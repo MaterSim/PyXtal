@@ -207,23 +207,38 @@ def find_short_dist(coor, lattice, tol):
 
     return pairs, graph
 
-def connected_components(graph): #Return a set of connected components for an undirected graph
+def connected_components(graph):
+    '''Given an undirected graph (a 2d array of indices), return a set of
+    connected components, each connected component being an (arbitrarily
+    ordered) array of indices which are connected either directly or indirectly.
+    '''
     def add_neighbors(el, seen=[]):
+        '''
+        Find all elements which are connected to el. Return an array which
+        includes these elements and el itself.
+        '''
+        #seen stores already-visited indices
         if seen == []: seen = [el]
+        #iterate through the neighbors (x) of el
         for x in graph[el]:
             if x not in seen:
                 seen.append(x)
+                #Recursively find neighbors of x
                 add_neighbors(x, seen)
         return seen
 
+    #Create a list of indices to iterate through
     unseen = list(range(len(graph)))
     sets = []
     i = 0
     while (unseen != []):
+        #x is the index we are finding the connected component of
         x = unseen.pop()
         sets.append([])
+        #Add neighbors of x to the current connected component
         for y in add_neighbors(x):
             sets[i].append(y)
+            #Remove indices which have already been found
             if y in unseen: unseen.remove(y)
         i += 1
     return sets
