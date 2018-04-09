@@ -403,7 +403,7 @@ def get_wyckoff_positions(sg):
         wyckoffs_organized[i].append(x)
     return wyckoffs_organized
 
-class generate_crystal(Structure):
+class random_crystal(Structure):
     def __init__(self, sg, species, numIons, factor):
         numIons *= cellsize(sg)
         volume = estimate_volume(numIons, species, factor)
@@ -517,8 +517,8 @@ if __name__ == "__main__":
     for i in range(100):
         numIons0 = np.array(numIons)
         sg = randint(2,230)
-        #new_struct, good_struc = generate_crystal(options.sg, system, numIons0, options.factor)
-        rand_crystal = generate_crystal(sg, system, numIons0, options.factor)
+        #new_struct, good_struc = random_crystal(options.sg, system, numIons0, options.factor)
+        rand_crystal = random_crystal(sg, system, numIons0, options.factor)
         new_struct, good_struc = rand_crystal.struct, rand_crystal.good_struct
         if good_struc:
             new_struct.to(fmt="poscar", filename = '1.vasp')
