@@ -403,7 +403,7 @@ def get_wyckoff_positions(sg):
         wyckoffs_organized[i].append(x)
     return wyckoffs_organized
 
-class random_crystal(Structure):
+class random_crystal():
     def __init__(self, sg, species, numIons, factor):
         numIons *= cellsize(sg)
         volume = estimate_volume(numIons, species, factor)
@@ -514,7 +514,7 @@ if __name__ == "__main__":
         system = [element]
         numIons = [int(number)]
 
-    for i in range(100):
+    for i in range(5):
         numIons0 = np.array(numIons)
         sg = randint(2,230)
         #new_struct, good_struc = random_crystal(options.sg, system, numIons0, options.factor)
