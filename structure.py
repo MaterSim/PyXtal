@@ -403,84 +403,91 @@ def get_wyckoff_positions(sg):
         wyckoffs_organized[i].append(x)
     return wyckoffs_organized
 
-def generate_crystal(sg, species, numIons, factor):
-    numIons *= cellsize(sg)
-    volume = estimate_volume(numIons, species, factor)
-    wyckoffs = get_wyckoff_positions(sg) #2D Array of Wyckoff positions organized by multiplicity
-    Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
-    Msg2 = 'Error: failed in the cycle of generating structures'
-    Msg3 = 'Warning: failed in the cycle of adding species'
-    Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
-    Msg5 = 'Finishing: added the specie'
-    Msg6 = 'Finishing: added the whole structure'
+class generate_crystal(Structure):
+    def __init__(self, sg, species, numIons, factor):
+        numIons *= cellsize(sg)
+        volume = estimate_volume(numIons, species, factor)
+        wyckoffs = get_wyckoff_positions(sg) #2D Array of Wyckoff positions organized by multiplicity
+        Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
+        Msg2 = 'Error: failed in the cycle of generating structures'
+        Msg3 = 'Warning: failed in the cycle of adding species'
+        Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
+        Msg5 = 'Finishing: added the specie'
+        Msg6 = 'Finishing: added the whole structure'
 
-    if check_compatible(numIons, wyckoffs) is False:
-        print(Msg1)
-    else:
-        for cycle1 in range(max1):
-            #1, Generate a lattice
-            cell_para = generate_lattice(sg, volume)
-            cell_matrix = para2matrix(cell_para)
-            coordinates_total = [] #to store the added coordinates
-            sites_total = []      #to store the corresponding specie
-            good_structure = False
+        if check_compatible(numIons, wyckoffs) is False:
+            print(Msg1)
+        else:
+            for cycle1 in range(max1):
+                #1, Generate a lattice
+                cell_para = generate_lattice(sg, volume)
+                cell_matrix = para2matrix(cell_para)
+                coordinates_total = [] #to store the added coordinates
+                sites_total = []      #to store the corresponding specie
+                good_structure = False
 
-            for cycle2 in range(max2):
-                coordinates_tmp = deepcopy(coordinates_total)
-                sites_tmp = deepcopy(sites_total)
-                
-        	#Add specie by specie
-                for numIon, specie in zip(numIons, species):
-                    numIon_added = 0
-                    tol = max(0.5*Element(specie).covalent_radius, tol_m)
-                    #Now we start to add the specie to the wyckoff position
-                    #print(wyckoffs[-1][0][0].as_xyz_string)
-                    for cycle3 in range(max3):
+                for cycle2 in range(max2):
+                    coordinates_tmp = deepcopy(coordinates_total)
+                    sites_tmp = deepcopy(sites_total)
+                    
+            	#Add specie by specie
+                    for numIon, specie in zip(numIons, species):
+                        numIon_added = 0
+                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
+                        #Now we start to add the specie to the wyckoff position
+                        #print(wyckoffs[-1][0][0].as_xyz_string)
+                        for cycle3 in range(max3):
 
-                        #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                        ops = choose_wyckoff(wyckoffs, numIon-numIon_added) 
-                        if ops is not False:
-        	    	    #Generate a list of coords from ops
-                            #point = rand_coords()  #ops[0].as_xyz_string()) 
-                            point = np.random.random(3)
-                            #print('generating new points:', point)
-                            coords = np.array([op.operate(point) for op in ops])
-                            #merge_coordinate if the atoms are close
-                            coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, wyckoffs, tol)
-                            if good_merge:
-                                coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                #print('existing: ', coordinates_tmp)
-                                if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
-                                    coordinates_tmp.append(coords_toadd)
-                                    sites_tmp.append(specie)
-                                    numIon_added += len(coords_toadd)
-                                if numIon_added == numIon:
-                                    #print(Msg5)
-                                    coordinates_total = deepcopy(coordinates_tmp)
-                                    sites_total = deepcopy(sites_tmp)
-                                    break
+                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
+                            ops = choose_wyckoff(wyckoffs, numIon-numIon_added) 
+                            if ops is not False:
+            	    	    #Generate a list of coords from ops
+                                #point = rand_coords()  #ops[0].as_xyz_string()) 
+                                point = np.random.random(3)
+                                #print('generating new points:', point)
+                                coords = np.array([op.operate(point) for op in ops])
+                                #merge_coordinate if the atoms are close
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, wyckoffs, tol)
+                                if good_merge:
+                                    coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
+                                    #print('existing: ', coordinates_tmp)
+                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
+                                        coordinates_tmp.append(coords_toadd)
+                                        sites_tmp.append(specie)
+                                        numIon_added += len(coords_toadd)
+                                    if numIon_added == numIon:
+                                        #print(Msg5)
+                                        coordinates_total = deepcopy(coordinates_tmp)
+                                        sites_total = deepcopy(sites_tmp)
+                                        break
 
-                if numIon_added == numIon:
-                    print(Msg6)
-                    good_structure = True
-                    break
-                elif cycle2+1 == max2:
-                    #print(coordinates_total)
-                    print(Msg3)
-            if good_structure:
-                final_coor = []
-                final_site = []
-                final_lattice = cell_matrix
-                for coor, ele in zip(coordinates_total, sites_total):
-                    for x in coor:
-                        final_coor.append(x)
-                        final_site.append(ele)
+                    if numIon_added == numIon:
+                        print(Msg6)
+                        good_structure = True
+                        break
+                    elif cycle2+1 == max2:
+                        #print(coordinates_total)
+                        print(Msg3)
+                if good_structure:
+                    final_coor = []
+                    final_site = []
+                    final_lattice = cell_matrix
+                    for coor, ele in zip(coordinates_total, sites_total):
+                        for x in coor:
+                            final_coor.append(x)
+                            final_site.append(ele)
 
-                if len(final_coor) > 48:
-                    return Structure(final_lattice, final_site, np.array(final_coor)), False
-                return Structure(final_lattice, final_site, np.array(final_coor)), True
+                    if len(final_coor) > 48:
+                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        self.good_struct = False
+                        return
+                    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                    self.good_struct = True
+                    return
 
-    return Msg2, False
+        self.struct = Msg2
+        self.good_struct = False
+        return
 
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
@@ -511,7 +518,8 @@ if __name__ == "__main__":
         numIons0 = np.array(numIons)
         sg = randint(2,230)
         #new_struct, good_struc = generate_crystal(options.sg, system, numIons0, options.factor)
-        new_struct, good_struc = generate_crystal(sg, system, numIons0, options.factor)
+        rand_crystal = generate_crystal(sg, system, numIons0, options.factor)
+        new_struct, good_struc = rand_crystal.struct, rand_crystal.good_struct
         if good_struc:
             new_struct.to(fmt="poscar", filename = '1.vasp')
             cell = read_vasp('1.vasp')
