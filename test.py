@@ -20,7 +20,7 @@ for params in params_list:
     for sg in range(sg_min, sg_max+1):
         rand_crystal = random_crystal(sg, species, numIons, factor)
 
-        if rand_crystal.good_struct:
+        if rand_crystal.valid:
             rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
             cell = read_vasp('1.vasp')
             ans = spglib.get_symmetry_dataset(cell, symprec=1e-1)['number']
