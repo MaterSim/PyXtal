@@ -407,31 +407,35 @@ def get_wyckoff_positions(sg):
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     '''
-    Given gen_pos (a list of SymmOps), return the list of
-    symmetry operations leaving a point (coordinate or SymmOp) invariant.
+    Given gen_pos (a list of SymmOps), return the list of symmetry operations
+    leaving a point (coordinate or SymmOp) invariant.
     '''
     #Convert point into a SymmOp
     if type(point) != SymmOp:
         point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point - np.floor(point))
     symmetry = []
     for op in gen_pos:
-        print("Checking wp " +op.as_xyz_string() + "...")
         is_symmetry = True
+        #Calculate the effect of applying op to point
         difference = SymmOp(point.affine_matrix - (op*point).affine_matrix)
-        print("Difference matrix:")
-        print(difference)
         #Check that the rotation matrix is unaltered by op
-        '''if not np.allclose(difference.rotation_matrix, np.zeros((3,3)), rtol = 1e-3, atol = 1e-3):
-            print("Failed rotation check")
-            is_symmetry = False'''
+        if not np.allclose(difference.rotation_matrix, np.zeros((3,3)), rtol = 1e-3, atol = 1e-3):
+            is_symmetry = False
         #Check that the displacement is less than tol
-        #TODO: Determine whether to use absolute or PBC distance
         displacement = difference.translation_vector
         if distance(displacement, lattice) > tol:
-            print("Failed distance check")
             is_symmetry = False
         if is_symmetry:
-            print("Passed!")
+            '''The actual site symmetry's translation vector may vary from op by
+            a factor of +1 or -1 (especially when op contains +-1/2).
+            We record this to distinguish between special Wyckoff positions.
+            As an example, consider the point (-x+1/2,-x,x+1/2) in position 16c
+            of space group Ia-3(206). The site symmetry includes the operations
+            (-z+1,x-1/2,-y+1/2) and (y+1/2,-z+1/2,-x+1). These operations are
+            not listed in the general position, but correspond to the operations
+            (-z,x+1/2,-y+1/2) and (y+1/2,-z+1/2,-x), respectively, but shifted
+            by (+1,-1,0) and (0,0,+1), respectively.
+            '''
             el = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector + np.round(displacement))
             symmetry.append(el)
     return symmetry
