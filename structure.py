@@ -1,21 +1,27 @@
-'''Program for generation of random crystal structures.
-by Scott Fredericks, Spring 2018
-Given a space group number between 1 and 230,
-and a number N of atoms in the primitive cell,
-produces a crystal structure with random atomic coordinates.
-Outputs a cif file with conventional setting'''
-import spglib
-from vasp import read_vasp
+'''
+Program for generation of random crystal structures.
+by Scott Fredericks and Qiang Zhu, Spring 2018
+Args:
+sg: space group number between 1 and 230,
+specie: type of atoms
+N : number of atoms in the primitive cell,
+
+output:
+a structure class
+
+possibly output cif file
+cif file with conventional setting
+'''
+
+from spglib import get_symmetry_dataset
 from pymatgen.symmetry.groups import sg_symbol_from_int_number
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.structure import Structure
 from pymatgen.io.cif import CifWriter
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from optparse import OptionParser
 from scipy.spatial.distance import cdist
 import numpy as np
-from os.path import isfile
 from random import uniform as rand
 from random import choice as choose
 from random import randint
@@ -24,6 +30,13 @@ import database.make_sitesym as make_sitesym
 import database.hall as hall
 from database.element import Element
 from copy import deepcopy
+
+#some optional libs
+#from vasp import read_vasp
+#from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+#from os.path import isfile
+
+
 #Define variables
 #------------------------------
 tol_m = 1.0 #seperation tolerance in Angstroms
@@ -106,31 +119,6 @@ def get_center(xyzs, lattice):
     return xyzs.mean(0)
 
 
-#generate random coordinate
-def rand_coords(xyz_string): 
-    """
-    args:
-    xyz_string: 0, y, 1/4
-    return: random numbers for the places where x, y, z is present
-    """
-    #xyz_string = ops[0].as_xyz_string()
-    xyz = []
-    x,y,z = np.random.random(3)
-    for content in xyz_string.strip('()').split(','):
-        if content.find('x')>=0:
-            xyz.append(x)
-        elif content.find('y')>=0:
-            xyz.append(y)
-        elif content.find('z')>=0:
-            xyz.append(z)
-        elif content.find('/')>=0:
-            tmp = content.split('/')
-            xyz.append(float(tmp[0])/float(tmp[1]))
-        else:
-            xyz.append(float(content))
-
-    return xyz
-
 def para2matrix(cell_para):
     """ 1x6 (a, b, c, alpha, beta, gamma) -> 3x3 representation -> """
     matrix = np.zeros([3,3])
@@ -155,8 +143,6 @@ def matrix2para(matrix):
     cell_para[3] = angle(matrix[1], matrix[2])
 
     return cell_para
-
-
 
 def cellsize(sg):
     """
@@ -322,17 +308,6 @@ def generate_lattice(sg, volume):
         a, b, c = s, s, s
     return np.array([a, b, c, alpha, beta, gamma])
 
-def check_compatible(numIons, wyckoff):
-    """
-    check if the number of atoms is compatible with the wyckoff positions
-    needs to improve later
-    """
-    N_site = [len(x[0]) for x in wyckoff]
-    for numIon in numIons:
-        if numIon % N_site[-1] > 0:
-            return False
-    return True
-
 def filter_site(v): #needs to explain
     #Adjusts coordinates to be greater than 0 and less than 1
     w = v
@@ -442,6 +417,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
 
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
+<<<<<<< HEAD
         numIons *= cellsize(sg)
         volume = estimate_volume(numIons, species, factor)
         wyckoffs = get_wyckoff_positions(sg) #2D Array of Wyckoff positions organized by multiplicity
@@ -455,10 +431,51 @@ class random_crystal():
 
         if check_compatible(numIons, wyckoffs) is False:
             print(Msg1)
+=======
+        #Necessary input
+        self.factor = factor
+        self.numIons0 = numIons
+        self.sg = sg
+        self.species = species
+        self.Msgs()
+        self.numIons = numIons * cellsize(self.sg)
+        self.volume = estimate_volume(self.numIons, self.species, self.factor)
+        self.wyckoffs = get_wyckoff_positions(self.sg) #2D Array of Wyckoff positions organized by multiplicity
+        self.generate_crystal()
+
+    def Msgs(self):
+        self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
+        self.Msg2 = 'Error: failed in the cycle of generating structures'
+        self.Msg3 = 'Warning: failed in the cycle of adding species'
+        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
+        self.Msg5 = 'Finishing: added the specie'
+        self.Msg6 = 'Finishing: added the whole structure'
+
+    def check_compatible(self):
+        """
+        check if the number of atoms is compatible with the wyckoff positions
+        needs to improve later
+        """
+        N_site = [len(x[0]) for x in self.wyckoffs]
+        for numIon in self.numIons:
+            if numIon % N_site[-1] > 0:
+                return False
+        return True
+
+
+    def generate_crystal(self):
+        """the main code to generate random crystal """
+    
+        if self.check_compatible() is False:
+            print(self.Msg1)
+            self.valid = False
+            return 
+
+>>>>>>> 80bb9bb040a249727c1b0b6befc5482fd5a6eec0
         else:
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice(sg, volume)
+                cell_para = generate_lattice(self.sg, self.volume)
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
@@ -469,7 +486,7 @@ class random_crystal():
                     sites_tmp = deepcopy(sites_total)
                     
             	#Add specie by specie
-                    for numIon, specie in zip(numIons, species):
+                    for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
                         tol = max(0.5*Element(specie).covalent_radius, tol_m)
                         #Now we start to add the specie to the wyckoff position
@@ -477,15 +494,14 @@ class random_crystal():
                         for cycle3 in range(max3):
 
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                            ops = choose_wyckoff(wyckoffs, numIon-numIon_added) 
+                            ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
                             if ops is not False:
             	    	    #Generate a list of coords from ops
-                                #point = rand_coords()  #ops[0].as_xyz_string()) 
                                 point = np.random.random(3)
                                 #print('generating new points:', point)
                                 coords = np.array([op.operate(point) for op in ops])
                                 #merge_coordinate if the atoms are close
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, wyckoffs, tol)
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, tol)
                                 if good_merge:
                                     coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                     #print('existing: ', coordinates_tmp)
@@ -500,31 +516,39 @@ class random_crystal():
                                         break
 
                     if numIon_added == numIon:
-                        print(Msg6)
+                        #print(self.Msg6)
                         good_structure = True
                         break
                     elif cycle2+1 == max2:
                         #print(coordinates_total)
-                        print(Msg3)
+                        print(self.Msg3)
+
                 if good_structure:
                     final_coor = []
                     final_site = []
+                    final_number = []
                     final_lattice = cell_matrix
                     for coor, ele in zip(coordinates_total, sites_total):
                         for x in coor:
                             final_coor.append(x)
                             final_site.append(ele)
+                            final_number.append(Element(ele).z)
 
-                    if len(final_coor) > 48:
-                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                        self.good_struct = False
-                        return
+                    #if len(final_coor) > 48: for debugg
+                    #    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                    #    self.good_struct = False
+                    #    return
+
+                    self.lattice = final_lattice                    
+                    self.coordinates = np.array(final_coor)
+                    self.sites = final_site                    
                     self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                    self.good_struct = True
+                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                    self.valid = True
                     return
 
         self.struct = Msg2
-        self.good_struct = False
+        self.valid = False
         return
 
 if __name__ == "__main__":
@@ -557,13 +581,15 @@ if __name__ == "__main__":
         sg = randint(2,230)
         #new_struct, good_struc = random_crystal(options.sg, system, numIons0, options.factor)
         rand_crystal = random_crystal(sg, system, numIons0, options.factor)
-        new_struct, good_struc = rand_crystal.struct, rand_crystal.good_struct
-        if good_struc:
-            new_struct.to(fmt="poscar", filename = '1.vasp')
-            cell = read_vasp('1.vasp')
-            #ans = spglib.get_spacegroup(cell)
-            ans = spglib.get_symmetry_dataset(cell, symprec=1e-1)['number']
+
+        if rand_crystal.valid:
+            #pymatgen style
+            rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
+
+            #spglib style structure called cell
+            ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group  requested: ', sg, 'generated', ans)
+
             if ans < int(sg/1.2):
                 print('something is wrong')
                 break
