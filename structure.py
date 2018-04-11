@@ -33,6 +33,7 @@ max3 = 30 #Attempts for a given Wyckoff position
 minvec = 2.0 #minimum vector length
 ang_min = 30
 ang_max = 150
+Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 #Define functions
 #------------------------------
 def create_matrix():
@@ -333,6 +334,7 @@ def check_compatible(numIons, wyckoff):
     return True
 
 def filter_site(v): #needs to explain
+    #Adjusts coordinates to be greater than 0 and less than 1
     w = v
     for i in range(len(w)):
     	while w[i]<0: w[i] += 1
@@ -403,11 +405,43 @@ def get_wyckoff_positions(sg):
         wyckoffs_organized[i].append(x)
     return wyckoffs_organized
 
+def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
+    '''
+    Given gen_pos (a list of SymmOps), return the list of
+    symmetry operations leaving a point (coordinate or SymmOp) invariant.
+    '''
+    #Convert point into a SymmOp
+    if type(point) != SymmOp:
+        point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point - np.floor(point))
+    symmetry = []
+    for op in gen_pos:
+        print("Checking wp " +op.as_xyz_string() + "...")
+        is_symmetry = True
+        difference = SymmOp(point.affine_matrix - (op*point).affine_matrix)
+        print("Difference matrix:")
+        print(difference)
+        #Check that the rotation matrix is unaltered by op
+        '''if not np.allclose(difference.rotation_matrix, np.zeros((3,3)), rtol = 1e-3, atol = 1e-3):
+            print("Failed rotation check")
+            is_symmetry = False'''
+        #Check that the displacement is less than tol
+        #TODO: Determine whether to use absolute or PBC distance
+        displacement = difference.translation_vector
+        if distance(displacement, lattice) > tol:
+            print("Failed distance check")
+            is_symmetry = False
+        if is_symmetry:
+            print("Passed!")
+            el = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector + np.round(displacement))
+            symmetry.append(el)
+    return symmetry
+
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
         numIons *= cellsize(sg)
         volume = estimate_volume(numIons, species, factor)
         wyckoffs = get_wyckoff_positions(sg) #2D Array of Wyckoff positions organized by multiplicity
+        
         Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
         Msg2 = 'Error: failed in the cycle of generating structures'
         Msg3 = 'Warning: failed in the cycle of adding species'
