@@ -13,7 +13,7 @@ possibly output cif file
 cif file with conventional setting
 '''
 
-import spglib
+from spglib import get_symmetry_dataset
 from pymatgen.symmetry.groups import sg_symbol_from_int_number
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.structure import Structure
@@ -473,11 +473,13 @@ class random_crystal():
                 if good_structure:
                     final_coor = []
                     final_site = []
+                    final_number = []
                     final_lattice = cell_matrix
                     for coor, ele in zip(coordinates_total, sites_total):
                         for x in coor:
                             final_coor.append(x)
                             final_site.append(ele)
+                            final_number.append(Element(ele).z)
 
                     #if len(final_coor) > 48: for debugg
                     #    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
@@ -488,6 +490,7 @@ class random_crystal():
                     self.coordinates = np.array(final_coor)
                     self.sites = final_site                    
                     self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
                     self.valid = True
                     return
 
@@ -531,8 +534,7 @@ if __name__ == "__main__":
             rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
 
             #spglib style structure called cell
-            cell = (rand_crystal.lattice, rand_crystal.coordinates, rand_crystal.sites)
-            ans = spglib.get_symmetry_dataset(cell, symprec=1e-1)['number']
+            ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group  requested: ', sg, 'generated', ans)
 
             if ans < int(sg/1.2):

@@ -23,8 +23,7 @@ for params in params_list:
 
         if rand_crystal.valid:
             rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
-            cell = (rand_crystal.lattice, rand_crystal.coordinates, rand_crystal.sites)
-            ans = get_symmetry_dataset(cell, symprec=1e-1)['number']
+            ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group  requested: ', sg, 'generated', ans)
             if ans < int(sg/1.2):
                 print('something is wrong')
