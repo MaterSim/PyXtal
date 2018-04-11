@@ -417,7 +417,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
 
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
-<<<<<<< HEAD
+
         numIons *= cellsize(sg)
         volume = estimate_volume(numIons, species, factor)
         wyckoffs = get_wyckoff_positions(sg) #2D Array of Wyckoff positions organized by multiplicity
@@ -431,7 +431,7 @@ class random_crystal():
 
         if check_compatible(numIons, wyckoffs) is False:
             print(Msg1)
-=======
+
         #Necessary input
         self.factor = factor
         self.numIons0 = numIons
@@ -471,7 +471,6 @@ class random_crystal():
             self.valid = False
             return 
 
->>>>>>> 80bb9bb040a249727c1b0b6befc5482fd5a6eec0
         else:
             for cycle1 in range(max1):
                 #1, Generate a lattice
