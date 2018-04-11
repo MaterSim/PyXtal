@@ -1,21 +1,27 @@
-'''Program for generation of random crystal structures.
+'''
+Program for generation of random crystal structures.
 by Scott Fredericks and Qiang Zhu, Spring 2018
-Given a space group number between 1 and 230,
-and a number N of atoms in the primitive cell,
-produces a crystal structure with random atomic coordinates.
-Outputs a cif file with conventional setting'''
+Args:
+sg: space group number between 1 and 230,
+specie: type of atoms
+N : number of atoms in the primitive cell,
+
+output:
+a structure class
+
+possibly output cif file
+cif file with conventional setting
+'''
+
 import spglib
-from vasp import read_vasp
 from pymatgen.symmetry.groups import sg_symbol_from_int_number
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.structure import Structure
 from pymatgen.io.cif import CifWriter
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from optparse import OptionParser
 from scipy.spatial.distance import cdist
 import numpy as np
-#from os.path import isfile
 from random import uniform as rand
 from random import choice as choose
 from random import randint
@@ -24,6 +30,13 @@ import database.make_sitesym as make_sitesym
 import database.hall as hall
 from database.element import Element
 from copy import deepcopy
+
+#some optional libs
+#from vasp import read_vasp
+#from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+#from os.path import isfile
+
+
 #Define variables
 #------------------------------
 tol_m = 1.0 #seperation tolerance in Angstroms
@@ -450,7 +463,7 @@ class random_crystal():
                                         break
 
                     if numIon_added == numIon:
-                        print(self.Msg6)
+                        #print(self.Msg6)
                         good_structure = True
                         break
                     elif cycle2+1 == max2:
@@ -466,11 +479,14 @@ class random_crystal():
                             final_coor.append(x)
                             final_site.append(ele)
 
-                    if len(final_coor) > 48:
-                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                        self.good_struct = False
-                        return
+                    #if len(final_coor) > 48: for debugg
+                    #    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                    #    self.good_struct = False
+                    #    return
 
+                    self.lattice = final_lattice                    
+                    self.coordinates = np.array(final_coor)
+                    self.sites = final_site                    
                     self.struct = Structure(final_lattice, final_site, np.array(final_coor))
                     self.valid = True
                     return
@@ -511,9 +527,11 @@ if __name__ == "__main__":
         rand_crystal = random_crystal(sg, system, numIons0, options.factor)
 
         if rand_crystal.valid:
-
+            #pymatgen style
             rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
-            cell = read_vasp('1.vasp')
+
+            #spglib style structure called cell
+            cell = (rand_crystal.lattice, rand_crystal.coordinates, rand_crystal.sites)
             ans = spglib.get_symmetry_dataset(cell, symprec=1e-1)['number']
             print('Space group  requested: ', sg, 'generated', ans)
 
