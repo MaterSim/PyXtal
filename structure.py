@@ -250,7 +250,6 @@ def merge_coordinate(coor, lattice, wyckoff, tol):
         else: 
             return coor, True
 
-
 def estimate_volume(numIons, species, factor=2.0):
     volume = 0
     for numIon, specie in zip(numIons, species):
@@ -415,9 +414,58 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             symmetry.append(el)
     return symmetry
 
+def get_wyckoff_symmetry(sg, i):
+    '''
+    Return the site symmetry of all points in the ith wyckoff position of sg.
+
+    Args:
+        sg: the international space group
+        i: the index of the Wyckoff position (largest = 0)
+    '''
+    #TODO: Convert from npy (very slow) to pandas
+    #TODO: Find ideal variable type for storing SymmOp operations
+    #TODO: Support letter instead of index
+    data = np.load("database/wyckoff_symmetry.npy")
+    return data[sg][i]
+    
+
+def check_wyckoff_position(points, sg, wyckoffs=None):
+    '''
+    Given a list of points, return index of Wyckoff position in space group.
+    If no match found, returns False.
+
+    Args:
+        points: a list of 3d coordinates or SymmOps to check
+        sg: the international space group number to check
+        wyckoffs: a list of wyckoff positions obtained from get_wyckoff_positions.
+    '''
+    #TODO: Implement changes from get_wyckoff_symmetry
+    #TODO: Create function for assigning WP to a single point
+    a = np.array(points)
+    if wyckoffs == None:
+        wyckoffs = get_wyckoff_positions(sg)
+    gen_pos = wyckoffs[0][0]
+    i = -1
+    p_symm = []
+    for x in points:
+        p_symm.append(site_symm(x, gen_pos))
+    for x in wyckoffs:
+        for wp in x:
+            i += 1
+            w_symm = get_wyckoff_symmetry(sg, i)
+            if len(p_symm) == len(w_symm):
+                temp = w_symm
+                for p in p_symm:
+                    for w in temp:
+                        if p == w:
+                            temp.remove(w)
+                if temp == []:
+                    return i
+    return False
+            
+
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
-<<<<<<< HEAD
         numIons *= cellsize(sg)
         volume = estimate_volume(numIons, species, factor)
         wyckoffs = get_wyckoff_positions(sg) #2D Array of Wyckoff positions organized by multiplicity
@@ -431,7 +479,6 @@ class random_crystal():
 
         if check_compatible(numIons, wyckoffs) is False:
             print(Msg1)
-=======
         #Necessary input
         self.factor = factor
         self.numIons0 = numIons
@@ -471,7 +518,6 @@ class random_crystal():
             self.valid = False
             return 
 
->>>>>>> 80bb9bb040a249727c1b0b6befc5482fd5a6eec0
         else:
             for cycle1 in range(max1):
                 #1, Generate a lattice
