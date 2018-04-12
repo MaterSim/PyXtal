@@ -416,7 +416,9 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
 
 def get_wyckoff_symmetry(sg, i):
     '''
-    Return the site symmetry of all points in the ith wyckoff position of sg.
+    Return the site symmetry of all points in the ith WP of sg.
+    1st index of returned list specifies a point in the WP.
+    2nd index specifies a SymmOp in the site symmetry of that point.
 
     Args:
         sg: the international space group
@@ -427,7 +429,6 @@ def get_wyckoff_symmetry(sg, i):
     #TODO: Support letter instead of index
     data = np.load("database/wyckoff_symmetry.npy")
     return data[sg][i]
-    
 
 def check_wyckoff_position(points, sg, wyckoffs=None):
     '''
@@ -479,6 +480,7 @@ class random_crystal():
 
         if check_compatible(numIons, wyckoffs) is False:
             print(Msg1)
+        
         #Necessary input
         self.factor = factor
         self.numIons0 = numIons
