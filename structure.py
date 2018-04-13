@@ -26,7 +26,6 @@ from random import uniform as rand
 from random import choice as choose
 from random import randint
 from math import sqrt, pi, sin, cos, acos, fabs
-import database.make_sitesym as make_sitesym
 import database.hall as hall
 from database.element import Element
 from copy import deepcopy
