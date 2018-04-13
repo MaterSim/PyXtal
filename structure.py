@@ -48,7 +48,7 @@ minvec = 2.0 #minimum vector length
 ang_min = 30
 ang_max = 150
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
-wyckoff_df = read_csv("wyckoff_list.csv")
+wyckoff_df = read_csv("database/wyckoff_list.csv")
 wyckoffs_all = [None] * 231
 #Define functions
 #------------------------------
