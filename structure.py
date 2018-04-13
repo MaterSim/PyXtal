@@ -36,7 +36,6 @@ from pandas import read_csv
 #from vasp import read_vasp
 #from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 #from os.path import isfile
-from timeit import timeit
 
 #Define variables
 #------------------------------
@@ -49,7 +48,7 @@ ang_min = 30
 ang_max = 150
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv("database/wyckoff_list.csv")
-wyckoffs_all = [None] * 231
+wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
 #Define functions
 #------------------------------
 def create_matrix():
@@ -330,59 +329,7 @@ def choose_wyckoff(wyckoffs, number):
             return choose(wyckoff)
     return False
 
-def get_wyckoff_positions(sg):
-    """find the wyckoff positions
-    Args:
-        sg: space group number (19)
-    Return: a list containg the operation matrix sorted by multiplicity
-    4a
-        [Rot:
-        [[ 1.  0.  0.]
-        [ 0.  1.  0.]
-        [ 0.  0.  1.]]
-        tau
-        [ 0.  0.  0.], 
-        Rot:
-        [[-1.  0.  0.]
-         [ 0. -1.  0.]
-         [ 0.  0.  1.]]
-        tau
-        [ 0.5  0.   0.5], 
-        Rot:
-        [[-1.  0.  0.]
-         [ 0.  1.  0.]
-         [ 0.  0. -1.]]
-        tau
-        [ 0.   0.5  0.5], 
-        Rot:
-        [[ 1.  0.  0.]
-         [ 0. -1.  0.]
-         [ 0.  0. -1.]]
-        tau
-        [ 0.5  0.5  0. ]]]
-    """
-    array = []
-    hall_number = hall.hall_from_hm(sg)
-    wyckoff_positions = make_sitesym.get_wyckoff_position_operators('database/Wyckoff.csv', hall_number)
-    for x in wyckoff_positions:
-    	temp = []
-    	for y in x:
-    	    temp.append(SymmOp.from_rotation_and_translation(list(y[0]), filter_site(y[1]/24)))
-    	array.append(temp)
-        
-    i = 0
-    wyckoffs_organized = [[]] #2D Array of Wyckoff positions organized by multiplicity
-    old = len(array[0])
-    for x in array:
-        mult = len(x)
-        if mult != old:
-            wyckoffs_organized.append([])
-            i += 1
-            old = mult
-        wyckoffs_organized[i].append(x)
-    return wyckoffs_organized
-
-def get_wyckoffs(sg):
+def get_wyckoffs(sg, organized=False):
     '''
     Returns a list of Wyckoff positions for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -394,7 +341,38 @@ def get_wyckoffs(sg):
         wyckoffs.append([])
         for y in x:
             wyckoffs[-1].append(SymmOp.from_xyz_string(y))
-    return wyckoffs
+    if organized:
+        wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
+        old = len(wyckoffs[0])
+        for wp in wyckoffs:
+            mult = len(wp)
+            if mult != old:
+                wyckoffs_organized.append([])
+                old = mult
+            wyckoffs_organized[-1].append(wp)
+        return wyckoffs_organized
+    else:
+        return wyckoffs
+
+def get_wyckoff_symmetry(sg):
+    '''
+    Returns a list of Wyckoff position site symmetry for a given space group.
+    1st index: index of WP in sg (0 is the WP with largest multiplicity)
+    2nd index: a point within the WP
+    3rd index: a site symmetry SymmOp of the point
+    '''
+    symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
+    symmetry = []
+    #Loop over Wyckoff positions
+    for x in symmetry_strings:
+        symmetry.append([])
+        #Loop over points in WP
+        for y in x:
+            symmetry[-1].append([])
+            #Loop over 
+            for z in y:
+                symmetry[-1][-1].append(SymmOp.from_xyz_string(z))
+    return symmetry
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     '''
@@ -431,22 +409,6 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             symmetry.append(el)
     return symmetry
 
-def get_wyckoff_symmetry(sg, i):
-    '''
-    Return the site symmetry of all points in the ith WP of sg.
-    1st index of returned list specifies a point in the WP.
-    2nd index specifies a SymmOp in the site symmetry of that point.
-
-    Args:
-        sg: the international space group
-        i: the index of the Wyckoff position (largest = 0)
-    '''
-    #TODO: Convert from npy (very slow) to pandas
-    #TODO: Find ideal variable type for storing SymmOp operations
-    #TODO: Support letter instead of index
-    data = np.load("database/wyckoff_symmetry.npy")
-    return data[sg][i]
-
 def check_wyckoff_position(points, sg, wyckoffs=None):
     '''
     Given a list of points, return index of Wyckoff position in space group.
@@ -455,47 +417,36 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
     Args:
         points: a list of 3d coordinates or SymmOps to check
         sg: the international space group number to check
-        wyckoffs: a list of wyckoff positions obtained from get_wyckoff_positions.
+        wyckoffs: a list of wyckoff positions obtained from get_wyckoffs.
     '''
-    #TODO: Implement changes from get_wyckoff_symmetry
     #TODO: Create function for assigning WP to a single point
     if wyckoffs == None:
-        wyckoffs = get_wyckoff_positions(sg)
-    gen_pos = wyckoffs[0][0]
-    i = -1
+        wyckoffs = get_wyckoffs(sg)
+        gen_pos = wyckoffs[0]
+    else:
+        gen_pos = wyckoffs[0][0]
+    w_symm_all = get_wyckoff_symmetry(sg)
     p_symm = []
     for x in points:
         p_symm.append(site_symm(x, gen_pos))
-    for x in wyckoffs:
-        for wp in x:
-            i += 1
-            w_symm = get_wyckoff_symmetry(sg, i)
-            if len(p_symm) == len(w_symm):
-                temp = w_symm
-                for p in p_symm:
-                    for w in temp:
-                        if p == w:
-                            temp.remove(w)
-                if temp == []:
-                    return i
+    for i, wp in enumerate(wyckoffs):
+        w_symm = w_symm_all[i]
+        if len(p_symm) == len(w_symm):
+            temp = w_symm
+            for p in p_symm:
+                for w in temp:
+                    if p == w:
+                        temp.remove(w)
+            if temp == []:
+                return i
     return False
             
 
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
-        numIons *= cellsize(sg)
-        volume = estimate_volume(numIons, species, factor)
-        wyckoffs = get_wyckoff_positions(sg) #2D Array of Wyckoff positions organized by multiplicity
-        
-        Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
-        Msg2 = 'Error: failed in the cycle of generating structures'
-        Msg3 = 'Warning: failed in the cycle of adding species'
-        Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
-        Msg5 = 'Finishing: added the specie'
-        Msg6 = 'Finishing: added the whole structure'
-
-        if check_compatible(numIons, wyckoffs) is False:
-            print(Msg1)
+        #numIons *= cellsize(sg) #Should not be called twice
+        #volume = estimate_volume(numIons, species, factor)
+        #wyckoffs = get_wyckoffs(sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
         
         #Necessary input
         self.factor = factor
@@ -505,7 +456,7 @@ class random_crystal():
         self.Msgs()
         self.numIons = numIons * cellsize(self.sg)
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
-        self.wyckoffs = get_wyckoff_positions(self.sg) #2D Array of Wyckoff positions organized by multiplicity
+        self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
         self.generate_crystal()
 
     def Msgs(self):
@@ -640,7 +591,7 @@ if __name__ == "__main__":
         system = [element]
         numIons = [int(number)]
 
-    for i in range(5):
+    for i in range(100):
         numIons0 = np.array(numIons)
         sg = randint(2,230)
         #new_struct, good_struc = random_crystal(options.sg, system, numIons0, options.factor)
