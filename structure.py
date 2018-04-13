@@ -30,12 +30,13 @@ import database.make_sitesym as make_sitesym
 import database.hall as hall
 from database.element import Element
 from copy import deepcopy
+from pandas import read_csv
 
 #some optional libs
 #from vasp import read_vasp
 #from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 #from os.path import isfile
-
+from timeit import timeit
 
 #Define variables
 #------------------------------
@@ -47,6 +48,8 @@ minvec = 2.0 #minimum vector length
 ang_min = 30
 ang_max = 150
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
+wyckoff_df = read_csv("wyckoff_list.csv")
+wyckoffs_all = [None] * 231
 #Define functions
 #------------------------------
 def create_matrix():
@@ -379,6 +382,20 @@ def get_wyckoff_positions(sg):
         wyckoffs_organized[i].append(x)
     return wyckoffs_organized
 
+def get_wyckoffs(sg):
+    '''
+    Returns a list of Wyckoff positions for a given space group.
+    1st index: index of WP in sg (0 is the WP with largest multiplicity)
+    2nd index: a SymmOp object in the WP
+    '''
+    wyckoff_strings = eval(wyckoff_df["0"][sg])
+    wyckoffs = []
+    for x in wyckoff_strings:
+        wyckoffs.append([])
+        for y in x:
+            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+    return wyckoffs
+
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     '''
     Given gen_pos (a list of SymmOps), return the list of symmetry operations
@@ -407,7 +424,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             of space group Ia-3(206). The site symmetry includes the operations
             (-z+1,x-1/2,-y+1/2) and (y+1/2,-z+1/2,-x+1). These operations are
             not listed in the general position, but correspond to the operations
-            (-z,x+1/2,-y+1/2) and (y+1/2,-z+1/2,-x), respectively, but shifted
+            (-z,x+1/2,-y+1/2) and (y+1/2,-z+1/2,-x), respectively, just shifted
             by (+1,-1,0) and (0,0,+1), respectively.
             '''
             el = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector + np.round(displacement))
@@ -442,7 +459,6 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
     '''
     #TODO: Implement changes from get_wyckoff_symmetry
     #TODO: Create function for assigning WP to a single point
-    a = np.array(points)
     if wyckoffs == None:
         wyckoffs = get_wyckoff_positions(sg)
     gen_pos = wyckoffs[0][0]
