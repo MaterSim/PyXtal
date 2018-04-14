@@ -78,11 +78,13 @@ def check_distance(coord1, coord2, specie1, specie2, lattice):
     lattice: cell matrix
     """
     #add PBC
-    for i in [-1,0,1]:
-        for j in [-1,0,1]:
-            for k in [-1,0,1]:
-                np.append(coord2, coord2+[i,j,k])
-    
+    coord2s = []
+    matrix = create_matrix()
+    for coord in coord2:
+        for m in matrix:
+            coord2s.append(coord+m)
+    coord2 = np.array(coord2s)
+
     coord2 = np.dot(coord2, lattice)
     if len(coord1)>0:
         for coord, element in zip(coord1, specie1):
@@ -536,6 +538,9 @@ class random_crystal():
                     elif cycle2+1 == max2:
                         #print(coordinates_total)
                         print(self.Msg3)
+                    else: #reset the coordinates and sites
+                        coordinates_total = []
+                        sites_total = []
 
                 if good_structure:
                     final_coor = []
