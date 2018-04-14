@@ -566,7 +566,7 @@ class random_crystal():
                     self.valid = True
                     return
 
-        self.struct = Msg2
+        self.struct = self.Msg2
         self.valid = False
         return
 
