@@ -485,6 +485,7 @@ class random_crystal():
     
         if self.check_compatible() is False:
             print(self.Msg1)
+            self.struct = None
             self.valid = False
             return 
 
@@ -530,6 +531,8 @@ class random_crystal():
                                         coordinates_total = deepcopy(coordinates_tmp)
                                         sites_total = deepcopy(sites_tmp)
                                         break
+                        if numIon_added != numIon:
+                            break
 
                     if numIon_added == numIon:
                         #print(self.Msg6)
@@ -552,11 +555,6 @@ class random_crystal():
                             final_coor.append(x)
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
-
-                    #if len(final_coor) > 48: for debugg
-                    #    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                    #    self.good_struct = False
-                    #    return
 
                     self.lattice = final_lattice                    
                     self.coordinates = np.array(final_coor)
@@ -594,12 +592,10 @@ if __name__ == "__main__":
     else:
         system = [element]
         numIons = [int(number)]
-
     for i in range(100):
         numIons0 = np.array(numIons)
-        sg = randint(2,230)
-        #new_struct, good_struc = random_crystal(options.sg, system, numIons0, options.factor)
-        rand_crystal = random_crystal(sg, system, numIons0, options.factor)
+        sg = options.sg
+        rand_crystal = random_crystal(options.sg, system, numIons0, options.factor)
 
         if rand_crystal.valid:
             #pymatgen style
@@ -609,9 +605,6 @@ if __name__ == "__main__":
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group  requested: ', sg, 'generated', ans)
 
-            if ans < int(sg/1.2):
-                print('something is wrong')
-                break
             #print(CifWriter(new_struct, symprec=0.1).__str__())
             #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
             #output wyckoff sites only
