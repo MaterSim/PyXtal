@@ -325,10 +325,22 @@ def choose_wyckoff(wyckoffs, number):
     1, the newly added sites is equal/less than the required number.
     2, prefer the sites with large multiplicity
     """
-    for wyckoff in wyckoffs:
-        if len(wyckoff[0]) <= number:
-            return choose(wyckoff)
-    return False
+    if rand(0,1)>0.5: #choose from high to low
+        for wyckoff in wyckoffs:
+            if len(wyckoff[0]) <= number:
+                return choose(wyckoff)
+        return False
+    else:
+        good_wyckoff = []
+        for wyckoff in wyckoffs:
+            if len(wyckoff[0]) <= number:
+                for w in wyckoff:
+                    good_wyckoff.append(w)
+        if len(good_wyckoff) > 0:
+            return choose(good_wyckoff)
+        else:
+            return False
+
 
 def get_wyckoffs(sg, organized=False):
     '''
@@ -450,6 +462,7 @@ class random_crystal():
         #wyckoffs = get_wyckoffs(sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
         
         #Necessary input
+        numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
         self.numIons0 = numIons
         self.sg = sg
@@ -502,14 +515,13 @@ class random_crystal():
                     coordinates_tmp = deepcopy(coordinates_total)
                     sites_tmp = deepcopy(sites_total)
                     
-            	#Add specie by specie
+            	    #Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
                         tol = max(0.5*Element(specie).covalent_radius, tol_m)
-                        #Now we start to add the specie to the wyckoff position
-                        #print(wyckoffs[-1][0][0].as_xyz_string)
-                        for cycle3 in range(max3):
 
+                        #Now we start to add the specie to the wyckoff position
+                        for cycle3 in range(max3):
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                             ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
                             if ops is not False:
@@ -527,20 +539,16 @@ class random_crystal():
                                         sites_tmp.append(specie)
                                         numIon_added += len(coords_toadd)
                                     if numIon_added == numIon:
-                                        #print(Msg5)
                                         coordinates_total = deepcopy(coordinates_tmp)
                                         sites_total = deepcopy(sites_tmp)
                                         break
                         if numIon_added != numIon:
-                            break
+                            break  #need to repeat from the 1st species
 
                     if numIon_added == numIon:
                         #print(self.Msg6)
                         good_structure = True
                         break
-                    elif cycle2+1 == max2:
-                        #print(coordinates_total)
-                        print(self.Msg3)
                     else: #reset the coordinates and sites
                         coordinates_total = []
                         sites_total = []
