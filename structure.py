@@ -103,14 +103,16 @@ def get_center(xyzs, lattice):
     to find the geometry center of the clusters under PBC
     """
     matrix0 = create_matrix()
+    xyzs -= np.round(xyzs)
     for atom1 in range(1,len(xyzs)):
         dist_min = 10.0
         for atom2 in range(0, atom1):
             #shift atom1 to position close to atom2
             #print(np.round(xyzs[atom1] - xyzs[atom2]))
-            xyzs[atom2] += np.round(xyzs[atom1] - xyzs[atom2])
+            #xyzs[atom2] += np.round(xyzs[atom1] - xyzs[atom2])
             #print(xyzs[atom1] - xyzs[atom2])
             matrix = matrix0 + (xyzs[atom1] - xyzs[atom2])
+            #print(matrix)
             matrix = np.dot(matrix, lattice)
             dists = cdist(matrix, [[0,0,0]])
             if np.min(dists) < dist_min:
@@ -119,6 +121,7 @@ def get_center(xyzs, lattice):
                 matrix_min = matrix0[np.argmin(dists)]
         #print(atom1, xyzs[atom1], matrix_min, dist_min)
         xyzs[atom1] += matrix_min
+    #print(xyzs)
     return xyzs.mean(0)
 
 
@@ -233,7 +236,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoff, tol):
+def merge_coordinate(coor, lattice, wyckoff, sg, tol):
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol)
         if len(pairs)>0:
@@ -245,8 +248,17 @@ def merge_coordinate(coor, lattice, wyckoff, tol):
                     #print(coor[group].mean(0))
                     merged.append(get_center(coor[group], lattice))
                 merged = np.array(merged)
-                #print('Merging----------------')
-                coor = merged
+                #if check_wyckoff_position(merged, sg, wyckoff) is not False:
+                if check_wyckoff_position(merged, sg) is False:
+                    print('something is wrong')
+                    print(coor)
+                    print(merged)
+                    print(sg)
+                    #exit(0)
+                    return coor, False
+                else:
+                    coor = merged
+
             else:#no way to merge
                 #print('no way to Merge, FFFFFFFFFFFFFFFFFFFFFFF----------------')
                 return coor, False
@@ -433,6 +445,10 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
         wyckoffs: a list of wyckoff positions obtained from get_wyckoffs.
     '''
     #TODO: Create function for assigning WP to a single point
+    #QZ: I am not sure if this is really needed
+    points = np.array(points)
+    points = np.around((points*1e+10))/1e+10
+
     if wyckoffs == None:
         wyckoffs = get_wyckoffs(sg)
         gen_pos = wyckoffs[0]
@@ -530,7 +546,7 @@ class random_crystal():
                                 #print('generating new points:', point)
                                 coords = np.array([op.operate(point) for op in ops])
                                 #merge_coordinate if the atoms are close
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, tol)
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
                                 if good_merge:
                                     coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                     #print('existing: ', coordinates_tmp)
