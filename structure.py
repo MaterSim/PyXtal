@@ -117,11 +117,13 @@ def check_distance(coord1, coord2, specie1, specie2, lattice):
     lattice: cell matrix
     """
     #add PBC
-    for i in [-1,0,1]:
-        for j in [-1,0,1]:
-            for k in [-1,0,1]:
-                np.append(coord2, coord2+[i,j,k])
-    
+    coord2s = []
+    matrix = create_matrix()
+    for coord in coord2:
+        for m in matrix:
+            coord2s.append(coord+m)
+    coord2 = np.array(coord2s)
+
     coord2 = np.dot(coord2, lattice)
     if len(coord1)>0:
         for coord, element in zip(coord1, specie1):
@@ -140,14 +142,16 @@ def get_center(xyzs, lattice):
     to find the geometry center of the clusters under PBC
     """
     matrix0 = create_matrix()
+    xyzs -= np.round(xyzs)
     for atom1 in range(1,len(xyzs)):
         dist_min = 10.0
         for atom2 in range(0, atom1):
             #shift atom1 to position close to atom2
             #print(np.round(xyzs[atom1] - xyzs[atom2]))
-            xyzs[atom2] += np.round(xyzs[atom1] - xyzs[atom2])
+            #xyzs[atom2] += np.round(xyzs[atom1] - xyzs[atom2])
             #print(xyzs[atom1] - xyzs[atom2])
             matrix = matrix0 + (xyzs[atom1] - xyzs[atom2])
+            #print(matrix)
             matrix = np.dot(matrix, lattice)
             dists = cdist(matrix, [[0,0,0]])
             if np.min(dists) < dist_min:
@@ -156,6 +160,7 @@ def get_center(xyzs, lattice):
                 matrix_min = matrix0[np.argmin(dists)]
         #print(atom1, xyzs[atom1], matrix_min, dist_min)
         xyzs[atom1] += matrix_min
+    #print(xyzs)
     return xyzs.mean(0)
 
 
@@ -270,7 +275,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoff, tol):
+def merge_coordinate(coor, lattice, wyckoff, sg, tol):
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol)
         if len(pairs)>0:
@@ -282,8 +287,17 @@ def merge_coordinate(coor, lattice, wyckoff, tol):
                     #print(coor[group].mean(0))
                     merged.append(get_center(coor[group], lattice))
                 merged = np.array(merged)
-                #print('Merging----------------')
-                coor = merged
+                #if check_wyckoff_position(merged, sg, wyckoff) is not False:
+                if check_wyckoff_position(merged, sg) is False:
+                    print('something is wrong')
+                    print(coor)
+                    print(merged)
+                    print(sg)
+                    #exit(0)
+                    return coor, False
+                else:
+                    coor = merged
+
             else:#no way to merge
                 #print('no way to Merge, FFFFFFFFFFFFFFFFFFFFFFF----------------')
                 return coor, False
@@ -378,10 +392,22 @@ def choose_wyckoff(wyckoffs, number):
     1, the newly added sites is equal/less than the required number.
     2, prefer the sites with large multiplicity
     """
-    for wyckoff in wyckoffs:
-        if len(wyckoff[0]) <= number:
-            return choose(wyckoff)
-    return False
+    if rand(0,1)>0.5: #choose from high to low
+        for wyckoff in wyckoffs:
+            if len(wyckoff[0]) <= number:
+                return choose(wyckoff)
+        return False
+    else:
+        good_wyckoff = []
+        for wyckoff in wyckoffs:
+            if len(wyckoff[0]) <= number:
+                for w in wyckoff:
+                    good_wyckoff.append(w)
+        if len(good_wyckoff) > 0:
+            return choose(good_wyckoff)
+        else:
+            return False
+
 
 def get_wyckoffs(sg, organized=False):
     '''
@@ -474,6 +500,10 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
         wyckoffs: a list of wyckoff positions obtained from get_wyckoffs.
     '''
     #TODO: Create function for assigning WP to a single point
+    #QZ: I am not sure if this is really needed
+    points = np.array(points)
+    points = np.around((points*1e+10))/1e+10
+
     if wyckoffs == None:
         wyckoffs = get_wyckoffs(sg)
         gen_pos = wyckoffs[0]
@@ -503,6 +533,7 @@ class random_crystal():
         #wyckoffs = get_wyckoffs(sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
         
         #Necessary input
+        numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
         self.numIons0 = numIons
         self.sg = sg
@@ -538,6 +569,7 @@ class random_crystal():
     
         if self.check_compatible() is False:
             print(self.Msg1)
+            self.struct = None
             self.valid = False
             return 
 
@@ -554,14 +586,13 @@ class random_crystal():
                     coordinates_tmp = deepcopy(coordinates_total)
                     sites_tmp = deepcopy(sites_total)
                     
-            	#Add specie by specie
+            	    #Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
                         tol = max(0.5*Element(specie).covalent_radius, tol_m)
-                        #Now we start to add the specie to the wyckoff position
-                        #print(wyckoffs[-1][0][0].as_xyz_string)
-                        for cycle3 in range(max3):
 
+                        #Now we start to add the specie to the wyckoff position
+                        for cycle3 in range(max3):
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                             ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
                             if ops is not False:
@@ -570,7 +601,7 @@ class random_crystal():
                                 #print('generating new points:', point)
                                 coords = np.array([op.operate(point) for op in ops])
                                 #merge_coordinate if the atoms are close
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, tol)
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
                                 if good_merge:
                                     coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                     #print('existing: ', coordinates_tmp)
@@ -579,18 +610,19 @@ class random_crystal():
                                         sites_tmp.append(specie)
                                         numIon_added += len(coords_toadd)
                                     if numIon_added == numIon:
-                                        #print(Msg5)
                                         coordinates_total = deepcopy(coordinates_tmp)
                                         sites_total = deepcopy(sites_tmp)
                                         break
+                        if numIon_added != numIon:
+                            break  #need to repeat from the 1st species
 
                     if numIon_added == numIon:
                         #print(self.Msg6)
                         good_structure = True
                         break
-                    elif cycle2+1 == max2:
-                        #print(coordinates_total)
-                        print(self.Msg3)
+                    else: #reset the coordinates and sites
+                        coordinates_total = []
+                        sites_total = []
 
                 if good_structure:
                     final_coor = []
@@ -603,11 +635,6 @@ class random_crystal():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
 
-                    #if len(final_coor) > 48: for debugg
-                    #    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                    #    self.good_struct = False
-                    #    return
-
                     self.lattice = final_lattice                    
                     self.coordinates = np.array(final_coor)
                     self.sites = final_site                    
@@ -616,6 +643,10 @@ class random_crystal():
                     self.valid = True
                     return
 
+<<<<<<< HEAD
+=======
+        self.struct = self.Msg2
+>>>>>>> 50f6fafe4b77c2013b21d7843592c2f3bdc61294
         self.valid = False
         return Msg2
 
@@ -643,12 +674,10 @@ if __name__ == "__main__":
     else:
         system = [element]
         numIons = [int(number)]
-
     for i in range(100):
         numIons0 = np.array(numIons)
-        sg = randint(2,230)
-        #new_struct, good_struc = random_crystal(options.sg, system, numIons0, options.factor)
-        rand_crystal = random_crystal(sg, system, numIons0, options.factor)
+        sg = options.sg
+        rand_crystal = random_crystal(options.sg, system, numIons0, options.factor)
 
         if rand_crystal.valid:
             #pymatgen style
@@ -658,9 +687,6 @@ if __name__ == "__main__":
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group  requested: ', sg, 'generated', ans)
 
-            if ans < int(sg/1.2):
-                print('something is wrong')
-                break
             #print(CifWriter(new_struct, symprec=0.1).__str__())
             #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
             #output wyckoff sites only
