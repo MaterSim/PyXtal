@@ -9,7 +9,7 @@ N : number of atoms in the primitive cell,
 output:
 a structure class
 
-possibly output cif file
+possibly output cif fileS
 cif file with conventional setting
 '''
 
@@ -643,10 +643,8 @@ class random_crystal():
                     self.valid = True
                     return
 
-<<<<<<< HEAD
 =======
         self.struct = self.Msg2
->>>>>>> 50f6fafe4b77c2013b21d7843592c2f3bdc61294
         self.valid = False
         return Msg2
 
