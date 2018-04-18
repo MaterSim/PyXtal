@@ -50,6 +50,45 @@ wyckoff_df = read_csv("database/wyckoff_list.csv")
 wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
 #Define functions
 #------------------------------
+def angle(v1, v2):
+    '''
+    Calculate the angle (in radians) between two vectors
+    '''
+    return acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+
+def gaussian(min, max, sigma=3.0):
+    '''
+    Choose a random number from a Gaussian probability distribution centered
+    between min and max. sigma is the number of standard deviations that min
+    and max are away from the center. Thus, sigma is also the largest possible
+    number of standard deviations corresponding to the returned value. sigma=2
+    corresponds to a 95.45% probability of choosing a number between min and max
+    '''
+    center = (max+min)*0.5
+    delta = fabs(max-min)*0.5
+    ratio = delta/sigma
+    while True:
+        x = np.random.normal(scale=ratio, loc=center)
+        if x > min and x < max:
+            return x
+            
+def random_matrix(width=1.0, unitary=False):
+    '''
+    Generate a random matrix with Gaussian elements. If unitary is True,
+    normalize to determinant 1
+    '''
+    mat = np.zeros([3,3])
+    determinant = 0
+    while determinant == 0:
+        for x in range(3):
+            for y in range(3):
+                mat[x][y] = np.random.normal(scale=width)
+        determinant = np.linalg.det(mat)
+    if unitary:
+        new = mat / np.cbrt(np.linalg.det(mat))
+        return new
+    else: return mat
+
 def create_matrix():
     matrix = []
     for i in [-1,0,1]:
@@ -139,9 +178,9 @@ def matrix2para(matrix):
     cell_para[1] = np.linalg.norm(matrix[1])
     cell_para[2] = np.linalg.norm(matrix[2])
 
-    cell_para[5] = angle(matrix[0], matrix[1])
+    cell_para[5] = angle(matrix[1], matrix[2])
     cell_para[4] = angle(matrix[0], matrix[2])
-    cell_para[3] = angle(matrix[1], matrix[2])
+    cell_para[3] = angle(matrix[0], matrix[1])
 
     return cell_para
 
@@ -257,56 +296,72 @@ def estimate_volume(numIons, species, factor=2.0):
         volume += numIon*4/3*pi*Element(specie).covalent_radius**3
     return factor*volume
 
-def generate_lattice(sg, volume):
+def generate_lattice(sg, volume, minvec=2.0, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     generate the lattice according to the space group symmetry and number of atoms
     if the space group has centering, we will transform to conventional cell setting
+    If the generated lattice does not meet the minimum angle and vector requirements,
+    we try to generate a new one, up to maxattempts times
+
+    args:
+        sg: International number of the space group
+        volume: volume of the lattice
+        minvec: minimum allowed lattice vector length (among a, b, and c)
+        minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
+        max_ratio: largest allowed ratio of two lattice vector lengths
     """
-    minvec2 = minvec*minvec
-    alpha = np.radians(rand(ang_min, ang_max))
-    beta  = np.radians(rand(ang_min, ang_max))
-    gamma = np.radians(rand(ang_min, ang_max))
-    #Triclinic
-    if sg <= 2:
-        x = sqrt(fabs(1. - cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2.*cos(alpha)*cos(beta)*cos(gamma)))
-        volume = volume/x
-        a = rand(minvec, volume/minvec2)
-        b = rand(minvec, volume/(minvec*a))
-        c = volume/(a*b)
-    #Monoclinic
-    elif sg <= 15:
-        alpha, gamma  = pi/2, pi/2
-        x = sin(beta)
-        volume = volume/x
-        a = rand(minvec, volume/(minvec2))
-        b = rand(minvec, volume/(minvec*a))
-        c = volume/(a*b)
-    #Orthorhombic
-    elif sg <= 74:
-        alpha, beta, gamma = pi/2, pi/2, pi/2
-        a = rand(minvec, volume/minvec2)
-        b = rand(minvec, volume/(minvec*a))
-        c = volume/(a*b)
-    #Tetragonal
-    elif sg <= 142:
-        alpha, beta, gamma = pi/2, pi/2, pi/2
-        c = rand(minvec, volume/minvec2)
-        a = sqrt(volume/c)
-        b = a
-    #Trigonal/Rhombohedral/Hexagonal
-    elif sg <= 194:
-        alpha, beta, gamma = pi/2, pi/2, pi/3*2
-        x = sqrt(3.)/2.
-        volume = volume/x
-        c = rand(minvec, volume/minvec2)
-        a = sqrt(volume/c)
-        b = a
-    #Cubic
-    else:
-        alpha, beta, gamma = pi/2, pi/2, pi/2
-        s = (volume) ** (1./3.)
-        a, b, c = s, s, s
-    return np.array([a, b, c, alpha, beta, gamma])
+    maxangle = pi-minangle
+    for n in range(maxattempts):
+        #Triclinic
+        if sg <= 2:
+            #Derive lattice constants from a random matrix
+            mat = random_matrix()
+            mat *= np.cbrt(volume/np.linalg.det(mat))
+            a, b, c, alpha, beta, gamma = matrix2para(mat)
+        #Monoclinic
+        elif sg <= 15:
+            alpha, gamma  = pi/2, pi/2
+            beta = gaussian(minangle, maxangle)
+            x = sin(beta)
+            c = gaussian(0, volume)
+            a = b = sqrt((volume/x)/c)
+        #Orthorhombic
+        elif sg <= 74:
+            alpha, beta, gamma = pi/2, pi/2, pi/2
+            a = gaussian(minvec, volume/minvec**2)
+            b = gaussian(minvec, volume/(minvec*a))
+            c = volume/(a*b)
+        #Tetragonal
+        elif sg <= 142:
+            alpha, beta, gamma = pi/2, pi/2, pi/2
+            c = gaussian(minvec, volume/minvec**2)
+            a = sqrt(volume/c)
+            b = a
+        #Trigonal/Rhombohedral/Hexagonal
+        elif sg <= 194:
+            alpha, beta, gamma = pi/2, pi/2, pi/3*2
+            x = sqrt(3.)/2.
+            volume = volume/x
+            c = gaussian(minvec, volume/minvec**2)
+            a = sqrt(volume/c)
+            b = a
+        #Cubic
+        else:
+            alpha, beta, gamma = pi/2, pi/2, pi/2
+            s = (volume) ** (1./3.)
+            a, b, c = s, s, s
+        #Check that lattice meets requirements
+        maxvec = (a*b*c)/(minvec**2)
+        if(a>minvec and b>minvec and c>minvec
+        and a<maxvec and b<maxvec and c<maxvec
+        and alpha>minangle and beta>minangle and gamma>minangle
+        and alpha<maxangle and beta<maxangle and gamma<maxangle
+        and a/b<max_ratio and a/c<max_ratio and b/c<max_ratio
+        and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
+            return np.array([a, b, c, alpha, beta, gamma])
+    #If maxattempts tries have been made without success
+    print("Error: Could not generate lattice after "+str(n+1)+" attempts")
+    return
 
 def filter_site(v): #needs to explain
     #Adjusts coordinates to be greater than 0 and less than 1
@@ -561,9 +616,8 @@ class random_crystal():
                     self.valid = True
                     return
 
-        self.struct = Msg2
         self.valid = False
-        return
+        return Msg2
 
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
