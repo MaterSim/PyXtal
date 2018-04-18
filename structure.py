@@ -105,7 +105,6 @@ def distance(xyz, lattice):
     matrix = np.dot(matrix, lattice)
     return np.min(cdist(matrix,[[0,0,0]]))       
 
-
 def check_distance(coord1, coord2, specie1, specie2, lattice):
     """
     check the distances between two set of atoms
@@ -162,7 +161,6 @@ def get_center(xyzs, lattice):
         xyzs[atom1] += matrix_min
     #print(xyzs)
     return xyzs.mean(0)
-
 
 def para2matrix(cell_para):
     """ 1x6 (a, b, c, alpha, beta, gamma) -> 3x3 representation -> """
@@ -524,7 +522,6 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
             if temp == []:
                 return i
     return False
-            
 
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
@@ -643,7 +640,6 @@ class random_crystal():
                     self.valid = True
                     return
 
-=======
         self.struct = self.Msg2
         self.valid = False
         return Msg2
