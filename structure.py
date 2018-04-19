@@ -89,6 +89,14 @@ def random_matrix(width=1.0, unitary=False):
         return new
     else: return mat
 
+def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35):
+    '''
+    Generate a random vector for lattice constant generation. The ratios between
+    x, y, and z of the returned vector correspond to the ratios between a, b,
+    and c. Results in a Gaussian distribution of the natural log of the ratios.
+    '''
+    return np.array([np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width))])
+
 def create_matrix():
     matrix = []
     for i in [-1,0,1]:
@@ -308,7 +316,7 @@ def estimate_volume(numIons, species, factor=2.0):
         volume += numIon*4/3*pi*Element(specie).covalent_radius**3
     return factor*volume
 
-def generate_lattice(sg, volume, minvec=2.0, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice(sg, volume, minvec=m_tol, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     generate the lattice according to the space group symmetry and number of atoms
     if the space group has centering, we will transform to conventional cell setting
@@ -464,7 +472,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     for op in gen_pos:
         is_symmetry = True
         #Calculate the effect of applying op to point
-        difference = SymmOp(point.affine_matrix - (op*point).affine_matrix)
+        difference = SymmOp((op*point).affine_matrix - point.affine_matrix)
         #Check that the rotation matrix is unaltered by op
         if not np.allclose(difference.rotation_matrix, np.zeros((3,3)), rtol = 1e-3, atol = 1e-3):
             is_symmetry = False
@@ -483,7 +491,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             (-z,x+1/2,-y+1/2) and (y+1/2,-z+1/2,-x), respectively, just shifted
             by (+1,-1,0) and (0,0,+1), respectively.
             '''
-            el = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector + np.round(displacement))
+            el = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector - np.round(displacement))
             symmetry.append(el)
     return symmetry
 
@@ -573,7 +581,9 @@ class random_crystal():
         else:
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice(self.sg, self.volume)
+                #Calculate a minimum vector length for generating a lattice
+                minvector = max(max(0.5*Element(specie).covalent_radius for specie in self.species), tol_m)
+                cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
