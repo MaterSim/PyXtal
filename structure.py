@@ -316,7 +316,7 @@ def estimate_volume(numIons, species, factor=2.0):
         volume += numIon*4/3*pi*Element(specie).covalent_radius**3
     return factor*volume
 
-def generate_lattice(sg, volume, minvec=m_tol, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     generate the lattice according to the space group symmetry and number of atoms
     if the space group has centering, we will transform to conventional cell setting
@@ -467,7 +467,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     '''
     #Convert point into a SymmOp
     if type(point) != SymmOp:
-        point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point - np.floor(point))
+        point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point)
     symmetry = []
     for op in gen_pos:
         is_symmetry = True
