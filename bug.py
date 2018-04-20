@@ -6,6 +6,7 @@ from pymatgen.core.operations import SymmOp
 from pymatgen.core.structure import Structure
 from pymatgen.io.cif import CifWriter
 from pandas import read_csv
+from numpy.random import random
 
 wyckoff_df = read_csv("database/wyckoff_list.csv")
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
@@ -25,7 +26,6 @@ def create_matrix():
             for k in [-1,0,1]:
                 matrix.append([i,j,k])
     return np.array(matrix, dtype=float)
-
 
 def get_wyckoff_symmetry(sg):
     '''
@@ -134,7 +134,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
     for x in points:
         p_symm.append(site_symm(x, gen_pos))
 
-    #------------------debug------------------------#
+    '''#------------------debug------------------------#
     print('------ site symmetry from our code------------')
     for p in p_symm:
         print([p0.as_xyz_string() for p0 in p])
@@ -145,7 +145,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
             print('---------------------------------')
             for w in w_symm:
                 print([p0.as_xyz_string() for p0 in w])
-    #------------------debug------------------------#
+    #------------------debug------------------------#'''
 
     for i, wp in enumerate(wyckoffs):
         w_symm = w_symm_all[i]
@@ -162,6 +162,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
 
 #It is stange that check_wyckoff returns false for the following set.
 #should be 8j position for spg 97
+'''
 coor = np.array(
 [[0.85540127, 0.35540127, 0.25],
  [0.14459873, 0.64459873, 0.25],
@@ -181,6 +182,27 @@ coor = np.array(
  [-0.23631801, -0.23631801, -0.06786002]]
 )
 print(check_wyckoff_position(coor, 99))
+'''
+
+#Test check_wyckoff_position() by plugging in random coordinates
+#Passes using new wyckoff_list.csv and wyckoff_symmetry.csv
+print("Calculating spacegroup:")
+allpassed = True
+for sg in range(1, 231):
+    print(sg,)
+    wyckoffs = get_wyckoffs(sg)
+    for i, wp in enumerate(wyckoffs):
+        xyz = [random(), random(), random()]
+        coor = []
+        for p in wp:
+            coor.append(p.operate(xyz))
+        passed = check_wyckoff_position(coor, sg)
+        if passed == False and passed != 0:
+            print("Failure for spacegroup "+str(sg)+" position # "+str(i))
+            allpassed = False
+if allpassed: print("All spacegroups passed.")
+
+
 #This set is to check the numerical tolerance of check_wyckoff
 #coor = np.array(
 #    [[-2.77555756e-17, -2.77555756e-17,  1.29634884e+00],
