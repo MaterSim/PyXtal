@@ -81,7 +81,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     '''
     #Convert point into a SymmOp
     if type(point) != SymmOp:
-        point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point - np.floor(point))
+        point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point)
     symmetry = []
     for op in gen_pos:
         is_symmetry = True
