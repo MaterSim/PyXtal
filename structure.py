@@ -89,13 +89,17 @@ def random_matrix(width=1.0, unitary=False):
         return new
     else: return mat
 
-def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35):
+def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
     '''
     Generate a random vector for lattice constant generation. The ratios between
     x, y, and z of the returned vector correspond to the ratios between a, b,
     and c. Results in a Gaussian distribution of the natural log of the ratios.
     '''
-    return np.array([np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width))])
+    vec = np.array([np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width))])
+    if unit:
+        return vec/np.linalg.norm(vec)
+    else:
+        return vec
 
 def create_matrix():
     matrix = []
@@ -295,10 +299,10 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol):
                 merged = np.array(merged)
                 #if check_wyckoff_position(merged, sg, wyckoff) is not False:
                 if check_wyckoff_position(merged, sg) is False:
-                    print('something is wrong')
+                    '''print('something is wrong')
                     print(coor)
                     print(merged)
-                    print(sg)
+                    print(sg)'''
                     #exit(0)
                     return coor, False
                 else:
@@ -343,28 +347,31 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             alpha, gamma  = pi/2, pi/2
             beta = gaussian(minangle, maxangle)
             x = sin(beta)
-            c = gaussian(0, volume)
+            vec = random_vector()
+            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
             a = b = sqrt((volume/x)/c)
         #Orthorhombic
         elif sg <= 74:
             alpha, beta, gamma = pi/2, pi/2, pi/2
-            a = gaussian(minvec, volume/minvec**2)
-            b = gaussian(minvec, volume/(minvec*a))
-            c = volume/(a*b)
+            x = 1
+            vec = random_vector()
+            a = vec[0]/(vec[1]*vec[2])*np.cbrt(volume/x)
+            b = vec[1]/(vec[0]*vec[2])*np.cbrt(volume/x)
+            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
         #Tetragonal
         elif sg <= 142:
             alpha, beta, gamma = pi/2, pi/2, pi/2
-            c = gaussian(minvec, volume/minvec**2)
-            a = sqrt(volume/c)
-            b = a
+            x = 1
+            vec = random_vector()
+            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
+            a = b = sqrt((volume/x)/c)
         #Trigonal/Rhombohedral/Hexagonal
         elif sg <= 194:
             alpha, beta, gamma = pi/2, pi/2, pi/3*2
             x = sqrt(3.)/2.
-            volume = volume/x
-            c = gaussian(minvec, volume/minvec**2)
-            a = sqrt(volume/c)
-            b = a
+            vec = random_vector()
+            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
+            a = b = sqrt((volume/x)/c)
         #Cubic
         else:
             alpha, beta, gamma = pi/2, pi/2, pi/2
@@ -579,10 +586,10 @@ class random_crystal():
             return 
 
         else:
+            #Calculate a minimum vector length for generating a lattice
+            minvector = max(max(0.5*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                #Calculate a minimum vector length for generating a lattice
-                minvector = max(max(0.5*Element(specie).covalent_radius for specie in self.species), tol_m)
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
@@ -652,7 +659,7 @@ class random_crystal():
 
         self.struct = self.Msg2
         self.valid = False
-        return Msg2
+        return self.Msg2
 
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
