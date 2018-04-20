@@ -89,6 +89,22 @@ def random_matrix(width=1.0, unitary=False):
         return new
     else: return mat
 
+def random_shear_matrix(width=1.0, unitary=False):
+    '''
+    Generate a random symmetric shear matrix with Gaussian elements. If unitary
+    is True, normalize to determinant 1
+    '''
+    mat = np.zeros([3,3])
+    determinant = 0
+    while determinant == 0:
+        a, b, c = np.random.normal(scale=width), np.random.normal(scale=width), np.random.normal(scale=width)
+        mat = np.array([[1,a,b],[a,1,c],[b,c,1]])
+        determinant = np.linalg.det(mat)
+    if unitary:
+        new = mat / np.cbrt(np.linalg.det(mat))
+        return new
+    else: return mat
+
 def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
     '''
     Generate a random vector for lattice constant generation. The ratios between
@@ -339,9 +355,13 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
         #Triclinic
         if sg <= 2:
             #Derive lattice constants from a random matrix
-            mat = random_matrix()
-            mat *= np.cbrt(volume/np.linalg.det(mat))
+            mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
+            x = (1-cos(alpha)**2-cos(beta)**2- cos(gamma)**2) + 2*sqrt(fabs(cos(alpha)*cos(beta)*cos(gamma)))
+            vec = random_vector()
+            a = vec[0]/(vec[1]*vec[2])*np.cbrt(volume/x)
+            b = vec[1]/(vec[0]*vec[2])*np.cbrt(volume/x)
+            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
         #Monoclinic
         elif sg <= 15:
             alpha, gamma  = pi/2, pi/2
