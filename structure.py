@@ -190,19 +190,38 @@ def get_center(xyzs, lattice):
     #print(xyzs)
     return xyzs.mean(0)
 
-def para2matrix(cell_para):
+def para2matrix(cell_para, radians=True):
     """ 1x6 (a, b, c, alpha, beta, gamma) -> 3x3 representation -> """
+    a = cell_para[0]
+    b = cell_para[1]
+    c = cell_para[2]
+    alpha = cell_para[3]
+    beta = cell_para[4]
+    gamma = cell_para[5]
+    if not radians:
+        deg = 180./(pi)
+        alpha *= deg
+        beta *= deg
+        gamma *= deg
+    cos_alpha = cos(alpha)
+    cos_beta = np.cos(beta)
+    cos_gamma = np.cos(gamma)
+    sin_gamma = np.sin(gamma)
+
+    c1 = c*cos_beta
+    c2 = (c*(cos_alpha - (cos_beta * cos_gamma))) / sin_gamma
+
     matrix = np.zeros([3,3])
-    matrix[0][0] = cell_para[0]
-    matrix[1][0] = cell_para[1]*cos(cell_para[5])
-    matrix[1][1] = cell_para[1]*sin(cell_para[5])
-    matrix[2][0] = cell_para[2]*cos(cell_para[4])
-    matrix[2][1] = cell_para[2]*cos(cell_para[3])*sin(cell_para[4])
-    matrix[2][2] = sqrt(cell_para[2]**2 - matrix[2][0]**2 - matrix[2][1]**2)
-    
+    matrix[0][0] = a
+    matrix[1][0] = b * cos_gamma
+    matrix[1][1] = b * sin_gamma
+    matrix[2][0] = c1
+    matrix[2][1] = c2
+    matrix[2][2] = sqrt(c**2 - c1**2 - c2**2)
+
     return matrix
 
-def matrix2para(matrix):
+def matrix2para(matrix, radians=True):
     """ 3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)"""
     cell_para = np.zeros(6)
     cell_para[0] = np.linalg.norm(matrix[0])
@@ -212,7 +231,12 @@ def matrix2para(matrix):
     cell_para[5] = angle(matrix[1], matrix[2])
     cell_para[4] = angle(matrix[0], matrix[2])
     cell_para[3] = angle(matrix[0], matrix[1])
-
+    
+    if not radians:
+        rad = pi/180.
+        cell_para[5] *= rad
+        cell_para[4] *= rad
+        cell_para[3] *= rad
     return cell_para
 
 def cellsize(sg):
@@ -357,7 +381,7 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             #Derive lattice constants from a random matrix
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
-            x = (1-cos(alpha)**2-cos(beta)**2- cos(gamma)**2) + 2*sqrt(fabs(cos(alpha)*cos(beta)*cos(gamma)))
+            x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
             vec = random_vector()
             abc = volume/x
             xyz = vec[0]*vec[1]*vec[2]
@@ -650,7 +674,7 @@ class random_crystal():
                 if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
                     print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
                     print('cell_para:  ', cell_para)
-                    #sys.exit(0)
+                    sys.exit(0)
 
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
