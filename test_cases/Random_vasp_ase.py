@@ -1,4 +1,6 @@
 from structure import random_crystal
+from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from spglib import get_symmetry_dataset
 from ase.io import read, write
 from ase.calculators.vasp import Vasp
@@ -19,6 +21,33 @@ maxangle = 150
 minangle = 30
 
 setup = {'B': '_s'} #use soft pp to speed up calc 
+
+def pymatgen2ase(struc):
+    atoms = Atoms(symbols = struc.atomic_numbers, cell = struc.lattice.matrix)
+    atoms.set_scaled_positions(struc.frac_coords)
+    return atoms
+
+def ase2pymatgen(struc):
+    lattice = struc._cell
+    coordinates = struc.get_scaled_positions()
+    species = struc.get_chemical_symbols()
+    return Structure(lattice, species, coordinates)
+
+def symmetrize_cell(struc, mode='C'):
+    """
+    symmetrize structure from pymatgen, and return the struc in conventional/primitive setting
+    Args:
+    struc: ase type
+    mode: output conventional or primitive cell
+    """
+    P_struc = ase2pymatgen(struc)
+    finder = SpacegroupAnalyzer(P_struc,symprec=0.06,angle_tolerance=5)
+    if mode == 'C':
+        P_struc = finder.get_conventional_standard_structure()
+    else:
+        P_struc = finder.get_primitive_standard_structure()
+
+    return pymatgen2ase(P_struc)
 
 def set_vasp(level=0, pstress=0.0000, setup=None):
     default0 = {'xc': 'pbe',
