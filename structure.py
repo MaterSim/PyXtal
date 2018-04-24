@@ -12,7 +12,7 @@ a structure class
 possibly output cif fileS
 cif file with conventional setting
 '''
-
+import sys
 from spglib import get_symmetry_dataset
 from pymatgen.symmetry.groups import sg_symbol_from_int_number
 from pymatgen.core.operations import SymmOp
@@ -576,6 +576,7 @@ class random_crystal():
         self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
         self.generate_crystal()
 
+
     def Msgs(self):
         self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
         self.Msg2 = 'Error: failed in the cycle of generating structures'
@@ -639,6 +640,11 @@ class random_crystal():
                 #1, Generate a lattice
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
                 cell_matrix = para2matrix(cell_para)
+                if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
+                    print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
+                    print('cell_para:  ', cell_para)
+                    sys.exit(0)
+
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
                 good_structure = False
