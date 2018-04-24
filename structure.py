@@ -591,10 +591,37 @@ class random_crystal():
         """
         N_site = [len(x[0]) for x in self.wyckoffs]
         for numIon in self.numIons:
+            #Check that the number of ions is a multiple of the smallest Wyckoff position
             if numIon % N_site[-1] > 0:
                 return False
-        return True
-
+            else:
+                #Check if smallest WP has at least one degree of freedom
+                op = self.wyckoffs[-1][-1][0]
+                if op.rotation_matrix.all() != 0.0:
+                    return True
+                else:
+                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
+                    remaining = numIon
+                    has_freedom = False
+                    for x in self.wyckoffs:
+                        for wp in x:
+                            removed = False
+                            while remaining >= len(wp) and removed == False:
+                                #Check if WP has at least one degree of freedom
+                                op = wp[0]
+                                remaining -= len(wp)
+                                if np.allclose(op.rotation_matrix, np.zeros([3,3])):
+                                    removed = True
+                                else:
+                                    has_freedom = True
+                    if remaining != 0:
+                        print("remaining: "+str(remaining))
+                        return False
+                if has_freedom:
+                    return True
+                else:
+                    print("Warning: Wyckoff Positions have no degrees of freedom.")
+                    return True
 
     def generate_crystal(self):
         """the main code to generate random crystal """
