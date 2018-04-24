@@ -607,7 +607,7 @@ class random_crystal():
 
         else:
             #Calculate a minimum vector length for generating a lattice
-            minvector = max(max(0.5*Element(specie).covalent_radius for specie in self.species), tol_m)
+            minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
