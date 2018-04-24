@@ -359,25 +359,32 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = (1-cos(alpha)**2-cos(beta)**2- cos(gamma)**2) + 2*sqrt(fabs(cos(alpha)*cos(beta)*cos(gamma)))
             vec = random_vector()
-            a = vec[0]/(vec[1]*vec[2])*np.cbrt(volume/x)
-            b = vec[1]/(vec[0]*vec[2])*np.cbrt(volume/x)
-            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
+            abc = volume/x
+            xyz = vec[0]*vec[1]*vec[2]
+            a = vec[0]*np.cbrt(abc)/np.cbrt(xyz)
+            b = vec[1]*np.cbrt(abc)/np.cbrt(xyz)
+            c = vec[2]*np.cbrt(abc)/np.cbrt(xyz)
         #Monoclinic
         elif sg <= 15:
             alpha, gamma  = pi/2, pi/2
             beta = gaussian(minangle, maxangle)
             x = sin(beta)
             vec = random_vector()
-            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
-            a = b = sqrt((volume/x)/c)
+            xyz = vec[0]*vec[1]*vec[2]
+            abc = volume/x
+            a = vec[0]*np.cbrt(abc)/np.cbrt(xyz)
+            b = vec[1]*np.cbrt(abc)/np.cbrt(xyz)
+            c = vec[2]*np.cbrt(abc)/np.cbrt(xyz)
         #Orthorhombic
         elif sg <= 74:
             alpha, beta, gamma = pi/2, pi/2, pi/2
             x = 1
             vec = random_vector()
-            a = vec[0]/(vec[1]*vec[2])*np.cbrt(volume/x)
-            b = vec[1]/(vec[0]*vec[2])*np.cbrt(volume/x)
-            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
+            xyz = vec[0]*vec[1]*vec[2]
+            abc = volume/x
+            a = vec[0]*np.cbrt(abc)/np.cbrt(xyz)
+            b = vec[1]*np.cbrt(abc)/np.cbrt(xyz)
+            c = vec[2]*np.cbrt(abc)/np.cbrt(xyz)
         #Tetragonal
         elif sg <= 142:
             alpha, beta, gamma = pi/2, pi/2, pi/2
@@ -643,7 +650,7 @@ class random_crystal():
                 if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
                     print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
                     print('cell_para:  ', cell_para)
-                    sys.exit(0)
+                    #sys.exit(0)
 
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
