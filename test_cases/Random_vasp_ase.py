@@ -3,6 +3,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from spglib import get_symmetry_dataset
 from ase.io import read, write
+from ase import Atoms
 from ase.calculators.vasp import Vasp
 from random import randint
 from vasprun import vasprun
@@ -180,14 +181,13 @@ for i in range(50):
         rand_crystal = random_crystal(sg, species, numIons, factor)
         if rand_crystal.valid:
             run = False
-    try:
-        struc = rand_crystal.struct
-        label = str(struc.formula).replace(" ","")
-        dir1 = str(i)+'-'+label
-        struc.to(fmt="poscar", filename = '1.vasp')
-        struc = read('1.vasp',format='vasp')
-        ans = get_symmetry_dataset(struc, symprec=1e-1)['number']
-        print('Space group  requested: ', sg, 'generated', ans)
-        optimize(struc, dir1)
-    except:
-        print('something is wrong')
+    #try:
+    P_struc = rand_crystal.struct
+    label = str(P_struc.formula).replace(" ","")
+    dir1 = str(i)+'-'+label
+    struc = pymatgen2ase(P_struc)
+    ans = get_symmetry_dataset(struc, symprec=1e-1)['number']
+    print('Space group  requested: ', sg, 'generated', ans)
+    optimize(struc, dir1)
+    #except:
+    #    print('something is wrong')
