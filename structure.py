@@ -338,7 +338,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol):
                     merged.append(get_center(coor[group], lattice))
                 merged = np.array(merged)
                 #if check_wyckoff_position(merged, sg, wyckoff) is not False:
-                if check_wyckoff_position(merged, sg) is False:
+                if check_wyckoff_position(merged, sg, exact_translation=False) is False:
                     '''print('something is wrong')
                     print(coor)
                     print(merged)
@@ -553,7 +553,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             symmetry.append(el)
     return symmetry
 
-def check_wyckoff_position(points, sg, wyckoffs=None):
+def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
     '''
     Given a list of points, return index of Wyckoff position in space group.
     If no match found, returns False.
@@ -562,6 +562,9 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
         points: a list of 3d coordinates or SymmOps to check
         sg: the international space group number to check
         wyckoffs: a list of wyckoff positions obtained from get_wyckoffs.
+        exact_translation: whether we require two SymmOps to have exactly equal
+            translational components. If false, translations related by +-1
+            are considered equal
     '''
     #TODO: Create function for assigning WP to a single point
     #QZ: I am not sure if this is really needed
@@ -575,6 +578,8 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
         gen_pos = wyckoffs[0][0]
     w_symm_all = get_wyckoff_symmetry(sg)
     p_symm = []
+    #If exact_translation is false, store WP's which might be a match
+    possible = []
     for x in points:
         p_symm.append(site_symm(x, gen_pos))
     for i, wp in enumerate(wyckoffs):
@@ -583,11 +588,36 @@ def check_wyckoff_position(points, sg, wyckoffs=None):
             temp = w_symm
             for p in p_symm:
                 for w in temp:
-                    if p == w:
-                        temp.remove(w)
+                    if exact_translation:
+                        if p == w:
+                            temp.remove(w)
+                    elif not exact_translation:
+                        temp2 = w
+                        for op_w in w:
+                            for op_p in p:
+                                difference = op_p.translation_vector - op_w.translation_vector
+                                if ( np.allclose(op_p.rotation_matrix, op_w.rotation_matrix)
+                                and np.allclose(difference, np.round(difference)) ):
+                                    temp2.remove(op_w)
+                        if temp2 == []:
+                            temp.remove(w)
             if temp == []:
-                return i
-    return False
+                #If we find a match with exact translations
+                if exact_translation:
+                    return i
+                elif not exact_translation:
+                    possible.append(i)
+    #If no matching WP's are found
+    if len(possible) == 0:
+        return False
+    #If exactly one matching WP is found
+    elif len(possible) == 1:
+        return possible[0]
+    #If multiple WP's are found
+    else:
+        #TODO: add a way to differentiate between possible WP's
+        print("Warning: multiple Wyckoff positions found")
+        return True
 
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
