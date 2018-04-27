@@ -190,7 +190,7 @@ def get_center(xyzs, lattice):
     #print(xyzs)
     return xyzs.mean(0)
 
-def para2matrix(cell_para, radians=True):
+def para2matrix(cell_para, radians=True, format='lower'):
     """ 1x6 (a, b, c, alpha, beta, gamma) -> 3x3 representation -> """
     a = cell_para[0]
     b = cell_para[1]
@@ -207,18 +207,19 @@ def para2matrix(cell_para, radians=True):
     cos_beta = np.cos(beta)
     cos_gamma = np.cos(gamma)
     sin_gamma = np.sin(gamma)
+    if format == 'lower':
+        c1 = c*cos_beta
+        c2 = (c*(cos_alpha - (cos_beta * cos_gamma))) / sin_gamma
 
-    c1 = c*cos_beta
-    c2 = (c*(cos_alpha - (cos_beta * cos_gamma))) / sin_gamma
-
-    matrix = np.zeros([3,3])
-    matrix[0][0] = a
-    matrix[1][0] = b * cos_gamma
-    matrix[1][1] = b * sin_gamma
-    matrix[2][0] = c1
-    matrix[2][1] = c2
-    matrix[2][2] = sqrt(c**2 - c1**2 - c2**2)
-
+        matrix = np.zeros([3,3])
+        matrix[0][0] = a
+        matrix[1][0] = b * cos_gamma
+        matrix[1][1] = b * sin_gamma
+        matrix[2][0] = c1
+        matrix[2][1] = c2
+        matrix[2][2] = sqrt(c**2 - c1**2 - c2**2)
+    elif format == 'symmetric':
+        pass
     return matrix
 
 def matrix2para(matrix, radians=True):
@@ -576,6 +577,12 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
         gen_pos = wyckoffs[0]
     else:
         gen_pos = wyckoffs[0][0]
+    new_points = []
+    #
+    if exact_translation == False:
+        for p in points:
+            new_points.append(p - np.floor(p))
+        points = new_points
     w_symm_all = get_wyckoff_symmetry(sg)
     p_symm = []
     #If exact_translation is false, store WP's which might be a match
@@ -593,8 +600,9 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
                             temp.remove(w)
                     elif not exact_translation:
                         temp2 = w
-                        for op_w in w:
-                            for op_p in p:
+                        for op_p in p:
+                            for op_w in w:
+                                #Check that SymmOp's are equal up to some integer translation
                                 difference = op_p.translation_vector - op_w.translation_vector
                                 if ( np.allclose(op_p.rotation_matrix, op_w.rotation_matrix)
                                 and np.allclose(difference, np.round(difference)) ):
