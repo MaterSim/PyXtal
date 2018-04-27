@@ -624,7 +624,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
     #If multiple WP's are found
     else:
         #TODO: add a way to differentiate between possible WP's
-        print("Warning: multiple Wyckoff positions found")
+        #print("Warning: multiple Wyckoff positions found")
         return True
 
 class random_crystal():
