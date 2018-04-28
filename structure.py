@@ -660,11 +660,10 @@ class random_crystal():
         needs to improve later
         """
         N_site = [len(x[0]) for x in self.wyckoffs]
-        print(N_site)
         has_freedom = False
+        #remove WP's with no freedom once they are filled
+        removed_wyckoffs = []
         for numIon in self.numIons:
-            print(numIon)
-            print(numIon % N_site[-1])
             #Check that the number of ions is a multiple of the smallest Wyckoff position
             if numIon % N_site[-1] > 0:
                 return False
@@ -679,11 +678,12 @@ class random_crystal():
                     for x in self.wyckoffs:
                         for wp in x:
                             removed = False
-                            while remaining >= len(wp) and removed == False:
+                            while remaining >= len(wp) and wp not in removed_wyckoffs:
                                 #Check if WP has at least one degree of freedom
                                 op = wp[0]
                                 remaining -= len(wp)
                                 if np.allclose(op.rotation_matrix, np.zeros([3,3])):
+                                    removed_wyckoffs.append(wp)
                                     removed = True
                                 else:
                                     has_freedom = True
@@ -699,12 +699,12 @@ class random_crystal():
         """the main code to generate random crystal """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
-        if degrees == 0:
+        if degrees is 0:
             print("Generation cancelled: Wyckoff positions have no degrees of freedom.")
             self.struct = None
             self.valid = False
             return
-        if degrees is False:
+        elif degrees is False:
             print(self.Msg1)
             self.struct = None
             self.valid = False
