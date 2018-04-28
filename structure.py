@@ -554,7 +554,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             symmetry.append(el)
     return symmetry
 
-def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
+def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
     '''
     Given a list of points, return index of Wyckoff position in space group.
     If no match found, returns False.
@@ -562,7 +562,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
     Args:
         points: a list of 3d coordinates or SymmOps to check
         sg: the international space group number to check
-        wyckoffs: a list of wyckoff positions obtained from get_wyckoffs.
+        wyckoffs: a list of Wyckoff positions obtained from get_wyckoffs.
         exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1
             are considered equal
@@ -592,14 +592,14 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
     for i, wp in enumerate(wyckoffs):
         w_symm = w_symm_all[i]
         if len(p_symm) == len(w_symm):
-            temp = w_symm
+            temp = deepcopy(w_symm)
             for p in p_symm:
                 for w in temp:
                     if exact_translation:
                         if p == w:
                             temp.remove(w)
                     elif not exact_translation:
-                        temp2 = w
+                        temp2 = deepcopy(w)
                         for op_p in p:
                             for op_w in w:
                                 #Check that SymmOp's are equal up to some integer translation
@@ -615,17 +615,17 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=True):
                     return i
                 elif not exact_translation:
                     possible.append(i)
-    #If no matching WP's are found
+        #If no matching WP's are found
     if len(possible) == 0:
         return False
     #If exactly one matching WP is found
     elif len(possible) == 1:
-        return possible[0]
+        return possible
     #If multiple WP's are found
     else:
         #TODO: add a way to differentiate between possible WP's
         #print("Warning: multiple Wyckoff positions found")
-        return True
+        return possible
 
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
@@ -660,7 +660,11 @@ class random_crystal():
         needs to improve later
         """
         N_site = [len(x[0]) for x in self.wyckoffs]
+        print(N_site)
+        has_freedom = False
         for numIon in self.numIons:
+            print(numIon)
+            print(numIon % N_site[-1])
             #Check that the number of ions is a multiple of the smallest Wyckoff position
             if numIon % N_site[-1] > 0:
                 return False
@@ -668,11 +672,10 @@ class random_crystal():
                 #Check if smallest WP has at least one degree of freedom
                 op = self.wyckoffs[-1][-1][0]
                 if op.rotation_matrix.all() != 0.0:
-                    return True
+                    has_freedom = True
                 else:
                     #Subtract from the number of ions beginning with the smallest Wyckoff positions
                     remaining = numIon
-                    has_freedom = False
                     for x in self.wyckoffs:
                         for wp in x:
                             removed = False
@@ -685,23 +688,27 @@ class random_crystal():
                                 else:
                                     has_freedom = True
                     if remaining != 0:
-                        print("remaining: "+str(remaining))
                         return False
-                if has_freedom:
-                    return True
-                else:
-                    print("Warning: Wyckoff Positions have no degrees of freedom.")
-                    return True
+        if has_freedom:
+            return True
+        else:
+            #print("Warning: Wyckoff Positions have no degrees of freedom.")
+            return 0
 
-    def generate_crystal(self):
+    def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """the main code to generate random crystal """
-    
-        if self.check_compatible() is False:
+        #Check the minimum number of degrees of freedom within the Wyckoff positions
+        degrees = self.check_compatible()
+        if degrees == 0:
+            print("Generation cancelled: Wyckoff positions have no degrees of freedom.")
+            self.struct = None
+            self.valid = False
+            return
+        if degrees is False:
             print(self.Msg1)
             self.struct = None
             self.valid = False
-            return 
-
+            return
         else:
             #Calculate a minimum vector length for generating a lattice
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
@@ -778,7 +785,7 @@ class random_crystal():
                     self.spg_struct = (final_lattice, np.array(final_coor), final_number)
                     self.valid = True
                     return
-
+        if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
         return self.Msg2
