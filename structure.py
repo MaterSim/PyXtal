@@ -199,11 +199,11 @@ def para2matrix(cell_para, radians=True, format='lower'):
     beta = cell_para[4]
     gamma = cell_para[5]
     if not radians:
-        deg = 180./(pi)
-        alpha *= deg
-        beta *= deg
-        gamma *= deg
-    cos_alpha = cos(alpha)
+        rad = pi/180.
+        alpha *= rad
+        beta *= rad
+        gamma *= rad
+    cos_alpha = np.cos(alpha)
     cos_beta = np.cos(beta)
     cos_gamma = np.cos(gamma)
     sin_gamma = np.sin(gamma)
@@ -220,24 +220,33 @@ def para2matrix(cell_para, radians=True, format='lower'):
         matrix[2][2] = sqrt(c**2 - c1**2 - c2**2)
     elif format == 'symmetric':
         pass
+    elif format == 'upper':
+        pass
     return matrix
 
 def matrix2para(matrix, radians=True):
     """ 3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)"""
     cell_para = np.zeros(6)
+    #a
     cell_para[0] = np.linalg.norm(matrix[0])
+    #b
     cell_para[1] = np.linalg.norm(matrix[1])
+    #c
     cell_para[2] = np.linalg.norm(matrix[2])
 
-    cell_para[5] = angle(matrix[1], matrix[2])
+    #alpha
+    cell_para[3] = angle(matrix[1], matrix[2])
+    #beta
     cell_para[4] = angle(matrix[0], matrix[2])
-    cell_para[3] = angle(matrix[0], matrix[1])
+    #gamma
+    cell_para[5] = angle(matrix[0], matrix[1])
     
     if not radians:
-        rad = pi/180.
-        cell_para[5] *= rad
-        cell_para[4] *= rad
-        cell_para[3] *= rad
+        #convert radians to degrees
+        deg = 180./pi
+        cell_para[3] *= deg
+        cell_para[4] *= deg
+        cell_para[5] *= deg
     return cell_para
 
 def cellsize(sg):
