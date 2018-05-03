@@ -198,7 +198,7 @@ def para2matrix(cell_para, radians=True, format='lower'):
     alpha = cell_para[3]
     beta = cell_para[4]
     gamma = cell_para[5]
-    if not radians:
+    if radians is not True:
         rad = pi/180.
         alpha *= rad
         beta *= rad
@@ -207,11 +207,12 @@ def para2matrix(cell_para, radians=True, format='lower'):
     cos_beta = np.cos(beta)
     cos_gamma = np.cos(gamma)
     sin_gamma = np.sin(gamma)
+    sin_alpha = np.sin(alpha)
+    matrix = np.zeros([3,3])
     if format == 'lower':
+        #Generate a lower-diagonal matrix
         c1 = c*cos_beta
         c2 = (c*(cos_alpha - (cos_beta * cos_gamma))) / sin_gamma
-
-        matrix = np.zeros([3,3])
         matrix[0][0] = a
         matrix[1][0] = b * cos_gamma
         matrix[1][1] = b * sin_gamma
@@ -219,8 +220,18 @@ def para2matrix(cell_para, radians=True, format='lower'):
         matrix[2][1] = c2
         matrix[2][2] = sqrt(c**2 - c1**2 - c2**2)
     elif format == 'symmetric':
+        #TODO: allow generation of symmetric matrices
         pass
     elif format == 'upper':
+        #Generate an upper-diagonal matrix
+        a3 = a*cos_beta
+        a2 = (a*(cos_gamma - (cos_beta * cos_alpha))) / sin_alpha
+        matrix[2][2] = c
+        matrix[1][2] = b * cos_alpha
+        matrix[1][1] = b * sin_alpha
+        matrix[0][2] = a3
+        matrix[0][1] = a2
+        matrix[0][0] = sqrt(a**2 - a3**2 - a2**2)
         pass
     return matrix
 
