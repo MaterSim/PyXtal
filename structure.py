@@ -708,17 +708,16 @@ class random_crystal():
         """the main code to generate random crystal """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
-        if degrees is 0:
-            print("Generation cancelled: Wyckoff positions have no degrees of freedom.")
-            self.struct = None
-            self.valid = False
-            return
-        elif degrees is False:
+        if degrees is False:
             print(self.Msg1)
             self.struct = None
             self.valid = False
             return
         else:
+            if degrees is 0:
+                max1 = 5
+                max2 = 5
+                max3 = 5
             #Calculate a minimum vector length for generating a lattice
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
