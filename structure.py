@@ -48,6 +48,7 @@ ang_max = 150
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv("database/wyckoff_list.csv")
 wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
+wyckoff_generators_df = read_csv("database/wyckoff_generators.csv")
 #Define functions
 #------------------------------
 def angle(v1, v2):
@@ -560,6 +561,22 @@ def get_wyckoff_symmetry(sg):
             for z in y:
                 symmetry[-1][-1].append(SymmOp.from_xyz_string(z))
     return symmetry
+
+def get_wyckoff_generators(sg):
+    '''
+    Returns a list of Wyckoff generators for a given space group.
+    1st index: index of WP in sg (0 is the WP with largest multiplicity)
+    2nd index: a generator for the WP
+    '''
+    generators_strings = eval(wyckoff_generators_df["0"][sg])
+    generators = []
+    #Loop over Wyckoff positions
+    for wp in generators_strings:
+        generators.append([])
+        #Loop over points in WP
+        for op in wp:
+            generators[-1].append(SymmOp.from_xyz_string(op))
+    return generators
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     '''
