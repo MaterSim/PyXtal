@@ -117,6 +117,28 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
     else:
         return vec
 
+def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
+    #Check two SymmOps for equivalence
+    #pbc=True means integer translations will be ignored
+    m1 = op1.rotation_matrix
+    m2 = op2.rotation_matrix
+    #Check that rotations are equivalent
+    if not np.allclose(m1, m2, rtol=rtol, atol=atol):
+        return False
+    v1 = op1.translation_vector
+    v2 = op2.translation_vector
+    if allow_pbc is False:
+        #Check if translation vectors are equal
+        if np.allclose(v1, v2, rtol=rtol, atol=atol):
+            return True
+        else: return False
+    elif allow_pbc is True:
+        #Check if translation vectors are equal up to integer difference
+        difference = v1 - v2
+        if np.allclose(difference, np.round(difference), rtol=rtol, atol=atol):
+            return True
+        else: return False
+
 def create_matrix():
     matrix = []
     for i in [-1,0,1]:
@@ -623,9 +645,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
                         for op_p in p:
                             for op_w in w:
                                 #Check that SymmOp's are equal up to some integer translation
-                                difference = op_p.translation_vector - op_w.translation_vector
-                                if ( np.allclose(op_p.rotation_matrix, op_w.rotation_matrix)
-                                and np.allclose(difference, np.round(difference)) ):
+                                if are_equal(op_w, op_p, allow_pbc=True):
                                     temp2.remove(op_w)
                         if temp2 == []:
                             temp.remove(w)
