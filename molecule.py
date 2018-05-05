@@ -40,19 +40,22 @@ def reoriented_molecule(mol, nested=False):
     are aligned with the identity matrix, and the matrix P
     used to rotate the molecule into this orientation
     '''
-    new_mol = mol.get_centered_molecule()
-    A = get_inertia_tensor(new_mol)
-    #Store the eigenvectors of the inertia tensor
-    P = eigh(A)[1]
-    #reorient the molecule
-    P = SymmOp.from_rotation_and_translation(P,[0,0,0])
-    new_mol.apply_operation(P.inverse)
+    def reorient(mol):
+        new_mol = mol.get_centered_molecule()
+        A = get_inertia_tensor(new_mol)
+        #Store the eigenvectors of the inertia tensor
+        P = eigh(A)[1]
+        #reorient the molecule
+        P = SymmOp.from_rotation_and_translation(P,[0,0,0])
+        new_mol.apply_operation(P.inverse)
+        return new_mol, P
     #If needed, recursively apply reorientation (due to numerical errors)
     iterations = 1
     max_iterations = 10
+    new_mol, P = reorient(mol)
     while (not np.allclose(eigh(get_inertia_tensor(new_mol))[1], identity)
             and iterations < 10):
-        new_mol, Q = reoriented_molecule(new_mol)
+        new_mol, Q = reorient(new_mol)
         P = Q*P
         iterations += 1
     if iterations == max_iterations:
