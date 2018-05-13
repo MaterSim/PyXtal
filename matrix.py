@@ -125,7 +125,7 @@ class OperationAnalyzer(SymmOp):
     #TODO: include support for matrix-column and axis-angle initialization
     def __init__(self, op):
         if type(op) == SymmOp:
-            self.op = op
+            self.op = deepcopy(op)
             self.m = op.rotation_matrix
             self.det = det(self.m)
         else:
@@ -183,6 +183,14 @@ class OperationAnalyzer(SymmOp):
             "\nType: "+str(self.type)+
             "\nOrder: "+str(self.order)+
             "\nAxis: "+str(self.axis) )
+    def is_conjugate(self, op2)
+        '''
+        Returns whether or not another operation is conjugate to this one.
+        
+        '''
+        if type(op2) != OperationAnalyzer:
+            op2 = OperationAnalyzer(op2)
+        
             
 
 #Test Functionality
