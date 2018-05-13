@@ -207,7 +207,7 @@ class OperationAnalyzer(SymmOp):
             else:
                 return False
 
-    def are_conjugate(op1, op2)
+    def are_conjugate(op1, op2):
         '''
         Returns whether two operations are conjugate
         '''
@@ -231,5 +231,4 @@ if __name__ == "__main__":
         a = rand()*2*pi
         op1 = aa2matrix(random_vector(), a)
         op2 = aa2matrix(random_vector(), a)
-        opa1 = OperationAnalyzer(op1)
-        print(opa1.is_conjugate(op2))
+        print(OperationAnalyzer.are_conjugate(op1, op2))
