@@ -113,9 +113,12 @@ def matrix2aa(m, radians=True):
         
 class OperationAnalyzer(SymmOp):
     '''
-    Class for comparing operations. Stores rotation axis and angle, as well as
+    Class for comparing operations. Stores rotation axis, angle, as well as
     the type of operation (identity, inversion, rotation, or rotoinversion).
     By default, takes a SymmOp as argument.
+    Note: rotoinversions with odd-order rotational parts will have an over-all
+        even order. For example, the order of (-3) is 6.
+    Note: reflections are treated as rotoinversions of order 2.
     '''
     #TODO: include support for off-center operations
     #TODO: include support for shear and scaling operations
@@ -138,6 +141,7 @@ class OperationAnalyzer(SymmOp):
         else:
             #If determinant is positive
             if det(self.m) > 0:
+                self.inverted = False
                 self.axis, self.angle = matrix2aa(self.m)
                 if isclose(self.angle, 0):
                     self.type = "identity"
@@ -150,17 +154,18 @@ class OperationAnalyzer(SymmOp):
                         self.order = None
             #If determinant is negative
             elif det(self.m)< 0:
+                self.inverted = True
                 mi = self.m * -1
                 self.axis, self.angle = matrix2aa(mi)
                 if isclose(self.angle, 0):
-                    self.type = "inverse"
+                    self.type = "inversion"
                     self.order = int(2)
                 else:
                     self.axis *= -1
                     self.type = "rotoinversion"
                     if isclose(2*pi/self.angle, 2*pi//self.angle):
                         self.order = int(2*pi//self.angle)
-                        if self.order//2 == 1:
+                        if self.order%2 != 0:
                             self.order *= int(2)
                     else:
                         self.order = None
