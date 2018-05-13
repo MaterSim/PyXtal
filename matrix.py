@@ -197,11 +197,23 @@ class OperationAnalyzer(SymmOp):
         '''
         if type(op2) != OperationAnalyzer:
             opa2 = OperationAnalyzer(op2)
-        else: opa2 = deepcopy(op2)
-        if opa2.type == self.type and opa2.order == self.order:
-            return True
+            if opa2.type == self.type and opa2.order == self.order:
+                return True
+            else:
+                return False
         else:
-            return False
+            if opa2.type == self.type and opa2.order == self.order:
+                return True
+            else:
+                return False
+
+    def are_conjugate(op1, op2)
+        '''
+        Returns whether two operations are conjugate
+        '''
+        if type(op1) != OperationAnalyzer:
+            opa1 = OperationAnalyzer(op1)
+        return opa1.is_conjugate(op2)
 
 #Test Functionality
 if __name__ == "__main__":
