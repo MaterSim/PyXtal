@@ -1,40 +1,18 @@
 import numpy as np
 from numpy import matrix
+from numpy import isclose
+from numpy import allclose
+from numpy.random import random as rand
 from numpy.linalg import eig
+from numpy.linalg import eigh
 from numpy.linalg import det
 import math
-import random
 from pymatgen.core.operations import SymmOp
 from math import pi
 rad = pi/180.
 deg = 180./pi
 
-#returns a 3x3 rotation matrix with random angle and orientation
-'''def aa2matrix(axis='random',angle='random', radians=True):
-    #Return a rotation matrix from an axis and angle
-    #If axis and/or angle is not provided, a random value is chosen
-    #TODO: Stop relying on SymmOp method - inaccurate
-    #If axis is provided, it is assumed to be unit length
-    if axis == 'random':
-        phi = random.random() * 2. * math.pi
-        N = random.random()
-        theta = math.acos(2.*N - 1.)
-        x = math.cos(phi) * math.sin(theta)
-        y = math.sin(phi) * math.sin(theta)
-        z = math.cos(theta)
-    else:
-        x = axis[0]
-        y = axis[1]
-        z = axis[2]
-    if angle == 'random':
-    	angle = random.random() * 2 * math.pi
-    else:
-        if radians is False:
-            angle *= rad
-    print(angle)
-    return SymmOp.from_origin_axis_angle([0,0,0], [x,y,z], angle, angle_in_radians=True).rotation_matrix'''
-
-def aa2matrix(axis, angle, radians=True):
+def aa2matrix(axis, angle, radians=True, random=False):
     '''
     Given an axis and an angle, return a 3x3 rotation matrix
     Based on:
@@ -43,6 +21,11 @@ def aa2matrix(axis, angle, radians=True):
     #Convert to radians if necessary
     if radians is not True:
         angle *= rad
+    #Allow for generation of random rotations
+    if random is True:
+        a = rand()
+        axis = [rand(),rand(),rand()]
+        angle = rand()*pi*2
     #Ensure axis is a unit vector
     axis = axis / np.linalg.norm(axis)
     #Define quantities which are reused
@@ -65,141 +48,81 @@ def aa2matrix(axis, angle, radians=True):
     Q[2][2] = z*z*C + c
     return Q
 
-    #def matrix2aa(m, radians=True):
-    '''
-    Return the axis and angle from a rotation matrix.
-    '''
-    '''#TODO: improve functionality with reflection and inversion matrices
-    if type(m) == SymmOp:
-        m = m.rotation_matrix
-    if np.linalg.det(m) < 0:
-        m *= -1.
-    value = m[0][0]+m[1][1]+m[2][2]
-    #Avoid problems caused by numerical errors
-    if value > 1 or value < -1: value = np.round(value)
-    angle = math.acos(( value - 1)/2)
-    if radians is False: angle *= deg
-    x = (m[2][1] - m[1][2])/np.sqrt((m[2][1] - m[1][2])**2+(m[0][2] - m[2][0])**2+(m[1][0] - m[0][1])**2)
-    y = (m[0][2] - m[2][0])/np.sqrt((m[2][1] - m[1][2])**2+(m[0][2] - m[2][0])**2+(m[1][0] - m[0][1])**2)
-    z = (m[1][0] - m[0][1])/np.sqrt((m[2][1] - m[1][2])**2+(m[0][2] - m[2][0])**2+(m[1][0] - m[0][1])**2)
-    return [x,y,z], angle'''
-
 def matrix2aa(m, radians=True):
     '''
     Return the axis and angle from a rotation matrix.
+    m must be an orthogonal matrix with determinant 1.
+    The axis is an eigenvector with eigenvalue 1.
+    The angle is determined by the trace and the asymmetryic part of m.
+    Based on:
+    https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
     '''
-    #TODO: improve functionality with reflection and inversion matrices
     if type(m) == SymmOp:
         m = m.rotation_matrix
-    #eigenvalues, eivenvectors = np.linalg.eig(m)
-
-
-#Functions from 
-def rotation_matrix(angle, direction, point=None):
-    """Return matrix to rotate about axis defined by point and direction.
-
-    >>> R = rotation_matrix(math.pi/2, [0, 0, 1], [1, 0, 0])
-    >>> numpy.allclose(numpy.dot(R, [0, 0, 0, 1]), [1, -1, 0, 1])
-    True
-    >>> angle = (random.random() - 0.5) * (2*math.pi)
-    >>> direc = numpy.random.random(3) - 0.5
-    >>> point = numpy.random.random(3) - 0.5
-    >>> R0 = rotation_matrix(angle, direc, point)
-    >>> R1 = rotation_matrix(angle-2*math.pi, direc, point)
-    >>> is_same_transform(R0, R1)
-    True
-    >>> R0 = rotation_matrix(angle, direc, point)
-    >>> R1 = rotation_matrix(-angle, -direc, point)
-    >>> is_same_transform(R0, R1)
-    True
-    >>> I = numpy.identity(4, numpy.float64)
-    >>> numpy.allclose(I, rotation_matrix(math.pi*2, direc))
-    True
-    >>> numpy.allclose(2, numpy.trace(rotation_matrix(math.pi/2,
-    ...                                               direc, point)))
-    True
-
-    """
-    sina = math.sin(angle)
-    cosa = math.cos(angle)
-    direction = unit_vector(direction[:3])
-    # rotation matrix around unit vector
-    R = numpy.diag([cosa, cosa, cosa])
-    R += numpy.outer(direction, direction) * (1.0 - cosa)
-    direction *= sina
-    R += numpy.array([[ 0.0,         -direction[2],  direction[1]],
-                      [ direction[2], 0.0,          -direction[0]],
-                      [-direction[1], direction[0],  0.0]])
-    M = numpy.identity(4)
-    M[:3, :3] = R
-    if point is not None:
-        # rotation not around origin
-        point = numpy.array(point[:3], dtype=numpy.float64, copy=False)
-        M[:3, 3] = point - numpy.dot(R, point)
-    return M
-
-def rotation_from_matrix(matrix):
-    """Return rotation angle and axis from rotation matrix.
-
-    >>> angle = (random.random() - 0.5) * (2*math.pi)
-    >>> direc = numpy.random.random(3) - 0.5
-    >>> point = numpy.random.random(3) - 0.5
-    >>> R0 = rotation_matrix(angle, direc, point)
-    >>> angle, direc, point = rotation_from_matrix(R0)
-    >>> R1 = rotation_matrix(angle, direc, point)
-    >>> is_same_transform(R0, R1)
-    True
-
-    """
-    R = numpy.array(matrix, dtype=numpy.float64, copy=False)
-    R33 = R[:3, :3]
-    # direction: unit eigenvector of R33 corresponding to eigenvalue of 1
-    w, W = numpy.linalg.eig(R33.T)
-    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
-    if not len(i):
-        raise ValueError('no unit eigenvector corresponding to eigenvalue 1')
-    direction = numpy.real(W[:, i[-1]]).squeeze()
-    # point: unit eigenvector of R33 corresponding to eigenvalue of 1
-    w, Q = numpy.linalg.eig(R)
-    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
-    if not len(i):
-        raise ValueError('no unit eigenvector corresponding to eigenvalue 1')
-    point = numpy.real(Q[:, i[-1]]).squeeze()
-    point /= point[3]
-    # rotation angle depending on direction
-    cosa = (numpy.trace(R33) - 1.0) / 2.0
-    if abs(direction[2]) > 1e-8:
-        sina = (R[1, 0] + (cosa-1.0)*direction[0]*direction[1]) / direction[2]
-    elif abs(direction[1]) > 1e-8:
-        sina = (R[0, 2] + (cosa-1.0)*direction[0]*direction[2]) / direction[1]
-    else:
-        sina = (R[2, 1] + (cosa-1.0)*direction[1]*direction[2]) / direction[0]
-    angle = math.atan2(sina, cosa)
-    return angle, direction, point
-    
+    #Check if m is the identity matrix
+    if allclose(m, np.identity(3)):
+        return None, 0.
+    #Check that m is orthogonal
+    m1 = np.dot(m, np.transpose(m))
+    m2 = np.dot(np.transpose(m), m)
+    if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
+        print("Error: matrix is not orthogonal.")
+        return
+    #Check that m has posititve determinant
+    if not isclose(det(m), 1):
+        print("Error: invalid rotation matrix, determinant is not 1.")
+        print("Divide matrix by inversion operation beore calling matrix2aa.")
+        return
+    #Determine the eigenvector(s) of m
+    e = np.linalg.eig(m)
+    eigenvalues = e[0]
+    possible = np.transpose(e[1])
+    eigenvectors = []
+    for v in possible:
+        if allclose(v, np.dot(m, v)):
+            eigenvectors.append(v)
+    #Determine the angle of rotation
+    if len(eigenvectors) == 1:
+        v = eigenvectors[0]
+        x = m[2][1] - m[1][2]
+        y = m[0][2] - m[2][0]
+        z = m[1][0] - m[0][1]
+        r = math.sqrt(x**2+y**2+z**2)
+        t = m[0][0] + m[1][1] + m[2][2]
+        theta = np.arctan2(r, t-1.)
+        #Ensure 0<theta<pi
+        if theta > pi:
+            theta = pi*2 - theta
+        if theta < 0:
+            theta *= -1
+            v *= -1
+        if radians is not True:
+            theta *= deg
+        return v, theta
+    #If no eigenvectors are found
+    elif len(eigenvectors) == 0:
+        print("Error: matrix2aa did not find any eigenvectors.")
+        return
+    #If multiple eigenvectors are found
+    elif len(eigenvectors) > 1:
+        print("Warning: multiple eigenvectors found.")
+        print("Found eigenvectors:")
+        print(v)
+        return None, 0.
+        
 
 #Test Functionality
 if __name__ == "__main__":
 #----------------------------------------------------
-    identity = np.matrix([[1,0,0],[0,1,0],[0,0,1]])
-    inverse = np.matrix([[-1,0,0],[0,-1,0],[0,0,-1]])
-    x2 = np.matrix([[1,0,0],[0,-1,0],[0,0,-1]])
-    y2 = np.matrix([[-1,0,0],[0,1,0],[0,0,-1]])
-    mx = np.matrix([[-1,0,0],[0,1,0],[0,0,1]])
-    my = np.matrix([[1,0,0],[0,-1,0],[0,0,1]])
-    #Note: 2bar is just inverse
-    x4 = [[],[],[]]
-    x_4 = [[],[],[]]
-    x3 = np.matrix([[],[],[]])
-    x_3 = np.matrix([[],[],[]])
-
-    '''for x in [identity, inverse, x2, y2, mx, my, x3, x_3]:
-        print('------------------')
-        print('Matrix:')
-        print(x)
-        print('Eigenvalues:')
-        print(eig(x)[0])
-        print('Eigenvectors:')
-        print(eig(x)[1])'''
-
-    print( aa2matrix([1,0,0],180, radians=False) )
+    print("Testing matrix2aa on matrices generated by aa2matrix:")
+    axes = []
+    angles = []
+    for x in range(20):
+        axis = np.array([rand(),rand(),rand()])
+        axis = axis/np.linalg.norm(axis)
+        angle = rand()*pi
+        found = matrix2aa(aa2matrix(axis, angle))
+        print("---Dot product of input and output axes:---")
+        print(np.dot(axis, found[0]))
+        print("Input angle/Output angle")
+        print(angle / found[1])
