@@ -12,6 +12,16 @@ from math import pi
 from copy import deepcopy
 rad = pi/180.
 deg = 180./pi
+from structure import angle
+
+def rotate_vector(v1, v2):
+    '''
+    Rotates a vector v1 to v2 about an axis perpendicular to both
+    Returns the 3x3 rotation matrix used to do so
+    '''
+    theta = angle(v1, v2)
+    v3 = np.cross(v1, v2)
+    return aa2matrix(v3, theta)
 
 def aa2matrix(axis, angle, radians=True, random=False):
     '''
@@ -179,7 +189,7 @@ class OperationAnalyzer(SymmOp):
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
     def __str__(self):
-        #Avoid printing '-0.' instead of 0.
+        #Avoid printing '-0.' instead of '0.'
         if self.axis is not None:
             if len(self.axis) == 3:
                 for i, x in enumerate(self.axis):
