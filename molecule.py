@@ -9,6 +9,7 @@ from numpy.linalg import eigh
 from numpy.linalg import det
 from copy import deepcopy
 from math import fabs
+from random import random
 
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
@@ -43,21 +44,21 @@ def reoriented_molecule(mol, nested=False):
         new_mol = mol.get_centered_molecule()
         A = get_inertia_tensor(new_mol)
         #Store the eigenvectors of the inertia tensor
-        P = eigh(A)[1]
+        P = np.transpose(eigh(A)[1])
         if det(P) < 0:
             P[0] *= -1
         #reorient the molecule
         P = SymmOp.from_rotation_and_translation(P,[0,0,0])
-        new_mol.apply_operation(P.inverse)
+        new_mol.apply_operation(P)
         #Our molecule should never be inverted during reorientation.
         if det(P.rotation_matrix) < 0:
             print("Error: inverted reorientation applied.")
         return new_mol, P
     #If needed, recursively apply reorientation (due to numerical errors)
     iterations = 1
-    max_iterations = 10
+    max_iterations = 100
     new_mol, P = reorient(mol)
-    while iterations < 10:
+    while iterations < max_iterations:
         is_okay = True
         for i in range(3):
             for j in range(3):
@@ -79,8 +80,9 @@ def reoriented_molecule(mol, nested=False):
         elif okay is True:
             break
     if iterations == max_iterations:
-        print("Error: Could not reorient molecule after 10 attempts")
-        print(eigh(get_inertia_tensor(new_mol)))
+        print("Error: Could not reorient molecule after "+str(max_iterations)+" attempts")
+        print(new_mol)
+        print(get_inertia_tensor(new_mol))
         return False
     return new_mol, P
 
@@ -118,30 +120,49 @@ if __name__ == "__main__":
     pga_rand_mol = PointGroupAnalyzer(rand_mol)
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
-    for mol in [h20, c60, h2, ch4, rand_mol]:
+    '''for mol in [h20, c60, h2, ch4, rand_mol]:
         print((mol.formula))
         mol, P = reoriented_molecule(mol)
+        print("Inertia tensor:")
+        print(get_inertia_tensor(mol))
         print("Inertia tensor Eigenvalues:")
         print(eigh(get_inertia_tensor(mol))[0])
         print("Inertia tensor Eigenvectors:")
-        print(eigh(get_inertia_tensor(mol))[1])
+        print(eigh(get_inertia_tensor(mol))[1])'''
 
-    #mol = deepcopy(ch4)
+    mol = deepcopy(ch4)
 
-    '''print('--------Initial Molecule--------')
+    print('--------Initial Molecule--------')
     print(mol)
+    print('Inertia tensor:')
+    print(get_inertia_tensor(mol))
     print('Eigenvectors of inertia tensor:')
     print(eigh(get_inertia_tensor(mol))[1])
-    pga = PointGroupAnalyzer(mol)
-    pg = pga.get_pointgroup()
+
+    v = [random(), random(), random()]
+    a = random()*math.pi*2
+    rot = aa2matrix(v, a)
+    mol.apply_operation(SymmOp.from_rotation_and_translation(rot, [0,0,0]))
+
+    print('--------After random rotation--------')
+    print(mol)
+    print('Inertia tensor:')
+    print(get_inertia_tensor(mol))
+    print('Eigenvectors of inertia tensor:')
+    print(eigh(get_inertia_tensor(mol))[1])
 
     mol, P = reoriented_molecule(mol)
 
     print('--------After reorientation--------')
     print(mol)
+    print('Inertia tensor:')
+    print(get_inertia_tensor(mol))
     print('Eigenvectors of inertia tensor:')
     print(eigh(get_inertia_tensor(mol))[1])
+
     pga = PointGroupAnalyzer(mol)
-    pg = pga.get_pointgroup()'''
+    pg = pga_ch4.get_pointgroup()
 
-
+    '''print('-----------Symmetry Operations:-----------')
+    for op in pg:
+        print(op)'''
