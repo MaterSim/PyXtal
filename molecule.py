@@ -1,6 +1,7 @@
 from pymatgen.core.structure import Molecule
 from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+from pymatgen.symmetry.analyzer import generate_full_symmops
 #from ase.build import molecule
 from matrix import *
 import numpy as np
@@ -98,7 +99,22 @@ def orientation_in_wyckoff_position(mol, wp, randomize=True):
         randomize: whether or not to apply a random rotation consistent with
             the symmetry requirements.
     '''
-    
+    #Reorient the molecule
+    oriented_mol, orientation = reoriented_molecule(mol)
+    #Add infitesimal rotational symmetry as 12-fold rotation if applicable
+    pga = PointGroupAnalyzer(oriented_mol)
+    pg = pga.get_pointgroup()
+    symm_m = []
+    for op in pg:
+        symm_m.append(op)
+    if '*' in pga.sch_symbol:
+        for axis in [[1,0,0],[0,1,0],[0,0,1]]:
+            op = SymmOp.from_rotation_and_translation(aa2matrix(axis, pi/6), [0,0,0])
+            if pga.is_valid_op(op):
+                symm_m.append(op)
+                symm_m = generate_full_symmops(symm_m, 1e-3)
+                break
+    pass
 
 #Test Functionality
 if __name__ == "__main__":
@@ -120,49 +136,4 @@ if __name__ == "__main__":
     pga_rand_mol = PointGroupAnalyzer(rand_mol)
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
-    '''for mol in [h20, c60, h2, ch4, rand_mol]:
-        print((mol.formula))
-        mol, P = reoriented_molecule(mol)
-        print("Inertia tensor:")
-        print(get_inertia_tensor(mol))
-        print("Inertia tensor Eigenvalues:")
-        print(eigh(get_inertia_tensor(mol))[0])
-        print("Inertia tensor Eigenvectors:")
-        print(eigh(get_inertia_tensor(mol))[1])'''
-
-    mol = deepcopy(ch4)
-
-    print('--------Initial Molecule--------')
-    print(mol)
-    print('Inertia tensor:')
-    print(get_inertia_tensor(mol))
-    print('Eigenvectors of inertia tensor:')
-    print(eigh(get_inertia_tensor(mol))[1])
-
-    v = [random(), random(), random()]
-    a = random()*math.pi*2
-    rot = aa2matrix(v, a)
-    mol.apply_operation(SymmOp.from_rotation_and_translation(rot, [0,0,0]))
-
-    print('--------After random rotation--------')
-    print(mol)
-    print('Inertia tensor:')
-    print(get_inertia_tensor(mol))
-    print('Eigenvectors of inertia tensor:')
-    print(eigh(get_inertia_tensor(mol))[1])
-
-    mol, P = reoriented_molecule(mol)
-
-    print('--------After reorientation--------')
-    print(mol)
-    print('Inertia tensor:')
-    print(get_inertia_tensor(mol))
-    print('Eigenvectors of inertia tensor:')
-    print(eigh(get_inertia_tensor(mol))[1])
-
-    pga = PointGroupAnalyzer(mol)
-    pg = pga_ch4.get_pointgroup()
-
-    '''print('-----------Symmetry Operations:-----------')
-    for op in pg:
-        print(op)'''
+    orientation_in_wyckoff_position(h2, 1, randomize=True)
