@@ -9,6 +9,7 @@ from numpy.linalg import det
 import math
 from pymatgen.core.operations import SymmOp
 from math import pi
+from copy import deepcopy
 rad = pi/180.
 deg = 180./pi
 
@@ -124,12 +125,17 @@ class OperationAnalyzer(SymmOp):
     #TODO: include support for shear and scaling operations
     #TODO: include support for matrix-column and axis-angle initialization
     def __init__(self, op):
-        if type(op) == SymmOp:
-            self.op = deepcopy(op)
+        if type(op) == deepcopy(SymmOp):
+            self.op = op
             self.m = op.rotation_matrix
             self.det = det(self.m)
+        elif (type(op) == np.ndarray) or (type(op) == np.matrix):
+            if op.shape == (3,3):
+                self.op = SymmOp.from_rotation_and_translation(op, [0,0,0])
+                self.m = self.op.rotation_matrix
+                self.det = det(op)
         else:
-            print("Error: OperationAnalyzer requires a SymmOp ojbect as an argument.")
+            print("Error: OperationAnalyzer requires a SymmOp or 3x3 array.")
         #If rotation matrix is not orthogonal
         m1 = np.dot(self.m, np.transpose(self.m))
         m2 = np.dot(np.transpose(self.m), self.m)
@@ -183,20 +189,35 @@ class OperationAnalyzer(SymmOp):
             "\nType: "+str(self.type)+
             "\nOrder: "+str(self.order)+
             "\nAxis: "+str(self.axis) )
-    def is_conjugate(self, op2)
+
+    def is_conjugate(self, op2):
         '''
-        Returns whether or not another operation is conjugate to this one.
-        
+        Returns whether or not another operation is conjugate
+        (the same operation in a different reference frame)
         '''
         if type(op2) != OperationAnalyzer:
-            op2 = OperationAnalyzer(op2)
-        
-            
+            opa2 = OperationAnalyzer(op2)
+        else: opa2 = deepcopy(op2)
+        if opa2.type == self.type and opa2.order == self.order:
+            return True
+        else:
+            return False
 
 #Test Functionality
 if __name__ == "__main__":
 #----------------------------------------------------
+    '''
+    #Check that OperationAnalyzer works
     for string in ['x,y,z','-x,y,z','x,-y,z','x,y,-z','-x,-y,z','-x,y,-z','x,-y,-z','-x,-y,-z']:
         op = SymmOp.from_xyz_string(string)
         opa = OperationAnalyzer(op)
-        print(opa)
+        print(opa)'''
+
+    #Check that is_conjugate works
+    from structure import random_vector
+    for i in range(20):
+        a = rand()*2*pi
+        op1 = aa2matrix(random_vector(), a)
+        op2 = aa2matrix(random_vector(), a)
+        opa1 = OperationAnalyzer(op1)
+        print(opa1.is_conjugate(op2))
