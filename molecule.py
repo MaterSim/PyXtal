@@ -2,8 +2,6 @@ from pymatgen.core.structure import Molecule
 from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pymatgen.symmetry.analyzer import generate_full_symmops
-#from ase.build import molecule
-from matrix import *
 import numpy as np
 from numpy import isclose
 from numpy.linalg import eigh
@@ -11,6 +9,11 @@ from numpy.linalg import det
 from copy import deepcopy
 from math import fabs
 from random import random
+from random import choice as choose
+from matrix import *
+from structure import get_wyckoff_symmetry
+
+#from ase.build import molecule
 
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
@@ -87,7 +90,58 @@ def reoriented_molecule(mol, nested=False):
         return False
     return new_mol, P
 
-def orientation_in_wyckoff_position(mol, wp, randomize=True):
+def get_symmetry(mol, already_oriented=False):
+    '''
+    Return a list of SymmOps for a molecule's point symmetry
+    already_oriented: whether or not the principle axes of mol are already reoriented 
+    '''
+    if already_oriented == True:
+        pga = PointGroupAnalyzer(mol)
+    elif already_oriented == False:
+        #Reorient the molecule
+        oriented_mol, P = reoriented_molecule(mol)
+        pga = PointGroupAnalyzer(oriented_mol)
+    pg = pga.get_pointgroup()
+    symm_m = []
+    for op in pg:
+        symm_m.append(op)
+    #Handle linear molecules
+    if '*' in pga.sch_symbol:
+        #Add 12-fold  and reflections in place of ininitesimal rotation
+        for axis in [[1,0,0],[0,1,0],[0,0,1]]:
+            op = SymmOp.from_rotation_and_translation(aa2matrix(axis, pi/6), [0,0,0])
+            if pga.is_valid_op(op):
+                symm_m.append(op)
+                #Any molecule with infinitesimal symmetry is linear;
+                #Thus, it possess mirror symmetry for any axis perpendicular
+                #To the rotational axis. pymatgen does not add this symmetry
+                #for all linear molecules - for example, hydrogen
+                if axis == [1,0,0]:
+                    symm_m.append(SymmOp.from_xyz_string('x,-y,z'))
+                    symm_m.append(SymmOp.from_xyz_string('x,y,-z'))
+                elif axis == [0,1,0]:
+                    symm_m.append(SymmOp.from_xyz_string('-x,y,z'))
+                    symm_m.append(SymmOp.from_xyz_string('x,y,-z'))
+                elif axis == [0,0,1]:
+                    symm_m.append(SymmOp.from_xyz_string('-x,y,z'))
+                    symm_m.append(SymmOp.from_xyz_string('x,-y,z'))
+                #Generate a full list of SymmOps for the molecule's pointgroup
+                symm_m = generate_full_symmops(symm_m, 1e-3)
+                break
+    #Handle non-linear molecules
+    else:
+        for op in pg:
+            symm_m.append(op)
+    #Reorient the SymmOps into mol's original frame
+    if not already_oriented:
+        new = []
+        for op in symm_m:
+            new.append(P*op*P.inverse)
+        return new
+    elif already_oriented:
+        return symm_m
+
+def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
     '''
     Tests if a molecule meets the symmetry requirements of a Wyckoff position.
     If it does, return the rotation matrix needed. Otherwise, returns False.
@@ -99,22 +153,60 @@ def orientation_in_wyckoff_position(mol, wp, randomize=True):
         randomize: whether or not to apply a random rotation consistent with
             the symmetry requirements.
     '''
-    #Reorient the molecule
-    oriented_mol, orientation = reoriented_molecule(mol)
-    #Add infitesimal rotational symmetry as 12-fold rotation if applicable
-    pga = PointGroupAnalyzer(oriented_mol)
-    pg = pga.get_pointgroup()
-    symm_m = []
-    for op in pg:
-        symm_m.append(op)
-    if '*' in pga.sch_symbol:
-        for axis in [[1,0,0],[0,1,0],[0,0,1]]:
-            op = SymmOp.from_rotation_and_translation(aa2matrix(axis, pi/6), [0,0,0])
-            if pga.is_valid_op(op):
-                symm_m.append(op)
-                symm_m = generate_full_symmops(symm_m, 1e-3)
-                break
-    pass
+    oriented_molecule, P = reoriented_molecule(mol)
+    symm_m = get_symmetry(oriented_molecule, already_oriented=True)
+    #Analyze the symmetry of the molecule and the Wyckoff position
+    symm_w = get_wyckoff_symmetry(sg)[index][0]
+    opa_w = []
+    for op_w in symm_w:
+        opa_w.append(OperationAnalyzer(op_w))
+    opa_m = []
+    for op_m in symm_m:
+        opa_m.append(OperationAnalyzer(op_m))
+    #Check for constraints from the Wyckoff symmetry...
+    #If we find ANY two constraints (SymmOps with unique axes), the molecule's
+    #point group MUST contain SymmOps which can be aligned to these particular
+    #constraints. However, there may be multiple compatible orientations of the
+    #molecule consistent with these constraints
+    constraint1 = None
+    constraint2 = None
+    for i, op_w in enumerate(symm_w):
+        if opa_w[i].axis is not None:
+            constraint1 = opa_w[i]
+            for j, op_w in enumerate(symm_w):
+                if opa_w[j].axis is not None:
+                    dot = np.dot(opa_w[i].axis, opa_w[j].axis)
+                    if (not isclose(dot, 1)) and (not isclose(dot, -1)):
+                        constraint2 = opa_w[j]
+                        break
+            break
+    #Indirectly store the angle between the constraint axes
+    if (constraint1 is not None
+        and constraint2 is not None):
+        dot_w = np.dot(constraint1.axis, constraint2.axis)
+    #Store corresponding symmetry elements of the molecule
+    constraints_m = []
+    if constraint1 is not None:
+        for i, op_m in enumerate(symm_m):
+            if opa_m[i].is_conjugate(constraint1):
+                constraints_m.append(opa_m[i])
+                if constraint2 is not None:
+                    for j, op_m in enumerate(symm_m):
+                        if opa_m[j].is_conjugate(constraint2):
+                            dot_m = np.dot(opa_m[i].axis, opa_m[j].axis)
+                            #Ensure that the angles are equal
+                            if isclose(dot_m, dot_w):
+                                constraints_m[-1].append(opa_w[j])
+    #Generate orientations consistent with the possible constraints
+    identity_op = SymmOp.from_rotation_and_translation(np.identity(3),[0,0,0])
+    orientations = [identity_op]
+    for c1 in constraints_m:
+        T = np.identity(3)
+        v1 = c1.axis
+        v2 = constraint1.axis
+        T = np.dot(rotate_vector(v1, v2), T)
+    #Check each of the found orientations for consistency with the Wycko
+
 
 #Test Functionality
 if __name__ == "__main__":
@@ -136,4 +228,4 @@ if __name__ == "__main__":
     pga_rand_mol = PointGroupAnalyzer(rand_mol)
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
-    orientation_in_wyckoff_position(h2, 1, randomize=True)
+    orientation_in_wyckoff_position(h2, 20, 2, randomize=True)
