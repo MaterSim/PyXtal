@@ -14,15 +14,6 @@ rad = pi/180.
 deg = 180./pi
 from structure import angle
 
-def rotate_vector(v1, v2):
-    '''
-    Rotates a vector v1 to v2 about an axis perpendicular to both
-    Returns the 3x3 rotation matrix used to do so
-    '''
-    theta = angle(v1, v2)
-    v3 = np.cross(v1, v2)
-    return aa2matrix(v3, theta)
-
 def aa2matrix(axis, angle, radians=True, random=False):
     '''
     Given an axis and an angle, return a 3x3 rotation matrix
@@ -103,7 +94,11 @@ def matrix2aa(m, radians=True):
         theta = np.arctan2(r, t-1.)
         #Ensure 0<theta<pi
         if theta > pi:
-            theta = pi*2 - theta
+            #Make sure 180 degree rotations are not converted to 0
+            if isclose(theta, pi, atol=1e-2, rtol=1e-3):
+                theta = pi
+            else:
+                theta = pi*2 - theta
         if theta < 0:
             theta *= -1
             v *= -1
@@ -121,6 +116,17 @@ def matrix2aa(m, radians=True):
         print("Found eigenvectors:")
         print(v)
         return None, 0.
+
+def rotate_vector(v1, v2):
+    '''
+    Rotates a vector v1 to v2 about an axis perpendicular to both
+    Returns the 3x3 rotation matrix used to do so
+    '''
+    if allclose(v1, v2):
+        return np.identity(3)
+    theta = angle(v1, v2)
+    v3 = np.cross(v1, v2)
+    return aa2matrix(v3, theta)
         
 class OperationAnalyzer(SymmOp):
     '''
@@ -212,7 +218,7 @@ class OperationAnalyzer(SymmOp):
             else:
                 return False
         else:
-            if opa2.type == self.type and opa2.order == self.order:
+            if op2.type == self.type and op2.order == self.order:
                 return True
             else:
                 return False
