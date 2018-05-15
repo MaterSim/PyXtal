@@ -174,16 +174,16 @@ class OperationAnalyzer(SymmOp):
                     found = False
                     for n in range(1, 61):
                         a = (n*self.angle) % (2*pi)
-                        if isclose(a, 0, rtol=1e-2, atol=1e-3):
+                        if isclose(a, 0, rtol=1e-3, atol=1e-4):
                             self.order = int(n)
                             found = True
                             break
-                        elif isclose(a, 2*pi, rtol=1e-2, atol=1e-3):
+                        elif isclose(a, 2*pi, rtol=1e-3, atol=1e-4):
                             self.order = int(n)
                             found = True
                             break
                     if not found:
-                        self.order = None
+                        self.order = "irrational"
             #If determinant is negative
             elif det(self.m)< 0:
                 self.inverted = True
@@ -198,20 +198,20 @@ class OperationAnalyzer(SymmOp):
                     found = False
                     for n in range(1, 61):
                         a = (n*self.angle) % (2*pi)
-                        if isclose(a, 0, rtol=1e-2, atol=1e-3):
+                        if isclose(a, 0, rtol=1e-3, atol=1e-4):
                             self.order = int(n)
                             found = True
                             if self.order%2 != 0:
                                 self.order *= int(2)
                             break
-                        elif isclose(a, 2*pi, rtol=1e-2, atol=1e-3):
+                        elif isclose(a, 2*pi, rtol=1e-3, atol=1e-4):
                             self.order = int(n)
                             found = True
                             if self.order%2 != 0:
                                 self.order *= int(2)
                             break
                     if not found:
-                        self.order = None
+                        self.order = "irrational"
             elif det(self.m) == 0:
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
