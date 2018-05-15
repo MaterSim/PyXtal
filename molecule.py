@@ -128,20 +128,17 @@ def get_symmetry(mol, already_oriented=False):
                 #Generate a full list of SymmOps for the molecule's pointgroup
                 symm_m = generate_full_symmops(symm_m, 1e-3)
                 break
-    #Handle non-linear molecules
-    else:
-        for op in pg:
-            symm_m.append(op)
     #Reorient the SymmOps into mol's original frame
     if not already_oriented:
         new = []
         for op in symm_m:
-            new.append(P*op*P.inverse)
+            new.append(P.inverse*op*P)
         return new
     elif already_oriented:
         return symm_m
 
-def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
+def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
+    exact_orientation=False, already_oriented=False):
     '''
     Tests if a molecule meets the symmetry requirements of a Wyckoff position.
     If it does, return the rotation matrix needed. Otherwise, returns False.
@@ -151,10 +148,26 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
         sg: the spacegroup to check
         index: the index of the Wyckoff position within the sg to check
         randomize: whether or not to apply a random rotation consistent with
-            the symmetry requirements. 
+            the symmetry requirements.
+        exact_orientation: whether to only check compatibility for the provided
+            orientation of the molecule. Used within general case for checking.
+            If True, this function only returns True or False
     '''
+    if exact_orientation is True:
+        mo = deepcopy(mol)
+        pga = PointGroupAnalyzer(mo)
+        symm_w = get_wyckoff_symmetry(sg)[index][0]
+        valid = True
+        for op in symm_w:
+            op_m = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+            if not pga.is_valid_op(op_m):
+                valid = False
+        if valid is True:
+            return True
+        elif valid is False:
+            return False
     #Analyze the symmetry of the molecule and the Wyckoff position
-    symm_m = get_symmetry(mol)
+    symm_m = get_symmetry(mol, already_oriented=already_oriented)
     symm_w = get_wyckoff_symmetry(sg)[index][0]
     #Store OperationAnalyzer objects for each SymmOp
     opa_w = []
@@ -205,6 +218,12 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
         v2 = constraint1.axis
         T = rotate_vector(v1, v2)
         #Loop over second molecular constraints
+        for opa in c1[1]:
+            v1 = np.dot(T, opa.axis)
+            v2 = constraint2.axis
+            R = rotate_vector(v1, v2)
+            T2 = np.dot(T, R)
+            orientations.append(T2)
         if c1[1] == []:
             if randomize is True:
                 angle = rand()*2*pi
@@ -213,18 +232,13 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
                 orientations.append(T2)
             else:
                 orientations.append(T)
-        for opa in c1[1]:
-            v1 = np.dot(T, opa.axis)
-            v2 = constraint2.axis
-            R = rotate_vector(v1, v2)
-            T2 = np.dot(T, R)
-            orientations.append(T2)
+    #Ensure the identity orientation is checked if no constraints are found
     if constraints_m == []:
         if randomize is True:
             R = aa2matrix(1,1,random=True)
             orientations.append(R)
         else:
-            orientation.append(np.identity())
+            orientations.append(np.identity(3))
     #Check each of the found orientations for consistency with the Wyckoff pos.
     #If consistent, put into an array of valid orientations
     allowed = []
@@ -232,13 +246,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
         o = SymmOp.from_rotation_and_translation(o,[0,0,0])
         mo = deepcopy(mol)
         mo.apply_operation(o)
-        pga = PointGroupAnalyzer(mo)
-        valid = True
-        for op in symm_w:
-            op_m = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-            if not pga.is_valid_op(op_m):
-                valid = False
-        if valid:
+        if orientation_in_wyckoff_position(mo, sg, index, exact_orientation=True) is True:
             allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
@@ -250,9 +258,9 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
 if __name__ == "__main__":
 #---------------------------------------------------
     #Test cases: water, methane, and c60 via pymatgen
-    h20 = Molecule.from_file('xyz/water.xyz')
-    pga_h20 = PointGroupAnalyzer(h20)
-    pg_h20 = pga_h20.get_pointgroup()
+    h2o = Molecule.from_file('xyz/water.xyz')
+    pga_h2o = PointGroupAnalyzer(h2o)
+    pg_h2o = pga_h2o.get_pointgroup()
     c60 = Molecule.from_file('xyz/c60.xyz')
     pga_c60 = PointGroupAnalyzer(c60)
     pg_c60 = pga_c60.get_pointgroup()
@@ -266,10 +274,30 @@ if __name__ == "__main__":
     pga_rand_mol = PointGroupAnalyzer(rand_mol)
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
-    #To use:
+    #Testing water
+    mol = deepcopy(h2o)
+    print("Original molecule:")
+    print(mol)
+    print()
+    #Apply random rotation to avoid lucky results
+    R = aa2matrix(1,1,random=True)
+    R_op = SymmOp.from_rotation_and_translation(R,[0,0,0])
+    mol.apply_operation(R_op)
+    print("Rotated molecule:")
+    print(mol)
+    print("============================================")
+
     #orientation_in_wyckoff_position(mol, sg, WP's index in sg)
-    #returns a list of orientations consistent with the WP.
+    #returns a list of orientations consistent with the WP's symmetry.
     #We can choose any of these orientations at random using np.random.choice
     #To use an orientation, do mol.apply_operation(orientation)
-    #More testing needs to be done to confirm the results.
-    print(orientation_in_wyckoff_position(ch4, 221, 2, randomize=False))
+    #Spacegroup 221, index 2 has m.. symmetry
+    allowed =  orientation_in_wyckoff_position(mol, 221, 2, randomize=True)
+    print("Found "+str(len(allowed))+" orientations:")
+    print("------------------------------")
+    for op in allowed:
+        mo = deepcopy(mol)
+        mo.apply_operation(op)
+        print()
+        print(mo)
+
