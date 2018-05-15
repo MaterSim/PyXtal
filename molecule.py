@@ -211,6 +211,8 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
                 R = aa2matrix(v1, angle)
                 T2 = np.dot(T, R)
                 orientations.append(T2)
+            else:
+                orientations.append(T)
         for opa in c1[1]:
             v1 = np.dot(T, opa.axis)
             v2 = constraint2.axis
@@ -230,7 +232,8 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
         pga = PointGroupAnalyzer(mo)
         valid = True
         for op in symm_w:
-            if not pga.is_valid_op(op):
+            op_m = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+            if not pga.is_valid_op(op_m):
                 valid = False
         if valid:
             allowed.append(o)
@@ -261,4 +264,4 @@ if __name__ == "__main__":
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
     #Bug. Should return an orientation along the x axis
-    print(orientation_in_wyckoff_position(h2, 221, 2, randomize=True))
+    print(orientation_in_wyckoff_position(ch4, 221, 8, randomize=False))
