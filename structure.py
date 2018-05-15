@@ -55,6 +55,8 @@ def angle(v1, v2):
     '''
     Calculate the angle (in radians) between two vectors
     '''
+    v1 = np.real(v1)
+    v2 = np.real(v2)
     return acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 def gaussian(min, max, sigma=3.0):

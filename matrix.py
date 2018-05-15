@@ -32,9 +32,9 @@ def aa2matrix(axis, angle, radians=True, random=False):
     #Ensure axis is a unit vector
     axis = axis / np.linalg.norm(axis)
     #Define quantities which are reused
-    x = axis[0]
-    y = axis[1]
-    z = axis[2]
+    x = np.real(axis[0])
+    y = np.real(axis[1])
+    z = np.real(axis[2])
     c = math.cos(angle)
     s = math.sin(angle)
     C = 1 - c
