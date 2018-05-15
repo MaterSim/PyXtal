@@ -245,7 +245,7 @@ class OperationAnalyzer(SymmOp):
         else:
             if op2.type == self.type and op2.order == self.order:
                 if self.type == "rotation" or self.type == "rotoinversion":
-                    if isclose(fabs(self.angle), fabs(opa2.angle)):
+                    if isclose(fabs(self.angle), fabs(op2.angle)):
                         return True
             else:
                 return False
