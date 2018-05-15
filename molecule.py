@@ -147,11 +147,11 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
     If it does, return the rotation matrix needed. Otherwise, returns False.
 
     args:
-        mol: pymatgen.core.structure.Molecule object
-        wp: a list of SymmOp objects corresponding to a Wyckoff position.
-            Can be obtained from get_wyckoffs(sg, organized=False)[i]
+        mol: pymatgen.core.structure.Molecule object. Orientation is arbitrary
+        sg: the spacegroup to check
+        index: the index of the Wyckoff position within the sg to check
         randomize: whether or not to apply a random rotation consistent with
-            the symmetry requirements.
+            the symmetry requirements. 
     '''
     #Analyze the symmetry of the molecule and the Wyckoff position
     symm_m = get_symmetry(mol)
@@ -198,7 +198,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
                             if isclose(dot_m, dot_w):
                                 constraints_m[-1][1].append(opa_m[j])
     #Generate orientations consistent with the possible constraints
-    orientations = [np.identity(3)]
+    orientations = []
     #Loop over molecular constraint sets
     for c1 in constraints_m:
         v1 = c1[0].axis
@@ -220,8 +220,11 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
             T2 = np.dot(T, R)
             orientations.append(T2)
     if constraints_m == []:
-        R = aa2matrix(1,1,random=True)
-        orientations.append(R)
+        if randomize is True:
+            R = aa2matrix(1,1,random=True)
+            orientations.append(R)
+        else:
+            orientation.append(np.identity())
     #Check each of the found orientations for consistency with the Wyckoff pos.
     #If consistent, put into an array of valid orientations
     allowed = []
@@ -263,5 +266,10 @@ if __name__ == "__main__":
     pga_rand_mol = PointGroupAnalyzer(rand_mol)
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
-    #Bug. Should return an orientation along the x axis
-    print(orientation_in_wyckoff_position(ch4, 221, 8, randomize=False))
+    #To use:
+    #orientation_in_wyckoff_position(mol, sg, WP's index in sg)
+    #returns a list of orientations consistent with the WP.
+    #We can choose any of these orientations at random using np.random.choice
+    #To use an orientation, do mol.apply_operation(orientation)
+    #More testing needs to be done to confirm the results.
+    print(orientation_in_wyckoff_position(ch4, 221, 2, randomize=False))
