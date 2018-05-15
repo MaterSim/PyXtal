@@ -153,10 +153,10 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
         randomize: whether or not to apply a random rotation consistent with
             the symmetry requirements.
     '''
-    oriented_molecule, P = reoriented_molecule(mol)
-    symm_m = get_symmetry(oriented_molecule, already_oriented=True)
     #Analyze the symmetry of the molecule and the Wyckoff position
+    symm_m = get_symmetry(mol)
     symm_w = get_wyckoff_symmetry(sg)[index][0]
+    #Store OperationAnalyzer objects for each SymmOp
     opa_w = []
     for op_w in symm_w:
         opa_w.append(OperationAnalyzer(op_w))
@@ -189,24 +189,56 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True):
     if constraint1 is not None:
         for i, op_m in enumerate(symm_m):
             if opa_m[i].is_conjugate(constraint1):
-                constraints_m.append(opa_m[i])
+                constraints_m.append([opa_m[i], []])
                 if constraint2 is not None:
                     for j, op_m in enumerate(symm_m):
                         if opa_m[j].is_conjugate(constraint2):
                             dot_m = np.dot(opa_m[i].axis, opa_m[j].axis)
                             #Ensure that the angles are equal
                             if isclose(dot_m, dot_w):
-                                constraints_m[-1].append(opa_w[j])
+                                constraints_m[-1][1].append(opa_m[j])
     #Generate orientations consistent with the possible constraints
-    identity_op = SymmOp.from_rotation_and_translation(np.identity(3),[0,0,0])
-    orientations = [identity_op]
+    orientations = [np.identity(3)]
+    #Loop over molecular constraint sets
     for c1 in constraints_m:
-        T = np.identity(3)
-        v1 = c1.axis
+        v1 = c1[0].axis
         v2 = constraint1.axis
-        T = np.dot(rotate_vector(v1, v2), T)
-    #Check each of the found orientations for consistency with the Wycko
-
+        T = rotate_vector(v1, v2)
+        #Loop over second molecular constraints
+        if c1[1] == []:
+            if randomize is True:
+                angle = rand()*2*pi
+                R = aa2matrix(v1, angle)
+                T2 = np.dot(T, R)
+                orientations.append(T2)
+        for opa in c1[1]:
+            v1 = np.dot(T, opa.axis)
+            v2 = constraint2.axis
+            R = rotate_vector(v1, v2)
+            T2 = np.dot(T, R)
+            orientations.append(T2)
+    if constraints_m == []:
+        R = aa2matrix(random=True)
+        orientations.append(R)
+    #Check each of the found orientations for consistency with the Wyckoff pos.
+    #If consistent, put into an array of valid orientations
+    allowed = []
+    for o in orientations:
+        o = SymmOp.from_rotation_and_translation(o,[0,0,0])
+        mo = deepcopy(mol)
+        mo.apply_operation(o)
+        pga = PointGroupAnalyzer(mo)
+        valid = True
+        for op in symm_m:
+            if not pga.is_valid_op(op):
+                valid = False
+        if valid:
+            allowed.append(o)
+    #Return the array of allowed orientations. If there are none, return False
+    if allowed == []:
+        return False
+    else:
+        return allowed
 
 #Test Functionality
 if __name__ == "__main__":
@@ -228,4 +260,5 @@ if __name__ == "__main__":
     pga_rand_mol = PointGroupAnalyzer(rand_mol)
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
-    orientation_in_wyckoff_position(h2, 20, 2, randomize=True)
+    print(orientation_in_wyckoff_position(h2, 221, 8, randomize=True))
+
