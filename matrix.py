@@ -7,8 +7,9 @@ from numpy.linalg import eig
 from numpy.linalg import eigh
 from numpy.linalg import det
 import math
-from pymatgen.core.operations import SymmOp
 from math import pi
+from math import fabs
+from pymatgen.core.operations import SymmOp
 from copy import deepcopy
 rad = pi/180.
 deg = 180./pi
@@ -170,9 +171,19 @@ class OperationAnalyzer(SymmOp):
                     self.order = int(1)
                 else:
                     self.type = "rotation"
-                    if isclose(2*pi/self.angle, 2*pi//self.angle):
-                        self.order = int(2*pi//self.angle)
-                    else:
+                    found = False
+                    for n in range(1, 61):
+                        a = (n*self.angle) % (2*pi)
+                        if isclose(a, 0, rtol=1e-2, atol=1e-3):
+                            self.order = int(n)
+                            found = True
+                            break
+                        elif isclose(a, 2*pi, rtol=1e-2, atol=1e-3):
+                            self.order = int(n)
+                            found = True
+                            break
+                    if not found:
+                        print((self.angle*12) % (2*pi))
                         self.order = None
             #If determinant is negative
             elif det(self.m)< 0:
@@ -185,11 +196,15 @@ class OperationAnalyzer(SymmOp):
                 else:
                     self.axis *= -1
                     self.type = "rotoinversion"
-                    if isclose(2*pi/self.angle, 2*pi//self.angle):
-                        self.order = int(2*pi//self.angle)
-                        if self.order%2 != 0:
-                            self.order *= int(2)
-                    else:
+                    found = False
+                    for n in range(1, 61):
+                        if isclose(fabs((n*self.angle)%(2*pi)) , 0):
+                            self.order = int(n)
+                            if self.order%2 != 0:
+                                self.order *= int(2)
+                            found = True
+                            break
+                    if not found:
                         self.order = None
             elif det(self.m) == 0:
                 self.type = "degenerate"
@@ -210,16 +225,22 @@ class OperationAnalyzer(SymmOp):
         '''
         Returns whether or not another operation is conjugate
         (the same operation in a different reference frame)
+        Rotations with the same order will not always return True. For example,
+        a 5/12 and 1/12 rotation will not be considered conjugate.
         '''
         if type(op2) != OperationAnalyzer:
             opa2 = OperationAnalyzer(op2)
             if opa2.type == self.type and opa2.order == self.order:
-                return True
+                if self.type == "rotation" or self.type == "rotoinversion":
+                    if isclose(fabs(self.angle), fabs(opa2.angle)):
+                        return True
             else:
                 return False
         else:
             if op2.type == self.type and op2.order == self.order:
-                return True
+                if self.type == "rotation" or self.type == "rotoinversion":
+                    if isclose(fabs(self.angle), fabs(opa2.angle)):
+                        return True
             else:
                 return False
 
@@ -241,10 +262,17 @@ if __name__ == "__main__":
         opa = OperationAnalyzer(op)
         print(opa)'''
 
-    #Check that is_conjugate works
+    '''#Check that is_conjugate works
     from structure import random_vector
     for i in range(20):
         a = rand()*2*pi
-        op1 = aa2matrix(random_vector(), a)
         op2 = aa2matrix(random_vector(), a)
-        print(OperationAnalyzer.are_conjugate(op1, op2))
+        print(OperationAnalyzer.are_conjugate(op1, op2))'''
+    
+    op = SymmOp.from_rotation_and_translation(aa2matrix([1,0,0], pi/6),[0,0,0])
+    ops = [op]
+    from pymatgen.symmetry.analyzer import generate_full_symmops
+    symm_m = generate_full_symmops(ops, 1e-3)
+    for op in symm_m:
+        opa = OperationAnalyzer(op)
+        print(opa.order)
