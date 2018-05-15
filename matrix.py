@@ -225,7 +225,7 @@ class OperationAnalyzer(SymmOp):
         return ("~~ Operation: "+self.op.as_xyz_string()+" ~~"+
             "\nType: "+str(self.type)+
             "\nOrder: "+str(self.order)+
-            "\nAxis: "+str(self.axis) )
+            "\nAxis: "+str(np.real(self.axis)) )
 
     def is_conjugate(self, op2):
         '''
