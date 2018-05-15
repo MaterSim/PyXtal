@@ -183,7 +183,6 @@ class OperationAnalyzer(SymmOp):
                             found = True
                             break
                     if not found:
-                        print((self.angle*12) % (2*pi))
                         self.order = None
             #If determinant is negative
             elif det(self.m)< 0:
@@ -198,11 +197,18 @@ class OperationAnalyzer(SymmOp):
                     self.type = "rotoinversion"
                     found = False
                     for n in range(1, 61):
-                        if isclose(fabs((n*self.angle)%(2*pi)) , 0):
+                        a = (n*self.angle) % (2*pi)
+                        if isclose(a, 0, rtol=1e-2, atol=1e-3):
                             self.order = int(n)
+                            found = True
                             if self.order%2 != 0:
                                 self.order *= int(2)
+                            break
+                        elif isclose(a, 2*pi, rtol=1e-2, atol=1e-3):
+                            self.order = int(n)
                             found = True
+                            if self.order%2 != 0:
+                                self.order *= int(2)
                             break
                     if not found:
                         self.order = None
