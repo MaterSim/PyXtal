@@ -230,17 +230,23 @@ class OperationAnalyzer(SymmOp):
         '''
         if type(op2) != OperationAnalyzer:
             opa2 = OperationAnalyzer(op2)
-            if opa2.type == self.type and opa2.order == self.order:
+            if opa2.type == self.type:
                 if self.type == "rotation" or self.type == "rotoinversion":
-                    if isclose(fabs(self.angle), fabs(opa2.angle)):
+                    ratio = self.angle / opa2.angle
+                    if isclose(fabs(ratio), 1., atol=1e-2):
                         return True
+                elif self.type == "identity" or self.type == "inversion":
+                    return True
             else:
                 return False
         else:
-            if op2.type == self.type and op2.order == self.order:
+            if op2.type == self.type:
                 if self.type == "rotation" or self.type == "rotoinversion":
-                    if isclose(fabs(self.angle), fabs(op2.angle)):
+                    ratio = self.angle / op2.angle
+                    if isclose(ratio, 1., atol=1e-2):
                         return True
+                elif self.type == "identity" or self.type == "inversion":
+                    return True
             else:
                 return False
 
