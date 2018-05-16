@@ -141,6 +141,27 @@ class OperationAnalyzer(SymmOp):
     #TODO: include support for off-center operations
     #TODO: include support for shear and scaling operations
     #TODO: include support for matrix-column and axis-angle initialization
+    def get_order(angle, rotoinversion=False, tol=1e-2):
+        #Find the order of a rotation based on its angle
+        found = False
+        for n in range(1, 61):
+            x = (n*angle) / (2*pi)
+            y = x - np.round(x)
+            if fabs(y) <= tol:
+                found = True
+                break
+        if found:
+            #Double order of odd-rotation rotoinversions
+            if rotoinversion is True:
+                if n % 2 == 1:
+                    return n * 2
+                else:
+                    return n
+            else:
+                return n
+        if not found:
+            return "irrational"
+    
     def __init__(self, op):
         if type(op) == deepcopy(SymmOp):
             self.op = op
@@ -171,19 +192,7 @@ class OperationAnalyzer(SymmOp):
                     self.order = int(1)
                 else:
                     self.type = "rotation"
-                    found = False
-                    for n in range(1, 61):
-                        a = (n*self.angle) % (2*pi)
-                        if isclose(a, 0, rtol=1e-3, atol=1e-4):
-                            self.order = int(n)
-                            found = True
-                            break
-                        elif isclose(a, 2*pi, rtol=1e-3, atol=1e-4):
-                            self.order = int(n)
-                            found = True
-                            break
-                    if not found:
-                        self.order = "irrational"
+                    self.order = OperationAnalyzer.get_order(self.angle)
             #If determinant is negative
             elif det(self.m)< 0:
                 self.inverted = True
@@ -195,23 +204,7 @@ class OperationAnalyzer(SymmOp):
                 else:
                     self.axis *= -1
                     self.type = "rotoinversion"
-                    found = False
-                    for n in range(1, 61):
-                        a = (n*self.angle) % (2*pi)
-                        if isclose(a, 0, rtol=1e-3, atol=1e-4):
-                            self.order = int(n)
-                            found = True
-                            if self.order%2 != 0:
-                                self.order *= int(2)
-                            break
-                        elif isclose(a, 2*pi, rtol=1e-3, atol=1e-4):
-                            self.order = int(n)
-                            found = True
-                            if self.order%2 != 0:
-                                self.order *= int(2)
-                            break
-                    if not found:
-                        self.order = "irrational"
+                    self.order = OperationAnalyzer.get_order(self.angle, rotoinversion=True)
             elif det(self.m) == 0:
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
@@ -225,6 +218,7 @@ class OperationAnalyzer(SymmOp):
         return ("~~ Operation: "+self.op.as_xyz_string()+" ~~"+
             "\nType: "+str(self.type)+
             "\nOrder: "+str(self.order)+
+            "\nAngle: "+str(self.angle)+
             "\nAxis: "+str(np.real(self.axis)) )
 
     def is_conjugate(self, op2):
