@@ -14,7 +14,21 @@ if __name__ == "__main__":
     for name in ['H2', 'H2O', 'HCl', 'PH3', 'CH4', 'C60']:
         mol = get_ase_mol(name)
         pga = PointGroupAnalyzer(mol)
+
+        #Symmetrize the molecule using pymatgen
+        mol = pga.symmetrize_molecule()['sym_mol']
+        pga = PointGroupAnalyzer(mol)
+
         print(name, ' has point group symmetry: ', pga.get_pointgroup())
+
+        #Check if orders of rotation are detected correctly
+        pg = pga.get_pointgroup()
+        for op in pg:
+            opa = OperationAnalyzer(op)
+            if opa.order == 'irrational':
+                print(opa)
+            elif opa.order > 10:
+                print(opa)
 
         #orientation_in_wyckoff_position(mol, sg, WP's index in sg)
         #returns a list of orientations consistent with the WP's symmetry.

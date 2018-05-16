@@ -204,7 +204,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
             if opa_m[i].is_conjugate(constraint1):
                 constraints_m.append([opa_m[i], []])
                 if constraint2 is not None:
-                    for j, op_m in enumerate(symm_m):
+                    for j, op_m2 in enumerate(symm_m):
                         if opa_m[j].is_conjugate(constraint2):
                             dot_m = np.dot(opa_m[i].axis, opa_m[j].axis)
                             #Ensure that the angles are equal
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     h2o = Molecule.from_file('xyz/water.xyz')
     pga_h2o = PointGroupAnalyzer(h2o)
     pg_h2o = pga_h2o.get_pointgroup()
-    c60 = Molecule.from_file('xyz/c60.xyz')
+    c60 = Molecule.from_file('xyz/C60-0.xyz')
     pga_c60 = PointGroupAnalyzer(c60)
     pg_c60 = pga_c60.get_pointgroup()
     h2 = Molecule.from_file('xyz/hydrogen.xyz')
@@ -275,7 +275,7 @@ if __name__ == "__main__":
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
     #Testing water
-    mol = deepcopy(h2o)
+    mol = deepcopy(c60)
     print("Original molecule:")
     print(mol)
     print()
@@ -287,11 +287,14 @@ if __name__ == "__main__":
     print(mol)
     print("============================================")
 
+    pga = PointGroupAnalyzer(mol)
+    mol = pga.symmetrize_molecule()['sym_mol']    
+
     #orientation_in_wyckoff_position(mol, sg, WP's index in sg)
     #returns a list of orientations consistent with the WP's symmetry.
     #We can choose any of these orientations at random using np.random.choice
     #To use an orientation, do mol.apply_operation(orientation)
-    #Spacegroup 221, index 2 has m.. symmetry
+    #Spacegroup WP 24l (index 2) in sg 221 has m.. symmetry
     allowed =  orientation_in_wyckoff_position(mol, 221, 2, randomize=True)
     print("Found "+str(len(allowed))+" orientations:")
     print("------------------------------")
