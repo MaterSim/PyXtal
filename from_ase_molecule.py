@@ -43,3 +43,12 @@ if __name__ == "__main__":
                 mo.apply_operation(op)
                 filename = 'xyz/' + name + '-' + str(i)+'.xyz'
                 mo.to(fmt='xyz',filename=filename)
+
+        allowed =  orientation_in_wyckoff_position(mol, 25, 2, randomize=True)
+        if allowed is not False:
+            print("Found "+str(len(allowed))+" orientations for ", name)
+            for i, op in enumerate(allowed):
+                mo = deepcopy(mol)
+                mo.apply_operation(op)
+                filename = 'xyz/' + name + '-' + str(i)+'.xyz'
+                mo.to(fmt='xyz',filename=filename)
