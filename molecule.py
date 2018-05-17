@@ -210,6 +210,50 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                             #Ensure that the angles are equal
                             if isclose(dot_m, dot_w):
                                 constraints_m[-1][1].append(opa_m[j])
+    #Eliminate redundancy for 1st constraint
+    list_i = list(range(len(constraints_m)))
+    list_j = list(range(len(constraints_m)))
+    for i in list_i:
+        c1 = constraints_m[i]
+        list_j.remove(i)
+        for j in list_j:
+            c2 = constraints_m[j]
+            #check if c1 and c2 are symmetrically equivalent
+            for op in symm_m:
+                op1 = c1[0].op
+                op2 = c2[0].op
+                if (op*op1*op.inverse == op2 or op*op2*op.inverse == op1 or
+                    op*op1*op.inverse == op2.inverse or op*op2*op.inverse == op1.inverse):
+                    list_i.remove(j)
+                    list_j.remove(j)
+                    break
+    c_m = deepcopy(constraints_m)
+    constraints_m = []
+    for i in list_i:
+        constraints_m.append(c_m[i])
+    #Eliminate redundancy for second constraint
+    for k, c in enumerate(constraints_m):
+        if c[1] != []:
+            list_i = list(range(len(c[1])))
+            list_j = list(range(len(c[1])))
+            for i in list_i:
+                c1 = c[1][i]
+                list_j.remove(i)
+                for j in list_j:
+                    c2 = c[1][j]
+                    #check if c1 and c2 are symmetrically equivalent
+                    for op in symm_m:
+                        v1 = op.operate(c1.axis)
+                        v2 = op.operate(c2.axis)
+                        #Remove elements which are symmetrically equivalent
+                        if allclose(v1, c2.axis, rtol=1e-2, atol=1e-2) or allclose(v2, c1.axis, rtol=1e-2, atol=1e-2):
+                            list_i.remove(j)
+                            list_j.remove(j)
+                            break
+            c_m = deepcopy(c[1])
+            constraints_m[k][1] = []
+            for i in list_i:
+                constraints_m[k][1].append(c_m[i])
     #Generate orientations consistent with the possible constraints
     orientations = []
     #Loop over molecular constraint sets
