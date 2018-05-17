@@ -140,10 +140,6 @@ def get_symmetry(mol, already_oriented=False):
                     symm_m.append(SymmOp.from_xyz_string('-x,y,z'))
                     symm_m.append(SymmOp.from_xyz_string('x,-y,z'))
                 #Generate a full list of SymmOps for the molecule's pointgroup
-                x = SymmOp.from_xyz_string('-x,y,-z')
-                symm_m.append(x)
-                x = SymmOp.from_xyz_string('-x,-y,z')
-                symm_m.append(x)
                 symm_m = generate_full_symmops(symm_m, 1e-3)
                 break
     #Reorient the SymmOps into mol's original frame
