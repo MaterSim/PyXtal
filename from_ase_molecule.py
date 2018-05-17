@@ -11,7 +11,7 @@ def get_ase_mol(molname):
 
 if __name__ == "__main__":
 #---------------------------------------------------
-    for name in ['H2', 'H2O', 'HCl', 'PH3', 'CH4', 'C60']:
+    for name in ['H2', 'H2O', 'HCl', 'CS2', 'C2Cl4','PH3', 'CH4', 'C6H6', 'C60']:
         mol = get_ase_mol(name)
         pga = PointGroupAnalyzer(mol)
 
@@ -45,6 +45,15 @@ if __name__ == "__main__":
                 mo.to(fmt='xyz',filename=filename)
 
         allowed =  orientation_in_wyckoff_position(mol, 25, 2, randomize=True)
+        if allowed is not False:
+            print("Found "+str(len(allowed))+" orientations for ", name)
+            for i, op in enumerate(allowed):
+                mo = deepcopy(mol)
+                mo.apply_operation(op)
+                filename = 'xyz/' + name + '-' + str(i)+'.xyz'
+                mo.to(fmt='xyz',filename=filename)
+
+        allowed =  orientation_in_wyckoff_position(mol, 147, 4, randomize=True)
         if allowed is not False:
             print("Found "+str(len(allowed))+" orientations for ", name)
             for i, op in enumerate(allowed):
