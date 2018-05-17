@@ -109,18 +109,17 @@ def get_symmetry(mol, already_oriented=False):
     Return a list of SymmOps for a molecule's point symmetry
     already_oriented: whether or not the principle axes of mol are already reoriented 
     '''
-    if already_oriented == True:
-        pga = PointGroupAnalyzer(mol)
-    elif already_oriented == False:
-        #Reorient the molecule
-        oriented_mol, P = reoriented_molecule(mol)
-        pga = PointGroupAnalyzer(oriented_mol)
-    pg = pga.get_pointgroup()
-    symm_m = []
-    for op in pg:
-        symm_m.append(op)
+    pga = PointGroupAnalyzer(mol)
     #Handle linear molecules
     if '*' in pga.sch_symbol:
+        if already_oriented == False:
+            #Reorient the molecule
+            oriented_mol, P = reoriented_molecule(mol)
+            pga = PointGroupAnalyzer(oriented_mol)
+        pg = pga.get_pointgroup()
+        symm_m = []
+        for op in pg:
+            symm_m.append(op)
         #Add 12-fold  and reflections in place of ininitesimal rotation
         for axis in [[1,0,0],[0,1,0],[0,0,1]]:
             op = SymmOp.from_rotation_and_translation(aa2matrix(axis, pi/6), [0,0,0])
@@ -142,13 +141,20 @@ def get_symmetry(mol, already_oriented=False):
                 #Generate a full list of SymmOps for the molecule's pointgroup
                 symm_m = generate_full_symmops(symm_m, 1e-3)
                 break
-    #Reorient the SymmOps into mol's original frame
-    if not already_oriented:
-        new = []
-        for op in symm_m:
-            new.append(P.inverse*op*P)
-        return new
-    elif already_oriented:
+        #Reorient the SymmOps into mol's original frame
+        if not already_oriented:
+            new = []
+            for op in symm_m:
+                new.append(P.inverse*op*P)
+            return new
+        elif already_oriented:
+            return symm_m
+    #Handle nonlinear molecules
+    else:
+        pg = pga.get_pointgroup()
+        symm_m = []
+        for op in pg:
+            symm_m.append(op)
         return symm_m
 
 def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
