@@ -38,6 +38,20 @@ def get_inertia_tensor(mol):
                   [I12, I22, I23],
                   [I13, I23, I33]])
 
+def get_moment_of_inertia(mol, axis, scale=1.0):
+    '''
+    Calculate the moment of inertia of a molecule about an axis
+    scale: changes the length scale of the molecule. Used to compare symmetry
+        axes for equivalence. Defaults to 1
+    '''
+    #convert axis to unit vector
+    axis = axis / np.linalg.norm(axis)
+    moment = 0
+    for i, a in enumerate(mol):
+        v = a.coords
+        moment += (scale * np.linalg.norm(np.cross(axis, v)) ) ** 2
+    return moment
+
 def reoriented_molecule(mol, nested=False):
     '''
     Return a molecule reoriented so that its principle axes
@@ -126,6 +140,10 @@ def get_symmetry(mol, already_oriented=False):
                     symm_m.append(SymmOp.from_xyz_string('-x,y,z'))
                     symm_m.append(SymmOp.from_xyz_string('x,-y,z'))
                 #Generate a full list of SymmOps for the molecule's pointgroup
+                x = SymmOp.from_xyz_string('-x,y,-z')
+                symm_m.append(x)
+                x = SymmOp.from_xyz_string('-x,-y,z')
+                symm_m.append(x)
                 symm_m = generate_full_symmops(symm_m, 1e-3)
                 break
     #Reorient the SymmOps into mol's original frame
@@ -213,20 +231,19 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     #Eliminate redundancy for 1st constraint
     list_i = list(range(len(constraints_m)))
     list_j = list(range(len(constraints_m)))
-    for i in list_i:
-        c1 = constraints_m[i]
-        list_j.remove(i)
-        for j in list_j:
-            c2 = constraints_m[j]
-            #check if c1 and c2 are symmetrically equivalent
-            for op in symm_m:
-                op1 = c1[0].op
-                op2 = c2[0].op
-                if (op*op1*op.inverse == op2 or op*op2*op.inverse == op1 or
-                    op*op1*op.inverse == op2.inverse or op*op2*op.inverse == op1.inverse):
-                    list_i.remove(j)
-                    list_j.remove(j)
-                    break
+    for i , c1 in enumerate(constraints_m):
+        if i in list_i:
+            for j , c2 in enumerate(constraints_m):
+                if i > j and j in list_j and j in list_i:
+                    #check if c1 and c2 are symmetrically equivalent  
+                    #calculate moments of inertia about both axes
+                    m1_a = get_moment_of_inertia(mol, c1[0].axis)
+                    m2_a = get_moment_of_inertia(mol, c2[0].axis)
+                    m1_b = get_moment_of_inertia(mol, c1[0].axis, scale=2.0)
+                    m2_b = get_moment_of_inertia(mol, c2[0].axis, scale=2.0)
+                    if isclose(m1_a, m2_a, rtol=1e-2) and isclose(m1_b, m2_b, rtol=1e-2):
+                        list_i.remove(j)
+                        list_j.remove(j)                
     c_m = deepcopy(constraints_m)
     constraints_m = []
     for i in list_i:
@@ -236,20 +253,19 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         if c[1] != []:
             list_i = list(range(len(c[1])))
             list_j = list(range(len(c[1])))
-            for i in list_i:
-                c1 = c[1][i]
-                list_j.remove(i)
-                for j in list_j:
-                    c2 = c[1][j]
-                    #check if c1 and c2 are symmetrically equivalent
-                    for op in symm_m:
-                        v1 = op.operate(c1.axis)
-                        v2 = op.operate(c2.axis)
-                        #Remove elements which are symmetrically equivalent
-                        if allclose(v1, c2.axis, rtol=1e-2, atol=1e-2) or allclose(v2, c1.axis, rtol=1e-2, atol=1e-2):
-                            list_i.remove(j)
-                            list_j.remove(j)
-                            break
+            for i, c1 in enumerate(c[1]):
+                if i in list_i:
+                    for j, c2 in enumerate(constraints_m):
+                        if j > i and j in list_j and j in list_i:
+                            #check if c1 and c2 are symmetrically equivalent  
+                            #calculate moments of inertia about both axes
+                            m1_a = get_moment_of_inertia(mol, c1.axis)
+                            m2_a = get_moment_of_inertia(mol, c2.axis)
+                            m1_b = get_moment_of_inertia(mol, c1.axis, scale=2.0)
+                            m2_b = get_moment_of_inertia(mol, c2.axis, scale=2.0)
+                            if isclose(m1_a, m2_a, rtol=1e-2) and isclose(m1_b, m2_b, rtol=1e-2):
+                                list_i.remove(j)
+                                list_j.remove(j)  
             c_m = deepcopy(c[1])
             constraints_m[k][1] = []
             for i in list_i:
