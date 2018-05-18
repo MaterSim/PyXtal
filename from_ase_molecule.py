@@ -35,29 +35,64 @@ if __name__ == "__main__":
         #We can choose any of these orientations at random using np.random.choice
         #To use an orientation, do mol.apply_operation(orientation)
         #Spacegroup 16, index 6 has .2. symmetry
+
+        #check 2 fold rotation
         allowed =  orientation_in_wyckoff_position(mol, 16, 6, randomize=True)
         if allowed is not False:
-            print("Found "+str(len(allowed))+" orientations for ", name)
+            print("Found "+str(len(allowed))+" orientations for ", name, ' with site symm 2')
             for i, op in enumerate(allowed):
                 mo = deepcopy(mol)
                 mo.apply_operation(op)
                 filename = 'xyz/' + name + '-' + str(i)+'.xyz'
                 mo.to(fmt='xyz',filename=filename)
 
+        #check reflection
         allowed =  orientation_in_wyckoff_position(mol, 25, 2, randomize=True)
         if allowed is not False:
-            print("Found "+str(len(allowed))+" orientations for ", name)
+            print("Found "+str(len(allowed))+" orientations for ", name, ' with site symm m')
             for i, op in enumerate(allowed):
                 mo = deepcopy(mol)
                 mo.apply_operation(op)
                 filename = 'xyz/' + name + '-' + str(i)+'.xyz'
                 mo.to(fmt='xyz',filename=filename)
 
+        #check 3 fold rotation
         allowed =  orientation_in_wyckoff_position(mol, 147, 4, randomize=True)
         if allowed is not False:
-            print("Found "+str(len(allowed))+" orientations for ", name)
+            print("Found "+str(len(allowed))+" orientations for ", name, ' with site symm 3')
             for i, op in enumerate(allowed):
                 mo = deepcopy(mol)
                 mo.apply_operation(op)
                 filename = 'xyz/' + name + '-' + str(i)+'.xyz'
                 mo.to(fmt='xyz',filename=filename)
+
+        #check -1
+        allowed =  orientation_in_wyckoff_position(mol, 2, 2, randomize=True)
+        if allowed is not False:
+            print("Found "+str(len(allowed))+" orientations for ", name, ' with site symm -1' )
+            for i, op in enumerate(allowed):
+                mo = deepcopy(mol)
+                mo.apply_operation(op)
+                filename = 'xyz/' + name + '-' + str(i)+'.xyz'
+                mo.to(fmt='xyz',filename=filename)
+
+        #check 2/m
+        allowed =  orientation_in_wyckoff_position(mol, 64, 6, randomize=True)
+        if allowed is not False:
+            print("Found "+str(len(allowed))+" orientations for ", name, ' with site symm 2/m')
+            for i, op in enumerate(allowed):
+                mo = deepcopy(mol)
+                mo.apply_operation(op)
+                filename = 'xyz/' + name + '-' + str(i)+'.xyz'
+                mo.to(fmt='xyz',filename=filename)
+
+        #check 6
+        allowed =  orientation_in_wyckoff_position(mol, 168, 3, randomize=True)
+        if allowed is not False:
+            print("Found "+str(len(allowed))+" orientations for ", name, ' with site symm 6')
+            for i, op in enumerate(allowed):
+                mo = deepcopy(mol)
+                mo.apply_operation(op)
+                filename = 'xyz/' + name + '-' + str(i)+'.xyz'
+                mo.to(fmt='xyz',filename=filename)
+
