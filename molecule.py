@@ -173,10 +173,50 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
             orientation of the molecule. Used within general case for checking.
             If True, this function only returns True or False
     '''
+    #Obtain the Wyckoff symmetry
+    symm_w_unedited = get_wyckoff_symmetry(sg)[index][0]
+    found_params = []
+    symm_w_partial = []
+    for op in symm_w_unedited:
+        #check if op is orthogonal
+        m1 = np.dot(op.rotation_matrix, np.transpose(op.rotation_matrix))
+        m2 = np.dot(np.transpose(op.rotation_matrix), op.rotation_matrix)
+        if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
+            #Convert opertaion to orthogonal
+            #Should only be needed for 3-fold and 6-fold rotations/rotoinversions
+            order = 0
+            newop = deepcopy(op)
+            for n in range(1, 7):
+                oldop = deepcopy(newop)
+                newop = oldop *  op
+                if allclose(newop.rotation_matrix, np.identity(3)):
+                    order = n
+                    break
+            if order == 0:
+                print("Error: could not convert to orthogonal operation:")
+                print(op)
+                symm_w_partial.append(op)
+            else:
+                d = np.linalg.det(op.rotation_matrix)
+                if isclose(d, 1):
+                    op_type = "rotation"
+                elif isclose(d, -1):
+                    op_type = "rotoinversion"
+                params = [order, op_type]
+                if params not in found_params:
+                    found_params.append(params)
+        else:
+            symm_w_partial.append(op)
+    for params in found_params:
+        m = aa2matrix([1,0,0], 2*pi/params[0])
+        if params[1] == "rotoinversion":
+            m *= -1
+        symm_w_partial.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
+    symm_w = generate_full_symmops(symm_w_partial, 1e-3)
+    #Check exact orientation
     if exact_orientation is True:
         mo = deepcopy(mol)
         pga = PointGroupAnalyzer(mo)
-        symm_w = get_wyckoff_symmetry(sg)[index][0]
         valid = True
         for op in symm_w:
             op_m = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
@@ -186,9 +226,8 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
             return True
         elif valid is False:
             return False
-    #Analyze the symmetry of the molecule and the Wyckoff position
+    #Obtain molecular symmetry, exact_orientation==False
     symm_m = get_symmetry(mol, already_oriented=already_oriented)
-    symm_w = get_wyckoff_symmetry(sg)[index][0]
     #Store OperationAnalyzer objects for each SymmOp
     opa_w = []
     for op_w in symm_w:

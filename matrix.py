@@ -165,6 +165,8 @@ class OperationAnalyzer(SymmOp):
     def __init__(self, op):
         if type(op) == deepcopy(SymmOp):
             self.op = op
+            self.tol = op.tol
+            self.affine_matrix = op.affine_matrix
             self.m = op.rotation_matrix
             self.det = det(self.m)
         elif (type(op) == np.ndarray) or (type(op) == np.matrix):
@@ -175,6 +177,7 @@ class OperationAnalyzer(SymmOp):
         else:
             print("Error: OperationAnalyzer requires a SymmOp or 3x3 array.")
         #If rotation matrix is not orthogonal
+            #Check that m is orthogonal
         m1 = np.dot(self.m, np.transpose(self.m))
         m2 = np.dot(np.transpose(self.m), self.m)
         if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
