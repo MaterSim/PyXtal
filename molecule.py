@@ -184,25 +184,35 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
             #Convert opertaion to orthogonal
             #Should only be needed for 3-fold and 6-fold rotations/rotoinversions
-            order = 0
-            newop = deepcopy(op)
-            for n in range(1, 7):
-                oldop = deepcopy(newop)
-                newop = oldop *  op
-                if allclose(newop.rotation_matrix, np.identity(3)):
-                    order = n
-                    break
-            if order == 0:
+            rotation_order = 0
+            d = np.linalg.det(op.rotation_matrix)
+            if isclose(d, 1):
+                op_type = "rotation"
+            elif isclose(d, -1):
+                op_type = "rotoinversion"
+            if op_type == "rotation":
+                newop = deepcopy(op)
+                for n in range(1, 7):
+                    newop = (op*newop)
+                    if allclose(newop.rotation_matrix, np.identity(3)):
+                        rotation_order = n
+                        break
+            if op_type == "rotoinversion":
+                #We only want the order of the rotational part of op,
+                #So we multiply op by -1 for rotoinversions
+                op_1 = SymmOp.from_rotation_and_translation(op.rotation_matrix*-1,[0,0,0])
+                new_op = deepcopy(op_1)
+                for n in range(1, 7):
+                    newop = (op_1*newop)
+                    if allclose(newop.rotation_matrix, np.identity(3)):
+                        rotation_order = n
+                        break
+            if rotation_order == 0:
                 print("Error: could not convert to orthogonal operation:")
                 print(op)
                 symm_w_partial.append(op)
             else:
-                d = np.linalg.det(op.rotation_matrix)
-                if isclose(d, 1):
-                    op_type = "rotation"
-                elif isclose(d, -1):
-                    op_type = "rotoinversion"
-                params = [order, op_type]
+                params = [rotation_order, op_type]
                 if params not in found_params:
                     found_params.append(params)
         else:
@@ -296,7 +306,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
             list_j = list(range(len(c[1])))
             for i, c1 in enumerate(c[1]):
                 if i in list_i:
-                    for j, c2 in enumerate(constraints_m):
+                    for j, c2 in enumerate(c[1]):
                         if j > i and j in list_j and j in list_i:
                             #check if c1 and c2 are symmetrically equivalent  
                             #calculate moments of inertia about both axes
