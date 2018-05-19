@@ -177,35 +177,35 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     symm_w_unedited = get_wyckoff_symmetry(sg)[index][0]
     found_params = []
     symm_w_partial = []
+    symm_w = []
+    orthogonal = True
+    #Check if operations are orthogonal; 3-fold and 6-fold operations are not
     for op in symm_w_unedited:
-        #check if op is orthogonal
         m1 = np.dot(op.rotation_matrix, np.transpose(op.rotation_matrix))
         m2 = np.dot(np.transpose(op.rotation_matrix), op.rotation_matrix)
         if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
-            #Convert opertaion to orthogonal
-            #Should only be needed for 3-fold and 6-fold rotations/rotoinversions
             rotation_order = 0
             d = np.linalg.det(op.rotation_matrix)
             if isclose(d, 1):
                 op_type = "rotation"
             elif isclose(d, -1):
-                op_type = "rotoinversion"
+                op_type = "improper rotation"
             if op_type == "rotation":
                 newop = deepcopy(op)
                 for n in range(1, 7):
-                    newop = (op*newop)
-                    if allclose(newop.rotation_matrix, np.identity(3)):
-                        rotation_order = n
+                    newop = (newop*op)
+                    if allclose(newop.rotation_matrix, np.identity(3), rtol=1e-2):
+                        rotation_order = n + 1
                         break
-            if op_type == "rotoinversion":
+            elif op_type == "improper rotation":
                 #We only want the order of the rotational part of op,
                 #So we multiply op by -1 for rotoinversions
                 op_1 = SymmOp.from_rotation_and_translation(op.rotation_matrix*-1,[0,0,0])
                 new_op = deepcopy(op_1)
                 for n in range(1, 7):
-                    newop = (op_1*newop)
+                    newop = (newop*op_1)
                     if allclose(newop.rotation_matrix, np.identity(3)):
-                        rotation_order = n
+                        rotation_order = n + 1
                         break
             if rotation_order == 0:
                 print("Error: could not convert to orthogonal operation:")
@@ -215,12 +215,15 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 params = [rotation_order, op_type]
                 if params not in found_params:
                     found_params.append(params)
-        else:
-            symm_w_partial.append(op)
+    #Add 3-fold and 6-fold symmetry back in using absolute coordinates
     for params in found_params:
-        m = aa2matrix([1,0,0], 2*pi/params[0])
-        if params[1] == "rotoinversion":
-            m *= -1
+        order = params[0]
+        op_type = params[1]
+        if op_type == "rotation" and (order == 3 or order == 6):
+            m = aa2matrix([0,0,1], (2*pi)/order)
+        elif op_type == "improper rotation" and (order == 3 or order == 6):
+            m = aa2matrix([0,0,1], 2*pi/order)
+            m[2] *= -1
         symm_w_partial.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
     symm_w = generate_full_symmops(symm_w_partial, 1e-3)
     #Check exact orientation
