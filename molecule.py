@@ -215,6 +215,8 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 params = [rotation_order, op_type]
                 if params not in found_params:
                     found_params.append(params)
+        else:
+            symm_w_partial.append(op)
     #Add 3-fold and 6-fold symmetry back in using absolute coordinates
     for params in found_params:
         order = params[0]
@@ -232,8 +234,8 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         pga = PointGroupAnalyzer(mo)
         valid = True
         for op in symm_w:
-            op_m = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-            if not pga.is_valid_op(op_m):
+            op_w = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+            if not pga.is_valid_op(op_w):
                 valid = False
         if valid is True:
             return True
@@ -360,7 +362,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         o = SymmOp.from_rotation_and_translation(o,[0,0,0])
         mo = deepcopy(mol)
         mo.apply_operation(o)
-        if orientation_in_wyckoff_position(mo, sg, index, exact_orientation=True) is True:
+        if orientation_in_wyckoff_position(mo, sg, index, exact_orientation=True, already_oriented=already_oriented) is True:
             allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
