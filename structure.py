@@ -15,6 +15,7 @@ cif file with conventional setting
 import sys
 from spglib import get_symmetry_dataset
 from pymatgen.symmetry.groups import sg_symbol_from_int_number
+from pymatgen.symmetry.analyzer import generate_full_symmops
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.structure import Structure
 from pymatgen.io.cif import CifWriter
@@ -48,6 +49,7 @@ ang_max = 150
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv("database/wyckoff_list.csv")
 wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
+wyckoff_symmetry_df_molecular = read_csv("database/wyckoff_symmetry_molecular.csv")
 wyckoff_generators_df = read_csv("database/wyckoff_generators.csv")
 #Define functions
 #------------------------------
@@ -544,24 +546,40 @@ def get_wyckoffs(sg, organized=False):
     else:
         return wyckoffs
 
-def get_wyckoff_symmetry(sg):
+def get_wyckoff_symmetry(sg, molecular=False):
     '''
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
     2nd index: a point within the WP
     3rd index: a site symmetry SymmOp of the point
+    molecular: whether or not to return the Euclidean point symmetry operations
+        If True, cuts off translational part of operation, and converts non-orthogonal
+        (3-fold and 6-fold rotation) operations to pure rotations
     '''
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
     symmetry = []
+    convert = False
+    if molecular is True:
+        if sg >= 143 and sg <= 194:
+            convert = True
     #Loop over Wyckoff positions
     for x in symmetry_strings:
         symmetry.append([])
         #Loop over points in WP
         for y in x:
             symmetry[-1].append([])
-            #Loop over 
+            #Loop over ops
             for z in y:
-                symmetry[-1][-1].append(SymmOp.from_xyz_string(z))
+                op = SymmOp.from_xyz_string(z)
+                if convert is True:
+                    #Convert non-orthogonal trigonal/hexagonal operations
+                    op = P*op*P.inverse
+                if molecular is False:
+                    symmetry[-1][-1].append(op)
+                elif molecular is True:
+                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                    symmetry[-1][-1].append(op)
     return symmetry
 
 def get_wyckoff_generators(sg):
