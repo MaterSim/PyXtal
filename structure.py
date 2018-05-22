@@ -49,7 +49,6 @@ ang_max = 150
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv("database/wyckoff_list.csv")
 wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
-wyckoff_symmetry_df_molecular = read_csv("database/wyckoff_symmetry_molecular.csv")
 wyckoff_generators_df = read_csv("database/wyckoff_generators.csv")
 #Define functions
 #------------------------------
@@ -121,6 +120,43 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
         return vec/np.linalg.norm(vec)
     else:
         return vec
+
+def ss_string_from_ops(ops, complete=False):
+    '''
+    Print the Hermann-Mauguin for a site symmetry group,
+    using a list of SymmOps as input
+    complete: whether or not all symmetry operations in the group
+        are present. If False, we generate the rest
+    '''
+    '''if complete is False:
+        ops = generate_full_symmops(ops)
+    #Get OperationAnalyzer object for all ops
+    opas = []
+    for op in ops:
+        opas.append(OperationAnalyzer(op))
+    #Loop through opas and check for type
+    #Store the symmetry of each axis
+    x_params = []
+    y_params = []
+    z_params = []
+    other_params = []
+    for opa in opas:
+        op_type = 
+        order = opa.order
+        axis = opa.axis
+        if allclose(axis, [1,0,0],rtol=1e-2) or allclose(axis, [-1,0,0],rtol=1e-2):
+            x_params.append([op_type,order])
+        elif allclose(axis, [0,1,0],rtol=1e-2) or allclose(axis, [0,-1,0],rtol=1e-2):
+            y_params.append([op_type,order])
+        elif allclose(axis, [0,0,1],rtol=1e-2) or allclose(axis, [0,0,-1],rtol=1e-2):
+            z_params.append([op_type,order])
+        elif ( allclose(axis, [1,1,1],rtol=1e-2) or allclose(axis, [-1,-1,-1],rtol=1e-2) or
+            allclose(axis, [-1,1,1],rtol=1e-2) or allclose(axis, [1,-1,-1],rtol=1e-2) or
+            allclose(axis, [1,-1,1],rtol=1e-2) or allclose(axis, [-1,1,-1],rtol=1e-2) or
+            allclose(axis, [1,1,-1],rtol=1e-2) or allclose(axis, [-1,-1,1],rtol=1e-2) ):
+            other_params.append([op_type,order])
+        else:'''
+            
 
 def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
     #Check two SymmOps for equivalence
