@@ -123,40 +123,51 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
 
 def ss_string_from_ops(ops, complete=False):
     '''
-    Print the Hermann-Mauguin for a site symmetry group,
-    using a list of SymmOps as input
+    Print the Hermann-Mauguin for a site symmetry group, using a list of
+    SymmOps as input. For information on reading these symbols, see:
+    http://en.wikipedia.org/wiki/Hermann-Mauguin_notation#Point_groups
+    args:
+    ops: a list of SymmOp objects representing the site symmetry
     complete: whether or not all symmetry operations in the group
         are present. If False, we generate the rest
     '''
-    '''if complete is False:
+    if complete is False:
         ops = generate_full_symmops(ops)
     #Get OperationAnalyzer object for all ops
     opas = []
     for op in ops:
         opas.append(OperationAnalyzer(op))
-    #Loop through opas and check for type
     #Store the symmetry of each axis
-    x_params = []
-    y_params = []
-    z_params = []
-    other_params = []
+    params = [[],[],[],[],[],[],[],[],[],[]]
+    has_inversion = False
     for opa in opas:
-        op_type = 
-        order = opa.order
-        axis = opa.axis
-        if allclose(axis, [1,0,0],rtol=1e-2) or allclose(axis, [-1,0,0],rtol=1e-2):
-            x_params.append([op_type,order])
-        elif allclose(axis, [0,1,0],rtol=1e-2) or allclose(axis, [0,-1,0],rtol=1e-2):
-            y_params.append([op_type,order])
-        elif allclose(axis, [0,0,1],rtol=1e-2) or allclose(axis, [0,0,-1],rtol=1e-2):
-            z_params.append([op_type,order])
-        elif ( allclose(axis, [1,1,1],rtol=1e-2) or allclose(axis, [-1,-1,-1],rtol=1e-2) or
-            allclose(axis, [-1,1,1],rtol=1e-2) or allclose(axis, [1,-1,-1],rtol=1e-2) or
-            allclose(axis, [1,-1,1],rtol=1e-2) or allclose(axis, [-1,1,-1],rtol=1e-2) or
-            allclose(axis, [1,1,-1],rtol=1e-2) or allclose(axis, [-1,-1,1],rtol=1e-2) ):
-            other_params.append([op_type,order])
-        else:'''
-            
+        if opa.type != "identity" and opa.type != "inversion":
+            for i, axis in enumerate([[1,0,0],[0,1,0],[0,0,1], [1,1,0],[1,0,1],[0,1,1], [1,1,1],[-1,1,1],[1,-1,1],[-1,-1,1]]):
+                if isclose(abs(np.dot(opa.axis, axis)), 1):
+                    params[i].append(opa)
+        elif opa.type == "inversion":
+            has_inversion = True
+    #Determine how many high-symmetry axes are present
+    n_axes = 0
+    #Store the order of each axis
+    orders = []
+    #Store whether or not each axis has reflection symmetry
+    reflections = []
+    for axis in params:
+        order = 1
+        high_symm = False
+        has_reflection = False
+        for opa in axis:
+            if opa.order => 3:
+                high_symm = True
+            if opa.order > maxorder:
+                maxorder = opa.order
+            if opa.order == 2 and opa.type == "rotoinversion":
+                has_reflection = True
+        orders.append(order)
+        if high_symm == True:
+            n_axes += 1
+        reflections.append(has_reflection)
 
 def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
     #Check two SymmOps for equivalence
