@@ -154,11 +154,11 @@ class OperationAnalyzer(SymmOp):
             #Double order of odd-rotation rotoinversions
             if rotoinversion is True:
                 if n % 2 == 1:
-                    return n * 2
+                    return int(n * 2)
                 else:
-                    return n
+                    return int(n)
             else:
-                return n
+                return int(n)
         if not found:
             return "irrational"
     
@@ -183,7 +183,7 @@ class OperationAnalyzer(SymmOp):
         if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
             print("Warning: operation is not orthogonal.")
             self.type = "general"
-            self.axis, self.angle = None, None
+            self.axis, self.angle, self.order, self.rotation_order = None, None, None, None
         #If rotation matrix is orthogonal
         else:
             #If determinant is positive
@@ -193,9 +193,11 @@ class OperationAnalyzer(SymmOp):
                 if isclose(self.angle, 0):
                     self.type = "identity"
                     self.order = int(1)
+                    self.rotation_order = int(1)
                 else:
                     self.type = "rotation"
                     self.order = OperationAnalyzer.get_order(self.angle)
+                    self.rotation_order = self.order
             #If determinant is negative
             elif det(self.m)< 0:
                 self.inverted = True
@@ -204,10 +206,12 @@ class OperationAnalyzer(SymmOp):
                 if isclose(self.angle, 0):
                     self.type = "inversion"
                     self.order = int(2)
+                    self.rotation_order = int(1)
                 else:
                     self.axis *= -1
                     self.type = "rotoinversion"
                     self.order = OperationAnalyzer.get_order(self.angle, rotoinversion=True)
+                    self.rotation_order = OperationAnalyzer.get_order(self.angle, rotoinversion=False)
             elif det(self.m) == 0:
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
