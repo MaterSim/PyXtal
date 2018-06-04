@@ -13,7 +13,14 @@ from pymatgen.core.operations import SymmOp
 from copy import deepcopy
 rad = pi/180.
 deg = 180./pi
-from structure import angle
+
+def angle(v1, v2):
+    '''
+    Calculate the angle (in radians) between two vectors
+    '''
+    v1 = np.real(v1)
+    v2 = np.real(v2)
+    return acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 def aa2matrix(axis, angle, radians=True, random=False):
     '''
