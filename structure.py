@@ -27,10 +27,12 @@ from random import uniform as rand
 from random import choice as choose
 from random import randint
 from math import sqrt, pi, sin, cos, acos, fabs
-import database.hall as hall
 from database.element import Element
 from copy import deepcopy
 from pandas import read_csv
+
+import database.hall as hall
+from matrix import OperationAnalyzer
 
 #some optional libs
 #from vasp import read_vasp
@@ -52,13 +54,6 @@ wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
 wyckoff_generators_df = read_csv("database/wyckoff_generators.csv")
 #Define functions
 #------------------------------
-def angle(v1, v2):
-    '''
-    Calculate the angle (in radians) between two vectors
-    '''
-    v1 = np.real(v1)
-    v2 = np.real(v2)
-    return acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 def gaussian(min, max, sigma=3.0):
     '''
@@ -131,8 +126,33 @@ def ss_string_from_ops(ops, complete=False):
     complete: whether or not all symmetry operations in the group
         are present. If False, we generate the rest
     '''
+    #Return the symbol for a single axis
+    #Will be called later within ss_string_from_ops
+    def get_symbol(opas, order, has_reflection):
+        #ops: a list of Symmetry operations about the axis
+        #order: highest order of any symmetry operation about the axis
+        #has_reflection: whether or not the axis has mirror symmetry
+        if has_reflection is True:
+            #rotations have priority
+            for opa in opas:
+                if opa.order == order and opa.type == "rotation":
+                    return str(opa.rotation_order)+"/m"
+            for opa in opas:
+                if (opa.order == order and opa.type == "rotoinversion"
+                    and opa.order != 2):
+                    return "-"+str(opa.rotation_order)
+            return "m"
+        elif has_reflection is False:
+            #rotoinversion has priority
+            for opa in opas:
+                if opa.order == order and opa.type == "rotoinversion":
+                    return "-"+str(opa.rotation_order)
+            for opa in opas:
+                if opa.order == order and opa.type == "rotation":
+                    return str(opa.rotation_order)
+            return "."
     if complete is False:
-        ops = generate_full_symmops(ops)
+        ops = generate_full_symmops(ops, 1e-3)
     #Get OperationAnalyzer object for all ops
     opas = []
     for op in ops:
@@ -143,7 +163,7 @@ def ss_string_from_ops(ops, complete=False):
     for opa in opas:
         if opa.type != "identity" and opa.type != "inversion":
             for i, axis in enumerate([[1,0,0],[0,1,0],[0,0,1], [1,1,0],[1,0,1],[0,1,1], [1,1,1],[-1,1,1],[1,-1,1],[-1,-1,1]]):
-                if isclose(abs(np.dot(opa.axis, axis)), 1):
+                if np.isclose(abs(np.dot(opa.axis, axis)), 1):
                     params[i].append(opa)
         elif opa.type == "inversion":
             has_inversion = True
@@ -158,16 +178,33 @@ def ss_string_from_ops(ops, complete=False):
         high_symm = False
         has_reflection = False
         for opa in axis:
-            if opa.order => 3:
+            if opa.order >= 3:
                 high_symm = True
-            if opa.order > maxorder:
-                maxorder = opa.order
+            if opa.order > order:
+                order = opa.order
             if opa.order == 2 and opa.type == "rotoinversion":
                 has_reflection = True
         orders.append(order)
         if high_symm == True:
             n_axes += 1
         reflections.append(has_reflection)
+    #Handle low-symmetry point groups
+    #Positions in symbol refer to x,y,z axes respectively
+    if n_axes == 0:
+        symbol = (get_symbol(params[0], orders[0], reflections[0])+
+                get_symbol(params[1], orders[1], reflections[1])+
+                get_symbol(params[2], orders[2], reflections[2]))
+        if symbol != "...":
+            return symbol
+        elif symbol == "...":
+            if has_inversion is True:
+                return "-1"
+            else:
+                return "1"
+    elif n_axes == 1:
+        pass
+    elif n_axes > 1:
+        pass
 
 def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
     #Check two SymmOps for equivalence
