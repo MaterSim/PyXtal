@@ -116,15 +116,20 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
     else:
         return vec
 
-def ss_string_from_ops(ops, complete=False):
+def ss_string_from_ops(ops, sg, complete=False):
     '''
-    Print the Hermann-Mauguin for a site symmetry group, using a list of
-    SymmOps as input. For information on reading these symbols, see:
+    Print the Hermann-Mauguin symbol for a site symmetry group, using a list of
+    SymmOps as input. Note that the symbol does not necessarily refer to the
+    x,y,z axes. For information on reading these symbols, see:
     http://en.wikipedia.org/wiki/Hermann-Mauguin_notation#Point_groups
     args:
-    ops: a list of SymmOp objects representing the site symmetry
-    complete: whether or not all symmetry operations in the group
-        are present. If False, we generate the rest
+        ops: a list of SymmOp objects representing the site symmetry
+        sg: International number of the spacegroup. Used to determine which
+            axes to show. For example, a 3-fold rotation in a cubic system is
+            written as ".3.", whereas a 3-fold rotation in a trigonal system
+            is written as "3.."
+        complete: whether or not all symmetry operations in the group
+            are present. If False, we generate the rest
     '''
     #Return the symbol for a single axis
     #Will be called later within ss_string_from_ops
@@ -151,6 +156,16 @@ def ss_string_from_ops(ops, complete=False):
                 if opa.order == order and opa.type == "rotation":
                     return str(opa.rotation_order)
             return "."
+    #Given a list of symbols, return the one with highest symmetry
+    #Will be called later in ss_string_from_ops
+    def get_highest_symbol(symbols):
+        symbol_list = ['.','m','2','-2','2/m','3','4','-4','4/m','-3','6','-6','6/m']
+        max_index = 0
+        for symbol in symbols:
+            i = symbol_list.index(symbol)
+            if i > max_index:
+                max_index = i
+        return symbol_list[max_index]
     if complete is False:
         ops = generate_full_symmops(ops, 1e-3)
     #Get OperationAnalyzer object for all ops
@@ -160,9 +175,12 @@ def ss_string_from_ops(ops, complete=False):
     #Store the symmetry of each axis
     params = [[],[],[],[],[],[],[],[],[],[]]
     has_inversion = False
+    axes = [[1,0,0],[0,1,0],[0,0,1],[1,1,0],[0,1,1],[1,0,1],[1,1,1],[-1,1,1],[1,-1,1],[-1,-1,1]]
+    for i, axis in enumerate(axes):
+        axes[i] = axis/np.linalg.norm(axis)
     for opa in opas:
         if opa.type != "identity" and opa.type != "inversion":
-            for i, axis in enumerate([[1,0,0],[0,1,0],[0,0,1], [1,1,0],[1,0,1],[0,1,1], [1,1,1],[-1,1,1],[1,-1,1],[-1,-1,1]]):
+            for i, axis in enumerate(axes):
                 if np.isclose(abs(np.dot(opa.axis, axis)), 1):
                     params[i].append(opa)
         elif opa.type == "inversion":
@@ -188,9 +206,10 @@ def ss_string_from_ops(ops, complete=False):
         if high_symm == True:
             n_axes += 1
         reflections.append(has_reflection)
-    #Handle low-symmetry point groups
+    #Handle low-symmetry point groups (sg's 1-74)
+    #Triclinic, monoclinic, orthorhombic
     #Positions in symbol refer to x,y,z axes respectively
-    if n_axes == 0:
+    if sg >= 1 and sg <= 74:
         symbol = (get_symbol(params[0], orders[0], reflections[0])+
                 get_symbol(params[1], orders[1], reflections[1])+
                 get_symbol(params[2], orders[2], reflections[2]))
@@ -201,10 +220,52 @@ def ss_string_from_ops(ops, complete=False):
                 return "-1"
             else:
                 return "1"
-    elif n_axes == 1:
+    #Trigonal, Hexagonal, Tetragonal
+    elif sg >= 75 and sg <= 194:
+        #1st symbol: z axis
+        s1 = get_symbol(params[2], orders[2], reflections[2])
+        #2nd symbol: x or y axes (whichever have higher-symmetry)
+        s2x = get_symbol(params[0], orders[0], reflections[0])
+        s2y = get_symbol(params[1], orders[1], reflections[1])
+        s2 = get_highest_symbol([s2x, s2y])
+        #3rd symbol: face-diagonal axes (whichever have highest symmetry)
+        s3xy = get_symbol(params[3], orders[3], reflections[3])
+        s3yz = get_symbol(params[4], orders[4], reflections[4])
+        s3xz = get_symbol(params[5], orders[5], reflections[5])
+        s3 = get_highest_symbol([s3xy, s3yz, s3xz])
+        symbol = s1 + s2 + s3
+        if symbol != "...":
+            return symbol
+        elif symbol == "...":
+            if has_inversion is True:
+                return "-1"
+            else:
+                return "1"
+    #Cubic
+    elif sg >= 195 and sg <= 230:
         pass
-    elif n_axes > 1:
-        pass
+        '''#1st symbol: z axis
+        s1 = get_symbol(params[2], orders[2], reflections[2])
+        #2nd symbol: x or y axes (whichever have higher-symmetry)
+        s2x = get_symbol(params[0], orders[0], reflections[0])
+        s2y = get_symbol(params[1], orders[1], reflections[1])
+        s2 = get_highest_symbol(s2x, s2y)
+        #3rd symbol: face-diagonal axes (whichever have highest symmetry)
+        s3xy = get_symbol(params[3], orders[3], reflections[3])
+        s3yz = get_symbol(params[4], orders[4], reflections[4])
+        s3xz = get_symbol(params[5], orders[5], reflections[5])
+        s3 = get_highest_symbol(s3xy, s3yz, s3xz)
+        symbol = s1 + s2 + s3
+        if symbol != "...":
+            return symbol
+        elif symbol == "...":
+            if has_inversion is True:
+                return "-1"
+            else:
+                return "1"'''
+    else:
+        print("Error: invalid spacegroup number")
+        return
 
 def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
     #Check two SymmOps for equivalence
