@@ -52,6 +52,7 @@ Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv("database/wyckoff_list.csv")
 wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
 wyckoff_generators_df = read_csv("database/wyckoff_generators.csv")
+letters = "abcdefghijklmnopqrstuvwxyzA"
 #Define functions
 #------------------------------
 
@@ -132,7 +133,7 @@ def ss_string_from_ops(ops, sg, complete=False):
             are present. If False, we generate the rest
     '''
     #Return the symbol for a single axis
-    #Will be called later within ss_string_from_ops
+    #Will be called later in the function
     def get_symbol(opas, order, has_reflection):
         #ops: a list of Symmetry operations about the axis
         #order: highest order of any symmetry operation about the axis
@@ -156,8 +157,8 @@ def ss_string_from_ops(ops, sg, complete=False):
                 if opa.order == order and opa.type == "rotation":
                     return str(opa.rotation_order)
             return "."
-    #Given a list of symbols, return the one with highest symmetry
-    #Will be called later in ss_string_from_ops
+    #Given a list of single-axis symbols, return the one with highest symmetry
+    #Will be called later in the function
     def get_highest_symbol(symbols):
         symbol_list = ['.','m','2','-2','2/m','3','4','-4','4/m','-3','6','-6','6/m']
         max_index = 0
@@ -173,9 +174,12 @@ def ss_string_from_ops(ops, sg, complete=False):
     for op in ops:
         opas.append(OperationAnalyzer(op))
     #Store the symmetry of each axis
-    params = [[],[],[],[],[],[],[],[],[],[]]
+    params = [[],[],[],[],[],[],[],[],[],[],[],[],[]]
     has_inversion = False
-    axes = [[1,0,0],[0,1,0],[0,0,1],[1,1,0],[0,1,1],[1,0,1],[1,1,1],[-1,1,1],[1,-1,1],[-1,-1,1]]
+    #Store possible symmetry axes for crystallographic point groups
+    axes = [[1,0,0],[0,1,0],[0,0,1],
+            [1,1,0],[0,1,1],[1,0,1],[1,-1,0],[0,1,-1],[1,0,-1],
+            [1,1,1],[-1,1,1],[1,-1,1],[-1,-1,1]]
     for i, axis in enumerate(axes):
         axes[i] = axis/np.linalg.norm(axis)
     for opa in opas:
@@ -206,7 +210,6 @@ def ss_string_from_ops(ops, sg, complete=False):
         if high_symm == True:
             n_axes += 1
         reflections.append(has_reflection)
-    #Handle low-symmetry point groups (sg's 1-74)
     #Triclinic, monoclinic, orthorhombic
     #Positions in symbol refer to x,y,z axes respectively
     if sg >= 1 and sg <= 74:
@@ -224,15 +227,18 @@ def ss_string_from_ops(ops, sg, complete=False):
     elif sg >= 75 and sg <= 194:
         #1st symbol: z axis
         s1 = get_symbol(params[2], orders[2], reflections[2])
-        #2nd symbol: x or y axes (whichever have higher-symmetry)
+        #2nd symbol: x or y axes (whichever have higher symmetry)
         s2x = get_symbol(params[0], orders[0], reflections[0])
         s2y = get_symbol(params[1], orders[1], reflections[1])
         s2 = get_highest_symbol([s2x, s2y])
         #3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        s3xy = get_symbol(params[3], orders[3], reflections[3])
-        s3yz = get_symbol(params[4], orders[4], reflections[4])
-        s3xz = get_symbol(params[5], orders[5], reflections[5])
-        s3 = get_highest_symbol([s3xy, s3yz, s3xz])
+        s3a = get_symbol(params[3], orders[3], reflections[3])
+        s3b = get_symbol(params[4], orders[4], reflections[4])
+        s3c = get_symbol(params[5], orders[5], reflections[5])
+        s3d = get_symbol(params[6], orders[6], reflections[6])
+        s3e = get_symbol(params[7], orders[7], reflections[7])
+        s3f = get_symbol(params[8], orders[8], reflections[8])
+        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])
         symbol = s1 + s2 + s3
         if symbol != "...":
             return symbol
@@ -244,17 +250,25 @@ def ss_string_from_ops(ops, sg, complete=False):
     #Cubic
     elif sg >= 195 and sg <= 230:
         pass
-        '''#1st symbol: z axis
-        s1 = get_symbol(params[2], orders[2], reflections[2])
-        #2nd symbol: x or y axes (whichever have higher-symmetry)
-        s2x = get_symbol(params[0], orders[0], reflections[0])
-        s2y = get_symbol(params[1], orders[1], reflections[1])
-        s2 = get_highest_symbol(s2x, s2y)
+        #1st symbol: x, y, and/or z axes (whichever have highest symmetry)
+        s1x = get_symbol(params[0], orders[0], reflections[0])
+        s1y = get_symbol(params[1], orders[1], reflections[1])
+        s1z = get_symbol(params[2], orders[2], reflections[2])
+        s1 = get_highest_symbol([s1x, s1y, s1z])
+        #2nd symbol: body-diagonal axes (whichever has highest symmetry)
+        s2a = get_symbol(params[9], orders[9], reflections[9])
+        s2b = get_symbol(params[10], orders[10], reflections[10])
+        s2c = get_symbol(params[11], orders[11], reflections[11])
+        s2d = get_symbol(params[12], orders[12], reflections[12])
+        s2 = get_highest_symbol([s2a, s2b, s2c, s2d])
         #3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        s3xy = get_symbol(params[3], orders[3], reflections[3])
-        s3yz = get_symbol(params[4], orders[4], reflections[4])
-        s3xz = get_symbol(params[5], orders[5], reflections[5])
-        s3 = get_highest_symbol(s3xy, s3yz, s3xz)
+        s3a = get_symbol(params[3], orders[3], reflections[3])
+        s3b = get_symbol(params[4], orders[4], reflections[4])
+        s3c = get_symbol(params[5], orders[5], reflections[5])
+        s3d = get_symbol(params[6], orders[6], reflections[6])
+        s3e = get_symbol(params[7], orders[7], reflections[7])
+        s3f = get_symbol(params[8], orders[8], reflections[8])
+        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])
         symbol = s1 + s2 + s3
         if symbol != "...":
             return symbol
@@ -262,7 +276,7 @@ def ss_string_from_ops(ops, sg, complete=False):
             if has_inversion is True:
                 return "-1"
             else:
-                return "1"'''
+                return "1"
     else:
         print("Error: invalid spacegroup number")
         return
