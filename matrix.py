@@ -20,7 +20,12 @@ def angle(v1, v2):
     '''
     v1 = np.real(v1)
     v2 = np.real(v2)
-    return acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+    dot = np.dot(v1, v2)
+    if isclose(dot, 1.0):
+        return 0
+    elif isclose(dot, -1.0):
+        return pi/2
+    return acos(dot / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 def aa2matrix(axis, angle, radians=True, random=False):
     '''
