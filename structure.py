@@ -160,7 +160,7 @@ def ss_string_from_ops(ops, sg, complete=False):
     #Given a list of single-axis symbols, return the one with highest symmetry
     #Will be called later in the function
     def get_highest_symbol(symbols):
-        symbol_list = ['.','m','2','-2','2/m','3','4','-4','4/m','-3','6','-6','6/m']
+        symbol_list = ['.','2','m','-2','2/m','3','4','-4','4/m','-3','6','-6','6/m']
         max_index = 0
         for symbol in symbols:
             i = symbol_list.index(symbol)
