@@ -7,7 +7,7 @@ from numpy.linalg import eig
 from numpy.linalg import eigh
 from numpy.linalg import det
 import math
-from math import pi
+from math import pi, acos
 from math import fabs
 from pymatgen.core.operations import SymmOp
 from copy import deepcopy
