@@ -242,9 +242,24 @@ def ss_string_from_ops(ops, sg, complete=True):
         axes[i] = axis/np.linalg.norm(axis)
     for opa in opas:
         if opa.type != "identity" and opa.type != "inversion":
+            found = False
             for i, axis in enumerate(axes):
                 if np.isclose(abs(np.dot(opa.axis, axis)), 1):
+                    found = True
                     params[i].append(opa)
+            #Store uncommon axes for trigonal and hexagonal lattices
+            if found is False:
+                axes.append(opa.axis)
+                #Check that new axis is not symmetrically equivalent to others
+                unique = True
+                for i, axis in enumerate(axes):
+                    if i != len(axes)-1:
+                        if are_symmetrically_equivalent(i, len(axes)-1):
+                            unique = False
+                if unique is True:
+                    params.append([opa])
+                elif unique is False:
+                    axes.pop()
         elif opa.type == "inversion":
             has_inversion = True
     #Determine how many high-symmetry axes are present
@@ -286,19 +301,9 @@ def ss_string_from_ops(ops, sg, complete=True):
         #1st symbol: z axis
         s1 = get_symbol(params[2], orders[2], reflections[2])
         #2nd symbol: x or y axes (whichever have higher symmetry)
-        '''s2x = get_symbol(params[0], orders[0], reflections[0])
-        s2y = get_symbol(params[1], orders[1], reflections[1])
-        s2 = get_highest_symbol([s2x, s2y])'''
         s2 = combine_axes([0,1])
         #3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        '''s3a = get_symbol(params[3], orders[3], reflections[3])
-        s3b = get_symbol(params[4], orders[4], reflections[4])
-        s3c = get_symbol(params[5], orders[5], reflections[5])
-        s3d = get_symbol(params[6], orders[6], reflections[6])
-        s3e = get_symbol(params[7], orders[7], reflections[7])
-        s3f = get_symbol(params[8], orders[8], reflections[8])
-        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])'''
-        s3 = combine_axes([3,4,5,6,7,8])
+        s3 = combine_axes(list(range(3, len(axes))))
         symbol = s1+" "+s2+" "+s3
         if symbol != ". . .":
             return symbol
@@ -311,26 +316,10 @@ def ss_string_from_ops(ops, sg, complete=True):
     elif sg >= 195 and sg <= 230:
         pass
         #1st symbol: x, y, and/or z axes (whichever have highest symmetry)
-        '''s1x = get_symbol(params[0], orders[0], reflections[0])
-        s1y = get_symbol(params[1], orders[1], reflections[1])
-        s1z = get_symbol(params[2], orders[2], reflections[2])
-        s1 = get_highest_symbol([s1x, s1y, s1z])'''
         s1 = combine_axes([0,1,2])
         #2nd symbol: body-diagonal axes (whichever has highest symmetry)
-        '''s2a = get_symbol(params[9], orders[9], reflections[9])
-        s2b = get_symbol(params[10], orders[10], reflections[10])
-        s2c = get_symbol(params[11], orders[11], reflections[11])
-        s2d = get_symbol(params[12], orders[12], reflections[12])
-        s2 = get_highest_symbol([s2a, s2b, s2c, s2d])'''
         s2 = combine_axes([9,10,11,12])
         #3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        '''s3a = get_symbol(params[3], orders[3], reflections[3])
-        s3b = get_symbol(params[4], orders[4], reflections[4])
-        s3c = get_symbol(params[5], orders[5], reflections[5])
-        s3d = get_symbol(params[6], orders[6], reflections[6])
-        s3e = get_symbol(params[7], orders[7], reflections[7])
-        s3f = get_symbol(params[8], orders[8], reflections[8])
-        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])'''
         s3 = combine_axes([3,4,5,6,7,8])
         symbol = s1+" "+s2+" "+s3
         if symbol != ". . .":
