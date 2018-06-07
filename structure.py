@@ -117,7 +117,7 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
     else:
         return vec
 
-def ss_string_from_ops(ops, sg, complete=False):
+def ss_string_from_ops(ops, sg, complete=True):
     '''
     Print the Hermann-Mauguin symbol for a site symmetry group, using a list of
     SymmOps as input. Note that the symbol does not necessarily refer to the
@@ -167,6 +167,64 @@ def ss_string_from_ops(ops, sg, complete=False):
             if i > max_index:
                 max_index = i
         return symbol_list[max_index]
+    #Return whether or not two axes are symmetrically equivalent
+    #It is assumed that both axes possess the same symbol
+    #Will be called within combine_axes
+    def are_symmetrically_equivalent(index1, index2):
+        axis1 = axes[index1]
+        axis2 = axes[index2]
+        condition1 = False
+        condition2 = False
+        #Check for an operation mapping one axis onto the other
+        for op in ops:
+            if condition1 is False or condition2 is False:
+                new1 = op.operate(axis1)
+                new2 = op.operate(axis2)
+                if np.isclose(abs(np.dot(new1, axis2)), 1):
+                    condition1 = True
+                if np.isclose(abs(np.dot(new2, axis1)), 1):
+                    condition2 = True
+        if condition1 is True and condition2 is True:
+            return True
+        else:
+            return False
+    #Given a list of axis indices, return the combined symbol
+    #Axes may or may not be symmetrically equivalent, but must be of the same
+    #type (x/y/z, face-diagonal, body-diagonal)
+    #Will be called for mid- and high-symmetry crystallographic point groups
+    def combine_axes(indices):
+        symbols = {}
+        for index in deepcopy(indices):
+            symbol = get_symbol(params[index],orders[index],reflections[index])
+            if symbol == ".":
+                indices.remove(index)
+            else:
+                symbols[index] = symbol
+        if indices == []:
+            return "."
+        #Remove redundant axes
+        for i in deepcopy(indices):
+            for j in deepcopy(indices):
+                if j > i:
+                    if symbols[i] == symbols[j]:
+                        if are_symmetrically_equivalent(i, j):
+                            if j in indices:
+                                indices.remove(j)
+        #Combine symbols for non-equivalent axes
+        new_symbols = []
+        for i in indices:
+            new_symbols.append(symbols[i])
+        symbol = ""
+        while new_symbols != []:
+            highest = get_highest_symbol(new_symbols)
+            symbol += highest
+            new_symbols.remove(highest)
+        if symbol == "":
+            print("Error: could not combine site symmetry axes.")
+            return
+        else:
+            return symbol
+    #Generate needed ops
     if complete is False:
         ops = generate_full_symmops(ops, 1e-3)
     #Get OperationAnalyzer object for all ops
@@ -179,7 +237,7 @@ def ss_string_from_ops(ops, sg, complete=False):
     #Store possible symmetry axes for crystallographic point groups
     axes = [[1,0,0],[0,1,0],[0,0,1],
             [1,1,0],[0,1,1],[1,0,1],[1,-1,0],[0,1,-1],[1,0,-1],
-            [1,1,1],[-1,1,1],[1,-1,1],[-1,-1,1]]
+            [1,1,1],[-1,1,1],[1,-1,1],[1,1,-1]]
     for i, axis in enumerate(axes):
         axes[i] = axis/np.linalg.norm(axis)
     for opa in opas:
@@ -228,21 +286,23 @@ def ss_string_from_ops(ops, sg, complete=False):
         #1st symbol: z axis
         s1 = get_symbol(params[2], orders[2], reflections[2])
         #2nd symbol: x or y axes (whichever have higher symmetry)
-        s2x = get_symbol(params[0], orders[0], reflections[0])
+        '''s2x = get_symbol(params[0], orders[0], reflections[0])
         s2y = get_symbol(params[1], orders[1], reflections[1])
-        s2 = get_highest_symbol([s2x, s2y])
+        s2 = get_highest_symbol([s2x, s2y])'''
+        s2 = combine_axes([0,1])
         #3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        s3a = get_symbol(params[3], orders[3], reflections[3])
+        '''s3a = get_symbol(params[3], orders[3], reflections[3])
         s3b = get_symbol(params[4], orders[4], reflections[4])
         s3c = get_symbol(params[5], orders[5], reflections[5])
         s3d = get_symbol(params[6], orders[6], reflections[6])
         s3e = get_symbol(params[7], orders[7], reflections[7])
         s3f = get_symbol(params[8], orders[8], reflections[8])
-        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])
-        symbol = s1 + s2 + s3
-        if symbol != "...":
+        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])'''
+        s3 = combine_axes([3,4,5,6,7,8])
+        symbol = s1+" "+s2+" "+s3
+        if symbol != ". . .":
             return symbol
-        elif symbol == "...":
+        elif symbol == ". . .":
             if has_inversion is True:
                 return "-1"
             else:
@@ -251,28 +311,31 @@ def ss_string_from_ops(ops, sg, complete=False):
     elif sg >= 195 and sg <= 230:
         pass
         #1st symbol: x, y, and/or z axes (whichever have highest symmetry)
-        s1x = get_symbol(params[0], orders[0], reflections[0])
+        '''s1x = get_symbol(params[0], orders[0], reflections[0])
         s1y = get_symbol(params[1], orders[1], reflections[1])
         s1z = get_symbol(params[2], orders[2], reflections[2])
-        s1 = get_highest_symbol([s1x, s1y, s1z])
+        s1 = get_highest_symbol([s1x, s1y, s1z])'''
+        s1 = combine_axes([0,1,2])
         #2nd symbol: body-diagonal axes (whichever has highest symmetry)
-        s2a = get_symbol(params[9], orders[9], reflections[9])
+        '''s2a = get_symbol(params[9], orders[9], reflections[9])
         s2b = get_symbol(params[10], orders[10], reflections[10])
         s2c = get_symbol(params[11], orders[11], reflections[11])
         s2d = get_symbol(params[12], orders[12], reflections[12])
-        s2 = get_highest_symbol([s2a, s2b, s2c, s2d])
+        s2 = get_highest_symbol([s2a, s2b, s2c, s2d])'''
+        s2 = combine_axes([9,10,11,12])
         #3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        s3a = get_symbol(params[3], orders[3], reflections[3])
+        '''s3a = get_symbol(params[3], orders[3], reflections[3])
         s3b = get_symbol(params[4], orders[4], reflections[4])
         s3c = get_symbol(params[5], orders[5], reflections[5])
         s3d = get_symbol(params[6], orders[6], reflections[6])
         s3e = get_symbol(params[7], orders[7], reflections[7])
         s3f = get_symbol(params[8], orders[8], reflections[8])
-        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])
-        symbol = s1 + s2 + s3
-        if symbol != "...":
+        s3 = get_highest_symbol([s3a, s3b, s3c, s3d, s3e, s3f])'''
+        s3 = combine_axes([3,4,5,6,7,8])
+        symbol = s1+" "+s2+" "+s3
+        if symbol != ". . .":
             return symbol
-        elif symbol == "...":
+        elif symbol == ". . .":
             if has_inversion is True:
                 return "-1"
             else:
