@@ -189,11 +189,9 @@ class OperationAnalyzer(SymmOp):
         else:
             print("Error: OperationAnalyzer requires a SymmOp or 3x3 array.")
         #If rotation matrix is not orthogonal
-            #Check that m is orthogonal
         m1 = np.dot(self.m, np.transpose(self.m))
         m2 = np.dot(np.transpose(self.m), self.m)
         if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
-            print("Warning: operation is not orthogonal.")
             self.type = "general"
             self.axis, self.angle, self.order, self.rotation_order = None, None, None, None
         #If rotation matrix is orthogonal
