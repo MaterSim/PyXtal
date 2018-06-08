@@ -135,8 +135,16 @@ def rotate_vector(v1, v2):
     Rotates a vector v1 to v2 about an axis perpendicular to both
     Returns the 3x3 rotation matrix used to do so
     '''
-    if allclose(v1, v2):
+    v1 = v1 / np.linalg.norm(v1)
+    v2 = v2 / np.linalg.norm(v2)
+    dot = np.dot(v1, v2)
+    #Handle collinear vectors
+    if np.isclose(dot, 1):
         return np.identity(3)
+    elif np.isclose(dot, -1):
+        r = [rand(),rand(),rand()]
+        v3 = np.cross(v1, r)
+        return aa2matrix(v3, pi)
     theta = angle(v1, v2)
     v3 = np.cross(v1, v2)
     return aa2matrix(v3, theta)
@@ -157,12 +165,12 @@ class OperationAnalyzer(SymmOp):
         #Find the order of a rotation based on its angle
         found = False
         for n in range(1, 61):
-            x = (n*angle) / (2*pi)
+            x = (n*angle) / (2.*pi)
             y = x - np.round(x)
-            if fabs(y) <= tol:
+            if abs(y) <= tol:
                 found = True
                 break
-        if found:
+        if found is True:
             #Double order of odd-rotation rotoinversions
             if rotoinversion is True:
                 if n % 2 == 1:
