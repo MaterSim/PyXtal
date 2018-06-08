@@ -3,7 +3,6 @@ from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pymatgen.symmetry.analyzer import generate_full_symmops
 import numpy as np
-from numpy import isclose
 from numpy.linalg import eigh
 from numpy.linalg import det
 from copy import deepcopy
@@ -84,11 +83,11 @@ def reoriented_molecule(mol, nested=False):
                 okay = True
                 if i == j:
                     #Check that diagonal elements are 0 or 1
-                    if (not isclose(x, 0)) and (not isclose(x, 1)):
+                    if (not np.isclose(x, 0)) and (not np.isclose(x, 1)):
                         okay = False
                 else:
                     #Check that off-diagonal elements are 0
-                    if (not isclose(x, 0)):
+                    if (not np.isclose(x, 0)):
                         okay = False
         if okay is False:
             #If matrix is not diagonal with 1's and/or 0's, reorient
@@ -196,6 +195,14 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     opa_m = []
     for op_m in symm_m:
         opa_m.append(OperationAnalyzer(op_m))
+    #Add opposite direction for 2-fold rotations
+    copy = deepcopy(opa_m)
+    for opa in copy:
+        if opa.type == "rotation" and opa.order == 2:
+            symm_m.append(opa.op)
+            opa2 = deepcopy(opa)
+            opa2.axis = [opa.axis[0]*-1, opa.axis[1]*-1, opa.axis[2]*-1]
+            opa_m.append(opa2)
     #Check for constraints from the Wyckoff symmetry...
     #If we find ANY two constraints (SymmOps with unique axes), the molecule's
     #point group MUST contain SymmOps which can be aligned to these particular
@@ -209,7 +216,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
             for j, op_w in enumerate(symm_w):
                 if opa_w[j].axis is not None:
                     dot = np.dot(opa_w[i].axis, opa_w[j].axis)
-                    if (not isclose(dot, 1)) and (not isclose(dot, -1)):
+                    if (not np.isclose(dot, 1, rtol=.01)) and (not np.isclose(dot, -1, rtol=.01)):
                         constraint2 = opa_w[j]
                         break
             break
@@ -220,32 +227,51 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     #Store corresponding symmetry elements of the molecule
     constraints_m = []
     if constraint1 is not None:
-        for i, op_m in enumerate(symm_m):
-            if opa_m[i].is_conjugate(constraint1):
-                constraints_m.append([opa_m[i], []])
+        for i, opa1 in enumerate(opa_m):
+            if opa1.is_conjugate(constraint1):
+                constraints_m.append([opa1, []])
                 if constraint2 is not None:
-                    for j, op_m2 in enumerate(symm_m):
-                        if opa_m[j].is_conjugate(constraint2):
-                            dot_m = np.dot(opa_m[i].axis, opa_m[j].axis)
+                    for j, opa2 in enumerate(opa_m):
+                        if opa2.is_conjugate(constraint2):
+                            dot_m = np.dot(opa1.axis, opa2.axis)
                             #Ensure that the angles are equal
-                            if isclose(dot_m, dot_w):
-                                constraints_m[-1][1].append(opa_m[j])
+                            if np.isclose(dot_m, dot_w):
+                                constraints_m[-1][1].append(opa2)
     #Eliminate redundancy for 1st constraint
     list_i = list(range(len(constraints_m)))
     list_j = list(range(len(constraints_m)))
-    for i , c1 in enumerate(constraints_m):
+    copy = deepcopy(constraints_m)
+    for i , c1 in enumerate(copy):
         if i in list_i:
-            for j , c2 in enumerate(constraints_m):
+            for j , c2 in enumerate(copy):
                 if i > j and j in list_j and j in list_i:
                     #check if c1 and c2 are symmetrically equivalent  
                     #calculate moments of inertia about both axes
-                    m1_a = get_moment_of_inertia(mol, c1[0].axis)
-                    m2_a = get_moment_of_inertia(mol, c2[0].axis)
-                    m1_b = get_moment_of_inertia(mol, c1[0].axis, scale=2.0)
-                    m2_b = get_moment_of_inertia(mol, c2[0].axis, scale=2.0)
-                    if isclose(m1_a, m2_a, rtol=1e-2) and isclose(m1_b, m2_b, rtol=1e-2):
-                        list_i.remove(j)
-                        list_j.remove(j)                
+                    for op in symm_m:
+                        #Check if axes are colinear
+                        if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=.01):
+                            list_i.remove(j)
+                            list_j.remove(j)
+                        else:# np.isclose(np.dot(c1[0].axis, c2[0].axis), -1, rtol=.01):
+                            cond1 = False
+                            cond2 = False
+                            for op in symm_m:
+                                if np.isclose(np.dot(op.operate(c1[0].axis), c2[0].axis), 1, rtol=.01):
+                                    cond1 = True
+                                if np.isclose(np.dot(op.operate(c2[0].axis), c1[0].axis), 1, rtol=.01):
+                                    cond2 = True
+                            if cond1 is True and cond2 is True:
+                                list_i.remove(j)
+                                list_j.remove(j)
+                        '''else:
+                            #Compare moments of inertia about axes
+                            m1_a = get_moment_of_inertia(mol, c1[0].axis)
+                            m2_a = get_moment_of_inertia(mol, c2[0].axis)
+                            m1_b = get_moment_of_inertia(mol, c1[0].axis, scale=2.0)
+                            m2_b = get_moment_of_inertia(mol, c2[0].axis, scale=2.0)
+                            if np.isclose(m1_a, m2_a, rtol=1e-2) and np.isclose(m1_b, m2_b, rtol=1e-2):
+                                list_i.remove(j)
+                                list_j.remove(j)  '''              
     c_m = deepcopy(constraints_m)
     constraints_m = []
     for i in list_i:
@@ -259,29 +285,70 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 if i in list_i:
                     for j, c2 in enumerate(c[1]):
                         if j > i and j in list_j and j in list_i:
-                            #check if c1 and c2 are symmetrically equivalent  
-                            #calculate moments of inertia about both axes
-                            m1_a = get_moment_of_inertia(mol, c1.axis)
-                            m2_a = get_moment_of_inertia(mol, c2.axis)
-                            m1_b = get_moment_of_inertia(mol, c1.axis, scale=2.0)
-                            m2_b = get_moment_of_inertia(mol, c2.axis, scale=2.0)
-                            if isclose(m1_a, m2_a, rtol=1e-2) and isclose(m1_b, m2_b, rtol=1e-2):
+                            #check if c1 and c2 are symmetrically equivalent
+                            #Check if axes are colinear
+                            if np.isclose(np.dot(c1.axis, c2.axis), 1, rtol=.01):
                                 list_i.remove(j)
-                                list_j.remove(j)  
+                                list_j.remove(j)
+                            else:# np.isclose(np.dot(c1.axis, c2.axis), -1, rtol=.01):
+                                cond1 = False
+                                cond2 = False
+                                for op in symm_m:
+                                    if np.isclose(np.dot(op.operate(c1.axis), c2.axis), 1, rtol=.01):
+                                        cond1 = True
+                                    if np.isclose(np.dot(op.operate(c2.axis), c1.axis), 1, rtol=.01):
+                                        cond2 = True
+                                if cond1 is True and cond2 is True:
+                                    list_i.remove(j)
+                                    list_j.remove(j)
+                            '''else:
+                                #calculate moments of inertia about both axes
+                                m1_a = get_moment_of_inertia(mol, c1.axis)
+                                m2_a = get_moment_of_inertia(mol, c2.axis)
+                                m1_b = get_moment_of_inertia(mol, c1.axis, scale=2.0)
+                                m2_b = get_moment_of_inertia(mol, c2.axis, scale=2.0)
+                                if np.isclose(m1_a, m2_a, rtol=1e-2) and np.isclose(m1_b, m2_b, rtol=1e-2):
+                                    list_i.remove(j)
+                                    list_j.remove(j)'''
             c_m = deepcopy(c[1])
             constraints_m[k][1] = []
             for i in list_i:
                 constraints_m[k][1].append(c_m[i])
+    '''#Look for 2-fold rotations; if found, add extra orientation
+    #in opposite direction.
+    #Loop over constraint1's
+    print(len(constraints_m))
+    copy = deepcopy(constraints_m)
+    for i , c1 in enumerate(copy):
+        if c1[0].type == "rotation" and c1[0].order == 2:
+            c = deepcopy(c1)
+            c[0].axis *= -1
+            constraints_m.append(c)
+    #Loop over constraint2's
+    copy = deepcopy(constraints_m)
+    for i , c1 in enumerate(copy):
+        for j, c2 in enumerate(c1[1]):
+            if c2.type == "rotation" and c2.order == 2:
+                c = deepcopy(c2)
+                c.axis *= -1
+                constraints_m[i][1].append(c)
+    print(len(constraints_m))'''
     #Generate orientations consistent with the possible constraints
     orientations = []
     #Loop over molecular constraint sets
     for c1 in constraints_m:
         v1 = c1[0].axis
+        for i, x in enumerate(v1):
+            if np.isclose(x, 0):
+                v1[i] = 0
         v2 = constraint1.axis
         T = rotate_vector(v1, v2)
         #Loop over second molecular constraints
         for opa in c1[1]:
             v1 = np.dot(T, opa.axis)
+            for i, x in enumerate(v1):
+                if np.isclose(x, 0):
+                    v1[i] = 0
             v2 = constraint2.axis
             R = rotate_vector(v1, v2)
             T2 = np.dot(T, R)
