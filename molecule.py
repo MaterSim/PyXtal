@@ -257,6 +257,16 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                         extra = deepcopy(opa2)
                         extra.axis = [opa2.axis[0]*-1, opa2.axis[1]*-1, opa2.axis[2]*-1]
                         constraints_m[i][1].append(extra)
+
+    '''print("-----")
+    x = 0
+    for c in constraints_m:
+        if len(c[1]) == 0:
+            x += 1
+        else:
+            x += len(c[1])
+    print(x)'''
+
     #Eliminate redundancy for 1st constraint
     list_i = list(range(len(constraints_m)))
     list_j = list(range(len(constraints_m)))
@@ -295,6 +305,15 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     constraints_m = []
     for i in list_i:
         constraints_m.append(c_m[i])
+
+    '''x = 0
+    for c in constraints_m:
+        if len(c[1]) == 0:
+            x += 1
+        else:
+            x += len(c[1])
+    print(x)'''
+
     #Eliminate redundancy for second constraint
     for k, c in enumerate(constraints_m):
         if c[1] != []:
@@ -315,9 +334,9 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                                 for opa in opa_m:
                                     if opa.type == "rotation":
                                         op = opa.op
-                                        if np.isclose(np.dot(op.operate(c1.axis), c2.axis), 1, rtol=.05):
+                                        if np.isclose(np.dot(op.operate(c1.axis), c2.axis), 1, rtol=.01):
                                             cond1 = True
-                                        if np.isclose(np.dot(op.operate(c2.axis), c1.axis), 1, rtol=.05):
+                                        if np.isclose(np.dot(op.operate(c2.axis), c1.axis), 1, rtol=.01):
                                             cond2 = True
                                 if cond1 is True and cond2 is True:
                                     list_i.remove(j)
@@ -331,10 +350,19 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                             if np.isclose(m1_a, m2_a, rtol=1e-2) and np.isclose(m1_b, m2_b, rtol=1e-2):
                                 list_i.remove(j)
                                 list_j.remove(j)'''
-            c_m = deepcopy(c[1])
+            '''c_m = deepcopy(c[1])
             constraints_m[k][1] = []
             for i in list_i:
-                constraints_m[k][1].append(c_m[i])
+                constraints_m[k][1].append(c_m[i])'''
+
+    '''#Debug
+    x = 0
+    for c in constraints_m:
+        if len(c[1]) == 0:
+            x += 1
+        else:
+            x += len(c[1])
+    print(x)'''
 
     '''#Debug
     for i, c1 in enumerate(constraints_m):
@@ -354,6 +382,12 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                         print(opa)
                 print(max)'''
 
+    '''#Debug
+    print("========")
+    for c in constraints_m:
+        print("---")
+        print(c[0])
+        print(c[1])'''
 
     '''#Look for 2-fold rotations; if found, add extra orientation
     #in opposite direction.
@@ -374,6 +408,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 c.axis *= -1
                 constraints_m[i][1].append(c)
     print(len(constraints_m))'''
+
     #Generate orientations consistent with the possible constraints
     orientations = []
     #Loop over molecular constraint sets
@@ -386,19 +421,25 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         T = rotate_vector(v1, v2)
         #Loop over second molecular constraints
         for opa in c1[1]:
-            v1 = np.dot(T, opa.axis)
-            for i, x in enumerate(v1):
-                if np.isclose(x, 0):
-                    v1[i] = 0
-            v2 = constraint2.axis
-            R = rotate_vector(v1, v2)
+            v = constraint1.axis
+            a = angle(np.dot(T, opa.axis), constraint2.axis)
+            R = aa2matrix(v, a)
             T2 = np.dot(R, T)
+            #T2 = np.dot(np.linalg.inv(R), np.dot(T, R))
+            a = angle(np.dot(T2, opa.axis), constraint2.axis)
+            if not np.isclose(a, 0, rtol=.01):
+                T2 = np.dot(np.linalg.inv(R), T)
+            a = angle(np.dot(T2, opa.axis), constraint2.axis)
+            if not np.isclose(a, 0, rtol=.01):
+                print("Error: Generated incorrect rotation: "+str(a))
             orientations.append(T2)
+        #If there is only one constraint
         if c1[1] == []:
             if randomize is True:
-                angle = rand()*2*pi
-                R = aa2matrix(v1, angle)
-                T2 = np.dot(T, R)
+                a = rand()*2*pi
+                R = aa2matrix(constraint1.axis, a)
+                T2 = np.dot(R, T)
+                #T2 = np.dot(np.linalg.inv(R), np.dot(T, R))
                 orientations.append(T2)
             else:
                 orientations.append(T)
@@ -407,24 +448,56 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         if randomize is True:
             R = aa2matrix(1,1,random=True)
             orientations.append(R)
-        else:
+        elif randomize is False:
             orientations.append(np.identity(3))
 
+    #Remove redundancy from orientations
+    list_i = list(range(len(orientations)))
+    list_j = list(range(len(orientations)))
+    for i , m1 in enumerate(orientations):
+        if i in list_i:
+            for j , m2 in enumerate(orientations):
+                if i > j and j in list_j and j in list_i:
+                    cond1 = False
+                    cond2 = False
+                    #Check if m1 and m2 are symmetrically equivalent
+                    for opa in opa_m:
+                        op = opa.op
+                        m = op.rotation_matrix
+                        if np.allclose(np.dot(m1, m), m2, rtol=.01):
+                            cond1 = True
+                        if np.allclose(np.dot(m2, m), m1, rtol=.01):
+                            cond2 = True
+                    if cond1 is True and cond2 is True:
+                        list_i.remove(j)
+                        list_j.remove(j)
+    copy = deepcopy(orientations)
+    orientations = []
+    for i in list_i:
+        orientations.append(copy[i])
+
     '''#Debug
-    print("-----")
     for o in orientations:
+        print("-----")
         op = SymmOp.from_rotation_and_translation(o, [0,0,0])
-        print(OperationAnalyzer(op))'''
+        mo = deepcopy(mol)
+        mo.apply_operation(op)
+        symm = get_symmetry(mo)
+        opas = []
+        for op in symm:
+            opas.append(OperationAnalyzer(op))
+        for opa in opas:
+            print(opa)'''
 
     #Check each of the found orientations for consistency with the Wyckoff pos.
     #If consistent, put into an array of valid orientations
     allowed = []
     for o in orientations:
-        o = SymmOp.from_rotation_and_translation(o,[0,0,0])
+        op = SymmOp.from_rotation_and_translation(o,[0,0,0])
         mo = deepcopy(mol)
-        mo.apply_operation(o)
+        mo.apply_operation(op)
         if orientation_in_wyckoff_position(mo, sg, index, exact_orientation=True, already_oriented=already_oriented) is True:
-            allowed.append(o)
+            allowed.append(op)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
         return False
