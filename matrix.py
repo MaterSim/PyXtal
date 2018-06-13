@@ -24,7 +24,7 @@ def angle(v1, v2):
     if isclose(dot, 1.0):
         return 0
     elif isclose(dot, -1.0):
-        return pi/2
+        return pi
     return acos(dot / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 def aa2matrix(axis, angle, radians=True, random=False):
@@ -139,9 +139,9 @@ def rotate_vector(v1, v2):
     v2 = v2 / np.linalg.norm(v2)
     dot = np.dot(v1, v2)
     #Handle collinear vectors
-    if np.isclose(dot, 1):
+    if np.isclose(dot, 1, rtol=.0001):
         return np.identity(3)
-    elif np.isclose(dot, -1):
+    elif np.isclose(dot, -1, rtol=.0001):
         r = [rand(),rand(),rand()]
         v3 = np.cross(v1, r)
         return aa2matrix(v3, pi)
