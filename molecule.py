@@ -263,8 +263,6 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                                 if np.isclose(np.dot(op.operate(c1[0].axis), c2[0].axis), 1, rtol=.05):
                                     cond1 = True
                                     break
-                                '''if np.isclose(np.dot(op.operate(c2[0].axis), c1[0].axis), 1, rtol=.05):
-                                    cond2 = True'''
                         if cond1 is True: # or cond2 is True:
                             list_i.remove(j)
                             list_j.remove(j)             
@@ -281,7 +279,6 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 if opa2.is_conjugate(constraint2):
                     dot_m = np.dot(opa1.axis, opa2.axis)
                     #Ensure that the angles are equal
-                    #if np.isclose(dot_m, dot_w, rtol=.03) or np.isclose(dot_m, -dot_w, rtol=.03):
                     if abs(dot_m - dot_w) < .02 or abs(dot_m + dot_w) < .02:
                         constraints_m[i][1].append(opa2)
                         #Generate 2nd constraint in opposite direction
@@ -309,7 +306,6 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 theta = np.arccos(1 - (c**2)/(2*(r**2)))
                 R = aa2matrix(constraint1.axis, theta)
                 T2 = np.dot(R, T)
-                #T2 = np.dot(np.linalg.inv(R), np.dot(T, R))
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
                 if not np.isclose(a, 0, rtol=.01):
                     T2 = np.dot(np.linalg.inv(R), T)
@@ -323,7 +319,6 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 a = rand()*2*pi
                 R = aa2matrix(constraint1.axis, a)
                 T2 = np.dot(R, T)
-                #T2 = np.dot(np.linalg.inv(R), np.dot(T, R))
                 orientations.append(T2)
             else:
                 orientations.append(T)
@@ -335,8 +330,6 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         elif randomize is False:
             orientations.append(np.identity(3))
     
-    print(len(orientations))
-    
     #Remove redundancy from orientations
     list_i = list(range(len(orientations)))
     list_j = list(range(len(orientations)))
@@ -344,7 +337,6 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         if i in list_i:
             for j , m2 in enumerate(orientations):
                 if i > j and j in list_j and j in list_i:
-                    #if cond1 is True: #and cond2 is True:
                     new_op = SymmOp.from_rotation_and_translation(np.dot(m2, np.linalg.inv(m1)), [0,0,0])
                     P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0,0,0])
                     old_op = P*new_op*P.inverse
@@ -355,8 +347,6 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     orientations = []
     for i in list_i:
         orientations.append(copy[i])
-
-    print(len(orientations))
 
     #Check each of the found orientations for consistency with the Wyckoff pos.
     #If consistent, put into an array of valid orientations
