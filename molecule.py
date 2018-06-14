@@ -231,7 +231,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     if (constraint1 is not None
         and constraint2 is not None):
         dot_w = np.dot(constraint1.axis, constraint2.axis)
-    #Store corresponding symmetry elements of the molecule
+    #Generate 1st consistent molecular constraints
     constraints_m = []
     if constraint1 is not None:
         for i, opa1 in enumerate(opa_m):
@@ -241,22 +241,8 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 extra = deepcopy(opa1)
                 extra.axis = [opa1.axis[0]*-1, opa1.axis[1]*-1, opa1.axis[2]*-1]
                 constraints_m.append([extra, []])
-    #Generate 2nd consistent constraints
-    if constraint2 is not None:
-        for i, c in enumerate(constraints_m):
-            opa1 = c[0]
-            for j, opa2 in enumerate(opa_m):
-                if opa2.is_conjugate(constraint2):
-                    dot_m = np.dot(opa1.axis, opa2.axis)
-                    #Ensure that the angles are equal
-                    if np.isclose(dot_m, dot_w, rtol=.01) or np.isclose(dot_m, -dot_w, rtol=.01):
-                        constraints_m[i][1].append(opa2)
-                        #Generate 2nd constraint in opposite direction
-                        extra = deepcopy(opa2)
-                        extra.axis = [opa2.axis[0]*-1, opa2.axis[1]*-1, opa2.axis[2]*-1]
-                        constraints_m[i][1].append(extra)
 
-    #Eliminate redundancy for 1st constraint
+    #Remove redundancy for the first constraints
     list_i = list(range(len(constraints_m)))
     list_j = list(range(len(constraints_m)))
     copy = deepcopy(constraints_m)
@@ -286,6 +272,22 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     constraints_m = []
     for i in list_i:
         constraints_m.append(c_m[i])
+
+    #Generate 2nd consistent molecular constraints
+    if constraint2 is not None:
+        for i, c in enumerate(constraints_m):
+            opa1 = c[0]
+            for j, opa2 in enumerate(opa_m):
+                if opa2.is_conjugate(constraint2):
+                    dot_m = np.dot(opa1.axis, opa2.axis)
+                    #Ensure that the angles are equal
+                    #if np.isclose(dot_m, dot_w, rtol=.03) or np.isclose(dot_m, -dot_w, rtol=.03):
+                    if abs(dot_m - dot_w) < .02 or abs(dot_m + dot_w) < .02:
+                        constraints_m[i][1].append(opa2)
+                        #Generate 2nd constraint in opposite direction
+                        extra = deepcopy(opa2)
+                        extra.axis = [opa2.axis[0]*-1, opa2.axis[1]*-1, opa2.axis[2]*-1]
+                        constraints_m[i][1].append(extra)
 
     #Generate orientations consistent with the possible constraints
     orientations = []
@@ -332,7 +334,9 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
             orientations.append(R)
         elif randomize is False:
             orientations.append(np.identity(3))
-
+    
+    print(len(orientations))
+    
     #Remove redundancy from orientations
     list_i = list(range(len(orientations)))
     list_j = list(range(len(orientations)))
@@ -351,6 +355,8 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     orientations = []
     for i in list_i:
         orientations.append(copy[i])
+
+    print(len(orientations))
 
     #Check each of the found orientations for consistency with the Wyckoff pos.
     #If consistent, put into an array of valid orientations
