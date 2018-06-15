@@ -166,7 +166,7 @@ def get_symmetry(mol, already_oriented=False):
         return symm_m
 
 def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
-    exact_orientation=False, already_oriented=False):
+    exact_orientation=False, already_oriented=False, allow_inversion=False):
     '''
     Tests if a molecule meets the symmetry requirements of a Wyckoff position.
     If it does, return the rotation matrix needed. Otherwise, returns False.
@@ -202,13 +202,30 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
 
     #Obtain molecular symmetry, exact_orientation==False
     symm_m = get_symmetry(mol, already_oriented=already_oriented)
-    #Store OperationAnalyzer objects for each SymmOp
+    #Store OperationAnalyzer objects for each molecular SymmOp
+    chiral = True
+    opa_m = []
+    for op_m in symm_m:
+        opa = OperationAnalyzer(op_m)
+        opa_m.append(opa)
+        if opa.type == "rotoinversion":
+            chiral = False
+        elif opa.type == "inversion":
+            chiral = False
+    #If molecule is chiral and allow_inversion is False,
+    #check if WP breaks symmetry
+    if chiral is True:
+        if allow_inversion is False:
+            gen_pos = get_wyckoffs(sg)[0]
+            for op in gen_pos:
+                if np.linalg.det(op.rotation_matrix) < 0:
+                    print("Warning: cannot place chiral molecule in spagegroup #"+str(sg))
+                    return False
+    #Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
     opa_w = []
     for op_w in symm_w:
         opa_w.append(OperationAnalyzer(op_w))
-    opa_m = []
-    for op_m in symm_m:
-        opa_m.append(OperationAnalyzer(op_m))
+
 
     #Check for constraints from the Wyckoff symmetry...
     #If we find ANY two constraints (SymmOps with unique axes), the molecule's
