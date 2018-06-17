@@ -27,6 +27,15 @@ def angle(v1, v2):
         return pi
     return acos(dot / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
+def is_orthogonal(m, tol=.001):
+    #Calculate whether or not a matrix is orthogonal
+    m1 = np.dot(m, np.transpose(m))
+    m2 = np.dot(np.transpose(m), m)
+    if not allclose(m1, np.identity(3), rtol=tol) or not allclose(m2, np.identity(3), rtol=tol):
+        return False
+    else:
+        return True
+
 def aa2matrix(axis, angle, radians=True, random=False):
     '''
     Given an axis and an angle, return a 3x3 rotation matrix
@@ -77,14 +86,11 @@ def matrix2aa(m, radians=True):
     #Check if m is the identity matrix
     if allclose(m, np.identity(3)):
         return None, 0.
-    #Check that m is orthogonal
-    m1 = np.dot(m, np.transpose(m))
-    m2 = np.dot(np.transpose(m), m)
-    if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
+    if not is_orthogonal(m):
         print("Error: matrix is not orthogonal.")
         return
     #Check that m has posititve determinant
-    if not isclose(det(m), 1):
+    if not isclose(det(m), 1, rtol=.001):
         print("Error: invalid rotation matrix, determinant is not 1.")
         print("Divide matrix by inversion operation beore calling matrix2aa.")
         return
@@ -197,9 +203,7 @@ class OperationAnalyzer(SymmOp):
         else:
             print("Error: OperationAnalyzer requires a SymmOp or 3x3 array.")
         #If rotation matrix is not orthogonal
-        m1 = np.dot(self.m, np.transpose(self.m))
-        m2 = np.dot(np.transpose(self.m), self.m)
-        if ( not allclose(m1, np.identity(3)) ) or ( not allclose(m2, np.identity(3)) ):
+        if not is_orthogonal(self.m):
             self.type = "general"
             self.axis, self.angle, self.order, self.rotation_order = None, None, None, None
         #If rotation matrix is orthogonal
@@ -282,6 +286,78 @@ class OperationAnalyzer(SymmOp):
         if type(op1) != OperationAnalyzer:
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
+
+class orientation():
+    '''
+    Stores orientations for molecular crystals based on vector constraints.
+    Can be stored to regenerate orientations consistent with a given constraint
+    vector, without re-calling orientation_in_wyckoff_position.
+    args:
+        matrix: a 3x3 rotation matrix to initialize with
+        degrees: the number of degrees of freedom...
+            0: The orientation refers to a single rotation matrix
+            1: The orientation can be rotated about a single axis
+            2: The orientation can be any pure rotation matrix
+    '''
+
+    def __init__(self, matrix, degrees=0, axis=None):
+        if (not is_orthogonal(matrix)):
+            print("Error: Supplied orientation matrix is not orthogonal")
+            return
+        if (degrees == 1) and (axis is None):
+            print("Error: Constraint vector required for orientation")
+        self.matrix = matrix
+        self.degrees = 0
+        self.axis = axis
+
+    def get_matrix(self, angle="random"):
+        #Return a SymmOp object rotated by given angle.
+        #If "random", rotates by a random amount
+        if degrees == 0:
+            if angle == "random":
+                return aa2matrix(1,1,random=True)
+            else:
+                return self.matrix
+        elif degrees == 1:
+            if angle == "random":
+                R = aa2matrix(self.axis, rand()*2*pi)
+                return np.dot(R, self.matrix)
+            else:
+                R = aa2matrix(self.axis, angle)
+                return np.dot(R, self.matrix)
+        elif degrees == 2:
+            return self.matrix
+
+    def get_op(self, angle="random"):
+        #Return a SymmOp object rotated by given angle.
+        #If "random", rotates by a random amount
+        m = self.get_matrix(angle=angle)
+        return SymmOp.from_rotation_and_translation(m,[0,0,0])
+
+    def from_constraint(v1, c1):
+        #c1 is the constraint vector; v1 will be rotated onto it
+        m = rotate_vector(v1, c1)
+        return orientation(m, degrees=1, axis=c1)
+
+    def from_constraints(v1, c1, v2, c2):
+        #c1 and c2 are constraint vectors, v1 and v2 will be rotated onto them
+        R1 = rotate_vector(v1, c1)
+        v = np.dot(R1, v2)
+        R2 = rotate_vector(v, c2)
+        m = np.dot(R2, R1)
+        a1 = angle(np.dot(m, v2), c2)
+        if not np.isclose(a, 0, rtol=.01):
+            m = np.dot(np.linalg.inv(R2), R1)
+        a = angle(np.dot(m, v2), c2)
+        if not np.isclose(a, 0, rtol=.01):
+            print("Error: Generated incorrect rotation: "+str(theta))
+            return
+        a = angle(np.dot(m, v2), c2)
+        if not np.isclose(a, 0, rtol=.01):
+            print("Error: Invalid constraints for orientation")
+            return
+        return orientation(m, degrees=2)
+        
 
 #Test Functionality
 if __name__ == "__main__":
