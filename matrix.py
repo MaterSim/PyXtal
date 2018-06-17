@@ -339,26 +339,6 @@ class orientation():
         m = rotate_vector(v1, c1)
         return orientation(m, degrees=1, axis=c1)
 
-    def from_constraints(v1, c1, v2, c2):
-        #c1 and c2 are constraint vectors, v1 and v2 will be rotated onto them
-        R1 = rotate_vector(v1, c1)
-        v = np.dot(R1, v2)
-        R2 = rotate_vector(v, c2)
-        m = np.dot(R2, R1)
-        a1 = angle(np.dot(m, v2), c2)
-        if not np.isclose(a, 0, rtol=.01):
-            m = np.dot(np.linalg.inv(R2), R1)
-        a = angle(np.dot(m, v2), c2)
-        if not np.isclose(a, 0, rtol=.01):
-            print("Error: Generated incorrect rotation: "+str(theta))
-            return
-        a = angle(np.dot(m, v2), c2)
-        if not np.isclose(a, 0, rtol=.01):
-            print("Error: Invalid constraints for orientation")
-            return
-        return orientation(m, degrees=2)
-        
-
 #Test Functionality
 if __name__ == "__main__":
 #----------------------------------------------------
