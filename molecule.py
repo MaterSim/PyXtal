@@ -289,6 +289,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         constraints_m.append(c_m[i])
 
     #Generate 2nd consistent molecular constraints
+    valid = range(len(constraints_m))
     if constraint2 is not None:
         for i, c in enumerate(constraints_m):
             opa1 = c[0]
@@ -302,15 +303,19 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                         extra = deepcopy(opa2)
                         extra.axis = [opa2.axis[0]*-1, opa2.axis[1]*-1, opa2.axis[2]*-1]
                         constraints_m[i][1].append(extra)
+            #If no consistent constraints are found, remove first constraint
+            if constraints_m[i][1] == []:
+                valid.remove(i)
+    copy = deepcopy(constraints_m)
+    constraints_m = []
+    for i in valid:
+        constraints_m.append(copy[i])
 
     #Generate orientations consistent with the possible constraints
     orientations = []
     #Loop over molecular constraint sets
     for c1 in constraints_m:
         v1 = c1[0].axis
-        for i, x in enumerate(v1):
-            if np.isclose(x, 0):
-                v1[i] = 0
         v2 = constraint1.axis
         T = rotate_vector(v1, v2)
         #Loop over second molecular constraints
