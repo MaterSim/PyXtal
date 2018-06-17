@@ -700,14 +700,6 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
 
-def filter_site(v): #needs to explain
-    #Adjusts coordinates to be greater than 0 and less than 1
-    w = v
-    for i in range(len(w)):
-    	while w[i]<0: w[i] += 1
-    	while w[i]>=1: w[i] -= 1
-    return w
-
 def choose_wyckoff(wyckoffs, number):
     """
     choose the wyckoff sites based on the current number of atoms
@@ -730,7 +722,6 @@ def choose_wyckoff(wyckoffs, number):
             return choose(good_wyckoff)
         else:
             return False
-
 
 def get_wyckoffs(sg, organized=False):
     '''
@@ -857,8 +848,6 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
             translational components. If false, translations related by +-1
             are considered equal
     '''
-    #TODO: Create function for assigning WP to a single point
-    #QZ: I am not sure if this is really needed
     points = np.array(points)
     points = np.around((points*1e+10))/1e+10
 
@@ -917,9 +906,6 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
 
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
-        #numIons *= cellsize(sg) #Should not be called twice
-        #volume = estimate_volume(numIons, species, factor)
-        #wyckoffs = get_wyckoffs(sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
         
         #Necessary input
         numIons = np.array(numIons) #must convert it to np.array
