@@ -313,7 +313,7 @@ class orientation():
     def get_matrix(self, angle="random"):
         #Return a SymmOp object rotated by given angle.
         #If "random", rotates by a random amount
-        if degrees == 0:
+        if degrees == 2:
             if angle == "random":
                 return aa2matrix(1,1,random=True)
             else:
@@ -325,7 +325,7 @@ class orientation():
             else:
                 R = aa2matrix(self.axis, angle)
                 return np.dot(R, self.matrix)
-        elif degrees == 2:
+        elif degrees == 0:
             return self.matrix
 
     def get_op(self, angle="random"):
