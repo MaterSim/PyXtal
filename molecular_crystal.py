@@ -86,7 +86,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii):
             coord = np.dot(coord, lattice)
             d_min = np.min(cdist(coord, coord2))
 
-            tol = 1.1*(radii[index1]+radii[index2])
+            tol = (radii[index1]+radii[index2])
 
             #print(d_min, tol)
             if d_min < tol:
@@ -451,9 +451,10 @@ class molecular_crystal():
                                 #print('generating new points:', point)
                                 coords = np.array([op.operate(point) for op in ops])
                                 #merge_coordinate if the atoms are close
-                                coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, self.wyckoffs, self.sg, self.radii[i], self.valid_orientations[i])
+                                coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, self.wyckoffs, self.sg, self.radii[i]*2, self.valid_orientations[i])
                                 if good_merge is not False:
                                     wp_index = good_merge
+                                    point = coords_toadd[0]
                                     coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                     if check_distance_molecular(coordinates_tmp, coords_toadd, sites_tmp, i, cell_matrix, self.radii):
                                         coordinates_tmp.append(coords_toadd)
@@ -538,8 +539,8 @@ if __name__ == "__main__":
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=12, 
             help="desired numbers of molecules: 12", metavar="numMols")
-    parser.add_option("-v", "--volume", dest="factor", default=20.0, type=float, 
-            help="volume factors: default 20.0", metavar="factor")
+    parser.add_option("-v", "--volume", dest="factor", default=100.0, type=float, 
+            help="volume factors: default 100.0", metavar="factor")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
