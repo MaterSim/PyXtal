@@ -86,7 +86,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii):
             coord = np.dot(coord, lattice)
             d_min = np.min(cdist(coord, coord2))
 
-            tol = 0.5*(radii[index1]+radii[index2])
+            tol = 1.1*(radii[index1]+radii[index2])
 
             #print(d_min, tol)
             if d_min < tol:
@@ -94,6 +94,141 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii):
         return True
     else:
         return True
+
+def jkfromi(i, olist):
+    '''
+    Given an organized list (Wyckoff positions or orientations), determine
+    the two indices which correspond to a single index for an unorganized list
+    '''
+    num = 0
+    found = False
+    for j , a in enumerate(olist):
+        for k , b in enumerate(a):
+            num += 1
+            if num == i:
+                return [j, k]
+    print("Error: Incorrect Wyckoff position list or index passed to jkfromi")
+    return None
+
+def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False):
+    '''
+    Given a list of points, return index of Wyckoff position in space group.
+    If no match found, returns False.
+
+    Args:
+        points: a list of 3d coordinates or SymmOps to check
+        sg: the international space group number to check
+        wyckoffs: a list of Wyckoff positions obtained from get_wyckoffs.
+        exact_translation: whether we require two SymmOps to have exactly equal
+            translational components. If false, translations related by +-1
+            are considered equal
+    '''
+    points = np.array(points)
+    points = np.around((points*1e+10))/1e+10
+
+    if wyckoffs == None:
+        wyckoffs = get_wyckoffs(sg)
+        gen_pos = wyckoffs[0]
+    else:
+        gen_pos = wyckoffs[0][0]
+    new_points = []
+    #
+    if exact_translation == False:
+        for p in points:
+            new_points.append(p - np.floor(p))
+        points = new_points
+    w_symm_all = get_wyckoff_symmetry(sg)
+    p_symm = []
+    #If exact_translation is false, store WP's which might be a match
+    possible = []
+    for x in points:
+        p_symm.append(site_symm(x, gen_pos))
+    for i, wp in enumerate(wyckoffs):
+        w_symm = w_symm_all[i]
+        if len(p_symm) == len(w_symm):
+            temp = deepcopy(w_symm)
+            for p in p_symm:
+                for w in temp:
+                    if exact_translation:
+                        if p == w:
+                            temp.remove(w)
+                    elif not exact_translation:
+                        temp2 = deepcopy(w)
+                        for op_p in p:
+                            for op_w in w:
+                                #Check that SymmOp's are equal up to some integer translation
+                                if are_equal(op_w, op_p, allow_pbc=True):
+                                    temp2.remove(op_w)
+                        if temp2 == []:
+                            temp.remove(w)
+            if temp == []:
+                #If we find a match with exact translations
+                if exact_translation:
+                    #Check orientations
+                    j, k = jkfromi(i, orientations)
+                    if orientations[j][k] != []:
+                        return i
+                    else:
+                        return False
+                elif not exact_translation:
+                    possible.append(i)
+        #If no matching WP's are found
+    if len(possible) == 0:
+        return False
+    #If exactly one matching WP is found
+    elif len(possible) == 1:
+        j, k = jkfromi(possible[0], orientations)
+        if orientations[j][k] != []:
+            return possible[0]
+        else:
+            return False
+    #If multiple WP's are found
+    elif len(possible) > 1:
+        #TODO: add a way to differentiate between possible WP's
+        #print("Warning: multiple Wyckoff positions found")
+        new = []
+        for i in possible:
+            j, k = jkfromi(i, orientations)
+            if orientations[j][k] != []:
+                new.append(i)
+        if len(new) == 0:
+            return False
+        elif len(new) == 1:
+            return new[0]
+        elif len(new) > 1:
+            return choose(new)
+
+def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations):
+    while True:
+        pairs, graph = find_short_dist(coor, lattice, tol)
+        index = None
+        valid = True
+        if len(pairs)>0 and valid is True:
+            if len(coor) > len(wyckoff[-1][0]):
+                merged = []
+                groups = connected_components(graph)
+                for group in groups:
+                    #print(coor[group])
+                    #print(coor[group].mean(0))
+                    merged.append(get_center(coor[group], lattice))
+                merged = np.array(merged)
+                #if check_wyckoff_position(merged, sg, wyckoff) is not False:
+                index = check_wyckoff_position_molecular(merged, sg, orientations, exact_translation=False)
+                if index is False:
+                    return coor, False
+                elif index is None:
+                    valid = False
+                else:
+                    #Check each possible merged Wyckoff position for orientaitons
+                    coor = merged
+
+            else:#no way to merge
+                #print('no way to Merge, FFFFFFFFFFFFFFFFFFFFFFF----------------')
+                return coor, False
+        else:
+            if index is None:
+                index = check_wyckoff_position_molecular(coor, sg, orientations, exact_translation=False)
+            return coor, index
 
 def choose_wyckoff_molecular(wyckoffs, number, orientations):
     """
@@ -285,12 +420,14 @@ class molecular_crystal():
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding molecular specie
                 wps_total = []      #to store corresponding Wyckoff position indices
+                points_total = []   #to store the generating x,y,z points
                 good_structure = False
 
                 for cycle2 in range(max2):
                     coordinates_tmp = deepcopy(coordinates_total)
                     sites_tmp = deepcopy(sites_total)
                     wps_tmp = deepcopy(wps_total)
+                    points_tmp = deepcopy(points_total)
                     
             	    #Add molecules specie by specie
                     for numMol, mol in zip(self.numMols, self.molecules):
@@ -314,19 +451,21 @@ class molecular_crystal():
                                 #print('generating new points:', point)
                                 coords = np.array([op.operate(point) for op in ops])
                                 #merge_coordinate if the atoms are close
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
+                                coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, self.wyckoffs, self.sg, self.radii[i], self.valid_orientations[i])
                                 if good_merge is not False:
+                                    wp_index = good_merge
                                     coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                    #print('existing: ', coordinates_tmp)
                                     if check_distance_molecular(coordinates_tmp, coords_toadd, sites_tmp, i, cell_matrix, self.radii):
                                         coordinates_tmp.append(coords_toadd)
                                         sites_tmp.append(i)
-                                        wps_tmp.append(indices)
+                                        wps_tmp.append(wp_index)
+                                        points_tmp.append(point)
                                         numMol_added += len(coords_toadd)
                                     if numMol_added == numMol:
                                         coordinates_total = deepcopy(coordinates_tmp)
                                         sites_total = deepcopy(sites_tmp)
                                         wps_total = deepcopy(wps_tmp)
+                                        points_total = deepcopy(points_tmp)
                                         break
                         if numMol_added != numMol:
                             break  #need to repeat from the 1st species
@@ -345,28 +484,24 @@ class molecular_crystal():
                     final_site = []
                     final_number = []
                     final_lattice = cell_matrix
-                    for coor, i, indices in zip(coordinates_total, sites_total, wps_total):
-                        x = coor[0]
+                    wyckoffs = get_wyckoffs(sg)
+                    for center0, i, wp_index in zip(points_total, sites_total, wps_total):
                         mol = self.molecules[i]
                         mo = deepcopy(mol)
-                        j, k = indices
+                        #get j, k from wp_index
+                        num = 0
+                        found = False
+                        j, k = jkfromi(wp_index, self.wyckoffs)
                         op1 = choose(self.valid_orientations[i][j][k]).get_op()
                         mo.apply_operation(op1)
-                        wyckoff_ops = self.wyckoffs[j][k]
-                        for op2 in wyckoff_ops:
-                            x = op2.operate(coor[0])
-                            sx, sy, sz = x[0], x[1], x[2]
-                            mo.apply_operation(op2)
-                            if self.valid_orientations[i][j][k] == []:
-                                print(i,j,k)
-                            elif self.valid_orientations[i][j][k] == [[]]:
-                                print(i,j,k)
-                            
+                        for op2 in get_wyckoff_generators(self.sg)[wp_index]:
                             for site in mo:
                                 #Place molecular coordinates in relative coordinates
-                                new_vector = np.dot(np.linalg.inv(cell_matrix), site.coords)
-                                mx, my, mz = new_vector[0], new_vector[1], new_vector[2]
-                                final_coor.append(list([mx+sx,my+sy,mz+sz]))
+                                relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
+                                raw_vector = center0 + relative_coords
+                                new_vector = op2.operate(raw_vector)
+                                new_vector -= np.floor(new_vector)
+                                final_coor.append(new_vector)
                                 final_site.append(site.specie)
                                 final_number.append(site.specie.number)
 
@@ -403,8 +538,8 @@ if __name__ == "__main__":
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=12, 
             help="desired numbers of molecules: 12", metavar="numMols")
-    parser.add_option("-v", "--volume", dest="factor", default=10.0, type=float, 
-            help="volume factors: default 2.0", metavar="factor")
+    parser.add_option("-v", "--volume", dest="factor", default=20.0, type=float, 
+            help="volume factors: default 20.0", metavar="factor")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
