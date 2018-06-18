@@ -334,31 +334,26 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
                 if not np.isclose(a, 0, rtol=.01):
                     print("Error: Generated incorrect rotation: "+str(theta))
-                orientations.append(T2)
+                o = orientation(T2, degrees=0)
+                orientations.append(o)
         #If there is only one constraint
         if c1[1] == []:
-            if randomize is True:
-                a = rand()*2*pi
-                R = aa2matrix(constraint1.axis, a)
-                T2 = np.dot(R, T)
-                orientations.append(T2)
-            else:
-                orientations.append(T)
+            o = orientation(T, degrees=1, axis=constraint1.axis)
+            orientations.append(o)
     #Ensure the identity orientation is checked if no constraints are found
     if constraints_m == []:
-        if randomize is True:
-            R = aa2matrix(1,1,random=True)
-            orientations.append(R)
-        elif randomize is False:
-            orientations.append(np.identity(3))
+        o = orientation(np.identity(3), degrees=2)
+        orientations.append(o)
     
     #Remove redundancy from orientations
     list_i = list(range(len(orientations)))
     list_j = list(range(len(orientations)))
-    for i , m1 in enumerate(orientations):
+    for i , o1 in enumerate(orientations):
         if i in list_i:
-            for j , m2 in enumerate(orientations):
+            for j , o2 in enumerate(orientations):
                 if i > j and j in list_j and j in list_i:
+                    m1 = o1.get_matrix(angle=0)
+                    m2 = o2.get_matrix(angle=0)
                     new_op = SymmOp.from_rotation_and_translation(np.dot(m2, np.linalg.inv(m1)), [0,0,0])
                     P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0,0,0])
                     old_op = P*new_op*P.inverse
@@ -374,7 +369,10 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     #If consistent, put into an array of valid orientations
     allowed = []
     for o in orientations:
-        op = SymmOp.from_rotation_and_translation(o,[0,0,0])
+        if randomize is True:
+            op = o.get_op()
+        elif randomize is False:
+            op = o.get_op(angle=0)
         mo = deepcopy(mol)
         mo.apply_operation(op)
         if orientation_in_wyckoff_position(mo, sg, index, exact_orientation=True, already_oriented=already_oriented) is True:
