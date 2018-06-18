@@ -45,7 +45,7 @@ class molecular_crystal():
     a volume factor, generates a molecular crystal consistent with the given
     constraints. This crystal is stored as a pymatgen struct via self.struct
     '''
-    def __init__(self, sg, molecules, numMols, factor):
+    def __init__(self, sg, molecules, numMols, factor, allow_inversion=False, orientations=None):
         
         #Necessary input
         numMols = np.array(numMols) #must convert it to np.array
@@ -65,6 +65,14 @@ class molecular_crystal():
         self.numMols = numMols * cellsize(self.sg)
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
+        #Whether or not to allow chiral molecules to be flipped
+        self.allow_inversion = allow_inversion
+        #When generating multiple crystals of the same stoichiometry and sg,
+        #allow the user to re-use the allowed orientations, to reduce time cost
+        if orientations is None:
+            self.get_orientations()
+        else:
+            self.valid_orientations = orientations
         self.generate_crystal()
 
 
@@ -76,12 +84,38 @@ class molecular_crystal():
         self.Msg5 = 'Finishing: added the specie'
         self.Msg6 = 'Finishing: added the whole structure'
 
-    def check_compatible(self):
+    def get_orientations(self):
         """
+        Calculate the valid orientations for each Molecule and Wyckoff position.
+        Returns a list with 4 indices:
+        index 1: the molecular prototype's index
+        index 2: the Wyckoff position's 1st index (based on multiplicity)
+        index 3: the WP's 2nd index (within the group of equal multiplicity)
+        index 4: the index of the valid orientation for the molecule/WP pair
+        For example, self.valid_orientations[i][j][k] would be a list of valid
+            orientations for self.molecules[i],
+            in the Wyckoff position self.wyckoffs[j][k]
+        """
+        self.valid_orientations = []
+        for mol in self.molecules:
+            self.valid_orientations.append([])
+            wp_index = -1
+            for i, x in enumerate(self.wyckoffs):
+                self.valid_orientations[-1].append([])
+                for j, wp in enumerate(x):
+                    wp_index += 1
+                    allowed = orientation_in_wyckoff_position(mol, self.sg, wp_index, already_oriented=True, allow_inversion=self.allow_inversion)
+                    if allowed is not False:
+                        self.valid_orientations[-1][-1].append(allowed)
+                    elif allowed is False:
+                        self.valid_orientations[-1][-1].append([])
+
+    def check_compatible(self):
+        '''
         check if the number of molecules is compatible with the
         wyckoff positions
         needs to improve later
-        """
+        '''
         N_site = [len(x[0]) for x in self.wyckoffs]
         has_freedom = False
         #remove WP's with no freedom once they are filled
