@@ -587,6 +587,7 @@ def connected_components(graph):
 def merge_coordinate(coor, lattice, wyckoff, sg, tol):
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol)
+        index = None
         if len(pairs)>0:
             if len(coor) > len(wyckoff[-1][0]):
                 merged = []
@@ -597,7 +598,8 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol):
                     merged.append(get_center(coor[group], lattice))
                 merged = np.array(merged)
                 #if check_wyckoff_position(merged, sg, wyckoff) is not False:
-                if check_wyckoff_position(merged, sg, exact_translation=False) is False:
+                index = check_wyckoff_position(merged, sg, exact_translation=False)
+                if index is False:
                     '''print('something is wrong')
                     print(coor)
                     print(merged)
@@ -610,8 +612,10 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol):
             else:#no way to merge
                 #print('no way to Merge, FFFFFFFFFFFFFFFFFFFFFFF----------------')
                 return coor, False
-        else: 
-            return coor, True
+        else:
+            if index is None:
+                index = check_wyckoff_position(coor, sg, exact_translation=False)
+            return coor, index
 
 def estimate_volume(numIons, species, factor=2.0):
     volume = 0
@@ -1018,7 +1022,7 @@ class random_crystal():
                                 coords = np.array([op.operate(point) for op in ops])
                                 #merge_coordinate if the atoms are close
                                 coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
-                                if good_merge:
+                                if good_merge is not False:
                                     coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                     #print('existing: ', coordinates_tmp)
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
@@ -1029,6 +1033,7 @@ class random_crystal():
                                         coordinates_total = deepcopy(coordinates_tmp)
                                         sites_total = deepcopy(sites_tmp)
                                         break
+
                         if numIon_added != numIon:
                             break  #need to repeat from the 1st species
 
