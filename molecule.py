@@ -376,7 +376,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         mo = deepcopy(mol)
         mo.apply_operation(op)
         if orientation_in_wyckoff_position(mo, sg, index, exact_orientation=True, already_oriented=already_oriented) is True:
-            allowed.append(op)
+            allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
         return False
