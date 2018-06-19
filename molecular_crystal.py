@@ -533,11 +533,11 @@ if __name__ == "__main__":
     
     #-------------------------------- Options -------------------------
     parser = OptionParser()
-    parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=194, type=int,
+    parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
             help="desired space group number: 1-230, e.g., 194")
     parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
-    parser.add_option("-n", "--numMols", dest="numMols", default=12, 
+    parser.add_option("-n", "--numMols", dest="numMols", default=4, 
             help="desired numbers of molecules: 12", metavar="numMols")
     parser.add_option("-v", "--volume", dest="factor", default=100.0, type=float, 
             help="volume factors: default 100.0", metavar="factor")
