@@ -100,7 +100,7 @@ def jkfromi(i, olist):
     Given an organized list (Wyckoff positions or orientations), determine
     the two indices which correspond to a single index for an unorganized list
     '''
-    num = 0
+    num = -1
     found = False
     for j , a in enumerate(olist):
         for k , b in enumerate(a):
