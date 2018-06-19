@@ -313,19 +313,19 @@ class orientation():
     def get_matrix(self, angle="random"):
         #Return a SymmOp object rotated by given angle.
         #If "random", rotates by a random amount
-        if degrees == 2:
+        if self.degrees == 2:
             if angle == "random":
                 return aa2matrix(1,1,random=True)
             else:
                 return self.matrix
-        elif degrees == 1:
+        elif self.degrees == 1:
             if angle == "random":
                 R = aa2matrix(self.axis, rand()*2*pi)
                 return np.dot(R, self.matrix)
             else:
                 R = aa2matrix(self.axis, angle)
                 return np.dot(R, self.matrix)
-        elif degrees == 0:
+        elif self.degrees == 0:
             return self.matrix
 
     def get_op(self, angle="random"):
