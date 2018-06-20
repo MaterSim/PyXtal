@@ -285,12 +285,14 @@ class molecular_crystal():
         #Reorient the molecules along their principle axes
         oriented_molecules = []
         for mol in molecules:
-            oriented_molecules.append(reoriented_molecule(mol)[0])
+            pga = PointGroupAnalyzer(mol)
+            mo = pga.symmetrize_molecule()['sym_mol']
+            oriented_molecules.append(mo)
         self.molecules = oriented_molecules
         self.boxes = []
         #Calculate binding boxes for each molecule
         for mol in self.molecules:
-            self.boxes.append(get_box(mol))
+            self.boxes.append(get_box(reoriented_molecule(mol)[0]))
         self.radii = []
         for box in self.boxes:
             self.radii.append(math.sqrt( max(box[1],box[0])**2 + max(box[3],box[2])**2 + max(box[5],box[4])**2 ))
@@ -538,9 +540,9 @@ if __name__ == "__main__":
     parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=4, 
-            help="desired numbers of molecules: 12", metavar="numMols")
-    parser.add_option("-v", "--volume", dest="factor", default=100.0, type=float, 
-            help="volume factors: default 100.0", metavar="factor")
+            help="desired numbers of molecules: 4", metavar="numMols")
+    parser.add_option("-v", "--volume", dest="factor", default=50.0, type=float, 
+            help="volume factors: default 20.0", metavar="factor")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
@@ -557,29 +559,21 @@ if __name__ == "__main__":
     else:
         system = [get_ase_mol(molecule)]
         numMols = [int(number)]
-    #Store the orientations for use
-    print("Calculating molecular orientations...",end="")
-    orientations = []
-    for mol in system:
-        orientations.append(get_sg_orientations(mol,options.sg))
-    print(" Done.")
-    '''for i, x in enumerate(orientations[0]):
-        print("---"+str(i)+str("---"))
-        for y in x:
-            print(y)'''
-    for i in range(10):
+    orientations = None
+    for i in range(100):
         numMols0 = np.array(numMols)
         sg = options.sg
         rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations)
 
         if rand_crystal.valid:
+            orientations = rand_crystal.valid_orientations
             #pymatgen style
-            print("Generated number "+str(i+1))
+            #print("Generated number "+str(i+1))
             rand_crystal.struct.to(fmt="cif", filename = "out/"+str(i+1)+'.cif')
 
             #spglib style structure called cell
-            #ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
-            #print('Space group requested: ', sg, 'generated', ans)
+            ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
+            print('Space group requested: ', sg, 'generated', ans)
 
             #print(CifWriter(new_struct, symprec=0.1).__str__())
             #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
