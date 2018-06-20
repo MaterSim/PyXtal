@@ -53,7 +53,7 @@ Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv("database/wyckoff_list.csv")
 wyckoff_symmetry_df = read_csv("database/wyckoff_symmetry.csv")
 wyckoff_generators_df = read_csv("database/wyckoff_generators.csv")
-letters = "abcdefghijklmnopqrstuvwxyzA"
+
 #Define functions
 #------------------------------
 
@@ -73,6 +73,45 @@ def gaussian(min, max, sigma=3.0):
         if x > min and x < max:
             return x
             
+def letter_from_index(index, sg)
+    '''
+    Given a Wyckoff position's index within a spacegroup,
+    return its number and letter e.g. '4a'
+    '''
+    letters = "abcdefghijklmnopqrstuvwxyzA"
+    wyckoffs = get_wyckoffs(sg)
+    length = len(wyckoffs)
+    return = letters[length - 1 - index]
+
+def index_from_letter(letter, sg)
+    letters = "abcdefghijklmnopqrstuvwxyzA"
+    wyckoffs = get_wyckoffs(sg)
+    length = len(wyckoffs)
+    return =  length - 1 - letters.index(letter)
+
+def jkfromi(i, olist):
+    '''
+    Given an organized list (Wyckoff positions or orientations), determine
+    the two indices which correspond to a single index for an unorganized list
+    '''
+    num = -1
+    found = False
+    for j , a in enumerate(olist):
+        for k , b in enumerate(a):
+            num += 1
+            if num == i:
+                return [j, k]
+    print("Error: Incorrect Wyckoff position list or index passed to jkfromi")
+    return None
+
+def ifromjk(j, k, olist):
+    num = -1
+    for x, a in enumerate(olist):
+        for y, b in enumerate(a):
+            num += 1
+            if x == j and y == k:
+                return num
+
 def random_matrix(width=1.0, unitary=False):
     '''
     Generate a random matrix with Gaussian elements. If unitary is True,
