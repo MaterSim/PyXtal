@@ -95,21 +95,6 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii):
     else:
         return True
 
-def jkfromi(i, olist):
-    '''
-    Given an organized list (Wyckoff positions or orientations), determine
-    the two indices which correspond to a single index for an unorganized list
-    '''
-    num = -1
-    found = False
-    for j , a in enumerate(olist):
-        for k , b in enumerate(a):
-            num += 1
-            if num == i:
-                return [j, k]
-    print("Error: Incorrect Wyckoff position list or index passed to jkfromi")
-    return None
-
 def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False):
     '''
     Given a list of points, return index of Wyckoff position in space group.
