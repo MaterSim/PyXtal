@@ -150,7 +150,7 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
                 #If we find a match with exact translations
                 if exact_translation:
                     #Check orientations
-                    j, k = jkfromi(i, orientations)
+                    j, k = jk_from_i(i, orientations)
                     if orientations[j][k] != []:
                         return i
                     else:
@@ -162,7 +162,7 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
         return False
     #If exactly one matching WP is found
     elif len(possible) == 1:
-        j, k = jkfromi(possible[0], orientations)
+        j, k = jk_from_i(possible[0], orientations)
         if orientations[j][k] != []:
             return possible[0]
         else:
@@ -173,7 +173,7 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
         #print("Warning: multiple Wyckoff positions found")
         new = []
         for i in possible:
-            j, k = jkfromi(i, orientations)
+            j, k = jk_from_i(i, orientations)
             if orientations[j][k] != []:
                 new.append(i)
         if len(new) == 0:
@@ -249,6 +249,24 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
             return choose(good_wyckoff)
         else:
             return False
+
+class mol_site():
+    '''
+    Class for storing molecular Wyckoff positions and orientations within
+    the molecular_crystal class. 
+    '''
+    def __init__(self, mol, position, sg, wp_index, lattice):
+        #Pymatgen molecule object
+        self.mol = mol
+        #Relative coordinates within the unit cell
+        self.position = position
+        #Spacegroup number
+        self.sg = sg
+        #single index of the Wyckoff position within the spacegroup
+        self.wp_index = wp_index
+        #letter of the Wyckoff position
+        self.multiplicity = len(get_wyckoffs(sg)[wp_index])
+        self.letter = letter_from_index(wp_index, sg)
 
 class molecular_crystal():
     '''
@@ -475,22 +493,26 @@ class molecular_crystal():
                             wps_total = []
                     #placing molecules here
                     if good_structure:
+                        final_lattice = cell_matrix
+                        self.lattice = final_lattice   
                         final_coor = []
                         final_site = []
                         final_number = []
-                        final_lattice = cell_matrix
                         wyckoffs = get_wyckoffs(sg)
+                        self.mol_generators = []
                         for center0, i, wp_index in zip(points_total, sites_total, wps_total):
                             mol = self.molecules[i]
                             mo = deepcopy(mol)
                             #get j, k from wp_index
                             num = 0
                             found = False
-                            j, k = jkfromi(wp_index, self.wyckoffs)
+                            j, k = jk_from_i(wp_index, self.wyckoffs)
                             op1 = choose(self.valid_orientations[i][j][k]).get_op()
                             mo.apply_operation(op1)
-                            for op2 in get_wyckoff_generators(self.sg)[wp_index]:
-                                for site in mo:
+                            ms0 = mol_site(mo, center0, self.sg, wp_index, self.lattice)
+                            self.mol_generators.append(ms0)
+                            for index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
+                                for site in mol:
                                     #Place molecular coordinates in relative coordinates
                                     relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
                                     raw_vector = center0 + relative_coords
@@ -500,8 +522,7 @@ class molecular_crystal():
                                     final_site.append(site.specie)
                                     final_number.append(site.specie.number)
 
-                        final_coor -= np.floor(final_coor)
-                        self.lattice = final_lattice                    
+                        final_coor -= np.floor(final_coor)                 
                         self.coordinates = np.array(final_coor)
                         self.sites = final_site                    
                         self.struct = Structure(final_lattice, final_site, np.array(final_coor))
@@ -533,8 +554,8 @@ if __name__ == "__main__":
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=2, 
             help="desired numbers of molecules: 4", metavar="numMols")
-    parser.add_option("-v", "--volume", dest="factor", default=3.0, type=float, 
-            help="volume factors: default 20.0", metavar="factor")
+    parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
+            help="volume factors: default 3.0", metavar="factor")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
