@@ -73,7 +73,7 @@ def gaussian(min, max, sigma=3.0):
         if x > min and x < max:
             return x
             
-def letter_from_index(index, sg)
+def letter_from_index(index, sg):
     '''
     Given a Wyckoff position's index within a spacegroup,
     return its number and letter e.g. '4a'
@@ -81,13 +81,13 @@ def letter_from_index(index, sg)
     letters = "abcdefghijklmnopqrstuvwxyzA"
     wyckoffs = get_wyckoffs(sg)
     length = len(wyckoffs)
-    return = letters[length - 1 - index]
+    return letters[length - 1 - index]
 
-def index_from_letter(letter, sg)
+def index_from_letter(letter, sg):
     letters = "abcdefghijklmnopqrstuvwxyzA"
     wyckoffs = get_wyckoffs(sg)
     length = len(wyckoffs)
-    return =  length - 1 - letters.index(letter)
+    return length - 1 - letters.index(letter)
 
 def jk_from_i(i, olist):
     '''
