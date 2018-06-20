@@ -38,7 +38,7 @@ def get_sg_orientations(mol, sg, allow_inversion=False):
                 valid_orientations[-1].append([])
     return valid_orientations
 
-def get_box(mol, padding=1):
+def get_box(mol, padding=1.5):
     '''
     Given a molecule, find a minimum orthorhombic box containing it.
     Size is calculated using min and max x, y, and z values.
@@ -208,8 +208,6 @@ def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations):
                 merged = []
                 groups = connected_components(graph)
                 for group in groups:
-                    #print(coor[group])
-                    #print(coor[group].mean(0))
                     merged.append(get_center(coor[group], lattice))
                 merged = np.array(merged)
                 #if check_wyckoff_position(merged, sg, wyckoff) is not False:
@@ -294,8 +292,13 @@ class molecular_crystal():
         for mol in self.molecules:
             self.boxes.append(get_box(reoriented_molecule(mol)[0]))
         self.radii = []
+        self.minlen = []
+        self.maxlen = []
         for box in self.boxes:
             self.radii.append(math.sqrt( max(box[1],box[0])**2 + max(box[3],box[2])**2 + max(box[5],box[4])**2 ))
+            lens = [box[1]-box[0], box[3]-box[2], box[5]-box[4]]
+            self.minlen.append(min(lens))
+            self.maxlen.append(min(lens))
         self.Msgs()
         self.numMols = numMols * cellsize(self.sg)
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
@@ -405,117 +408,121 @@ class molecular_crystal():
             return
         else:
             if degrees == 0:
-                max1 = 5
-                max2 = 5
-                max3 = 5
+                max1 = 10
+                max2 = 100
+                max3 = 100
             #Calculate a minimum vector length for generating a lattice
-            minvector = max(max(2.0*radius for radius in self.radii), tol_m)
+            minvector = max(lens for lens in self.minlen)
+            #print(self.radii, minvector)
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                cell_matrix = para2matrix(cell_para)
-                if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                    print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
-                    print('cell_para:  ', cell_para)
-                    sys.exit(0)
+                if cell_para is None:
+                    break
+                else:
+                    cell_matrix = para2matrix(cell_para)
+                    if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
+                        print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
+                        print('cell_para:  ', cell_para)
+                        sys.exit(0)
 
-                coordinates_total = [] #to store the added coordinates
-                sites_total = []      #to store the corresponding molecular specie
-                wps_total = []      #to store corresponding Wyckoff position indices
-                points_total = []   #to store the generating x,y,z points
-                good_structure = False
+                    coordinates_total = [] #to store the added coordinates
+                    sites_total = []      #to store the corresponding molecular specie
+                    wps_total = []      #to store corresponding Wyckoff position indices
+                    points_total = []   #to store the generating x,y,z points
+                    good_structure = False
 
-                for cycle2 in range(max2):
-                    coordinates_tmp = deepcopy(coordinates_total)
-                    sites_tmp = deepcopy(sites_total)
-                    wps_tmp = deepcopy(wps_total)
-                    points_tmp = deepcopy(points_total)
-                    
-            	    #Add molecules specie by specie
-                    for numMol, mol in zip(self.numMols, self.molecules):
-                        i = self.molecules.index(mol)
-                        tol = max(0.5*self.radii[i], tol_m)
-                        numMol_added = 0
+                    for cycle2 in range(max2):
+                        coordinates_tmp = deepcopy(coordinates_total)
+                        sites_tmp = deepcopy(sites_total)
+                        wps_tmp = deepcopy(wps_total)
+                        points_tmp = deepcopy(points_total)
+                        
+                	    #Add molecules specie by specie
+                        for numMol, mol in zip(self.numMols, self.molecules):
+                            i = self.molecules.index(mol)
+                            numMol_added = 0
 
-                        #Now we start to add the specie to the wyckoff position
-                        for cycle3 in range(max3):
-                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                            #NOTE: The molecular version return wyckoff indices, not ops
-                            indices = choose_wyckoff_molecular(self.wyckoffs, numMol-numMol_added, self.valid_orientations[i])
-                            if indices is not False:
-                                j, k = indices
-                                if self.valid_orientations[i][j][k] == []:
-                                    print("Error: Failed to catch empty set...")
-                                    print(i,j,k)
-            	    	    #Generate a list of coords from ops
-                                ops = self.wyckoffs[j][k]
-                                point = np.random.random(3)
-                                #print('generating new points:', point)
-                                coords = np.array([op.operate(point) for op in ops])
-                                #merge_coordinate if the atoms are close
-                                coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, self.wyckoffs, self.sg, self.radii[i]*2, self.valid_orientations[i])
-                                if good_merge is not False:
-                                    wp_index = good_merge
-                                    point = coords_toadd[0]
-                                    coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                    if check_distance_molecular(coordinates_tmp, coords_toadd, sites_tmp, i, cell_matrix, self.radii):
-                                        coordinates_tmp.append(coords_toadd)
-                                        sites_tmp.append(i)
-                                        wps_tmp.append(wp_index)
-                                        points_tmp.append(point)
-                                        numMol_added += len(coords_toadd)
-                                    if numMol_added == numMol:
-                                        coordinates_total = deepcopy(coordinates_tmp)
-                                        sites_total = deepcopy(sites_tmp)
-                                        wps_total = deepcopy(wps_tmp)
-                                        points_total = deepcopy(points_tmp)
-                                        break
-                        if numMol_added != numMol:
-                            break  #need to repeat from the 1st species
+                            #Now we start to add the specie to the wyckoff position
+                            for cycle3 in range(max3):
+                                #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
+                                #NOTE: The molecular version return wyckoff indices, not ops
+                                indices = choose_wyckoff_molecular(self.wyckoffs, numMol-numMol_added, self.valid_orientations[i])
+                                if indices is not False:
+                                    j, k = indices
+                                    if self.valid_orientations[i][j][k] == []:
+                                        print("Error: Failed to catch empty set...")
+                                        print(i,j,k)
+                	    	    #Generate a list of coords from ops
+                                    ops = self.wyckoffs[j][k]
+                                    point = np.random.random(3)
+                                    #print('generating new points:', point)
+                                    coords = np.array([op.operate(point) for op in ops])
+                                    #merge_coordinate if the atoms are close
+                                    coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, 
+                                            self.wyckoffs, self.sg, 3.0, self.valid_orientations[i])
+                                    if good_merge is not False:
+                                        wp_index = good_merge
+                                        point = coords_toadd[0]
+                                        coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
+                                        if check_distance_molecular(coordinates_tmp, coords_toadd, sites_tmp, i, cell_matrix, self.radii):
+                                            coordinates_tmp.append(coords_toadd)
+                                            sites_tmp.append(i)
+                                            wps_tmp.append(wp_index)
+                                            points_tmp.append(point)
+                                            numMol_added += len(coords_toadd)
+                                        if numMol_added == numMol:
+                                            coordinates_total = deepcopy(coordinates_tmp)
+                                            sites_total = deepcopy(sites_tmp)
+                                            wps_total = deepcopy(wps_tmp)
+                                            points_total = deepcopy(points_tmp)
+                                            break
+                            if numMol_added != numMol:
+                                break  #need to repeat from the 1st species
 
-                    if numMol_added == numMol:
-                        #print(self.Msg6)
-                        good_structure = True
-                        break
-                    else: #reset the coordinates and sites
-                        coordinates_total = []
-                        sites_total = []
-                        wps_total = []
+                        if numMol_added == numMol:
+                            #print(self.Msg6)
+                            good_structure = True
+                            break
+                        else: #reset the coordinates and sites
+                            coordinates_total = []
+                            sites_total = []
+                            wps_total = []
+                    #placing molecules here
+                    if good_structure:
+                        final_coor = []
+                        final_site = []
+                        final_number = []
+                        final_lattice = cell_matrix
+                        wyckoffs = get_wyckoffs(sg)
+                        for center0, i, wp_index in zip(points_total, sites_total, wps_total):
+                            mol = self.molecules[i]
+                            mo = deepcopy(mol)
+                            #get j, k from wp_index
+                            num = 0
+                            found = False
+                            j, k = jkfromi(wp_index, self.wyckoffs)
+                            op1 = choose(self.valid_orientations[i][j][k]).get_op()
+                            mo.apply_operation(op1)
+                            for op2 in get_wyckoff_generators(self.sg)[wp_index]:
+                                for site in mo:
+                                    #Place molecular coordinates in relative coordinates
+                                    relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
+                                    raw_vector = center0 + relative_coords
+                                    new_vector = op2.operate(raw_vector)
+                                    new_vector -= np.floor(new_vector)
+                                    final_coor.append(new_vector)
+                                    final_site.append(site.specie)
+                                    final_number.append(site.specie.number)
 
-                if good_structure:
-                    final_coor = []
-                    final_site = []
-                    final_number = []
-                    final_lattice = cell_matrix
-                    wyckoffs = get_wyckoffs(sg)
-                    for center0, i, wp_index in zip(points_total, sites_total, wps_total):
-                        mol = self.molecules[i]
-                        mo = deepcopy(mol)
-                        #get j, k from wp_index
-                        num = 0
-                        found = False
-                        j, k = jkfromi(wp_index, self.wyckoffs)
-                        op1 = choose(self.valid_orientations[i][j][k]).get_op()
-                        mo.apply_operation(op1)
-                        for op2 in get_wyckoff_generators(self.sg)[wp_index]:
-                            for site in mo:
-                                #Place molecular coordinates in relative coordinates
-                                relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
-                                raw_vector = center0 + relative_coords
-                                new_vector = op2.operate(raw_vector)
-                                new_vector -= np.floor(new_vector)
-                                final_coor.append(new_vector)
-                                final_site.append(site.specie)
-                                final_number.append(site.specie.number)
-
-                    final_coor -= np.floor(final_coor)
-                    self.lattice = final_lattice                    
-                    self.coordinates = np.array(final_coor)
-                    self.sites = final_site                    
-                    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                    self.valid = True
-                    return
+                        final_coor -= np.floor(final_coor)
+                        self.lattice = final_lattice                    
+                        self.coordinates = np.array(final_coor)
+                        self.sites = final_site                    
+                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                        self.valid = True
+                        return
         if degrees == 0: print("Couldn't generate crystal. Note: Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
@@ -539,9 +546,9 @@ if __name__ == "__main__":
             help="desired space group number: 1-230, e.g., 194")
     parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
-    parser.add_option("-n", "--numMols", dest="numMols", default=4, 
+    parser.add_option("-n", "--numMols", dest="numMols", default=2, 
             help="desired numbers of molecules: 4", metavar="numMols")
-    parser.add_option("-v", "--volume", dest="factor", default=50.0, type=float, 
+    parser.add_option("-v", "--volume", dest="factor", default=3.0, type=float, 
             help="volume factors: default 20.0", metavar="factor")
 
     (options, args) = parser.parse_args()    
@@ -560,20 +567,20 @@ if __name__ == "__main__":
         system = [get_ase_mol(molecule)]
         numMols = [int(number)]
     orientations = None
-    for i in range(100):
+    for i in range(1):
         numMols0 = np.array(numMols)
         sg = options.sg
         rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations)
 
         if rand_crystal.valid:
-            orientations = rand_crystal.valid_orientations
+            #orientations = rand_crystal.valid_orientations
             #pymatgen style
             #print("Generated number "+str(i+1))
-            rand_crystal.struct.to(fmt="cif", filename = "out/"+str(i+1)+'.cif')
+            CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = "out/"+str(i+1)+'.cif')
 
             #spglib style structure called cell
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
-            print('Space group requested: ', sg, 'generated', ans)
+            print('Space group requested: ', sg, 'generated', ans, 'vol: ', rand_crystal.volume)
 
             #print(CifWriter(new_struct, symprec=0.1).__str__())
             #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
@@ -581,6 +588,6 @@ if __name__ == "__main__":
 
         else: 
             print('something is wrong')
-            #print(len(new_struct.frac_coords))
+            print(len(rand_crystal.coordinates))
             break
             #print(new_struct)

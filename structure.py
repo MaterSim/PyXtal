@@ -694,6 +694,8 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             a, b, c = s, s, s
         #Check that lattice meets requirements
         maxvec = (a*b*c)/(minvec**2)
+        if minvec > maxvec:
+            minvec, maxvec = maxvec, minvec
         if(a>minvec and b>minvec and c>minvec
         and a<maxvec and b<maxvec and c<maxvec
         and alpha>minangle and beta>minangle and gamma>minangle
@@ -701,8 +703,10 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
         and a/b<max_ratio and a/c<max_ratio and b/c<max_ratio
         and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
             return np.array([a, b, c, alpha, beta, gamma])
+        #else:
+            #print([a, b, c, maxvec, minvec, maxvec*minvec*minvec])
     #If maxattempts tries have been made without success
-    print("Error: Could not generate lattice after "+str(n+1)+" attempts")
+    print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
 
 def choose_wyckoff(wyckoffs, number):
@@ -993,77 +997,80 @@ class random_crystal():
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                cell_matrix = para2matrix(cell_para)
-                if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                    print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
-                    print('cell_para:  ', cell_para)
-                    sys.exit(0)
+                if cell_para is None:
+                    break
+                else:
+                    cell_matrix = para2matrix(cell_para)
+                    if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
+                        print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
+                        print('cell_para:  ', cell_para)
+                        sys.exit(0)
 
-                coordinates_total = [] #to store the added coordinates
-                sites_total = []      #to store the corresponding specie
-                good_structure = False
+                    coordinates_total = [] #to store the added coordinates
+                    sites_total = []      #to store the corresponding specie
+                    good_structure = False
 
-                for cycle2 in range(max2):
-                    coordinates_tmp = deepcopy(coordinates_total)
-                    sites_tmp = deepcopy(sites_total)
-                    
-            	    #Add specie by specie
-                    for numIon, specie in zip(self.numIons, self.species):
-                        numIon_added = 0
-                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
+                    for cycle2 in range(max2):
+                        coordinates_tmp = deepcopy(coordinates_total)
+                        sites_tmp = deepcopy(sites_total)
+                        
+            	        #Add specie by specie
+                        for numIon, specie in zip(self.numIons, self.species):
+                            numIon_added = 0
+                            tol = max(0.5*Element(specie).covalent_radius, tol_m)
 
-                        #Now we start to add the specie to the wyckoff position
-                        for cycle3 in range(max3):
-                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                            ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
-                            if ops is not False:
-            	    	    #Generate a list of coords from ops
-                                point = np.random.random(3)
-                                #print('generating new points:', point)
-                                coords = np.array([op.operate(point) for op in ops])
-                                #merge_coordinate if the atoms are close
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
-                                if good_merge is not False:
-                                    coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                    #print('existing: ', coordinates_tmp)
-                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
-                                        coordinates_tmp.append(coords_toadd)
-                                        sites_tmp.append(specie)
-                                        numIon_added += len(coords_toadd)
-                                    if numIon_added == numIon:
-                                        coordinates_total = deepcopy(coordinates_tmp)
-                                        sites_total = deepcopy(sites_tmp)
-                                        break
+                            #Now we start to add the specie to the wyckoff position
+                            for cycle3 in range(max3):
+                                #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
+                                ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
+                                if ops is not False:
+            	        	    #Generate a list of coords from ops
+                                    point = np.random.random(3)
+                                    #print('generating new points:', point)
+                                    coords = np.array([op.operate(point) for op in ops])
+                                    #merge_coordinate if the atoms are close
+                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
+                                    if good_merge is not False:
+                                        coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
+                                        #print('existing: ', coordinates_tmp)
+                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
+                                            coordinates_tmp.append(coords_toadd)
+                                            sites_tmp.append(specie)
+                                            numIon_added += len(coords_toadd)
+                                        if numIon_added == numIon:
+                                            coordinates_total = deepcopy(coordinates_tmp)
+                                            sites_total = deepcopy(sites_tmp)
+                                            break
 
-                        if numIon_added != numIon:
-                            break  #need to repeat from the 1st species
+                            if numIon_added != numIon:
+                                break  #need to repeat from the 1st species
 
-                    if numIon_added == numIon:
-                        #print(self.Msg6)
-                        good_structure = True
-                        break
-                    else: #reset the coordinates and sites
-                        coordinates_total = []
-                        sites_total = []
+                        if numIon_added == numIon:
+                            #print(self.Msg6)
+                            good_structure = True
+                            break
+                        else: #reset the coordinates and sites
+                            coordinates_total = []
+                            sites_total = []
 
-                if good_structure:
-                    final_coor = []
-                    final_site = []
-                    final_number = []
-                    final_lattice = cell_matrix
-                    for coor, ele in zip(coordinates_total, sites_total):
-                        for x in coor:
-                            final_coor.append(x)
-                            final_site.append(ele)
-                            final_number.append(Element(ele).z)
+                    if good_structure:
+                        final_coor = []
+                        final_site = []
+                        final_number = []
+                        final_lattice = cell_matrix
+                        for coor, ele in zip(coordinates_total, sites_total):
+                            for x in coor:
+                                final_coor.append(x)
+                                final_site.append(ele)
+                                final_number.append(Element(ele).z)
 
-                    self.lattice = final_lattice                    
-                    self.coordinates = np.array(final_coor)
-                    self.sites = final_site                    
-                    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                    self.valid = True
-                    return
+                        self.lattice = final_lattice                    
+                        self.coordinates = np.array(final_coor)
+                        self.sites = final_site                    
+                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                        self.valid = True
+                        return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
