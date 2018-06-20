@@ -33,6 +33,7 @@ from pandas import read_csv
 
 import database.hall as hall
 from matrix import OperationAnalyzer
+from matrix import angle
 
 #some optional libs
 #from vasp import read_vasp
