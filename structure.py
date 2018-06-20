@@ -89,7 +89,7 @@ def index_from_letter(letter, sg)
     length = len(wyckoffs)
     return =  length - 1 - letters.index(letter)
 
-def jkfromi(i, olist):
+def jk_from_i(i, olist):
     '''
     Given an organized list (Wyckoff positions or orientations), determine
     the two indices which correspond to a single index for an unorganized list
@@ -101,10 +101,10 @@ def jkfromi(i, olist):
             num += 1
             if num == i:
                 return [j, k]
-    print("Error: Incorrect Wyckoff position list or index passed to jkfromi")
+    print("Error: Incorrect Wyckoff position list or index passed to jk_from_i")
     return None
 
-def ifromjk(j, k, olist):
+def i_from_jk(j, k, olist):
     num = -1
     for x, a in enumerate(olist):
         for y, b in enumerate(a):
