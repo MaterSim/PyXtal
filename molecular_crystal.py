@@ -522,7 +522,7 @@ class molecular_crystal():
                                     final_site.append(site.specie)
                                     final_number.append(site.specie.number)
 
-                        final_coor -= np.floor(final_coor)                 
+                        final_coor -= np.floor(final_coor)
                         self.coordinates = np.array(final_coor)
                         self.sites = final_site                    
                         self.struct = Structure(final_lattice, final_site, np.array(final_coor))
@@ -555,13 +555,18 @@ if __name__ == "__main__":
     parser.add_option("-n", "--numMols", dest="numMols", default=2, 
             help="desired numbers of molecules: 4", metavar="numMols")
     parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
-            help="volume factors: default 3.0", metavar="factor")
+            help="volume factor: default 3.0", metavar="factor")
+    parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
+    parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
+            help="number of crystals to generate: default 1", metavar="attempts")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
     number = options.numMols
+    verbosity = options.verbosity
+    attempts = options.attempts
+    
     numMols = []
-
     if molecule.find(',') > 0:
         strings = molecule.split(',')
         system = []
@@ -573,7 +578,7 @@ if __name__ == "__main__":
         system = [get_ase_mol(molecule)]
         numMols = [int(number)]
     orientations = None
-    for i in range(1):
+    for i in range(attempts):
         numMols0 = np.array(numMols)
         sg = options.sg
         rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations)
@@ -587,6 +592,9 @@ if __name__ == "__main__":
             #spglib style structure called cell
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group requested: ', sg, 'generated', ans, 'vol: ', rand_crystal.volume)
+            if verbosity > 0:
+                for ms in rand_crystal.mol_generators:
+                    print(str(ms.multiplicity)+str(ms.letter)+" "+str(ms.position))
 
             #print(CifWriter(new_struct, symprec=0.1).__str__())
             #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
