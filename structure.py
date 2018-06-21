@@ -952,6 +952,24 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
         #print("Warning: multiple Wyckoff positions found")
         return possible
 
+def verify_distances(coordinates, species, lattice, factor=1.0):
+    for i, c1 in enumerate(coordinates):
+        specie1 = species[i]
+        for j, c2 in enumerate(coordinates):
+            if j > i:
+                specie2 = species[j]
+                diff = np.array(c2) - np.array(c1)
+                for i in range(len(diff)):
+                    while diff[i] > 0.5:
+                        diff[i] -= 0.5
+                    while diff[i] < -0.5:
+                        diff[i] += 0.5
+                d_min = distance(diff, lattice)
+                tol = factor*0.5*(Element(specie1).covalent_radius + Element(specie2).covalent_radius)
+                if d_min < tol:
+                    return False
+    return True
+
 class random_crystal():
     def __init__(self, sg, species, numIons, factor):
         
