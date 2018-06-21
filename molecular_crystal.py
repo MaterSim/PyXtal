@@ -10,7 +10,7 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
     '''
     volume = 0
     for numMol, box in zip(numMols, boxes):
-        volume += (box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
+        volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
     return factor*volume
 
 def get_sg_orientations(mol, sg, allow_inversion=False):
@@ -56,9 +56,9 @@ def get_box(mol, padding=1.5):
         if x < minx: minx = x
         if y < minx: minx = y
         if z < minx: minx = z
-        if x > minx: maxx = x
-        if y > minx: maxx = y
-        if z > minx: maxx = z
+        if x > maxx: maxx = x
+        if y > maxx: maxx = y
+        if z > maxx: maxx = z
     return [minx-padding,maxx+padding,miny-padding,maxy+padding,minz-padding,minz+padding]
 
 def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii):
@@ -520,11 +520,11 @@ class molecular_crystal():
                                     new_vector = op2.operate(raw_vector)
                                     new_vector -= np.floor(new_vector)
                                     final_coor.append(new_vector)
-                                    final_site.append(site.species_string)
+                                    final_site.append(site.specie)
                                     final_number.append(site.specie.number)
 
                         final_coor -= np.floor(final_coor)
-                        if verify_distances(final_coor, final_site, final_lattice) is True:      
+                        if verify_distances(final_coor, list(s.name for s in final_site), final_lattice, factor=0.1) is True:      
                             self.lattice = final_lattice  
                             self.coordinates = np.array(final_coor)
                             self.sites = final_site              
@@ -532,7 +532,7 @@ class molecular_crystal():
                             self.spg_struct = (final_lattice, np.array(final_coor), final_number)
                             self.valid = True
                             return
-                        #else: print("Failed final distance check.")
+                        else: print("Failed final distance check.")
         print("Couldn't generate crystal after max attempts.")
         if degrees == 0:
             print("Note: Wyckoff positions have no degrees of freedom.")
