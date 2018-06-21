@@ -412,8 +412,8 @@ class molecular_crystal():
         else:
             if degrees == 0:
                 max1 = 10
-                max2 = 100
-                max3 = 100
+                max2 = 10
+                max3 = 10
             #Calculate a minimum vector length for generating a lattice
             minvector = max(lens for lens in self.minlen)
             #print(self.radii, minvector)
@@ -529,7 +529,9 @@ class molecular_crystal():
                         self.spg_struct = (final_lattice, np.array(final_coor), final_number)
                         self.valid = True
                         return
-        if degrees == 0: print("Couldn't generate crystal. Note: Wyckoff positions have no degrees of freedom.")
+        print("Couldn't generate crystal after max attempts.")
+        if degrees == 0:
+            print("Note: Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
         return self.Msg2
@@ -602,6 +604,6 @@ if __name__ == "__main__":
 
         else: 
             print('something is wrong')
-            print(len(rand_crystal.coordinates))
+            #print(len(rand_crystal.coordinates))
             break
             #print(new_struct)
