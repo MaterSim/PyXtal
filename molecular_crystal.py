@@ -400,6 +400,8 @@ class molecular_crystal():
             #print("Warning: Wyckoff Positions have no degrees of freedom.")
             return 0
 
+        return True
+
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """the main code to generate random crystal """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
@@ -493,8 +495,7 @@ class molecular_crystal():
                             wps_total = []
                     #placing molecules here
                     if good_structure:
-                        final_lattice = cell_matrix
-                        self.lattice = final_lattice   
+                        final_lattice = cell_matrix 
                         final_coor = []
                         final_site = []
                         final_number = []
@@ -509,7 +510,7 @@ class molecular_crystal():
                             j, k = jk_from_i(wp_index, self.wyckoffs)
                             op1 = choose(self.valid_orientations[i][j][k]).get_op()
                             mo.apply_operation(op1)
-                            ms0 = mol_site(mo, center0, self.sg, wp_index, self.lattice)
+                            ms0 = mol_site(mo, center0, self.sg, wp_index, cell_matrix)
                             self.mol_generators.append(ms0)
                             for index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
                                 for site in mol:
@@ -519,16 +520,19 @@ class molecular_crystal():
                                     new_vector = op2.operate(raw_vector)
                                     new_vector -= np.floor(new_vector)
                                     final_coor.append(new_vector)
-                                    final_site.append(site.specie)
+                                    final_site.append(site.species_string)
                                     final_number.append(site.specie.number)
 
                         final_coor -= np.floor(final_coor)
-                        self.coordinates = np.array(final_coor)
-                        self.sites = final_site                    
-                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                        self.valid = True
-                        return
+                        if verify_distances(final_coor, final_site, final_lattice) is True:      
+                            self.lattice = final_lattice  
+                            self.coordinates = np.array(final_coor)
+                            self.sites = final_site              
+                            self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                            self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                            self.valid = True
+                            return
+                        #else: print("Failed final distance check.")
         print("Couldn't generate crystal after max attempts.")
         if degrees == 0:
             print("Note: Wyckoff positions have no degrees of freedom.")
