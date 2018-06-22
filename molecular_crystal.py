@@ -515,8 +515,9 @@ class molecular_crystal():
                             for index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
                                 for site in mol:
                                     #Place molecular coordinates in relative coordinates
-                                    relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
+                                    #relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
                                     #relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
+                                    relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
                                     raw_vector = center0 + relative_coords
                                     new_vector = op2.operate(raw_vector)
                                     new_vector -= np.floor(new_vector)
