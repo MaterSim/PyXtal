@@ -959,11 +959,6 @@ def verify_distances(coordinates, species, lattice, factor=1.0):
             if j > i:
                 specie2 = species[j]
                 diff = np.array(c2) - np.array(c1)
-                for i in range(len(diff)):
-                    while diff[i] > 0.5:
-                        diff[i] -= 0.5
-                    while diff[i] < -0.5:
-                        diff[i] += 0.5
                 d_min = distance(diff, lattice)
                 tol = factor*0.5*(Element(specie1).covalent_radius + Element(specie2).covalent_radius)
                 if d_min < tol:
