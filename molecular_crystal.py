@@ -59,7 +59,7 @@ def get_box(mol, padding=1.5):
         if x > maxx: maxx = x
         if y > maxx: maxx = y
         if z > maxx: maxx = z
-    return [minx-padding,maxx+padding,miny-padding,maxy+padding,minz-padding,minz+padding]
+    return [minx-padding,maxx+padding,miny-padding,maxy+padding,minz-padding,maxz+padding]
 
 def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii):
     #NOTE: Currently does not depend on molecular orientations
@@ -515,7 +515,8 @@ class molecular_crystal():
                             for index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
                                 for site in mol:
                                     #Place molecular coordinates in relative coordinates
-                                    relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
+                                    relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
+                                    #relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
                                     raw_vector = center0 + relative_coords
                                     new_vector = op2.operate(raw_vector)
                                     new_vector -= np.floor(new_vector)
@@ -523,8 +524,8 @@ class molecular_crystal():
                                     final_site.append(site.specie)
                                     final_number.append(site.specie.number)
 
-                        final_coor -= np.floor(final_coor)
-                        if verify_distances(final_coor, list(s.name for s in final_site), final_lattice, factor=0.1) is True:      
+                        #final_coor -= np.floor(final_coor)
+                        if verify_distances(final_coor, list(s.name for s in final_site), final_lattice, factor=0.1) is True:
                             self.lattice = final_lattice  
                             self.coordinates = np.array(final_coor)
                             self.sites = final_site              
