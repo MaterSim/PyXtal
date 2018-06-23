@@ -564,7 +564,7 @@ class molecular_crystal():
                                     final_site.append(site.specie)
                                     final_number.append(site.specie.number)
 
-                        #final_coor -= np.floor(final_coor)
+                        final_coor -= np.floor(final_coor)
                         if verify_distances(final_coor, list(s.name for s in final_site), final_lattice, factor=0.1) is True:
                             self.lattice = final_lattice  
                             self.coordinates = np.array(final_coor)
