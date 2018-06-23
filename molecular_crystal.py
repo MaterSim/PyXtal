@@ -1,6 +1,10 @@
 from structure import *
 from molecule import *
 
+max1 = 30 #Attempts for generating lattices
+max2 = 30 #Attempts for a given lattice
+max3 = 30 #Attempts for a given Wyckoff position
+
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
     '''
     Estimate the volume needed for a molecular crystal unit cell.
@@ -11,7 +15,7 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
     volume = 0
     for numMol, box in zip(numMols, boxes):
         volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
-    return factor*volume
+    return abs(factor*volume)
 
 def get_sg_orientations(mol, sg, allow_inversion=False):
     """
@@ -38,7 +42,7 @@ def get_sg_orientations(mol, sg, allow_inversion=False):
                 valid_orientations[-1].append([])
     return valid_orientations
 
-def get_box(mol, padding=1.5):
+def get_box(mol, padding=1.0):
     '''
     Given a molecule, find a minimum orthorhombic box containing it.
     Size is calculated using min and max x, y, and z values.
@@ -291,14 +295,19 @@ class molecular_crystal():
             oriented_molecules.append(mo)
         self.molecules = oriented_molecules
         self.boxes = []
-        #Calculate binding boxes for each molecule
+        #Calculate binding boxes and radii for each molecule
+        self.radii = []
         for mol in self.molecules:
             self.boxes.append(get_box(reoriented_molecule(mol)[0]))
-        self.radii = []
+            max_r = 0
+            for site in mol:
+                radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
+                if radius > max_r: max_r = radius
+            self.radii.append(max_r+1.0)
         self.minlen = []
         self.maxlen = []
         for box in self.boxes:
-            self.radii.append(math.sqrt( max(box[1],box[0])**2 + max(box[3],box[2])**2 + max(box[5],box[4])**2 ))
+            #self.radii.append(math.sqrt( max(box[1],box[0])**2 + max(box[3],box[2])**2 + max(box[5],box[4])**2 ))
             lens = [box[1]-box[0], box[3]-box[2], box[5]-box[4]]
             self.minlen.append(min(lens))
             self.maxlen.append(min(lens))
@@ -417,7 +426,7 @@ class molecular_crystal():
                 max2 = 10
                 max3 = 10
             #Calculate a minimum vector length for generating a lattice
-            minvector = max(lens for lens in self.minlen)
+            minvector = max(radius*2 for radius in self.radii)
             #print(self.radii, minvector)
             for cycle1 in range(max1):
                 #1, Generate a lattice
@@ -465,7 +474,7 @@ class molecular_crystal():
                                     coords = np.array([op.operate(point) for op in ops])
                                     #merge_coordinate if the atoms are close
                                     coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, 
-                                            self.wyckoffs, self.sg, 3.0, self.valid_orientations[i])
+                                            self.wyckoffs, self.sg, self.radii[i]*2, self.valid_orientations[i])
                                     if good_merge is not False:
                                         wp_index = good_merge
                                         coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
@@ -633,5 +642,5 @@ if __name__ == "__main__":
         else: 
             print('something is wrong')
             #print(len(rand_crystal.coordinates))
-            break
+            #break
             #print(new_struct)
