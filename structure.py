@@ -733,17 +733,19 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             a, b, c = s, s, s
         #Check that lattice meets requirements
         maxvec = (a*b*c)/(minvec**2)
-        if minvec > maxvec:
-            minvec, maxvec = maxvec, minvec
-        if(a>minvec and b>minvec and c>minvec
-        and a<maxvec and b<maxvec and c<maxvec
-        and alpha>minangle and beta>minangle and gamma>minangle
-        and alpha<maxangle and beta<maxangle and gamma<maxangle
-        and a/b<max_ratio and a/c<max_ratio and b/c<max_ratio
-        and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
-            return np.array([a, b, c, alpha, beta, gamma])
-        #else:
-            #print([a, b, c, maxvec, minvec, maxvec*minvec*minvec])
+        if minvec < maxvec:
+            #Check minimum Euclidean distances
+            smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
+            if(a>minvec and b>minvec and c>minvec
+            and a<maxvec and b<maxvec and c<maxvec
+            and smallvec < minvec
+            and alpha>minangle and beta>minangle and gamma>minangle
+            and alpha<maxangle and beta<maxangle and gamma<maxangle
+            and a/b<max_ratio and a/c<max_ratio and b/c<max_ratio
+            and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
+                return np.array([a, b, c, alpha, beta, gamma])
+            #else:
+                #print([a, b, c, maxvec, minvec, maxvec*minvec*minvec])
     #If maxattempts tries have been made without success
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
