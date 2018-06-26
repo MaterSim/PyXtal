@@ -9,7 +9,7 @@ between axes.
 '''
 
 from structure import *
-
+letters = "abcdefghijklmnopqrstuvwxyzA"
 for sg in range(1, 231):
     print("====="+str(sg)+"=====")
     symmetry = get_wyckoff_symmetry(sg, molecular=True)
