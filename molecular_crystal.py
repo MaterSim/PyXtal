@@ -660,7 +660,7 @@ class molecular_crystal():
                             self.spg_struct = (final_lattice, np.array(final_coor), final_number)
                             self.valid = True
                             return
-                        else: print("Failed final distance check.")
+                        #else: print("Failed final distance check.")
         print("Couldn't generate crystal after max attempts.")
         if degrees == 0:
             print("Note: Wyckoff positions have no degrees of freedom.")
