@@ -280,11 +280,12 @@ class molecular_crystal():
     a volume factor, generates a molecular crystal consistent with the given
     constraints. This crystal is stored as a pymatgen struct via self.struct
     '''
-    def __init__(self, sg, molecules, numMols, factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
+    def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
         
         #Necessary input
+        self.Msgs()
         numMols = np.array(numMols) #must convert it to np.array
-        self.factor = factor
+        self.factor = volume_factor
         self.numMols0 = numMols
         self.sg = sg
         #Reorient the molecules along their principle axes
@@ -311,7 +312,6 @@ class molecular_crystal():
             lens = [box[1]-box[0], box[3]-box[2], box[5]-box[4]]
             self.minlen.append(min(lens))
             self.maxlen.append(min(lens))
-        self.Msgs()
         self.numMols = numMols * cellsize(self.sg)
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
@@ -480,8 +480,12 @@ class molecular_crystal():
                                     #print('generating new points:', point)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #merge_coordinate if the atoms are close
+                                    if self.check_atomic_distances is False:
+                                        mtol = self.radii[i]*2
+                                    elif self.check_atomic_distances is True:
+                                        mtol = 3.0
                                     coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, 
-                                            self.wyckoffs, self.sg, self.radii[i]*2, self.valid_orientations[i])
+                                            self.wyckoffs, self.sg, mtol, self.valid_orientations[i])
                                     if good_merge is not False:
                                         wp_index = good_merge
                                         j, k = jk_from_i(wp_index, self.wyckoffs)
@@ -695,6 +699,7 @@ if __name__ == "__main__":
     number = options.numMols
     verbosity = options.verbosity
     attempts = options.attempts
+    
     
     numMols = []
     if molecule.find(',') > 0:
