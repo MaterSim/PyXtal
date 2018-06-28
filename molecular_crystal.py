@@ -727,10 +727,14 @@ if __name__ == "__main__":
             #spglib style structure called cell
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group requested: ', sg, 'generated', ans, 'vol: ', rand_crystal.volume)
+
+            #Print additional information about the structure
             if verbosity > 0:
                 print("Molecular Wyckoff positions:")
                 for ms in rand_crystal.mol_generators:
                     print(str(ms.multiplicity)+str(ms.letter)+" "+str(ms.position))
+            if verbosity > 1:
+                print(rand_crystal.struct)
 
             #print(CifWriter(new_struct, symprec=0.1).__str__())
             #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
