@@ -732,7 +732,7 @@ if __name__ == "__main__":
             if verbosity > 0:
                 print("Molecular Wyckoff positions:")
                 for ms in rand_crystal.mol_generators:
-                    print(str(ms.multiplicity)+str(ms.letter)+" "+str(ms.position))
+                    print(str(ms.mol.composition) + ": " + str(ms.multiplicity)+str(ms.letter)+" "+str(ms.position))
             if verbosity > 1:
                 print(rand_crystal.struct)
 
