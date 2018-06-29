@@ -1,16 +1,9 @@
 '''
 Program for generation of random crystal structures.
 by Scott Fredericks and Qiang Zhu, Spring 2018
-Args:
-sg: space group number between 1 and 230,
-specie: type of atoms
-N : number of atoms in the primitive cell,
 
 output:
-a structure class
-
-possibly output cif fileS
-cif file with conventional setting
+a randomly generated cif file with conventional setting
 '''
 import sys
 from spglib import get_symmetry_dataset
@@ -32,11 +25,11 @@ from copy import deepcopy
 from pandas import read_csv
 
 import database.hall as hall
-from matrix import OperationAnalyzer
-from matrix import angle
-from matrix import random_vector
-from matrix import are_equal
-from matrix import random_shear_matrix
+from operations import OperationAnalyzer
+from operations import angle
+from operations import random_vector
+from operations import are_equal
+from operations import random_shear_matrix
 
 
 #some optional libs

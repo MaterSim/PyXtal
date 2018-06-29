@@ -1,5 +1,6 @@
-from structure import *
+from crystal import *
 from molecule import *
+from operations import *
 
 max1 = 30 #Attempts for generating lattices
 max2 = 30 #Attempts for a given lattice

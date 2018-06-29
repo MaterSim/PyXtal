@@ -9,8 +9,8 @@ from copy import deepcopy
 from math import fabs
 from random import random
 from random import choice as choose
-from matrix import *
-from structure import get_wyckoff_symmetry
+from operations import *
+from crystal import get_wyckoff_symmetry
 
 #from ase.build import molecule
 
