@@ -27,6 +27,34 @@ def angle(v1, v2):
         return pi
     return acos(dot / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
+def random_shear_matrix(width=1.0, unitary=False):
+    '''
+    Generate a random symmetric shear matrix with Gaussian elements. If unitary
+    is True, normalize to determinant 1
+    '''
+    mat = np.zeros([3,3])
+    determinant = 0
+    while determinant == 0:
+        a, b, c = np.random.normal(scale=width), np.random.normal(scale=width), np.random.normal(scale=width)
+        mat = np.array([[1,a,b],[a,1,c],[b,c,1]])
+        determinant = np.linalg.det(mat)
+    if unitary:
+        new = mat / np.cbrt(np.linalg.det(mat))
+        return new
+    else: return mat
+
+def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
+    '''
+    Generate a random vector for lattice constant generation. The ratios between
+    x, y, and z of the returned vector correspond to the ratios between a, b,
+    and c. Results in a Gaussian distribution of the natural log of the ratios.
+    '''
+    vec = np.array([np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width))])
+    if unit:
+        return vec/np.linalg.norm(vec)
+    else:
+        return vec
+
 def is_orthogonal(m, tol=.001):
     #Calculate whether or not a matrix is orthogonal
     m1 = np.dot(m, np.transpose(m))
@@ -155,6 +183,28 @@ def rotate_vector(v1, v2):
     v3 = np.cross(v1, v2)
     return aa2matrix(v3, theta)
         
+def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
+    #Check two SymmOps for equivalence
+    #pbc=True means integer translations will be ignored
+    m1 = op1.rotation_matrix
+    m2 = op2.rotation_matrix
+    #Check that rotations are equivalent
+    if not np.allclose(m1, m2, rtol=rtol, atol=atol):
+        return False
+    v1 = op1.translation_vector
+    v2 = op2.translation_vector
+    if allow_pbc is False:
+        #Check if translation vectors are equal
+        if np.allclose(v1, v2, rtol=rtol, atol=atol):
+            return True
+        else: return False
+    elif allow_pbc is True:
+        #Check if translation vectors are equal up to integer difference
+        difference = v1 - v2
+        if np.allclose(difference, np.round(difference), rtol=rtol, atol=atol):
+            return True
+        else: return False
+
 class OperationAnalyzer(SymmOp):
     '''
     Class for comparing operations. Stores rotation axis, angle, as well as
