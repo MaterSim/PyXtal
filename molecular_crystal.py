@@ -672,16 +672,8 @@ class molecular_crystal():
 
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
-    from ase.build import molecule as ase_molecule
-    from pymatgen import Molecule
-    def get_ase_mol(molname):
-        """convert ase molecule to pymatgen style"""
-        ase_mol = ase_molecule(molname)
-        pos = ase_mol.get_positions()
-        symbols = ase_mol.get_chemical_symbols()
-        return(Molecule(symbols, pos))
-    
-    #-------------------------------- Options -------------------------
+    from os import mkdir
+
     parser = OptionParser()
     parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
             help="desired space group number: 1-230, e.g., 36")
@@ -720,14 +712,23 @@ if __name__ == "__main__":
         rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations)
 
         if rand_crystal.valid:
-            #orientations = rand_crystal.valid_orientations
-            #pymatgen style
-            #print("Generated number "+str(i+1))
-            CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = "out/"+str(i+1)+'.cif')
+            written = False
+            try:
+                mkdir("out")
+            except: pass
+            try:
+                cifpath = 'out/' + str(i+1) + '.cif'
+                CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
+                written = True
+            except: pass
 
             #spglib style structure called cell
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group requested: ', sg, 'generated', ans, 'vol: ', rand_crystal.volume)
+            if written is True:
+                print("    Output to "+cifpath)
+            else:
+                print("    Could not write cif file.")
 
             #Print additional information about the structure
             if verbosity > 0:
