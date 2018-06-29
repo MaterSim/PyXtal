@@ -417,7 +417,7 @@ def check_distance(coord1, coord2, specie1, specie2, lattice):
     Args:
     coord1: multiple list of atoms e.g. [[0,0,0],[1,1,1]]
     specie1: the corresponding type of coord1, e.g. ['Na','Cl']
-    coord2: a list of new atoms: [0.5, 0.5 0.5]
+    coord2: a list of new atoms: [[0.5, 0.5 0.5]]
     specie2: the type of coord2: 'Cl'
     lattice: cell matrix
     """
