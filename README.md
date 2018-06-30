@@ -1,12 +1,12 @@
 # Crystallography
 Python code for the generation and study of crystal structures based on symmetry constraints.
 Codeveloped by Scott Fredericks and Qiang Zhu at UNLV department of Physics.
-Distributed under the MIT License
+Distributed under the MIT License.
 
 ## Current Features:
 * Random generation of crystals for a given space group and stoichiometry
 * Generation of molecular crystals, with consideration for each molecule's compatibility with the Wyckoff site symmetry
-* Allows easy access to Wyckoff position information, including site symmetry operations and symbols
+* Easy access to Wyckoff position information, including site symmetry operations and symbols
 
 ## Dependencies:
 * [SciPy](https://www.scipy.org/install.html)
