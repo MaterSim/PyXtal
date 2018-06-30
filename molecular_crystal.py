@@ -545,6 +545,7 @@ class molecular_crystal():
                                             ms0 = mol_site(mo, point, self.sg, wp_index, cell_matrix)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
+                                            flag1 = True
                                             for point_index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
@@ -564,42 +565,42 @@ class molecular_crystal():
                                                 wp_atomic_coords.append(current_atomic_coords)
                                                 #Check distances between molecules in current WP
                                                 if point_index == 1:
-                                                    flag = True
                                                     for a_index, specie2 in enumerate(current_atomic_sites):
-                                                        flag = check_distance([wp_atomic_coords[0]], [current_atomic_coords[a_index]], wp_atomic_sites[0], specie2, cell_matrix)
-                                                        if flag is False:
+                                                        flag1 = check_distance([wp_atomic_coords[0]], [current_atomic_coords[a_index]], wp_atomic_sites[0], specie2, cell_matrix, d_factor=2.0)
+                                                        if flag1 is False:
                                                             break
-                                                    if flag is False:
+                                                    if flag1 is False:
                                                         break
-                                            #Check distances between current and previous molecular atoms
-                                            a = []
-                                            for x in wp_atomic_coords:
-                                                a += x
-                                            b = []
-                                            for x in wp_atomic_sites:
-                                                b += x
-                                            flag = True
-                                            for a_index, specie2 in enumerate(b):
-                                                flag = check_distance([atomic_coordinates_total], [a[a_index]], atomic_sites_total, specie2, cell_matrix)
-                                                if flag is False: break
-                                            if flag is True:
-                                                mol_generators_tmp.append(ms0)
-                                                molecular_coordinates_tmp.append(coords_toadd)
-                                                molecular_sites_tmp.append(i)
-                                                atomic_coordinates_tmp += a
-                                                atomic_sites_tmp += b
-                                                wps_tmp.append(wp_index)
-                                                points_tmp.append(point)
-                                                numMol_added += len(coords_toadd)
-                                                if numMol_added == numMol:
-                                                    mol_generators_total = deepcopy(mol_generators_tmp)
-                                                    molecular_coordinates_total = deepcopy(molecular_coordinates_tmp)
-                                                    atomic_sites_total = deepcopy(atomic_sites_tmp)
-                                                    atomic_coordinates_total = deepcopy(atomic_coordinates_tmp)
-                                                    molecular_sites_total = deepcopy(molecular_sites_tmp)
-                                                    wps_total = deepcopy(wps_tmp)
-                                                    points_total = deepcopy(points_tmp)
-                                                    break
+                                            if flag1 is True:
+                                                #Check distances between current and previous molecular atoms
+                                                a = []
+                                                for x in wp_atomic_coords:
+                                                    a += x
+                                                b = []
+                                                for x in wp_atomic_sites:
+                                                    b += x
+                                                flag2 = True
+                                                for a_index, specie2 in enumerate(b):
+                                                    flag2 = check_distance([atomic_coordinates_total], [a[a_index]], atomic_sites_total, specie2, cell_matrix, d_factor=2.0)
+                                                    if flag2 is False: break
+                                                if flag2 is True:
+                                                    mol_generators_tmp.append(ms0)
+                                                    molecular_coordinates_tmp.append(coords_toadd)
+                                                    molecular_sites_tmp.append(i)
+                                                    atomic_coordinates_tmp += a
+                                                    atomic_sites_tmp += b
+                                                    wps_tmp.append(wp_index)
+                                                    points_tmp.append(point)
+                                                    numMol_added += len(coords_toadd)
+                                                    if numMol_added == numMol:
+                                                        mol_generators_total = deepcopy(mol_generators_tmp)
+                                                        molecular_coordinates_total = deepcopy(molecular_coordinates_tmp)
+                                                        atomic_sites_total = deepcopy(atomic_sites_tmp)
+                                                        atomic_coordinates_total = deepcopy(atomic_coordinates_tmp)
+                                                        molecular_sites_total = deepcopy(molecular_sites_tmp)
+                                                        wps_total = deepcopy(wps_tmp)
+                                                        points_total = deepcopy(points_tmp)
+                                                        break
 
                             if numMol_added != numMol:
                                 break  #need to repeat from the 1st species
