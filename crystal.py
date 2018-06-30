@@ -341,7 +341,7 @@ def distance(xyz, lattice):
     matrix = np.dot(matrix, lattice)
     return np.min(cdist(matrix,[[0,0,0]]))       
 
-def check_distance(coord1, coord2, specie1, specie2, lattice):
+def check_distance(coord1, coord2, specie1, specie2, lattice, d_factor=1.0):
     """
     check the distances between two set of atoms
     Args:
@@ -364,7 +364,7 @@ def check_distance(coord1, coord2, specie1, specie2, lattice):
         for coord, element in zip(coord1, specie1):
             coord = np.dot(coord, lattice)
             d_min = np.min(cdist(coord, coord2))
-            tol = 0.5*(Element(element).covalent_radius + Element(specie2).covalent_radius)
+            tol = d_factor*0.5*(Element(element).covalent_radius + Element(specie2).covalent_radius)
             #print(d_min, tol)
             if d_min < tol:
                 return False
