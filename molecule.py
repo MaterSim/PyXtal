@@ -12,7 +12,16 @@ from random import choice as choose
 from operations import *
 from crystal import get_wyckoff_symmetry
 
-#from ase.build import molecule
+try:
+    from ase.build import molecule as ase_molecule
+    def get_ase_mol(molname):
+        """convert ase molecule to pymatgen style"""
+        ase_mol = ase_molecule(molname)
+        pos = ase_mol.get_positions()
+        symbols = ase_mol.get_chemical_symbols()
+        return(Molecule(symbols, pos))
+except:
+    print("Could not import ASE. Install ASE for additional molecular support.")
 
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
@@ -403,6 +412,8 @@ if __name__ == "__main__":
     pga_rand_mol = PointGroupAnalyzer(rand_mol)
     pg_rand_mol = pga_rand_mol.get_pointgroup()
 
+    #from ase.build import molecule
+
     #Testing water
     mol = deepcopy(c60)
     print("Original molecule:")
@@ -414,7 +425,7 @@ if __name__ == "__main__":
     mol.apply_operation(R_op)
     print("Rotated molecule:")
     print(mol)
-    print("============================================")
+    print()
 
     pga = PointGroupAnalyzer(mol)
     mol = pga.symmetrize_molecule()['sym_mol']    
@@ -425,11 +436,10 @@ if __name__ == "__main__":
     #To use an orientation, do mol.apply_operation(orientation)
     #Spacegroup WP 24l (index 2) in sg 221 has m.. symmetry
     allowed =  orientation_in_wyckoff_position(mol, 221, 2, randomize=True)
-    print("Found "+str(len(allowed))+" orientations:")
-    print("------------------------------")
-    for op in allowed:
+    print("Found "+str(len(allowed))+" orientations in sg 221 position 1g:")
+    '''for orientation in allowed:
         mo = deepcopy(mol)
-        mo.apply_operation(op)
+        mo.apply_operation(orientation.get_op)
         print()
-        print(mo)
+        print(mo)'''
 
