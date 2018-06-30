@@ -21,7 +21,8 @@ try:
         symbols = ase_mol.get_chemical_symbols()
         return(Molecule(symbols, pos))
 except:
-    print("Could not import ASE. Install ASE for additional molecular support.")
+    print("Could not import ASE. Install ASE for additional molecular support:")
+    print("https://wiki.fysik.dtu.dk/ase/install.html")
 
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
@@ -399,23 +400,12 @@ if __name__ == "__main__":
     h2o = Molecule.from_file('xyz/water.xyz')
     pga_h2o = PointGroupAnalyzer(h2o)
     pg_h2o = pga_h2o.get_pointgroup()
-    c60 = Molecule.from_file('xyz/C60-0.xyz')
-    pga_c60 = PointGroupAnalyzer(c60)
-    pg_c60 = pga_c60.get_pointgroup()
-    h2 = Molecule.from_file('xyz/hydrogen.xyz')
-    pga_h2 = PointGroupAnalyzer(h2)
-    pg_h2 = pga_h2.get_pointgroup()
-    ch4 = Molecule.from_file('xyz/methane.xyz')
-    pga_ch4 = PointGroupAnalyzer(ch4)
-    pg_ch4 = pga_ch4.get_pointgroup()
-    rand_mol = Molecule.from_file('xyz/random.xyz')
-    pga_rand_mol = PointGroupAnalyzer(rand_mol)
-    pg_rand_mol = pga_rand_mol.get_pointgroup()
+
 
     #from ase.build import molecule
 
     #Testing water
-    mol = deepcopy(c60)
+    mol = get_ase_molecule("H2O")
     print("Original molecule:")
     print(mol)
     print()
