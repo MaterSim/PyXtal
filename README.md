@@ -5,10 +5,7 @@ Distributed under the MIT License
 
 ## Current Features:
 * Random generation of crystals for a given space group and stoichiometry
- - Can outputs cif files for generated crystals (via Pymatgen)
 * Generation of molecular crystals, with consideration for each molecule's compatibility with the Wyckoff site symmetry
- - Allows input from xyz files for molecules (via Pymatgen)
- - Allows generation of simple molecules from chemical symbol (via ASE)
 * Allows easy access to Wyckoff position information, including site symmetry operations and symbols
 
 ## Dependencies:
