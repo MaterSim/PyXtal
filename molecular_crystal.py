@@ -276,10 +276,30 @@ class mol_site():
 class molecular_crystal():
     '''
     Class for storing and generating molecular crystals based on symmetry
-    constraints. Based on the random_crystal class for atomic crystals.
+    constraints. Based on the crystal.random_crystal class for atomic crystals.
     Given a spacegroup, list of molecule objects, molecular stoichiometry, and
     a volume factor, generates a molecular crystal consistent with the given
     constraints. This crystal is stored as a pymatgen struct via self.struct
+    
+    Args:
+        sg: The international spacegroup number
+        numMols: The number of each type of molecule within the primitive cell
+        volume_factor: A volume factor used to generate a larger or smaller
+            unit cell. Increasing this gives extra space between molecules
+        allow_inversion: Whether or not to allow chiral molecules to be
+            inverted. If True, the final crystal may contain mirror images of
+            the original molecule.
+            Unless the chemical properties of the mirror image are known, it is
+            highly recommended to keep this value False.
+        orientations:
+            Once a crystal with the same spacegroup and molecular stoichiometry
+            has been generated, you may pass its valid_orientations attribute
+            here to avoid repeating the calculation, but this is not required
+        check_atomic_distances:
+            If True, checks the inter-atomic distances after each Wyckoff
+            position is added. This requires slightly more time, but vastly
+            improves accuracy. For approximately spherical molecules, or
+            for large inter-molecular distances, this may be turned off
     '''
     def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
         
@@ -291,6 +311,11 @@ class molecular_crystal():
         self.sg = sg
         #Reorient the molecules along their principle axes
         oriented_molecules = []
+        #Allow support for generating molecules from text via ASE
+        for i, mol in enumerate(molecules):
+            if type(mol) == str:
+                mo = get_ase_molecules(mol)
+            molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
