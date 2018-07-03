@@ -714,7 +714,7 @@ if __name__ == "__main__":
             help="number of crystals to generate: default 1", metavar="attempts")
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
             help="Directory for storing output cif files: default 'out'", metavar="outdir")
-    parser.add_option("-c", "--checkatoms", dest="checkatoms", default=True, type=str, 
+    parser.add_option("-c", "--checkatoms", dest="checkatoms", default="True", type=str, 
             help="Whether to check inter-atomic distances at each step: default True", metavar="outdir")
 
     (options, args) = parser.parse_args()    
@@ -723,7 +723,10 @@ if __name__ == "__main__":
     verbosity = options.verbosity
     attempts = options.attempts
     outdir = options.outdir
-    checkatoms = eval(options.checkatoms)
+    if options.checkatoms == "True" or options.checkatoms == "False":
+        checkatoms = eval(options.checkatoms)
+    else:
+        print("Invalid value for --checkatoms: must be 'True' or 'False'.")
     
     
     numMols = []
