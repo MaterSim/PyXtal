@@ -705,19 +705,22 @@ if __name__ == "__main__":
             help="desired space group number: 1-230, e.g., 36")
     parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
-    parser.add_option("-n", "--numMols", dest="numMols", default=2, 
+    parser.add_option("-n", "--numMols", dest="numMols", default=4, 
             help="desired numbers of molecules: 4", metavar="numMols")
     parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
             help="volume factor: default 3.0", metavar="factor")
     parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
+    parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
+            help="Directory for storing output cif files: default 'out'", metavar="outdir")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
     number = options.numMols
     verbosity = options.verbosity
     attempts = options.attempts
+    outdir = options.outdir
     
     
     numMols = []
@@ -740,10 +743,12 @@ if __name__ == "__main__":
         if rand_crystal.valid:
             written = False
             try:
-                mkdir("out")
+                mkdir(outdir)
             except: pass
             try:
-                cifpath = 'out/' + str(i+1) + '.cif'
+                comp = str(rand_crystal.struct.composition)
+                comp = comp.replace(" ", "")
+                cifpath = outdir + '/' + comp + "_" + str(i+1) + '.cif'
                 CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
                 written = True
             except: pass
