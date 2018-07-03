@@ -669,7 +669,7 @@ class molecular_crystal():
                                         new_vector = center1 + relative_coords
                                         new_vector -= np.floor(new_vector)
                                         final_coor.append(new_vector)
-                                        final_site.append(site.specie)
+                                        final_site.append(site.specie.name)
                                         final_number.append(site.specie.number)
 
                         elif self.check_atomic_distances is True:
@@ -714,6 +714,8 @@ if __name__ == "__main__":
             help="number of crystals to generate: default 1", metavar="attempts")
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
             help="Directory for storing output cif files: default 'out'", metavar="outdir")
+    parser.add_option("-c", "--checkatoms", dest="checkatoms", default=True, type=str, 
+            help="Whether to check inter-atomic distances at each step: default True", metavar="outdir")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
@@ -721,6 +723,7 @@ if __name__ == "__main__":
     verbosity = options.verbosity
     attempts = options.attempts
     outdir = options.outdir
+    checkatoms = eval(options.checkatoms)
     
     
     numMols = []
@@ -738,7 +741,7 @@ if __name__ == "__main__":
     for i in range(attempts):
         numMols0 = np.array(numMols)
         sg = options.sg
-        rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations)
+        rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations, check_atomic_distances=checkatoms)
 
         if rand_crystal.valid:
             written = False
