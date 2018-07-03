@@ -315,7 +315,7 @@ class molecular_crystal():
         for i, mol in enumerate(molecules):
             if type(mol) == str:
                 mo = get_ase_molecules(mol)
-            molecules[i] = mo
+                molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
