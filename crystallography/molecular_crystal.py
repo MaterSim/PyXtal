@@ -1,6 +1,7 @@
 from crystallography.crystal import *
 from crystallography.molecule import *
 from crystallography.operations import *
+from time import time
 
 max1 = 30 #Attempts for generating lattices
 max2 = 30 #Attempts for a given lattice
@@ -743,6 +744,7 @@ if __name__ == "__main__":
         numMols = [int(number)]
     orientations = None
     for i in range(attempts):
+        start = time()
         numMols0 = np.array(numMols)
         sg = options.sg
         rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations, check_atomic_distances=checkatoms)
@@ -767,9 +769,11 @@ if __name__ == "__main__":
                 print("    Output to "+cifpath)
             else:
                 print("    Could not write cif file.")
+            end = time()
 
             #Print additional information about the structure
             if verbosity > 0:
+                print("Time required for generation: " + str(end - start) + "s")
                 print("Molecular Wyckoff positions:")
                 for ms in rand_crystal.mol_generators:
                     print(str(ms.mol.composition) + ": " + str(ms.multiplicity)+str(ms.letter)+" "+str(ms.position))
