@@ -532,7 +532,7 @@ class molecular_crystal():
                                             generated -= np.floor(generated)
                                             for index1, c1 in enumerate(tmp_c):
                                                 for index2, c2 in enumerate(generated):
-                                                    if np.allclose(c1, c2, atol=.01):
+                                                    if np.allclose(c1, c2, atol=.01, rtol=.01):
                                                         index_list1.remove(index1)
                                                         index_list2.remove(index2)
                                                         break
@@ -540,6 +540,7 @@ class molecular_crystal():
                                                 break
                                         if index_list1 != [] and index_list2 != []:
                                             print("Error: Could not generate merged coordinates from Wyckoff generators")
+                                            self.valid = False
                                             return
 
                                         #Check inter-molecular distances
