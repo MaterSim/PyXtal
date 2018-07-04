@@ -748,6 +748,7 @@ if __name__ == "__main__":
         numMols0 = np.array(numMols)
         sg = options.sg
         rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations, check_atomic_distances=checkatoms)
+        end = time()
 
         if rand_crystal.valid:
             written = False
@@ -769,7 +770,6 @@ if __name__ == "__main__":
                 print("    Output to "+cifpath)
             else:
                 print("    Could not write cif file.")
-            end = time()
 
             #Print additional information about the structure
             if verbosity > 0:
@@ -786,6 +786,7 @@ if __name__ == "__main__":
 
         else: 
             print('something is wrong')
+            print('Time spent during generation attempt: ' + str(start-end) + "s")
             #print(len(rand_crystal.coordinates))
             #break
             #print(new_struct)
