@@ -101,6 +101,34 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
     else:
         return True
 
+def find_generating_point(coords, generators):
+    #Given a set of coordinates and Wyckoff generators, return the coord which
+    #can be used to generate the others
+    for coord in coords:
+        generated = list(gen.operate(coord) for gen in generators)
+        generated -= np.floor(generated)
+        tmp_c = deepcopy(coords)
+        tmp_c -= np.floor(tmp_c)
+        index_list1 = list(range(len(tmp_c)))
+        index_list2 = list(range(len(generated)))
+        if len(generated) != len(tmp_c):
+            print("Warning: coordinate and generator lists have unequal length.")
+            print("In check_wyckoff_position_molecular.find_generating_point:")
+            print("len(coords): "+str(len(coords))+", len(generators): "+str(len(generators)))
+            return None
+        for index1, c1 in enumerate(tmp_c):
+            for index2, c2 in enumerate(generated):
+                if np.allclose(c1, c2, atol=.01, rtol=.01):
+                    if index1 in index_list1:
+                        index_list1.remove(index1)
+                    if index2 in index_list2:
+                        index_list2.remove(index2)
+                    break
+        if index_list1 == [] and index_list2 == []:
+            return coord
+    #If no valid coordinate is found
+    return None
+
 def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False):
     '''
     Given a list of points, return index of Wyckoff position in space group.
@@ -113,7 +141,7 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
         exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1
             are considered equal
-    '''
+    ''' 
     points = np.array(points)
     points = np.around((points*1e+10))/1e+10
 
@@ -159,24 +187,13 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
                     j, k = jk_from_i(i, orientations)
                     if orientations[j][k] != []:
                         return i
-                    else:
-                        return False
                 elif not exact_translation:
                     possible.append(i)
-        #If no matching WP's are found
+    #If no matching WP's are found
     if len(possible) == 0:
         return False
-    #If exactly one matching WP is found
-    elif len(possible) == 1:
-        j, k = jk_from_i(possible[0], orientations)
-        if orientations[j][k] != []:
-            return possible[0]
-        else:
-            return False
-    #If multiple WP's are found
-    elif len(possible) > 1:
-        #TODO: add a way to differentiate between possible WP's
-        #print("Warning: multiple Wyckoff positions found")
+    #If any matching WP' are found
+    elif len(possible) >= 1:
         new = []
         for i in possible:
             j, k = jk_from_i(i, orientations)
@@ -187,7 +204,16 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
         elif len(new) == 1:
             return new[0]
         elif len(new) > 1:
-            return choose(new)
+            #Check that points are correctly generated
+            for i in new:
+                generators = get_wyckoff_generators(sg)[i]
+                p = find_generating_point(points, generators)
+                if p is not None:
+                    return i
+            print("Error: Could not generate coordinates for detected Wyckoff position.")
+            return False
+    print("Unexpected error in check_wyckoff_position_molecular.")
+    return False
 
 def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations):
     while True:
@@ -201,7 +227,6 @@ def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations):
                 for group in groups:
                     merged.append(get_center(coor[group], lattice))
                 merged = np.array(merged)
-                #if check_wyckoff_position(merged, sg, wyckoff) is not False:
                 index = check_wyckoff_position_molecular(merged, sg, orientations, exact_translation=False)
                 if index is False:
                     return coor, False
@@ -504,7 +529,6 @@ class molecular_crystal():
                 	    	    #Generate a list of coords from ops
                                     ops = self.wyckoffs[j][k]
                                     point = np.random.random(3)
-                                    #print('generating new points:', point)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #merge_coordinate if the atoms are close
                                     if self.check_atomic_distances is False:
@@ -521,25 +545,8 @@ class molecular_crystal():
 
                                         #Check that coords_toadd are generated by point
                                         generators = get_wyckoff_generators(sg)[wp_index]
-                                        for point in coords_toadd:
-                                            generated = list(generator.operate(point) for generator in generators)
-                                            generated -= np.floor(generated)
-                                            tmp_c = deepcopy(coords_toadd)
-                                            index_list1 = list(range(len(tmp_c)))
-                                            index_list2 = list(range(len(generated)))
-                                            if len(generated) != len(tmp_c):
-                                                print("Error: Incorrect generation of Wyckoff position")
-                                                return
-                                            generated -= np.floor(generated)
-                                            for index1, c1 in enumerate(tmp_c):
-                                                for index2, c2 in enumerate(generated):
-                                                    if np.allclose(c1, c2, atol=.01, rtol=.01):
-                                                        index_list1.remove(index1)
-                                                        index_list2.remove(index2)
-                                                        break
-                                            if index_list1 == [] and index_list2 == []:
-                                                break
-                                        if index_list1 != [] and index_list2 != []:
+                                        point = find_generating_point(coords_toadd, generators)
+                                        if point is None:
                                             print("Error: Could not generate merged coordinates from Wyckoff generators")
                                             self.valid = False
                                             return
