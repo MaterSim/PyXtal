@@ -101,34 +101,6 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
     else:
         return True
 
-def find_generating_point(coords, generators):
-    #Given a set of coordinates and Wyckoff generators, return the coord which
-    #can be used to generate the others
-    for coord in coords:
-        generated = list(gen.operate(coord) for gen in generators)
-        generated -= np.floor(generated)
-        tmp_c = deepcopy(coords)
-        tmp_c -= np.floor(tmp_c)
-        index_list1 = list(range(len(tmp_c)))
-        index_list2 = list(range(len(generated)))
-        if len(generated) != len(tmp_c):
-            print("Warning: coordinate and generator lists have unequal length.")
-            print("In check_wyckoff_position_molecular.find_generating_point:")
-            print("len(coords): "+str(len(coords))+", len(generators): "+str(len(generators)))
-            return None
-        for index1, c1 in enumerate(tmp_c):
-            for index2, c2 in enumerate(generated):
-                if np.allclose(c1, c2, atol=.01, rtol=.01):
-                    if index1 in index_list1:
-                        index_list1.remove(index1)
-                    if index2 in index_list2:
-                        index_list2.remove(index2)
-                    break
-        if index_list1 == [] and index_list2 == []:
-            return coord
-    #If no valid coordinate is found
-    return None
-
 def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False):
     '''
     Given a list of points, return index of Wyckoff position in space group.
