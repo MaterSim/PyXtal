@@ -843,7 +843,7 @@ def find_generating_point(coords, generators):
             return None
         for index1, c1 in enumerate(tmp_c):
             for index2, c2 in enumerate(generated):
-                if np.allclose(c1, c2, atol=.01, rtol=.01):
+                if np.allclose(c1, c2, atol=.001, rtol=.001):
                     if index1 in index_list1:
                         index_list1.remove(index1)
                     if index2 in index_list2:
