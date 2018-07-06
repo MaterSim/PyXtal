@@ -174,7 +174,18 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
         if len(new) == 0:
             return False
         elif len(new) == 1:
-            return new[0]
+            generators = get_wyckoff_generators(sg)[new[0]]
+            p = find_generating_point(points, generators)
+            if p is not None:
+                return new[0]
+            else:
+                print("Error: Could not generate coordinates for detected Wyckoff position.")
+                print("Suspected Wyckoff position: "+str(letter_from_index(new[0], sg)))
+                print("Coordinates:")
+                print("---------------------")
+                for p in points:
+                    print(p)
+                return False
         elif len(new) > 1:
             #Check that points are correctly generated
             for i in new:
@@ -183,6 +194,13 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
                 if p is not None:
                     return i
             print("Error: Could not generate coordinates for detected Wyckoff position.")
+            print("Suspected Wyckoff positions:")
+            for i in new:
+                print(str(letter_from_index(i, sg)))
+            print("Coordinates:")
+            print("---------------------")
+            for p in points:
+                print(p)
             return False
     print("Unexpected error in check_wyckoff_position_molecular.")
     return False
@@ -728,7 +746,7 @@ if __name__ == "__main__":
         sg = options.sg
         rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations, check_atomic_distances=checkatoms)
         end = time()
-
+        timespent = np.around((end - start), decimals=2)
         if rand_crystal.valid:
             written = False
             try:
@@ -752,7 +770,7 @@ if __name__ == "__main__":
 
             #Print additional information about the structure
             if verbosity > 0:
-                print("Time required for generation: " + str(end - start) + "s")
+                print("Time required for generation: " + str(timespent) + "s")
                 print("Molecular Wyckoff positions:")
                 for ms in rand_crystal.mol_generators:
                     print(str(ms.mol.composition) + ": " + str(ms.multiplicity)+str(ms.letter)+" "+str(ms.position))
@@ -765,7 +783,7 @@ if __name__ == "__main__":
 
         else: 
             print('something is wrong')
-            print('Time spent during generation attempt: ' + str(start-end) + "s")
+            print('Time spent during generation attempt: ' + str(timespent) + "s")
             #print(len(rand_crystal.coordinates))
             #break
             #print(new_struct)
