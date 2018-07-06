@@ -300,7 +300,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         constraints_m.append(c_m[i])
 
     #Generate 2nd consistent molecular constraints
-    valid = range(len(constraints_m))
+    valid = list(range(len(constraints_m)))
     if constraint2 is not None:
         for i, c in enumerate(constraints_m):
             opa1 = c[0]
