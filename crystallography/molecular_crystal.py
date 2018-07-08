@@ -1,3 +1,15 @@
+'''
+Module for generation of random molecular crystals which meet symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options are provided for command-line usage of the module:
+    -s --spacegroup: int for the international spacegroup number to be generated. Defaults to 36
+    -e --molecule: str for the chemical formula of the molecule to use. For multiple molecule types, separate entries with commas. Ex: "C60", "H2O, CH4, NH3". Defaults to H2O
+    -n --numMols: int for the number of molecules in the PRIMITIVE unit cell (For P-type spacegroups, this is the same as the number of molecules in the conventional unit cell.For A,B,C, and I-centered spacegroups, this is half the number of the conventional cell. For F-centered unit cells, this is one fourth the number of the conventional cell.). For multiple molecule types, separate entries with commas. Ex: "8", "1, 4, 12". Defaults to 4
+    -f --factor: float for the relative volume factor used to generate the unit cell. Larger values result in larger cells, with molecules spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 3.0
+    -v --verbosity: int for the amount of information which should be printed for each generated structure. For 0, only prints the requested and generated spacegroups. For 1, also prints the Wyckoff positions and time elapsed. For 2, also prints the contents of the generated pymatgen structure. Defaults to 0
+    -a --attempts: int for the number of structures to generate. Note: if any of the attempts fail, the number of generated structures will be less than this value. Structures will be output to separate cif files. Defaults to 1
+    -o --outdir: str for the file directory where cif files will be output to. Defaults to "."
+    -c --checkatoms: bool for whether or not to check inter-atomic distances at each step of generation. When True, produces more accurate results, but requires more computation time for larger molecules. When False, produces less accurate results and may require a larger volume factor, but does not require more computation time for large molecules. Generally, the flag should only be set to False for large, approximately spherical molecules like C60. Defaults to True
+    -i --allowinversion: bool for whether or not to allow inversion of chiral molecules for spacegroups which contain inversional and/or rotoinversional symmetry. This should only be True if the chemical and biological properties of the mirror molecule are known and suitable for the desired application. Defaults to False
+'''
 from crystallography.crystal import *
 from crystallography.molecule import *
 from crystallography.operations import *
@@ -715,6 +727,8 @@ if __name__ == "__main__":
             help="Directory for storing output cif files: default 'out'", metavar="outdir")
     parser.add_option("-c", "--checkatoms", dest="checkatoms", default="True", type=str, 
             help="Whether to check inter-atomic distances at each step: default True", metavar="outdir")
+    parser.add_option("-i", "--allowinversion", dest="allowinversion", default="False", type=str, 
+            help="Whether to allow inversion of chiral molecules: default False", metavar="outdir")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
@@ -725,8 +739,13 @@ if __name__ == "__main__":
     if options.checkatoms == "True" or options.checkatoms == "False":
         checkatoms = eval(options.checkatoms)
     else:
-        print("Invalid value for --checkatoms: must be 'True' or 'False'.")
-    
+        print("Invalid value for -c (--checkatoms): must be 'True' or 'False'.")
+        checkatoms = True
+    if options.allowinversion == "True" or options.allowinversion == "False":
+        allowinversion = eval(options.allowinversion)
+    else:
+        print("Invalid value for -i (--allowinversion): must be 'True' or 'False'.")
+        allowinversion = False
     
     numMols = []
     if molecule.find(',') > 0:
@@ -744,7 +763,7 @@ if __name__ == "__main__":
         start = time()
         numMols0 = np.array(numMols)
         sg = options.sg
-        rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations, check_atomic_distances=checkatoms)
+        rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations, check_atomic_distances=checkatoms, allow_inversion=allowinversion)
         end = time()
         timespent = np.around((end - start), decimals=2)
         if rand_crystal.valid:
