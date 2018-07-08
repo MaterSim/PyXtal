@@ -1,4 +1,14 @@
+'''
+Module for handling atomic elements.
+'''
+
 class Element:
+    '''
+    Class for storing and accessing atomic elements. 
+
+    args:
+        input_value: The atomic number, symbol, or name of the element
+    '''
     def __init__(self, input_value):
         self.input = input_value
 
@@ -210,11 +220,15 @@ class Element:
             [ 36.526, 23.808, 16.771,  3.479,  0.499,  3.264, 14.946,105.980, 13.381]]
 
         self.z = None
+        '''atomic number'''
         self.short_name = None
+        '''atomic symbol'''
         self.long_name = None
+        '''atomic name'''
         self.valence = None
         self.valence_electrons = None
         self.covalent_radius = None
+        '''atomic radius used for distance checking within crystals'''
 
         pos = None
 
