@@ -1,13 +1,9 @@
-import setuptools
-#from distutils.core import setup
-
-from glob import glob
+from distutils.core import setup
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setuptools.setup(
-#setup(
+setup(
     include_package_data=True,
     name="crystallography",
     version="0.1dev",
@@ -17,19 +13,12 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/qzhu2017/crystallography",
-    packages=setuptools.find_packages(),
-
-    data_data = [('database', 'database/wyckoff_list.csv'), ('database', 'database/wyckoff_generators.csv'), ('database', 'database/wyckoff_symmetry.csv') ],
-
-    package_data={
-    'crystallography': [
-        'database/*.csv',
-        ],
-    },
-
+    packages=['crystallography', 'crystallography.database'],
+    package_data={'crystallography': ['crystallography.database/*.csv']},
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ),
+    requires=['spglib', 'pymatgen', 'numpy', 'scipy', 'ase'],
 )
