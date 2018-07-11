@@ -1,14 +1,23 @@
 '''
-Module for generation of random molecular crystals which meet symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options are provided for command-line usage of the module:
-    -s --spacegroup: int for the international spacegroup number to be generated. Defaults to 36
-    -e --molecule: str for the chemical formula of the molecule to use. For multiple molecule types, separate entries with commas. Ex: "C60", "H2O, CH4, NH3". Defaults to H2O
-    -n --numMols: int for the number of molecules in the PRIMITIVE unit cell (For P-type spacegroups, this is the same as the number of molecules in the conventional unit cell.For A,B,C, and I-centered spacegroups, this is half the number of the conventional cell. For F-centered unit cells, this is one fourth the number of the conventional cell.). For multiple molecule types, separate entries with commas. Ex: "8", "1, 4, 12". Defaults to 4
-    -f --factor: float for the relative volume factor used to generate the unit cell. Larger values result in larger cells, with molecules spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 3.0
-    -v --verbosity: int for the amount of information which should be printed for each generated structure. For 0, only prints the requested and generated spacegroups. For 1, also prints the Wyckoff positions and time elapsed. For 2, also prints the contents of the generated pymatgen structure. Defaults to 0
-    -a --attempts: int for the number of structures to generate. Note: if any of the attempts fail, the number of generated structures will be less than this value. Structures will be output to separate cif files. Defaults to 1
-    -o --outdir: str for the file directory where cif files will be output to. Defaults to "."
-    -c --checkatoms: bool for whether or not to check inter-atomic distances at each step of generation. When True, produces more accurate results, but requires more computation time for larger molecules. When False, produces less accurate results and may require a larger volume factor, but does not require more computation time for large molecules. Generally, the flag should only be set to False for large, approximately spherical molecules like C60. Defaults to True
-    -i --allowinversion: bool for whether or not to allow inversion of chiral molecules for spacegroups which contain inversional and/or rotoinversional symmetry. This should only be True if the chemical and biological properties of the mirror molecule are known and suitable for the desired application. Defaults to False
+Module for generation of random molecular crystals which meet symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options (preceded by two dashes) are provided for command-line usage of the module:  
+
+    spacegroup (-s): the international spacegroup number to be generated. Defaults to 36  
+
+    molecule (-e): the chemical formula of the molecule to use. For multiple molecule types, separate entries with commas. Ex: "C60", "H2O, CH4, NH3". Defaults to H2O  
+
+    numMols (-n): the number of molecules in the PRIMITIVE unit cell (For P-type spacegroups, this is the same as the number of molecules in the conventional unit cell. For A, B, C, and I-centered spacegroups, this is half the number of the conventional cell. For F-centered unit cells, this is one fourth the number of the conventional cell.). For multiple molecule types, separate entries with commas. Ex: "8", "1, 4, 12". Defaults to 4  
+
+    factor (-f): the relative volume factor used to generate the unit cell. Larger values result in larger cells, with molecules spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 3.0  
+
+    verbosity (-v): the amount of information which should be printed for each generated structure. For 0, only prints the requested and generated spacegroups. For 1, also prints the Wyckoff positions and time elapsed. For 2, also prints the contents of the generated pymatgen structure. Defaults to 0  
+
+    attempts (-a): the number of structures to generate. Note: if any of the attempts fail, the number of generated structures will be less than this value. Structures will be output to separate cif files. Defaults to 1  
+
+    outdir (-o): the file directory where cif files will be output to. Defaults to "."  
+
+    checkatoms (-c): whether or not to check inter-atomic distances at each step of generation. When True, produces more accurate results, but requires more computation time for larger molecules. When False, produces less accurate results and may require a larger volume factor, but does not require more computation time for large molecules. Generally, the flag should only be set to False for large, approximately spherical molecules like C60. Defaults to True  
+
+    allowinversion (-i): whether or not to allow inversion of chiral molecules for spacegroups which contain inversional and/or rotoinversional symmetry. This should only be True if the chemical and biological properties of the mirror molecule are known and suitable for the desired application. Defaults to False  
 '''
 from crystallography.crystal import *
 from crystallography.molecule import *
@@ -21,10 +30,15 @@ max3 = 30 #Attempts for a given Wyckoff position
 
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
     '''
-    Estimate the volume needed for a molecular crystal unit cell.
-    args:
+    Estimate the volume needed for a molecular crystal conventional unit cell.
+
+    Args:
         numMols: A list with the number of each type of molecule
         boxes: A list of bounding boxes for each molecule. Obtained from get_box
+        factor: a factor to multiply the final result by. Used to increase space between molecules
+
+    Returns:
+        the estimated volume (in cubic Angstroms) needed for the unit cell
     '''
     volume = 0
     for numMol, box in zip(numMols, boxes):
@@ -35,12 +49,24 @@ def get_sg_orientations(mol, sg, allow_inversion=False):
     """
     Calculate the valid orientations for each Molecule and Wyckoff position.
     Returns a list with 3 indices:
-    index 1: the Wyckoff position's 1st index (based on multiplicity)
-    index 2: the WP's 2nd index (within the group of equal multiplicity)
-    index 3: the index of the valid orientation for the molecule/WP pair
+
+        index 1: the Wyckoff position's 1st index (based on multiplicity)  
+
+        index 2: the WP's 2nd index (within the group of equal multiplicity)  
+
+        index 3: the index of the valid orientation for the molecule/WP pair
+
     For example, self.valid_orientations[i][j] would be a list of valid
-        orientations for self.molecules[i],
-        in the Wyckoff position self.wyckoffs[i][j]
+    orientations for self.molecules[i], in the Wyckoff position
+    self.wyckoffs[i][j]
+
+    Args:
+        mol: a pymatgen Molecule object.
+        sg: the international spacegroup number
+        allow_inversion: whether or not to allow inversion operations for chiral molecules
+
+    Returns:
+        a list of operations orientation objects for each Wyckoff position. 1st and 2nd indices correspond to the Wyckoff position
     """
     valid_orientations = []
     wyckoffs = get_wyckoffs(sg, organized=True)
@@ -60,13 +86,17 @@ def get_box(mol, padding=1.0):
     '''
     Given a molecule, find a minimum orthorhombic box containing it.
     Size is calculated using min and max x, y, and z values.
-    Returns a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
-    the negative x direction, x2 is the displacement in the positive x
-    direction, and so on. For best results, call oriented_molecule first.
-    args:
-        mol: a pymatgen molecule object
+    For best results, call oriented_molecule first.
+    
+    Args:
+        mol: a pymatgen Molecule object
         padding: the extra space to be added in each direction. Double this
-            amount will be added to each of the x, y, and z directions.
+            amount will be added to each of the x, y, and z directions
+
+    Returns:
+        a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
+        the negative x direction, x2 is the displacement in the positive x
+        direction, and so on
     '''
     minx, miny, minz, maxx, maxy, maxz = 0.,0.,0.,0.,0.,0.
     for i, p in enumerate(mol):
@@ -80,15 +110,24 @@ def get_box(mol, padding=1.0):
     return [minx-padding,maxx+padding,miny-padding,maxy+padding,minz-padding,maxz+padding]
 
 def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0):
-    #NOTE: Currently does not depend on molecular orientations
     """
-    check the distances between two set of molecules
+    Check the distances between two set of molecules. The first set is generally
+    larger than the second. Distances between coordinates within the first set are
+    not checked, and distances between coordinates within the second set are not
+    checked. Only distances between points from different sets are checked.
+
     Args:
-    coord1: multiple list of positions e.g. [[0,0,0],[1,1,1]]
-    indices1: the corresponding molecular indices of coord1, e.g. [1, 3]
-    coord2: a list of new positions: [0.5, 0.5 0.5]
-    index2: the molecular index for coord2: 4
-    lattice: cell matrix
+        coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4],[.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
+        indices1: the corresponding molecular indices of coord1, e.g. [1, 3]. Indices correspond to which value in radii to use
+        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9], [.4,.5,.6]]
+        index2: the molecular index for coord2. Corresponds to which value in radii to use
+        lattice: matrix describing the unit cell vectors
+        radii: a list of radii used to judge whether or not two molecules overlap
+        factor: the tolerance is multiplied by this amount. Larger values mean molecules must be farther apart
+
+    Returns:
+        a bool for whether or not the atoms are sufficiently far enough apart
+    
     """
     #add PBC
     coord2s = []
@@ -115,16 +154,20 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
 
 def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False):
     '''
-    Given a list of points, return index of Wyckoff position in space group.
-    If no match found, returns False.
+    Given a list of points, returns the index of the Wyckoff position within
+    the spacegroup.
 
     Args:
-        points: a list of 3d coordinates or SymmOps to check
+        points: a list of 3d fractional coordinates or SymmOps to check
         sg: the international space group number to check
-        wyckoffs: a list of Wyckoff positions obtained from get_wyckoffs.
+        wyckoffs: a list of (unsorted) Wyckoff positions obtained from get_wyckoffs.
         exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1
             are considered equal
+
+    Returns:
+        a single index corresponding to the detected Wyckoff position. If no
+        valid Wyckoff position is found, returns False
     ''' 
     points = np.array(points)
     points = np.around((points*1e+10))/1e+10
@@ -248,11 +291,22 @@ def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations):
 
 def choose_wyckoff_molecular(wyckoffs, number, orientations):
     """
-    choose the wyckoff sites based on the current number of atoms
-    rules 
-    1, the newly added sites is equal/less than the required number.
-    2, prefer the sites with large multiplicity
-    orientations: the valid orientations --for a given molecule--
+    Choose a Wyckoff position to fill based on the current number of molecules
+    needed to be placed within a unit cell
+    Rules:
+        1) The new position's multiplicity is equal/less than (number).
+        2) We prefer positions with large multiplicity.
+        3) The site must admit valid orientations for the desired molecule.
+
+    Args:
+        wyckoffs: an unsorted list of Wyckoff positions
+        number: the number of molecules still needed in the unit cell
+        orientations: the valid orientations for a given molecule. Obtained from
+            get_sg_orientations, which is called within molecular_crystal
+
+    Returns:
+        a single index for the Wyckoff position. If no position is found,
+        returns False
     """
     if np.random.random()>0.5: #choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
@@ -286,7 +340,7 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
 class mol_site():
     '''
     Class for storing molecular Wyckoff positions and orientations within
-    the molecular_crystal class. 
+    the molecular_crystal class.
     '''
     def __init__(self, mol, position, sg, wp_index, lattice):
         #Pymatgen molecule object
@@ -311,14 +365,14 @@ class molecular_crystal():
     
     Args:
         sg: The international spacegroup number
-        numMols: The number of each type of molecule within the primitive cell
+        numMols: A list of the number of each type of molecule within the
+            primitive cell
         volume_factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
         allow_inversion: Whether or not to allow chiral molecules to be
             inverted. If True, the final crystal may contain mirror images of
-            the original molecule.
-            Unless the chemical properties of the mirror image are known, it is
-            highly recommended to keep this value False.
+            the original molecule. Unless the chemical properties of the mirror
+            image are known, it is highly recommended to keep this value False
         orientations:
             Once a crystal with the same spacegroup and molecular stoichiometry
             has been generated, you may pass its valid_orientations attribute
@@ -369,6 +423,8 @@ class molecular_crystal():
         self.numMols = numMols * cellsize(self.sg)
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
+        '''The Wyckoff positions for the crystal's spacegroup. Sorted by
+        multiplicity.'''
         self.check_atomic_distances = check_atomic_distances
         #Whether or not to allow chiral molecules to be flipped
         self.allow_inversion = allow_inversion
@@ -378,6 +434,9 @@ class molecular_crystal():
             self.get_orientations()
         else:
             self.valid_orientations = orientations
+            '''The valid orientations for each molecule and Wyckoff position.
+            May be copied when generating a new molecular_crystal to save a
+            small amount of time'''
         self.generate_crystal()
 
 
@@ -391,15 +450,20 @@ class molecular_crystal():
 
     def get_orientations(self):
         """
-        Calculate the valid orientations for each Molecule and Wyckoff position.
-        Returns a list with 4 indices:
-        index 1: the molecular prototype's index
+        Calculates the valid orientations for each Molecule and Wyckoff
+        position. Returns a list with 4 indices:
+
+        index 1: the molecular prototype's index within self.molecules
+
         index 2: the Wyckoff position's 1st index (based on multiplicity)
+
         index 3: the WP's 2nd index (within the group of equal multiplicity)
+
         index 4: the index of the valid orientation for the molecule/WP pair
+
         For example, self.valid_orientations[i][j][k] would be a list of valid
-            orientations for self.molecules[i],
-            in the Wyckoff position self.wyckoffs[j][k]
+        orientations for self.molecules[i], in the Wyckoff position
+        self.wyckoffs[j][k]
         """
         self.valid_orientations = []
         for mol in self.molecules:
@@ -417,9 +481,9 @@ class molecular_crystal():
 
     def check_compatible(self):
         '''
-        check if the number of molecules is compatible with the
-        wyckoff positions
-        needs to improve later
+        Checks if the number of molecules is compatible with the Wyckoff
+        positions. Considers the number of degrees of freedom for each Wyckoff
+        position, and makes sure at least one valid combination of WP's exists.
         '''
         N_site = [len(x[0]) for x in self.wyckoffs]
         has_freedom = False
@@ -467,7 +531,16 @@ class molecular_crystal():
         return True
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
-        """the main code to generate random crystal """
+        """
+        The main code to generate a random molecular crystal. If successful, stores
+        a pymatgen.core.structure object in self.struct and sets self.valid to True.
+        If unsuccessful, sets self.valid to False and outputs an error message.
+
+        Args:
+            max1: the number of attempts for generating a lattice
+            max2: the number of attempts for a given lattice
+            max3: the number of attempts for a given Wyckoff position
+        """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is False:
