@@ -1,9 +1,16 @@
-'''
-Class of layer group
-'''
-
 from optparse import OptionParser
+
 class Layergroup:
+    '''
+    Class for storing layer groups. Used for the generation of 2d crystals.
+    Each layer group corresponds to the point group of a 3d space group. Thus, we
+    can access the symmetry information using code for standard space groups. The
+    primary class, Layergroup, allows access to the layer group number, space group
+    number, and space group symbol.
+
+    Args:
+        input_value: The layer group number or symbol
+    '''
     def __init__(self, input_value):
 
         # list of layer group number, symbol, space group number and permutation
@@ -95,6 +102,7 @@ class Layergroup:
         self.error = False
         if self.input.isdigit():
             self.lg = int(self.input)
+            '''The layer group number (between 1 and 80)'''
         else:
             for i, e1 in enumerate(self.group_list):
                 if e1[1] == self.input:
@@ -102,7 +110,9 @@ class Layergroup:
                     break
         if (self.lg is not None) and (0<self.lg<81):
             self.symbol=self.group_list[self.lg-1][1]
+            '''The Hermann-Mauguin symbol of the layer group'''
             self.sgnumber = self.group_list[self.lg-1][2]
+            '''The international space group number (between 1 and 230)'''
             self.permutation=self.group_list[self.lg-1][3]
         else:
             self.error = True
