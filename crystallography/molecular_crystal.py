@@ -1,4 +1,5 @@
-'''
+#TODO: Add PBC for functions mirroring those in crystal.py
+"""
 Module for generation of random molecular crystals which meet symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options (preceded by two dashes) are provided for command-line usage of the module:  
 
     spacegroup (-s): the international spacegroup number to be generated. Defaults to 36  
@@ -18,7 +19,7 @@ Module for generation of random molecular crystals which meet symmetry constrain
     checkatoms (-c): whether or not to check inter-atomic distances at each step of generation. When True, produces more accurate results, but requires more computation time for larger molecules. When False, produces less accurate results and may require a larger volume factor, but does not require more computation time for large molecules. Generally, the flag should only be set to False for large, approximately spherical molecules like C60. Defaults to True  
 
     allowinversion (-i): whether or not to allow inversion of chiral molecules for spacegroups which contain inversional and/or rotoinversional symmetry. This should only be True if the chemical and biological properties of the mirror molecule are known and suitable for the desired application. Defaults to False  
-'''
+"""
 from crystallography.crystal import *
 from crystallography.molecule import *
 from crystallography.operations import *
@@ -29,7 +30,7 @@ max2 = 30 #Attempts for a given lattice
 max3 = 30 #Attempts for a given Wyckoff position
 
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
-    '''
+    """
     Estimate the volume needed for a molecular crystal conventional unit cell.
 
     Args:
@@ -39,7 +40,7 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
 
     Returns:
         the estimated volume (in cubic Angstroms) needed for the unit cell
-    '''
+    """
     volume = 0
     for numMol, box in zip(numMols, boxes):
         volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
@@ -83,7 +84,7 @@ def get_sg_orientations(mol, sg, allow_inversion=False):
     return valid_orientations
 
 def get_box(mol, padding=1.0):
-    '''
+    """
     Given a molecule, find a minimum orthorhombic box containing it.
     Size is calculated using min and max x, y, and z values.
     For best results, call oriented_molecule first.
@@ -97,7 +98,7 @@ def get_box(mol, padding=1.0):
         a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
         the negative x direction, x2 is the displacement in the positive x
         direction, and so on
-    '''
+    """
     minx, miny, minz, maxx, maxy, maxz = 0.,0.,0.,0.,0.,0.
     for i, p in enumerate(mol):
         x, y, z = p.coords
@@ -109,7 +110,7 @@ def get_box(mol, padding=1.0):
         if z > maxx: maxx = z
     return [minx-padding,maxx+padding,miny-padding,maxy+padding,minz-padding,maxz+padding]
 
-def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0):
+def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0, PBC=None):
     """
     Check the distances between two set of molecules. The first set is generally
     larger than the second. Distances between coordinates within the first set are
@@ -118,20 +119,20 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
 
     Args:
         coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4],[.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
-        indices1: the corresponding molecular indices of coord1, e.g. [1, 3]. Indices correspond to which value in radii to use
         coord2: a list of new fractional coordinates e.g. [[.7,.8,.9], [.4,.5,.6]]
+        indices1: the corresponding molecular indices of coord1, e.g. [1, 3]. Indices correspond to which value in radii to use
         index2: the molecular index for coord2. Corresponds to which value in radii to use
         lattice: matrix describing the unit cell vectors
         radii: a list of radii used to judge whether or not two molecules overlap
-        factor: the tolerance is multiplied by this amount. Larger values mean molecules must be farther apart
+        d_factor: the tolerance is multiplied by this amount. Larger values mean molecules must be farther apart
+        PBC: value to be passed to create_matrix for periodic boundary conditions
 
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
-    
     """
     #add PBC
     coord2s = []
-    matrix = create_matrix()
+    matrix = create_matrix(PBC)
     for coord in coord2:
         for m in matrix:
             coord2s.append(coord+m)
@@ -153,7 +154,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
         return True
 
 def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False):
-    '''
+    """
     Given a list of points, returns the index of the Wyckoff position within
     the spacegroup.
 
@@ -168,7 +169,7 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
     Returns:
         a single index corresponding to the detected Wyckoff position. If no
         valid Wyckoff position is found, returns False
-    ''' 
+    """
     points = np.array(points)
     points = np.around((points*1e+10))/1e+10
 
@@ -338,10 +339,10 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
             return False
 
 class mol_site():
-    '''
+    """
     Class for storing molecular Wyckoff positions and orientations within
     the molecular_crystal class.
-    '''
+    """
     def __init__(self, mol, position, sg, wp_index, lattice):
         #Pymatgen molecule object
         self.mol = mol
@@ -356,7 +357,7 @@ class mol_site():
         self.letter = letter_from_index(wp_index, sg)
 
 class molecular_crystal():
-    '''
+    """
     Class for storing and generating molecular crystals based on symmetry
     constraints. Based on the crystal.random_crystal class for atomic crystals.
     Given a spacegroup, list of molecule objects, molecular stoichiometry, and
@@ -382,7 +383,7 @@ class molecular_crystal():
             position is added. This requires slightly more time, but vastly
             improves accuracy. For approximately spherical molecules, or
             for large inter-molecular distances, this may be turned off
-    '''
+    """
     def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
         
         #Necessary input
@@ -423,8 +424,8 @@ class molecular_crystal():
         self.numMols = numMols * cellsize(self.sg)
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
-        '''The Wyckoff positions for the crystal's spacegroup. Sorted by
-        multiplicity.'''
+        """The Wyckoff positions for the crystal's spacegroup. Sorted by
+        multiplicity."""
         self.check_atomic_distances = check_atomic_distances
         #Whether or not to allow chiral molecules to be flipped
         self.allow_inversion = allow_inversion
@@ -434,9 +435,9 @@ class molecular_crystal():
             self.get_orientations()
         else:
             self.valid_orientations = orientations
-            '''The valid orientations for each molecule and Wyckoff position.
+            """The valid orientations for each molecule and Wyckoff position.
             May be copied when generating a new molecular_crystal to save a
-            small amount of time'''
+            small amount of time"""
         self.generate_crystal()
 
 
@@ -480,11 +481,11 @@ class molecular_crystal():
                         self.valid_orientations[-1][-1].append([])
 
     def check_compatible(self):
-        '''
+        """
         Checks if the number of molecules is compatible with the Wyckoff
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
-        '''
+        """
         N_site = [len(x[0]) for x in self.wyckoffs]
         has_freedom = False
         #remove WP's with no freedom once they are filled
@@ -869,13 +870,7 @@ if __name__ == "__main__":
             if verbosity > 1:
                 print(rand_crystal.struct)
 
-            #print(CifWriter(new_struct, symprec=0.1).__str__())
-            #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
-            #output wyckoff sites only
-
+        #If generation fails
         else: 
             print('something is wrong')
             print('Time spent during generation attempt: ' + str(timespent) + "s")
-            #print(len(rand_crystal.coordinates))
-            #break
-            #print(new_struct)

@@ -1,8 +1,4 @@
-
-'''
-Module for generating random atomic crystal structures. A pymatgen- or spglib- type structure is generated, and can be output to a .cif file. Options are provided for command-line usage of the module:...
-'''
-'''
+"""
 Module for generation of random atomic crystals with symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options (preceded by two dashes) are provided for command-line usage of the module:  
 
     spacegroup (-s): the international spacegroup number to be generated. Defaults to 206  
@@ -11,14 +7,14 @@ Module for generation of random atomic crystals with symmetry constraints. A pym
 
     numIons (-n): the number of atoms in the PRIMITIVE unit cell (For P-type spacegroups, this is the same as the number of molecules in the conventional unit cell. For A, B, C, and I-centered spacegroups, this is half the number of the conventional cell. For F-centered unit cells, this is one fourth the number of the conventional cell.). For multiple atom types, separate entries with commas. Ex: "8", "1, 4, 12". Defaults to 16  
 
-    factor (-f): the relative volume factor used to generate the unit cell. Larger values result in larger cells, with molecules spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 2.0  
+    factor (-f): the relative volume factor used to generate the unit cell. Larger values result in larger cells, with atoms spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 2.0  
 
     verbosity (-v): the amount of information which should be printed for each generated structure. For 0, only prints the requested and generated spacegroups. For 1, also prints the contents of the generated pymatgen structure. Defaults to 0  
 
     attempts (-a): the number of structures to generate. Note: if any of the attempts fail, the number of generated structures will be less than this value. Structures will be output to separate cif files. Defaults to 10  
 
     outdir (-o): the file directory where cif files will be output to. Defaults to "."  
-'''
+"""
 
 import sys
 #from pkg_resources import resource_string
@@ -74,13 +70,21 @@ wyckoff_generators_df = read_csv(resource_filename("crystallography", "database/
 #------------------------------
 
 def gaussian(min, max, sigma=3.0):
-    '''
+    """
     Choose a random number from a Gaussian probability distribution centered
     between min and max. sigma is the number of standard deviations that min
     and max are away from the center. Thus, sigma is also the largest possible
     number of standard deviations corresponding to the returned value. sigma=2
     corresponds to a 95.45% probability of choosing a number between min and max
-    '''
+
+    Args:
+        min: the minimum acceptable value
+        max: the maximum acceptable value
+        sigma: the number of standard deviations between the center and min or max
+
+    Returns:
+        a value chosen randomly between min and max
+    """
     center = (max+min)*0.5
     delta = fabs(max-min)*0.5
     ratio = delta/sigma
@@ -90,26 +94,50 @@ def gaussian(min, max, sigma=3.0):
             return x
             
 def letter_from_index(index, sg):
-    '''
+    """
     Given a Wyckoff position's index within a spacegroup,
     return its number and letter e.g. '4a'
-    '''
+
+    Args:
+        index: a single integer describing the WP's index within the spacegroup (0 is the general position)
+        sg: the international spacegroup number
+   
+    Returns:
+        the Wyckoff letter corresponding to the Wyckoff position (for example, for position 4a, the function would return 'a')
+    """
     letters = "abcdefghijklmnopqrstuvwxyzA"
     wyckoffs = get_wyckoffs(sg)
     length = len(wyckoffs)
     return letters[length - 1 - index]
 
 def index_from_letter(letter, sg):
+    """
+    Given the Wyckoff letter, returns the index of a Wyckoff position within the spacegroup
+
+    Args:
+        letter: The wyckoff letter
+        sg: the internationl spacegroup number
+
+    Returns:
+        a single index specifying the location of the Wyckoff position within the spacegroup (0 is the general position)
+    """
     letters = "abcdefghijklmnopqrstuvwxyzA"
     wyckoffs = get_wyckoffs(sg)
     length = len(wyckoffs)
     return length - 1 - letters.index(letter)
 
 def jk_from_i(i, olist):
-    '''
+    """
     Given an organized list (Wyckoff positions or orientations), determine
-    the two indices which correspond to a single index for an unorganized list
-    '''
+    the two indices which correspond to a single index for an unorganized list. Used mainly for organized Wyckoff position lists, but can be used for other lists organized in a similar way
+
+    Args:
+        i: a single index corresponding to the item's location in the unorganized list
+        olist: the organized list
+
+    Returns:
+        [j, k]: two indices corresponding to the item's location in the organized list
+    """
     num = -1
     found = False
     for j , a in enumerate(olist):
@@ -129,12 +157,13 @@ def i_from_jk(j, k, olist):
                 return num
 
 def ss_string_from_ops(ops, sg, complete=True):
-    '''
+    """
     Print the Hermann-Mauguin symbol for a site symmetry group, using a list of
     SymmOps as input. Note that the symbol does not necessarily refer to the
     x,y,z axes. For information on reading these symbols, see:
     http://en.wikipedia.org/wiki/Hermann-Mauguin_notation#Point_groups
-    args:
+
+    Args:
         ops: a list of SymmOp objects representing the site symmetry
         sg: International number of the spacegroup. Used to determine which
             axes to show. For example, a 3-fold rotation in a cubic system is
@@ -142,7 +171,10 @@ def ss_string_from_ops(ops, sg, complete=True):
             is written as "3.."
         complete: whether or not all symmetry operations in the group
             are present. If False, we generate the rest
-    '''
+
+    Returns:
+        a string representing the site symmetry. Ex: "2mm"
+    """
     #Return the symbol for a single axis
     #Will be called later in the function
     def get_symbol(opas, order, has_reflection):
@@ -345,6 +377,15 @@ def ss_string_from_ops(ops, sg, complete=True):
         return
 
 def create_matrix(PBC=None):
+    """
+    Used for calculating distances in lattices with periodic boundary conditions. When multiplied with a set of points, generates additional points in cells adjacent to and diagonal to the original cell
+
+    Args:
+        PBC: an axis which does not have periodic boundary condition. Ex: PBC=1 cancels periodic boundary conditions along the x axis
+
+    Returns:
+        A numpy array of matrices which can be multiplied by a set of coordinates
+    """
     matrix = []
     i_list = [-1, 0, 1]
     j_list = [-1, 0, 1]
@@ -371,13 +412,22 @@ def distance(xyz, lattice, PBC=None):
 
 def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor=1.0):
     """
-    check the distances between two set of atoms
+    Check the distances between two set of molecules. The first set is generally
+    larger than the second. Distances between coordinates within the first set are
+    not checked, and distances between coordinates within the second set are not
+    checked. Only distances between points from different sets are checked.
+
     Args:
-    coord1: multiple list of atoms e.g. [[0,0,0],[1,1,1]]
-    specie1: the corresponding type of coord1, e.g. ['Na','Cl']
-    coord2: a list of new atoms: [[0.5, 0.5 0.5]]
-    specie2: the type of coord2: 'Cl'
-    lattice: cell matrix
+        coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4],[.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
+        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9], [.4,.5,.6]]
+        specie1: a list of atomic symbols for coord1. Ex: ['C', 'O']
+        specie2: the atomic symbol for coord2. Ex: 'Li'
+        lattice: matrix describing the unit cell vectors
+        PBC: value to be passed to create_matrix
+        d_factor: the tolerance is multiplied by this amount. Larger values mean atoms must be farther apart
+
+    Returns:
+        a bool for whether or not the atoms are sufficiently far enough apart
     """
     #add PBC
     coord2s = []
@@ -402,7 +452,15 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor
 
 def get_center(xyzs, lattice, PBC=None):
     """
-    to find the geometry center of the clusters under PBC
+    Finds the geometric centers of the clusters under periodic boundary conditions.
+
+    Args:
+        xyzs: a list of fractional coordinates
+        lattice: a matrix describing the unit cell
+        PBC: a value to be passed to create_matrix
+
+    Returns:
+        x,y,z coordinates for the center of the input coordinate list
     """
     matrix0 = create_matrix(PBC)
     xyzs -= np.round(xyzs)
@@ -423,7 +481,17 @@ def get_center(xyzs, lattice, PBC=None):
     return center
 
 def para2matrix(cell_para, radians=True, format='lower'):
-    """ 1x6 (a, b, c, alpha, beta, gamma) -> 3x3 representation -> """
+    """
+    Given a set of lattic parameters, generates a matrix representing the lattice vectors
+
+    Args:
+        cell_para: a 1x6 list of lattice parameters [a, b, c, alpha, beta, gamma]. a, b, and c are the length of the lattice vectos, and alpha, beta, and gamma are the angles between these vectors. Can be generated by matrix2para
+        radians: if True, lattice parameters should be in radians. If False, lattice angles should be in degrees
+        format: a string ('lower', 'symmetric', or 'upper') for the type of matrix to be output
+
+    Returns:
+        a 3x3 matrix representing the unit cell. By default (format='lower'), the a vector is aligined along the x-axis, and the b vector is in the y-z plane
+    """
     a = cell_para[0]
     b = cell_para[1]
     c = cell_para[2]
@@ -468,6 +536,9 @@ def para2matrix(cell_para, radians=True, format='lower'):
     return matrix
 
 def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
+    '''
+    TODO: Add documentation
+    '''
     old = lattice[dim, dim]
     new = old + vacuum
     coor[:,dim] = coor[:,dim]*old/new
@@ -476,6 +547,9 @@ def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
     return lattice, coor
 
 def Permutation(lattice, coor, PB):
+    """
+    TODO: Add documentation
+    """
     para = matrix2para(lattice)
     para1 = deepcopy(para)
     coor1 = deepcopy(coor)
@@ -488,7 +562,8 @@ def Permutation(lattice, coor, PB):
     return para2matrix(para1), coor1
 
 def matrix2para(matrix, radians=True):
-    """ 3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)"""
+    """
+    """
     cell_para = np.zeros(6)
     #a
     cell_para[0] = np.linalg.norm(matrix[0])
@@ -562,10 +637,11 @@ def find_short_dist(coor, lattice, tol):
     return pairs, graph
 
 def connected_components(graph):
-    '''Given an undirected graph (a 2d array of indices), return a set of
+    """
+    Given an undirected graph (a 2d array of indices), return a set of
     connected components, each connected component being an (arbitrarily
     ordered) array of indices which are connected either directly or indirectly.
-    '''
+    """
     def add_neighbors(el, seen=[]):
         '''
         Find all elements which are connected to el. Return an array which
@@ -803,11 +879,11 @@ def choose_wyckoff(wyckoffs, number):
             return False
 
 def get_wyckoffs(sg, organized=False, PB=None):
-    '''
+    """
     Returns a list of Wyckoff positions for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
     2nd index: a SymmOp object in the WP
-    '''
+    """
     if PB is not None:
         coor = [0,0,0]
         #coor[0] = 0.5
@@ -844,7 +920,7 @@ def get_wyckoffs(sg, organized=False, PB=None):
         return wyckoffs
 
 def get_wyckoff_symmetry(sg, molecular=False):
-    '''
+    """
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
     2nd index: a point within the WP
@@ -852,7 +928,7 @@ def get_wyckoff_symmetry(sg, molecular=False):
     molecular: whether or not to return the Euclidean point symmetry operations
         If True, cuts off translational part of operation, and converts non-orthogonal
         (3-fold and 6-fold rotation) operations to pure rotations
-    '''
+    """
     P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
     symmetry = []
@@ -880,11 +956,11 @@ def get_wyckoff_symmetry(sg, molecular=False):
     return symmetry
 
 def get_wyckoff_generators(sg):
-    '''
+    """
     Returns a list of Wyckoff generators for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
     2nd index: a generator for the WP
-    '''
+    """
     generators_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
     #Loop over Wyckoff positions
@@ -896,10 +972,10 @@ def get_wyckoff_generators(sg):
     return generators
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
-    '''
+    """
     Given gen_pos (a list of SymmOps), return the list of symmetry operations
     leaving a point (coordinate or SymmOp) invariant.
-    '''
+    """
     #Convert point into a SymmOp
     if type(point) != SymmOp:
         point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point)
@@ -959,7 +1035,7 @@ def find_generating_point(coords, generators):
     return None
 
 def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
-    '''
+    """
     Given a list of points, return index of Wyckoff position in space group.
     If no match found, returns False.
 
@@ -970,7 +1046,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
         exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1
             are considered equal
-    '''
+    """
     points = np.array(points)
     points = np.around((points*1e+10))/1e+10
 
@@ -1110,7 +1186,7 @@ class random_crystal():
             return 0
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
-        """the main code to generate random crystal """
+        """the main code to generate random crystal"""
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is False:
