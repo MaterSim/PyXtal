@@ -1,9 +1,6 @@
-'''
-Program for generation of random crystal structures.
-by Scott Fredericks and Qiang Zhu, Spring 2018
 
-output:
-a randomly generated cif file with conventional setting
+'''
+Module for generating random atomic crystal structures. A pymatgen- or spglib- type structure is generated, and can be output to a .cif file. Options are provided for command-line usage of the module:...
 '''
 import sys
 #from pkg_resources import resource_string
@@ -27,6 +24,7 @@ from pandas import read_csv
 
 from crystallography.database.element import Element
 import crystallography.database.hall as hall
+from crystallography.database.layergroup import Layergroup
 from crystallography.operations import OperationAnalyzer
 from crystallography.operations import angle
 from crystallography.operations import random_vector
@@ -49,14 +47,6 @@ minvec = 2.0 #minimum vector length
 ang_min = 30
 ang_max = 150
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
-
-'''wyckoff_df = read_csv(str(resource_string(__name__, "database/wyckoff_list.csv")))
-wyckoff_symmetry_df = read_csv(str(resource_string(__name__, "database/wyckoff_symmetry.csv")))
-wyckoff_generators_df = read_csv(str(resource_string(__name__, "database/wyckoff_generators.csv")))'''
-
-'''wyckoff_df = read_csv("crystallography/database/wyckoff_list.csv")
-wyckoff_symmetry_df = read_csv("crystallography/database/wyckoff_symmetry.csv")
-wyckoff_generators_df = read_csv("crystallography/database/wyckoff_generators.csv")'''
 
 wyckoff_df = read_csv(resource_filename("crystallography", "database/wyckoff_list.csv"))
 wyckoff_symmetry_df = read_csv(resource_filename("crystallography", "database/wyckoff_symmetry.csv"))
@@ -336,23 +326,32 @@ def ss_string_from_ops(ops, sg, complete=True):
         print("Error: invalid spacegroup number")
         return
 
-def create_matrix():
+def create_matrix(PBC=None):
     matrix = []
-    for i in [-1,0,1]:
-        for j in [-1,0,1]:
-            for k in [-1,0,1]:
+    i_list = [-1, 0, 1]
+    j_list = [-1, 0, 1]
+    k_list = [-1, 0, 1]
+    if PBC == 1:
+        i_list = [0]
+    elif PBC == 2:
+        j_list = [0]
+    elif PBC == 3:
+        k_list = [0]
+    for i in i_list:
+        for j in j_list:
+            for k in k_list:
                 matrix.append([i,j,k])
     return np.array(matrix, dtype=float)
 
 #Euclidean distance
-def distance(xyz, lattice): 
+def distance(xyz, lattice, PBC=None): 
     xyz = xyz - np.round(xyz)
-    matrix = create_matrix()
+    matrix = create_matrix(PBC)
     matrix += xyz
     matrix = np.dot(matrix, lattice)
     return np.min(cdist(matrix,[[0,0,0]]))       
 
-def check_distance(coord1, coord2, specie1, specie2, lattice, d_factor=1.0):
+def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor=1.0):
     """
     check the distances between two set of atoms
     Args:
@@ -364,7 +363,7 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, d_factor=1.0):
     """
     #add PBC
     coord2s = []
-    matrix = create_matrix()
+    matrix = create_matrix(PBC)
     for coord in coord2:
         for m in matrix:
             coord2s.append(coord+m)
@@ -383,31 +382,27 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, d_factor=1.0):
     else:
         return True
 
-def get_center(xyzs, lattice):
+def get_center(xyzs, lattice, PBC=None):
     """
     to find the geometry center of the clusters under PBC
     """
-    matrix0 = create_matrix()
+    matrix0 = create_matrix(PBC)
     xyzs -= np.round(xyzs)
     for atom1 in range(1,len(xyzs)):
         dist_min = 10.0
         for atom2 in range(0, atom1):
             #shift atom1 to position close to atom2
-            #print(np.round(xyzs[atom1] - xyzs[atom2]))
-            #xyzs[atom2] += np.round(xyzs[atom1] - xyzs[atom2])
-            #print(xyzs[atom1] - xyzs[atom2])
             matrix = matrix0 + (xyzs[atom1] - xyzs[atom2])
-            #print(matrix)
             matrix = np.dot(matrix, lattice)
             dists = cdist(matrix, [[0,0,0]])
             if np.min(dists) < dist_min:
                 dist_min = np.min(dists)
-                #print(dist_min, matrix[np.argmin(dists)]/4.72)
                 matrix_min = matrix0[np.argmin(dists)]
-        #print(atom1, xyzs[atom1], matrix_min, dist_min)
         xyzs[atom1] += matrix_min
-    #print(xyzs)
-    return xyzs.mean(0)
+    center = xyzs.mean(0)
+    if abs(center[PBC-1])<1e-4:
+        center[PBC-1] = 0.5
+    return center
 
 def para2matrix(cell_para, radians=True, format='lower'):
     """ 1x6 (a, b, c, alpha, beta, gamma) -> 3x3 representation -> """
@@ -454,6 +449,26 @@ def para2matrix(cell_para, radians=True, format='lower'):
         pass
     return matrix
 
+def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
+    old = lattice[dim, dim]
+    new = old + vacuum
+    coor[:,dim] = coor[:,dim]*old/new
+    coor[:,dim] = coor[:,dim] - np.mean(coor[:,dim]) + 0.5
+    lattice[dim, dim] = new
+    return lattice, coor
+
+def Permutation(lattice, coor, PB):
+    para = matrix2para(lattice)
+    para1 = deepcopy(para)
+    coor1 = deepcopy(coor)
+    for axis in [0,1,2]:
+        para1[axis] = para[PB[axis]-1]
+        para1[axis+3] = para[PB[axis]+2]
+        coor1[:,axis] = coor[:,PB[axis]-1]
+    #print('before permutation: ', para)
+    #print('after permutation: ', para1)
+    return para2matrix(para1), coor1
+
 def matrix2para(matrix, radians=True):
     """ 3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)"""
     cell_para = np.zeros(6)
@@ -463,7 +478,6 @@ def matrix2para(matrix, radians=True):
     cell_para[1] = np.linalg.norm(matrix[1])
     #c
     cell_para[2] = np.linalg.norm(matrix[2])
-
     #alpha
     cell_para[3] = angle(matrix[1], matrix[2])
     #beta
@@ -565,7 +579,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoff, sg, tol):
+def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol)
         index = None
@@ -574,18 +588,11 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol):
                 merged = []
                 groups = connected_components(graph)
                 for group in groups:
-                    #print(coor[group])
-                    #print(coor[group].mean(0))
-                    merged.append(get_center(coor[group], lattice))
+                    merged.append(get_center(coor[group], lattice, PBC))
                 merged = np.array(merged)
                 #if check_wyckoff_position(merged, sg, wyckoff) is not False:
                 index = check_wyckoff_position(merged, sg, exact_translation=False)
                 if index is False:
-                    '''print('something is wrong')
-                    print(coor)
-                    print(merged)
-                    print(sg)'''
-                    #exit(0)
                     return coor, False
                 else:
                     coor = merged
@@ -691,6 +698,69 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
 
+def generate_lattice_2d(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+    """
+    generate the lattice according to the space group symmetry and number of atoms
+    if the space group has centering, we will transform to conventional cell setting
+    If the generated lattice does not meet the minimum angle and vector requirements,
+    we try to generate a new one, up to maxattempts times
+
+    args:
+        sg: International number of the space group
+        volume: volume of the lattice
+        minvec: minimum allowed lattice vector length (among a, b, and c)
+        minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
+        max_ratio: largest allowed ratio of two lattice vector lengths
+    """
+    maxangle = pi-minangle
+    abc = np.ones([3])
+    abc[2] = thickness
+    alpha, beta, gamma  = pi/2, pi/2, pi/2
+    for n in range(maxattempts):
+        #Triclinic
+        if sg <= 2:
+            vec = random_vector()
+
+        #Monoclinic
+        elif sg <= 15:
+            if P[-1]==3 and sg_symbol_from_int_number(sg)=='P':
+                gamma = gaussian(minangle, maxangle)
+            x = sin(beta)
+            vec = random_vector()
+            ratio = sqrt(volume/x*vec[2]/abc[2])
+            abc[0]=vec[0]*ratio
+            abc[1]=vec[1]*ratio
+
+        #Orthorhombic
+        elif sg <= 74:
+            vec = random_vector()
+            ratio = sqrt(volume*vec[2]/abc[2])
+            abc[0]=vec[0]*ratio
+            abc[1]=vec[1]*ratio
+
+        #Tetragonal
+        elif sg <= 142:
+            abc[0] = abc[1] = sqrt(volume/abc[2])
+
+        #Trigonal/Rhombohedral/Hexagonal
+        elif sg <= 194:
+            gamma = pi/3*2
+            x = sqrt(3.)/2.
+            abc[0] = abc[1] = sqrt((volume/x)/abc[2])
+
+        para = np.array([abc[0], abc[1], abc[2], alpha, beta, gamma])
+        para1 = deepcopy(para)
+        for axis in [0,1,2]:
+            para1[axis] = para[P[axis]-1]
+            para1[axis+3] = para[P[axis]+2]
+        #print('before: ', para)
+        #print('after : ', para1)
+        return para1
+
+    #If maxattempts tries have been made without success
+    print("Error: Could not generate lattice after "+str(n+1)+" attempts")
+    return
+
 def choose_wyckoff(wyckoffs, number):
     """
     choose the wyckoff sites based on the current number of atoms
@@ -714,18 +784,34 @@ def choose_wyckoff(wyckoffs, number):
         else:
             return False
 
-def get_wyckoffs(sg, organized=False):
+def get_wyckoffs(sg, organized=False, PB=None):
     '''
     Returns a list of Wyckoff positions for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
     2nd index: a SymmOp object in the WP
     '''
+    if PB is not None:
+        coor = [0,0,0]
+        #coor[0] = 0.5
+        #print(coor[0], coor[1], coor[2])
+        coor[PB[-1]-1] = 0.5
+        coor = np.array(coor)
+
     wyckoff_strings = eval(wyckoff_df["0"][sg])
     wyckoffs = []
     for x in wyckoff_strings:
-        wyckoffs.append([])
-        for y in x:
-            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+        if PB is not None:
+            op = SymmOp.from_xyz_string(x[0])
+            coor1 = op.operate(coor)
+            if abs(coor1[PB[-1]-1]-0.5) < 1e-2:
+                #print('invalid wyckoffs for layer group: ', x[0], coor, coor1)
+                wyckoffs.append([])
+                for y in x:
+                    wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+        else:
+            wyckoffs.append([])
+            for y in x:
+                wyckoffs[-1].append(SymmOp.from_xyz_string(y))
     if organized:
         wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
         old = len(wyckoffs[0])
@@ -1098,6 +1184,171 @@ class random_crystal():
                         self.spg_struct = (final_lattice, np.array(final_coor), final_number)
                         self.valid = True
                         return
+        if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
+        self.struct = self.Msg2
+        self.valid = False
+        return self.Msg2
+
+class random_crystal_2D():
+    def __init__(self, number, species, numIons, thickness, factor):
+
+        self.lgp = Layergroup(number)
+        self.sg = self.lgp.sgnumber
+        numIons = np.array(numIons) #must convert it to np.array
+        self.factor = factor
+        self.thickness = thickness
+        self.numIons0 = numIons
+        self.species = species
+        self.PBC = self.lgp.permutation[-1] 
+        self.PB = self.lgp.permutation[3:6] 
+        self.P = self.lgp.permutation[:3] 
+        self.Msgs()
+        self.numIons = numIons * cellsize(self.sg)
+        self.volume = estimate_volume(self.numIons, self.species, self.factor)
+        self.wyckoffs = deepcopy(get_wyckoffs(self.sg, organized=True, PB=self.PB)) 
+        self.generate_crystal()
+
+
+    def Msgs(self):
+        self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
+        self.Msg2 = 'Error: failed in the cycle of generating structures'
+        self.Msg3 = 'Warning: failed in the cycle of adding species'
+        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
+        self.Msg5 = 'Finishing: added the specie'
+        self.Msg6 = 'Finishing: added the whole structure'
+
+    def check_compatible(self):
+        """
+        check if the number of atoms is compatible with the wyckoff positions
+        needs to improve later
+        """
+        N_site = [len(x[0]) for x in self.wyckoffs]
+        has_freedom = False
+        #remove WP's with no freedom once they are filled
+        removed_wyckoffs = []
+        for numIon in self.numIons:
+            #Check that the number of ions is a multiple of the smallest Wyckoff position
+            if numIon % N_site[-1] > 0:
+                return False
+            else:
+                #Check if smallest WP has at least one degree of freedom
+                op = self.wyckoffs[-1][-1][0]
+                if op.rotation_matrix.all() != 0.0:
+                    has_freedom = True
+                else:
+                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
+                    remaining = numIon
+                    for x in self.wyckoffs:
+                        for wp in x:
+                            removed = False
+                            while remaining >= len(wp) and wp not in removed_wyckoffs:
+                                #Check if WP has at least one degree of freedom
+                                op = wp[0]
+                                remaining -= len(wp)
+                                if np.allclose(op.rotation_matrix, np.zeros([3,3])):
+                                    removed_wyckoffs.append(wp)
+                                    removed = True
+                                else:
+                                    has_freedom = True
+                    if remaining != 0:
+                        return False
+        if has_freedom:
+            return True
+        else:
+            #print("Warning: Wyckoff Positions have no degrees of freedom.")
+            return 0
+
+    def generate_crystal(self, max1=max1, max2=max2, max3=max3):
+        """the main code to generate random crystal """
+        #Check the minimum number of degrees of freedom within the Wyckoff positions
+        degrees = self.check_compatible()
+        if degrees is 0:
+            print("Generation cancelled: Wyckoff positions have no degrees of freedom.")
+            self.struct = None
+            self.valid = False
+            return
+        elif degrees is False:
+            print(self.Msg1)
+            self.struct = None
+            self.valid = False
+            return
+        else:
+            #Calculate a minimum vector length for generating a lattice
+            minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
+            for cycle1 in range(max1):
+                #1, Generate a lattice
+                cell_para = generate_lattice_2d(self.sg, self.volume, self.thickness, self.P, minvec=minvector)
+                cell_matrix = para2matrix(cell_para)
+                coordinates_total = [] #to store the added coordinates
+                sites_total = []      #to store the corresponding specie
+                good_structure = False
+
+                for cycle2 in range(max2):
+                    coordinates_tmp = deepcopy(coordinates_total)
+                    sites_tmp = deepcopy(sites_total)
+                    
+            	    #Add specie by specie
+                    for numIon, specie in zip(self.numIons, self.species):
+                        numIon_added = 0
+                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
+
+                        #Now we start to add the specie to the wyckoff position
+                        for cycle3 in range(max3):
+                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
+                            ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
+                            if ops is not False:
+            	    	    #Generate a list of coords from ops
+                                point = np.random.random(3)
+                                #print('generating new points:', point)
+                                coords = np.array([op.operate(point) for op in ops])
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, self.PBC)
+                                if good_merge:
+                                    coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
+                                    #print('Adding: ', coords_toadd)
+                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, self.PBC):
+                                        coordinates_tmp.append(coords_toadd)
+                                        sites_tmp.append(specie)
+                                        numIon_added += len(coords_toadd)
+                                    if numIon_added == numIon:
+                                        coordinates_total = deepcopy(coordinates_tmp)
+                                        sites_total = deepcopy(sites_tmp)
+                                        break
+                        if numIon_added != numIon:
+                            break  #need to repeat from the 1st species
+
+                    if numIon_added == numIon:
+                        #print(self.Msg6)
+                        good_structure = True
+                        break
+                    else: #reset the coordinates and sites
+                        coordinates_total = []
+                        sites_total = []
+
+                if good_structure:
+                    final_coor = []
+                    final_site = []
+                    final_number = []
+                    final_lattice = cell_matrix
+                    for coor, ele in zip(coordinates_total, sites_total):
+                        for x in coor:
+                            final_coor.append(x)
+                            final_site.append(ele)
+                            final_number.append(Element(ele).z)
+                    final_coor = np.array(final_coor)
+                    final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                    #print('before:  ', final_coor)
+                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    #print('cell:  ', matrix2para(final_lattice))
+                    #print(final_lattice)
+                    #print(self.PB)
+                    #print('length: ',len(self.wyckoffs)) 
+                    self.lattice = final_lattice                    
+                    self.coordinates = final_coor
+                    self.sites = final_site                    
+                    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                    self.valid = True
+                    return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
