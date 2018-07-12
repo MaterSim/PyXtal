@@ -2,6 +2,24 @@
 '''
 Module for generating random atomic crystal structures. A pymatgen- or spglib- type structure is generated, and can be output to a .cif file. Options are provided for command-line usage of the module:...
 '''
+'''
+Module for generation of random atomic crystals with symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options (preceded by two dashes) are provided for command-line usage of the module:  
+
+    spacegroup (-s): the international spacegroup number to be generated. Defaults to 206  
+
+    element (-e): the chemical symbol of the atom(s) to use. For multiple molecule types, separate entries with commas. Ex: "C", "H, O, N". Defaults to Li  
+
+    numIons (-n): the number of atoms in the PRIMITIVE unit cell (For P-type spacegroups, this is the same as the number of molecules in the conventional unit cell. For A, B, C, and I-centered spacegroups, this is half the number of the conventional cell. For F-centered unit cells, this is one fourth the number of the conventional cell.). For multiple atom types, separate entries with commas. Ex: "8", "1, 4, 12". Defaults to 16  
+
+    factor (-f): the relative volume factor used to generate the unit cell. Larger values result in larger cells, with molecules spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 2.0  
+
+    verbosity (-v): the amount of information which should be printed for each generated structure. For 0, only prints the requested and generated spacegroups. For 1, also prints the contents of the generated pymatgen structure. Defaults to 0  
+
+    attempts (-a): the number of structures to generate. Note: if any of the attempts fail, the number of generated structures will be less than this value. Structures will be output to separate cif files. Defaults to 10  
+
+    outdir (-o): the file directory where cif files will be output to. Defaults to "."  
+'''
+
 import sys
 #from pkg_resources import resource_string
 from pkg_resources import resource_filename
@@ -1363,13 +1381,26 @@ if __name__ == "__main__":
             help="desired elements: e.g., Li", metavar="element")
     parser.add_option("-n", "--numIons", dest="numIons", default=16, 
             help="desired numbers of atoms: 16", metavar="numIons")
-    parser.add_option("-v", "--volume", dest="factor", default=2.0, type=float, 
-            help="volume factors: default 2.0", metavar="factor")
+    parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
+            help="volume factor: default 3.0", metavar="factor")
+
+
+    parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
+    parser.add_option("-a", "--attempts", dest="attempts", default=10, type=int, 
+            help="number of crystals to generate: default 1", metavar="attempts")
+    parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
+            help="Directory for storing output cif files: default 'out'", metavar="outdir")
+
+
+
 
     (options, args) = parser.parse_args()    
     element = options.element
     number = options.numIons
     numIons = []
+    verbosity = options.verbosity
+    attempts = options.attempts
+    outdir = options.outdir
 
     if element.find(',') > 0:
         system = element.split(',')
@@ -1378,25 +1409,42 @@ if __name__ == "__main__":
     else:
         system = [element]
         numIons = [int(number)]
-    for i in range(100):
+    for i in range(attempts):
         numIons0 = np.array(numIons)
         sg = options.sg
         rand_crystal = random_crystal(options.sg, system, numIons0, options.factor)
 
         if rand_crystal.valid:
-            #pymatgen style
-            rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
+            #Output a cif file
+            written = False
+            try:
+                mkdir(outdir)
+            except: pass
+            try:
+                comp = str(rand_crystal.struct.composition)
+                comp = comp.replace(" ", "")
+                cifpath = outdir + '/' + comp + "_" + str(i+1) + '.cif'
+                CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
+                written = True
+            except: pass
+            #POSCAR output
+            #rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
 
             #spglib style structure called cell
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
             print('Space group  requested: ', sg, 'generated', ans)
+            if written is True:
+                print("    Output to "+cifpath)
+            else:
+                print("    Could not write cif file.")
 
-            #print(CifWriter(new_struct, symprec=0.1).__str__())
-            #print('Space group:', finder.get_space_group_symbol(), 'tolerance:', tol)
-            #output wyckoff sites only
+            #Print additional information about the structure
+            if verbosity > 0:
+                print("Time required for generation: " + str(timespent) + "s")
+                print(rand_crystal.struct)
 
+
+        #If generation fails
         else: 
             print('something is wrong')
-            #print(len(new_struct.frac_coords))
-            break
-            #print(new_struct)
+            print('Time spent during generation attempt: ' + str(timespent) + "s")
