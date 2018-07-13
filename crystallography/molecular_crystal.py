@@ -1,23 +1,55 @@
 """
-Module for generation of random molecular crystals which meet symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options (preceded by two dashes) are provided for command-line usage of the module:  
+Module for generation of random molecular crystals which meet symmetry
+constraints. A pymatgen- or spglib-type structure object is created, which can
+be saved to a .cif file. Options (preceded by two dashes) are provided for
+command-line usage of the module:  
 
-    spacegroup (-s): the international spacegroup number to be generated. Defaults to 36  
+    spacegroup (-s): the international spacegroup number to be generated.
+        Defaults to 36  
 
-    molecule (-e): the chemical formula of the molecule to use. For multiple molecule types, separate entries with commas. Ex: "C60", "H2O, CH4, NH3". Defaults to H2O  
+    molecule (-e): the chemical formula of the molecule to use. For multiple
+        molecule types, separate entries with commas. Ex: "C60", "H2O, CH4,
+        NH3". Defaults to H2O  
 
-    numMols (-n): the number of molecules in the PRIMITIVE unit cell (For P-type spacegroups, this is the same as the number of molecules in the conventional unit cell. For A, B, C, and I-centered spacegroups, this is half the number of the conventional cell. For F-centered unit cells, this is one fourth the number of the conventional cell.). For multiple molecule types, separate entries with commas. Ex: "8", "1, 4, 12". Defaults to 4  
+    numMols (-n): the number of molecules in the PRIMITIVE unit cell (For
+        P-type spacegroups, this is the same as the number of molecules in the
+        conventional unit cell. For A, B, C, and I-centered spacegroups, this
+        is half the number of the conventional cell. For F-centered unit cells,
+        this is one fourth the number of the conventional cell.). For multiple
+        molecule types, separate entries with commas. Ex: "8", "1, 4, 12".
+        Defaults to 4  
 
-    factor (-f): the relative volume factor used to generate the unit cell. Larger values result in larger cells, with molecules spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 3.0  
+    factor (-f): the relative volume factor used to generate the unit cell.
+        Larger values result in larger cells, with molecules spaced further
+        apart. If generation fails after max attempts, consider increasing this
+        value. Defaults to 3.0  
 
-    verbosity (-v): the amount of information which should be printed for each generated structure. For 0, only prints the requested and generated spacegroups. For 1, also prints the Wyckoff positions and time elapsed. For 2, also prints the contents of the generated pymatgen structure. Defaults to 0  
+    verbosity (-v): the amount of information which should be printed for each
+        generated structure. For 0, only prints the requested and generated
+        spacegroups. For 1, also prints the Wyckoff positions and time elapsed.
+        For 2, also prints the contents of the generated pymatgen structure.
+        Defaults to 0  
 
-    attempts (-a): the number of structures to generate. Note: if any of the attempts fail, the number of generated structures will be less than this value. Structures will be output to separate cif files. Defaults to 1  
+    attempts (-a): the number of structures to generate. Note: if any of the
+        attempts fail, the number of generated structures will be less than this
+        value. Structures will be output to separate cif files. Defaults to 1  
 
-    outdir (-o): the file directory where cif files will be output to. Defaults to "."  
+    outdir (-o): the file directory where cif files will be output to. Defaults
+        to "."  
 
-    checkatoms (-c): whether or not to check inter-atomic distances at each step of generation. When True, produces more accurate results, but requires more computation time for larger molecules. When False, produces less accurate results and may require a larger volume factor, but does not require more computation time for large molecules. Generally, the flag should only be set to False for large, approximately spherical molecules like C60. Defaults to True  
+    checkatoms (-c): whether or not to check inter-atomic distances at each step
+        of generation. When True, produces more accurate results, but requires
+        more computation time for larger molecules. When False, produces less
+        accurate results and may require a larger volume factor, but does not
+        require more computation time for large molecules. Generally, the flag
+        should only be set to False for large, approximately spherical molecules
+        like C60. Defaults to True  
 
-    allowinversion (-i): whether or not to allow inversion of chiral molecules for spacegroups which contain inversional and/or rotoinversional symmetry. This should only be True if the chemical and biological properties of the mirror molecule are known and suitable for the desired application. Defaults to False  
+    allowinversion (-i): whether or not to allow inversion of chiral molecules
+        for spacegroups which contain inversional and/or rotoinversional
+        symmetry. This should only be True if the chemical and biological
+        properties of the mirror molecule are known and suitable for the desired
+        application. Defaults to False  
 """
 from crystallography.crystal import *
 from crystallography.molecule import *
@@ -35,7 +67,8 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
     Args:
         numMols: A list with the number of each type of molecule
         boxes: A list of bounding boxes for each molecule. Obtained from get_box
-        factor: a factor to multiply the final result by. Used to increase space between molecules
+        factor: a factor to multiply the final result by. Used to increase space
+        between molecules
 
     Returns:
         the estimated volume (in cubic Angstroms) needed for the unit cell
@@ -63,10 +96,12 @@ def get_sg_orientations(mol, sg, allow_inversion=False):
     Args:
         mol: a pymatgen Molecule object.
         sg: the international spacegroup number
-        allow_inversion: whether or not to allow inversion operations for chiral molecules
+        allow_inversion: whether or not to allow inversion operations for chiral
+            molecules
 
     Returns:
-        a list of operations orientation objects for each Wyckoff position. 1st and 2nd indices correspond to the Wyckoff position
+        a list of operations orientation objects for each Wyckoff position. 1st
+            and 2nd indices correspond to the Wyckoff position
     """
     valid_orientations = []
     wyckoffs = get_wyckoffs(sg, organized=True)
@@ -112,18 +147,24 @@ def get_box(mol, padding=1.0):
 def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0, PBC=None):
     """
     Check the distances between two set of molecules. The first set is generally
-    larger than the second. Distances between coordinates within the first set are
-    not checked, and distances between coordinates within the second set are not
-    checked. Only distances between points from different sets are checked.
+    larger than the second. Distances between coordinates within the first set
+    are not checked, and distances between coordinates within the second set are
+    not checked. Only distances between points from different sets are checked.
 
     Args:
-        coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4],[.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
-        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9], [.4,.5,.6]]
-        indices1: the corresponding molecular indices of coord1, e.g. [1, 3]. Indices correspond to which value in radii to use
-        index2: the molecular index for coord2. Corresponds to which value in radii to use
+        coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4],
+            [.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
+        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9],
+            [.4,.5,.6]]
+        indices1: the corresponding molecular indices of coord1, e.g. [1, 3].
+            Indices correspond to which value in radii to use
+        index2: the molecular index for coord2. Corresponds to which value in
+            radii to use
         lattice: matrix describing the unit cell vectors
-        radii: a list of radii used to judge whether or not two molecules overlap
-        d_factor: the tolerance is multiplied by this amount. Larger values mean molecules must be farther apart
+        radii: a list of radii used to judge whether or not two molecules
+            overlap
+        d_factor: the tolerance is multiplied by this amount. Larger values
+            mean molecules must be farther apart
         PBC: value to be passed to create_matrix for periodic boundary conditions
 
     Returns:
@@ -160,10 +201,11 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
     Args:
         points: a list of 3d fractional coordinates or SymmOps to check
         sg: the international space group number to check
-        wyckoffs: a list of (unsorted) Wyckoff positions obtained from get_wyckoffs.
+        wyckoffs: a list of (unsorted) Wyckoff positions obtained from
+            get_wyckoffs.
         exact_translation: whether we require two SymmOps to have exactly equal
-            translational components. If false, translations related by +-1
-            are considered equal
+            translational components. If false, translations related by +-1 are
+            considered equal
 
     Returns:
         a single index corresponding to the detected Wyckoff position. If no
@@ -532,9 +574,10 @@ class molecular_crystal():
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """
-        The main code to generate a random molecular crystal. If successful, stores
-        a pymatgen.core.structure object in self.struct and sets self.valid to True.
-        If unsuccessful, sets self.valid to False and outputs an error message.
+        The main code to generate a random molecular crystal. If successful,
+        stores a pymatgen.core.structure object in self.struct and sets
+        self.valid to True. If unsuccessful, sets self.valid to False and
+        outputs an error message.
 
         Args:
             max1: the number of attempts for generating a lattice
