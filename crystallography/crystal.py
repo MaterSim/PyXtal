@@ -1,19 +1,40 @@
 """
-Module for generation of random atomic crystals with symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options (preceded by two dashes) are provided for command-line usage of the module:  
+Module for generation of random atomic crystals with symmetry constraints. A
+pymatgen- or spglib-type structure object is created, which can be saved to a
+.cif file. Options (preceded by two dashes) are provided for command-line usage
+of the module:  
 
-    spacegroup (-s): the international spacegroup number to be generated. Defaults to 206  
+    spacegroup (-s): the international spacegroup number to be generated.
+        Defaults to 206  
 
-    element (-e): the chemical symbol of the atom(s) to use. For multiple molecule types, separate entries with commas. Ex: "C", "H, O, N". Defaults to Li  
+    element (-e): the chemical symbol of the atom(s) to use. For multiple
+        molecule types, separate entries with commas. Ex: "C", "H, O, N".
+        Defaults to Li  
 
-    numIons (-n): the number of atoms in the PRIMITIVE unit cell (For P-type spacegroups, this is the same as the number of molecules in the conventional unit cell. For A, B, C, and I-centered spacegroups, this is half the number of the conventional cell. For F-centered unit cells, this is one fourth the number of the conventional cell.). For multiple atom types, separate entries with commas. Ex: "8", "1, 4, 12". Defaults to 16  
+    numIons (-n): the number of atoms in the PRIMITIVE unit cell
+        (For P-type spacegroups, this is the same as the number of molecules in
+        the conventional unit cell. For A, B, C, and I-centered spacegroups,
+        this is half the number of the conventional cell. For F-centered unit
+        cells, this is one fourth the number of the conventional cell.).
+        For multiple atom types, separate entries with commas.
+        Ex: "8", "1, 4, 12". Defaults to 16  
 
-    factor (-f): the relative volume factor used to generate the unit cell. Larger values result in larger cells, with atoms spaced further apart. If generation fails after max attempts, consider increasing this value. Defaults to 2.0  
+    factor (-f): the relative volume factor used to generate the unit cell.
+        Larger values result in larger cells, with atoms spaced further apart.
+        If generation fails after max attempts, consider increasing this value.
+        Defaults to 2.0  
 
-    verbosity (-v): the amount of information which should be printed for each generated structure. For 0, only prints the requested and generated spacegroups. For 1, also prints the contents of the generated pymatgen structure. Defaults to 0  
+    verbosity (-v): the amount of information which should be printed for each
+        generated structure. For 0, only prints the requested and generated
+        spacegroups. For 1, also prints the contents of the generated pymatgen
+        structure. Defaults to 0  
 
-    attempts (-a): the number of structures to generate. Note: if any of the attempts fail, the number of generated structures will be less than this value. Structures will be output to separate cif files. Defaults to 10  
+    attempts (-a): the number of structures to generate. Note: if any of the
+        attempts fail, the number of generated structures will be less than this
+        value. Structures will be output to separate cif files. Defaults to 10  
 
-    outdir (-o): the file directory where cif files will be output to. Defaults to "."  
+    outdir (-o): the file directory where cif files will be output to.
+        Defaults to "."  
 """
 
 import sys
@@ -75,7 +96,8 @@ def gaussian(min, max, sigma=3.0):
     between min and max. sigma is the number of standard deviations that min
     and max are away from the center. Thus, sigma is also the largest possible
     number of standard deviations corresponding to the returned value. sigma=2
-    corresponds to a 95.45% probability of choosing a number between min and max
+    corresponds to a 95.45% probability of choosing a number between min and
+    max.
 
     Args:
         min: the minimum acceptable value
@@ -95,15 +117,17 @@ def gaussian(min, max, sigma=3.0):
             
 def letter_from_index(index, sg):
     """
-    Given a Wyckoff position's index within a spacegroup,
-    return its number and letter e.g. '4a'
+    Given a Wyckoff position's index within a spacegroup, return its number
+    and letter e.g. '4a'
 
     Args:
-        index: a single integer describing the WP's index within the spacegroup (0 is the general position)
+        index: a single integer describing the WP's index within the
+            spacegroup (0 is the general position)
         sg: the international spacegroup number
    
     Returns:
-        the Wyckoff letter corresponding to the Wyckoff position (for example, for position 4a, the function would return 'a')
+        the Wyckoff letter corresponding to the Wyckoff position (for example,
+        for position 4a, the function would return 'a')
     """
     letters = "abcdefghijklmnopqrstuvwxyzA"
     wyckoffs = get_wyckoffs(sg)
@@ -112,14 +136,16 @@ def letter_from_index(index, sg):
 
 def index_from_letter(letter, sg):
     """
-    Given the Wyckoff letter, returns the index of a Wyckoff position within the spacegroup
+    Given the Wyckoff letter, returns the index of a Wyckoff position within
+    the spacegroup
 
     Args:
         letter: The wyckoff letter
         sg: the internationl spacegroup number
 
     Returns:
-        a single index specifying the location of the Wyckoff position within the spacegroup (0 is the general position)
+        a single index specifying the location of the Wyckoff position within
+        the spacegroup (0 is the general position)
     """
     letters = "abcdefghijklmnopqrstuvwxyzA"
     wyckoffs = get_wyckoffs(sg)
@@ -128,15 +154,19 @@ def index_from_letter(letter, sg):
 
 def jk_from_i(i, olist):
     """
-    Given an organized list (Wyckoff positions or orientations), determine
-    the two indices which correspond to a single index for an unorganized list. Used mainly for organized Wyckoff position lists, but can be used for other lists organized in a similar way
+    Given an organized list (Wyckoff positions or orientations), determine the
+    two indices which correspond to a single index for an unorganized list.
+    Used mainly for organized Wyckoff position lists, but can be used for other
+    lists organized in a similar way
 
     Args:
-        i: a single index corresponding to the item's location in the unorganized list
+        i: a single index corresponding to the item's location in the
+            unorganized list
         olist: the organized list
 
     Returns:
-        [j, k]: two indices corresponding to the item's location in the organized list
+        [j, k]: two indices corresponding to the item's location in the
+            organized list
     """
     num = -1
     found = False
@@ -167,8 +197,8 @@ def ss_string_from_ops(ops, sg, complete=True):
         ops: a list of SymmOp objects representing the site symmetry
         sg: International number of the spacegroup. Used to determine which
             axes to show. For example, a 3-fold rotation in a cubic system is
-            written as ".3.", whereas a 3-fold rotation in a trigonal system
-            is written as "3.."
+            written as ".3.", whereas a 3-fold rotation in a trigonal system is
+            written as "3.."
         complete: whether or not all symmetry operations in the group
             are present. If False, we generate the rest
 
@@ -378,13 +408,17 @@ def ss_string_from_ops(ops, sg, complete=True):
 
 def create_matrix(PBC=None):
     """
-    Used for calculating distances in lattices with periodic boundary conditions. When multiplied with a set of points, generates additional points in cells adjacent to and diagonal to the original cell
+    Used for calculating distances in lattices with periodic boundary
+    conditions. When multiplied with a set of points, generates additional
+    points in cells adjacent to and diagonal to the original cell
 
     Args:
-        PBC: an axis which does not have periodic boundary condition. Ex: PBC=1 cancels periodic boundary conditions along the x axis
+        PBC: an axis which does not have periodic boundary condition.
+            Ex: PBC=1 cancels periodic boundary conditions along the x axis
 
     Returns:
-        A numpy array of matrices which can be multiplied by a set of coordinates
+        A numpy array of matrices which can be multiplied by a set of
+        coordinates
     """
     matrix = []
     i_list = [-1, 0, 1]
@@ -412,19 +446,23 @@ def distance(xyz, lattice, PBC=None):
 
 def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor=1.0):
     """
-    Check the distances between two set of molecules. The first set is generally
-    larger than the second. Distances between coordinates within the first set are
-    not checked, and distances between coordinates within the second set are not
-    checked. Only distances between points from different sets are checked.
+    Check the distances between two set of molecules. The first set is
+    generally larger than the second. Distances between coordinates within the
+    first set are not checked, and distances between coordinates within the
+    second set are not checked. Only distances between points from different
+    sets are checked.
 
     Args:
-        coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4],[.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
-        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9], [.4,.5,.6]]
+        coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4]
+            [.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
+        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9],
+            [.4,.5,.6]]
         specie1: a list of atomic symbols for coord1. Ex: ['C', 'O']
         specie2: the atomic symbol for coord2. Ex: 'Li'
         lattice: matrix describing the unit cell vectors
         PBC: value to be passed to create_matrix
-        d_factor: the tolerance is multiplied by this amount. Larger values mean atoms must be farther apart
+        d_factor: the tolerance is multiplied by this amount. Larger values
+            mean atoms must be farther apart
 
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
@@ -452,7 +490,8 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor
 
 def get_center(xyzs, lattice, PBC=None):
     """
-    Finds the geometric centers of the clusters under periodic boundary conditions.
+    Finds the geometric centers of the clusters under periodic boundary
+    conditions.
 
     Args:
         xyzs: a list of fractional coordinates
@@ -482,15 +521,23 @@ def get_center(xyzs, lattice, PBC=None):
 
 def para2matrix(cell_para, radians=True, format='lower'):
     """
-    Given a set of lattic parameters, generates a matrix representing the lattice vectors
+    Given a set of lattic parameters, generates a matrix representing the
+    lattice vectors
 
     Args:
-        cell_para: a 1x6 list of lattice parameters [a, b, c, alpha, beta, gamma]. a, b, and c are the length of the lattice vectos, and alpha, beta, and gamma are the angles between these vectors. Can be generated by matrix2para
-        radians: if True, lattice parameters should be in radians. If False, lattice angles should be in degrees
-        format: a string ('lower', 'symmetric', or 'upper') for the type of matrix to be output
+        cell_para: a 1x6 list of lattice parameters [a, b, c, alpha, beta,
+            gamma]. a, b, and c are the length of the lattice vectos, and
+            alpha, beta, and gamma are the angles between these vectors. Can
+            be generated by matrix2para
+        radians: if True, lattice parameters should be in radians. If False,
+            lattice angles should be in degrees
+        format: a string ('lower', 'symmetric', or 'upper') for the type of
+            matrix to be output
 
     Returns:
-        a 3x3 matrix representing the unit cell. By default (format='lower'), the a vector is aligined along the x-axis, and the b vector is in the y-z plane
+        a 3x3 matrix representing the unit cell. By default (format='lower'),
+        the a vector is aligined along the x-axis, and the b vector is in the
+        y-z plane
     """
     a = cell_para[0]
     b = cell_para[1]
@@ -536,9 +583,7 @@ def para2matrix(cell_para, radians=True, format='lower'):
     return matrix
 
 def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
-    '''
-    TODO: Add documentation
-    '''
+    #TODO: add docstring
     old = lattice[dim, dim]
     new = old + vacuum
     coor[:,dim] = coor[:,dim]*old/new
@@ -547,9 +592,7 @@ def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
     return lattice, coor
 
 def Permutation(lattice, coor, PB):
-    """
-    TODO: Add documentation
-    """
+    #TODO: add docstring
     para = matrix2para(lattice)
     para1 = deepcopy(para)
     coor1 = deepcopy(coor)
@@ -563,6 +606,19 @@ def Permutation(lattice, coor, PB):
 
 def matrix2para(matrix, radians=True):
     """
+    Given a 3x3 matrix representing a unit cell, outputs a list of lattice
+    parameters.
+
+    Args:
+        matrix: a 3x3 array or list, where the first, second, and third rows
+            represent the a, b, and c vectors respectively
+        radians: if True, outputs angles in radians. If False, outputs in
+            degrees
+
+    Returns:
+        a 1x6 list of lattice parameters [a, b, c, alpha, beta, gamma]. a, b,
+        and c are the length of the lattice vectos, and alpha, beta, and gamma
+        are the angles between these vectors
     """
     cell_para = np.zeros(6)
     #a
@@ -588,7 +644,15 @@ def matrix2para(matrix, radians=True):
 
 def cellsize(sg):
     """
-    Returns the number of duplications in the conventional lattice
+    Returns the number of duplicate atoms in the conventional lattice (in
+    contrast to the primitive cell). Based on the type of cell centering (P,
+    A, C, I, R, or F)
+
+    Args:
+        sg: the international spacegroup number
+
+    Returns:
+        a number between 1 and 4
     """
     symbol = sg_symbol_from_int_number(sg)
     letter = symbol[0]
@@ -604,8 +668,21 @@ def cellsize(sg):
 
 def find_short_dist(coor, lattice, tol):
     """
-    here we find the atomic pairs with shortest distance
-    and then build the connectivity map
+    Given a list of fractional coordinates, finds pairs which are closer
+    together than tol, and builds the connectivity map
+
+    Args:
+        coor: a list of fractional 3-dimensional coordinates
+        lattice: a matrix representing the crystal unit cell
+        tol: the distance tolerance for pairing coordinates
+    
+    Returns:
+        pairs, graph: (pairs) is a list whose entries have the form [index1,
+        index2, distance], where index1 and index2 correspond to the indices
+        of a pair of points within the supplied list (coor). distance is the
+        distance between the two points. (graph) is a connectivity map in the
+        form of a list. Its first index represents a point within coor, and
+        the second indices represent which point(s) it is connected to.
     """
     pairs=[]
     graph=[]
@@ -640,13 +717,25 @@ def connected_components(graph):
     """
     Given an undirected graph (a 2d array of indices), return a set of
     connected components, each connected component being an (arbitrarily
-    ordered) array of indices which are connected either directly or indirectly.
+    ordered) array of indices which are connected either directly or
+    indirectly.
+
+    Args:
+        graph: a list reprenting the connections between points. The first index
+            represents a point, and the 2nd indices represent the points to
+            which the first point is connected. Can be generated by
+            find_short_dist
+
+    Returns:
+        a list of connected components. The first index denotes a separate
+        connected component. The second indices denote the points within the
+        connected component which are connected to each other
     """
     def add_neighbors(el, seen=[]):
-        '''
+        """
         Find all elements which are connected to el. Return an array which
         includes these elements and el itself.
-        '''
+        """
         #seen stores already-visited indices
         if seen == []: seen = [el]
         #iterate through the neighbors (x) of el
@@ -674,6 +763,27 @@ def connected_components(graph):
     return sets
 
 def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
+    """
+    Given a list of fractional coordinates, merges them within a given
+    tolerance, and checks if the merged coordinates satisfy a Wyckoff
+    position. Used for merging general Wyckoff positions into special Wyckoff
+    positions within the random_crystal (and its derivative) classes.
+
+    Args:
+        coor: a list of fractional coordinates
+        lattice: a 3x3 matrix representing the unit cell
+        wyckoff: an unorganized list of Wyckoff positions to check
+        sg: the international spacegroup number
+        tol: the cutoff distance for merging coordinates
+        PBC: a number representing the periodic boundary conditions (used for
+            2d and 1d crystals)
+
+    Returns:
+        coor, index: (coor) is the new list of fractional coordinates after
+        merging, and index is a single index of the Wyckoff position within
+        the spacegroup. If merging is unsuccesful, or no index is found,
+        returns the original coordinates and False
+    """
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol)
         index = None
@@ -700,6 +810,21 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
             return coor, index
 
 def estimate_volume(numIons, species, factor=2.0):
+    """
+    Estimates the volume of a unit cell based on the number and types of ions.
+    Assumes each atom takes up a sphere with radius equal to its covalent bond
+    radius.
+
+    Args:
+        numIons: a list of the number of ions for each specie
+        species: a corresponding list for the specie of each type of ion. Each
+            element in the list should be a string for the atomic symbol
+        factor: an optional factor to multiply the result by. Larger values
+            allow more space between atoms
+    
+    Returns:
+        a float value for the estimated volume
+    """
     volume = 0
     for numIon, specie in zip(numIons, species):
         volume += numIon*4/3*pi*Element(specie).covalent_radius**3
@@ -707,17 +832,22 @@ def estimate_volume(numIons, species, factor=2.0):
 
 def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
-    generate the lattice according to the space group symmetry and number of atoms
-    if the space group has centering, we will transform to conventional cell setting
-    If the generated lattice does not meet the minimum angle and vector requirements,
-    we try to generate a new one, up to maxattempts times
+    Generates a lattice (3x3 matrix) according to the space group symmetry and
+    number of atoms. If the spacegroup has centering, we will transform to
+    conventional cell setting. If the generated lattice does not meet the
+    minimum angle and vector requirements, we try to generate a new one, up to
+    maxattempts times.
 
-    args:
+    Args:
         sg: International number of the space group
-        volume: volume of the lattice
+        volume: volume of the conventional unit cell
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
+
+    Returns:
+        a 3x3 matrix representing the lattice vectors of the unit cell. If
+        generation fails, outputs a warning message and returns empty
     """
     maxangle = pi-minangle
     for n in range(maxattempts):
@@ -794,17 +924,24 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
 
 def generate_lattice_2d(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
-    generate the lattice according to the space group symmetry and number of atoms
-    if the space group has centering, we will transform to conventional cell setting
-    If the generated lattice does not meet the minimum angle and vector requirements,
-    we try to generate a new one, up to maxattempts times
+    Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
+    number of atoms. If the spacegroup has centering, we will transform to
+    conventional cell setting. If the generated lattice does not meet the
+    minimum angle and vector requirements, we try to generate a new one, up to
+    maxattempts times.
 
-    args:
+    Args:
         sg: International number of the space group
         volume: volume of the lattice
+        thickness: 3rd-dimensional thickness of the unit cell
+        P: permuation info about the cell obtained from the layergroup class
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
+
+    Returns:
+        a 3x3 matrix representing the lattice vectors of the unit cell. If
+        generation fails, outputs a warning message and returns empty
     """
     maxangle = pi-minangle
     abc = np.ones([3])
@@ -857,10 +994,19 @@ def generate_lattice_2d(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
 
 def choose_wyckoff(wyckoffs, number):
     """
-    choose the wyckoff sites based on the current number of atoms
-    rules 
-    1, the newly added sites is equal/less than the required number.
-    2, prefer the sites with large multiplicity
+    Choose a Wyckoff position to fill based on the current number of atoms
+    needed to be placed within a unit cell
+    Rules:
+        1) The new position's multiplicity is equal/less than (number).
+        2) We prefer positions with large multiplicity.
+
+    Args:
+        wyckoffs: an unsorted list of Wyckoff positions
+        number: the number of atoms still needed in the unit cell
+
+    Returns:
+        a single index for the Wyckoff position. If no position is found,
+        returns False
     """
     if rand(0,1)>0.5: #choose from high to low
         for wyckoff in wyckoffs:
@@ -880,9 +1026,35 @@ def choose_wyckoff(wyckoffs, number):
 
 def get_wyckoffs(sg, organized=False, PB=None):
     """
-    Returns a list of Wyckoff positions for a given space group.
+    Returns a list of Wyckoff positions for a given space group. Has option to
+    organize the list based on multiplicity (this is used for
+    random_crystal.wyckoffs) For an unorganized list:
+
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
+
     2nd index: a SymmOp object in the WP
+
+    For an organized list:
+
+    1st index: specifies multiplicity (0 is the largest multiplicity)
+
+    2nd index: corresponds to a Wyckoff position within the group of equal
+        multiplicity.
+
+    3nd index: corresponds to a SymmOp object within the Wyckoff position
+
+    You may switch between organized and unorganized lists using the methods
+    i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
+    entry in an unorganized list, it will be the [j][k] entry in an organized
+    list.
+
+    Args:
+        sg: the international spacegroup number
+        organized: whether or not to organize the list based on multiplicity
+        PB: permutation info for 2d crystals, form the layergroup class
+    
+    Returns: 
+        a list of Wyckoff positions, each of which is a list of SymmOp's
     """
     if PB is not None:
         coor = [0,0,0]
@@ -925,9 +1097,18 @@ def get_wyckoff_symmetry(sg, molecular=False):
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
     2nd index: a point within the WP
     3rd index: a site symmetry SymmOp of the point
-    molecular: whether or not to return the Euclidean point symmetry operations
-        If True, cuts off translational part of operation, and converts non-orthogonal
-        (3-fold and 6-fold rotation) operations to pure rotations
+
+    Args:
+        sg: the international spacegroup number
+        molecular: whether or not to return the Euclidean point symmetry
+            operations. If True, cuts off translational part of operation, and
+            converts non-orthogonal operations (3-fold and 6-fold rotations)
+            to (orthogonal) pure rotations. Should be used when dealing with
+            molecular crystals
+
+    Returns:
+        a 3d list of SymmOp objects representing the site symmetry of each
+        point in each Wyckoff position
     """
     P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
@@ -960,6 +1141,17 @@ def get_wyckoff_generators(sg):
     Returns a list of Wyckoff generators for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
     2nd index: a generator for the WP
+    This function is useful for rotating molecules based on Wyckoff position,
+    since special Wyckoff positions only encode positional information, but not
+    information about the orientation. The generators for each Wyckoff position
+    form a subset of the spacegroup's general Wyckoff position.
+    
+    Args:
+        sg: the international spacegroup number
+    
+    Returns:
+        a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
+        single fractional (x,y,z) coordinate
     """
     generators_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
@@ -973,8 +1165,27 @@ def get_wyckoff_generators(sg):
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
     """
-    Given gen_pos (a list of SymmOps), return the list of symmetry operations
-    leaving a point (coordinate or SymmOp) invariant.
+    Given a point and a general Wyckoff position, return the list of symmetry
+    operations leaving the point (coordinate or SymmOp) invariant. The returned
+    SymmOps are a subset of the general position. The site symmetry can be used
+    for determining the Wyckoff position for a set of points, or for
+    determining the valid orientations of a molecule within a given Wyckoff
+    position.
+
+    Args:
+        point: a 1x3 coordinate or SymmOp object to find the symmetry of. If a
+            SymmOp is given, the returned symmetries must also preserve the
+            point's orientaion
+        gen_pos: the general position of the spacegroup. Can be obtained using
+            get_wyckoffs(sg)[0], where sg is the desired spacegroup number
+        tol:
+            the numberical tolerance for determining equivalent positions and
+            orientations.
+        lattice:
+            a 3x3 matrix representing the lattice vectors of the unit cell
+
+    Returns:
+        a list of SymmOp objects which leave the given point invariant
     """
     #Convert point into a SymmOp
     if type(point) != SymmOp:
@@ -992,7 +1203,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
         if distance(displacement, lattice) > tol:
             is_symmetry = False
         if is_symmetry:
-            '''The actual site symmetry's translation vector may vary from op by
+            """The actual site symmetry's translation vector may vary from op by
             a factor of +1 or -1 (especially when op contains +-1/2).
             We record this to distinguish between special Wyckoff positions.
             As an example, consider the point (-x+1/2,-x,x+1/2) in position 16c
@@ -1001,14 +1212,30 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             not listed in the general position, but correspond to the operations
             (-z,x+1/2,-y+1/2) and (y+1/2,-z+1/2,-x), respectively, just shifted
             by (+1,-1,0) and (0,0,+1), respectively.
-            '''
+            """
             el = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector - np.round(displacement))
             symmetry.append(el)
     return symmetry
 
 def find_generating_point(coords, generators):
-    #Given a set of coordinates and Wyckoff generators, return the coord which
-    #can be used to generate the others
+    """
+    Given a set of coordinates and Wyckoff generators, return the coord which
+    can be used to generate the others. This is useful for molecular Wyckoff
+    positions, for which the orientation, and not just the position, is
+    needed for each point in the Wyckoff position. Thus, we need to know which
+    coordinates to use for x, y, and z, so that rotations can be applied
+    correctly using the Wyckoff geneators
+
+    Args:
+        coords: a list of fractional coordinates corresponding to a Wyckoff
+            position
+        generators: the list of Wyckoff generators for the Wyckoff position.
+            Can be obtained from get_wyckoff_generators
+    
+    Returns:
+        a fractional coordinate [x, y, z] corresponding to the first listed
+        point in the Wyckoff position
+     """
     for coord in coords:
         generated = list(gen.operate(coord) for gen in generators)
         generated -= np.floor(generated)
@@ -1036,8 +1263,9 @@ def find_generating_point(coords, generators):
 
 def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
     """
-    Given a list of points, return index of Wyckoff position in space group.
-    If no match found, returns False.
+    Given a list of points, returns a single index of a matching Wyckoff
+    position in the space group. Checks the site symmetry of each supplied
+    point against the site symmetry for each point in the Wyckoff position.
 
     Args:
         points: a list of 3d coordinates or SymmOps to check
@@ -1045,7 +1273,12 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
         wyckoffs: a list of Wyckoff positions obtained from get_wyckoffs.
         exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1
-            are considered equal
+            are considered equal. If points have been directly generated from
+            a Wyckoff position, we may set this to True. Otherwise, leave False
+
+    Returns:
+        a single index for the Wyckoff position within the sg. If no matching
+        WP is found, returns False
     """
     points = np.array(points)
     points = np.around((points*1e+10))/1e+10
@@ -1108,6 +1341,19 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
         return False
 
 def verify_distances(coordinates, species, lattice, factor=1.0):
+    """
+    Checks the inter-atomic distance between all pairs of atoms in a crystal.
+
+    Args:
+        coordinates: a 1x3 list of fractional coordinates
+        species: a list of atomic symbols for each coordinate
+        lattice: a 3x3 matrix representing the lattice vectors of the unit cell
+        factor: a tolerance factor for checking distances. A larger value means
+            atoms must be farther apart
+    
+    Returns:
+        True if no atoms are too close together, False if any pair is too close
+    """
     for i, c1 in enumerate(coordinates):
         specie1 = species[i]
         for j, c2 in enumerate(coordinates):
@@ -1121,22 +1367,48 @@ def verify_distances(coordinates, species, lattice, factor=1.0):
     return True
 
 class random_crystal():
+    """
+    Class for storing and generating atomic crystals based on symmetry
+    constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
+    and a volume factor, generates a random crystal consistent with the
+    spacegroup's symmetry. This crystal is stored as a pymatgen struct via
+    self.struct
+    
+    Args:
+        sg: the international spacegroup number
+        species: a list of atomic symbols for each ion type
+        numIons: a list of the number of each type of atom within the
+            primitive cell (NOT the conventional cell)
+        factor: a volume factor used to generate a larger or smaller
+            unit cell. Increasing this gives extra space between atoms
+    """
     def __init__(self, sg, species, numIons, factor):
         
         #Necessary input
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
+        """The supplied volume factor for the unit cell."""
         self.numIons0 = numIons
         self.sg = sg
+        """The international spacegroup number of the crystal."""
         self.species = species
+        """A list of atomic symbols for the types of atoms in the crystal."""
         self.Msgs()
+        """A list of warning messages to use during generation."""
         self.numIons = numIons * cellsize(self.sg)
+        """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
-        self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
+        """The volume of the generated unit cell"""
+        self.wyckoffs = get_wyckoffs(self.sg, organized=True)
+        """The Wyckoff positions for the crystal's spacegroup. Sorted by
+        multiplicity."""
         self.generate_crystal()
 
 
     def Msgs(self):
+        """
+        Define a set of error and warning message if generation fails.
+        """
         self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
         self.Msg2 = 'Error: failed in the cycle of generating structures'
         self.Msg3 = 'Warning: failed in the cycle of adding species'
@@ -1146,8 +1418,9 @@ class random_crystal():
 
     def check_compatible(self):
         """
-        check if the number of atoms is compatible with the wyckoff positions
-        needs to improve later
+        Checks if the number of atoms is compatible with the Wyckoff
+        positions. Considers the number of degrees of freedom for each Wyckoff
+        position, and makes sure at least one valid combination of WP's exists.
         """
         N_site = [len(x[0]) for x in self.wyckoffs]
         has_freedom = False
@@ -1186,7 +1459,17 @@ class random_crystal():
             return 0
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
-        """the main code to generate random crystal"""
+        """
+        The main code to generate a random atomic crystal. If successful,
+        stores a pymatgen.core.structure object in self.struct and sets
+        self.valid to True. If unsuccessful, sets self.valid to False and
+        outputs an error message.
+
+        Args:
+            max1: the number of attempts for generating a lattice
+            max2: the number of attempts for a given lattice
+            max3: the number of attempts for a given Wyckoff position
+        """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is False:
@@ -1271,12 +1554,24 @@ class random_crystal():
                                 final_site.append(ele)
                                 final_number.append(Element(ele).z)
 
-                        self.lattice = final_lattice                    
+                        self.lattice = final_lattice   
+                        """A 3x3 matrix representing the lattice of the unit
+                        cell."""                 
                         self.coordinates = np.array(final_coor)
-                        self.sites = final_site                    
+                        """The fractional coordinates for each molecule in the
+                        final structure"""
+                        self.sites = final_site
+                        """A list of atomic symbols corresponding to the type
+                        of atom for each site in self.coordinates"""
                         self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        """A pymatgen.core.structure.Structure object for the
+                        final generated crystal."""
                         self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                        """A list of information describing the generated
+                        crystal, which may be used by spglib for symmetry
+                        analysis."""
                         self.valid = True
+                        """Whether or not a valid crystal was generated."""
                         return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
@@ -1284,26 +1579,60 @@ class random_crystal():
         return self.Msg2
 
 class random_crystal_2D():
+    """
+    A 2d counterpart to random_crystal. Generates a random atomic crystal based
+    on a 2d layer group instead of a 3d spacegroup. Note that each layer group
+    is equal to a corresponding 3d spacegroup, but without periodicity in one
+    direction. The generated pymatgen structure can be accessed via self.struct
+
+    Args:
+        number: the layer group number between 1 and 80. NOT equal to the
+            international space group number, which is between 1 and 230
+        species: a list of atomic symbols for each ion type
+        numIons: a list of the number of each type of atom within the
+            primitive cell (NOT the conventional cell)
+        thickness: the thickness, in Angstroms, of the unit cell in the 3rd
+            dimension (the direction which is not repeated periodically)
+        factor: a volume factor used to generate a larger or smaller
+            unit cell. Increasing this gives extra space between atoms
+    """
     def __init__(self, number, species, numIons, thickness, factor):
 
         self.lgp = Layergroup(number)
+        """The number (between 1 and 80) for the crystal's layer group."""
         self.sg = self.lgp.sgnumber
+        """The number (between 1 and 230) for the international spacegroup."""
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
+        """"The volume factor used to generate the unit cell."""
         self.thickness = thickness
+        """the thickness, in Angstroms, of the unit cell in the 3rd
+        dimension."""
         self.numIons0 = numIons
         self.species = species
+        """A list of atomic symbols for the types of atoms in the crystal."""
         self.PBC = self.lgp.permutation[-1] 
+        """The axis (between 1 and 3) which is not periodic."""
         self.PB = self.lgp.permutation[3:6] 
+        #TODO: add docstring
         self.P = self.lgp.permutation[:3] 
+        #TODO: add docstring
         self.Msgs()
+        """A list of warning messages to use during generation."""
         self.numIons = numIons * cellsize(self.sg)
+        """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
+        """The volume of the generated unit cell"""
         self.wyckoffs = deepcopy(get_wyckoffs(self.sg, organized=True, PB=self.PB)) 
+        """The Wyckoff positions for the crystal's spacegroup. Sorted by
+        multiplicity."""        
         self.generate_crystal()
 
 
     def Msgs(self):
+        """
+        Define a set of error and warning message if generation fails.
+        """
         self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
         self.Msg2 = 'Error: failed in the cycle of generating structures'
         self.Msg3 = 'Warning: failed in the cycle of adding species'
@@ -1313,8 +1642,9 @@ class random_crystal_2D():
 
     def check_compatible(self):
         """
-        check if the number of atoms is compatible with the wyckoff positions
-        needs to improve later
+        Checks if the number of atoms is compatible with the Wyckoff
+        positions. Considers the number of degrees of freedom for each Wyckoff
+        position, and makes sure at least one valid combination of WP's exists.
         """
         N_site = [len(x[0]) for x in self.wyckoffs]
         has_freedom = False
@@ -1353,7 +1683,17 @@ class random_crystal_2D():
             return 0
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
-        """the main code to generate random crystal """
+        """
+        The main code to generate a random atomic crystal. If successful,
+        stores a pymatgen.core.structure object in self.struct and sets
+        self.valid to True. If unsuccessful, sets self.valid to False and
+        outputs an error message.
+
+        Args:
+            max1: the number of attempts for generating a lattice
+            max2: the number of attempts for a given lattice
+            max3: the number of attempts for a given Wyckoff position
+        """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is 0:
@@ -1436,12 +1776,24 @@ class random_crystal_2D():
                     #print(final_lattice)
                     #print(self.PB)
                     #print('length: ',len(self.wyckoffs)) 
-                    self.lattice = final_lattice                    
+                    self.lattice = final_lattice
+                    """A 3x3 matrix representing the lattice of the unit
+                    cell."""                        
                     self.coordinates = final_coor
-                    self.sites = final_site                    
+                    """The fractional coordinates for each molecule in the
+                    final structure"""
+                    self.sites = final_site  
+                    """A list of atomic symbols corresponding to the type
+                    of atom for each site in self.coordinates"""                  
                     self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                    """A pymatgen.core.structure.Structure object for the
+                    final generated crystal."""                    
                     self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                    """A list of information describing the generated
+                    crystal, which may be used by spglib for symmetry
+                    analysis."""                    
                     self.valid = True
+                    """Whether or not a valid crystal was generated."""
                     return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2

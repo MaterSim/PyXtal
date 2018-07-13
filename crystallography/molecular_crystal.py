@@ -434,10 +434,10 @@ class molecular_crystal():
         """A list of warning messages to use during generation."""
         numMols = np.array(numMols) #must convert it to np.array
         self.factor = volume_factor
-        """The supplied volume factor for the unit cell"""
+        """The supplied volume factor for the unit cell."""
         self.numMols0 = numMols
         self.sg = sg
-        """The international spacegroup number of the crystal"""
+        """The international spacegroup number of the crystal."""
         #Reorient the molecules along their principle axes
         oriented_molecules = []
         #Allow support for generating molecules from text via ASE
@@ -469,7 +469,7 @@ class molecular_crystal():
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
+        self.wyckoffs = get_wyckoffs(self.sg, organized=True)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
         self.check_atomic_distances = check_atomic_distances
@@ -822,7 +822,7 @@ class molecular_crystal():
                             self.sites = final_site
                             """The indices within self.molecules corresponding
                             to the type of molecule for each site in
-                            self.sites."""              
+                            self.coordinates."""              
                             self.struct = Structure(final_lattice, final_site, np.array(final_coor))
                             """A pymatgen.core.structure.Structure object for
                             the final generated crystal."""
