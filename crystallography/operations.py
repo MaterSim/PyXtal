@@ -1,3 +1,12 @@
+"""
+Module for generating and analyzing transformation operations. Several functions
+for working with matrices are provided. The class OperationAnalyzer allows for
+comparison between pymatgen.core.operations.SymmOp objects, and can be used to
+identify conjugate operations. The class orientation can be used to identify
+degrees of freedom for molecules in Wyckoff positions with certain symmetry
+constraints.
+"""
+
 import numpy as np
 from numpy import matrix
 from numpy import isclose
@@ -15,10 +24,17 @@ rad = pi/180.
 deg = 180./pi
 
 def angle(v1, v2):
-    '''
-    Calculate the angle (in radians) between two vectors
-    '''
-    v1 = np.real(v1)
+    """
+    Calculate the angle (in radians) between two vectors.
+
+    Args:
+        v1: a 1x3 vector
+        v2: a 1x3 vector
+
+    Returns:
+        the angle in radians between the two vectors
+    """
+    np.real(v1)
     v2 = np.real(v2)
     dot = np.dot(v1, v2)
     if isclose(dot, 1.0):
@@ -28,10 +44,18 @@ def angle(v1, v2):
     return acos(dot / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 def random_shear_matrix(width=1.0, unitary=False):
-    '''
+    """
     Generate a random symmetric shear matrix with Gaussian elements. If unitary
     is True, normalize to determinant 1
-    '''
+
+    Args:
+        width: the width of the normal distribution to use when choosing values.
+            Passed to numpy.random.normal
+        unitary: whether or not to normalize the matrix to determinant 1
+    
+    Returns:
+        a 3x3 numpy array of floats
+    """
     mat = np.zeros([3,3])
     determinant = 0
     while determinant == 0:
@@ -44,11 +68,21 @@ def random_shear_matrix(width=1.0, unitary=False):
     else: return mat
 
 def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
-    '''
+    """
     Generate a random vector for lattice constant generation. The ratios between
     x, y, and z of the returned vector correspond to the ratios between a, b,
     and c. Results in a Gaussian distribution of the natural log of the ratios.
-    '''
+
+    Args:
+        minvec: the bottom-left-back minimum point which can be chosen
+        maxvec: the top-right-front maximum point which can be chosen
+        width: the width of the normal distribution to use when choosing values.
+            Passed to numpy.random.normal
+        unit: whether or not to normalize the vector to determinant 1
+
+    Returns:
+        a 1x3 numpy array of floats
+    """
     vec = np.array([np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width))])
     if unit:
         return vec/np.linalg.norm(vec)
@@ -56,7 +90,17 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
         return vec
 
 def is_orthogonal(m, tol=.001):
-    #Calculate whether or not a matrix is orthogonal
+    """
+    Check whether or not a 3x3 matrix is orthogonal. An orthogonal matrix has
+    the property that it is equal to its transpose.
+
+    Args:
+        m: a 3x3 matrix (list or numpy array)
+        tol: the numerical tolerance for checking if two matrices are equal
+
+    Returns:
+        True if the matrix is orthogonal, False if it is not
+    """
     m1 = np.dot(m, np.transpose(m))
     m2 = np.dot(np.transpose(m), m)
     if not allclose(m1, np.identity(3), rtol=tol) or not allclose(m2, np.identity(3), rtol=tol):
@@ -65,11 +109,22 @@ def is_orthogonal(m, tol=.001):
         return True
 
 def aa2matrix(axis, angle, radians=True, random=False):
-    '''
-    Given an axis and an angle, return a 3x3 rotation matrix
+    """
+    Given an axis and an angle, return a 3x3 rotation matrix.
     Based on:
     https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
-    '''
+
+    Args:
+        axis: a vector about which to perform a rotation
+        angle: the angle of rotation
+        radians: whether the supplied angle is in radians (True)
+            or in degrees (False)
+        random: whether or not to choose a random rotation matrix. If True, the
+            axis and angle are ignored, and a random orientation is generated
+
+    Returns:
+        a 3x3 numpy array representing a rotation matrix
+    """
     #Convert to radians if necessary
     if radians is not True:
         angle *= rad
@@ -101,14 +156,21 @@ def aa2matrix(axis, angle, radians=True, random=False):
     return Q
 
 def matrix2aa(m, radians=True):
-    '''
-    Return the axis and angle from a rotation matrix.
-    m must be an orthogonal matrix with determinant 1.
-    The axis is an eigenvector with eigenvalue 1.
+    """
+    Return the axis and angle from a rotation matrix. m must be an orthogonal
+    matrix with determinant 1. The axis is an eigenvector with eigenvalue 1.
     The angle is determined by the trace and the asymmetryic part of m.
     Based on:
     https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
-    '''
+
+    Args:
+        m: an orthogonal 3x3 matrix (list, array, or matrix) with determinant 1
+        radians: whether the returned angle is in radians (True)
+            or in degrees (False)
+
+    Returns:
+        the axis and angle of the supplied rotation matrix
+    """
     if type(m) == SymmOp:
         m = m.rotation_matrix
     #Check if m is the identity matrix
@@ -165,10 +227,20 @@ def matrix2aa(m, radians=True):
         return None, 0.
 
 def rotate_vector(v1, v2):
-    '''
-    Rotates a vector v1 to v2 about an axis perpendicular to both
-    Returns the 3x3 rotation matrix used to do so
-    '''
+    #TODO: Verify that multiplication order is correct
+    #(matrix should come after vector in np.dot)
+    """
+    Rotates a vector v1 to v2 about an axis perpendicular to both. Returns the
+    3x3 rotation matrix used to do so.
+
+    Args:
+        v1: a 1x3 vector (list or array) of floats
+        v2: a 1x3 vector (list or array) of floats
+
+    Returns:
+        a 3x3 matrix generated by aa2matrix, corresponding to a rotation which
+        can be applied to v1 to obtain v2
+    """
     v1 = v1 / np.linalg.norm(v1)
     v2 = v2 / np.linalg.norm(v2)
     dot = np.dot(v1, v2)
@@ -184,6 +256,24 @@ def rotate_vector(v1, v2):
     return aa2matrix(v3, theta)
         
 def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
+    """
+    Check whether two SymmOp objects are equal up to some numerical tolerance.
+    Allows for optional consideration of periodic boundary conditions. This
+    option is useful for handling the periodicity of crystals.
+
+    Args:
+        op1: a SymmOp object
+        op2: another SymmOp object
+        allow_pbc: if True, two ops differing only by integer translations will
+            be considered equal
+        rtol: the relative numerical tolerance for equivalence (passed to
+            numpy.allclose)
+        atol: the absolute numerical tolerance for equivalence (passed to
+            numpy.allclose)
+
+    Returns:
+        True if op1 and op2 are equivalent, False otherwise
+    """
     #Check two SymmOps for equivalence
     #pbc=True means integer translations will be ignored
     m1 = op1.rotation_matrix
@@ -206,14 +296,23 @@ def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
         else: return False
 
 class OperationAnalyzer(SymmOp):
-    '''
-    Class for comparing operations. Stores rotation axis, angle, as well as
-    the type of operation (identity, inversion, rotation, or rotoinversion).
-    By default, takes a SymmOp as argument.
+    """
+    Class for comparing operations. Stores rotation axis and angle, as well as
+    the type and order of operation (identity, inversion, rotation, or
+    rotoinversion). By default, takes a SymmOp as argument. This information can
+    be accessed by calling print(object). The class methods is_conjugate and
+    are_conjugate can be used to determine if two operations are conjugate to
+    each other. That is, whether they represent the same angle of rotation and
+    are either both inverted or both uninverted.
+
     Note: rotoinversions with odd-order rotational parts will have an over-all
         even order. For example, the order of (-3) is 6.
+
     Note: reflections are treated as rotoinversions of order 2.
-    '''
+
+    Args:
+        SymmOp: a pymatgen.core.structure.SymmOp object to analyze
+    """
     #TODO: include support for off-center operations
     #TODO: include support for shear and scaling operations
     #TODO: include support for matrix-column and axis-angle initialization
@@ -241,10 +340,16 @@ class OperationAnalyzer(SymmOp):
     def __init__(self, op):
         if type(op) == deepcopy(SymmOp):
             self.op = op
+            """The original SymmOp object being analyzed"""
             self.tol = op.tol
+            """The numerical tolerance associated with self.op"""
             self.affine_matrix = op.affine_matrix
+            """The 4x4 affine matrix of the op"""
             self.m = op.rotation_matrix
+            """The 3x3 rotation (or rotoinversion) matrix, which ignores the
+            translational part of self.op"""
             self.det = det(self.m)
+            """The determinant of self.m"""
         elif (type(op) == np.ndarray) or (type(op) == np.matrix):
             if op.shape == (3,3):
                 self.op = SymmOp.from_rotation_and_translation(op, [0,0,0])
@@ -264,8 +369,17 @@ class OperationAnalyzer(SymmOp):
                 self.axis, self.angle = matrix2aa(self.m)
                 if isclose(self.angle, 0):
                     self.type = "identity"
+                    """The type of operation. Is one of 'identity', 'inversion',
+                    'rotation', or 'rotoinversion'."""
                     self.order = int(1)
+                    """The order of the operation. This is the number of times
+                    the operation must be applied consecutively to return to the
+                    identity operation. If no integer number if found, we set
+                    this to 'irrational'."""
                     self.rotation_order = int(1)
+                    """The order of the rotational (non-inversional) part of the
+                    operation. Must be used in conjunction with self.order to
+                    determine the properties of the operation."""
                 else:
                     self.type = "rotation"
                     self.order = OperationAnalyzer.get_order(self.angle)
@@ -288,6 +402,11 @@ class OperationAnalyzer(SymmOp):
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
     def __str__(self):
+        """
+        A custom printing string for the object. The type, order, angle, and
+        axis are printed. Converts values close to 0 to 0 for readability. Also
+        only prints the real part of the axis.
+        """
         #Avoid printing '-0.' instead of '0.'
         if self.axis is not None:
             if len(self.axis) == 3:
@@ -301,12 +420,18 @@ class OperationAnalyzer(SymmOp):
             "\nAxis: "+str(np.real(self.axis)) )
 
     def is_conjugate(self, op2):
-        '''
-        Returns whether or not another operation is conjugate
-        (the same operation in a different reference frame)
-        Rotations with the same order will not always return True. For example,
-        a 5/12 and 1/12 rotation will not be considered conjugate.
-        '''
+        """
+        Returns whether or not another operation is conjugate (the same
+        operation in a different reference frame). Rotations with the same order
+        will not always return True. For example, a 5/12 and 1/12 rotation will
+        not be considered conjugate.
+
+        Args:
+            op2: a SymmOp or OperationAnalyzer object to compare with
+
+        Returns:
+            True if op2 is conjugate to self.op, and False otherwise
+        """
         if type(op2) != OperationAnalyzer:
             opa2 = OperationAnalyzer(op2)
             if opa2.type == self.type:
@@ -330,25 +455,46 @@ class OperationAnalyzer(SymmOp):
                 return False
 
     def are_conjugate(op1, op2):
-        '''
-        Returns whether two operations are conjugate
-        '''
+        """
+        Returns whether or not two operations are conjugate (the same
+        operation in a different reference frame). Rotations with the same order
+        will not always return True. For example, a 5/12 and 1/12 rotation will
+        not be considered conjugate.
+
+        Args:
+            op1: a SymmOp or OperationAnalyzer object
+            op2: a SymmOp or OperationAnalyzer object to compare with op1
+
+        Returns:
+            True if op2 is conjugate to op1, and False otherwise
+        """
         if type(op1) != OperationAnalyzer:
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
 
 class orientation():
-    '''
+    """
     Stores orientations for molecular crystals based on vector constraints.
     Can be stored to regenerate orientations consistent with a given constraint
-    vector, without re-calling orientation_in_wyckoff_position.
-    args:
-        matrix: a 3x3 rotation matrix to initialize with
+    vector, without re-calling orientation_in_wyckoff_position. Allows for
+    generating orientations which differ only in their rotation about a given
+    axis.
+
+    Args:
+        matrix: a 3x3 rotation matrix describing the orientation (and/or
+            inversion) to store
         degrees: the number of degrees of freedom...
-            0: The orientation refers to a single rotation matrix
-            1: The orientation can be rotated about a single axis
-            2: The orientation can be any pure rotation matrix
-    '''
+
+            0 - The orientation refers to a single rotation matrix
+
+            1 - The orientation can be rotated about a single axis
+
+            2 - The orientation can be any pure rotation matrix
+
+        axis:
+            an optional axis about which the orientation can rotate. Only used
+            if degrees is equal to 1
+    """
 
     def __init__(self, matrix, degrees=0, axis=None):
         if (not is_orthogonal(matrix)):
@@ -357,12 +503,28 @@ class orientation():
         if (degrees == 1) and (axis is None):
             print("Error: Constraint vector required for orientation")
         self.matrix = np.array(matrix)
+        """The supplied orientation (and/or inversion) matrix, converted to a
+        numpy array."""
         self.degrees = 0
+        """The number of degrees of freedom."""
         self.axis = axis
+        """The axis (optional) about which the orientation may rotate."""
 
     def get_matrix(self, angle="random"):
-        #Return a SymmOp object rotated by given angle.
-        #If "random", rotates by a random amount
+        """
+        Generate a 3x3 rotation matrix consistent with the orientation's
+        constraints. Allows for specification of an angle (possibly random) to
+        rotate about the constraint axis.
+
+        Args:
+            angle: an angle to rotate about the constraint axis. If "random",
+                chooses a random rotation angle. If self.degrees==2, chooses a
+                random 3d rotation matrix to multiply by. If the original matrix
+                is wanted, set angle=0, or call self.matrix
+
+        Returns:
+            a 3x3 rotation (and/or inversion) matrix (numpy array)
+        """
         if self.degrees == 2:
             if angle == "random":
                 return aa2matrix(1,1,random=True)
@@ -379,12 +541,37 @@ class orientation():
             return self.matrix
 
     def get_op(self, angle="random"):
-        #Return a SymmOp object rotated by given angle.
+        """
+        Generate a SymmOp object consistent with the orientation's
+        constraints. Allows for specification of an angle (possibly random) to
+        rotate about the constraint axis.
+
+        Args:
+            angle: an angle to rotate about the constraint axis. If "random",
+                chooses a random rotation angle. If self.degrees==2, chooses a
+                random 3d rotation matrix to multiply by. If the original matrix
+                is wanted, set angle=0, or call self.matrix
+
+        Returns:
+            pymatgen.core.structure. SymmOp object
+        """n angle.
         #If "random", rotates by a random amount
         m = self.get_matrix(angle=angle)
         return SymmOp.from_rotation_and_translation(m,[0,0,0])
 
     def from_constraint(v1, c1):
+        """
+        Geneate an orientation object given a constraint axis c1, and a
+        corresponding vector v1. v1 will be rotated onto c1, and the resulting
+        orientation will have a rotational degree of freedom about c1.
+
+        Args:
+            v1: a 1x3 vector in the original reference frame
+            c1: a corresponding axis which v1 must be mapped to
+
+        Returns:
+            an orientation object consistent with the supplied constraint
+        """
         #c1 is the constraint vector; v1 will be rotated onto it
         m = rotate_vector(v1, c1)
         return orientation(m, degrees=1, axis=c1)
@@ -392,20 +579,6 @@ class orientation():
 #Test Functionality
 if __name__ == "__main__":
 #----------------------------------------------------
-    '''
-    #Check that OperationAnalyzer works
-    for string in ['x,y,z','-x,y,z','x,-y,z','x,y,-z','-x,-y,z','-x,y,-z','x,-y,-z','-x,-y,-z']:
-        op = SymmOp.from_xyz_string(string)
-        opa = OperationAnalyzer(op)
-        print(opa)'''
-
-    '''#Check that is_conjugate works
-    from structure import random_vector
-    for i in range(20):
-        a = rand()*2*pi
-        op2 = aa2matrix(random_vector(), a)
-        print(OperationAnalyzer.are_conjugate(op1, op2))'''
-    
     op = SymmOp.from_rotation_and_translation(aa2matrix([1,0,0], pi/6),[0,0,0])
     ops = [op]
     from pymatgen.symmetry.analyzer import generate_full_symmops
