@@ -405,7 +405,7 @@ def create_matrix(PBC=None):
 #Euclidean distance
 def distance(xyz, lattice, PBC=None): 
     xyz = xyz - np.round(xyz)
-    matrix = create_matrix(PBC)
+    matrix = create_matrix(PBC=PBC)
     matrix += xyz
     matrix = np.dot(matrix, lattice)
     return np.min(cdist(matrix,[[0,0,0]]))       
@@ -431,7 +431,7 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor
     """
     #add PBC
     coord2s = []
-    matrix = create_matrix(PBC)
+    matrix = create_matrix(PBC=PBC)
     for coord in coord2:
         for m in matrix:
             coord2s.append(coord+m)
@@ -462,7 +462,7 @@ def get_center(xyzs, lattice, PBC=None):
     Returns:
         x,y,z coordinates for the center of the input coordinate list
     """
-    matrix0 = create_matrix(PBC)
+    matrix0 = create_matrix(PBC=PBC)
     xyzs -= np.round(xyzs)
     for atom1 in range(1,len(xyzs)):
         dist_min = 10.0
@@ -682,7 +682,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
                 merged = []
                 groups = connected_components(graph)
                 for group in groups:
-                    merged.append(get_center(coor[group], lattice, PBC))
+                    merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
                 #if check_wyckoff_position(merged, sg, wyckoff) is not False:
                 index = check_wyckoff_position(merged, sg, exact_translation=False)
@@ -1395,11 +1395,11 @@ class random_crystal_2D():
                                 point = np.random.random(3)
                                 #print('generating new points:', point)
                                 coords = np.array([op.operate(point) for op in ops])
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, self.PBC)
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC)
                                 if good_merge:
                                     coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                     #print('Adding: ', coords_toadd)
-                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, self.PBC):
+                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
                                         coordinates_tmp.append(coords_toadd)
                                         sites_tmp.append(specie)
                                         numIon_added += len(coords_toadd)

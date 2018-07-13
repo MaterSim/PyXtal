@@ -1,4 +1,3 @@
-#TODO: Add PBC for functions mirroring those in crystal.py
 """
 Module for generation of random molecular crystals which meet symmetry constraints. A pymatgen- or spglib-type structure object is created, which can be saved to a .cif file. Options (preceded by two dashes) are provided for command-line usage of the module:  
 
@@ -132,7 +131,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
     """
     #add PBC
     coord2s = []
-    matrix = create_matrix(PBC)
+    matrix = create_matrix(PBC=PBC)
     for coord in coord2:
         for m in matrix:
             coord2s.append(coord+m)
@@ -261,7 +260,7 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
     print("Unexpected error in check_wyckoff_position_molecular.")
     return False
 
-def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations):
+def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations, PBC=None):
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol)
         index = None
@@ -271,7 +270,7 @@ def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations):
                 merged = []
                 groups = connected_components(graph)
                 for group in groups:
-                    merged.append(get_center(coor[group], lattice))
+                    merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
                 index = check_wyckoff_position_molecular(merged, sg, orientations, exact_translation=False)
                 if index is False:
