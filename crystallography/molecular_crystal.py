@@ -407,32 +407,37 @@ class molecular_crystal():
     
     Args:
         sg: The international spacegroup number
+        molecules: a list of pymatgen.core.structure.Molecule objects for
+            each type of molecule
         numMols: A list of the number of each type of molecule within the
-            primitive cell
+            primitive cell (NOT the conventioal cell)
         volume_factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
         allow_inversion: Whether or not to allow chiral molecules to be
             inverted. If True, the final crystal may contain mirror images of
             the original molecule. Unless the chemical properties of the mirror
             image are known, it is highly recommended to keep this value False
-        orientations:
-            Once a crystal with the same spacegroup and molecular stoichiometry
-            has been generated, you may pass its valid_orientations attribute
-            here to avoid repeating the calculation, but this is not required
-        check_atomic_distances:
-            If True, checks the inter-atomic distances after each Wyckoff
-            position is added. This requires slightly more time, but vastly
-            improves accuracy. For approximately spherical molecules, or
-            for large inter-molecular distances, this may be turned off
+        orientations: Once a crystal with the same spacegroup and molecular
+            stoichiometry has been generated, you may pass its
+            valid_orientations attribute here to avoid repeating the
+            calculation, but this is not required
+        check_atomic_distances: If True, checks the inter-atomic distances
+            after each Wyckoff position is added. This requires slightly more
+            time, but vastly improves accuracy. For approximately spherical
+            molecules, or for large inter-molecular distances, this may be
+            turned off
     """
     def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
         
         #Necessary input
         self.Msgs()
+        """A list of warning messages to use during generation."""
         numMols = np.array(numMols) #must convert it to np.array
         self.factor = volume_factor
+        """The supplied volume factor for the unit cell"""
         self.numMols0 = numMols
         self.sg = sg
+        """The international spacegroup number of the crystal"""
         #Reorient the molecules along their principle axes
         oriented_molecules = []
         #Allow support for generating molecules from text via ASE
@@ -445,9 +450,14 @@ class molecular_crystal():
             mo = pga.symmetrize_molecule()['sym_mol']
             oriented_molecules.append(mo)
         self.molecules = oriented_molecules
+        """A list of pymatgen.core.structure.Molecule objects, symmetrized and
+        oriented along their symmetry axes."""
         self.boxes = []
-        #Calculate binding boxes and radii for each molecule
+        """A list of bounding boxes for each molecule. Used for estimating
+        volume of the unit cell."""
         self.radii = []
+        """A list of approximated radii for each molecule type. Used for
+        checking inter-molecular distances."""
         for mol in self.molecules:
             self.boxes.append(get_box(reoriented_molecule(mol)[0]))
             max_r = 0
@@ -455,21 +465,17 @@ class molecular_crystal():
                 radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
                 if radius > max_r: max_r = radius
             self.radii.append(max_r+1.0)
-        self.minlen = []
-        self.maxlen = []
-        for box in self.boxes:
-            #self.radii.append(math.sqrt( max(box[1],box[0])**2 + max(box[3],box[2])**2 + max(box[5],box[4])**2 ))
-            lens = [box[1]-box[0], box[3]-box[2], box[5]-box[4]]
-            self.minlen.append(min(lens))
-            self.maxlen.append(min(lens))
         self.numMols = numMols * cellsize(self.sg)
+        """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
+        """The volume of the generated unit cell"""
         self.wyckoffs = get_wyckoffs(self.sg, organized=True) #2D Array of Wyckoff positions organized by multiplicity
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
         self.check_atomic_distances = check_atomic_distances
-        #Whether or not to allow chiral molecules to be flipped
+        """Whether or not inter-atomic distances are checked at each step."""
         self.allow_inversion = allow_inversion
+        """Whether or not to allow chiral molecules to be inverted."""
         #When generating multiple crystals of the same stoichiometry and sg,
         #allow the user to re-use the allowed orientations, to reduce time cost
         if orientations is None:
@@ -807,12 +813,25 @@ class molecular_crystal():
 
                         final_coor -= np.floor(final_coor)
                         if verify_distances(final_coor, final_site, final_lattice, factor=1.0) is True:
-                            self.lattice = final_lattice  
+                            self.lattice = final_lattice
+                            """A 3x3 matrix representing the lattice of the
+                            unit cell."""  
                             self.coordinates = np.array(final_coor)
-                            self.sites = final_site              
+                            """The fractional coordinates for each molecule
+                            in the final structure"""
+                            self.sites = final_site
+                            """The indices within self.molecules corresponding
+                            to the type of molecule for each site in
+                            self.sites."""              
                             self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                            """A pymatgen.core.structure.Structure object for
+                            the final generated crystal."""
                             self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                            """A list of information describing the generated
+                            crystal, which may be used by spglib for symmetry
+                            analysis."""
                             self.valid = True
+                            """Whether or not a valid crystal was generated."""
                             return
                         #else: print("Failed final distance check.")
         print("Couldn't generate crystal after max attempts.")
