@@ -1,14 +1,14 @@
-'''
+"""
 Module for handling atomic elements.
-'''
+"""
 
 class Element:
-    '''
+    """
     Class for storing and accessing atomic elements. 
 
-    args:
+    Args:
         input_value: The atomic number, symbol, or name of the element
-    '''
+    """
     def __init__(self, input_value):
         self.input = input_value
 
@@ -121,6 +121,8 @@ class Element:
             (104,'Rf','Rutherfordium',4.0,3,None),
             (105, 'Db', 'Dubnium',  2.0, 3, None),
         ]
+        """A list of atomic numbers, symbols, names, and other information, up
+        to atomic number 105"""
         
         #scatter factor
         self.sf=[
@@ -218,17 +220,20 @@ class Element:
             [  0.000,  0.000,  0.000,  0.000,  0.530,  3.335, 16.143,101.371, 13.393],
             [ 36.187, 23.596, 15.640,  4.186,  0.512,  3.254, 15.362, 97.491, 13.357],
             [ 36.526, 23.808, 16.771,  3.479,  0.499,  3.264, 14.946,105.980, 13.381]]
+        """A list of scatter factors for the elements"""
 
         self.z = None
-        '''atomic number'''
+        """atomic number"""
         self.short_name = None
-        '''atomic symbol'''
+        """atomic symbol"""
         self.long_name = None
-        '''atomic name'''
+        """atomic name"""
         self.valence = None
+        """valence value"""
         self.valence_electrons = None
+        """number of valence electrons"""
         self.covalent_radius = None
-        '''atomic radius used for distance checking within crystals'''
+        """atomic radius used for distance checking within crystals"""
 
         pos = None
 
@@ -270,17 +275,36 @@ class Element:
             self.scatter = self.sf[pos]
 
     def get_all(self, pos):
+        """
+        Return all [pos] elements in the full element list
+        
+        Args:
+            pos: the index of the elements to retrieve
+        
+        Returns:
+            a list containing only the [pos] elements of self.elements_list
+        """
         els = []
         for el in self.elements_list:
             els.append(el[pos])
         return els
 
     def get_sf(self, pos):
+        """
+        Get the scattering factor for an element.
+        
+        Args:
+            pos: the atomic number of the element
+
+        Returns:
+            the scattering factor of the element
+        """
         els = []
         for el in self.sf:
             els.append(el[pos])
         return els
 
+    #TODO: add docstrings for miscellaneous functions
     def all_z(self):
         return self.get_all(0)
     def all_short_names(self):

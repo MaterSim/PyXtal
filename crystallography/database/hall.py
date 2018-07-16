@@ -1,4 +1,4 @@
-'''Module for converting between hall and Hermann-Mauguin spacegroup numbers'''
+"""Module for converting between hall and Hermann-Mauguin spacegroup numbers"""
 hall_numbers = [0, 1, 2,
 3,
 6,
@@ -238,7 +238,8 @@ hall_numbers = [0, 1, 2,
 #TODO: incorporate non-standard setting transformations
 def hall_from_hm(num):
 	return hall_numbers[num]
-'''
+"""
+List of Hermann-Mauguin to Hall symbol conversions:
 HM #    HM Symbol      Hall Symbol(different from wyckoff.csv)
  1        P 1            P 1
  2        P -1          -P 1
@@ -770,4 +771,4 @@ HM #    HM Symbol      Hall Symbol(different from wyckoff.csv)
 228:2      F d -3 c:2    -F 4cvw 2vw 3
 229        I m -3 m      -I 4 2 3
 230        I a -3 d      -I 4bd 2c 3
-'''
+"""
