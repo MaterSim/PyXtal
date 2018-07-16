@@ -465,8 +465,22 @@ def create_matrix(PBC=None):
                 matrix.append([i,j,k])
     return np.array(matrix, dtype=float)
 
-#Euclidean distance
-def distance(xyz, lattice, PBC=None): 
+def distance(xyz, lattice, PBC=None):
+    """
+    Returns the Euclidean distance from the origin for a fractional
+    displacement vector. Takes into account the lattice metric and periodic
+    boundary conditions, including up to one non-periodic axis.
+    
+    Args:
+        xyz: a fractional 3d displacement vector. Can be obtained by
+            subtracting one fractional vector from another
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: the axis, if any, which is non-periodic. 1, 2, and 3 correspond
+            to x, y, and z respectively.
+
+    Returns:
+        a scalar for the distance of the point from the origin
+    """
     xyz = xyz - np.round(xyz)
     matrix = create_matrix(PBC=PBC)
     matrix += xyz
