@@ -554,7 +554,7 @@ class orientation():
 
         Returns:
             pymatgen.core.structure. SymmOp object
-        """n angle.
+        """
         #If "random", rotates by a random amount
         m = self.get_matrix(angle=angle)
         return SymmOp.from_rotation_and_translation(m,[0,0,0])
