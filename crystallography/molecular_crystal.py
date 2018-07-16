@@ -1236,7 +1236,6 @@ class molecular_crystal_2d():
                         final_coor = []
                         final_site = []
                         final_number = []
-                        self.mol_generators = []
 
                         if self.check_atomic_distances is False:
                             for center0, i, wp_index in zip(points_total, molecular_sites_total, wps_total):
@@ -1248,12 +1247,10 @@ class molecular_crystal_2d():
                                 op1 = choose(self.valid_orientations[i][j][k]).get_op()
                                 mo.apply_operation(op1)
                                 ms0 = mol_site(mo, center0, self.sg, wp_index, cell_matrix)
-                                self.mol_generators.append(ms0)
+                                mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
                                     for site in mo:
                                         #Place molecular coordinates in relative coordinates
-                                        #relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
-                                        #relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
                                         relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
                                         center1 = op2.operate(center0)
                                         rot = SymmOp.from_rotation_and_translation(op2.rotation_matrix,[0,0,0])
@@ -1263,6 +1260,7 @@ class molecular_crystal_2d():
                                         final_coor.append(new_vector)
                                         final_site.append(site.specie.name)
                                         final_number.append(site.specie.number)
+                            self.mol_generators = deepcopy(mol_generators_total)
 
                         elif self.check_atomic_distances is True:
                             final_coor = deepcopy(atomic_coordinates_total)
