@@ -8,6 +8,7 @@ from pymatgen.core.structure import Molecule
 from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pymatgen.symmetry.analyzer import generate_full_symmops
+from ase.build import molecule as ase_molecule
 import numpy as np
 from numpy.linalg import eigh
 from numpy.linalg import det
