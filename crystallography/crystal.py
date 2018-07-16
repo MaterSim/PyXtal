@@ -90,6 +90,28 @@ wyckoff_generators_df = read_csv(resource_filename("crystallography", "database/
 #Define functions
 #------------------------------
 
+def filtered_coords(coords, PBC=None)
+    """
+    Given a list of 3d fractional coordinates or a single 3d point, transform
+    all coordinates to less than 1 and greater than 0. If one axis is not
+    periodic, does not transform the coordinates along that axis. For example,
+    for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
+    not the y axis (PBC=2), the function would return [0.2, 1.6, 0.6].
+
+    Args:
+        coords: a list or array of real 3d vectors, or a single real 3d vector
+        PBC: the axis, if any, which is not periodic. 1, 2, and 3 correspond
+            to x, y, and z repectively
+
+    Returns:
+        a new list of coordinates (or single point) with values scaled between
+        0 and 1, except for values on the non-periodic axis
+    """
+    new_coords = np.array(coords - np.floor(coords))
+    if PBC is not None:
+        new_coords_toadd[:,self.PBC-1] = coords_toadd[:,self.PBC-1]
+    return new_coords_toadd
+
 def gaussian(min, max, sigma=3.0):
     """
     Choose a random number from a Gaussian probability distribution centered
@@ -1218,7 +1240,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
             symmetry.append(el)
     return symmetry
 
-def find_generating_point(coords, generators):
+def find_generating_point(coords, generators, PBC=None):
     """
     Given a set of coordinates and Wyckoff generators, return the coord which
     can be used to generate the others. This is useful for molecular Wyckoff
@@ -1239,9 +1261,9 @@ def find_generating_point(coords, generators):
      """
     for coord in coords:
         generated = list(gen.operate(coord) for gen in generators)
-        generated -= np.floor(generated)
+        generated = filtered_coords(generated, PBC=PBC)
         tmp_c = deepcopy(coords)
-        tmp_c -= np.floor(tmp_c)
+        tmp_c = filtered_coords(tmp_c, PBC=PBC)
         index_list1 = list(range(len(tmp_c)))
         index_list2 = list(range(len(generated)))
         if len(generated) != len(tmp_c):
@@ -1293,7 +1315,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     #
     if exact_translation == False:
         for p in points:
-            new_points.append(p - np.floor(p))
+            new_points.append(filtered_coords(p, PBC=PBC))
         points = new_points
     w_symm_all = get_wyckoff_symmetry(sg)
     p_symm = []
@@ -1335,7 +1357,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     else:
         #Check that points are generated from generators
         for i in possible:
-            p = find_generating_point(points, generators)
+            p = find_generating_point(points, generators, PBC=PBC)
             if p is not None:
                 return i
         print("Error: Could not generate Wyckoff position from generators")
@@ -1737,7 +1759,7 @@ class random_crystal_2D():
                                     coords = np.array([op.operate(point) for op in ops])
                                     coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC)
                                     if good_merge:
-                                        coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
+                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                         #print('Adding: ', coords_toadd)
                                         if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
                                             coordinates_tmp.append(coords_toadd)
