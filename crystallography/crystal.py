@@ -90,7 +90,7 @@ wyckoff_generators_df = read_csv(resource_filename("crystallography", "database/
 #Define functions
 #------------------------------
 
-def filtered_coords(coords, PBC=None)
+def filtered_coords(coords, PBC=None):
     """
     Given a list of 3d fractional coordinates or a single 3d point, transform
     all coordinates to less than 1 and greater than 0. If one axis is not
@@ -107,10 +107,17 @@ def filtered_coords(coords, PBC=None)
         a new list of coordinates (or single point) with values scaled between
         0 and 1, except for values on the non-periodic axis
     """
-    new_coords = np.array(coords - np.floor(coords))
+    coords0 = np.array(coords)
+    new_coords = coords0 - np.floor(coords0)
     if PBC is not None:
-        new_coords_toadd[:,self.PBC-1] = coords_toadd[:,self.PBC-1]
-    return new_coords_toadd
+        if len(new_coords.shape) == 2:
+            new_coords[:,PBC-1] = coords0[:,PBC-1]
+        elif len(new_coords.shape) == 1:
+            new_coords[PBC-1] = coords0[PBC-1]
+        else:
+            print("Warning: invalid array dimensions for filtered_coords. Shape: "+str(new_coords.shape))
+            return coords
+    return new_coords
 
 def gaussian(min, max, sigma=3.0):
     """
