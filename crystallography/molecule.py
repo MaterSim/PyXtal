@@ -1,3 +1,9 @@
+"""
+Module for handling molecules. Uses the pymatgen.core.structure.Molecule
+class as a base. Has a function for reorienting molecules
+(reoriented_molecule), and for calculating valid orientations within a Wyckoff
+position based on symmetry (orientation_in_wyckoff_position).
+"""
 from pymatgen.core.structure import Molecule
 from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
@@ -13,25 +19,35 @@ from random import choice as choose
 from crystallography.operations import *
 from crystallography.crystal import get_wyckoff_symmetry
 
-try:
-    from ase.build import molecule as ase_molecule
-    def get_ase_mol(molname):
-        """convert ase molecule to pymatgen style"""
-        ase_mol = ase_molecule(molname)
-        pos = ase_mol.get_positions()
-        symbols = ase_mol.get_chemical_symbols()
-        return(Molecule(symbols, pos))
-except:
-    print("Could not import ASE. Install ASE for additional molecular support:")
-    print("https://wiki.fysik.dtu.dk/ase/install.html")
-
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
 
+def get_ase_mol(molname):
+    """
+    Convert an ase molecule to a pymatgen Molecule object.
+
+    Args:
+        molname: a string for the chemical formula of the molecule
+
+    Returns:
+        a pymatgen Molecule object
+    """
+    ase_mol = ase_molecule(molname)
+    pos = ase_mol.get_positions()
+    symbols = ase_mol.get_chemical_symbols()
+    return(Molecule(symbols, pos))
+
 def get_inertia_tensor(mol):
-    '''
-    Calculate the symmetric inertia tensor for a Molecule object
-    '''
+    """
+    Calculate the symmetric inertia tensor for a Molecule object. Used to find
+    the principal axes of symmetry.
+
+    Args:
+        mol: a Molecule object
+
+    Returns:
+        a 3x3 numpy array representing a moment of inertia tensor
+    """
     mo = mol.get_centered_molecule()
     # Initialize elements of the inertia tensor
     I11 = I22 = I33 = I12 = I13 = I23 = 0.0
@@ -49,11 +65,17 @@ def get_inertia_tensor(mol):
                   [I13, I23, I33]])
 
 def get_moment_of_inertia(mol, axis, scale=1.0):
-    '''
-    Calculate the moment of inertia of a molecule about an axis
-    scale: changes the length scale of the molecule. Used to compare symmetry
-        axes for equivalence. Defaults to 1
-    '''
+    """
+    Calculate the moment of inertia of a molecule about an axis.
+
+    Args:
+        mol: a Molecule object
+        axis: a 3d axis (list or array) to compute the moment about
+        scale: changes the length scale of the molecule
+
+    Returns:
+        a scalar value for the moment of inertia about the axis
+    """
     #convert axis to unit vector
     axis = axis / np.linalg.norm(axis)
     moment = 0
@@ -63,11 +85,19 @@ def get_moment_of_inertia(mol, axis, scale=1.0):
     return moment
 
 def reoriented_molecule(mol, nested=False):
-    '''
-    Return a molecule reoriented so that its principle axes
-    are aligned with the identity matrix, and the matrix P
-    used to rotate the molecule into this orientation
-    '''
+    """
+    Reorient a molecule so that its principal axes are aligned with the
+    identity matrix.
+
+    Args:
+        mol: a Molecule object
+        nested: internal variable to keep track of how many times the function
+            has been called recursively
+
+    Returns:
+        new_mol, P: new_mol is a reoriented copy of the original molecule. P is
+            the 3x3 rotation matrix used to obtain it.
+    """
     def reorient(mol):
         new_mol = mol.get_centered_molecule()
         A = get_inertia_tensor(new_mol)
@@ -115,10 +145,19 @@ def reoriented_molecule(mol, nested=False):
     return new_mol, P
 
 def get_symmetry(mol, already_oriented=False):
-    '''
-    Return a list of SymmOps for a molecule's point symmetry
-    already_oriented: whether or not the principle axes of mol are already reoriented 
-    '''
+    """
+    Return a molecule's point symmetry.
+    Note: for linear molecules, infinitessimal rotations are treated as 6-fold
+    rotations, which works for 3d and 2d point groups.
+
+    Args:
+        mol: a Molecule object
+        already_oriented: whether or not the principle axes of mol are already
+            reoriented. Can save time if True, but is not required.
+
+    Returns:
+        a list of SymmOp objects which leave the molecule unchanged when applied
+    """
     pga = PointGroupAnalyzer(mol)
     #Handle linear molecules
     if '*' in pga.sch_symbol:
@@ -143,20 +182,14 @@ def get_symmetry(mol, already_oriented=False):
                     symm_m.append(SymmOp.from_xyz_string('x,-y,z'))
                     symm_m.append(SymmOp.from_xyz_string('x,y,-z'))
                     r = SymmOp.from_xyz_string('-x,y,-z')
-                    '''if pga.is_valid_op(r):
-                        symm_m.append(r)'''
                 elif axis == [0,1,0]:
                     symm_m.append(SymmOp.from_xyz_string('-x,y,z'))
                     symm_m.append(SymmOp.from_xyz_string('x,y,-z'))
                     r = SymmOp.from_xyz_string('-x,-y,z')
-                    '''if pga.is_valid_op(r):
-                        symm_m.append(r)'''
                 elif axis == [0,0,1]:
                     symm_m.append(SymmOp.from_xyz_string('-x,y,z'))
                     symm_m.append(SymmOp.from_xyz_string('x,-y,z'))
                     r = SymmOp.from_xyz_string('x,-y,-z')
-                    '''if pga.is_valid_op(r):
-                        symm_m.append(r)'''
                 #Generate a full list of SymmOps for the molecule's pointgroup
                 symm_m = generate_full_symmops(symm_m, 1e-3)
                 break
@@ -178,23 +211,28 @@ def get_symmetry(mol, already_oriented=False):
 
 def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     exact_orientation=False, already_oriented=False, allow_inversion=False):
-    '''
-    Tests if a molecule meets the symmetry requirements of a Wyckoff position.
-    If it does, return the rotation matrix needed. Otherwise, returns False.
+    """
+    Tests if a molecule meets the symmetry requirements of a Wyckoff position,
+    and returns the valid orientations.
 
-    args:
-        mol: pymatgen.core.structure.Molecule object. Orientation is arbitrary
-        sg: the spacegroup to check
+    Args:
+        mol: a Molecule object. Orientation is arbitrary
+        sg: the international spacegroup number
         index: the index of the Wyckoff position within the sg to check
         randomize: whether or not to apply a random rotation consistent with
-            the symmetry requirements.
+            the symmetry requirements
         exact_orientation: whether to only check compatibility for the provided
             orientation of the molecule. Used within general case for checking.
             If True, this function only returns True or False
         already_oriented: whether or not to reorient the principle axes
             when calling get_symmetry. Setting to True can remove redundancy,
-            but is not necessary.
-    '''
+            but is not necessary
+
+    Returns:
+        a list of operations.Orientation objects which can be applied to the
+        molecule while allowing it to satisfy the symmetry requirements of the
+        Wyckoff position. If no orientations are found, returns False.
+    """
     #Obtain the Wyckoff symmetry
     symm_w = get_wyckoff_symmetry(sg, molecular=True)[index][0]
     pga = PointGroupAnalyzer(mol)
@@ -428,9 +466,3 @@ if __name__ == "__main__":
     #Spacegroup WP 24l (index 2) in sg 221 has m.. symmetry
     allowed =  orientation_in_wyckoff_position(mol, 221, 2, randomize=True)
     print("Found "+str(len(allowed))+" orientations in sg 221 position 1g:")
-    '''for orientation in allowed:
-        mo = deepcopy(mol)
-        mo.apply_operation(orientation.get_op)
-        print()
-        print(mo)'''
-
