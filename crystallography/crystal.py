@@ -666,7 +666,7 @@ def cellsize(sg):
     	return 4
     else: return "Error: Could not determine lattice type"
 
-def find_short_dist(coor, lattice, tol):
+def find_short_dist(coor, lattice, tol, PBC=None):
     """
     Given a list of fractional coordinates, finds pairs which are closer
     together than tol, and builds the connectivity map
@@ -691,7 +691,7 @@ def find_short_dist(coor, lattice, tol):
 
     for i1 in range(len(coor)-1):
         for i2 in range(i1+1,len(coor)):
-            dist = distance(coor[i1]-coor[i2], lattice)
+            dist = distance(coor[i1]-coor[i2], lattice, PBC=PBC)
             if dist <= tol:
                 #dists.append(dist)
                 pairs.append([i1,i2,dist])
@@ -1163,7 +1163,7 @@ def get_wyckoff_generators(sg):
             generators[-1].append(SymmOp.from_xyz_string(op))
     return generators
 
-def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
+def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
     """
     Given a point and a general Wyckoff position, return the list of symmetry
     operations leaving the point (coordinate or SymmOp) invariant. The returned
@@ -1200,7 +1200,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice):
             is_symmetry = False
         #Check that the displacement is less than tol
         displacement = difference.translation_vector
-        if distance(displacement, lattice) > tol:
+        if distance(displacement, lattice, PBC=PBC) > tol:
             is_symmetry = False
         if is_symmetry:
             """The actual site symmetry's translation vector may vary from op by
@@ -1261,7 +1261,7 @@ def find_generating_point(coords, generators):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
+def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -1299,7 +1299,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
     #If exact_translation is false, store WP's which might be a match
     possible = []
     for x in points:
-        p_symm.append(site_symm(x, gen_pos))
+        p_symm.append(site_symm(x, gen_pos, PBC=PBC))
     for i, wp in enumerate(wyckoffs):
         w_symm = w_symm_all[i]
         if len(p_symm) == len(w_symm):
@@ -1340,7 +1340,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False):
         print("Error: Could not generate Wyckoff position from generators")
         return False
 
-def verify_distances(coordinates, species, lattice, factor=1.0):
+def verify_distances(coordinates, species, lattice, factor=1.0, PBC=None):
     """
     Checks the inter-atomic distance between all pairs of atoms in a crystal.
 
@@ -1360,7 +1360,7 @@ def verify_distances(coordinates, species, lattice, factor=1.0):
             if j > i:
                 specie2 = species[j]
                 diff = np.array(c2) - np.array(c1)
-                d_min = distance(diff, lattice)
+                d_min = distance(diff, lattice, PBC=PBC)
                 tol = factor*0.5*(Element(specie1).covalent_radius + Element(specie2).covalent_radius)
                 if d_min < tol:
                     return False
