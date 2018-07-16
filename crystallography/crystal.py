@@ -515,8 +515,9 @@ def get_center(xyzs, lattice, PBC=None):
                 matrix_min = matrix0[np.argmin(dists)]
         xyzs[atom1] += matrix_min
     center = xyzs.mean(0)
-    if abs(center[PBC-1])<1e-4:
-        center[PBC-1] = 0.5
+    if PBC is not None:
+        if abs(center[PBC-1])<1e-4:
+            center[PBC-1] = 0.5
     return center
 
 def para2matrix(cell_para, radians=True, format='lower'):
