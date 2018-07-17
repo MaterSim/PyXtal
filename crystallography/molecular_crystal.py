@@ -78,7 +78,7 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
         volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
     return abs(factor*volume)
 
-def get_sg_orientations(mol, sg, allow_inversion=False):
+def get_sg_orientations(mol, sg, allow_inversion=False, PB=None):
     """
     Calculate the valid orientations for each Molecule and Wyckoff position.
     Returns a list with 3 indices:
@@ -104,7 +104,7 @@ def get_sg_orientations(mol, sg, allow_inversion=False):
             and 2nd indices correspond to the Wyckoff position
     """
     valid_orientations = []
-    wyckoffs = get_wyckoffs(sg, organized=True)
+    wyckoffs = get_wyckoffs(sg, organized=True, PB=PB)
     wp_index = -1
     for i, x in enumerate(wyckoffs):
         valid_orientations.append([])
@@ -193,7 +193,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
     else:
         return True
 
-def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False, PBC=None):
+def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False, PBC=None, PB=None):
     """
     Given a list of points, returns the index of the Wyckoff position within
     the spacegroup.
@@ -215,7 +215,7 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
     points = np.around((points*1e+10))/1e+10
 
     if wyckoffs == None:
-        wyckoffs = get_wyckoffs(sg)
+        wyckoffs = get_wyckoffs(sg, PB=PB)
         gen_pos = wyckoffs[0]
     else:
         gen_pos = wyckoffs[0][0]

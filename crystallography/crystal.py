@@ -806,7 +806,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
+def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=PB):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -838,8 +838,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
                 for group in groups:
                     merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
-                #if check_wyckoff_position(merged, sg, wyckoff) is not False:
-                index = check_wyckoff_position(merged, sg, exact_translation=False)
+                index = check_wyckoff_position(merged, sg, exact_translation=False, PBC=PBC, PB=PB)
                 if index is False:
                     return coor, False
                 else:
@@ -850,7 +849,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
                 return coor, False
         else:
             if index is None:
-                index = check_wyckoff_position(coor, sg, exact_translation=False)
+                index = check_wyckoff_position(coor, sg, exact_translation=False, PBC=PBC, PB=PB)
             return coor, index
 
 def estimate_volume(numIons, species, factor=2.0):
@@ -1289,7 +1288,7 @@ def find_generating_point(coords, generators, PBC=None):
         index_list2 = list(range(len(generated)))
         if len(generated) != len(tmp_c):
             print("Warning: coordinate and generator lists have unequal length.")
-            print("In check_wyckoff_position_molecular.find_generating_point:")
+            print("In check_wyckoff_position.find_generating_point:")
             print("len(coords): "+str(len(coords))+", len(generators): "+str(len(generators)))
             return None
         for index1, c1 in enumerate(tmp_c):
@@ -1305,7 +1304,7 @@ def find_generating_point(coords, generators, PBC=None):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None):
+def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None, PB=None):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -1328,7 +1327,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     points = np.around((points*1e+10))/1e+10
 
     if wyckoffs == None:
-        wyckoffs = get_wyckoffs(sg)
+        wyckoffs = get_wyckoffs(sg, PB=PB)
         gen_pos = wyckoffs[0]
     else:
         gen_pos = wyckoffs[0][0]
@@ -1778,7 +1777,7 @@ class random_crystal_2D():
                                     point = np.random.random(3)
                                     #print('generating new points:', point)
                                     coords = np.array([op.operate(point) for op in ops])
-                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC)
+                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC, PB=self.PB)
                                     if good_merge:
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                         #print('Adding: ', coords_toadd)
