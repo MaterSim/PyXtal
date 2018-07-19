@@ -806,7 +806,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=PB):
+def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=None):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
