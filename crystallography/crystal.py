@@ -1008,9 +1008,12 @@ def generate_lattice_2d(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
         #Orthorhombic
         elif sg <= 74:
             vec = random_vector()
-            ratio = sqrt(volume*vec[2]/abc[2])
-            abc[0]=vec[0]*ratio
-            abc[1]=vec[1]*ratio
+            #ratio = sqrt(volume*vec[2]/abc[2])
+            #abc[0]=vec[0]*ratio
+            #abc[1]=vec[1]*ratio
+            ratio = abs(vec[0]/vec[1]) #ratio a/b
+            abc[1] = sqrt(volume/(thickness*ratio))
+            abc[0] = abc[1]* ratio
 
         #Tetragonal
         elif sg <= 142:
