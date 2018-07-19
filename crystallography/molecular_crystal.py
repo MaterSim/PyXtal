@@ -443,7 +443,7 @@ class molecular_crystal():
         #Allow support for generating molecules from text via ASE
         for i, mol in enumerate(molecules):
             if type(mol) == str:
-                mo = get_ase_molecules(mol)
+                mo = get_ase_mol(mol)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
@@ -893,7 +893,7 @@ class molecular_crystal_2d():
         #Allow support for generating molecules from text via ASE
         for i, mol in enumerate(molecules):
             if type(mol) == str:
-                mo = get_ase_molecules(mol)
+                mo = get_ase_mol(mol)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
