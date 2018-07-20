@@ -997,20 +997,27 @@ def generate_lattice_2d(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             f = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
             abc[2] = abc[2]/f #scale thickness by outer product of vectors
-            ab = volume/abc[2]
+            ab = volume/(abc[2]*f)
             ratio = a/b
             abc[0] = sqrt(ab*ratio)
             abc[1] = sqrt(ab/ratio)
 
         #Monoclinic
         elif sg <= 15:
-            if P[-1]==3 and sg_symbol_from_int_number(sg)=='P':
+            if P[-1] == 3:
                 gamma = gaussian(minangle, maxangle)
-            x = sin(beta)
-            vec = random_vector()
-            ratio = sqrt(volume/x*vec[2]/abc[2])
-            abc[0]=vec[0]*raio
-            abc[1]=vec[1]*ratio
+                f = sin(gamma)
+            elif P[-1] == 2:
+                beta = gaussian(minangle, maxangle)
+                f = sin(beta)
+            elif P[-1] == 1:
+                alpha = gaussian(minangle, maxangle)
+                f = sin(alpha)
+            a, b, c = random_vector()
+            ab = volume/(abc[2]*f)
+            ratio = a/b
+            abc[0] = sqrt(ab*ratio)
+            abc[1] = sqrt(ab/ratio)
 
         #Orthorhombic
         elif sg <= 74:
@@ -1927,4 +1934,4 @@ if __name__ == "__main__":
         #If generation fails
         else: 
             print('something is wrong')
-            print('Time spent during generation attempt: ' + str(timespent) + "s")t
+            print('Time spent during generation attempt: ' + str(timespent) + "s")
