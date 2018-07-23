@@ -111,9 +111,13 @@ def filtered_coords(coords, PBC=None):
     new_coords = coords0 - np.floor(coords0)
     if PBC is not None:
         if len(new_coords.shape) == 2:
-            new_coords[:,PBC-1] = coords0[:,PBC-1]
+            for x in range(1, 4):
+                if x != PBC:
+                    new_coords[:,x-1] = coords0[:,x-1]
         elif len(new_coords.shape) == 1:
-            new_coords[PBC-1] = coords0[PBC-1]
+            for x in range(1, 4):
+                if x != PBC:
+                    new_coords[x-1] = coords0[x-1]
         else:
             print("Warning: invalid array dimensions for filtered_coords. Shape: "+str(new_coords.shape))
             return coords
