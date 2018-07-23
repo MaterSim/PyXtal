@@ -1196,7 +1196,7 @@ def get_wyckoff_symmetry(sg, molecular=False):
                     symmetry[-1][-1].append(op)
     return symmetry
 
-def get_wyckoff_generators(sg):
+def get_wyckoff_generators(sg, PB=None):
     """
     Returns a list of Wyckoff generators for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -1213,15 +1213,30 @@ def get_wyckoff_generators(sg):
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-    generators_strings = eval(wyckoff_generators_df["0"][sg])
+    if PB is not None:
+        coor = [0,0,0]
+        #coor[0] = 0.5
+        #print(coor[0], coor[1], coor[2])
+        coor[PB[-1]-1] = 0.5
+        coor = np.array(coor)
+
+    generator_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
-    #Loop over Wyckoff positions
-    for wp in generators_strings:
-        generators.append([])
-        #Loop over points in WP
-        for op in wp:
-            generators[-1].append(SymmOp.from_xyz_string(op))
+    for x in generator_strings:
+        if PB is not None:
+            op = SymmOp.from_xyz_string(x[0])
+            coor1 = op.operate(coor)
+            if abs(coor1[PB[-1]-1]-0.5) < 1e-2:
+                #print('invalid generators for layer group: ', x[0], coor, coor1)
+                generators.append([])
+                for y in x:
+                    generators[-1].append(SymmOp.from_xyz_string(y))
+        else:
+            generators.append([])
+            for y in x:
+                generators[-1].append(SymmOp.from_xyz_string(y))
     return generators
+
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
     """
@@ -1393,7 +1408,9 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     #If multiple WP's are found
     else:
         #Check that points are generated from generators
+        allgen = get_wyckoff_generators(sg, PB=PB)
         for i in possible:
+            generators = allgen[i]
             p = find_generating_point(points, generators, PBC=PBC)
             if p is not None:
                 return i
