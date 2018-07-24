@@ -1,0 +1,178 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Welcome to crystallography’s documentation! &#8212; crystallography 0.1dev documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">crystallography 0.1dev documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-crystallography-s-documentation">
+<h1>Welcome to crystallography’s documentation!<a class="headerlink" href="#welcome-to-crystallography-s-documentation" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div>Crystallography is a Python library for the ab-initio generation of random crystal structures. It is made available under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible atomic geometries, which can be output to .cif or .vasp files. The structure information can then be used with various optimization methods and software, in order to determine the lowest-energy structure for a given compound.
+Currently, the software allows generation of 3d atomic and molecular crystals; 2d crystal generation is under active development. The software also allows access to symmetry information, including Wyckoff positions and site symmetry. A basic tutorial is provided below for common functions. For more detailed information, see the documentation for that specific module.</div></blockquote>
+</div>
+<div class="section" id="dependencies">
+<h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li>[SciPy](<a class="reference external" href="https://www.scipy.org/install.html">https://www.scipy.org/install.html</a>)</li>
+<li>[NumPy](<a class="reference external" href="https://www.scipy.org/scipylib/download.html">https://www.scipy.org/scipylib/download.html</a>)</li>
+<li>[Pandas](<a class="reference external" href="https://pandas.pydata.org/getpandas.html">https://pandas.pydata.org/getpandas.html</a>)</li>
+<li>[Pymatgen](<a class="reference external" href="http://pymatgen.org/#getting-pymatgen">http://pymatgen.org/#getting-pymatgen</a>)</li>
+<li>[SpgLib for Python](<a class="reference external" href="https://atztogo.github.io/spglib/python-spglib.html#installation">https://atztogo.github.io/spglib/python-spglib.html#installation</a>)</li>
+<li>[ASE](<a class="reference external" href="https://wiki.fysik.dtu.dk/ase/install.html">https://wiki.fysik.dtu.dk/ase/install.html</a>)</li>
+</ul>
+</div>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>To install, simply make a copy of the source code:</p>
+<p><code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/qzhu2017/crystallography</span></code></p>
+<p>Then, inside of the downloaded directory, run</p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code></p>
+<p>This will install the module. The code can be used within Python via</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">crystallography</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
+<p>The package’s main modules are crystal.py and molecular_crystal.py. These modules contain functions for generating atomic and molecular crystals, respectively. These modules can be run as scripts via</p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">crystallography.crystal</span></code></p>
+<p>or</p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">crystallography.molecular_crystal</span></code></p>
+<p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="crystallography.crystal.html">crystal</a>, <a class="reference external" href="crystallography.molecular_crystal.html">molecular_crystal</a>. Alternatively, the functions can be called directly within Python, as illustrated in the following examples.</p>
+<p><strong>Atomic 3d Crystals</strong></p>
+<p>The main function for generating and storing crystals is crystal.random_crystal. Here is a simple example of a carbon crystal:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">crystallography.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
+<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">225</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This would create a crystal structure with space group 225, 3 carbon atoms in the primitive cell, and a volume factor of 8. For stoichiometries with more than one type of atom, replace [‘C’] with a list of atomic symbols, and replace [3] with a list of numbers. For example,</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">99</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Ba&#39;</span><span class="p">,</span><span class="s1">&#39;Ti&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>would create a random BaTiO3 crystal.</p>
+<p>The geometric properties of the crystal are stored in my_crystal.struct, which is a pymatgen.core.structures.Structure object. <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html#module-pymatgen.core.structure">Click here</a> for more information about the class. You can print my_crystal.struct directly to view the lattice vectors and atomic positions, or you can output the information using</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">my_crystal</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s1">&#39;myfile&#39;</span><span class="p">,</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;cif&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will create a file called myfile.cif, which stores the structure information. Other file types are supported by changing the value of fmt: pymatgen also supports ‘poscar’, ‘cssr’, and ‘json’.</p>
+<p><strong>Understanding the Parameters</strong></p>
+<p>There are 230 types of space groups (with International number between 1 and 230), each of which has a different set of symmetry operations and shape of unit cell. For a list of space groups and their symmetry operations, see the free online utility <a class="reference external" href="http://www.cryst.ehu.es/cryst/get_wp.html">WYCKPOS</a>, which is maintained by the Bilbao Crystallographic Server. For more information about space groups and crystals in general, consult <a class="reference external" href="http://it.iucr.org/">the International Tables of Crystallography</a>.</p>
+<p>Note that the input number of atoms is for the primitive unit cell, while the output uses the conventional unit cell. This means that for some space groups, the number of atoms in the output structure will be multiplied by 2, 3, or 4 compared to the input. Specifically, space groups beginning with “A”, “C” or “I” have twice as many atoms in the conventional cell, space groups beginning with “R” have 3 times as many, and space groups beginning with “F” have 4 times as many. Keep this in mind when choosing a range of stoichiometries and space groups to generate.</p>
+<p>The function works by attempting to insert atoms into different patterns (Wyckoff positions) within the unit cell. If a set of inserted atoms is too close together, it will be merged into a different Wyckoff position. Because each Wyckoff position can only hold a set number of atoms, not all stoichiometries will work with all space groups. In this case, the package will output a warning message, and will not attempt to generate the crystal. However, some parameter sets are still difficult or impossible to generate. If the atoms are still too close together after a set number of attempts, the generation will fail, and random_crystal.valid will be set to False.</p>
+<p>If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should thus be used to determine an appropriate value. Typically, a value between 1 and 10 should suffice.</p>
+<p><strong>2D atomic Crystals</strong></p>
+<p>To generate a 2d crystal, use the class crystal.random_crystal_2D. For example,</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">crystallography.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
+<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal_2D</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will generate a 2d crystal with layer group 20, 4 carbon atoms in the primitive cell, a thickness of 2.0 Angstroms, and a volume factor of 2.5. As with 3d crystals, for crystals with multiple atom types, you may replace [‘C’] and [4] with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. Thus, it is not recommended to store the structure in a .cif or POSCAR file without software for handling 2d crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; a value of 1, 2, or 3 corresponds to the x, y, or z axis, respectively.</p>
+<p>Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see <a href="#id1"><span class="problematic" id="id2">`</span></a>the International Tables of Crystallography, Volume E, part 4
+&lt;<a class="reference external" href="http://it.iucr.org/Eb/contents/">http://it.iucr.org/Eb/contents/</a>&gt;_.</p>
+<p>Note that changing the volume factor will not change the thickness of the output crystal. So, if you are testing over a range of volume factors, consider how the shape of the unit cell will be affected, and change the thickness accordingly.</p>
+<p><strong>Molecular 3d Crystals</strong>
+TODO: Finish documentation for remaining functions. Place tutorial in a separate html file</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">crystallography.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
+<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">225</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Resources</strong>
+TODO: Add list of learning and further reading materials for space groups, Wyckoff positions, 2d crystals, etc.</p>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to crystallography’s documentation!</a></li>
+<li><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">crystallography 0.1dev documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Scott Fredericks, Qiang Zhu.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+    </div>
+  </body>
+</html>

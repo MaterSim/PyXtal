@@ -1,0 +1,25 @@
+crystallography package
+=======================
+
+.. automodule:: crystallography
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    crystallography.database
+
+Submodules
+----------
+
+.. toctree::
+
+   crystallography.crystal
+   crystallography.molecular_crystal
+   crystallography.molecule
+   crystallography.operations
+

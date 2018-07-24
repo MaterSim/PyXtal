@@ -1,0 +1,7 @@
+crystallography\.database\.layergroup module
+============================================
+
+.. automodule:: crystallography.database.layergroup
+    :members:
+    :undoc-members:
+    :show-inheritance:

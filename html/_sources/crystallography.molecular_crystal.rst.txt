@@ -1,0 +1,7 @@
+crystallography\.molecular\_crystal module
+==========================================
+
+.. automodule:: crystallography.molecular_crystal
+    :members:
+    :undoc-members:
+    :show-inheritance:

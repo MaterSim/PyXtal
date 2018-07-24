@@ -1,0 +1,7 @@
+crystallography\.database\.element module
+=========================================
+
+.. automodule:: crystallography.database.element
+    :members:
+    :undoc-members:
+    :show-inheritance:

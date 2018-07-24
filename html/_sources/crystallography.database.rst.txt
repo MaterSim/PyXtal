@@ -1,0 +1,17 @@
+crystallography\.database package
+=================================
+
+.. automodule:: crystallography.database
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+   crystallography.database.element
+   crystallography.database.hall
+   crystallography.database.layergroup
+
