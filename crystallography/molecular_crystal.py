@@ -335,7 +335,9 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
     """
     Choose a Wyckoff position to fill based on the current number of molecules
     needed to be placed within a unit cell
+
     Rules:
+
         1) The new position's multiplicity is equal/less than (number).
         2) We prefer positions with large multiplicity.
         3) The site must admit valid orientations for the desired molecule.
@@ -343,8 +345,8 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
     Args:
         wyckoffs: an unsorted list of Wyckoff positions
         number: the number of molecules still needed in the unit cell
-        orientations: the valid orientations for a given molecule. Obtained from
-            get_sg_orientations, which is called within molecular_crystal
+        orientations: the valid orientations for a given molecule. Obtained
+            from get_sg_orientations, which is called within molecular_crystal
 
     Returns:
         a single index for the Wyckoff position. If no position is found,
@@ -843,7 +845,7 @@ class molecular_crystal():
         self.valid = False
         return self.Msg2
 
-class molecular_crystal_2d():
+class molecular_crystal_2D():
     """
     A 2d counterpart to molecular_crystal. Given a layer group, list of
     molecule objects, molecular stoichiometry, and
