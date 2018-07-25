@@ -493,7 +493,7 @@ def distance(xyz, lattice, PBC=None):
 
 def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor=1.0):
     """
-    Check the distances between two set of molecules. The first set is
+    Check the distances between two set of atoms. The first set is
     generally larger than the second. Distances between coordinates within the
     first set are not checked, and distances between coordinates within the
     second set are not checked. Only distances between points from different
@@ -990,9 +990,10 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    PBC = P[-1]
     maxangle = pi-minangle
     abc = np.ones([3])
-    abc[2] = thickness
+    abc[PBC-1] = thickness
     alpha, beta, gamma  = pi/2, pi/2, pi/2
     for n in range(maxattempts):
         #Triclinic

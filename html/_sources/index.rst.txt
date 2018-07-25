@@ -7,7 +7,7 @@ Welcome to crystallography's documentation!
 ===========================================
 
     Crystallography is a Python library for the ab-initio generation of random crystal structures. It is made available under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible atomic geometries, which can be output to .cif or .vasp files. The structure information can then be used with various optimization methods and software, in order to determine the lowest-energy structure for a given compound.
-    Currently, the software allows generation of 3d atomic and molecular crystals; 2d crystal generation is under active development. The software also allows access to symmetry information, including Wyckoff positions and site symmetry. A basic tutorial is provided below for common functions. For more detailed information, see the documentation for that specific module.
+    Currently, the software allows generation of 3d atomic and molecular crystals; 2d crystal generation is under active development. The software also allows access to symmetry information, including Wyckoff positions and site symmetry. A basic tutorial is provided below for common functions. For more detailed information, see the documentation for a specific module.
 
 Dependencies
 ===========================================
@@ -98,10 +98,10 @@ To generate a 2d crystal, use the class `crystal.random_crystal_2D
 
 .. code-block:: python
 
-   from crystallography.crystal import random_crystal
+   from crystallography.crystal import random_crystal_2D
    my_crystal = random_crystal_2D(20, ['C'], [4], 2.0, 2.5)
 
-will generate a 2d crystal with layer group 20, 4 carbon atoms in the primitive cell, a thickness of 2.0 Angstroms, and a volume factor of 2.5. As with the 3d case, for crystals with multiple atom types, you may replace ['C'] and [4] with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. Thus, it is not recommended to store the structure in a .cif or POSCAR file without software specifically designed to handling 2d crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; a value of 1, 2, or 3 corresponds to the x, y, or z axis, respectively.
+would generate a 2d crystal with layer group 20, 4 carbon atoms in the primitive cell, a thickness of 2.0 Angstroms, and a volume factor of 2.5. As with the 3d case, for crystals with multiple atom types, you may replace ['C'] and [4] with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. Thus, it is not recommended to store the structure in a .cif or POSCAR file without software specifically designed for handling 2d crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; a value of 1, 2, or 3 corresponds to the x, y, or z axis, respectively.
 
 Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see `the International Tables of Crystallography, Volume E, part 4
 <http://it.iucr.org/Eb/ch4o1v0001/contents/>`_.
@@ -123,14 +123,17 @@ This would give a crystal with spacegroup 36, 4 water molecules in the primitive
 
 Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The molecular_crystal class handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric.
 
-Like atomic crystals, the atomic positions may be accessed with the struct attribute. However, for accessing the positions and orientations of the molecules themselves, there is an attribute called mol_generators. This provides a list of the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit, and can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule's center of mass.
+Like atomic crystals, the atomic positions may be accessed with the struct attribute. However, for accessing the positions and orientations of the molecules themselves, there is an attribute called `mol_generators
+<crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal.mol_generators>`_. This provides a list of `mol_site
+<crystallography.molecular_crystal.html#crystallography.molecular_crystal.mol_site>`_ objects, which in turn give the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit. This can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule's center of mass.
 
 The orientations stored in the mol_generator class are members of the `operations.orientation
 <crystallography.operations.html#crystallography.operations.orientation>`_ class. A molecule in a Wyckoff position may be allowed to rotate about a certain axis, allowed to rotate freely, or may be rigidly constrained. This information is stored in the orientation class. To obtain a SymmOp which can be applied to the molecule, and which is consistent with the geometric constraints, call `orientation.get_op
 <crystallography.operations.html#crystallography.operations.orientation.get_op>`_. For a 3x3 matrix instead, call `orientation.get_matrix
 <crystallography.operations.html#crystallography.operations.orientation.get_matrix>`_. In either case, this will give a random rotation consistent with the degrees of freedom. To obtain the exact rotation used when generating the crystal (and avoid the random rotation), pass the parameter angle=0.
 
-There are a few other parameters which may be passed to the class. See the module documentation for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule's mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one molecule is chiral.
+There are a few other parameters which may be passed to the class. See the `module documentation
+<crystallography.molecular_crystal.html>`_ for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule's mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one molecule is chiral.
 
 **2D Molecular Crystals**
 
@@ -174,7 +177,7 @@ In order to make this information more human-readable, the function `ss_string_f
 
    >>> from crystallography.crystal import *
    >>> sg = 35
-   >>> index = index_from_letter(sg)
+   >>> index = index_from_letter('b', sg)
    >>> ops = get_wyckoff_symmetry(sg)[index][0]
    >>> ss_string_from_ops(ops, sg)
    'mm2'

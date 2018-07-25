@@ -284,7 +284,44 @@ molecules</li>
 <em class="property">class </em><code class="descclassname">crystallography.molecular_crystal.</code><code class="descname">mol_site</code><span class="sig-paren">(</span><em>mol</em>, <em>position</em>, <em>sg</em>, <em>wp_index</em>, <em>lattice</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#mol_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.mol_site" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
 <p>Class for storing molecular Wyckoff positions and orientations within
-the molecular_crystal class.</p>
+the molecular_crystal class. Each mol_site object represenents an
+entire Wyckoff position, not necessarily a single molecule.</p>
+<dl class="attribute">
+<dt id="crystallography.molecular_crystal.mol_site.letter">
+<code class="descname">letter</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.mol_site.letter" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Wyckoff letter of the molecule’s Wyckoff position</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="crystallography.molecular_crystal.mol_site.mol">
+<code class="descname">mol</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.mol_site.mol" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Pymatgen molecule object</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="crystallography.molecular_crystal.mol_site.multiplicity">
+<code class="descname">multiplicity</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.mol_site.multiplicity" title="Permalink to this definition">¶</a></dt>
+<dd><p>The multiplicity of the molecule’s Wyckoff position</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="crystallography.molecular_crystal.mol_site.position">
+<code class="descname">position</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.mol_site.position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Relative coordinates of the molecule’s center within the unit cell</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="crystallography.molecular_crystal.mol_site.sg">
+<code class="descname">sg</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.mol_site.sg" title="Permalink to this definition">¶</a></dt>
+<dd><p>The international spacegroup number</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="crystallography.molecular_crystal.mol_site.wp_index">
+<code class="descname">wp_index</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.mol_site.wp_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Single index of the Wyckoff position within the spacegroup</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">

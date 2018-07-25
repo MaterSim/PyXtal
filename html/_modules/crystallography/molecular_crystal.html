@@ -431,20 +431,22 @@
 <div class="viewcode-block" id="mol_site"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.mol_site">[docs]</a><span class="k">class</span> <span class="nc">mol_site</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class for storing molecular Wyckoff positions and orientations within</span>
-<span class="sd">    the molecular_crystal class.</span>
+<span class="sd">    the molecular_crystal class. Each mol_site object represenents an</span>
+<span class="sd">    entire Wyckoff position, not necessarily a single molecule.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">wp_index</span><span class="p">,</span> <span class="n">lattice</span><span class="p">):</span>
-        <span class="c1">#Pymatgen molecule object</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span> <span class="o">=</span> <span class="n">mol</span>
-        <span class="c1">#Relative coordinates within the unit cell</span>
+        <span class="sd">&quot;&quot;&quot;A Pymatgen molecule object&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">position</span>
-        <span class="c1">#Spacegroup number</span>
+        <span class="sd">&quot;&quot;&quot;Relative coordinates of the molecule&#39;s center within the unit cell&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sg</span> <span class="o">=</span> <span class="n">sg</span>
-        <span class="c1">#single index of the Wyckoff position within the spacegroup</span>
+        <span class="sd">&quot;&quot;&quot;The international spacegroup number&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wp_index</span> <span class="o">=</span> <span class="n">wp_index</span>
-        <span class="c1">#letter of the Wyckoff position</span>
+        <span class="sd">&quot;&quot;&quot;Single index of the Wyckoff position within the spacegroup&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">)[</span><span class="n">wp_index</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">letter</span> <span class="o">=</span> <span class="n">letter_from_index</span><span class="p">(</span><span class="n">wp_index</span><span class="p">,</span> <span class="n">sg</span><span class="p">)</span></div>
+        <span class="sd">&quot;&quot;&quot;The multiplicity of the molecule&#39;s Wyckoff position&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">letter</span> <span class="o">=</span> <span class="n">letter_from_index</span><span class="p">(</span><span class="n">wp_index</span><span class="p">,</span> <span class="n">sg</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;The Wyckoff letter of the molecule&#39;s Wyckoff position&quot;&quot;&quot;</span></div>
 
 <div class="viewcode-block" id="molecular_crystal"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal">[docs]</a><span class="k">class</span> <span class="nc">molecular_crystal</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -827,6 +829,7 @@
                         <span class="n">final_site</span> <span class="o">=</span> <span class="p">[]</span>
                         <span class="n">final_number</span> <span class="o">=</span> <span class="p">[]</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">mol_generators</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="sd">&quot;&quot;&quot;A list of mol_site objects which can be used to regenerate the crystal.&quot;&quot;&quot;</span>
 
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
                             <span class="k">for</span> <span class="n">center0</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">wp_index</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">points_total</span><span class="p">,</span> <span class="n">molecular_sites_total</span><span class="p">,</span> <span class="n">wps_total</span><span class="p">):</span>
@@ -1115,7 +1118,7 @@
             <span class="c1">#print(self.radii, minvector)</span>
             <span class="k">for</span> <span class="n">cycle1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max1</span><span class="p">):</span>
                 <span class="c1">#1, Generate a lattice</span>
-                <span class="n">cell_para</span> <span class="o">=</span> <span class="n">generate_lattice_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">minvec</span><span class="o">=</span><span class="n">minvector</span><span class="p">)</span>
+                <span class="n">cell_para</span> <span class="o">=</span> <span class="n">generate_lattice_2D</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">minvec</span><span class="o">=</span><span class="n">minvector</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">cell_para</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>

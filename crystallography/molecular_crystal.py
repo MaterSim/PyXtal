@@ -384,20 +384,22 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
 class mol_site():
     """
     Class for storing molecular Wyckoff positions and orientations within
-    the molecular_crystal class.
+    the molecular_crystal class. Each mol_site object represenents an
+    entire Wyckoff position, not necessarily a single molecule.
     """
     def __init__(self, mol, position, sg, wp_index, lattice):
-        #Pymatgen molecule object
         self.mol = mol
-        #Relative coordinates within the unit cell
+        """A Pymatgen molecule object"""
         self.position = position
-        #Spacegroup number
+        """Relative coordinates of the molecule's center within the unit cell"""
         self.sg = sg
-        #single index of the Wyckoff position within the spacegroup
+        """The international spacegroup number"""
         self.wp_index = wp_index
-        #letter of the Wyckoff position
+        """Single index of the Wyckoff position within the spacegroup"""
         self.multiplicity = len(get_wyckoffs(sg)[wp_index])
+        """The multiplicity of the molecule's Wyckoff position"""
         self.letter = letter_from_index(wp_index, sg)
+        """The Wyckoff letter of the molecule's Wyckoff position"""
 
 class molecular_crystal():
     """
@@ -780,6 +782,7 @@ class molecular_crystal():
                         final_site = []
                         final_number = []
                         self.mol_generators = []
+                        """A list of mol_site objects which can be used to regenerate the crystal."""
 
                         if self.check_atomic_distances is False:
                             for center0, i, wp_index in zip(points_total, molecular_sites_total, wps_total):
