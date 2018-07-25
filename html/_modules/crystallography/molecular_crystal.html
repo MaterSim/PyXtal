@@ -892,7 +892,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Msg2</span></div></div>
 
-<div class="viewcode-block" id="molecular_crystal_2d"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2d">[docs]</a><span class="k">class</span> <span class="nc">molecular_crystal_2d</span><span class="p">():</span>
+<div class="viewcode-block" id="molecular_crystal_2D"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D">[docs]</a><span class="k">class</span> <span class="nc">molecular_crystal_2D</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A 2d counterpart to molecular_crystal. Given a layer group, list of</span>
 <span class="sd">    molecule objects, molecular stoichiometry, and</span>
@@ -996,7 +996,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_crystal</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="molecular_crystal_2d.Msgs"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2d.Msgs">[docs]</a>    <span class="k">def</span> <span class="nf">Msgs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="molecular_crystal_2D.Msgs"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D.Msgs">[docs]</a>    <span class="k">def</span> <span class="nf">Msgs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Msg1</span> <span class="o">=</span> <span class="s1">&#39;Error: the stoichiometry is incompatible with the wyckoff sites choice&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Msg2</span> <span class="o">=</span> <span class="s1">&#39;Error: failed in the cycle of generating structures&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Msg3</span> <span class="o">=</span> <span class="s1">&#39;Warning: failed in the cycle of adding species&#39;</span>
@@ -1004,7 +1004,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">Msg5</span> <span class="o">=</span> <span class="s1">&#39;Finishing: added the specie&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Msg6</span> <span class="o">=</span> <span class="s1">&#39;Finishing: added the whole structure&#39;</span></div>
 
-<div class="viewcode-block" id="molecular_crystal_2d.get_orientations"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2d.get_orientations">[docs]</a>    <span class="k">def</span> <span class="nf">get_orientations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="molecular_crystal_2D.get_orientations"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D.get_orientations">[docs]</a>    <span class="k">def</span> <span class="nf">get_orientations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculates the valid orientations for each Molecule and Wyckoff</span>
 <span class="sd">        position. Returns a list with 4 indices:</span>
@@ -1035,7 +1035,7 @@
                     <span class="k">else</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span></div>
 
-<div class="viewcode-block" id="molecular_crystal_2d.check_compatible"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2d.check_compatible">[docs]</a>    <span class="k">def</span> <span class="nf">check_compatible</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="molecular_crystal_2D.check_compatible"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D.check_compatible">[docs]</a>    <span class="k">def</span> <span class="nf">check_compatible</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Checks if the number of molecules is compatible with the Wyckoff</span>
 <span class="sd">        positions. Considers the number of degrees of freedom for each Wyckoff</span>
@@ -1086,7 +1086,7 @@
 
         <span class="k">return</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="molecular_crystal_2d.generate_crystal"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2d.generate_crystal">[docs]</a>    <span class="k">def</span> <span class="nf">generate_crystal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max1</span><span class="o">=</span><span class="n">max1</span><span class="p">,</span> <span class="n">max2</span><span class="o">=</span><span class="n">max2</span><span class="p">,</span> <span class="n">max3</span><span class="o">=</span><span class="n">max3</span><span class="p">):</span>
+<div class="viewcode-block" id="molecular_crystal_2D.generate_crystal"><a class="viewcode-back" href="../../crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D.generate_crystal">[docs]</a>    <span class="k">def</span> <span class="nf">generate_crystal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max1</span><span class="o">=</span><span class="n">max1</span><span class="p">,</span> <span class="n">max2</span><span class="o">=</span><span class="n">max2</span><span class="p">,</span> <span class="n">max3</span><span class="o">=</span><span class="n">max3</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The main code to generate a random molecular crystal. If successful,</span>
 <span class="sd">        stores a pymatgen.core.structure object in self.struct and sets</span>

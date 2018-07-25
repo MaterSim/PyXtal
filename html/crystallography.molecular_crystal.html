@@ -450,8 +450,8 @@ multiplicity.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d">
-<em class="property">class </em><code class="descclassname">crystallography.molecular_crystal.</code><code class="descname">molecular_crystal_2d</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D">
+<em class="property">class </em><code class="descclassname">crystallography.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
 <p>A 2d counterpart to molecular_crystal. Given a layer group, list of
 molecule objects, molecular stoichiometry, and
@@ -491,52 +491,52 @@ turned off</li>
 </tbody>
 </table>
 <dl class="method">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.Msgs">
-<code class="descname">Msgs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2d.Msgs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.Msgs" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.Msgs">
+<code class="descname">Msgs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2D.Msgs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.Msgs" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.PBC">
-<code class="descname">PBC</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.PBC" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.PBC">
+<code class="descname">PBC</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.PBC" title="Permalink to this definition">¶</a></dt>
 <dd><p>The axis (between 1 and 3) which is not periodic.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.allow_inversion">
-<code class="descname">allow_inversion</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.allow_inversion" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.allow_inversion">
+<code class="descname">allow_inversion</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.allow_inversion" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether or not to allow chiral molecules to be inverted.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.boxes">
-<code class="descname">boxes</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.boxes" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.boxes">
+<code class="descname">boxes</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.boxes" title="Permalink to this definition">¶</a></dt>
 <dd><p>A list of bounding boxes for each molecule. Used for estimating
 volume of the unit cell.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.check_atomic_distances">
-<code class="descname">check_atomic_distances</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.check_atomic_distances" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.check_atomic_distances">
+<code class="descname">check_atomic_distances</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.check_atomic_distances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether or not inter-atomic distances are checked at each step.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.check_compatible">
-<code class="descname">check_compatible</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2d.check_compatible"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.check_compatible" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.check_compatible">
+<code class="descname">check_compatible</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2D.check_compatible"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.check_compatible" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the number of molecules is compatible with the Wyckoff
 positions. Considers the number of degrees of freedom for each Wyckoff
 position, and makes sure at least one valid combination of WP’s exists.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.factor">
-<code class="descname">factor</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.factor" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.factor">
+<code class="descname">factor</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.factor" title="Permalink to this definition">¶</a></dt>
 <dd><p>The supplied volume factor for the unit cell.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.generate_crystal">
-<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=30</em>, <em>max2=30</em>, <em>max3=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2d.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.generate_crystal" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.generate_crystal">
+<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=30</em>, <em>max2=30</em>, <em>max3=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2D.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.generate_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>The main code to generate a random molecular crystal. If successful,
 stores a pymatgen.core.structure object in self.struct and sets
 self.valid to True. If unsuccessful, sets self.valid to False and
@@ -557,8 +557,8 @@ outputs an error message.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.get_orientations">
-<code class="descname">get_orientations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2d.get_orientations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.get_orientations" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.get_orientations">
+<code class="descname">get_orientations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/crystallography/molecular_crystal.html#molecular_crystal_2D.get_orientations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.get_orientations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the valid orientations for each Molecule and Wyckoff
 position. Returns a list with 4 indices:</p>
 <p>index 1: the molecular prototype’s index within self.molecules</p>
@@ -571,61 +571,61 @@ self.wyckoffs[j][k]</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.lgp">
-<code class="descname">lgp</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.lgp" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.lgp">
+<code class="descname">lgp</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.lgp" title="Permalink to this definition">¶</a></dt>
 <dd><p>The number (between 1 and 80) for the crystal’s layer group.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.molecules">
-<code class="descname">molecules</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.molecules" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.molecules">
+<code class="descname">molecules</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.molecules" title="Permalink to this definition">¶</a></dt>
 <dd><p>A list of pymatgen.core.structure.Molecule objects, symmetrized and
 oriented along their symmetry axes.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.numMols">
-<code class="descname">numMols</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.numMols" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.numMols">
+<code class="descname">numMols</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.numMols" title="Permalink to this definition">¶</a></dt>
 <dd><p>The number of each type of molecule in the CONVENTIONAL cell</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.radii">
-<code class="descname">radii</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.radii" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.radii">
+<code class="descname">radii</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.radii" title="Permalink to this definition">¶</a></dt>
 <dd><p>A list of approximated radii for each molecule type. Used for
 checking inter-molecular distances.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.sg">
-<code class="descname">sg</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.sg" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.sg">
+<code class="descname">sg</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.sg" title="Permalink to this definition">¶</a></dt>
 <dd><p>The number (between 1 and 230) for the international spacegroup.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.thickness">
-<code class="descname">thickness</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.thickness" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.thickness">
+<code class="descname">thickness</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.thickness" title="Permalink to this definition">¶</a></dt>
 <dd><p>the thickness, in Angstroms, of the unit cell in the 3rd
 dimension.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.valid_orientations">
-<code class="descname">valid_orientations</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.valid_orientations" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.valid_orientations">
+<code class="descname">valid_orientations</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.valid_orientations" title="Permalink to this definition">¶</a></dt>
 <dd><p>The valid orientations for each molecule and Wyckoff position.
 May be copied when generating a new molecular_crystal to save a
 small amount of time</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.volume">
-<code class="descname">volume</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.volume" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.volume">
+<code class="descname">volume</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.volume" title="Permalink to this definition">¶</a></dt>
 <dd><p>The volume of the generated unit cell</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="crystallography.molecular_crystal.molecular_crystal_2d.wyckoffs">
-<code class="descname">wyckoffs</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2d.wyckoffs" title="Permalink to this definition">¶</a></dt>
+<dt id="crystallography.molecular_crystal.molecular_crystal_2D.wyckoffs">
+<code class="descname">wyckoffs</code><em class="property"> = None</em><a class="headerlink" href="#crystallography.molecular_crystal.molecular_crystal_2D.wyckoffs" title="Permalink to this definition">¶</a></dt>
 <dd><p>The Wyckoff positions for the crystal’s spacegroup. Sorted by
 multiplicity.</p>
 </dd></dl>

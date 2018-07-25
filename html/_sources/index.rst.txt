@@ -36,7 +36,9 @@ This will install the module. The code can be used within Python via
 
 Usage
 ===========================================
-The package's main modules are crystal.py and molecular_crystal.py. These modules contain functions for generating atomic and molecular crystals, respectively. These modules can be run as scripts via
+The package's main modules are `crystal.py
+<crystallography.crystal.html>`_ and `molecular_crystal.py
+<crystallography.molecular_crystal.html>`_. These modules contain functions for generating 3d atomic and molecular crystals, respectively. These modules can be run as scripts via
 
 ``python -m crystallography.crystal``
 
@@ -50,7 +52,8 @@ As scripts, these modules will generate 3d crystals with a given space group, st
 
 **Atomic 3d Crystals**
 
-The main function for generating and storing crystals is crystal.random_crystal. Here is a simple example of a carbon crystal:
+The main function for generating and storing crystals is `crystal.random_crystal
+<crystallography.crystal.html#crystallography.crystal.random_crystal>`_. Here is a simple example of a carbon crystal:
 
 .. code-block:: python
 
@@ -65,14 +68,14 @@ This would create a crystal structure with space group 225, 3 carbon atoms in th
 
 would create a random BaTiO3 crystal.
 
-The geometric properties of the crystal are stored in my_crystal.struct, which is a pymatgen.core.structures.Structure object. `Click here
-<http://pymatgen.org/pymatgen.core.structure.html#module-pymatgen.core.structure>`_ for more information about the class. You can print my_crystal.struct directly to view the lattice vectors and atomic positions, or you can output the information using
+If the generation is successful, the value my_crystal.valid will be set to True; otherwise, it will be False. The geometric properties of the crystal are stored in my_crystal.struct, which is a `pymatgen.core.structure.Structure
+<http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure>`_ object. You can print my_crystal.struct directly to view the lattice vectors and atomic positions, or you can output the information using
 
 .. code-block:: python
 
    my_crystal.struct.to(filename='myfile',fmt='cif')
 
-This will create a file called myfile.cif, which stores the structure information. Other file types are supported by changing the value of fmt: pymatgen also supports 'poscar', 'cssr', and 'json'.
+This will create a file called myfile.cif, which stores the structure information. Other file types are supported by changing the value of fmt to 'poscar', 'cssr', or 'json'.
 
 **Understanding the Parameters**
 
@@ -82,36 +85,101 @@ There are 230 types of space groups (with International number between 1 and 230
 
 Note that the input number of atoms is for the primitive unit cell, while the output uses the conventional unit cell. This means that for some space groups, the number of atoms in the output structure will be multiplied by 2, 3, or 4 compared to the input. Specifically, space groups beginning with "A", "C" or "I" have twice as many atoms in the conventional cell, space groups beginning with "R" have 3 times as many, and space groups beginning with "F" have 4 times as many. Keep this in mind when choosing a range of stoichiometries and space groups to generate.
 
-The function works by attempting to insert atoms into different patterns (Wyckoff positions) within the unit cell. If a set of inserted atoms is too close together, it will be merged into a different Wyckoff position. Because each Wyckoff position can only hold a set number of atoms, not all stoichiometries will work with all space groups. In this case, the package will output a warning message, and will not attempt to generate the crystal. However, some parameter sets are still difficult or impossible to generate. If the atoms are still too close together after a set number of attempts, the generation will fail, and random_crystal.valid will be set to False.
+The function works by attempting to insert atoms into different Wyckoff positions within the unit cell. If a set of inserted atoms is too close together, it will be merged into a lower-multiplicity position. Because each Wyckoff position can only hold a set number of atoms, not all stoichiometries will work with all space groups. In this case, the package will output a warning message, and will not attempt to generate the crystal. Even if the stoichiometry is technically compatible, some parameter sets may still be difficult or impossible to generate. If the atoms are still too close together after a set number of attempts, the generation will fail, and random_crystal.valid will be set to False.
 
-If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should thus be used to determine an appropriate value. Typically, a value between 1 and 10 should suffice.
+If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1 and 10 should suffice.
 
 **2D atomic Crystals**
 
-To generate a 2d crystal, use the class crystal.random_crystal_2D. For example,
+(NOTE: Currently under development; results may not be valid)
+
+To generate a 2d crystal, use the class `crystal.random_crystal_2D
+<crystallography.crystal.html#crystallography.crystal.random_crystal_2D>`_. For example,
 
 .. code-block:: python
 
    from crystallography.crystal import random_crystal
    my_crystal = random_crystal_2D(20, ['C'], [4], 2.0, 2.5)
 
-will generate a 2d crystal with layer group 20, 4 carbon atoms in the primitive cell, a thickness of 2.0 Angstroms, and a volume factor of 2.5. As with 3d crystals, for crystals with multiple atom types, you may replace ['C'] and [4] with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. Thus, it is not recommended to store the structure in a .cif or POSCAR file without software for handling 2d crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; a value of 1, 2, or 3 corresponds to the x, y, or z axis, respectively.
+will generate a 2d crystal with layer group 20, 4 carbon atoms in the primitive cell, a thickness of 2.0 Angstroms, and a volume factor of 2.5. As with the 3d case, for crystals with multiple atom types, you may replace ['C'] and [4] with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. Thus, it is not recommended to store the structure in a .cif or POSCAR file without software specifically designed to handling 2d crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; a value of 1, 2, or 3 corresponds to the x, y, or z axis, respectively.
 
 Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see `the International Tables of Crystallography, Volume E, part 4
-<http://it.iucr.org/Eb/contents/>_.
+<http://it.iucr.org/Eb/ch4o1v0001/contents/>`_.
 
 Note that changing the volume factor will not change the thickness of the output crystal. So, if you are testing over a range of volume factors, consider how the shape of the unit cell will be affected, and change the thickness accordingly.
 
 **Molecular 3d Crystals**
-TODO: Finish documentation for remaining functions. Place tutorial in a separate html file
+
+Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with molecules. The molecules may either be strings for the chemical composition, or `pymatgen.core.structure.Molecule
+<http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule>`_ objects. The generating class is `molecular_crystal.molecular_crystal
+<crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal>`_:
 
 .. code-block:: python
 
    from crystallography.molecular_crystal import molecular_crystal
-   my_crystal = molecular_crystal(225, ['C'], [3], 8.0)
+   my_crystal = molecular_crystal(36, ['H2O'], [4], 8.0)
 
-**Resources**
-TODO: Add list of learning and further reading materials for space groups, Wyckoff positions, 2d crystals, etc.
+This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 8. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
+
+Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The molecular_crystal class handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric.
+
+Like atomic crystals, the atomic positions may be accessed with the struct attribute. However, for accessing the positions and orientations of the molecules themselves, there is an attribute called mol_generators. This provides a list of the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit, and can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule's center of mass.
+
+The orientations stored in the mol_generator class are members of the `operations.orientation
+<crystallography.operations.html#crystallography.operations.orientation>`_ class. A molecule in a Wyckoff position may be allowed to rotate about a certain axis, allowed to rotate freely, or may be rigidly constrained. This information is stored in the orientation class. To obtain a SymmOp which can be applied to the molecule, and which is consistent with the geometric constraints, call `orientation.get_op
+<crystallography.operations.html#crystallography.operations.orientation.get_op>`_. For a 3x3 matrix instead, call `orientation.get_matrix
+<crystallography.operations.html#crystallography.operations.orientation.get_matrix>`_. In either case, this will give a random rotation consistent with the degrees of freedom. To obtain the exact rotation used when generating the crystal (and avoid the random rotation), pass the parameter angle=0.
+
+There are a few other parameters which may be passed to the class. See the module documentation for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule's mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one molecule is chiral.
+
+**2D Molecular Crystals**
+
+(NOTE: Currently under development; results may be not be valid)
+
+2d Molecular crystals are generated using the class `molecular_crystal.molecular_crystal_2D
+<crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D>`_:
+
+.. code-block:: python
+
+   from crystallography.crystal import random_crystal
+   my_crystal = molecular_crystal_2D(20, ['H2O'], [4], 2.0, 2.5)
+
+Here, the parameters correspond to those for `random_crystal_2D
+<crystallography.crystal.html#crystallography.crystal.random_crystal_2D>`_, except the atoms are again replaced with molecules. The additional options available for `molecular_crystal
+<crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal>`_ are also available for `molecular_crystal_2D
+<crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D>`_.
+
+Because molecules have a certain thickness of their own, care should be used when choosing a thickness value. Currently, the thickness parameter only determines where the molecular centers of mass can be, so the final crystal may have individual atoms outside of this range.
+
+**Wyckoff Positions**
+
+The package has several utilities for working with Wyckoff positions and their symmetries. Most of these functions are found within the `crystal
+<crystallography.crystal.html>`_ module.
+
+The main function is `get_wyckoffs(sg)
+<crystallography.crystal.html#crystallography.crystal.get_wyckoffs>`_, where sg is the international space group of interest. This will return a list of Wyckoff positions for the space group, with the 0th list element being the general Wyckoff position, and the remaining elements being the special Wyckoff positions. Each of the Wyckoff positions is, in turn, a list of symmetry operations (`pymatgen.core.operations.SymmOp
+<http://pymatgen.org/pymatgen.core.operations.html#pymatgen.core.operations.SymmOp>`_). These symmetry operations can be applied to 3d vectors using op.operate(vector), or can be composed together via multiplication: op3 = op1 * op2. Each SymmOp consists of a rotation matrix (op.rotation_matrix) and a translation vector (op.translation), and is represented by a 4x4 affine matrix (op.affine_matrix).
+
+A Wyckoff position is typically denoted with a number-letter combination, depending on its multiplicity. For example, for space group 16 (P222), the general Wyckoff position is called "4u". This is because the position has a multiplicity of 4, and the letters a-t are used by special Wyckoff positions. If you know the letter of a Wyckoff position, you can obtain its index within a get_wyckoffs(sg) list using the function `index_from_letter(letter, sg)
+<crystallography.crystal.html#crystallography.crystal.index_from_letter>`_. Likewise, if you know the index, you can obtain the letter using `letter_from_index(index, sg)
+<crystallography.crystal.html#crystallography.crystal.letter_from_index>`_. An example is provided below.
+
+For a given space group, each Wyckoff position is a subgroup of the general Wyckoff position. Furthermore, the Wyckoff position occupied by a given structure is determined by the symmetry of that structure with respect to the crystal as a whole. Naturally, each Wyckoff position requires some symmetry for an atom or molecule to occupy it. This symmetry can be accessed using `get_wyckoff_symmetry(sg)
+<crystallography.crystal.html#crystallography.crystal.get_wyckoff_symmetry>`_. This returns a nested list, where the first index specifies a Wyckoff position, the second index specifies a point within that Wyckoff position, and the third index specifies a list of symmetry operations corresponding to that point. This list of operations can then be used to check whether a given molecule is consistent with a given Wyckoff position.
+
+In order to make this information more human-readable, the function `ss_string_from_ops(ops, sg)
+<crystallography.crystal.html#crystallography.crystal.ss_string_from_ops>`_ can be used to generate a Hermann-Mauguin symbol for a given point group. Here, ops is a list of symmetry options, and sg is the international spacegroup number. So, for example, if we wanted to know the site symmetry of the Wyckoff position 2b in space group 35, we could use:
+
+.. code-block:: python
+
+   >>> from crystallography.crystal import *
+   >>> sg = 35
+   >>> index = index_from_letter(sg)
+   >>> ops = get_wyckoff_symmetry(sg)[index][0]
+   >>> ss_string_from_ops(ops, sg)
+   'mm2'
+
+In this example, 'mm2' denotes mirror planes accross the x and y axes, and a 2-fold rotation about the z axis. Note that in Hermann-Mauguin notation, the symbols do not always follow this x,y,z format. For more information on reading these symbols, see https://en.wikipedia.org/wiki/Hermann%E2%80%93Mauguin_notation.
 
 .. toctree::
    :maxdepth: 2
