@@ -990,6 +990,7 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    #Store the non-periodic axis
     PBC = P[-1]
     maxangle = pi-minangle
     abc = np.ones([3])
@@ -1000,49 +1001,87 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
         if sg <= 2:
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
-            f = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
-            abc[2] = abc[2]/f #scale thickness by outer product of vectors
-            ab = volume/(abc[2]*f)
+            x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
+            abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
+            ab = volume/(abc[PBC-1]*x)
             ratio = a/b
-            abc[0] = sqrt(ab*ratio)
-            abc[1] = sqrt(ab/ratio)
+            if PBC == 3:
+                abc[0] = sqrt(ab*ratio)
+                abc[1] = sqrt(ab/ratio)
+            elif PBC == 2:
+                abc[0] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
+            elif PBC == 1:
+                abc[1] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
 
         #Monoclinic
         elif sg <= 15:
-            if P[-1] == 3:
-                gamma = gaussian(minangle, maxangle)
-                f = sin(gamma)
-            elif P[-1] == 2:
-                beta = gaussian(minangle, maxangle)
-                f = sin(beta)
-            elif P[-1] == 1:
-                alpha = gaussian(minangle, maxangle)
-                f = sin(alpha)
             a, b, c = random_vector()
-            ab = volume/(abc[2]*f)
+            if PBC == 3:
+                gamma = gaussian(minangle, maxangle)
+                x = sin(gamma)
+            elif PBC == 2:
+                beta = gaussian(minangle, maxangle)
+                x = sin(beta)
+            elif PBC == 1:
+                alpha = gaussian(minangle, maxangle)
+                x = sin(alpha)
+            ab = volume/(abc[PBC-1]*x)
             ratio = a/b
-            abc[0] = sqrt(ab*ratio)
-            abc[1] = sqrt(ab/ratio)
+            if PBC == 3:
+                abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
+                ab = volume/(thickness)
+                abc[0] = sqrt(ab*ratio)
+                abc[1] = sqrt(ab/ratio)
+            elif PBC == 2:
+                abc[0] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
+            elif PBC == 1:
+                abc[1] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
         elif sg <= 74:
             vec = random_vector()
-            #ratio = sqrt(volume*vec[2]/abc[2])
-            #abc[0]=vec[0]*ratio
-            #abc[1]=vec[1]*ratio
-            ratio = abs(vec[0]/vec[1]) #ratio a/b
-            abc[1] = sqrt(volume/(thickness*ratio))
-            abc[0] = abc[1]* ratio
+            if PBC == 3:
+                ratio = abs(vec[0]/vec[1]) #ratio a/b
+                abc[1] = sqrt(volume/(thickness*ratio))
+                abc[0] = abc[1]* ratio
+            elif PBC == 2:
+                ratio = abs(vec[0]/vec[2]) #ratio a/b
+                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[0] = abc[2]* ratio
+            elif PBC == 1:
+                ratio = abs(vec[1]/vec[2]) #ratio a/b
+                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[1] = abc[2]* ratio
 
         #Tetragonal
         elif sg <= 142:
-            abc[0] = abc[1] = sqrt(volume/abc[2])
+            if PBC == 3:
+                abc[0] = abc[1] = sqrt(volume/thickness)
+            elif PBC == 2:
+                abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
+                abc[0] = abc[1]
+                abc[2] = volume/(abc[PBC-1]**2)
+            elif PBC == 1:
+                abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
+                abc[1] = abc[0]
+                abc[2] = volume/(abc[PBC-1]**2)
 
         #Trigonal/Rhombohedral/Hexagonal
         elif sg <= 194:
             gamma = pi/3*2
             x = sqrt(3.)/2.
-            abc[0] = abc[1] = sqrt((volume/x)/abc[2])
+            if PBC == 3:
+                abc[0] = abc[1] = sqrt((volume/x)/abc[PBC-1])
+            elif PBC == 2:
+                abc[0] = abc[1]
+                abc[2] = (volume/x)(thickness**2)
+            elif PBC == 1:
+                abc[1] = abc[0]
+                abc[2] = (volume/x)/(thickness**2)
 
         para = np.array([abc[0], abc[1], abc[2], alpha, beta, gamma])
         para1 = deepcopy(para)
