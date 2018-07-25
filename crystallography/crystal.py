@@ -969,7 +969,7 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
 
-def generate_lattice_2d(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -1791,7 +1791,7 @@ class random_crystal_2D():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice_2d(self.sg, self.volume, self.thickness, self.P, minvec=minvector)
+                cell_para = generate_lattice_2D(self.sg, self.volume, self.thickness, self.P, minvec=minvector)
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
