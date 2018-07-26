@@ -282,6 +282,11 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
                 print("---------------------")
                 for p in points:
                     print(p)
+                print("Generators:")
+                print("---------------------")
+                for gen in generators:
+                    print(gen.as_xyz_string())
+                sys.exit(0)
                 return False
         elif len(new) > 1:
             #Check that points are correctly generated
@@ -298,6 +303,11 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
             print("---------------------")
             for p in points:
                 print(p)
+            print("Generators:")
+            print("---------------------")
+            for gen in generators:
+                print(gen.as_xyz_string())
+            sys.exit(0)
             return False
     print("Unexpected error in check_wyckoff_position_molecular.")
     return False

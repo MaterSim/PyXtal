@@ -111,13 +111,13 @@ def filtered_coords(coords, PBC=None):
     new_coords = coords0 - np.floor(coords0)
     if PBC is not None:
         if len(new_coords.shape) == 2:
-            for x in range(1, 4):
-                if x != PBC:
-                    new_coords[:,x-1] = coords0[:,x-1]
+            for x in range(0, 3):
+                if x == PBC-1:
+                    new_coords[:,x] = coords0[:,x]
         elif len(new_coords.shape) == 1:
-            for x in range(1, 4):
-                if x != PBC:
-                    new_coords[x-1] = coords0[x-1]
+            for x in range(0, 3):
+                if x == PBC-1:
+                    new_coords[x] = coords0[x]
         else:
             print("Warning: invalid array dimensions for filtered_coords. Shape: "+str(new_coords.shape))
             return coords
@@ -1084,13 +1084,12 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
                 abc[2] = (volume/x)/(thickness**2)
 
         para = np.array([abc[0], abc[1], abc[2], alpha, beta, gamma])
-        para1 = deepcopy(para)
+        return para
+        '''para1 = deepcopy(para)
         for axis in [0,1,2]:
             para1[axis] = para[P[axis]-1]
             para1[axis+3] = para[P[axis]+2]
-        #print('before: ', para)
-        #print('after : ', para1)
-        return para1
+        return para1'''
 
     #If maxattempts tries have been made without success
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
@@ -1357,9 +1356,9 @@ def find_generating_point(coords, generators, PBC=None):
      """
     for coord in coords:
         generated = list(gen.operate(coord) for gen in generators)
-        generated = filtered_coords(generated, PBC=PBC)
+        generated = filtered_coords(generated, PBC=None)
         tmp_c = deepcopy(coords)
-        tmp_c = filtered_coords(tmp_c, PBC=PBC)
+        tmp_c = filtered_coords(tmp_c, PBC=None)
         index_list1 = list(range(len(tmp_c)))
         index_list2 = list(range(len(generated)))
         if len(generated) != len(tmp_c):
@@ -1378,6 +1377,9 @@ def find_generating_point(coords, generators, PBC=None):
         if index_list1 == [] and index_list2 == []:
             return coord
     #If no valid coordinate is found
+    print("-----------------")
+    for c in generated:
+        print(c)
     return None
 
 def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None, PB=None):
