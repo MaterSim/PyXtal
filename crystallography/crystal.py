@@ -485,7 +485,7 @@ def distance(xyz, lattice, PBC=None):
     Returns:
         a scalar for the distance of the point from the origin
     """
-    xyz = xyz - np.round(xyz)
+    xyz = filtered_coords(xyz, PBC=PBC)
     matrix = create_matrix(PBC=PBC)
     matrix += xyz
     matrix = np.dot(matrix, lattice)
@@ -528,7 +528,6 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor
             coord = np.dot(coord, lattice)
             d_min = np.min(cdist(coord, coord2))
             tol = d_factor*0.5*(Element(element).covalent_radius + Element(specie2).covalent_radius)
-            #print(d_min, tol)
             if d_min < tol:
                 return False
         return True
@@ -550,6 +549,7 @@ def get_center(xyzs, lattice, PBC=None):
     """
     matrix0 = create_matrix(PBC=PBC)
     xyzs -= np.round(xyzs)
+    matrix_min = [0,0,0]
     for atom1 in range(1,len(xyzs)):
         dist_min = 10.0
         for atom2 in range(0, atom1):
@@ -648,8 +648,6 @@ def Permutation(lattice, coor, PB):
         para1[axis] = para[PB[axis]-1]
         para1[axis+3] = para[PB[axis]+2]
         coor1[:,axis] = coor[:,PB[axis]-1]
-    #print('before permutation: ', para)
-    #print('after permutation: ', para1)
     return para2matrix(para1), coor1
 
 def matrix2para(matrix, radians=True):
@@ -745,17 +743,12 @@ def find_short_dist(coor, lattice, tol, PBC=None):
                 pairs.append([i1,i2,dist])
     pairs = np.array(pairs)
     if len(pairs) > 0:
-        #print('--------', dists <= (min(dists) + 0.1))
         d_min = min(pairs[:,-1]) + 1e-3
         sequence = [pairs[:,-1] <= d_min]
-        #print(sequence)
         pairs = pairs[sequence]
-        #print(pairs)
-        #print(len(coor))
         for pair in pairs:
             pair0=int(pair[0])
             pair1=int(pair[1])
-            #print(pair0, pair1, len(graph))
             graph[pair0].append(pair1)
             graph[pair1].append(pair0)
 
@@ -833,7 +826,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=None):
         returns the original coordinates and False
     """
     while True:
-        pairs, graph = find_short_dist(coor, lattice, tol)
+        pairs, graph = find_short_dist(coor, lattice, tol, PBC=PBC)
         index = None
         if len(pairs)>0:
             if len(coor) > len(wyckoff[-1][0]):
@@ -849,7 +842,6 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=None):
                     coor = merged
 
             else:#no way to merge
-                #print('no way to Merge, FFFFFFFFFFFFFFFFFFFFFFF----------------')
                 return coor, False
         else:
             if index is None:
@@ -963,8 +955,6 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             and a/b<max_ratio and a/c<max_ratio and b/c<max_ratio
             and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
                 return np.array([a, b, c, alpha, beta, gamma])
-            #else:
-                #print([a, b, c, maxvec, minvec, maxvec*minvec*minvec])
     #If maxattempts tries have been made without success
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
@@ -1104,7 +1094,7 @@ def choose_wyckoff(wyckoffs, number):
         2) We prefer positions with large multiplicity.
 
     Args:
-        wyckoffs: an unsorted list of Wyckoff positions
+        wyckoffs: an organized list of Wyckoff positions
         number: the number of atoms still needed in the unit cell
 
     Returns:
@@ -1161,8 +1151,6 @@ def get_wyckoffs(sg, organized=False, PB=None):
     """
     if PB is not None:
         coor = [0,0,0]
-        #coor[0] = 0.5
-        #print(coor[0], coor[1], coor[2])
         coor[PB[-1]-1] = 0.5
         coor = np.array(coor)
 
@@ -1173,7 +1161,7 @@ def get_wyckoffs(sg, organized=False, PB=None):
             op = SymmOp.from_xyz_string(x[0])
             coor1 = op.operate(coor)
             if abs(coor1[PB[-1]-1]-0.5) < 1e-2:
-                #print('invalid wyckoffs for layer group: ', x[0], coor, coor1)
+                #invalid wyckoffs for layer group
                 wyckoffs.append([])
                 for y in x:
                     wyckoffs[-1].append(SymmOp.from_xyz_string(y))
@@ -1258,8 +1246,6 @@ def get_wyckoff_generators(sg, PB=None):
     """
     if PB is not None:
         coor = [0,0,0]
-        #coor[0] = 0.5
-        #print(coor[0], coor[1], coor[2])
         coor[PB[-1]-1] = 0.5
         coor = np.array(coor)
 
@@ -1270,7 +1256,7 @@ def get_wyckoff_generators(sg, PB=None):
             op = SymmOp.from_xyz_string(x[0])
             coor1 = op.operate(coor)
             if abs(coor1[PB[-1]-1]-0.5) < 1e-2:
-                #print('invalid generators for layer group: ', x[0], coor, coor1)
+                #invalid generators for layer group
                 generators.append([])
                 for y in x:
                     generators[-1].append(SymmOp.from_xyz_string(y))
@@ -1354,11 +1340,12 @@ def find_generating_point(coords, generators, PBC=None):
         a fractional coordinate [x, y, z] corresponding to the first listed
         point in the Wyckoff position
      """
+    #filtered = filtered_coords(coords)
     for coord in coords:
-        generated = list(gen.operate(coord) for gen in generators)
-        generated = filtered_coords(generated, PBC=None)
         tmp_c = deepcopy(coords)
         tmp_c = filtered_coords(tmp_c, PBC=None)
+        generated = list(gen.operate(coord) for gen in generators)
+        generated = filtered_coords(generated, PBC=None)
         index_list1 = list(range(len(tmp_c)))
         index_list2 = list(range(len(generated)))
         if len(generated) != len(tmp_c):
@@ -1369,17 +1356,13 @@ def find_generating_point(coords, generators, PBC=None):
         for index1, c1 in enumerate(tmp_c):
             for index2, c2 in enumerate(generated):
                 if np.allclose(c1, c2, atol=.001, rtol=.001):
-                    if index1 in index_list1:
+                    if index1 in index_list1 and index2 in index_list2:
                         index_list1.remove(index1)
-                    if index2 in index_list2:
                         index_list2.remove(index2)
-                    break
-        if index_list1 == [] and index_list2 == []:
+                        break
+        if index_list2 == []:
             return coord
     #If no valid coordinate is found
-    print("-----------------")
-    for c in generated:
-        print(c)
     return None
 
 def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None, PB=None):
@@ -1454,13 +1437,19 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     #If multiple WP's are found
     else:
         #Check that points are generated from generators
-        allgen = get_wyckoff_generators(sg, PB=PB)
+        allgen = get_wyckoffs(sg, PB=PB)
         for i in possible:
             generators = allgen[i]
             p = find_generating_point(points, generators, PBC=PBC)
             if p is not None:
                 return i
         print("Error: Could not generate Wyckoff position from generators")
+        print("Suspected Wyckoff positions:")
+        for i in possible:
+            print(letter_from_index(i, sg))
+        print("Provided points:")
+        for c in points:
+            print(c)
         return False
 
 def verify_distances(coordinates, species, lattice, factor=1.0, PBC=None):
@@ -1578,7 +1567,7 @@ class random_crystal():
         if has_freedom:
             return True
         else:
-            #print("Warning: Wyckoff Positions have no degrees of freedom.")
+            #Wyckoff Positions have no degrees of freedom
             return 0
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
@@ -1639,13 +1628,11 @@ class random_crystal():
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
                                     point = np.random.random(3)
-                                    #print('generating new points:', point)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #merge_coordinate if the atoms are close
                                     coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
                                     if good_merge is not False:
                                         coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                        #print('existing: ', coordinates_tmp)
                                         if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
                                             coordinates_tmp.append(coords_toadd)
                                             sites_tmp.append(specie)
@@ -1659,7 +1646,6 @@ class random_crystal():
                                 break  #need to repeat from the 1st species
 
                         if numIon_added == numIon:
-                            #print(self.Msg6)
                             good_structure = True
                             break
                         else: #reset the coordinates and sites
@@ -1802,7 +1788,7 @@ class random_crystal_2D():
         if has_freedom:
             return True
         else:
-            #print("Warning: Wyckoff Positions have no degrees of freedom.")
+            #Wyckoff Positions have no degrees of freedom
             return 0
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
@@ -1851,16 +1837,14 @@ class random_crystal_2D():
                         #Now we start to add the specie to the wyckoff position
                         for cycle3 in range(max3):
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                            ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
+                            ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added)
                             if ops is not False:
-            	    	    #Generate a list of coords from ops
+                	    	    #Generate a list of coords from ops
                                 point = np.random.random(3)
-                                #print('generating new points:', point)
                                 coords = np.array([op.operate(point) for op in ops])
                                 coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC, PB=self.PB)
-                                if good_merge:
+                                if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
-                                    #print('Adding: ', coords_toadd)
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
                                         coordinates_tmp.append(coords_toadd)
                                         sites_tmp.append(specie)
@@ -1873,7 +1857,6 @@ class random_crystal_2D():
                             break  #need to repeat from the 1st species
 
                     if numIon_added == numIon:
-                        #print(self.Msg6)
                         good_structure = True
                         break
                     else: #reset the coordinates and sites
@@ -1892,12 +1875,7 @@ class random_crystal_2D():
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    #print('before:  ', final_coor)
                     final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
-                    #print('cell:  ', matrix2para(final_lattice))
-                    #print(final_lattice)
-                    #print(self.PB)
-                    #print('length: ',len(self.wyckoffs)) 
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
