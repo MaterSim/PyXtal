@@ -803,7 +803,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=None):
+def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -835,7 +835,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=None):
                 for group in groups:
                     merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
-                index = check_wyckoff_position(merged, sg, exact_translation=False, PBC=PBC, PB=PB)
+                index = check_wyckoff_position(merged, sg, exact_translation=False, PBC=PBC)
                 if index is False:
                     return coor, False
                 else:
@@ -845,7 +845,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None, PB=None):
                 return coor, False
         else:
             if index is None:
-                index = check_wyckoff_position(coor, sg, exact_translation=False, PBC=PBC, PB=PB)
+                index = check_wyckoff_position(coor, sg, exact_translation=False, PBC=PBC)
             return coor, index
 
 def estimate_volume(numIons, species, factor=2.0):
@@ -1117,7 +1117,7 @@ def choose_wyckoff(wyckoffs, number):
         else:
             return False
 
-def get_wyckoffs(sg, organized=False, PB=None):
+def get_wyckoffs(sg, organized=False, PBC=None):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
     organize the list based on multiplicity (this is used for
@@ -1144,23 +1144,23 @@ def get_wyckoffs(sg, organized=False, PB=None):
     Args:
         sg: the international spacegroup number
         organized: whether or not to organize the list based on multiplicity
-        PB: permutation info for 2d crystals, form the layergroup class
+        PB: permutation info for 2d crystals, from the layergroup class
     
     Returns: 
         a list of Wyckoff positions, each of which is a list of SymmOp's
     """
-    if PB is not None:
+    if PBC is not None:
         coor = [0,0,0]
-        coor[PB[-1]-1] = 0.5
+        coor[PBC-1] = 0.5
         coor = np.array(coor)
 
     wyckoff_strings = eval(wyckoff_df["0"][sg])
     wyckoffs = []
     for x in wyckoff_strings:
-        if PB is not None:
+        if PBC is not None:
             op = SymmOp.from_xyz_string(x[0])
             coor1 = op.operate(coor)
-            if abs(coor1[PB[-1]-1]-0.5) < 1e-2:
+            if abs(coor1[PBC-1]-0.5) < 1e-2:
                 #invalid wyckoffs for layer group
                 wyckoffs.append([])
                 for y in x:
@@ -1182,7 +1182,7 @@ def get_wyckoffs(sg, organized=False, PB=None):
     else:
         return wyckoffs
 
-def get_wyckoff_symmetry(sg, molecular=False):
+def get_wyckoff_symmetry(sg, PBC=None, molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -1201,6 +1201,12 @@ def get_wyckoff_symmetry(sg, molecular=False):
         a 3d list of SymmOp objects representing the site symmetry of each
         point in each Wyckoff position
     """
+    if PBC is not None:
+        coor = [0,0,0]
+        coor[PBC-1] = 0.5
+        coor = np.array(coor)
+    wyckoffs = get_wyckoffs(sg, PBC=PBC)
+
     P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
     symmetry = []
@@ -1209,25 +1215,45 @@ def get_wyckoff_symmetry(sg, molecular=False):
         if sg >= 143 and sg <= 194:
             convert = True
     #Loop over Wyckoff positions
-    for x in symmetry_strings:
-        symmetry.append([])
-        #Loop over points in WP
-        for y in x:
-            symmetry[-1].append([])
-            #Loop over ops
-            for z in y:
-                op = SymmOp.from_xyz_string(z)
-                if convert is True:
-                    #Convert non-orthogonal trigonal/hexagonal operations
-                    op = P*op*P.inverse
-                if molecular is False:
-                    symmetry[-1][-1].append(op)
-                elif molecular is True:
-                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                    symmetry[-1][-1].append(op)
+    for x, w in zip(symmetry_strings, wyckoffs):
+        if PBC is not None:
+            op = w[0]
+            coor1 = op.operate(coor)
+            if abs(coor1[PBC-1]-0.5) < 1e-2:
+                symmetry.append([])
+                #Loop over points in WP
+                for y in x:
+                    symmetry[-1].append([])
+                    #Loop over ops
+                    for z in y:
+                        op = SymmOp.from_xyz_string(z)
+                        if convert is True:
+                            #Convert non-orthogonal trigonal/hexagonal operations
+                            op = P*op*P.inverse
+                        if molecular is False:
+                            symmetry[-1][-1].append(op)
+                        elif molecular is True:
+                            op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                            symmetry[-1][-1].append(op)
+        else:
+            symmetry.append([])
+            #Loop over points in WP
+            for y in x:
+                symmetry[-1].append([])
+                #Loop over ops
+                for z in y:
+                    op = SymmOp.from_xyz_string(z)
+                    if convert is True:
+                        #Convert non-orthogonal trigonal/hexagonal operations
+                        op = P*op*P.inverse
+                    if molecular is False:
+                        symmetry[-1][-1].append(op)
+                    elif molecular is True:
+                        op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                        symmetry[-1][-1].append(op)
     return symmetry
 
-def get_wyckoff_generators(sg, PB=None):
+def get_wyckoff_generators(sg, PBC=None):
     """
     Returns a list of Wyckoff generators for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -1244,18 +1270,19 @@ def get_wyckoff_generators(sg, PB=None):
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-    if PB is not None:
+    if PBC is not None:
         coor = [0,0,0]
-        coor[PB[-1]-1] = 0.5
+        coor[PBC-1] = 0.5
         coor = np.array(coor)
+    wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
     generator_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
-    for x in generator_strings:
-        if PB is not None:
-            op = SymmOp.from_xyz_string(x[0])
+    for x, w in zip(generator_strings, wyckoffs):
+        if PBC is not None:
+            op = w[0]
             coor1 = op.operate(coor)
-            if abs(coor1[PB[-1]-1]-0.5) < 1e-2:
+            if abs(coor1[PBC-1]-0.5) < 1e-2:
                 #invalid generators for layer group
                 generators.append([])
                 for y in x:
@@ -1340,12 +1367,11 @@ def find_generating_point(coords, generators, PBC=None):
         a fractional coordinate [x, y, z] corresponding to the first listed
         point in the Wyckoff position
      """
-    #filtered = filtered_coords(coords)
     for coord in coords:
         tmp_c = deepcopy(coords)
-        tmp_c = filtered_coords(tmp_c, PBC=None)
+        tmp_c = filtered_coords(tmp_c, PBC=PBC)
         generated = list(gen.operate(coord) for gen in generators)
-        generated = filtered_coords(generated, PBC=None)
+        generated = filtered_coords(generated, PBC=PBC)
         index_list1 = list(range(len(tmp_c)))
         index_list2 = list(range(len(generated)))
         if len(generated) != len(tmp_c):
@@ -1365,7 +1391,7 @@ def find_generating_point(coords, generators, PBC=None):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None, PB=None):
+def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -1385,28 +1411,30 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
         WP is found, returns False
     """
     points = np.array(points)
-    points = np.around((points*1e+10))/1e+10
+    #points = np.around((points*1e+10))/1e+10
 
     if wyckoffs == None:
-        wyckoffs = get_wyckoffs(sg, PB=PB)
+        wyckoffs = get_wyckoffs(sg, PBC=PBC)
         gen_pos = wyckoffs[0]
     else:
         gen_pos = wyckoffs[0][0]
+
     new_points = []
-    #
     if exact_translation == False:
-        for p in points:
-            new_points.append(filtered_coords(p, PBC=PBC))
-        points = new_points
-    w_symm_all = get_wyckoff_symmetry(sg)
+        new_points = filtered_coords(points, PBC=PBC)
+    else:
+        new_points = deepcopy(points)
+
+    w_symm_all = get_wyckoff_symmetry(sg, PBC=PBC)
     p_symm = []
     #If exact_translation is false, store WP's which might be a match
     possible = []
-    for x in points:
+    for x in new_points:
         p_symm.append(site_symm(x, gen_pos, PBC=PBC))
+    
     for i, wp in enumerate(wyckoffs):
         w_symm = w_symm_all[i]
-        if len(p_symm) == len(w_symm):
+        if len(p_symm) == len(w_symm) and len(wp) == len(points):
             temp = deepcopy(w_symm)
             for p in p_symm:
                 for w in temp:
@@ -1425,7 +1453,12 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
             if temp == []:
                 #If we find a match with exact translations
                 if exact_translation:
-                    return i
+                    generators = get_wyckoffs(sg, PBC=PBC)[i]
+                    p = find_generating_point(points, generators, PBC=PBC)
+                    if p is not None:
+                        return i
+                    else:
+                        return False
                 elif not exact_translation:
                     possible.append(i)
         #If no matching WP's are found
@@ -1433,23 +1466,22 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
         return False
     #If exactly one matching WP is found
     elif len(possible) == 1:
-        return possible[0]
+        i = possible[0]
+        generators = get_wyckoffs(sg, PBC=PBC)[i]
+        p = find_generating_point(points, generators, PBC=PBC)
+        if p is not None:
+            return i
+        else:
+            return False
     #If multiple WP's are found
     else:
         #Check that points are generated from generators
-        allgen = get_wyckoffs(sg, PB=PB)
+        allgen = get_wyckoffs(sg, PBC=PBC)
         for i in possible:
             generators = allgen[i]
             p = find_generating_point(points, generators, PBC=PBC)
             if p is not None:
                 return i
-        print("Error: Could not generate Wyckoff position from generators")
-        print("Suspected Wyckoff positions:")
-        for i in possible:
-            print(letter_from_index(i, sg))
-        print("Provided points:")
-        for c in points:
-            print(c)
         return False
 
 def verify_distances(coordinates, species, lattice, factor=1.0, PBC=None):
@@ -1842,7 +1874,7 @@ class random_crystal_2D():
                 	    	    #Generate a list of coords from ops
                                 point = np.random.random(3)
                                 coords = np.array([op.operate(point) for op in ops])
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC, PB=self.PB)
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC)
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):

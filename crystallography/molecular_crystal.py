@@ -78,7 +78,7 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
         volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
     return abs(factor*volume)
 
-def get_sg_orientations(mol, sg, allow_inversion=False, PB=None):
+def get_sg_orientations(mol, sg, allow_inversion=False, PBC=None):
     """
     Calculate the valid orientations for each Molecule and Wyckoff position.
     Returns a list with 3 indices:
@@ -104,7 +104,7 @@ def get_sg_orientations(mol, sg, allow_inversion=False, PB=None):
             and 2nd indices correspond to the Wyckoff position
     """
     valid_orientations = []
-    wyckoffs = get_wyckoffs(sg, organized=True, PB=PB)
+    wyckoffs = get_wyckoffs(sg, organized=True, PBC=PBC)
     wp_index = -1
     for i, x in enumerate(wyckoffs):
         valid_orientations.append([])
@@ -186,14 +186,13 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
 
             tol = (radii[index1]+radii[index2])
 
-            #print(d_min, tol)
             if d_min < tol:
                 return False
         return True
     else:
         return True
 
-def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False, PBC=None, PB=None):
+def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, exact_translation=False, PBC=None):
     """
     Given a list of points, returns the index of the Wyckoff position within
     the spacegroup.
@@ -211,108 +210,30 @@ def check_wyckoff_position_molecular(points, sg, orientations, wyckoffs=None, ex
         a single index corresponding to the detected Wyckoff position. If no
         valid Wyckoff position is found, returns False
     """
-    points = np.array(points)
-    points = np.around((points*1e+10))/1e+10
-
-    if wyckoffs == None:
-        wyckoffs = get_wyckoffs(sg, PB=PB)
-        gen_pos = wyckoffs[0]
-    else:
-        gen_pos = wyckoffs[0][0]
-    new_points = []
-    #
-    if exact_translation == False:
-        for p in points:
-            new_points.append(filtered_coords(p, PBC=PBC))
-        points = new_points
-    w_symm_all = get_wyckoff_symmetry(sg)
-    p_symm = []
-    #If exact_translation is false, store WP's which might be a match
-    possible = []
-    for x in points:
-        p_symm.append(site_symm(x, gen_pos, PBC=PBC))
-    for i, wp in enumerate(wyckoffs):
-        w_symm = w_symm_all[i]
-        if len(p_symm) == len(w_symm):
-            temp = deepcopy(w_symm)
-            for p in p_symm:
-                for w in temp:
-                    if exact_translation:
-                        if p == w:
-                            temp.remove(w)
-                    elif not exact_translation:
-                        temp2 = deepcopy(w)
-                        for op_p in p:
-                            for op_w in w:
-                                #Check that SymmOp's are equal up to some integer translation
-                                if are_equal(op_w, op_p, allow_pbc=True):
-                                    temp2.remove(op_w)
-                        if temp2 == []:
-                            temp.remove(w)
-            if temp == []:
-                #If we find a match with exact translations
-                if exact_translation:
-                    #Check orientations
-                    j, k = jk_from_i(i, orientations)
-                    if orientations[j][k] != []:
-                        return i
-                elif not exact_translation:
-                    possible.append(i)
-    #If no matching WP's are found
-    if len(possible) == 0:
-        return False
-    #If any matching WP' are found
-    elif len(possible) >= 1:
-        new = []
-        for i in possible:
-            j, k = jk_from_i(i, orientations)
+    index = check_wyckoff_position(points, sg, wyckoffs=wyckoffs, exact_translation=exact_translation, PBC=PBC)
+    if index is not False:
+        generators = get_wyckoffs(sg, PBC=PBC)[index]
+        point = find_generating_point(points, generators, PBC=PBC)
+        if point is not None:
+            j, k = jk_from_i(index, orientations)
             if orientations[j][k] != []:
-                new.append(i)
-        if len(new) == 0:
-            return False
-        elif len(new) == 1:
-            generators = get_wyckoffs(sg, PB=PB)[new[0]]
-            p = find_generating_point(points, generators, PBC=PBC)
-            if p is not None:
-                return new[0]
+                return index
             else:
-                print("Error: Could not generate coordinates for detected Wyckoff position.")
-                print("Suspected Wyckoff position: "+str(letter_from_index(new[0], sg)))
-                print("Coordinates:")
-                print("---------------------")
-                for p in points:
-                    print(p)
-                print("Generators:")
-                print("---------------------")
-                for gen in generators:
-                    print(gen.as_xyz_string())
-                sys.exit(0)
                 return False
-        elif len(new) > 1:
-            #Check that points are correctly generated
-            for i in new:
-                generators = get_wyckoffs(sg, PB=PB)[i]
-                p = find_generating_point(points, generators, PBC=PBC)
-                if p is not None:
-                    return i
-            print("Error: Could not generate coordinates for detected Wyckoff position.")
-            print("Suspected Wyckoff positions:")
-            for i in new:
-                print(str(letter_from_index(i, sg)))
+        else:
+            print("(Inside check_wyckoff_position_molecular)")
+            print("Error: Could not generate points from Wyckoff generators")
+            print("Space group: "+str(sg))
+            print("wp_index: "+str(index))
             print("Coordinates:")
-            print("---------------------")
-            for p in points:
-                print(p)
+            for c in points:
+                print(c)
             print("Generators:")
-            print("---------------------")
-            for gen in generators:
-                print(gen.as_xyz_string())
-            sys.exit(0)
-            return False
-    print("Unexpected error in check_wyckoff_position_molecular.")
+            for g in generators:
+                print(g.as_xyz_string())
     return False
 
-def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations, PBC=None, PB=None):
+def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations, PBC=None):
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol, PBC=PBC)
         index = None
@@ -324,7 +245,7 @@ def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations, PB
                 for group in groups:
                     merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
-                index = check_wyckoff_position_molecular(merged, sg, orientations, exact_translation=False, PBC=PBC, PB=PB)
+                index = check_wyckoff_position_molecular(merged, sg, orientations, exact_translation=False, PBC=PBC)
                 if index is False:
                     return coor, False
                 elif index is None:
@@ -334,11 +255,10 @@ def merge_coordinate_molecular(coor, lattice, wyckoff, sg, tol, orientations, PB
                     coor = merged
 
             else:#no way to merge
-                #print('no way to Merge, FFFFFFFFFFFFFFFFFFFFFFF----------------')
                 return coor, False
         else:
             if index is None:
-                index = check_wyckoff_position_molecular(coor, sg, orientations, exact_translation=False, PBC=PBC, PB=PB)
+                index = check_wyckoff_position_molecular(coor, sg, orientations, exact_translation=False, PBC=PBC)
             return coor, index
 
 def choose_wyckoff_molecular(wyckoffs, number, orientations):
@@ -370,9 +290,6 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
                     if orientations[j][k] != []:
                         good_wyckoff.append([j,k])
                 if len(good_wyckoff) > 0:
-                    for indices in good_wyckoff:
-                        if orientations[indices[0]][indices[1]] == []:
-                            print(str(j)+", "+str(k)+str(" X"))
                     return choose(good_wyckoff)
         return False
     else:
@@ -383,10 +300,6 @@ def choose_wyckoff_molecular(wyckoffs, number, orientations):
                     if orientations[j][k] != []:
                         good_wyckoff.append([j,k])
         if len(good_wyckoff) > 0:
-            for indices in good_wyckoff:
-                j, k = indices
-                if orientations[j][k] == []:
-                    print(str(j)+", "+str(k)+str(" Y"))
             return choose(good_wyckoff)
         else:
             return False
@@ -397,7 +310,7 @@ class mol_site():
     the molecular_crystal class. Each mol_site object represenents an
     entire Wyckoff position, not necessarily a single molecule.
     """
-    def __init__(self, mol, position, sg, wp_index, lattice):
+    def __init__(self, mol, position, sg, wp_index, lattice, PBC=None):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = position
@@ -406,10 +319,12 @@ class mol_site():
         """The international spacegroup number"""
         self.wp_index = wp_index
         """Single index of the Wyckoff position within the spacegroup"""
-        self.multiplicity = len(get_wyckoffs(sg)[wp_index])
+        self.multiplicity = len(get_wyckoffs(sg, PBC=PBC)[wp_index])
         """The multiplicity of the molecule's Wyckoff position"""
         self.letter = letter_from_index(wp_index, sg)
         """The Wyckoff letter of the molecule's Wyckoff position"""
+        self.PBC = None
+        """The periodic boundary condition direction"""
 
 class molecular_crystal():
     """
@@ -535,7 +450,7 @@ class molecular_crystal():
                 self.valid_orientations[-1].append([])
                 for j, wp in enumerate(x):
                     wp_index += 1
-                    allowed = orientation_in_wyckoff_position(mol, self.sg, wp_index, already_oriented=True, allow_inversion=self.allow_inversion)
+                    allowed = orientation_in_wyckoff_position(mol, self.sg, wp_index, already_oriented=True, allow_inversion=self.allow_inversion, PBC=self.PBC)
                     if allowed is not False:
                         self.valid_orientations[-1][-1].append(allowed)
                     else:
@@ -587,7 +502,7 @@ class molecular_crystal():
         if has_freedom:
             return True
         else:
-            #print("Warning: Wyckoff Positions have no degrees of freedom.")
+            #Wyckoff Positions have no degrees of freedom
             return 0
 
         return True
@@ -679,15 +594,23 @@ class molecular_crystal():
                                         wp_index = good_merge
                                         j, k = jk_from_i(wp_index, self.wyckoffs)
                                         wyckoffs = self.wyckoffs[j][k]
-                                        coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
 
                                         #Check that coords_toadd are generated by point
                                         generators = get_wyckoffs(self.sg)[wp_index]
                                         point = find_generating_point(coords_toadd, generators)
                                         if point is None:
                                             print("Error: Could not generate merged coordinates from Wyckoff generators")
+                                            print("Space group: "+str(self.sg))
+                                            print("wp_index: "+str(wp_index))
+                                            print("Coordinates:")
+                                            for c in coords_toadd:
+                                                print(c)
+                                            print("Generators:")
+                                            for g in generators:
+                                                print(g.as_xyz_string())
                                             self.valid = False
                                             return
+                                        coords_toadd = filtered_coords(coords_toadd) #scale the coordinates to [0,1], very important!
 
                                         #Check inter-molecular distances
                                         if self.check_atomic_distances is False:
@@ -943,7 +866,7 @@ class molecular_crystal_2D():
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = get_wyckoffs(self.sg, organized=True, PB=self.PB)
+        self.wyckoffs = get_wyckoffs(self.sg, organized=True, PBC=self.PBC)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
         self.check_atomic_distances = check_atomic_distances
@@ -1128,26 +1051,32 @@ class molecular_crystal_2D():
                                     ops = self.wyckoffs[j][k]
                                     point = np.random.random(3)
                                     coords = np.array([op.operate(point) for op in ops])
-                                    #merge_coordinate if the atoms are close
+                                    #merge coordinates if the atoms are close
                                     if self.check_atomic_distances is False:
                                         mtol = self.radii[i]*2
                                     elif self.check_atomic_distances is True:
                                         mtol = 3.0
-                                    coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, self.wyckoffs, self.sg, mtol, self.valid_orientations[i], PBC=self.PBC, PB=self.PB)
+                                    coords_toadd, good_merge = merge_coordinate_molecular(coords, cell_matrix, self.wyckoffs, self.sg, mtol, self.valid_orientations[i], PBC=self.PBC)
                                     if good_merge is not False:
                                         wp_index = good_merge
-                                        j, k = jk_from_i(wp_index, self.wyckoffs)
-                                        wyckoffs = self.wyckoffs[j][k]
-                                        #Scale the coordinates to [0,1], except in the no-PBC direction
-                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
 
                                         #Check that coords_toadd are generated by point
-                                        generators = get_wyckoffs(self.sg, PB=self.PB)[wp_index]
+                                        generators = get_wyckoffs(self.sg, PBC=self.PBC)[wp_index]
                                         point = find_generating_point(coords_toadd, generators, PBC=self.PBC)
                                         if point is None:
                                             print("Error: Could not generate merged coordinates from Wyckoff generators")
+                                            print("Space group: "+str(self.sg))
+                                            print("wp_index: "+str(wp_index))
+                                            print("Coordinates:")
+                                            for c in coords_toadd:
+                                                print(c)
+                                            print("Generators:")
+                                            for g in generators:
+                                                print(g.as_xyz_string())
                                             self.valid = False
                                             return
+                                        #Scale the coordinates to [0,1], except in the no-PBC direction
+                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
 
                                         #Check inter-molecular distances
                                         if self.check_atomic_distances is False:
@@ -1174,11 +1103,11 @@ class molecular_crystal_2D():
                                             j, k = jk_from_i(wp_index, self.wyckoffs)
                                             op1 = choose(self.valid_orientations[i][j][k]).get_op()
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, self.sg, wp_index, cell_matrix)
+                                            ms0 = mol_site(mo, point, self.sg, wp_index, cell_matrix, PBC=self.PBC)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
-                                            for point_index, op2 in enumerate(get_wyckoff_generators(self.sg, PB=self.PB)[wp_index]):
+                                            for point_index, op2 in enumerate(get_wyckoff_generators(self.sg, PBC=self.PBC)[wp_index]):
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
                                                 for site in mo:
@@ -1261,9 +1190,9 @@ class molecular_crystal_2D():
                                 j, k = jk_from_i(wp_index, self.wyckoffs)
                                 op1 = choose(self.valid_orientations[i][j][k]).get_op()
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, self.sg, wp_index, cell_matrix)
+                                ms0 = mol_site(mo, center0, self.sg, wp_index, cell_matrix, PBC=self.PBC)
                                 mol_generators_total.append(ms0)
-                                for index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
+                                for index, op2 in enumerate(get_wyckoff_generators(self.sg, PBC=self.PBC)[wp_index]):
                                     for site in mo:
                                         #Place molecular coordinates in relative coordinates
                                         relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))

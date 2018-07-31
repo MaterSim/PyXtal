@@ -211,7 +211,7 @@ def get_symmetry(mol, already_oriented=False):
         return symm_m
 
 def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
-    exact_orientation=False, already_oriented=False, allow_inversion=False):
+    exact_orientation=False, already_oriented=False, allow_inversion=False, PBC=None):
     """
     Tests if a molecule meets the symmetry requirements of a Wyckoff position,
     and returns the valid orientations.
@@ -235,7 +235,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         Wyckoff position. If no orientations are found, returns False.
     """
     #Obtain the Wyckoff symmetry
-    symm_w = get_wyckoff_symmetry(sg, molecular=True)[index][0]
+    symm_w = get_wyckoff_symmetry(sg, PBC=PBC, molecular=True)[index][0]
     pga = PointGroupAnalyzer(mol)
 
     #Check exact orientation
@@ -266,7 +266,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     #check if WP breaks symmetry
     if chiral is True:
         if allow_inversion is False:
-            gen_pos = get_wyckoffs(sg)[0]
+            gen_pos = get_wyckoffs(sg, PBC=PBC)[0]
             for op in gen_pos:
                 if np.linalg.det(op.rotation_matrix) < 0:
                     print("Warning: cannot place chiral molecule in spagegroup #"+str(sg))
