@@ -1009,8 +1009,8 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
         elif sg <= 15:
             a, b, c = random_vector()
             if PBC == 3:
-                gamma = gaussian(minangle, maxangle)
-                x = sin(gamma)
+                beta = gaussian(minangle, maxangle)
+                x = sin(beta)
             elif PBC == 2:
                 beta = gaussian(minangle, maxangle)
                 x = sin(beta)
@@ -1019,9 +1019,9 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
                 x = sin(alpha)
             ab = volume/(abc[PBC-1]*x)
             ratio = a/b
+            abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
+            ab = volume/(thickness)
             if PBC == 3:
-                abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
-                ab = volume/(thickness)
                 abc[0] = sqrt(ab*ratio)
                 abc[1] = sqrt(ab/ratio)
             elif PBC == 2:
