@@ -1,19 +1,22 @@
+"""
+Script to test the functionality of molecular_crystal_2D. For each layer group (between 1 and 80), generates a 2d molecular crystal with the given parameters. Most of the command line options for molecular_crystal.py are also present here, with the addition of -t for the thickness of the cell. For each layer group, the number of molecules used to generate the crystal is equal to the multiplicity of the general position.
+"""
+
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
     from os import mkdir
     from crystallography.molecular_crystal import *
+    from crystallography.database.layergroup import Layergroup
 
     parser = OptionParser()
-    parser.add_option("-s", "--number", dest="num", metavar='num', default=36, type=int,
-            help="desired space group number: 1-230, e.g., 36")
     parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
-    parser.add_option("-n", "--numMols", dest="numMols", default=4, 
-            help="desired numbers of molecules: 4", metavar="numMols")
+    parser.add_option("-n", "--numMols", dest="numMols", default=12, 
+            help="desired numbers of molecules: 12", metavar="numMols")
     parser.add_option("-t", "--thickness", dest="thickness", default=4.0, type=float, 
             help="volume factor: default 4.0", metavar="thickness")
-    parser.add_option("-f", "--factor", dest="factor", default=2.0, type=float, 
-            help="volume factor: default 2.0", metavar="factor")
+    parser.add_option("-f", "--factor", dest="factor", default=2.5, type=float, 
+            help="volume factor: default 2.5", metavar="factor")
     parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
@@ -56,13 +59,15 @@ if __name__ == "__main__":
 
     #Layergroup numbers to test
     numrange = list(range(1, 81))
-
+    
     for num in numrange:
+        print('---------------Layergroup '+str(num)+'---------------')
         for i in range(attempts):
-            print('---------------Layergroup '+str(num)+'---------------')
             start = time()
+            sg = Layergroup(num).sgnumber
+            multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
             numMols0 = np.array(numMols)
-            rand_crystal = molecular_crystal_2D(num, system, numMols0, options.thickness, options.factor, orientations=orientations, check_atomic_distances=checkatoms, allow_inversion=allowinversion)
+            rand_crystal = molecular_crystal_2D(num, system, [multiplicity], options.thickness, options.factor, orientations=orientations, check_atomic_distances=checkatoms, allow_inversion=allowinversion)
             end = time()
             timespent = np.around((end - start), decimals=2)
             if rand_crystal.valid:
