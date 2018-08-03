@@ -1760,7 +1760,7 @@ class random_crystal_2D():
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = deepcopy(get_wyckoffs(self.sg, organized=True, PB=self.PB)) 
+        self.wyckoffs = deepcopy(get_wyckoffs(self.sg, organized=True, PBC=self.PBC)) 
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""        
         self.generate_crystal()
