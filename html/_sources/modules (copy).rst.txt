@@ -1,7 +1,0 @@
-crystallography
-===============
-
-.. toctree::
-   :maxdepth: 4
-
-   crystallography

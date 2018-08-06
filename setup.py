@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     include_package_data=True,
-    name="crystallography",
+    name="pyxtal",
     version="0.1dev",
     author="Scott Fredericks, Qiang Zhu",
     author_email="fredes3@unlv.nevada.edu",
@@ -13,8 +13,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/qzhu2017/crystallography",
-    packages=['crystallography', 'crystallography.database'],
-    package_data={'crystallography': ['crystallography.database/*.csv']},
+    packages=['pyxtal', 'pyxtal.database'],
+    package_data={'pyxtal': ['pyxtal.database/*.csv']},
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

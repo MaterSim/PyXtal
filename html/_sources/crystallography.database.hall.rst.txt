@@ -1,7 +1,0 @@
-crystallography\.database\.hall module
-======================================
-
-.. automodule:: crystallography.database.hall
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Welcome to crystallography’s documentation! &#8212; crystallography 0.1dev documentation</title>
+    <title>Welcome to pyXtal’s documentation! &#8212; pyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -34,7 +34,7 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">crystallography 0.1dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">pyXtal 0.1dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -43,10 +43,10 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-crystallography-s-documentation">
-<h1>Welcome to crystallography’s documentation!<a class="headerlink" href="#welcome-to-crystallography-s-documentation" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="welcome-to-pyxtal-s-documentation">
+<h1>Welcome to pyXtal’s documentation!<a class="headerlink" href="#welcome-to-pyxtal-s-documentation" title="Permalink to this headline">¶</a></h1>
 <blockquote>
-<div>Crystallography is a Python library for the ab-initio generation of random crystal structures. It is made available under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible atomic geometries, which can be output to .cif or .vasp files. The structure information can then be used with various optimization methods and software, in order to determine the lowest-energy structure for a given compound.
+<div>pyXtal is a Python library for the ab-initio generation of random crystal structures. It is made available under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible atomic geometries, which can be output to .cif or .vasp files. The structure information can then be used with various optimization methods and software, in order to determine the lowest-energy structure for a given compound.
 Currently, the software allows generation of 3d atomic and molecular crystals; 2d crystal generation is under active development. The software also allows access to symmetry information, including Wyckoff positions and site symmetry. A basic tutorial is provided below for common functions. For more detailed information, see the documentation for a specific module.</div></blockquote>
 </div>
 <div class="section" id="dependencies">
@@ -67,20 +67,20 @@ Currently, the software allows generation of 3d atomic and molecular crystals; 2
 <p>Then, inside of the downloaded directory, run</p>
 <p><code class="docutils literal"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code></p>
 <p>This will install the module. The code can be used within Python via</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">crystallography</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyxtal</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
-<p>The package’s main modules are <a class="reference external" href="crystallography.crystal.html">crystal.py</a> and <a class="reference external" href="crystallography.molecular_crystal.html">molecular_crystal.py</a>. These modules contain functions for generating 3d atomic and molecular crystals, respectively. These modules can be run as scripts via</p>
-<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">crystallography.crystal</span></code></p>
+<p>The package’s main modules are <a class="reference external" href="pyxtal.crystal.html">crystal.py</a> and <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal.py</a>. These modules contain functions for generating 3d atomic and molecular crystals, respectively. These modules can be run as scripts via</p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.crystal</span></code></p>
 <p>or</p>
-<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">crystallography.molecular_crystal</span></code></p>
-<p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="crystallography.crystal.html">crystal</a>, <a class="reference external" href="crystallography.molecular_crystal.html">molecular_crystal</a>. Alternatively, the functions can be called directly within Python, as illustrated in the following examples.</p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span></code></p>
+<p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="pyxtal.crystal.html">crystal</a>, <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal</a>. Alternatively, the functions can be called directly within Python, as illustrated in the following examples.</p>
 <p><strong>Atomic 3d Crystals</strong></p>
-<p>The main function for generating and storing crystals is <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.random_crystal">crystal.random_crystal</a>. Here is a simple example of a carbon crystal:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">crystallography.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
+<p>The main function for generating and storing crystals is <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal">crystal.random_crystal</a>. Here is a simple example of a carbon crystal:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">225</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -101,8 +101,8 @@ Currently, the software allows generation of 3d atomic and molecular crystals; 2
 <p>If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1 and 10 should suffice.</p>
 <p><strong>2D atomic Crystals</strong></p>
 <p>(NOTE: Currently under development; results may not be valid)</p>
-<p>To generate a 2d crystal, use the class <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.random_crystal_2D">crystal.random_crystal_2D</a>. For example,</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">crystallography.crystal</span> <span class="kn">import</span> <span class="n">random_crystal_2D</span>
+<p>To generate a 2d crystal, use the class <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D">crystal.random_crystal_2D</a>. For example,</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal_2D</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal_2D</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -110,32 +110,32 @@ Currently, the software allows generation of 3d atomic and molecular crystals; 2
 <p>Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see <a class="reference external" href="http://it.iucr.org/Eb/ch4o1v0001/contents/">the International Tables of Crystallography, Volume E, part 4</a>.</p>
 <p>Note that changing the volume factor will not change the thickness of the output crystal. So, if you are testing over a range of volume factors, consider how the shape of the unit cell will be affected, and change the thickness accordingly.</p>
 <p><strong>Molecular 3d Crystals</strong></p>
-<p>Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with molecules. The molecules may either be strings for the chemical composition, or <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule">pymatgen.core.structure.Molecule</a> objects. The generating class is <a class="reference external" href="crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal">molecular_crystal.molecular_crystal</a>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">crystallography.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
+<p>Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with molecules. The molecules may either be strings for the chemical composition, or <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule">pymatgen.core.structure.Molecule</a> objects. The generating class is <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal">molecular_crystal.molecular_crystal</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 8. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.</p>
 <p>Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The molecular_crystal class handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric.</p>
-<p>Like atomic crystals, the atomic positions may be accessed with the struct attribute. However, for accessing the positions and orientations of the molecules themselves, there is an attribute called <a class="reference external" href="crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal.mol_generators">mol_generators</a>. This provides a list of <a class="reference external" href="crystallography.molecular_crystal.html#crystallography.molecular_crystal.mol_site">mol_site</a> objects, which in turn give the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit. This can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule’s center of mass.</p>
-<p>The orientations stored in the mol_generator class are members of the <a class="reference external" href="crystallography.operations.html#crystallography.operations.orientation">operations.orientation</a> class. A molecule in a Wyckoff position may be allowed to rotate about a certain axis, allowed to rotate freely, or may be rigidly constrained. This information is stored in the orientation class. To obtain a SymmOp which can be applied to the molecule, and which is consistent with the geometric constraints, call <a class="reference external" href="crystallography.operations.html#crystallography.operations.orientation.get_op">orientation.get_op</a>. For a 3x3 matrix instead, call <a class="reference external" href="crystallography.operations.html#crystallography.operations.orientation.get_matrix">orientation.get_matrix</a>. In either case, this will give a random rotation consistent with the degrees of freedom. To obtain the exact rotation used when generating the crystal (and avoid the random rotation), pass the parameter angle=0.</p>
-<p>There are a few other parameters which may be passed to the class. See the <a class="reference external" href="crystallography.molecular_crystal.html">module documentation</a> for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one molecule is chiral.</p>
+<p>Like atomic crystals, the atomic positions may be accessed with the struct attribute. However, for accessing the positions and orientations of the molecules themselves, there is an attribute called <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.mol_generators">mol_generators</a>. This provides a list of <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site">mol_site</a> objects, which in turn give the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit. This can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule’s center of mass.</p>
+<p>The orientations stored in the mol_generator class are members of the <a class="reference external" href="pyxtal.operations.html#pyxtal.operations.orientation">operations.orientation</a> class. A molecule in a Wyckoff position may be allowed to rotate about a certain axis, allowed to rotate freely, or may be rigidly constrained. This information is stored in the orientation class. To obtain a SymmOp which can be applied to the molecule, and which is consistent with the geometric constraints, call <a class="reference external" href="pyxtal.operations.html#pyxtal.operations.orientation.get_op">orientation.get_op</a>. For a 3x3 matrix instead, call <a class="reference external" href="pyxtal.operations.html#pyxtal.operations.orientation.get_matrix">orientation.get_matrix</a>. In either case, this will give a random rotation consistent with the degrees of freedom. To obtain the exact rotation used when generating the crystal (and avoid the random rotation), pass the parameter angle=0.</p>
+<p>There are a few other parameters which may be passed to the class. See the <a class="reference external" href="pyxtal.molecular_crystal.html">module documentation</a> for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one molecule is chiral.</p>
 <p><strong>2D Molecular Crystals</strong></p>
 <p>(NOTE: Currently under development; results may be not be valid)</p>
-<p>2d Molecular crystals are generated using the class <a class="reference external" href="crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D">molecular_crystal.molecular_crystal_2D</a>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">crystallography.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
+<p>2d Molecular crystals are generated using the class <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D">molecular_crystal.molecular_crystal_2D</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal_2D</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Here, the parameters correspond to those for <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.random_crystal_2D">random_crystal_2D</a>, except the atoms are again replaced with molecules. The additional options available for <a class="reference external" href="crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal">molecular_crystal</a> are also available for <a class="reference external" href="crystallography.molecular_crystal.html#crystallography.molecular_crystal.molecular_crystal_2D">molecular_crystal_2D</a>.</p>
+<p>Here, the parameters correspond to those for <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D">random_crystal_2D</a>, except the atoms are again replaced with molecules. The additional options available for <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal">molecular_crystal</a> are also available for <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D">molecular_crystal_2D</a>.</p>
 <p>Because molecules have a certain thickness of their own, care should be used when choosing a thickness value. Currently, the thickness parameter only determines where the molecular centers of mass can be, so the final crystal may have individual atoms outside of this range.</p>
 <p><strong>Wyckoff Positions</strong></p>
-<p>The package has several utilities for working with Wyckoff positions and their symmetries. Most of these functions are found within the <a class="reference external" href="crystallography.crystal.html">crystal</a> module.</p>
-<p>The main function is <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.get_wyckoffs">get_wyckoffs(sg)</a>, where sg is the international space group of interest. This will return a list of Wyckoff positions for the space group, with the 0th list element being the general Wyckoff position, and the remaining elements being the special Wyckoff positions. Each of the Wyckoff positions is, in turn, a list of symmetry operations (<a class="reference external" href="http://pymatgen.org/pymatgen.core.operations.html#pymatgen.core.operations.SymmOp">pymatgen.core.operations.SymmOp</a>). These symmetry operations can be applied to 3d vectors using op.operate(vector), or can be composed together via multiplication: op3 = op1 * op2. Each SymmOp consists of a rotation matrix (op.rotation_matrix) and a translation vector (op.translation), and is represented by a 4x4 affine matrix (op.affine_matrix).</p>
-<p>A Wyckoff position is typically denoted with a number-letter combination, depending on its multiplicity. For example, for space group 16 (P222), the general Wyckoff position is called “4u”. This is because the position has a multiplicity of 4, and the letters a-t are used by special Wyckoff positions. If you know the letter of a Wyckoff position, you can obtain its index within a get_wyckoffs(sg) list using the function <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.index_from_letter">index_from_letter(letter, sg)</a>. Likewise, if you know the index, you can obtain the letter using <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.letter_from_index">letter_from_index(index, sg)</a>. An example is provided below.</p>
-<p>For a given space group, each Wyckoff position is a subgroup of the general Wyckoff position. Furthermore, the Wyckoff position occupied by a given structure is determined by the symmetry of that structure with respect to the crystal as a whole. Naturally, each Wyckoff position requires some symmetry for an atom or molecule to occupy it. This symmetry can be accessed using <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.get_wyckoff_symmetry">get_wyckoff_symmetry(sg)</a>. This returns a nested list, where the first index specifies a Wyckoff position, the second index specifies a point within that Wyckoff position, and the third index specifies a list of symmetry operations corresponding to that point. This list of operations can then be used to check whether a given molecule is consistent with a given Wyckoff position.</p>
-<p>In order to make this information more human-readable, the function <a class="reference external" href="crystallography.crystal.html#crystallography.crystal.ss_string_from_ops">ss_string_from_ops(ops, sg)</a> can be used to generate a Hermann-Mauguin symbol for a given point group. Here, ops is a list of symmetry options, and sg is the international spacegroup number. So, for example, if we wanted to know the site symmetry of the Wyckoff position 2b in space group 35, we could use:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">crystallography.crystal</span> <span class="kn">import</span> <span class="o">*</span>
+<p>The package has several utilities for working with Wyckoff positions and their symmetries. Most of these functions are found within the <a class="reference external" href="pyxtal.crystal.html">crystal</a> module.</p>
+<p>The main function is <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.get_wyckoffs">get_wyckoffs(sg)</a>, where sg is the international space group of interest. This will return a list of Wyckoff positions for the space group, with the 0th list element being the general Wyckoff position, and the remaining elements being the special Wyckoff positions. Each of the Wyckoff positions is, in turn, a list of symmetry operations (<a class="reference external" href="http://pymatgen.org/pymatgen.core.operations.html#pymatgen.core.operations.SymmOp">pymatgen.core.operations.SymmOp</a>). These symmetry operations can be applied to 3d vectors using op.operate(vector), or can be composed together via multiplication: op3 = op1 * op2. Each SymmOp consists of a rotation matrix (op.rotation_matrix) and a translation vector (op.translation), and is represented by a 4x4 affine matrix (op.affine_matrix).</p>
+<p>A Wyckoff position is typically denoted with a number-letter combination, depending on its multiplicity. For example, for space group 16 (P222), the general Wyckoff position is called “4u”. This is because the position has a multiplicity of 4, and the letters a-t are used by special Wyckoff positions. If you know the letter of a Wyckoff position, you can obtain its index within a get_wyckoffs(sg) list using the function <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.index_from_letter">index_from_letter(letter, sg)</a>. Likewise, if you know the index, you can obtain the letter using <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.letter_from_index">letter_from_index(index, sg)</a>. An example is provided below.</p>
+<p>For a given space group, each Wyckoff position is a subgroup of the general Wyckoff position. Furthermore, the Wyckoff position occupied by a given structure is determined by the symmetry of that structure with respect to the crystal as a whole. Naturally, each Wyckoff position requires some symmetry for an atom or molecule to occupy it. This symmetry can be accessed using <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.get_wyckoff_symmetry">get_wyckoff_symmetry(sg)</a>. This returns a nested list, where the first index specifies a Wyckoff position, the second index specifies a point within that Wyckoff position, and the third index specifies a list of symmetry operations corresponding to that point. This list of operations can then be used to check whether a given molecule is consistent with a given Wyckoff position.</p>
+<p>In order to make this information more human-readable, the function <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.ss_string_from_ops">ss_string_from_ops(ops, sg)</a> can be used to generate a Hermann-Mauguin symbol for a given point group. Here, ops is a list of symmetry options, and sg is the international spacegroup number. So, for example, if we wanted to know the site symmetry of the Wyckoff position 2b in space group 35, we could use:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sg</span> <span class="o">=</span> <span class="mi">35</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">index</span> <span class="o">=</span> <span class="n">index_from_letter</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">sg</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ops</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">)[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -164,13 +164,20 @@ Currently, the software allows generation of 3d atomic and molecular crystals; 2
         <div class="sphinxsidebarwrapper">
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Welcome to crystallography’s documentation!</a></li>
+<li><a class="reference internal" href="#">Welcome to pyXtal’s documentation!</a></li>
 <li><a class="reference internal" href="#dependencies">Dependencies</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -194,11 +201,11 @@ Currently, the software allows generation of 3d atomic and molecular crystals; 2
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">crystallography 0.1dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">pyXtal 0.1dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Scott Fredericks, Qiang Zhu.
+        &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>

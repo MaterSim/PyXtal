@@ -1,7 +1,0 @@
-crystallography\.operations module
-==================================
-
-.. automodule:: crystallography.operations
-    :members:
-    :undoc-members:
-    :show-inheritance:

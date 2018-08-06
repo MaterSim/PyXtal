@@ -1,7 +1,7 @@
-crystallography
-===============
+pyxtal
+======
 
 .. toctree::
    :maxdepth: 4
 
-   crystallography
+   pyxtal

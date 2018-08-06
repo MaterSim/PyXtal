@@ -1,0 +1,17 @@
+pyxtal\.database package
+========================
+
+.. automodule:: pyxtal.database
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+   pyxtal.database.element
+   pyxtal.database.hall
+   pyxtal.database.layergroup
+

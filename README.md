@@ -1,4 +1,4 @@
-# Crystallography
+# pyXtal
 Python code for the generation and study of crystal structures based on symmetry constraints.
 Codeveloped by Qiang Zhu and Scott Fredericks at UNLV department of Physics.
 Distributed under the MIT License.

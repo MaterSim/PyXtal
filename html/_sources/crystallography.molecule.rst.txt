@@ -1,7 +1,0 @@
-crystallography\.molecule module
-================================
-
-.. automodule:: crystallography.molecule
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -1,7 +1,0 @@
-crystallography\.crystal module
-===============================
-
-.. automodule:: crystallography.crystal
-    :members:
-    :undoc-members:
-    :show-inheritance:
