@@ -43,8 +43,1028 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="pyxtal-crystal-module">
-<h1>pyxtal.crystal module<a class="headerlink" href="#pyxtal-crystal-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-pyxtal.crystal">
+<span id="pyxtal-crystal-module"></span><h1>pyxtal.crystal module<a class="headerlink" href="#module-pyxtal.crystal" title="Permalink to this headline">¶</a></h1>
+<p>Module for generation of random atomic crystals with symmetry constraints. A
+pymatgen- or spglib-type structure object is created, which can be saved to a
+.cif file. Options (preceded by two dashes) are provided for command-line usage
+of the module:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>spacegroup (-s): the international spacegroup number to be generated.</dt>
+<dd>Defaults to 206</dd>
+<dt>element (-e): the chemical symbol of the atom(s) to use. For multiple</dt>
+<dd>molecule types, separate entries with commas. Ex: “C”, “H, O, N”.
+Defaults to Li</dd>
+<dt>numIons (-n): the number of atoms in the PRIMITIVE unit cell</dt>
+<dd>(For P-type spacegroups, this is the same as the number of molecules in
+the conventional unit cell. For A, B, C, and I-centered spacegroups,
+this is half the number of the conventional cell. For F-centered unit
+cells, this is one fourth the number of the conventional cell.).
+For multiple atom types, separate entries with commas.
+Ex: “8”, “1, 4, 12”. Defaults to 16</dd>
+<dt>factor (-f): the relative volume factor used to generate the unit cell.</dt>
+<dd>Larger values result in larger cells, with atoms spaced further apart.
+If generation fails after max attempts, consider increasing this value.
+Defaults to 2.0</dd>
+<dt>verbosity (-v): the amount of information which should be printed for each</dt>
+<dd>generated structure. For 0, only prints the requested and generated
+spacegroups. For 1, also prints the contents of the generated pymatgen
+structure. Defaults to 0</dd>
+<dt>attempts (-a): the number of structures to generate. Note: if any of the</dt>
+<dd>attempts fail, the number of generated structures will be less than this
+value. Structures will be output to separate cif files. Defaults to 10</dd>
+<dt>outdir (-o): the file directory where cif files will be output to.</dt>
+<dd>Defaults to “.”</dd>
+</dl>
+</div></blockquote>
+<dl class="function">
+<dt id="pyxtal.crystal.Add_vacuum">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">Add_vacuum</code><span class="sig-paren">(</span><em>lattice</em>, <em>coor</em>, <em>vacuum=10.0</em>, <em>dim=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Add_vacuum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Add_vacuum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.Permutation">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">Permutation</code><span class="sig-paren">(</span><em>lattice</em>, <em>coor</em>, <em>PB</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Permutation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Permutation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.cellsize">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">cellsize</code><span class="sig-paren">(</span><em>sg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#cellsize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.cellsize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of duplicate atoms in the conventional lattice (in
+contrast to the primitive cell). Based on the type of cell centering (P,
+A, C, I, R, or F)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sg</strong> – the international spacegroup number</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a number between 1 and 4</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.check_distance">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_distance</code><span class="sig-paren">(</span><em>coord1</em>, <em>coord2</em>, <em>specie1</em>, <em>specie2</em>, <em>lattice</em>, <em>PBC=None</em>, <em>d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the distances between two set of atoms. The first set is
+generally larger than the second. Distances between coordinates within the
+first set are not checked, and distances between coordinates within the
+second set are not checked. Only distances between points from different
+sets are checked.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coord1</strong> – multiple lists of fractional coordinates e.g. [[[.1,.6,.4]
+[.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]</li>
+<li><strong>coord2</strong> – a list of new fractional coordinates e.g. [[.7,.8,.9],
+[.4,.5,.6]]</li>
+<li><strong>specie1</strong> – a list of atomic symbols for coord1. Ex: [‘C’, ‘O’]</li>
+<li><strong>specie2</strong> – the atomic symbol for coord2. Ex: ‘Li’</li>
+<li><strong>lattice</strong> – matrix describing the unit cell vectors</li>
+<li><strong>PBC</strong> – value to be passed to create_matrix</li>
+<li><strong>d_factor</strong> – the tolerance is multiplied by this amount. Larger values
+mean atoms must be farther apart</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a bool for whether or not the atoms are sufficiently far enough apart</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.check_wyckoff_position">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_wyckoff_position</code><span class="sig-paren">(</span><em>points</em>, <em>sg</em>, <em>wyckoffs=None</em>, <em>exact_translation=False</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_wyckoff_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_wyckoff_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of points, returns a single index of a matching Wyckoff
+position in the space group. Checks the site symmetry of each supplied
+point against the site symmetry for each point in the Wyckoff position.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> – a list of 3d coordinates or SymmOps to check</li>
+<li><strong>sg</strong> – the international space group number to check</li>
+<li><strong>wyckoffs</strong> – a list of Wyckoff positions obtained from get_wyckoffs.</li>
+<li><strong>exact_translation</strong> – whether we require two SymmOps to have exactly equal
+translational components. If false, translations related by +-1
+are considered equal. If points have been directly generated from
+a Wyckoff position, we may set this to True. Otherwise, leave False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a single index for the Wyckoff position within the sg. If no matching
+WP is found, returns False</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.choose_wyckoff">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">choose_wyckoff</code><span class="sig-paren">(</span><em>wyckoffs</em>, <em>number</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#choose_wyckoff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.choose_wyckoff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Choose a Wyckoff position to fill based on the current number of atoms
+needed to be placed within a unit cell
+Rules:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The new position’s multiplicity is equal/less than (number).</li>
+<li>We prefer positions with large multiplicity.</li>
+</ol>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wyckoffs</strong> – an organized list of Wyckoff positions</li>
+<li><strong>number</strong> – the number of atoms still needed in the unit cell</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a single index for the Wyckoff position. If no position is found,
+returns False</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.connected_components">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">connected_components</code><span class="sig-paren">(</span><em>graph</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#connected_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.connected_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an undirected graph (a 2d array of indices), return a set of
+connected components, each connected component being an (arbitrarily
+ordered) array of indices which are connected either directly or
+indirectly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>graph</strong> – a list reprenting the connections between points. The first index
+represents a point, and the 2nd indices represent the points to
+which the first point is connected. Can be generated by
+find_short_dist</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of connected components. The first index denotes a separate
+connected component. The second indices denote the points within the
+connected component which are connected to each other</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.create_matrix">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">create_matrix</code><span class="sig-paren">(</span><em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#create_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.create_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for calculating distances in lattices with periodic boundary
+conditions. When multiplied with a set of points, generates additional
+points in cells adjacent to and diagonal to the original cell</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>PBC</strong> – an axis which does not have periodic boundary condition.
+Ex: PBC=1 cancels periodic boundary conditions along the x axis</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A numpy array of matrices which can be multiplied by a set of
+coordinates</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.distance">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">distance</code><span class="sig-paren">(</span><em>xyz</em>, <em>lattice</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Euclidean distance from the origin for a fractional
+displacement vector. Takes into account the lattice metric and periodic
+boundary conditions, including up to one non-periodic axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xyz</strong> – a fractional 3d displacement vector. Can be obtained by
+subtracting one fractional vector from another</li>
+<li><strong>lattice</strong> – a 3x3 matrix describing a unit cell’s lattice vectors</li>
+<li><strong>PBC</strong> – the axis, if any, which is non-periodic. 1, 2, and 3 correspond
+to x, y, and z respectively.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a scalar for the distance of the point from the origin</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.estimate_volume">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">estimate_volume</code><span class="sig-paren">(</span><em>numIons</em>, <em>species</em>, <em>factor=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#estimate_volume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.estimate_volume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimates the volume of a unit cell based on the number and types of ions.
+Assumes each atom takes up a sphere with radius equal to its covalent bond
+radius.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>numIons</strong> – a list of the number of ions for each specie</li>
+<li><strong>species</strong> – a corresponding list for the specie of each type of ion. Each
+element in the list should be a string for the atomic symbol</li>
+<li><strong>factor</strong> – an optional factor to multiply the result by. Larger values
+allow more space between atoms</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a float value for the estimated volume</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.filtered_coords">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">filtered_coords</code><span class="sig-paren">(</span><em>coords</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#filtered_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.filtered_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of 3d fractional coordinates or a single 3d point, transform
+all coordinates to less than 1 and greater than 0. If one axis is not
+periodic, does not transform the coordinates along that axis. For example,
+for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
+not the y axis (PBC=2), the function would return [0.2, 1.6, 0.6].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coords</strong> – a list or array of real 3d vectors, or a single real 3d vector</li>
+<li><strong>PBC</strong> – the axis, if any, which is not periodic. 1, 2, and 3 correspond
+to x, y, and z repectively</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a new list of coordinates (or single point) with values scaled between
+0 and 1, except for values on the non-periodic axis</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.find_generating_point">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">find_generating_point</code><span class="sig-paren">(</span><em>coords</em>, <em>generators</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#find_generating_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.find_generating_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of coordinates and Wyckoff generators, return the coord which
+can be used to generate the others. This is useful for molecular Wyckoff
+positions, for which the orientation, and not just the position, is
+needed for each point in the Wyckoff position. Thus, we need to know which
+coordinates to use for x, y, and z, so that rotations can be applied
+correctly using the Wyckoff geneators</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coords</strong> – a list of fractional coordinates corresponding to a Wyckoff
+position</li>
+<li><strong>generators</strong> – the list of Wyckoff generators for the Wyckoff position.
+Can be obtained from get_wyckoff_generators</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a fractional coordinate [x, y, z] corresponding to the first listed
+point in the Wyckoff position</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.find_short_dist">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">find_short_dist</code><span class="sig-paren">(</span><em>coor</em>, <em>lattice</em>, <em>tol</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#find_short_dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.find_short_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of fractional coordinates, finds pairs which are closer
+together than tol, and builds the connectivity map</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coor</strong> – a list of fractional 3-dimensional coordinates</li>
+<li><strong>lattice</strong> – a matrix representing the crystal unit cell</li>
+<li><strong>tol</strong> – the distance tolerance for pairing coordinates</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(pairs) is a list whose entries have the form [index1,
+index2, distance], where index1 and index2 correspond to the indices
+of a pair of points within the supplied list (coor). distance is the
+distance between the two points. (graph) is a connectivity map in the
+form of a list. Its first index represents a point within coor, and
+the second indices represent which point(s) it is connected to.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">pairs, graph</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.gaussian">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">gaussian</code><span class="sig-paren">(</span><em>min</em>, <em>max</em>, <em>sigma=3.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Choose a random number from a Gaussian probability distribution centered
+between min and max. sigma is the number of standard deviations that min
+and max are away from the center. Thus, sigma is also the largest possible
+number of standard deviations corresponding to the returned value. sigma=2
+corresponds to a 95.45% probability of choosing a number between min and
+max.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>min</strong> – the minimum acceptable value</li>
+<li><strong>max</strong> – the maximum acceptable value</li>
+<li><strong>sigma</strong> – the number of standard deviations between the center and min or max</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a value chosen randomly between min and max</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.generate_lattice">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">generate_lattice</code><span class="sig-paren">(</span><em>sg</em>, <em>volume</em>, <em>minvec=1.0</em>, <em>minangle=0.5235987755982988</em>, <em>max_ratio=10.0</em>, <em>maxattempts=100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#generate_lattice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.generate_lattice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a lattice (3x3 matrix) according to the space group symmetry and
+number of atoms. If the spacegroup has centering, we will transform to
+conventional cell setting. If the generated lattice does not meet the
+minimum angle and vector requirements, we try to generate a new one, up to
+maxattempts times.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sg</strong> – International number of the space group</li>
+<li><strong>volume</strong> – volume of the conventional unit cell</li>
+<li><strong>minvec</strong> – minimum allowed lattice vector length (among a, b, and c)</li>
+<li><strong>minangle</strong> – minimum allowed lattice angle (among alpha, beta, and gamma)</li>
+<li><strong>max_ratio</strong> – largest allowed ratio of two lattice vector lengths</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3x3 matrix representing the lattice vectors of the unit cell. If
+generation fails, outputs a warning message and returns empty</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.generate_lattice_2D">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">generate_lattice_2D</code><span class="sig-paren">(</span><em>sg</em>, <em>volume</em>, <em>thickness</em>, <em>P</em>, <em>minvec=1.0</em>, <em>minangle=0.5235987755982988</em>, <em>max_ratio=10.0</em>, <em>maxattempts=100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#generate_lattice_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.generate_lattice_2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
+number of atoms. If the spacegroup has centering, we will transform to
+conventional cell setting. If the generated lattice does not meet the
+minimum angle and vector requirements, we try to generate a new one, up to
+maxattempts times.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sg</strong> – International number of the space group</li>
+<li><strong>volume</strong> – volume of the lattice</li>
+<li><strong>thickness</strong> – 3rd-dimensional thickness of the unit cell</li>
+<li><strong>P</strong> – permuation info about the cell obtained from the layergroup class</li>
+<li><strong>minvec</strong> – minimum allowed lattice vector length (among a, b, and c)</li>
+<li><strong>minangle</strong> – minimum allowed lattice angle (among alpha, beta, and gamma)</li>
+<li><strong>max_ratio</strong> – largest allowed ratio of two lattice vector lengths</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3x3 matrix representing the lattice vectors of the unit cell. If
+generation fails, outputs a warning message and returns empty</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.get_center">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">get_center</code><span class="sig-paren">(</span><em>xyzs</em>, <em>lattice</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#get_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.get_center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the geometric centers of the clusters under periodic boundary
+conditions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xyzs</strong> – a list of fractional coordinates</li>
+<li><strong>lattice</strong> – a matrix describing the unit cell</li>
+<li><strong>PBC</strong> – a value to be passed to create_matrix</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">x,y,z coordinates for the center of the input coordinate list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.get_wyckoff_generators">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">get_wyckoff_generators</code><span class="sig-paren">(</span><em>sg</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#get_wyckoff_generators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.get_wyckoff_generators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of Wyckoff generators for a given space group.
+1st index: index of WP in sg (0 is the WP with largest multiplicity)
+2nd index: a generator for the WP
+This function is useful for rotating molecules based on Wyckoff position,
+since special Wyckoff positions only encode positional information, but not
+information about the orientation. The generators for each Wyckoff position
+form a subset of the spacegroup’s general Wyckoff position.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sg</strong> – the international spacegroup number</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
+single fractional (x,y,z) coordinate</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.get_wyckoff_symmetry">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">get_wyckoff_symmetry</code><span class="sig-paren">(</span><em>sg</em>, <em>PBC=None</em>, <em>molecular=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#get_wyckoff_symmetry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.get_wyckoff_symmetry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of Wyckoff position site symmetry for a given space group.
+1st index: index of WP in sg (0 is the WP with largest multiplicity)
+2nd index: a point within the WP
+3rd index: a site symmetry SymmOp of the point</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sg</strong> – the international spacegroup number</li>
+<li><strong>molecular</strong> – whether or not to return the Euclidean point symmetry
+operations. If True, cuts off translational part of operation, and
+converts non-orthogonal operations (3-fold and 6-fold rotations)
+to (orthogonal) pure rotations. Should be used when dealing with
+molecular crystals</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3d list of SymmOp objects representing the site symmetry of each
+point in each Wyckoff position</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.get_wyckoffs">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">get_wyckoffs</code><span class="sig-paren">(</span><em>sg</em>, <em>organized=False</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#get_wyckoffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.get_wyckoffs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of Wyckoff positions for a given space group. Has option to
+organize the list based on multiplicity (this is used for
+random_crystal.wyckoffs) For an unorganized list:</p>
+<p>1st index: index of WP in sg (0 is the WP with largest multiplicity)</p>
+<p>2nd index: a SymmOp object in the WP</p>
+<p>For an organized list:</p>
+<p>1st index: specifies multiplicity (0 is the largest multiplicity)</p>
+<dl class="docutils">
+<dt>2nd index: corresponds to a Wyckoff position within the group of equal</dt>
+<dd>multiplicity.</dd>
+</dl>
+<p>3nd index: corresponds to a SymmOp object within the Wyckoff position</p>
+<p>You may switch between organized and unorganized lists using the methods
+i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
+entry in an unorganized list, it will be the [j][k] entry in an organized
+list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sg</strong> – the international spacegroup number</li>
+<li><strong>organized</strong> – whether or not to organize the list based on multiplicity</li>
+<li><strong>PB</strong> – permutation info for 2d crystals, from the layergroup class</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list of Wyckoff positions, each of which is a list of SymmOp’s</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.i_from_jk">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">i_from_jk</code><span class="sig-paren">(</span><em>j</em>, <em>k</em>, <em>olist</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#i_from_jk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.i_from_jk" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.index_from_letter">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">index_from_letter</code><span class="sig-paren">(</span><em>letter</em>, <em>sg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#index_from_letter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.index_from_letter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the Wyckoff letter, returns the index of a Wyckoff position within
+the spacegroup</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>letter</strong> – The wyckoff letter</li>
+<li><strong>sg</strong> – the internationl spacegroup number</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a single index specifying the location of the Wyckoff position within
+the spacegroup (0 is the general position)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.jk_from_i">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">jk_from_i</code><span class="sig-paren">(</span><em>i</em>, <em>olist</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#jk_from_i"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.jk_from_i" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an organized list (Wyckoff positions or orientations), determine the
+two indices which correspond to a single index for an unorganized list.
+Used mainly for organized Wyckoff position lists, but can be used for other
+lists organized in a similar way</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>i</strong> – a single index corresponding to the item’s location in the
+unorganized list</li>
+<li><strong>olist</strong> – the organized list</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>two indices corresponding to the item’s location in the</dt>
+<dd><p class="first last">organized list</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">[j, k]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.letter_from_index">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">letter_from_index</code><span class="sig-paren">(</span><em>index</em>, <em>sg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#letter_from_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.letter_from_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a Wyckoff position’s index within a spacegroup, return its number
+and letter e.g. ‘4a’</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index</strong> – a single integer describing the WP’s index within the
+spacegroup (0 is the general position)</li>
+<li><strong>sg</strong> – the international spacegroup number</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the Wyckoff letter corresponding to the Wyckoff position (for example,
+for position 4a, the function would return ‘a’)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.matrix2para">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">matrix2para</code><span class="sig-paren">(</span><em>matrix</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#matrix2para"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.matrix2para" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a 3x3 matrix representing a unit cell, outputs a list of lattice
+parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>matrix</strong> – a 3x3 array or list, where the first, second, and third rows
+represent the a, b, and c vectors respectively</li>
+<li><strong>radians</strong> – if True, outputs angles in radians. If False, outputs in
+degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 1x6 list of lattice parameters [a, b, c, alpha, beta, gamma]. a, b,
+and c are the length of the lattice vectos, and alpha, beta, and gamma
+are the angles between these vectors</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.merge_coordinate">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">merge_coordinate</code><span class="sig-paren">(</span><em>coor</em>, <em>lattice</em>, <em>wyckoff</em>, <em>sg</em>, <em>tol</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#merge_coordinate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.merge_coordinate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of fractional coordinates, merges them within a given
+tolerance, and checks if the merged coordinates satisfy a Wyckoff
+position. Used for merging general Wyckoff positions into special Wyckoff
+positions within the random_crystal (and its derivative) classes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coor</strong> – a list of fractional coordinates</li>
+<li><strong>lattice</strong> – a 3x3 matrix representing the unit cell</li>
+<li><strong>wyckoff</strong> – an unorganized list of Wyckoff positions to check</li>
+<li><strong>sg</strong> – the international spacegroup number</li>
+<li><strong>tol</strong> – the cutoff distance for merging coordinates</li>
+<li><strong>PBC</strong> – a number representing the periodic boundary conditions (used for
+2d and 1d crystals)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(coor) is the new list of fractional coordinates after
+merging, and index is a single index of the Wyckoff position within
+the spacegroup. If merging is unsuccesful, or no index is found,
+returns the original coordinates and False</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">coor, index</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.para2matrix">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">para2matrix</code><span class="sig-paren">(</span><em>cell_para</em>, <em>radians=True</em>, <em>format='lower'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#para2matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.para2matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of lattic parameters, generates a matrix representing the
+lattice vectors</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cell_para</strong> – a 1x6 list of lattice parameters [a, b, c, alpha, beta,
+gamma]. a, b, and c are the length of the lattice vectos, and
+alpha, beta, and gamma are the angles between these vectors. Can
+be generated by matrix2para</li>
+<li><strong>radians</strong> – if True, lattice parameters should be in radians. If False,
+lattice angles should be in degrees</li>
+<li><strong>format</strong> – a string (‘lower’, ‘symmetric’, or ‘upper’) for the type of
+matrix to be output</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3x3 matrix representing the unit cell. By default (format=’lower’),
+the a vector is aligined along the x-axis, and the b vector is in the
+y-z plane</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyxtal.crystal.random_crystal">
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal</code><span class="sig-paren">(</span><em>sg</em>, <em>species</em>, <em>numIons</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<p>Class for storing and generating atomic crystals based on symmetry
+constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
+and a volume factor, generates a random crystal consistent with the
+spacegroup’s symmetry. This crystal is stored as a pymatgen struct via
+self.struct</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sg</strong> – the international spacegroup number</li>
+<li><strong>species</strong> – a list of atomic symbols for each ion type</li>
+<li><strong>numIons</strong> – a list of the number of each type of atom within the
+primitive cell (NOT the conventional cell)</li>
+<li><strong>factor</strong> – a volume factor used to generate a larger or smaller
+unit cell. Increasing this gives extra space between atoms</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pyxtal.crystal.random_crystal.Msgs">
+<code class="descname">Msgs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.Msgs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.Msgs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a set of error and warning message if generation fails.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.random_crystal.check_compatible">
+<code class="descname">check_compatible</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.check_compatible"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.check_compatible" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the number of atoms is compatible with the Wyckoff
+positions. Considers the number of degrees of freedom for each Wyckoff
+position, and makes sure at least one valid combination of WP’s exists.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal.factor">
+<code class="descname">factor</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal.factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>The supplied volume factor for the unit cell.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.random_crystal.generate_crystal">
+<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=30</em>, <em>max2=30</em>, <em>max3=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.generate_crystal" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main code to generate a random atomic crystal. If successful,
+stores a pymatgen.core.structure object in self.struct and sets
+self.valid to True. If unsuccessful, sets self.valid to False and
+outputs an error message.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max1</strong> – the number of attempts for generating a lattice</li>
+<li><strong>max2</strong> – the number of attempts for a given lattice</li>
+<li><strong>max3</strong> – the number of attempts for a given Wyckoff position</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal.numIons">
+<code class="descname">numIons</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal.numIons" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of each type of atom in the CONVENTIONAL cell</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal.sg">
+<code class="descname">sg</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal.sg" title="Permalink to this definition">¶</a></dt>
+<dd><p>The international spacegroup number of the crystal.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal.species">
+<code class="descname">species</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal.species" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of atomic symbols for the types of atoms in the crystal.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal.volume">
+<code class="descname">volume</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal.volume" title="Permalink to this definition">¶</a></dt>
+<dd><p>The volume of the generated unit cell</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal.wyckoffs">
+<code class="descname">wyckoffs</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal.wyckoffs" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Wyckoff positions for the crystal’s spacegroup. Sorted by
+multiplicity.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyxtal.crystal.random_crystal_2D">
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>number</em>, <em>species</em>, <em>numIons</em>, <em>thickness</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<p>A 2d counterpart to random_crystal. Generates a random atomic crystal based
+on a 2d layer group instead of a 3d spacegroup. Note that each layer group
+is equal to a corresponding 3d spacegroup, but without periodicity in one
+direction. The generated pymatgen structure can be accessed via self.struct</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>number</strong> – the layer group number between 1 and 80. NOT equal to the
+international space group number, which is between 1 and 230</li>
+<li><strong>species</strong> – a list of atomic symbols for each ion type</li>
+<li><strong>numIons</strong> – a list of the number of each type of atom within the
+primitive cell (NOT the conventional cell)</li>
+<li><strong>thickness</strong> – the thickness, in Angstroms, of the unit cell in the 3rd
+dimension (the direction which is not repeated periodically)</li>
+<li><strong>factor</strong> – a volume factor used to generate a larger or smaller
+unit cell. Increasing this gives extra space between atoms</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pyxtal.crystal.random_crystal_2D.Msgs">
+<code class="descname">Msgs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D.Msgs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.Msgs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a set of error and warning message if generation fails.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.PBC">
+<code class="descname">PBC</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.PBC" title="Permalink to this definition">¶</a></dt>
+<dd><p>The axis (between 1 and 3) which is not periodic.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.random_crystal_2D.check_compatible">
+<code class="descname">check_compatible</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D.check_compatible"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.check_compatible" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the number of atoms is compatible with the Wyckoff
+positions. Considers the number of degrees of freedom for each Wyckoff
+position, and makes sure at least one valid combination of WP’s exists.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.factor">
+<code class="descname">factor</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>“The volume factor used to generate the unit cell.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.random_crystal_2D.generate_crystal">
+<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=30</em>, <em>max2=30</em>, <em>max3=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.generate_crystal" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main code to generate a random atomic crystal. If successful,
+stores a pymatgen.core.structure object in self.struct and sets
+self.valid to True. If unsuccessful, sets self.valid to False and
+outputs an error message.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max1</strong> – the number of attempts for generating a lattice</li>
+<li><strong>max2</strong> – the number of attempts for a given lattice</li>
+<li><strong>max3</strong> – the number of attempts for a given Wyckoff position</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.lgp">
+<code class="descname">lgp</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.lgp" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number (between 1 and 80) for the crystal’s layer group.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.numIons">
+<code class="descname">numIons</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.numIons" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of each type of atom in the CONVENTIONAL cell</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.sg">
+<code class="descname">sg</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.sg" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number (between 1 and 230) for the international spacegroup.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.species">
+<code class="descname">species</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.species" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of atomic symbols for the types of atoms in the crystal.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.thickness">
+<code class="descname">thickness</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.thickness" title="Permalink to this definition">¶</a></dt>
+<dd><p>the thickness, in Angstroms, of the unit cell in the 3rd
+dimension.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.volume">
+<code class="descname">volume</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.volume" title="Permalink to this definition">¶</a></dt>
+<dd><p>The volume of the generated unit cell</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal_2D.wyckoffs">
+<code class="descname">wyckoffs</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D.wyckoffs" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Wyckoff positions for the crystal’s spacegroup. Sorted by
+multiplicity.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.site_symm">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">site_symm</code><span class="sig-paren">(</span><em>point, gen_pos, tol=0.001, lattice=array([[1, 0, 0],        [0, 1, 0],        [0, 0, 1]]), PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#site_symm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.site_symm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a point and a general Wyckoff position, return the list of symmetry
+operations leaving the point (coordinate or SymmOp) invariant. The returned
+SymmOps are a subset of the general position. The site symmetry can be used
+for determining the Wyckoff position for a set of points, or for
+determining the valid orientations of a molecule within a given Wyckoff
+position.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>point</strong> – a 1x3 coordinate or SymmOp object to find the symmetry of. If a
+SymmOp is given, the returned symmetries must also preserve the
+point’s orientaion</li>
+<li><strong>gen_pos</strong> – the general position of the spacegroup. Can be obtained using
+get_wyckoffs(sg)[0], where sg is the desired spacegroup number</li>
+<li><strong>tol</strong> – the numberical tolerance for determining equivalent positions and
+orientations.</li>
+<li><strong>lattice</strong> – a 3x3 matrix representing the lattice vectors of the unit cell</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list of SymmOp objects which leave the given point invariant</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.ss_string_from_ops">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">ss_string_from_ops</code><span class="sig-paren">(</span><em>ops</em>, <em>sg</em>, <em>complete=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#ss_string_from_ops"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.ss_string_from_ops" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the Hermann-Mauguin symbol for a site symmetry group, using a list of
+SymmOps as input. Note that the symbol does not necessarily refer to the
+x,y,z axes. For information on reading these symbols, see:
+<a class="reference external" href="http://en.wikipedia.org/wiki/Hermann-Mauguin_notation#Point_groups">http://en.wikipedia.org/wiki/Hermann-Mauguin_notation#Point_groups</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ops</strong> – a list of SymmOp objects representing the site symmetry</li>
+<li><strong>sg</strong> – International number of the spacegroup. Used to determine which
+axes to show. For example, a 3-fold rotation in a cubic system is
+written as “.3.”, whereas a 3-fold rotation in a trigonal system is
+written as “3..”</li>
+<li><strong>complete</strong> – whether or not all symmetry operations in the group
+are present. If False, we generate the rest</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">“2mm”</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">a string representing the site symmetry. Ex</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.verify_distances">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">verify_distances</code><span class="sig-paren">(</span><em>coordinates</em>, <em>species</em>, <em>lattice</em>, <em>factor=1.0</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#verify_distances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.verify_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the inter-atomic distance between all pairs of atoms in a crystal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coordinates</strong> – a 1x3 list of fractional coordinates</li>
+<li><strong>species</strong> – a list of atomic symbols for each coordinate</li>
+<li><strong>lattice</strong> – a 3x3 matrix representing the lattice vectors of the unit cell</li>
+<li><strong>factor</strong> – a tolerance factor for checking distances. A larger value means
+atoms must be farther apart</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">True if no atoms are too close together, False if any pair is too close</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 

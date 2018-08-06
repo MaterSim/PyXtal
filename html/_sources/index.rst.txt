@@ -1,4 +1,4 @@
-.. pyxtal documentation master file, created by
+.. pyXtal documentation master file, created by
    sphinx-quickstart on Tue Jul  3 13:17:06 2018.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -22,7 +22,7 @@ Installation
 ===========================================
 To install, simply make a copy of the source code:
 
-``git clone https://github.com/qzhu2017/crystallography``
+``git clone https://github.com/qzhu2017/pyxtal``
 
 Then, inside of the downloaded directory, run
 

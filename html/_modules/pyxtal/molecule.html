@@ -1,0 +1,557 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>pyxtal.molecule &#8212; pyXtal 0.1dev documentation</title>
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">pyXtal 0.1dev documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxtal.molecule</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for handling molecules. Uses the pymatgen.core.structure.Molecule</span>
+<span class="sd">class as a base. Has a function for reorienting molecules</span>
+<span class="sd">(reoriented_molecule), and for calculating valid orientations within a Wyckoff</span>
+<span class="sd">position based on symmetry (orientation_in_wyckoff_position).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">pymatgen.core.structure</span> <span class="k">import</span> <span class="n">Molecule</span>
+<span class="kn">from</span> <span class="nn">pymatgen.core.operations</span> <span class="k">import</span> <span class="n">SymmOp</span>
+<span class="kn">from</span> <span class="nn">pymatgen.symmetry.analyzer</span> <span class="k">import</span> <span class="n">PointGroupAnalyzer</span>
+<span class="kn">from</span> <span class="nn">pymatgen.symmetry.analyzer</span> <span class="k">import</span> <span class="n">generate_full_symmops</span>
+<span class="kn">from</span> <span class="nn">ase.build</span> <span class="k">import</span> <span class="n">molecule</span> <span class="k">as</span> <span class="n">ase_molecule</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="k">import</span> <span class="n">eigh</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="k">import</span> <span class="n">det</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">fabs</span>
+<span class="kn">from</span> <span class="nn">random</span> <span class="k">import</span> <span class="n">random</span>
+<span class="kn">from</span> <span class="nn">random</span> <span class="k">import</span> <span class="n">choice</span> <span class="k">as</span> <span class="n">choose</span>
+
+<span class="kn">from</span> <span class="nn">pyxtal.operations</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="k">import</span> <span class="n">get_wyckoff_symmetry</span>
+
+<span class="n">identity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+<span class="n">inversion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+
+<div class="viewcode-block" id="get_ase_mol"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_ase_mol">[docs]</a><span class="k">def</span> <span class="nf">get_ase_mol</span><span class="p">(</span><span class="n">molname</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert an ase molecule to a pymatgen Molecule object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        molname: a string for the chemical formula of the molecule</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a pymatgen Molecule object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ase_mol</span> <span class="o">=</span> <span class="n">ase_molecule</span><span class="p">(</span><span class="n">molname</span><span class="p">)</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">ase_mol</span><span class="o">.</span><span class="n">get_positions</span><span class="p">()</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="n">ase_mol</span><span class="o">.</span><span class="n">get_chemical_symbols</span><span class="p">()</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">Molecule</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">pos</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="get_inertia_tensor"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_inertia_tensor">[docs]</a><span class="k">def</span> <span class="nf">get_inertia_tensor</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the symmetric inertia tensor for a Molecule object. Used to find</span>
+<span class="sd">    the principal axes of symmetry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mol: a Molecule object</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a 3x3 numpy array representing a moment of inertia tensor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mo</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">get_centered_molecule</span><span class="p">()</span>
+    <span class="c1"># Initialize elements of the inertia tensor</span>
+    <span class="n">I11</span> <span class="o">=</span> <span class="n">I22</span> <span class="o">=</span> <span class="n">I33</span> <span class="o">=</span> <span class="n">I12</span> <span class="o">=</span> <span class="n">I13</span> <span class="o">=</span> <span class="n">I23</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mo</span><span class="p">)):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">mo</span><span class="o">.</span><span class="n">cart_coords</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">mo</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">specie</span><span class="o">.</span><span class="n">number</span>
+        <span class="n">I11</span> <span class="o">+=</span> <span class="n">m</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">z</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">I22</span> <span class="o">+=</span> <span class="n">m</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">z</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">I33</span> <span class="o">+=</span> <span class="n">m</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">y</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">I12</span> <span class="o">+=</span> <span class="o">-</span><span class="n">m</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span>
+        <span class="n">I13</span> <span class="o">+=</span> <span class="o">-</span><span class="n">m</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="n">z</span>
+        <span class="n">I23</span> <span class="o">+=</span> <span class="o">-</span><span class="n">m</span> <span class="o">*</span> <span class="n">y</span> <span class="o">*</span> <span class="n">z</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">I11</span><span class="p">,</span> <span class="n">I12</span><span class="p">,</span> <span class="n">I13</span><span class="p">],</span>
+                  <span class="p">[</span><span class="n">I12</span><span class="p">,</span> <span class="n">I22</span><span class="p">,</span> <span class="n">I23</span><span class="p">],</span>
+                  <span class="p">[</span><span class="n">I13</span><span class="p">,</span> <span class="n">I23</span><span class="p">,</span> <span class="n">I33</span><span class="p">]])</span></div>
+
+<div class="viewcode-block" id="get_moment_of_inertia"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_moment_of_inertia">[docs]</a><span class="k">def</span> <span class="nf">get_moment_of_inertia</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the moment of inertia of a molecule about an axis.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mol: a Molecule object</span>
+<span class="sd">        axis: a 3d axis (list or array) to compute the moment about</span>
+<span class="sd">        scale: changes the length scale of the molecule</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a scalar value for the moment of inertia about the axis</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#convert axis to unit vector</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+    <span class="n">moment</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">coords</span>
+        <span class="n">moment</span> <span class="o">+=</span> <span class="p">(</span><span class="n">scale</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span> <span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">moment</span></div>
+
+<div class="viewcode-block" id="reoriented_molecule"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.reoriented_molecule">[docs]</a><span class="k">def</span> <span class="nf">reoriented_molecule</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reorient a molecule so that its principal axes are aligned with the</span>
+<span class="sd">    identity matrix.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mol: a Molecule object</span>
+<span class="sd">        nested: internal variable to keep track of how many times the function</span>
+<span class="sd">            has been called recursively</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        new_mol, P: new_mol is a reoriented copy of the original molecule. P is</span>
+<span class="sd">            the 3x3 rotation matrix used to obtain it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">reorient</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+        <span class="n">new_mol</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">get_centered_molecule</span><span class="p">()</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">get_inertia_tensor</span><span class="p">(</span><span class="n">new_mol</span><span class="p">)</span>
+        <span class="c1">#Store the eigenvectors of the inertia tensor</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">eigh</span><span class="p">(</span><span class="n">A</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">det</span><span class="p">(</span><span class="n">P</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="c1">#reorient the molecule</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">P</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">new_mol</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+        <span class="c1">#Our molecule should never be inverted during reorientation.</span>
+        <span class="k">if</span> <span class="n">det</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: inverted reorientation applied.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_mol</span><span class="p">,</span> <span class="n">P</span>
+    <span class="c1">#If needed, recursively apply reorientation (due to numerical errors)</span>
+    <span class="n">iterations</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">max_iterations</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">new_mol</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="n">reorient</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">iterations</span> <span class="o">&lt;</span> <span class="n">max_iterations</span><span class="p">:</span>
+        <span class="n">is_okay</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">get_inertia_tensor</span><span class="p">(</span><span class="n">new_mol</span><span class="p">))[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+                <span class="n">okay</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+                    <span class="c1">#Check that diagonal elements are 0 or 1</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+                        <span class="n">okay</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1">#Check that off-diagonal elements are 0</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
+                        <span class="n">okay</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">okay</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="c1">#If matrix is not diagonal with 1&#39;s and/or 0&#39;s, reorient</span>
+            <span class="n">new_mol</span><span class="p">,</span> <span class="n">Q</span> <span class="o">=</span> <span class="n">reorient</span><span class="p">(</span><span class="n">new_mol</span><span class="p">)</span>
+            <span class="n">P</span> <span class="o">=</span> <span class="n">Q</span><span class="o">*</span><span class="n">P</span>
+            <span class="n">iterations</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">okay</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">iterations</span> <span class="o">==</span> <span class="n">max_iterations</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Could not reorient molecule after &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">max_iterations</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; attempts&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">new_mol</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">get_inertia_tensor</span><span class="p">(</span><span class="n">new_mol</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="n">new_mol</span><span class="p">,</span> <span class="n">P</span></div>
+
+<div class="viewcode-block" id="get_symmetry"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_symmetry">[docs]</a><span class="k">def</span> <span class="nf">get_symmetry</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a molecule&#39;s point symmetry.</span>
+<span class="sd">    Note: for linear molecules, infinitessimal rotations are treated as 6-fold</span>
+<span class="sd">    rotations, which works for 3d and 2d point groups.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mol: a Molecule object</span>
+<span class="sd">        already_oriented: whether or not the principle axes of mol are already</span>
+<span class="sd">            reoriented. Can save time if True, but is not required.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a list of SymmOp objects which leave the molecule unchanged when applied</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pga</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+    <span class="c1">#Handle linear molecules</span>
+    <span class="k">if</span> <span class="s1">&#39;*&#39;</span> <span class="ow">in</span> <span class="n">pga</span><span class="o">.</span><span class="n">sch_symbol</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">already_oriented</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="c1">#Reorient the molecule</span>
+            <span class="n">oriented_mol</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="n">reoriented_molecule</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+            <span class="n">pga</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">oriented_mol</span><span class="p">)</span>
+        <span class="n">pg</span> <span class="o">=</span> <span class="n">pga</span><span class="o">.</span><span class="n">get_pointgroup</span><span class="p">()</span>
+        <span class="n">symm_m</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">pg</span><span class="p">:</span>
+            <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+        <span class="c1">#Add 12-fold  and reflections in place of ininitesimal rotation</span>
+        <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]]:</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">aa2matrix</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">pi</span><span class="o">/</span><span class="mi">6</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">pga</span><span class="o">.</span><span class="n">is_valid_op</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>
+                <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                <span class="c1">#Any molecule with infinitesimal symmetry is linear;</span>
+                <span class="c1">#Thus, it possess mirror symmetry for any axis perpendicular</span>
+                <span class="c1">#To the rotational axis. pymatgen does not add this symmetry</span>
+                <span class="c1">#for all linear molecules - for example, hydrogen</span>
+                <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,-y,z&#39;</span><span class="p">))</span>
+                    <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,-z&#39;</span><span class="p">))</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,y,-z&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,y,z&#39;</span><span class="p">))</span>
+                    <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,-z&#39;</span><span class="p">))</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,-y,z&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,y,z&#39;</span><span class="p">))</span>
+                    <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,-y,z&#39;</span><span class="p">))</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,-y,-z&#39;</span><span class="p">)</span>
+                <span class="c1">#Generate a full list of SymmOps for the molecule&#39;s pointgroup</span>
+                <span class="n">symm_m</span> <span class="o">=</span> <span class="n">generate_full_symmops</span><span class="p">(</span><span class="n">symm_m</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>
+                <span class="k">break</span>
+        <span class="c1">#Reorient the SymmOps into mol&#39;s original frame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">already_oriented</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">symm_m</span><span class="p">:</span>
+                <span class="n">new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">inverse</span><span class="o">*</span><span class="n">op</span><span class="o">*</span><span class="n">P</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">new</span>
+        <span class="k">elif</span> <span class="n">already_oriented</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">symm_m</span>
+    <span class="c1">#Handle nonlinear molecules</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pg</span> <span class="o">=</span> <span class="n">pga</span><span class="o">.</span><span class="n">get_pointgroup</span><span class="p">()</span>
+        <span class="n">symm_m</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">pg</span><span class="p">:</span>
+            <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">symm_m</span></div>
+
+<div class="viewcode-block" id="orientation_in_wyckoff_position"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.orientation_in_wyckoff_position">[docs]</a><span class="k">def</span> <span class="nf">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tests if a molecule meets the symmetry requirements of a Wyckoff position,</span>
+<span class="sd">    and returns the valid orientations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mol: a Molecule object. Orientation is arbitrary</span>
+<span class="sd">        sg: the international spacegroup number</span>
+<span class="sd">        index: the index of the Wyckoff position within the sg to check</span>
+<span class="sd">        randomize: whether or not to apply a random rotation consistent with</span>
+<span class="sd">            the symmetry requirements</span>
+<span class="sd">        exact_orientation: whether to only check compatibility for the provided</span>
+<span class="sd">            orientation of the molecule. Used within general case for checking.</span>
+<span class="sd">            If True, this function only returns True or False</span>
+<span class="sd">        already_oriented: whether or not to reorient the principle axes</span>
+<span class="sd">            when calling get_symmetry. Setting to True can remove redundancy,</span>
+<span class="sd">            but is not necessary</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a list of operations.Orientation objects which can be applied to the</span>
+<span class="sd">        molecule while allowing it to satisfy the symmetry requirements of the</span>
+<span class="sd">        Wyckoff position. If no orientations are found, returns False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#Obtain the Wyckoff symmetry</span>
+    <span class="n">symm_w</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pga</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+
+    <span class="c1">#Check exact orientation</span>
+    <span class="k">if</span> <span class="n">exact_orientation</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">mo</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">symm_w</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pga</span><span class="o">.</span><span class="n">is_valid_op</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>
+                <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">valid</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">valid</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1">#Obtain molecular symmetry, exact_orientation==False</span>
+    <span class="n">symm_m</span> <span class="o">=</span> <span class="n">get_symmetry</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="n">already_oriented</span><span class="p">)</span>
+    <span class="c1">#Store OperationAnalyzer objects for each molecular SymmOp</span>
+    <span class="n">chiral</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">opa_m</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">op_m</span> <span class="ow">in</span> <span class="n">symm_m</span><span class="p">:</span>
+        <span class="n">opa</span> <span class="o">=</span> <span class="n">OperationAnalyzer</span><span class="p">(</span><span class="n">op_m</span><span class="p">)</span>
+        <span class="n">opa_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opa</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">opa</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;rotoinversion&quot;</span><span class="p">:</span>
+            <span class="n">chiral</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">opa</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;inversion&quot;</span><span class="p">:</span>
+            <span class="n">chiral</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1">#If molecule is chiral and allow_inversion is False,</span>
+    <span class="c1">#check if WP breaks symmetry</span>
+    <span class="k">if</span> <span class="n">chiral</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">allow_inversion</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">gen_pos</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">gen_pos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: cannot place chiral molecule in spagegroup #&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">sg</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+    <span class="c1">#Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp</span>
+    <span class="n">opa_w</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">op_w</span> <span class="ow">in</span> <span class="n">symm_w</span><span class="p">:</span>
+        <span class="n">opa_w</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OperationAnalyzer</span><span class="p">(</span><span class="n">op_w</span><span class="p">))</span>
+
+
+    <span class="c1">#Check for constraints from the Wyckoff symmetry...</span>
+    <span class="c1">#If we find ANY two constraints (SymmOps with unique axes), the molecule&#39;s</span>
+    <span class="c1">#point group MUST contain SymmOps which can be aligned to these particular</span>
+    <span class="c1">#constraints. However, there may be multiple compatible orientations of the</span>
+    <span class="c1">#molecule consistent with these constraints</span>
+    <span class="n">constraint1</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">constraint2</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">op_w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">symm_w</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">opa_w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">constraint1</span> <span class="o">=</span> <span class="n">opa_w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">op_w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">symm_w</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">opa_w</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">dot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">opa_w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">opa_w</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">dot</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">dot</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">)):</span>
+                        <span class="n">constraint2</span> <span class="o">=</span> <span class="n">opa_w</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                        <span class="k">break</span>
+            <span class="k">break</span>
+    <span class="c1">#Indirectly store the angle between the constraint axes</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">constraint1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">constraint2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">dot_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">constraint1</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">constraint2</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+    <span class="c1">#Generate 1st consistent molecular constraints</span>
+    <span class="n">constraints_m</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">constraint1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">opa1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">opa_m</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">opa1</span><span class="o">.</span><span class="n">is_conjugate</span><span class="p">(</span><span class="n">constraint1</span><span class="p">):</span>
+                <span class="n">constraints_m</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">opa1</span><span class="p">,</span> <span class="p">[]])</span>
+                <span class="c1">#Generate 2nd constraint in opposite direction</span>
+                <span class="n">extra</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">opa1</span><span class="p">)</span>
+                <span class="n">extra</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">opa1</span><span class="o">.</span><span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*-</span><span class="mi">1</span><span class="p">,</span> <span class="n">opa1</span><span class="o">.</span><span class="n">axis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*-</span><span class="mi">1</span><span class="p">,</span> <span class="n">opa1</span><span class="o">.</span><span class="n">axis</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">constraints_m</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">extra</span><span class="p">,</span> <span class="p">[]])</span>
+
+    <span class="c1">#Remove redundancy for the first constraints</span>
+    <span class="n">list_i</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">constraints_m</span><span class="p">)))</span>
+    <span class="n">list_j</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">constraints_m</span><span class="p">)))</span>
+    <span class="n">copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">constraints_m</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="p">,</span> <span class="n">c1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">copy</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">list_i</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="p">,</span> <span class="n">c2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">copy</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">j</span> <span class="ow">and</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">list_j</span> <span class="ow">and</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">list_i</span><span class="p">:</span>
+                    <span class="c1">#Check if axes are colinear</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">c2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">):</span>
+                        <span class="n">list_i</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                        <span class="n">list_j</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span><span class="c1"># np.isclose(np.dot(c1[0].axis, c2[0].axis), -1, rtol=.01):</span>
+                        <span class="n">cond1</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="n">cond2</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="k">for</span> <span class="n">opa</span> <span class="ow">in</span> <span class="n">opa_m</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">opa</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;rotation&quot;</span><span class="p">:</span>
+                                <span class="n">op</span> <span class="o">=</span> <span class="n">opa</span><span class="o">.</span><span class="n">op</span>
+                                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">),</span> <span class="n">c2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">05</span><span class="p">):</span>
+                                    <span class="n">cond1</span> <span class="o">=</span> <span class="kc">True</span>
+                                    <span class="k">break</span>
+                        <span class="k">if</span> <span class="n">cond1</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># or cond2 is True:</span>
+                            <span class="n">list_i</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                            <span class="n">list_j</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>             
+    <span class="n">c_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">constraints_m</span><span class="p">)</span>
+    <span class="n">constraints_m</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">list_i</span><span class="p">:</span>
+        <span class="n">constraints_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c_m</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="c1">#Generate 2nd consistent molecular constraints</span>
+    <span class="n">valid</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">constraints_m</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">constraint2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">constraints_m</span><span class="p">):</span>
+            <span class="n">opa1</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">opa2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">opa_m</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">opa2</span><span class="o">.</span><span class="n">is_conjugate</span><span class="p">(</span><span class="n">constraint2</span><span class="p">):</span>
+                    <span class="n">dot_m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">opa1</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">opa2</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+                    <span class="c1">#Ensure that the angles are equal</span>
+                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dot_m</span> <span class="o">-</span> <span class="n">dot_w</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">02</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dot_m</span> <span class="o">+</span> <span class="n">dot_w</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">02</span><span class="p">:</span>
+                        <span class="n">constraints_m</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opa2</span><span class="p">)</span>
+                        <span class="c1">#Generate 2nd constraint in opposite direction</span>
+                        <span class="n">extra</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">opa2</span><span class="p">)</span>
+                        <span class="n">extra</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">opa2</span><span class="o">.</span><span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*-</span><span class="mi">1</span><span class="p">,</span> <span class="n">opa2</span><span class="o">.</span><span class="n">axis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*-</span><span class="mi">1</span><span class="p">,</span> <span class="n">opa2</span><span class="o">.</span><span class="n">axis</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*-</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="n">constraints_m</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+            <span class="c1">#If no consistent constraints are found, remove first constraint</span>
+            <span class="k">if</span> <span class="n">constraints_m</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="p">[]:</span>
+                <span class="n">valid</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">constraints_m</span><span class="p">)</span>
+    <span class="n">constraints_m</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">valid</span><span class="p">:</span>
+        <span class="n">constraints_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">copy</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="c1">#Generate orientations consistent with the possible constraints</span>
+    <span class="n">orientations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1">#Loop over molecular constraint sets</span>
+    <span class="k">for</span> <span class="n">c1</span> <span class="ow">in</span> <span class="n">constraints_m</span><span class="p">:</span>
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span>
+        <span class="n">v2</span> <span class="o">=</span> <span class="n">constraint1</span><span class="o">.</span><span class="n">axis</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">rotate_vector</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">)</span>
+        <span class="c1">#Loop over second molecular constraints</span>
+        <span class="k">for</span> <span class="n">opa</span> <span class="ow">in</span> <span class="n">c1</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">phi</span> <span class="o">=</span> <span class="n">angle</span><span class="p">(</span><span class="n">constraint1</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">constraint2</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+            <span class="n">phi2</span> <span class="o">=</span> <span class="n">angle</span><span class="p">(</span><span class="n">constraint1</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">opa</span><span class="o">.</span><span class="n">axis</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">isclose</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">phi2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">):</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">opa</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span> <span class="o">-</span> <span class="n">constraint2</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+                <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+                <span class="n">R</span> <span class="o">=</span> <span class="n">aa2matrix</span><span class="p">(</span><span class="n">constraint1</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+                <span class="n">T2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">T2</span><span class="p">,</span> <span class="n">opa</span><span class="o">.</span><span class="n">axis</span><span class="p">),</span> <span class="n">constraint2</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">):</span>
+                    <span class="n">T2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">R</span><span class="p">),</span> <span class="n">T</span><span class="p">)</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">T2</span><span class="p">,</span> <span class="n">opa</span><span class="o">.</span><span class="n">axis</span><span class="p">),</span> <span class="n">constraint2</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Generated incorrect rotation: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+                <span class="n">o</span> <span class="o">=</span> <span class="n">orientation</span><span class="p">(</span><span class="n">T2</span><span class="p">,</span> <span class="n">degrees</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">orientations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+        <span class="c1">#If there is only one constraint</span>
+        <span class="k">if</span> <span class="n">c1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="n">orientation</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">degrees</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">constraint1</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+            <span class="n">orientations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+    <span class="c1">#Ensure the identity orientation is checked if no constraints are found</span>
+    <span class="k">if</span> <span class="n">constraints_m</span> <span class="o">==</span> <span class="p">[]:</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="n">orientation</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">degrees</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">orientations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+    
+    <span class="c1">#Remove redundancy from orientations</span>
+    <span class="n">list_i</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">orientations</span><span class="p">)))</span>
+    <span class="n">list_j</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">orientations</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="p">,</span> <span class="n">o1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">orientations</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">list_i</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="p">,</span> <span class="n">o2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">orientations</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">j</span> <span class="ow">and</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">list_j</span> <span class="ow">and</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">list_i</span><span class="p">:</span>
+                    <span class="n">m1</span> <span class="o">=</span> <span class="n">o1</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="n">m2</span> <span class="o">=</span> <span class="n">o2</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="n">new_op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">m1</span><span class="p">)),</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">P</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">m1</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">old_op</span> <span class="o">=</span> <span class="n">P</span><span class="o">*</span><span class="n">new_op</span><span class="o">*</span><span class="n">P</span><span class="o">.</span><span class="n">inverse</span>
+                    <span class="k">if</span> <span class="n">pga</span><span class="o">.</span><span class="n">is_valid_op</span><span class="p">(</span><span class="n">old_op</span><span class="p">):</span>
+                        <span class="n">list_i</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                        <span class="n">list_j</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+    <span class="n">copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">orientations</span><span class="p">)</span>
+    <span class="n">orientations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">list_i</span><span class="p">:</span>
+        <span class="n">orientations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">copy</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="c1">#Check each of the found orientations for consistency with the Wyckoff pos.</span>
+    <span class="c1">#If consistent, put into an array of valid orientations</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">orientations</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">randomize</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">get_op</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">randomize</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">mo</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+        <span class="n">mo</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="n">already_oriented</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">allowed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+    <span class="c1">#Return the array of allowed orientations. If there are none, return False</span>
+    <span class="k">if</span> <span class="n">allowed</span> <span class="o">==</span> <span class="p">[]:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">allowed</span></div>
+
+<span class="c1">#Test Functionality</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="c1">#---------------------------------------------------</span>
+    <span class="c1">#Test cases: water, methane, and c60 via pymatgen</span>
+    <span class="n">h2o</span> <span class="o">=</span> <span class="n">Molecule</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s1">&#39;xyz/water.xyz&#39;</span><span class="p">)</span>
+    <span class="n">pga_h2o</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">h2o</span><span class="p">)</span>
+    <span class="n">pg_h2o</span> <span class="o">=</span> <span class="n">pga_h2o</span><span class="o">.</span><span class="n">get_pointgroup</span><span class="p">()</span>
+
+
+    <span class="c1">#from ase.build import molecule</span>
+
+    <span class="c1">#Testing water</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">get_ase_molecule</span><span class="p">(</span><span class="s2">&quot;H2O&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original molecule:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="c1">#Apply random rotation to avoid lucky results</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">aa2matrix</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">random</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">R_op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">R</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">mol</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">R_op</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Rotated molecule:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="n">pga</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">pga</span><span class="o">.</span><span class="n">symmetrize_molecule</span><span class="p">()[</span><span class="s1">&#39;sym_mol&#39;</span><span class="p">]</span>    
+
+    <span class="c1">#orientation_in_wyckoff_position(mol, sg, WP&#39;s index in sg)</span>
+    <span class="c1">#returns a list of orientations consistent with the WP&#39;s symmetry.</span>
+    <span class="c1">#We can choose any of these orientations at random using np.random.choice</span>
+    <span class="c1">#To use an orientation, do mol.apply_operation(orientation)</span>
+    <span class="c1">#Spacegroup WP 24l (index 2) in sg 221 has m.. symmetry</span>
+    <span class="n">allowed</span> <span class="o">=</span>  <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="mi">221</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Found &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">allowed</span><span class="p">))</span><span class="o">+</span><span class="s2">&quot; orientations in sg 221 position 1g:&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">pyXtal 0.1dev documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+    </div>
+  </body>
+</html>
