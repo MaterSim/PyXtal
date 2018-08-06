@@ -31,13 +31,14 @@ of the module:
 
     attempts (-a): the number of structures to generate. Note: if any of the
         attempts fail, the number of generated structures will be less than this
-        value. Structures will be output to separate cif files. Defaults to 10  
+        value. Structures will be output to separate cif files. Defaults to 1  
 
     outdir (-o): the file directory where cif files will be output to.
-        Defaults to "."  
+        Defaults to "out"  
 """
 
 import sys
+from time import time
 #from pkg_resources import resource_string
 from pkg_resources import resource_filename
 from spglib import get_symmetry_dataset
@@ -1930,6 +1931,7 @@ class random_crystal_2D():
 
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
+    import os
     parser = OptionParser()
     parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=206, type=int,
             help="desired space group number: 1-230, e.g., 206")
@@ -1939,16 +1941,11 @@ if __name__ == "__main__":
             help="desired numbers of atoms: 16", metavar="numIons")
     parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
             help="volume factor: default 3.0", metavar="factor")
-
-
     parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
-    parser.add_option("-a", "--attempts", dest="attempts", default=10, type=int, 
+    parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
             help="Directory for storing output cif files: default 'out'", metavar="outdir")
-
-
-
 
     (options, args) = parser.parse_args()    
     element = options.element
@@ -1965,21 +1962,30 @@ if __name__ == "__main__":
     else:
         system = [element]
         numIons = [int(number)]
+
+    try:
+        os.mkdir(outdir)
+    except: pass
+
+    filecount = 1 #To check whether a file already exists
     for i in range(attempts):
         numIons0 = np.array(numIons)
         sg = options.sg
+        start = time()
         rand_crystal = random_crystal(options.sg, system, numIons0, options.factor)
+        end = time()
+        timespent = np.around((end - start), decimals=2)
 
         if rand_crystal.valid:
             #Output a cif file
             written = False
             try:
-                mkdir(outdir)
-            except: pass
-            try:
                 comp = str(rand_crystal.struct.composition)
                 comp = comp.replace(" ", "")
-                cifpath = outdir + '/' + comp + "_" + str(i+1) + '.cif'
+                cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
+                while os.path.isfile(cifpath):
+                    filecount += 1
+                    cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
                 CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
                 written = True
             except: pass

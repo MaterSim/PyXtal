@@ -35,7 +35,7 @@ command-line usage of the module:
         value. Structures will be output to separate cif files. Defaults to 1  
 
     outdir (-o): the file directory where cif files will be output to. Defaults
-        to "."  
+        to "out"  
 
     checkatoms (-c): whether or not to check inter-atomic distances at each step
         of generation. When True, produces more accurate results, but requires
@@ -51,6 +51,7 @@ command-line usage of the module:
         properties of the mirror molecule are known and suitable for the desired
         application. Defaults to False  
 """
+
 from pyxtal.crystal import *
 from pyxtal.molecule import *
 from pyxtal.operations import *
@@ -450,7 +451,7 @@ class molecular_crystal():
                 self.valid_orientations[-1].append([])
                 for j, wp in enumerate(x):
                     wp_index += 1
-                    allowed = orientation_in_wyckoff_position(mol, self.sg, wp_index, already_oriented=True, allow_inversion=self.allow_inversion, PBC=self.PBC)
+                    allowed = orientation_in_wyckoff_position(mol, self.sg, wp_index, already_oriented=True, allow_inversion=self.allow_inversion)
                     if allowed is not False:
                         self.valid_orientations[-1][-1].append(allowed)
                     else:
@@ -1246,7 +1247,7 @@ class molecular_crystal_2D():
 
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
-    from os import mkdir
+    import os
 
     parser = OptionParser()
     parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
@@ -1296,6 +1297,12 @@ if __name__ == "__main__":
         system = [get_ase_mol(molecule)]
         numMols = [int(number)]
     orientations = None
+
+    try:
+        os.mkdir(outdir)
+    except: pass
+
+    filecount = 1 #To check whether a file already exists
     for i in range(attempts):
         start = time()
         numMols0 = np.array(numMols)
@@ -1304,14 +1311,15 @@ if __name__ == "__main__":
         end = time()
         timespent = np.around((end - start), decimals=2)
         if rand_crystal.valid:
+            #Output a cif file
             written = False
-            try:
-                mkdir(outdir)
-            except: pass
             try:
                 comp = str(rand_crystal.struct.composition)
                 comp = comp.replace(" ", "")
-                cifpath = outdir + '/' + comp + "_" + str(i+1) + '.cif'
+                cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
+                while os.path.isfile(cifpath):
+                    filecount += 1
+                    cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
                 CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
                 written = True
             except: pass
