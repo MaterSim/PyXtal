@@ -82,7 +82,7 @@
 <span class="sd">        value. Structures will be output to separate cif files. Defaults to 1  </span>
 
 <span class="sd">    outdir (-o): the file directory where cif files will be output to. Defaults</span>
-<span class="sd">        to &quot;.&quot;  </span>
+<span class="sd">        to &quot;out&quot;  </span>
 
 <span class="sd">    checkatoms (-c): whether or not to check inter-atomic distances at each step</span>
 <span class="sd">        of generation. When True, produces more accurate results, but requires</span>
@@ -498,7 +498,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
                 <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">wp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
                     <span class="n">wp_index</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">allowed</span> <span class="o">=</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">wp_index</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allow_inversion</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+                    <span class="n">allowed</span> <span class="o">=</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">wp_index</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allow_inversion</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">allowed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -1294,7 +1294,7 @@
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="c1">#-------------------------------- Options -------------------------</span>
-    <span class="kn">from</span> <span class="nn">os</span> <span class="k">import</span> <span class="n">mkdir</span>
+    <span class="kn">import</span> <span class="nn">os</span>
 
     <span class="n">parser</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="s2">&quot;--spacegroup&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s2">&quot;sg&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;sg&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
@@ -1344,6 +1344,12 @@
         <span class="n">system</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_ase_mol</span><span class="p">(</span><span class="n">molecule</span><span class="p">)]</span>
         <span class="n">numMols</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">number</span><span class="p">)]</span>
     <span class="n">orientations</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">outdir</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
+
+    <span class="n">filecount</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1">#To check whether a file already exists</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">attempts</span><span class="p">):</span>
         <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
         <span class="n">numMols0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numMols</span><span class="p">)</span>
@@ -1352,14 +1358,15 @@
         <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
         <span class="n">timespent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">((</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">rand_crystal</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+            <span class="c1">#Output a cif file</span>
             <span class="n">written</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">mkdir</span><span class="p">(</span><span class="n">outdir</span><span class="p">)</span>
-            <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">comp</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">rand_crystal</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">composition</span><span class="p">)</span>
                 <span class="n">comp</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-                <span class="n">cifpath</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">comp</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.cif&#39;</span>
+                <span class="n">cifpath</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">comp</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">filecount</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.cif&#39;</span>
+                <span class="k">while</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">cifpath</span><span class="p">):</span>
+                    <span class="n">filecount</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">cifpath</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">comp</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">filecount</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.cif&#39;</span>
                 <span class="n">CifWriter</span><span class="p">(</span><span class="n">rand_crystal</span><span class="o">.</span><span class="n">struct</span><span class="p">,</span> <span class="n">symprec</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">write_file</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">cifpath</span><span class="p">)</span>
                 <span class="n">written</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>

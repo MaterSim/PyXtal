@@ -77,7 +77,10 @@ Currently, the software allows generation of 3d atomic and molecular crystals; 2
 <p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.crystal</span></code></p>
 <p>or</p>
 <p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span></code></p>
-<p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="pyxtal.crystal.html">crystal</a>, <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal</a>. Alternatively, the functions can be called directly within Python, as illustrated in the following examples.</p>
+<p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="pyxtal.crystal.html">crystal</a>, <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal</a>.
+To explore the full options, please use the -h flag:</p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span> <span class="pre">-h</span></code></p>
+<p>Alternatively, the functions can be called directly within Python, as illustrated in the following examples.</p>
 <p><strong>Atomic 3d Crystals</strong></p>
 <p>The main function for generating and storing crystals is <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal">crystal.random_crystal</a>. Here is a simple example of a carbon crystal:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>

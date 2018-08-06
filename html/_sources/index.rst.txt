@@ -48,7 +48,12 @@ or
 
 As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: `crystal
 <pyxtal.crystal.html>`_, `molecular_crystal
-<pyxtal.molecular_crystal.html>`_. Alternatively, the functions can be called directly within Python, as illustrated in the following examples.
+<pyxtal.molecular_crystal.html>`_. 
+To explore the full options, please use the -h flag:
+
+``python -m pyxtal.molecular_crystal -h``
+
+Alternatively, the functions can be called directly within Python, as illustrated in the following examples.
 
 **Atomic 3d Crystals**
 
