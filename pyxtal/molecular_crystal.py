@@ -53,7 +53,8 @@ command-line usage of the module:
         properties of the mirror molecule are known and suitable for the desired
         application. Defaults to False  
 
-    dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using a layer group number instead of a space group number.  
+    dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using
+        a layer group number instead of a space group number.  
 
     thickness (-t): The thickness, in Angstroms, to use when generating a
         2D crystal. Note that this will not necessarily be one of the lattice
