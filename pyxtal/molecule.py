@@ -4,6 +4,7 @@ class as a base. Has a function for reorienting molecules
 (reoriented_molecule), and for calculating valid orientations within a Wyckoff
 position based on symmetry (orientation_in_wyckoff_position).
 """
+
 from pymatgen.core.structure import Molecule
 from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
