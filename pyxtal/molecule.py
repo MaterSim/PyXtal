@@ -438,15 +438,14 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
 if __name__ == "__main__":
 #---------------------------------------------------
     #Test cases: water, methane, and c60 via pymatgen
-    h2o = Molecule.from_file('xyz/water.xyz')
-    pga_h2o = PointGroupAnalyzer(h2o)
-    pg_h2o = pga_h2o.get_pointgroup()
-
+    #h2o = Molecule.from_file('xyz/water.xyz')
+    #pga_h2o = PointGroupAnalyzer(h2o)
+    #pg_h2o = pga_h2o.get_pointgroup()
 
     #from ase.build import molecule
 
     #Testing water
-    mol = get_ase_molecule("H2O")
+    mol = get_ase_mol("H2O")
     print("Original molecule:")
     print(mol)
     print()
