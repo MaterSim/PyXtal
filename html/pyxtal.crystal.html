@@ -51,8 +51,10 @@ pymatgen- or spglib-type structure object is created, which can be saved to a
 of the module:</p>
 <blockquote>
 <div><dl class="docutils">
-<dt>spacegroup (-s): the international spacegroup number to be generated.</dt>
-<dd>Defaults to 206</dd>
+<dt>spacegroup (-s): the international spacegroup number (between 1 and 230)</dt>
+<dd>to be generated. In the case of a 2D crystal (using option ‘-d 2’),
+this will instead be the layer group number (between 1 and 80).
+Defaults to 36.</dd>
 <dt>element (-e): the chemical symbol of the atom(s) to use. For multiple</dt>
 <dd>molecule types, separate entries with commas. Ex: “C”, “H, O, N”.
 Defaults to Li</dd>
@@ -76,6 +78,12 @@ structure. Defaults to 0</dd>
 value. Structures will be output to separate cif files. Defaults to 1</dd>
 <dt>outdir (-o): the file directory where cif files will be output to.</dt>
 <dd>Defaults to “out”</dd>
+<dt>dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using</dt>
+<dd>a layer group number instead of a space group number.</dd>
+<dt>thickness (-t): The thickness, in Angstroms, to use when generating a</dt>
+<dd>2D crystal. Note that this will not necessarily be one of the lattice
+vectors, but will represent the perpendicular distance along the non-
+periodic direction. Defaults to 2.0</dd>
 </dl>
 </div></blockquote>
 <dl class="function">
@@ -270,7 +278,7 @@ to x, y, and z respectively.</li>
 
 <dl class="function">
 <dt id="pyxtal.crystal.estimate_volume">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">estimate_volume</code><span class="sig-paren">(</span><em>numIons</em>, <em>species</em>, <em>factor=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#estimate_volume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.estimate_volume" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">estimate_volume</code><span class="sig-paren">(</span><em>numIons</em>, <em>species</em>, <em>factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#estimate_volume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.estimate_volume" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimates the volume of a unit cell based on the number and types of ions.
 Assumes each atom takes up a sphere with radius equal to its covalent bond
 radius.</p>

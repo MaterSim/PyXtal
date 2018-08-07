@@ -485,15 +485,14 @@
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
 <span class="c1">#---------------------------------------------------</span>
     <span class="c1">#Test cases: water, methane, and c60 via pymatgen</span>
-    <span class="n">h2o</span> <span class="o">=</span> <span class="n">Molecule</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s1">&#39;xyz/water.xyz&#39;</span><span class="p">)</span>
-    <span class="n">pga_h2o</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">h2o</span><span class="p">)</span>
-    <span class="n">pg_h2o</span> <span class="o">=</span> <span class="n">pga_h2o</span><span class="o">.</span><span class="n">get_pointgroup</span><span class="p">()</span>
-
+    <span class="c1">#h2o = Molecule.from_file(&#39;xyz/water.xyz&#39;)</span>
+    <span class="c1">#pga_h2o = PointGroupAnalyzer(h2o)</span>
+    <span class="c1">#pg_h2o = pga_h2o.get_pointgroup()</span>
 
     <span class="c1">#from ase.build import molecule</span>
 
     <span class="c1">#Testing water</span>
-    <span class="n">mol</span> <span class="o">=</span> <span class="n">get_ase_molecule</span><span class="p">(</span><span class="s2">&quot;H2O&quot;</span><span class="p">)</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">get_ase_mol</span><span class="p">(</span><span class="s2">&quot;H2O&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original molecule:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>

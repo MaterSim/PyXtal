@@ -51,8 +51,10 @@
 <span class="sd">be saved to a .cif file. Options (preceded by two dashes) are provided for</span>
 <span class="sd">command-line usage of the module:  </span>
 
-<span class="sd">    spacegroup (-s): the international spacegroup number to be generated.</span>
-<span class="sd">        Defaults to 36  </span>
+<span class="sd">    spacegroup (-s): the international spacegroup number (between 1 and 230)</span>
+<span class="sd">        to be generated. In the case of a 2D crystal (using option &#39;-d 2&#39;),</span>
+<span class="sd">        this will instead be the layer group number (between 1 and 80).</span>
+<span class="sd">        Defaults to 36.  </span>
 
 <span class="sd">    molecule (-e): the chemical formula of the molecule to use. For multiple</span>
 <span class="sd">        molecule types, separate entries with commas. Ex: &quot;C60&quot;, &quot;H2O, CH4,</span>
@@ -97,8 +99,15 @@
 <span class="sd">        symmetry. This should only be True if the chemical and biological</span>
 <span class="sd">        properties of the mirror molecule are known and suitable for the desired</span>
 <span class="sd">        application. Defaults to False  </span>
-<span class="sd">&quot;&quot;&quot;</span>
 
+<span class="sd">    dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using</span>
+<span class="sd">        a layer group number instead of a space group number.  </span>
+
+<span class="sd">    thickness (-t): The thickness, in Angstroms, to use when generating a</span>
+<span class="sd">        2D crystal. Note that this will not necessarily be one of the lattice</span>
+<span class="sd">        vectors, but will represent the perpendicular distance along the non-</span>
+<span class="sd">        periodic direction. Defaults to 2.0  </span>
+<span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">pyxtal.molecule</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">pyxtal.operations</span> <span class="k">import</span> <span class="o">*</span>
@@ -165,16 +174,14 @@
                 <span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
     <span class="k">return</span> <span class="n">valid_orientations</span></div>
 
-<div class="viewcode-block" id="get_box"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.get_box">[docs]</a><span class="k">def</span> <span class="nf">get_box</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="get_box"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.get_box">[docs]</a><span class="k">def</span> <span class="nf">get_box</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given a molecule, find a minimum orthorhombic box containing it.</span>
-<span class="sd">    Size is calculated using min and max x, y, and z values.</span>
+<span class="sd">    Size is calculated using min and max x, y, and z values, plus the padding defined by the vdw radius</span>
 <span class="sd">    For best results, call oriented_molecule first.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        mol: a pymatgen Molecule object</span>
-<span class="sd">        padding: the extra space to be added in each direction. Double this</span>
-<span class="sd">            amount will be added to each of the x, y, and z directions</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in</span>
@@ -182,15 +189,17 @@
 <span class="sd">        direction, and so on</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">minx</span><span class="p">,</span> <span class="n">miny</span><span class="p">,</span> <span class="n">minz</span><span class="p">,</span> <span class="n">maxx</span><span class="p">,</span> <span class="n">maxy</span><span class="p">,</span> <span class="n">maxz</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+    <span class="c1">#for p in mol:</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">mol</span><span class="p">:</span>
         <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">coords</span>
-        <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">minx</span><span class="p">:</span> <span class="n">minx</span> <span class="o">=</span> <span class="n">x</span>
-        <span class="k">if</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">minx</span><span class="p">:</span> <span class="n">minx</span> <span class="o">=</span> <span class="n">y</span>
-        <span class="k">if</span> <span class="n">z</span> <span class="o">&lt;</span> <span class="n">minx</span><span class="p">:</span> <span class="n">minx</span> <span class="o">=</span> <span class="n">z</span>
-        <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">maxx</span><span class="p">:</span> <span class="n">maxx</span> <span class="o">=</span> <span class="n">x</span>
-        <span class="k">if</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="n">maxx</span><span class="p">:</span> <span class="n">maxx</span> <span class="o">=</span> <span class="n">y</span>
-        <span class="k">if</span> <span class="n">z</span> <span class="o">&gt;</span> <span class="n">maxx</span><span class="p">:</span> <span class="n">maxx</span> <span class="o">=</span> <span class="n">z</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">minx</span><span class="o">-</span><span class="n">padding</span><span class="p">,</span><span class="n">maxx</span><span class="o">+</span><span class="n">padding</span><span class="p">,</span><span class="n">miny</span><span class="o">-</span><span class="n">padding</span><span class="p">,</span><span class="n">maxy</span><span class="o">+</span><span class="n">padding</span><span class="p">,</span><span class="n">minz</span><span class="o">-</span><span class="n">padding</span><span class="p">,</span><span class="n">maxz</span><span class="o">+</span><span class="n">padding</span><span class="p">]</span></div>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">species_string</span><span class="p">)</span><span class="o">.</span><span class="n">vdw_radius</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span> <span class="n">minx</span><span class="p">:</span> <span class="n">minx</span> <span class="o">=</span> <span class="n">x</span><span class="o">-</span><span class="n">r</span>
+        <span class="k">if</span> <span class="n">y</span><span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span> <span class="n">miny</span><span class="p">:</span> <span class="n">miny</span> <span class="o">=</span> <span class="n">y</span><span class="o">-</span><span class="n">r</span>
+        <span class="k">if</span> <span class="n">z</span><span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span> <span class="n">minz</span><span class="p">:</span> <span class="n">minx</span> <span class="o">=</span> <span class="n">z</span><span class="o">-</span><span class="n">r</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">+</span><span class="n">r</span> <span class="o">&gt;</span> <span class="n">maxx</span><span class="p">:</span> <span class="n">maxx</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="n">r</span>
+        <span class="k">if</span> <span class="n">y</span><span class="o">+</span><span class="n">r</span> <span class="o">&gt;</span> <span class="n">maxy</span><span class="p">:</span> <span class="n">maxy</span> <span class="o">=</span> <span class="n">y</span><span class="o">+</span><span class="n">r</span>
+        <span class="k">if</span> <span class="n">z</span><span class="o">+</span><span class="n">r</span> <span class="o">&gt;</span> <span class="n">maxz</span><span class="p">:</span> <span class="n">maxz</span> <span class="o">=</span> <span class="n">z</span><span class="o">+</span><span class="n">r</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">minx</span><span class="p">,</span><span class="n">maxx</span><span class="p">,</span><span class="n">miny</span><span class="p">,</span><span class="n">maxy</span><span class="p">,</span><span class="n">minz</span><span class="p">,</span><span class="n">maxz</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="check_distance_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_distance_molecular">[docs]</a><span class="k">def</span> <span class="nf">check_distance_molecular</span><span class="p">(</span><span class="n">coord1</span><span class="p">,</span> <span class="n">coord2</span><span class="p">,</span> <span class="n">indices1</span><span class="p">,</span> <span class="n">index2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">radii</span><span class="p">,</span> <span class="n">factor</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1314,6 +1323,10 @@
             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to check inter-atomic distances at each step: default True&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;outdir&quot;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--allowinversion&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s2">&quot;allowinversion&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;False&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> 
             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to allow inversion of chiral molecules: default False&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;outdir&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s2">&quot;-d&quot;</span><span class="p">,</span> <span class="s2">&quot;--dimension&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s2">&quot;dimension&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;dimension&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;desired dimension: (3 or 2 for 3d or 2d, respectively)&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="s2">&quot;--thickness&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s2">&quot;thickness&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;thickness&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Thickness, in Angstroms, of a 2D crystal: default 2.0&quot;</span><span class="p">)</span>
 
     <span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>    
     <span class="n">molecule</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">molecule</span>
@@ -1321,6 +1334,10 @@
     <span class="n">verbosity</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">verbosity</span>
     <span class="n">attempts</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">attempts</span>
     <span class="n">outdir</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">outdir</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">factor</span>
+    <span class="n">dimension</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">dimension</span>
+    <span class="n">thickness</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">thickness</span>
+
     <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">checkatoms</span> <span class="o">==</span> <span class="s2">&quot;True&quot;</span> <span class="ow">or</span> <span class="n">options</span><span class="o">.</span><span class="n">checkatoms</span> <span class="o">==</span> <span class="s2">&quot;False&quot;</span><span class="p">:</span>
         <span class="n">checkatoms</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">checkatoms</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -1354,7 +1371,10 @@
         <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
         <span class="n">numMols0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numMols</span><span class="p">)</span>
         <span class="n">sg</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">sg</span>
-        <span class="n">rand_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">system</span><span class="p">,</span> <span class="n">numMols0</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">factor</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="n">checkatoms</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allowinversion</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dimension</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">rand_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">system</span><span class="p">,</span> <span class="n">numMols0</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="n">checkatoms</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allowinversion</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dimension</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">rand_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal_2D</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">system</span><span class="p">,</span> <span class="n">numMols0</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allowinversion</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="n">checkatoms</span><span class="p">)</span>
         <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
         <span class="n">timespent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">((</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">rand_crystal</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>

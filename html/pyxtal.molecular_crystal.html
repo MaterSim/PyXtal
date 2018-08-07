@@ -51,8 +51,10 @@ be saved to a .cif file. Options (preceded by two dashes) are provided for
 command-line usage of the module:</p>
 <blockquote>
 <div><dl class="docutils">
-<dt>spacegroup (-s): the international spacegroup number to be generated.</dt>
-<dd>Defaults to 36</dd>
+<dt>spacegroup (-s): the international spacegroup number (between 1 and 230)</dt>
+<dd>to be generated. In the case of a 2D crystal (using option ‘-d 2’),
+this will instead be the layer group number (between 1 and 80).
+Defaults to 36.</dd>
 <dt>molecule (-e): the chemical formula of the molecule to use. For multiple</dt>
 <dd>molecule types, separate entries with commas. Ex: “C60”, “H2O, CH4,
 NH3”. Defaults to H2O</dd>
@@ -89,6 +91,12 @@ like C60. Defaults to True</dd>
 symmetry. This should only be True if the chemical and biological
 properties of the mirror molecule are known and suitable for the desired
 application. Defaults to False</dd>
+<dt>dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using</dt>
+<dd>a layer group number instead of a space group number.</dd>
+<dt>thickness (-t): The thickness, in Angstroms, to use when generating a</dt>
+<dd>2D crystal. Note that this will not necessarily be one of the lattice
+vectors, but will represent the perpendicular distance along the non-
+periodic direction. Defaults to 2.0</dd>
 </dl>
 </div></blockquote>
 <dl class="function">
@@ -213,25 +221,19 @@ returns False</p>
 
 <dl class="function">
 <dt id="pyxtal.molecular_crystal.get_box">
-<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">get_box</code><span class="sig-paren">(</span><em>mol</em>, <em>padding=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#get_box"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.get_box" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">get_box</code><span class="sig-paren">(</span><em>mol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#get_box"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.get_box" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a molecule, find a minimum orthorhombic box containing it.
-Size is calculated using min and max x, y, and z values.
+Size is calculated using min and max x, y, and z values, plus the padding defined by the vdw radius
 For best results, call oriented_molecule first.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>mol</strong> – a pymatgen Molecule object</li>
-<li><strong>padding</strong> – the extra space to be added in each direction. Double this
-amount will be added to each of the x, y, and z directions</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mol</strong> – a pymatgen Molecule object</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
 the negative x direction, x2 is the displacement in the positive x
-direction, and so on</p>
-</td>
+direction, and so on</td>
 </tr>
 </tbody>
 </table>
