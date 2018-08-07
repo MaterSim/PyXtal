@@ -4,8 +4,10 @@ pymatgen- or spglib-type structure object is created, which can be saved to a
 .cif file. Options (preceded by two dashes) are provided for command-line usage
 of the module:  
 
-    spacegroup (-s): the international spacegroup number to be generated.
-        Defaults to 206  
+    spacegroup (-s): the international spacegroup number (between 1 and 230)
+        to be generated. In the case of a 2D crystal (using option '-d 2'),
+        this will instead be the layer group number (between 1 and 80).
+        Defaults to 36.  
 
     element (-e): the chemical symbol of the atom(s) to use. For multiple
         molecule types, separate entries with commas. Ex: "C", "H, O, N".
@@ -34,7 +36,14 @@ of the module:
         value. Structures will be output to separate cif files. Defaults to 1  
 
     outdir (-o): the file directory where cif files will be output to.
-        Defaults to "out"  
+        Defaults to "out"
+
+    dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using a layer group number instead of a space group number.  
+
+    thickness (-t): The thickness, in Angstroms, to use when generating a
+        2D crystal. Note that this will not necessarily be one of the lattice
+        vectors, but will represent the perpendicular distance along the non-
+        periodic direction. Defaults to 2.0    
 """
 
 import sys
@@ -1933,8 +1942,8 @@ if __name__ == "__main__":
     #-------------------------------- Options -------------------------
     import os
     parser = OptionParser()
-    parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=206, type=int,
-            help="desired space group number: 1-230, e.g., 206")
+    parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
+            help="desired space group number (1-230) or layer group number (1-80), e.g., 36")
     parser.add_option("-e", "--element", dest="element", default='Li', 
             help="desired elements: e.g., Li", metavar="element")
     parser.add_option("-n", "--numIons", dest="numIons", default=16, 
@@ -1946,15 +1955,34 @@ if __name__ == "__main__":
             help="number of crystals to generate: default 1", metavar="attempts")
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
             help="Directory for storing output cif files: default 'out'", metavar="outdir")
+    parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
+            help="desired dimension: (3 or 2 for 3d or 2d, respectively)")
+    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=2.0, type=float,
+            help="Thickness, in Angstroms, of a 2D crystal: default 2.0")
 
-    (options, args) = parser.parse_args()    
+    (options, args) = parser.parse_args()
+    sg = options.sg
+    if dimension == 3:
+        if sg < 1 or sg > 230:
+            print("Invalid space group number. Must be between 1 and 230.")
+            sys.exit(0)
+    elif dimension == 2:
+        if sg < 1 or sg > 80:
+            print("Invalid layer group number. Must be between 1 and 80.")
+            sys.exit(0)
+    elif dimension == 1:
+        print("1d crystals cannot currently be generated. Use dimension 2 or 3.")
+        sys.exit(0)
+    elif dimension == 0:
+        print("0d clusters cannot currently be generated. Use dimension 2 or 3.")
+        sys.exit(0)
+    else:
+        print("Invalid dimension. Use dimension 2 or 3.")
+        sys.exit(0)
+
     element = options.element
     number = options.numIons
     numIons = []
-    verbosity = options.verbosity
-    attempts = options.attempts
-    outdir = options.outdir
-
     if element.find(',') > 0:
         system = element.split(',')
         for x in number.split(','):
@@ -1962,6 +1990,17 @@ if __name__ == "__main__":
     else:
         system = [element]
         numIons = [int(number)]
+
+    factor = options.factor
+    if factor < 0:
+        print("Error: Volume factor must be greater than 0.")
+        sys.exit(0)
+
+    verbosity = options.verbosity
+    attempts = options.attempts
+    outdir = options.outdir
+    dimension = options.dimension
+    thickness = options.thickness
 
     try:
         os.mkdir(outdir)
@@ -1972,7 +2011,10 @@ if __name__ == "__main__":
         numIons0 = np.array(numIons)
         sg = options.sg
         start = time()
-        rand_crystal = random_crystal(options.sg, system, numIons0, options.factor)
+        if dimension == 3:
+            rand_crystal = random_crystal(options.sg, system, numIons0, factor)
+        elif dimension == 2:
+            rand_crystal = random_crystal_2D(options.sg, system, numIons0, thickness, factor)
         end = time()
         timespent = np.around((end - start), decimals=2)
 

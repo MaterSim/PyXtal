@@ -4,8 +4,10 @@ constraints. A pymatgen- or spglib-type structure object is created, which can
 be saved to a .cif file. Options (preceded by two dashes) are provided for
 command-line usage of the module:  
 
-    spacegroup (-s): the international spacegroup number to be generated.
-        Defaults to 36  
+    spacegroup (-s): the international spacegroup number (between 1 and 230)
+        to be generated. In the case of a 2D crystal (using option '-d 2'),
+        this will instead be the layer group number (between 1 and 80).
+        Defaults to 36.  
 
     molecule (-e): the chemical formula of the molecule to use. For multiple
         molecule types, separate entries with commas. Ex: "C60", "H2O, CH4,
@@ -50,6 +52,13 @@ command-line usage of the module:
         symmetry. This should only be True if the chemical and biological
         properties of the mirror molecule are known and suitable for the desired
         application. Defaults to False  
+
+    dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using a layer group number instead of a space group number.  
+
+    thickness (-t): The thickness, in Angstroms, to use when generating a
+        2D crystal. Note that this will not necessarily be one of the lattice
+        vectors, but will represent the perpendicular distance along the non-
+        periodic direction. Defaults to 2.0  
 """
 
 from pyxtal.crystal import *
@@ -1267,6 +1276,10 @@ if __name__ == "__main__":
             help="Whether to check inter-atomic distances at each step: default True", metavar="outdir")
     parser.add_option("-i", "--allowinversion", dest="allowinversion", default="False", type=str, 
             help="Whether to allow inversion of chiral molecules: default False", metavar="outdir")
+    parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
+            help="desired dimension: (3 or 2 for 3d or 2d, respectively)")
+    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=2.0, type=float,
+            help="Thickness, in Angstroms, of a 2D crystal: default 2.0")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
@@ -1274,6 +1287,10 @@ if __name__ == "__main__":
     verbosity = options.verbosity
     attempts = options.attempts
     outdir = options.outdir
+    factor = options.factor
+    dimension = options.dimension
+    thickness = options.thickness
+
     if options.checkatoms == "True" or options.checkatoms == "False":
         checkatoms = eval(options.checkatoms)
     else:
@@ -1307,7 +1324,10 @@ if __name__ == "__main__":
         start = time()
         numMols0 = np.array(numMols)
         sg = options.sg
-        rand_crystal = molecular_crystal(options.sg, system, numMols0, options.factor, orientations=orientations, check_atomic_distances=checkatoms, allow_inversion=allowinversion)
+        if dimension == 3:
+            rand_crystal = molecular_crystal(options.sg, system, numMols0, factor, check_atomic_distances=checkatoms, allow_inversion=allowinversion)
+        elif dimension == 2:
+            rand_crystal = molecular_crystal_2D(options.sg, system, numMols0, thickness, factor, allow_inversion=allowinversion, check_atomic_distances=checkatoms)
         end = time()
         timespent = np.around((end - start), decimals=2)
         if rand_crystal.valid:
