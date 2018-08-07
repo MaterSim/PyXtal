@@ -849,7 +849,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
                 index = check_wyckoff_position(coor, sg, exact_translation=False, PBC=PBC)
             return coor, index
 
-def estimate_volume(numIons, species, factor=2.0):
+def estimate_volume(numIons, species, factor=1.0):
     """
     Estimates the volume of a unit cell based on the number and types of ions.
     Assumes each atom takes up a sphere with radius equal to its covalent bond
@@ -867,7 +867,8 @@ def estimate_volume(numIons, species, factor=2.0):
     """
     volume = 0
     for numIon, specie in zip(numIons, species):
-        volume += numIon*4/3*pi*Element(specie).covalent_radius**3
+        r = rand(Element(specie).covalent_radius, Element(specie).vdw_radius)
+        volume += numIon*4/3*pi*r**3
     return factor*volume
 
 def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
@@ -1941,7 +1942,8 @@ if __name__ == "__main__":
             help="desired numbers of atoms: 16", metavar="numIons")
     parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
             help="volume factor: default 3.0", metavar="factor")
-    parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
+    parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, 
+            help="verbosity: default 0; higher values print more information", metavar="verbosity")
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 

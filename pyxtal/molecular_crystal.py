@@ -51,7 +51,6 @@ command-line usage of the module:
         properties of the mirror molecule are known and suitable for the desired
         application. Defaults to False  
 """
-
 from pyxtal.crystal import *
 from pyxtal.molecule import *
 from pyxtal.operations import *
@@ -118,16 +117,14 @@ def get_sg_orientations(mol, sg, allow_inversion=False, PBC=None):
                 valid_orientations[-1].append([])
     return valid_orientations
 
-def get_box(mol, padding=1.0):
+def get_box(mol):
     """
     Given a molecule, find a minimum orthorhombic box containing it.
-    Size is calculated using min and max x, y, and z values.
+    Size is calculated using min and max x, y, and z values, plus the padding defined by the vdw radius
     For best results, call oriented_molecule first.
     
     Args:
         mol: a pymatgen Molecule object
-        padding: the extra space to be added in each direction. Double this
-            amount will be added to each of the x, y, and z directions
 
     Returns:
         a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
@@ -135,15 +132,17 @@ def get_box(mol, padding=1.0):
         direction, and so on
     """
     minx, miny, minz, maxx, maxy, maxz = 0.,0.,0.,0.,0.,0.
-    for i, p in enumerate(mol):
+    #for p in mol:
+    for p in mol:
         x, y, z = p.coords
-        if x < minx: minx = x
-        if y < minx: minx = y
-        if z < minx: minx = z
-        if x > maxx: maxx = x
-        if y > maxx: maxx = y
-        if z > maxx: maxx = z
-    return [minx-padding,maxx+padding,miny-padding,maxy+padding,minz-padding,maxz+padding]
+        r = Element(p.species_string).vdw_radius
+        if x-r < minx: minx = x-r
+        if y-r < miny: miny = y-r
+        if z-r < minz: minx = z-r
+        if x+r > maxx: maxx = x+r
+        if y+r > maxy: maxy = y+r
+        if z+r > maxz: maxz = z+r
+    return [minx,maxx,miny,maxy,minz,maxz]
 
 def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0, PBC=None):
     """
