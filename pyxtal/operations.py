@@ -169,7 +169,7 @@ def matrix2aa(m, radians=True):
             or in degrees (False)
 
     Returns:
-        the axis and angle of the supplied rotation matrix
+        [axis, angle]: the axis (3-vector) and angle (in radians) of the supplied rotation matrix
     """
     if type(m) == SymmOp:
         m = m.rotation_matrix
