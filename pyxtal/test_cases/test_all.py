@@ -27,6 +27,7 @@ def fail():
     failed_package = True
     failed_module = True
     failed = True
+    print("    Error")
 
 #Print whether module passed or failed
 def check():
@@ -54,6 +55,60 @@ print("====== Testing functionality for pyXtal version 0.1dev ======")
 
 failed_package = False #Record if errors occur at any level
 
+print("Importing sys...")
+try:
+    import sys
+    print("Success!")
+except:
+    print("Error: could not import sys. Try reinstalling Python.")
+    sys.exit(0)
+
+print("Importing numpy...")
+try:
+    import numpy as np
+    print("Success!")
+except:
+    print("Error: could not import numpy. Try reinstalling the package.")
+    sys.exit(0)
+
+print("Importing pymatgen...")
+try:
+    import pymatgen
+    print("Success!")
+except:
+    print("Error: could not import pymatgen. Try reinstalling the package.")
+    sys.exit(0)
+
+try:
+    from pymatgen.core.operations import SymmOp
+except:
+    print("Error: could not import SymmOp object from pymatgen. Try reinstalling the package.")
+    sys.exit(0)
+
+print("Importing pandas...")
+try:
+    import pandas
+    print("Success!")
+except:
+    print("Error: could not import pandas. Try reinstalling the package.")
+    sys.exit(0)
+
+print("Importing spglib...")
+try:
+    import spglib
+    print("Success!")
+except:
+    print("Error: could not import spglib. Try reinstalling the package.")
+    sys.exit(0)
+
+print("Importing ase...")
+try:
+    import ase
+    print("Success!")
+except:
+    print("Error: could not import ase. Try reinstalling the package.")
+    sys.exit(0)
+
 print("Importing pyxtal...")
 try:
     import pyxtal
@@ -63,6 +118,8 @@ except:
     sys.exit(0)
 
 print("=== Testing modules ===")
+
+#=====database.element=====
 print("pyxtal.database.element")
 reset()
 try:
@@ -111,6 +168,7 @@ if passed():
 
 check()
 
+#=====database.hall=====
 print("pyxtal.database.hall")
 reset()
 try:
@@ -135,6 +193,7 @@ if passed():
 
 check()
 
+#=====database.layergroup=====
 print("pyxtal.database.layergroup")
 reset()
 try:
@@ -164,10 +223,11 @@ if passed():
                 lgp.permutation
             except:
                 fail()
-                print("Error accessing accessing attribute for layer group # "+str(i))
+                print("    Error accessing accessing attribute for layer group # "+str(i))
 
 check()
 
+#=====operations=====
 print("pyxtal.operations")
 reset()
 try:
@@ -187,7 +247,8 @@ if passed():
             random_vector()
     except:
         fail()
-        print("Error generating random vector")
+
+check()
 
 print("  function angle")
 try:
@@ -203,7 +264,148 @@ if passed():
             angle(v1, v2)
     except:
         fail()
-        print("Error calculating angle")
+
+check()
+
+print("  function random_shear_matrix")
+try:
+    from pyxtal.operations import random_shear_matrix
+except:
+    import_fail()
+
+if passed():
+    try:
+        for i in range(10):
+            random_shear_matrix()
+    except:
+        fail()
+
+check()
+
+print("  function is_orthogonal")
+try:
+    from pyxtal.operations import is_orthogonal
+except:
+    import_fail()
+
+if passed():
+    try:
+        a = is_orthogonal([[1,0,0],[0,1,0],[0,0,1]])
+        b = is_orthogonal([[0,0,1],[1,0,0],[1,0,0]])
+        if a is True and b is False:
+            pass
+        else:
+            fail()
+    except:
+        fail()
+
+check()
+
+print("  function aa2matrix")
+try:
+    from pyxtal.operations import aa2matrix
+except:
+    import_fail()
+
+if passed():
+    try:
+        for i in range(10):
+            aa2matrix(1, 1, random=True)
+    except:
+        fail()
+
+check()
+
+print("  function matrix2aa")
+try:
+    from pyxtal.operations import matrix2aa
+except:
+    import_fail()
+
+if passed():
+    try:
+        for i in range(10):
+            m = aa2matrix(1, 1, random=True)
+            aa = matrix2aa(m)
+    except:
+        fail()
+
+check()
+
+print("  function rotate_vector")
+try:
+    from pyxtal.operations import rotate_vector
+except:
+    import_fail()
+
+if passed():
+    try:
+        for i in range(10):
+            v1 = random_vector()
+            v2 = random_vector()
+            rotate_vector(v1, v2)
+    except:
+        fail()
+
+check()
+
+print("  function are_equal")
+try:
+    from pyxtal.operations import are_equal
+except:
+    import_fail()
+
+if passed():
+    try:
+        op1 = SymmOp.from_xyz_string('x,y,z')
+        op2 = SymmOp.from_xyz_string('x,y,z+1')
+        a = are_equal(op1, op2, allow_pbc=True)
+        b = are_equal(op1, op2, allow_pbc=False)
+        if a is True and b is False:
+            pass
+        else:
+            fail()
+    except:
+        fail()
+
+check()
+
+
+print("  class OperationAnalyzer")
+try:
+    from pyxtal.operations import OperationAnalyzer
+except:
+    import_fail()
+
+if passed():
+    try:
+        for i in range(10):
+            m = aa2matrix(1,1,random=True)
+            t = random_vector()
+            op1 = SymmOp.from_rotation_and_translation(m, t)
+            OperationAnalyzer(op1)
+    except:
+        fail()
+
+check()
+
+print("  class orientation")
+try:
+    from pyxtal.operations import orientation
+except:
+    import_fail()
+
+if passed():
+    try:
+        for i in range(10):
+            v1 = random_vector()
+            c1 = random_vector()
+            o = orientation.from_constraint(v1, c1)
+    except:
+        fail()
+
+check()
+
 
 
 end()
