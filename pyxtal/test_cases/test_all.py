@@ -406,6 +406,94 @@ if passed():
 
 check()
 
+#=====molecule=====
+print("pyxtal.molecule")
+reset()
+try:
+    import pyxtal.molecule
+except:
+    import_fail()
+
+print("  function get_ase_mol")
+try:
+    from pyxtal.molecule import get_ase_mol
+except:
+    import_fail()
+
+if passed():
+    try:
+        h2 = get_ase_mol("H2")
+        h2o = get_ase_mol("H2O")
+        ch4 = get_ase_mol("CH4")
+    except:
+        fail()
+
+check()
+
+print("  get_inertia_tensor")
+try:
+    from pyxtal.molecule import get_inertia_tensor
+except:
+    import_fail()
+
+if passed():
+    try:
+        get_inertia_tensor(h2)
+        get_inertia_tensor(h2o)
+        get_inertia_tensor(ch4)
+    except:
+        fail()
+
+check()
+
+print("  get_moment_of_inertia")
+try:
+    from pyxtal.molecule import get_moment_of_inertia
+except:
+    import_fail()
+
+if passed():
+    try:
+        v = random_vector()
+        get_moment_of_inertia(h2, v)
+        get_moment_of_inertia(h2o, v)
+        get_moment_of_inertia(ch4, v)
+    except:
+        fail()
+
+check()
+
+print("  reoriented_molecule")
+try:
+    from pyxtal.molecule import reoriented_molecule
+except:
+    import_fail()
+
+if passed():
+    try:
+        reoriented_molecule(h2)
+        reoriented_molecule(h2o)
+        reoriented_molecule(ch4)
+    except:
+        fail()
+
+check()
+
+print("  orientation_in_wyckoff_position")
+try:
+    from pyxtal.molecule import orientation_in_wyckoff_position
+except:
+    import_fail()
+
+if passed():
+    try:
+        orientation_in_wyckoff_position(h2, 20, 1)
+        orientation_in_wyckoff_position(h2o, 20, 1)
+        orientation_in_wyckoff_position(ch4, 20, 1)
+    except:
+        fail()
+
+check()
 
 
 end()
