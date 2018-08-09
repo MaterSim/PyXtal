@@ -41,7 +41,7 @@ def angle(v1, v2):
         return 0
     elif isclose(dot, -1.0):
         return pi
-    return acos(dot / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+    return acos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 def random_shear_matrix(width=1.0, unitary=False):
     """
