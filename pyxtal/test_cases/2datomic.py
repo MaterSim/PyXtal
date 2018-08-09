@@ -15,9 +15,9 @@ if __name__ == "__main__":
     parser.add_option("-n", "--numions", dest="numions", default=12, 
             help="desired numbers of ions: 12", metavar="numions")
     parser.add_option("-t", "--thickness", dest="thickness", default=3.0, type=float, 
-            help="volume factor: default 3.0", metavar="thickness")
+            help="volume factor: default 1.0", metavar="thickness")
     parser.add_option("-f", "--factor", dest="factor", default=4.0, type=float, 
-            help="volume factor: default 4.0", metavar="factor")
+            help="volume factor: default 1.0", metavar="factor")
     parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
@@ -53,17 +53,6 @@ if __name__ == "__main__":
             end = time()
             timespent = np.around((end - start), decimals=2)
             if rand_crystal.valid:
-                '''written = False
-                try:
-                    mkdir(outdir)
-                except: pass
-                try:
-                    comp = str(rand_crystal.struct.composition)
-                    comp = comp.replace(" ", "")
-                    cifpath = outdir + '/' + comp + "_" + str(i+1) + '.cif'
-                    CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
-                    written = True
-                except: pass'''
 
                 #spglib style structure called cell
                 ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
@@ -71,11 +60,7 @@ if __name__ == "__main__":
                 if ans is not None:
                     print('Space group requested: '+str(sg)+' generated', ans['number'], 'vol: ', rand_crystal.volume)
                 else:
-                    print('Space group requested: '+str(sg)+' Could not calculate generated.***********')
-                '''if written is True:
-                    print("    Output to "+cifpath)
-                else:
-                    print("    Could not write cif file.")'''
+                    print('Space group requested: '+str(sg)+' Could not calculate generated')
 
                 #Print additional information about the structure
                 if verbosity > 0:

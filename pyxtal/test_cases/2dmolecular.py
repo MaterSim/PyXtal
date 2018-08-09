@@ -13,10 +13,10 @@ if __name__ == "__main__":
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=12, 
             help="desired numbers of molecules: 12", metavar="numMols")
-    parser.add_option("-t", "--thickness", dest="thickness", default=4.0, type=float, 
-            help="volume factor: default 4.0", metavar="thickness")
-    parser.add_option("-f", "--factor", dest="factor", default=2.5, type=float, 
-            help="volume factor: default 2.5", metavar="factor")
+    parser.add_option("-t", "--thickness", dest="thickness", default=3.0, type=float, 
+            help="volume factor: default 3.0", metavar="thickness")
+    parser.add_option("-f", "--factor", dest="factor", default=1.0, type=float, 
+            help="volume factor: default 1.0", metavar="factor")
     parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
