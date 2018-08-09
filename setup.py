@@ -13,7 +13,7 @@ setup(
     #long_description_content_type="text/markdown",
     url="https://github.com/qzhu2017/pyXtal",
     packages=['pyxtal', 'pyxtal.database'],
-    package_data={'pyxtal.database': ['*.csv']},
+    package_data={'pyxtal.database': ['*.csv', '*.json']},
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

@@ -1,3 +1,4 @@
 include /*.py
 include database/*.py
 include database/*.csv
+include database/*.json
