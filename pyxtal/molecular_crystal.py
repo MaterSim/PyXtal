@@ -542,8 +542,14 @@ class molecular_crystal():
                 max2 = 10
                 max3 = 10
             #Calculate a minimum vector length for generating a lattice
-            minvector = max(radius*2 for radius in self.radii)
-            #print(self.radii, minvector)
+            #minvector = max(radius*2 for radius in self.radii)
+            all_lengths = []
+            for box in self.boxes:
+                lengths = []
+                for a, b in [[0,1],[2,3],[4,5]]:
+                    lengths.append(abs(box[b]-box[a]))
+                all_lengths.append(min(lengths))
+            minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
@@ -1010,8 +1016,14 @@ class molecular_crystal_2D():
                 max2 = 10
                 max3 = 10
             #Calculate a minimum vector length for generating a lattice
-            minvector = max(radius*2 for radius in self.radii)
-            #print(self.radii, minvector)
+            #minvector = max(radius*2 for radius in self.radii)
+            all_lengths = []
+            for box in self.boxes:
+                lengths = []
+                for a, b in [[0,1],[2,3],[4,5]]:
+                    lengths.append(abs(box[b]-box[a]))
+                all_lengths.append(min(lengths))
+            minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice_2D(self.sg, self.volume, self.thickness, self.P, minvec=minvector)
