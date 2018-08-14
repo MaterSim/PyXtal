@@ -64,7 +64,7 @@ def test_atomic():
     from pyxtal.crystal import random_crystal
     slow = []
     print("Spacegroup # | Spacegroup Generated | Time Elapsed")
-    skip = [202, 225, 227, 229] #slow to generate
+    skip = [202, 216, 225, 227, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
@@ -106,7 +106,7 @@ def test_molecular():
     from pyxtal.molecular_crystal import molecular_crystal
     slow = []
     print("Spacegroup # | Spacegroup Generated | Time Elapsed")
-    skip = [202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
+    skip = [183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
@@ -149,7 +149,7 @@ def test_atomic_2D():
     from pyxtal.database.layergroup import Layergroup
     slow = []
     print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
-    skip = [30, 57, 62, 64, 79, 80] #slow to generate
+    skip = [18, 24, 30, 33, 39, 40, 42, 43, 47, 53, 57, 60, 62, 63, 64, 72, 75, 76, 79, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
@@ -193,7 +193,7 @@ def test_molecular_2D():
     from pyxtal.database.layergroup import Layergroup
     slow = []
     print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
-    skip = [64, 80] #slow to generate
+    skip = [12, 64, 65, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
@@ -917,6 +917,8 @@ if __name__ == "__main__":
         fail(e)
         sys.exit(0)
 
+    masterstart = time()
+
     test_modules()
 
     test_atomic()
@@ -927,4 +929,8 @@ if __name__ == "__main__":
 
     test_molecular_2D()
 
+    masterend = time()
+    mastertime = np.around((masterend-masterstart), decimals=2)
+
     print("TEST COMPLETE")
+    print("Total time elapsed: "+str(mastertime))
