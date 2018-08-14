@@ -97,6 +97,7 @@ Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
 wyckoff_symmetry_df = read_csv(resource_filename("pyxtal", "database/wyckoff_symmetry.csv"))
 wyckoff_generators_df = read_csv(resource_filename("pyxtal", "database/wyckoff_generators.csv"))
+rod_df = read_csv(resource_filename("pyxtal", "database/rod.csv"))
 
 #Define functions
 #------------------------------
@@ -1124,6 +1125,26 @@ def choose_wyckoff(wyckoffs, number):
             return choose(good_wyckoff)
         else:
             return False
+
+def get_rod(num, organized=False):
+    wyckoff_strings = eval(rod_df["0"][num])
+    wyckoffs = []
+    for x in wyckoff_strings:
+        wyckoffs.append([])
+        for y in x:
+            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+    if organized:
+        wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
+        old = len(wyckoffs[0])
+        for wp in wyckoffs:
+            mult = len(wp)
+            if mult != old:
+                wyckoffs_organized.append([])
+                old = mult
+            wyckoffs_organized[-1].append(wp)
+        return wyckoffs_organized
+    else:
+        return wyckoffs
 
 def get_wyckoffs(sg, organized=False, PBC=None):
     """
