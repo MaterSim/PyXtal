@@ -64,7 +64,7 @@ def test_atomic():
     from pyxtal.crystal import random_crystal
     slow = []
     print("Spacegroup # | Spacegroup Generated | Time Elapsed")
-    skip = [202, 216, 225, 227, 229, 230] #slow to generate
+    skip = [202, 216, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
@@ -149,7 +149,7 @@ def test_atomic_2D():
     from pyxtal.database.layergroup import Layergroup
     slow = []
     print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
-    skip = [18, 24, 30, 33, 39, 40, 42, 43, 47, 53, 57, 60, 62, 63, 64, 72, 75, 76, 79, 80] #slow to generate
+    skip = [13, 18, 24, 25, 30, 33, 39, 40, 42, 43, 45, 47, 53, 54, 57, 60, 61, 62, 63, 64, 72, 75, 76, 78, 79, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
@@ -933,4 +933,4 @@ if __name__ == "__main__":
     mastertime = np.around((masterend-masterstart), decimals=2)
 
     print("TEST COMPLETE")
-    print("Total time elapsed: "+str(mastertime))
+    print("Total time elapsed: "+str(mastertime)+" s")
