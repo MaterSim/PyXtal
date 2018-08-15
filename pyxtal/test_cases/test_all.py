@@ -149,7 +149,7 @@ def test_atomic_2D():
     from pyxtal.database.layergroup import Layergroup
     slow = []
     print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
-    skip = [13, 18, 24, 25, 30, 33, 39, 40, 42, 43, 45, 47, 53, 54, 57, 60, 61, 62, 63, 64, 72, 75, 76, 78, 79, 80] #slow to generate
+    skip = [13, 18, 22, 24, 25, 26, 30, 33, 39, 40, 42, 43, 45, 47, 48, 52, 53, 54, 56, 57, 60, 61, 62, 63, 64, 72, 75, 76, 78, 79, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
