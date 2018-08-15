@@ -98,6 +98,7 @@ wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
 wyckoff_symmetry_df = read_csv(resource_filename("pyxtal", "database/wyckoff_symmetry.csv"))
 wyckoff_generators_df = read_csv(resource_filename("pyxtal", "database/wyckoff_generators.csv"))
 rod_df = read_csv(resource_filename("pyxtal", "database/rod.csv"))
+layer_df = read_csv(resource_filename("pyxtal", "database/layer.csv"))
 
 #Define functions
 #------------------------------
@@ -1126,26 +1127,6 @@ def choose_wyckoff(wyckoffs, number):
         else:
             return False
 
-def get_rod(num, organized=False):
-    wyckoff_strings = eval(rod_df["0"][num])
-    wyckoffs = []
-    for x in wyckoff_strings:
-        wyckoffs.append([])
-        for y in x:
-            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
-    if organized:
-        wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
-        old = len(wyckoffs[0])
-        for wp in wyckoffs:
-            mult = len(wp)
-            if mult != old:
-                wyckoffs_organized.append([])
-                old = mult
-            wyckoffs_organized[-1].append(wp)
-        return wyckoffs_organized
-    else:
-        return wyckoffs
-
 def get_wyckoffs(sg, organized=False, PBC=None):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
@@ -1198,6 +1179,114 @@ def get_wyckoffs(sg, organized=False, PBC=None):
             wyckoffs.append([])
             for y in x:
                 wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+    if organized:
+        wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
+        old = len(wyckoffs[0])
+        for wp in wyckoffs:
+            mult = len(wp)
+            if mult != old:
+                wyckoffs_organized.append([])
+                old = mult
+            wyckoffs_organized[-1].append(wp)
+        return wyckoffs_organized
+    else:
+        return wyckoffs
+
+def get_layer(num, organized=False):
+    """
+    Returns a list of Wyckoff positions for a given 2D layer group. Has
+    option to organize the list based on multiplicity (this is used for
+    random_crystal_2D.wyckoffs) For an unorganized list:
+
+    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
+
+    2nd index: a SymmOp object in the WP
+
+    For an organized list:
+
+    1st index: specifies multiplicity (0 is the largest multiplicity)
+
+    2nd index: corresponds to a Wyckoff position within the group of equal
+        multiplicity.
+
+    3nd index: corresponds to a SymmOp object within the Wyckoff position
+
+    #TODO: Make jk_from_i and i_from_jk compatible with layer and rod groups
+    You may switch between organized and unorganized lists using the methods
+    i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
+    entry in an unorganized list, it will be the [j][k] entry in an organized
+    list.
+
+    For layer groups with more than one possible origin, origin choice 2 is
+    used.
+
+    Args:
+        num: the international layer group number
+        organized: whether or not to organize the list based on multiplicity
+    
+    Returns: 
+        a list of Wyckoff positions, each of which is a list of SymmOp's
+    """
+    wyckoff_strings = eval(layer_df["0"][num])
+    wyckoffs = []
+    for x in wyckoff_strings:
+        wyckoffs.append([])
+        for y in x:
+            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+    if organized:
+        wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
+        old = len(wyckoffs[0])
+        for wp in wyckoffs:
+            mult = len(wp)
+            if mult != old:
+                wyckoffs_organized.append([])
+                old = mult
+            wyckoffs_organized[-1].append(wp)
+        return wyckoffs_organized
+    else:
+        return wyckoffs
+
+def get_rod(num, organized=False):
+    """
+    Returns a list of Wyckoff positions for a given 1D Rod group. Has option to
+    organize the list based on multiplicity (this is used for
+    random_crystal_1D.wyckoffs) For an unorganized list:
+
+    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
+
+    2nd index: a SymmOp object in the WP
+
+    For an organized list:
+
+    1st index: specifies multiplicity (0 is the largest multiplicity)
+
+    2nd index: corresponds to a Wyckoff position within the group of equal
+        multiplicity.
+
+    3nd index: corresponds to a SymmOp object within the Wyckoff position
+
+    #TODO: Make jk_from_i and i_from_jk compatible with layer and rod groups
+    You may switch between organized and unorganized lists using the methods
+    i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
+    entry in an unorganized list, it will be the [j][k] entry in an organized
+    list.
+
+    For Rod groups with more than one possible setting, setting choice 1
+    is used.
+
+    Args:
+        num: the international Rod group number
+        organized: whether or not to organize the list based on multiplicity
+    
+    Returns: 
+        a list of Wyckoff positions, each of which is a list of SymmOp's
+    """
+    wyckoff_strings = eval(rod_df["0"][num])
+    wyckoffs = []
+    for x in wyckoff_strings:
+        wyckoffs.append([])
+        for y in x:
+            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
     if organized:
         wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
         old = len(wyckoffs[0])
@@ -1956,6 +2045,214 @@ class random_crystal_2D():
                     self.valid = True
                     """Whether or not a valid crystal was generated."""
                     return
+        if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
+        self.struct = self.Msg2
+        self.valid = False
+        return self.Msg2
+
+class random_crystal_1D():
+    """
+    Class for storing and generating atomic crystals based on symmetry
+    constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
+    and a volume factor, generates a random crystal consistent with the
+    spacegroup's symmetry. This crystal is stored as a pymatgen struct via
+    self.struct
+    
+    Args:
+        sg: the international spacegroup number
+        species: a list of atomic symbols for each ion type
+        numIons: a list of the number of each type of atom within the
+            primitive cell (NOT the conventional cell)
+        factor: a volume factor used to generate a larger or smaller
+            unit cell. Increasing this gives extra space between atoms
+    """
+    def __init__(self, sg, species, numIons, factor):
+        
+        #Necessary input
+        numIons = np.array(numIons) #must convert it to np.array
+        self.factor = factor
+        """The supplied volume factor for the unit cell."""
+        self.numIons0 = numIons
+        self.num = num
+        """The Rod group number (1-75) of the crystal."""
+        self.sg = sg_from_rod(num)
+        self.species = species
+        """A list of atomic symbols for the types of atoms in the crystal."""
+        self.Msgs()
+        """A list of warning messages to use during generation."""
+        self.volume = estimate_volume(self.numIons, self.species, self.factor)
+        """The volume of the generated unit cell"""
+        self.wyckoffs = get_rod(self.num, organized=True)
+        """The Wyckoff positions for the crystal's spacegroup. Sorted by
+        multiplicity."""
+        self.generate_crystal()
+
+
+    def Msgs(self):
+        """
+        Define a set of error and warning message if generation fails.
+        """
+        self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
+        self.Msg2 = 'Error: failed in the cycle of generating structures'
+        self.Msg3 = 'Warning: failed in the cycle of adding species'
+        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
+        self.Msg5 = 'Finishing: added the specie'
+        self.Msg6 = 'Finishing: added the whole structure'
+
+    def check_compatible(self):
+        """
+        Checks if the number of atoms is compatible with the Wyckoff
+        positions. Considers the number of degrees of freedom for each Wyckoff
+        position, and makes sure at least one valid combination of WP's exists.
+        """
+        N_site = [len(x[0]) for x in self.wyckoffs]
+        has_freedom = False
+        #remove WP's with no freedom once they are filled
+        removed_wyckoffs = []
+        for numIon in self.numIons:
+            #Check that the number of ions is a multiple of the smallest Wyckoff position
+            if numIon % N_site[-1] > 0:
+                return False
+            else:
+                #Check if smallest WP has at least one degree of freedom
+                op = self.wyckoffs[-1][-1][0]
+                if op.rotation_matrix.all() != 0.0:
+                    has_freedom = True
+                else:
+                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
+                    remaining = numIon
+                    for x in self.wyckoffs:
+                        for wp in x:
+                            removed = False
+                            while remaining >= len(wp) and wp not in removed_wyckoffs:
+                                #Check if WP has at least one degree of freedom
+                                op = wp[0]
+                                remaining -= len(wp)
+                                if np.allclose(op.rotation_matrix, np.zeros([3,3])):
+                                    removed_wyckoffs.append(wp)
+                                    removed = True
+                                else:
+                                    has_freedom = True
+                    if remaining != 0:
+                        return False
+        if has_freedom:
+            return True
+        else:
+            #Wyckoff Positions have no degrees of freedom
+            return 0
+
+    def generate_crystal(self, max1=max1, max2=max2, max3=max3):
+        """
+        The main code to generate a random atomic crystal. If successful,
+        stores a pymatgen.core.structure object in self.struct and sets
+        self.valid to True. If unsuccessful, sets self.valid to False and
+        outputs an error message.
+
+        Args:
+            max1: the number of attempts for generating a lattice
+            max2: the number of attempts for a given lattice
+            max3: the number of attempts for a given Wyckoff position
+        """
+        #Check the minimum number of degrees of freedom within the Wyckoff positions
+        degrees = self.check_compatible()
+        if degrees is False:
+            print(self.Msg1)
+            self.struct = None
+            self.valid = False
+            return
+        else:
+            if degrees is 0:
+                max1 = 5
+                max2 = 5
+                max3 = 5
+            #Calculate a minimum vector length for generating a lattice
+            minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
+            for cycle1 in range(max1):
+                #1, Generate a lattice
+                cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
+                if cell_para is None:
+                    break
+                else:
+                    cell_matrix = para2matrix(cell_para)
+                    if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
+                        print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
+                        print('cell_para:  ', cell_para)
+                        sys.exit(0)
+
+                    coordinates_total = [] #to store the added coordinates
+                    sites_total = []      #to store the corresponding specie
+                    good_structure = False
+
+                    for cycle2 in range(max2):
+                        coordinates_tmp = deepcopy(coordinates_total)
+                        sites_tmp = deepcopy(sites_total)
+                        
+            	        #Add specie by specie
+                        for numIon, specie in zip(self.numIons, self.species):
+                            numIon_added = 0
+                            tol = max(0.5*Element(specie).covalent_radius, tol_m)
+
+                            #Now we start to add the specie to the wyckoff position
+                            for cycle3 in range(max3):
+                                #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
+                                ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
+                                if ops is not False:
+            	        	    #Generate a list of coords from ops
+                                    point = np.random.random(3)
+                                    coords = np.array([op.operate(point) for op in ops])
+                                    #merge_coordinate if the atoms are close
+                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
+                                    if good_merge is not False:
+                                        coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
+                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
+                                            coordinates_tmp.append(coords_toadd)
+                                            sites_tmp.append(specie)
+                                            numIon_added += len(coords_toadd)
+                                        if numIon_added == numIon:
+                                            coordinates_total = deepcopy(coordinates_tmp)
+                                            sites_total = deepcopy(sites_tmp)
+                                            break
+
+                            if numIon_added != numIon:
+                                break  #need to repeat from the 1st species
+
+                        if numIon_added == numIon:
+                            good_structure = True
+                            break
+                        else: #reset the coordinates and sites
+                            coordinates_total = []
+                            sites_total = []
+
+                    if good_structure:
+                        final_coor = []
+                        final_site = []
+                        final_number = []
+                        final_lattice = cell_matrix
+                        for coor, ele in zip(coordinates_total, sites_total):
+                            for x in coor:
+                                final_coor.append(x)
+                                final_site.append(ele)
+                                final_number.append(Element(ele).z)
+
+                        self.lattice = final_lattice   
+                        """A 3x3 matrix representing the lattice of the unit
+                        cell."""                 
+                        self.coordinates = np.array(final_coor)
+                        """The fractional coordinates for each molecule in the
+                        final structure"""
+                        self.sites = final_site
+                        """A list of atomic symbols corresponding to the type
+                        of atom for each site in self.coordinates"""
+                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        """A pymatgen.core.structure.Structure object for the
+                        final generated crystal."""
+                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                        """A list of information describing the generated
+                        crystal, which may be used by spglib for symmetry
+                        analysis."""
+                        self.valid = True
+                        """Whether or not a valid crystal was generated."""
+                        return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
