@@ -9,6 +9,7 @@ from pymatgen.core.structure import Molecule
 from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pymatgen.symmetry.analyzer import generate_full_symmops
+import openbabel
 from ase.build import molecule as ase_molecule
 import numpy as np
 from numpy.linalg import eigh
@@ -23,6 +24,82 @@ from pyxtal.crystal import get_wyckoff_symmetry
 
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
+
+def ob_mol_from_file(fname, ftype="xyz", add_hydrogen=True):
+    """
+    Import a molecule from a file using OpenBabel
+
+        fname: the path string to the file to be opened
+        add_hydrogen: whether or not to insert hydrogens automatically
+            openbabel does not always add hydrogens automatically
+        ftype: the file format
+
+    Returns:
+        an openbabel OBMol molecule object
+    """
+    #Set input/output format
+    obConversion = openbabel.OBConversion()
+    obConversion.SetInAndOutFormats(ftype, "mol2")
+
+    #Read the file
+    mol = openbabel.OBMol()
+    obConversion.ReadFile(mol, fname)
+
+    #Add hydrogens
+    if add_hydrogen is True:
+        mol.AddHydrogens()
+
+    return mol
+
+def ob_mol_from_string(string, ftype="smi", add_hydrogen=True):
+    """
+    Create a molecule from a string using OpenBabel
+
+    Args:
+        string: a string describing the molecule (SMILES format by default)
+        ftype: the format to use for interpreting the string
+        add_hydrogen: whether or not to insert hydrogens automatically
+            (SMILES strings do not typically show hydrogens)
+
+    Returns:
+        an openbabel OBMol molecule object
+    """
+    #Set input/output format
+    obConversion = openbabel.OBConversion()
+    obConversion.SetInAndOutFormats("smi", "mol2")
+
+    #Read the string
+    mol = openbabel.OBMol()
+    obConversion.ReadString(mol, string)
+
+    #Add hydrogens
+    if add_hydrogen is True:
+        mol.AddHydrogens()
+
+    return mol
+
+def pmg_from_ob(mol):
+    """
+    Convert an openbabel molecule to Pymatgen format
+
+    Args:
+        mol: an openbabel OBMol object
+
+    Returns:
+        a pymatgen Molecule object
+    """
+    nums = []
+    positions = []
+    #Loop over atoms in the molecule
+    for i in range(mol.NumAtoms()):
+        #OBAtom object
+        a = mol.GetAtom(i+1)
+        #Position vector
+        positions.append( np.array([a.x(), a.y(), a.z()]) )
+        #Atomic Number
+        nums.append( a.GetAtomicNum() )
+
+    return Molecule(nums, positions)
 
 def get_ase_mol(molname):
     """
