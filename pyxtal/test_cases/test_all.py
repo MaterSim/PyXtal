@@ -111,7 +111,7 @@ def test_molecular():
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal(sg, ['O'], [multiplicity], 2.5)
+            rand_crystal = molecular_crystal(sg, ['H2O'], [multiplicity], 2.5)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -199,7 +199,7 @@ def test_molecular_2D():
             sg = Layergroup(num).sgnumber
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_2D(num, ['O'], [multiplicity], 3.0, 4.0)
+            rand_crystal = molecular_crystal_2D(num, ['H2O'], [multiplicity], 3.0, 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)

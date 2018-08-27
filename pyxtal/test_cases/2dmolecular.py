@@ -9,7 +9,7 @@ if __name__ == "__main__":
     from pyxtal.database.layergroup import Layergroup
 
     parser = OptionParser()
-    parser.add_option("-e", "--molecule", dest="molecule", default='O', 
+    parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=12, 
             help="desired numbers of molecules: 12", metavar="numMols")
