@@ -383,6 +383,7 @@ class molecular_crystal():
         for i, mol in enumerate(molecules):
             if type(mol) == str:
                 mo = ob_mol_from_string(mol)
+                mo = pmg_from_ob(mo)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
@@ -848,6 +849,7 @@ class molecular_crystal_2D():
         for i, mol in enumerate(molecules):
             if type(mol) == str:
                 mo = ob_mol_from_string(mol)
+                mo = pmg_from_ob(mo)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
