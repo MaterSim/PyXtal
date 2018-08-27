@@ -19,5 +19,5 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ),
-    requires=['spglib', 'pymatgen', 'numpy', 'scipy', 'ase', 'openbabel'],
+    requires=['spglib', 'pymatgen', 'numpy', 'scipy', 'openbabel'],
 )
