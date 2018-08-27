@@ -10,7 +10,6 @@ from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pymatgen.symmetry.analyzer import generate_full_symmops
 import openbabel
-from ase.build import molecule as ase_molecule
 import numpy as np
 from numpy.linalg import eigh
 from numpy.linalg import det
@@ -100,21 +99,6 @@ def pmg_from_ob(mol):
         nums.append( a.GetAtomicNum() )
 
     return Molecule(nums, positions)
-
-def get_ase_mol(molname):
-    """
-    Convert an ase molecule to a pymatgen Molecule object.
-
-    Args:
-        molname: a string for the chemical formula of the molecule
-
-    Returns:
-        a pymatgen Molecule object
-    """
-    ase_mol = ase_molecule(molname)
-    pos = ase_mol.get_positions()
-    symbols = ase_mol.get_chemical_symbols()
-    return(Molecule(symbols, pos))
 
 def get_inertia_tensor(mol):
     """
@@ -519,10 +503,8 @@ if __name__ == "__main__":
     #pga_h2o = PointGroupAnalyzer(h2o)
     #pg_h2o = pga_h2o.get_pointgroup()
 
-    #from ase.build import molecule
-
     #Testing water
-    mol = get_ase_mol("H2O")
+    mol = ob_mol_from_string("O")
     print("Original molecule:")
     print(mol)
     print()

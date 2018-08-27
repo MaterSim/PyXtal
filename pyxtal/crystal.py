@@ -2024,8 +2024,8 @@ class random_crystal_2D():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
-                    final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        

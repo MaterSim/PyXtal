@@ -111,7 +111,7 @@ def test_molecular():
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal(sg, ['H2O'], [multiplicity], 2.5)
+            rand_crystal = molecular_crystal(sg, ['O'], [multiplicity], 2.5)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -149,13 +149,13 @@ def test_atomic_2D():
     from pyxtal.database.layergroup import Layergroup
     slow = []
     print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
-    skip = [13, 18, 22, 24, 25, 26, 30, 33, 39, 40, 42, 43, 45, 47, 48, 52, 53, 54, 56, 57, 60, 61, 62, 63, 64, 72, 75, 76, 78, 79, 80] #slow to generate
+    skip = []#13, 18, 22, 24, 25, 26, 30, 33, 39, 40, 42, 43, 45, 47, 48, 52, 53, 54, 56, 57, 60, 61, 62, 63, 64, 72, 75, 76, 78, 79, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_2D(num, ['H'], [multiplicity], 3.0, 1.0)
+            rand_crystal = random_crystal_2D(num, ['H'], [multiplicity], 3.0, 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -193,13 +193,13 @@ def test_molecular_2D():
     from pyxtal.database.layergroup import Layergroup
     slow = []
     print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
-    skip = [12, 64, 65, 80] #slow to generate
+    skip = []#12, 64, 65, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
             multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_2D(num, ['H2O'], [multiplicity], 3.0, 1.0)
+            rand_crystal = molecular_crystal_2D(num, ['O'], [multiplicity], 3.0, 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -292,13 +292,12 @@ def test_modules():
         print("Error: could not import pybtex. Try reinstalling the package.")
         print("PyXtal will still run, but cannot import molecules from ase.")
 
-    print("Importing ase...")
+    print("Importing openbabel...")
     try:
         import ase
         print("Success!")
     except:
-        print("Error: could not import ase. Try reinstalling the package.")
-        print("PyXtal will still run, but cannot import molecules from ase.")
+        print("Error: could not import openbabel. Try reinstalling the package.")
 
     print("Importing pyxtal...")
     try:
@@ -598,17 +597,15 @@ def test_modules():
     except Exception as e:
         fail(e)
 
-    print("  get_ase_mol")
+    print("  ob_mol_from_string")
     try:
-        from pyxtal.molecule import get_ase_mol
+        from pyxtal.molecule import ob_mol_from_string
     except Exception as e:
         fail(e)
 
     if passed():
         try:
-            h2 = get_ase_mol("H2")
-            h2o = get_ase_mol("H2O")
-            ch4 = get_ase_mol("CH4")
+            h2o = ob_mol_from_string("O")
         except Exception as e:
             fail(e)
 
@@ -919,11 +916,11 @@ if __name__ == "__main__":
 
     masterstart = time()
 
-    test_modules()
+    #test_modules()
 
-    test_atomic()
+    #test_atomic()
 
-    test_molecular()
+    #test_molecular()
 
     test_atomic_2D()
 

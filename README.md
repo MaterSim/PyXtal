@@ -15,3 +15,4 @@ Distributed under the MIT License.
 * [Pymatgen](http://pymatgen.org/#getting-pymatgen)
 * [SpgLib for Python](https://atztogo.github.io/spglib/python-spglib.html#installation)
 * [ASE](https://wiki.fysik.dtu.dk/ase/install.html)
+* [openbabel](http://openbabel.org/wiki/Main_Page)

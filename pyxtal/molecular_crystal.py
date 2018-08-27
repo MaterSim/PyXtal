@@ -379,10 +379,10 @@ class molecular_crystal():
         """The international spacegroup number of the crystal."""
         #Reorient the molecules along their principle axes
         oriented_molecules = []
-        #Allow support for generating molecules from text via ASE
+        #Allow support for generating molecules from text via openbable
         for i, mol in enumerate(molecules):
             if type(mol) == str:
-                mo = get_ase_mol(mol)
+                mo = ob_mol_from_string(mol)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
@@ -844,10 +844,10 @@ class molecular_crystal_2D():
         """The number (between 1 and 230) for the international spacegroup."""
         #Reorient the molecules along their principle axes
         oriented_molecules = []
-        #Allow support for generating molecules from text via ASE
+        #Allow support for generating molecules from text via openbabel
         for i, mol in enumerate(molecules):
             if type(mol) == str:
-                mo = get_ase_mol(mol)
+                mo = ob_mol_from_string(mol)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
@@ -1273,7 +1273,7 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
             help="desired space group number: 1-230, e.g., 36")
-    parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
+    parser.add_option("-e", "--molecule", dest="molecule", default='O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=4, 
             help="desired numbers of molecules: 4", metavar="numMols")
@@ -1319,11 +1319,11 @@ if __name__ == "__main__":
         strings = molecule.split(',')
         system = []
         for mol in strings:
-            system.append(get_ase_mol(mol))
+            system.append(ob_mol_from_string(mol))
         for x in number.split(','):
             numMols.append(int(x))
     else:
-        system = [get_ase_mol(molecule)]
+        system = [ob_mol_from_string(molecule)]
         numMols = [int(number)]
     orientations = None
 

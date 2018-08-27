@@ -9,7 +9,7 @@ if __name__ == "__main__":
     from pyxtal.database.layergroup import Layergroup
 
     parser = OptionParser()
-    parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
+    parser.add_option("-e", "--molecule", dest="molecule", default='O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=12, 
             help="desired numbers of molecules: 12", metavar="numMols")
@@ -49,11 +49,11 @@ if __name__ == "__main__":
         strings = molecule.split(',')
         system = []
         for mol in strings:
-            system.append(get_ase_mol(mol))
+            system.append(ob_mol_from_string(mol))
         for x in number.split(','):
             numMols.append(int(x))
     else:
-        system = [get_ase_mol(molecule)]
+        system = [ob_mol_from_string(molecule)]
         numMols = [int(number)]
     orientations = None
 
