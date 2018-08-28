@@ -62,8 +62,9 @@ def test_atomic():
     from spglib import get_symmetry_dataset
     from pyxtal.crystal import get_wyckoffs
     from pyxtal.crystal import random_crystal
+    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
-    print("Spacegroup # | Spacegroup Generated | Time Elapsed")
+    print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
     skip = [202, 216, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
@@ -86,11 +87,18 @@ def test_atomic():
                 t += "~"
                 slow.append(sg)
             if rand_crystal.valid:
-                ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
-                if ans is not None:
-                    print("\t"+str(sg)+"\t|\t"+str(ans['number'])+"\t|\t"+t)
+                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                if ans1 is None:
+                    ans1 = "???"
                 else:
-                    print("\t"+str(sg)+"\t|\t"+"???"+"\t|\t"+t)
+                    ans1 = ans1['number']
+                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                ans2 = None
+                if sga is not None:
+                    ans2 = sga.get_space_group_number()
+                if ans2 is None:
+                    ans2 = "???"
+                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -104,8 +112,9 @@ def test_molecular():
     from spglib import get_symmetry_dataset
     from pyxtal.crystal import get_wyckoffs
     from pyxtal.molecular_crystal import molecular_crystal
+    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
-    print("Spacegroup # | Spacegroup Generated | Time Elapsed")
+    print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
     skip = [183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
         if sg not in skip:
@@ -128,11 +137,18 @@ def test_molecular():
                 t += "~"
                 slow.append(sg)
             if rand_crystal.valid:
-                ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
-                if ans is not None:
-                    print("\t"+str(sg)+"\t|\t"+str(ans['number'])+"\t|\t"+t)
+                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                if ans1 is None:
+                    ans1 = "???"
                 else:
-                    print("\t"+str(sg)+"\t|\t"+"???"+"\t|\t"+t)
+                    ans1 = ans1['number']
+                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                ans2 = None
+                if sga is not None:
+                    ans2 = sga.get_space_group_number()
+                if ans2 is None:
+                    ans2 = "???"
+                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -147,8 +163,9 @@ def test_atomic_2D():
     from pyxtal.crystal import get_wyckoffs
     from pyxtal.crystal import random_crystal_2D
     from pyxtal.database.layergroup import Layergroup
+    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
-    print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
+    print("   Layergroup   | sg # Expected |Generated (SPG)|Generated (PMG)|Time Elapsed")
     skip = []#13, 18, 22, 24, 25, 26, 30, 33, 39, 40, 42, 43, 45, 47, 48, 52, 53, 54, 56, 57, 60, 61, 62, 63, 64, 72, 75, 76, 78, 79, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
@@ -172,11 +189,18 @@ def test_atomic_2D():
                 t += "~"
                 slow.append(num)
             if rand_crystal.valid:
-                ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
-                if ans is not None:
-                    print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans['number'])+"\t|\t"+t)
+                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                if ans1 is None:
+                    ans1 = "???"
                 else:
-                    print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+"???"+"\t|\t"+t)
+                    ans1 = ans1['number']
+                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                ans2 = None
+                if sga is not None:
+                    ans2 = sga.get_space_group_number()
+                if ans2 is None:
+                    ans2 = "???"
+                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -191,8 +215,9 @@ def test_molecular_2D():
     from pyxtal.crystal import get_wyckoffs
     from pyxtal.molecular_crystal import molecular_crystal_2D
     from pyxtal.database.layergroup import Layergroup
+    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
-    print("Layergroup | Spacegroup Expected | Spacegroup Generated | Time Elapsed")
+    print("   Layergroup   | sg # Expected |Generated (SPG)|Generated (PMG)|Time Elapsed")
     skip = []#12, 64, 65, 80] #slow to generate
     for num in range(1, 81):
         if num not in skip:
@@ -216,11 +241,18 @@ def test_molecular_2D():
                 t += "~"
                 slow.append(num)
             if rand_crystal.valid:
-                ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
-                if ans is not None:
-                    print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans['number'])+"\t|\t"+t)
+                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                if ans1 is None:
+                    ans1 = "???"
                 else:
-                    print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+"???"+"\t|\t"+t)
+                    ans1 = ans1['number']
+                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                ans2 = None
+                if sga is not None:
+                    ans2 = sga.get_space_group_number()
+                if ans2 is None:
+                    ans2 = "???"
+                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
