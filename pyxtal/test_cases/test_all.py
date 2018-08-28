@@ -295,7 +295,7 @@ def test_molecular_2D():
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("3D_Molecular_"+str(num)+".cif"))
+                    outstrings.append(str("2D_Molecular_"+str(num)+".cif"))
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
