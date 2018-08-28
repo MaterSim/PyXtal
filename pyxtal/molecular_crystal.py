@@ -64,8 +64,10 @@ command-line usage of the module:
 from pyxtal.crystal import *
 from pyxtal.molecule import *
 from pyxtal.operations import *
+from pyxtal.database.collection import Collection
 from time import time
 
+molecule_collection = Collection('molecules')
 max1 = 30 #Attempts for generating lattices
 max2 = 30 #Attempts for a given lattice
 max3 = 30 #Attempts for a given Wyckoff position
@@ -382,8 +384,13 @@ class molecular_crystal():
         #Allow support for generating molecules from text via openbable
         for i, mol in enumerate(molecules):
             if type(mol) == str:
-                mo = ob_mol_from_string(mol)
-                mo = pmg_from_ob(mo)
+                #Read strings into molecules, try collection first,
+                #If string not in collection, use SMILES format
+                try:
+                    mo = molecule_collection[mol]
+                except:
+                    mo = ob_mol_from_string(mol)
+                    mo = pmg_from_ob(mo)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
@@ -848,8 +855,13 @@ class molecular_crystal_2D():
         #Allow support for generating molecules from text via openbabel
         for i, mol in enumerate(molecules):
             if type(mol) == str:
-                mo = ob_mol_from_string(mol)
-                mo = pmg_from_ob(mo)
+                #Read strings into molecules, try collection first,
+                #If string not in collection, use SMILES format
+                try:
+                    mo = molecule_collection[mol]
+                except:
+                    mo = ob_mol_from_string(mol)
+                    mo = pmg_from_ob(mo)
                 molecules[i] = mo
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
@@ -1240,6 +1252,9 @@ class molecular_crystal_2D():
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
                         if verify_distances(final_coor, final_site, final_lattice, factor=1.0, PBC=self.PBC) is True:
+                            final_coor = np.array(final_coor)
+                            final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                            final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                             self.lattice = final_lattice
                             """A 3x3 matrix representing the lattice of the
                             unit cell."""  
@@ -1275,7 +1290,7 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
             help="desired space group number: 1-230, e.g., 36")
-    parser.add_option("-e", "--molecule", dest="molecule", default='O', 
+    parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=4, 
             help="desired numbers of molecules: 4", metavar="numMols")

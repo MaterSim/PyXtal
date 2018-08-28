@@ -1021,27 +1021,20 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
 
         #Monoclinic
         elif sg <= 15:
-            a, b, c = random_vector()
-            if PBC == 3:
-                beta = gaussian(minangle, maxangle)
-                x = sin(beta)
-            elif PBC == 2:
-                gamma = gaussian(minangle, maxangle)
-                x = sin(gamma)
-            elif PBC == 1:
-                alpha = gaussian(minangle, maxangle)
-                x = sin(alpha)
-            ab = volume/(abc[PBC-1]*x)
-            ratio = a/b
-            if PBC == 3:
-                abc[0] = sqrt(ab*ratio)
-                abc[1] = sqrt(ab/ratio)
-            elif PBC == 2:
-                abc[0] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
-            elif PBC == 1:
-                abc[1] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+
+            alpha, gamma  = pi/2, pi/2
+            beta = gaussian(minangle, maxangle)
+            x = sin(beta)
+            vec = random_vector()
+            xyz = vec[0]*vec[1]*vec[2]
+            abc0 = volume/x
+            a = vec[0]*np.cbrt(abc0)/np.cbrt(xyz)
+            b = vec[1]*np.cbrt(abc0)/np.cbrt(xyz)
+            c = vec[2]*np.cbrt(abc0)/np.cbrt(xyz)
+
+            abc[0] = a
+            abc[1] = b
+            abc[2] = c
 
         #Orthorhombic
         elif sg <= 74:
@@ -2024,8 +2017,8 @@ class random_crystal_2D():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
-                    #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
