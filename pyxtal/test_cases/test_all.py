@@ -378,6 +378,30 @@ def test_modules():
 
     check()
 
+    #=====database.collection=====
+    print("pyxtal.database.collection")
+    reset()
+    try:
+        import pyxtal.database.collection
+    except Exception as e:
+        fail(e)
+
+    print("  Collection")
+    try:
+        from pyxtal.database.collection import Collection
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        for i in range(1, 230):
+            if passed():
+                try:
+                    molecule_collection = Collection('molecules')
+                except:
+                    fail("Could not access hm # "+str(i))
+
+    check()
+
     #=====database.layergroup=====
     print("pyxtal.database.layergroup")
     reset()
@@ -605,7 +629,8 @@ def test_modules():
 
     if passed():
         try:
-            h2o = ob_mol_from_string("O")
+            h2o = molecule_collection['H2O']
+            ch4 = molecule_collection['CH4']
         except Exception as e:
             fail(e)
 
@@ -619,7 +644,6 @@ def test_modules():
 
     if passed():
         try:
-            get_inertia_tensor(h2)
             get_inertia_tensor(h2o)
             get_inertia_tensor(ch4)
         except Exception as e:
@@ -636,7 +660,6 @@ def test_modules():
     if passed():
         try:
             v = random_vector()
-            get_moment_of_inertia(h2, v)
             get_moment_of_inertia(h2o, v)
             get_moment_of_inertia(ch4, v)
         except Exception as e:
@@ -652,7 +675,6 @@ def test_modules():
 
     if passed():
         try:
-            reoriented_molecule(h2)
             reoriented_molecule(h2o)
             reoriented_molecule(ch4)
         except Exception as e:
@@ -668,7 +690,6 @@ def test_modules():
 
     if passed():
         try:
-            orientation_in_wyckoff_position(h2, 20, 1)
             orientation_in_wyckoff_position(h2o, 20, 1)
             orientation_in_wyckoff_position(ch4, 20, 1)
         except Exception as e:
@@ -916,11 +937,11 @@ if __name__ == "__main__":
 
     masterstart = time()
 
-    #test_modules()
+    test_modules()
 
-    #test_atomic()
+    test_atomic()
 
-    #test_molecular()
+    test_molecular()
 
     test_atomic_2D()
 
