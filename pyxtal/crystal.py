@@ -1021,20 +1021,20 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
 
         #Monoclinic
         elif sg <= 15:
-
-            alpha, gamma  = pi/2, pi/2
+            a, b, c = random_vector()
             beta = gaussian(minangle, maxangle)
             x = sin(beta)
-            vec = random_vector()
-            xyz = vec[0]*vec[1]*vec[2]
-            abc0 = volume/x
-            a = vec[0]*np.cbrt(abc0)/np.cbrt(xyz)
-            b = vec[1]*np.cbrt(abc0)/np.cbrt(xyz)
-            c = vec[2]*np.cbrt(abc0)/np.cbrt(xyz)
-
-            abc[0] = a
-            abc[1] = b
-            abc[2] = c
+            ab = volume/(abc[PBC-1]*x)
+            ratio = a/b
+            if PBC == 3:
+                abc[0] = sqrt(ab*ratio)
+                abc[1] = sqrt(ab/ratio)
+            elif PBC == 2:
+                abc[0] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
+            elif PBC == 1:
+                abc[1] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
         elif sg <= 74:
