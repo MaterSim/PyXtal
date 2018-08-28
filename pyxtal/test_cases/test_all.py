@@ -4,6 +4,9 @@ Test script for pyXtal version 0.1dev. Tests core functions for all modules.
 import sys
 sys.settrace(None)
 
+outstructs = []
+outstrings = []
+
 #Check if module and classes work correctly
 def passed():
     global failed_module
@@ -57,6 +60,8 @@ def end(condition=1):
         sys.exit(0)
 
 def test_atomic():
+    global outstructs
+    global outstrings
     print("=== Testing generation of atomic 3D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
@@ -98,7 +103,15 @@ def test_atomic():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+                    t += " xxxxx"
+                if ans2 != "???":
+                    if int(ans2) < int(sg):
+                        t += " xxxxx"
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                #output cif files for incorrect space groups
+                if t[-1] == "x":
+                    outstructs.append(rand_crystal.struct)
+                    outstrings.append(str("3D_Atomic_"+str(sg)+".cif"))
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -107,6 +120,8 @@ def test_atomic():
             print("     "+str(i))
 
 def test_molecular():
+    global outstructs
+    global outstrings
     print("=== Testing generation of molecular 3D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
@@ -148,7 +163,15 @@ def test_molecular():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+                    t += " xxxxx"
+                if ans2 != "???":
+                    if int(ans2) < int(sg):
+                        t += " xxxxx"
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                #output cif files for incorrect space groups
+                if t[-1] == "x":
+                    outstructs.append(rand_crystal.struct)
+                    outstrings.append(str("3D_Molecular_"+str(sg)+".cif"))
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -157,6 +180,8 @@ def test_molecular():
             print("     "+str(i))
 
 def test_atomic_2D():
+    global outstructs
+    global outstrings
     print("=== Testing generation of atomic 2D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
@@ -200,7 +225,15 @@ def test_atomic_2D():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+                    t += " xxxxx"
+                if ans2 != "???":
+                    if int(ans2) < int(sg):
+                        t += " xxxxx"
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                #output cif files for incorrect space groups
+                if t[-1] == "x":
+                    outstructs.append(rand_crystal.struct)
+                    outstrings.append(str("2D_Atomic_"+str(num)+".cif"))
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -209,6 +242,8 @@ def test_atomic_2D():
             print("     "+str(i))
 
 def test_molecular_2D():
+    global outstructs
+    global outstrings
     print("=== Testing generation of molecular 2D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
@@ -252,7 +287,15 @@ def test_molecular_2D():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+                    t += " xxxxx"
+                if ans2 != "???":
+                    if int(ans2) < int(sg):
+                        t += " xxxxx"
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                #output cif files for incorrect space groups
+                if t[-1] == "x":
+                    outstructs.append(rand_crystal.struct)
+                    outstrings.append(str("3D_Molecular_"+str(num)+".cif"))
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -984,3 +1027,24 @@ if __name__ == "__main__":
 
     print("TEST COMPLETE")
     print("Total time elapsed: "+str(mastertime)+" s")
+
+    if outstructs != []:
+        from pymatgen.io.cif import CifWriter
+        from os import mkdir
+        from os.path import isdir
+        outdir0 = "test_out_"
+        i = 1
+        while True:
+            outdir = outdir0 + str(i)
+            if not isdir(outdir):
+                mkdir(outdir)
+                break
+            i += 1
+            if i > 100:
+                break
+        print("Some generated space groups did not match the expected group.")
+        print("cif files for these groups will be output to the directory " + outdir + ":")
+        for struct, string in zip(outstructs, outstrings):
+            cifpath = outdir + "/" + string
+            CifWriter(struct, symprec=0.1).write_file(filename = cifpath)
+            print("  "+string)
