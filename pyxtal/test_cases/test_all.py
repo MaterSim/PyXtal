@@ -111,7 +111,7 @@ def test_atomic():
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("3D_Atomic_"+str(sg)+".cif"))
+                    outstrings.append(str("3D_Atomic_"+str(sg)+".poscar"))
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -171,7 +171,7 @@ def test_molecular():
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("3D_Molecular_"+str(sg)+".cif"))
+                    outstrings.append(str("3D_Molecular_"+str(sg)+".poscar"))
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -233,7 +233,7 @@ def test_atomic_2D():
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("2D_Atomic_"+str(num)+".cif"))
+                    outstrings.append(str("2D_Atomic_"+str(num)+".poscar"))
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -295,7 +295,7 @@ def test_molecular_2D():
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("2D_Molecular_"+str(num)+".cif"))
+                    outstrings.append(str("2D_Molecular_"+str(num)+".poscar"))
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -358,14 +358,6 @@ def test_modules():
     except Exception as e:
         fail(e)
         sys.exit(0)
-
-    print("Importing pybtex (needed for ase)...")
-    try:
-        import pybtex
-        print("Success!")
-    except:
-        print("Error: could not import pybtex. Try reinstalling the package.")
-        print("PyXtal will still run, but cannot import molecules from ase.")
 
     print("Importing openbabel...")
     try:
@@ -1014,13 +1006,13 @@ if __name__ == "__main__":
 
     test_modules()
 
-    test_atomic()
+    #test_atomic()
 
     test_molecular()
 
-    test_atomic_2D()
+    #test_atomic_2D()
 
-    test_molecular_2D()
+    #test_molecular_2D()
 
     masterend = time()
     mastertime = np.around((masterend-masterstart), decimals=2)
@@ -1029,7 +1021,7 @@ if __name__ == "__main__":
     print("Total time elapsed: "+str(mastertime)+" s")
 
     if outstructs != []:
-        from pymatgen.io.cif import CifWriter
+        #from pymatgen.io.cif import CifWriter
         from os import mkdir
         from os.path import isdir
         outdir0 = "test_out_"
@@ -1043,8 +1035,9 @@ if __name__ == "__main__":
             if i > 100:
                 break
         print("Some generated space groups did not match the expected group.")
-        print("cif files for these groups will be output to the directory " + outdir + ":")
+        print("POSCAR files for these groups will be output to the directory " + outdir + ":")
         for struct, string in zip(outstructs, outstrings):
-            cifpath = outdir + "/" + string
-            CifWriter(struct, symprec=0.1).write_file(filename = cifpath)
+            fpath = outdir + "/" + string
+            struct.to(filename=fpath, fmt="poscar")
+            #CifWriter(struct, symprec=0.1).write_file(filename = fpath)
             print("  "+string)
