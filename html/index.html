@@ -4,18 +4,27 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Welcome to pyXtal’s documentation! &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
-  </head><body>
+  </head>
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -53,43 +62,45 @@
 </ul>
 </div></blockquote>
 <p>Note that for openbabel, you must install the C++ pacakge before installing the Python bindings. For Debian based systems, your distribution may already have installable packages:</p>
-<p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">openbabel</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">openbabel</span></code></p>
+<p><code class="docutils literal"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">openbabel</span></code></p>
+<p><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">openbabel</span></code></p>
+<p>Note that the openbabel Python bindings require swig to install:</p>
+<p><code class="docutils literal"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">swig</span></code></p>
 </div>
 <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <p>To install PyXtal, first install all dependencies, then make a copy of the source code:</p>
-<p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/qzhu2017/pyxtal</span></code></p>
+<p><code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/qzhu2017/pyxtal</span></code></p>
 <p>Then, inside of the downloaded directory, run</p>
-<p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code></p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code></p>
 <p>This will install the module. The code can be used within Python via</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyxtal</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyxtal</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
 <p>The package’s main modules are <a class="reference external" href="pyxtal.crystal.html">crystal.py</a> and <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal.py.</a> These modules contain functions for generating 3d atomic and molecular crystals, respectively. These modules can be run as scripts via</p>
-<p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.crystal</span></code></p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.crystal</span></code></p>
 <p>or</p>
-<p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span></code></p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span></code></p>
 <p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="pyxtal.crystal.html">crystal.py</a>, <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal.py.</a>. To explore the full options, please use the -h flag:</p>
-<p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span> <span class="pre">-h</span></code></p>
+<p><code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span> <span class="pre">-h</span></code></p>
 <p>Alternatively, the functions can be called directly within Python, as illustrated in the following examples.</p>
 <div class="section" id="atomic-3d-crystals">
 <h2>Atomic 3d Crystals<a class="headerlink" href="#atomic-3d-crystals" title="Permalink to this headline">¶</a></h2>
 <p>The main function for generating and storing crystals is <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal">crystal.random_crystal</a>. Here is a simple example of a carbon crystal:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">225</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This would create a crystal structure with space group 225, 3 carbon atoms in the primitive cell, and a volume factor of 8. For stoichiometries with more than one type of atom, replace [‘C’] with a list of atomic symbols, and replace [3] with a list of numbers. For example,</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">99</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Ba&#39;</span><span class="p">,</span><span class="s1">&#39;Ti&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">99</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Ba&#39;</span><span class="p">,</span><span class="s1">&#39;Ti&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>would create a random BaTiO3 crystal.</p>
 <p>If the generation is successful, the value my_crystal.valid will be set to True; otherwise, it will be False. The geometric properties of the crystal are stored in my_crystal.struct, which is a <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure">pymatgen.core.structure.Structure</a> object. You can print my_crystal.struct directly to view the lattice vectors and atomic positions, or you can output the information using</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_crystal</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s1">&#39;myfile&#39;</span><span class="p">,</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;cif&#39;</span><span class="p">)</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="n">my_crystal</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s1">&#39;myfile&#39;</span><span class="p">,</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;cif&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This will create a file called myfile.cif, which stores the structure information. Other file types are supported by changing the value of fmt to ‘poscar’, ‘cssr’, or ‘json’.</p>
@@ -105,7 +116,7 @@
 <h2>Atomic 2D Crystals<a class="headerlink" href="#atomic-2d-crystals" title="Permalink to this headline">¶</a></h2>
 <p>(NOTE: Currently under development; results may not be valid)</p>
 <p>To generate a 2d crystal, use the class <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D">crystal.random_crystal_2D</a>. For example,</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal_2D</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal_2D</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">random_crystal_2D</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -116,7 +127,7 @@
 <div class="section" id="molecular-3d-crystals">
 <h2>Molecular 3D Crystals<a class="headerlink" href="#molecular-3d-crystals" title="Permalink to this headline">¶</a></h2>
 <p>Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with molecules. The molecules may either be strings for the chemical composition, or <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule">pymatgen.core.structure.Molecule</a> objects. The generating class is <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal">molecular_crystal.molecular_crystal</a>:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">8.0</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -130,7 +141,7 @@
 <h2>2D Molecular Crystals<a class="headerlink" href="#d-molecular-crystals" title="Permalink to this headline">¶</a></h2>
 <p>(NOTE: Currently under development; results may be not be valid)</p>
 <p>2d Molecular crystals are generated using the class <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D">molecular_crystal.molecular_crystal_2D</a>:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_crystal</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal_2D</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -144,7 +155,7 @@
 <p>A Wyckoff position is typically denoted with a number-letter combination, depending on its multiplicity. For example, for space group 16 (P222), the general Wyckoff position is called “4u”. This is because the position has a multiplicity of 4, and the letters a-t are used by special Wyckoff positions. If you know the letter of a Wyckoff position, you can obtain its index within a get_wyckoffs(sg) list using the function <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.index_from_letter">index_from_letter(letter, sg)</a>. Likewise, if you know the index, you can obtain the letter using <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.letter_from_index">letter_from_index(index, sg)</a>. An example is provided below.</p>
 <p>For a given space group, each Wyckoff position is a subgroup of the general Wyckoff position. Furthermore, the Wyckoff position occupied by a given structure is determined by the symmetry of that structure with respect to the crystal as a whole. Naturally, each Wyckoff position requires some symmetry for an atom or molecule to occupy it. This symmetry can be accessed using <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.get_wyckoff_symmetry">get_wyckoff_symmetry(sg)</a>. This returns a nested list, where the first index specifies a Wyckoff position, the second index specifies a point within that Wyckoff position, and the third index specifies a list of symmetry operations corresponding to that point. This list of operations can then be used to check whether a given molecule is consistent with a given Wyckoff position.</p>
 <p>In order to make this information more human-readable, the function <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.ss_string_from_ops">ss_string_from_ops(ops, sg)</a> can be used to generate a Hermann-Mauguin symbol for a given point group. Here, ops is a list of symmetry options, and sg is the international spacegroup number. So, for example, if we wanted to know the site symmetry of the Wyckoff position 2b in space group 35, we could use:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="o">*</span>
+<div class="highlight-Python"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">sg</span> <span class="o">=</span> <span class="mi">35</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">index</span> <span class="o">=</span> <span class="n">index_from_letter</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">sg</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">ops</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">)[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -198,14 +209,12 @@
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
-    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -226,7 +235,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>
 </html>

@@ -27,6 +27,10 @@ Note that for openbabel, you must install the C++ pacakge before installing the 
 
 ``pip install openbabel``
 
+Note that the openbabel Python bindings require swig to install:
+
+``sudo apt-get install swig``  
+
 Installation
 ==================
 

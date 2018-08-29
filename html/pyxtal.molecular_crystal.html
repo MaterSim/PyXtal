@@ -4,18 +4,27 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>pyxtal.molecular_crystal module &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
-  </head><body>
+  </head>
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -244,7 +253,7 @@ allow_inversion: whether or not to allow inversion operations for chiral</p>
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.mol_site">
 <em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">mol_site</code><span class="sig-paren">(</span><em>mol</em>, <em>position</em>, <em>sg</em>, <em>wp_index</em>, <em>lattice</em>, <em>PBC=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Class for storing molecular Wyckoff positions and orientations within
 the molecular_crystal class. Each mol_site object represenents an
 entire Wyckoff position, not necessarily a single molecule.</p>
@@ -295,7 +304,7 @@ entire Wyckoff position, not necessarily a single molecule.</p>
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal">
 <em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal</code><span class="sig-paren">(</span><em>sg</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Class for storing and generating molecular crystals based on symmetry
 constraints. Based on the crystal.random_crystal class for atomic crystals.
 Given a spacegroup, list of molecule objects, molecular stoichiometry, and
@@ -447,7 +456,7 @@ multiplicity.</p>
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_2D">
 <em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A 2d counterpart to molecular_crystal. Given a layer group, list of
 molecule objects, molecular stoichiometry, and
 a volume factor, generates a molecular crystal consistent with the given
@@ -624,21 +633,21 @@ multiplicity.</p>
 <p>Results are from the “continuous uniform” distribution over the
 stated interval.  To sample  multiply
 the output of <cite>random_sample</cite> by <cite>(b-a)</cite> and add <cite>a</cite>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">random_sample</span><span class="p">()</span> <span class="o">+</span> <span class="n">a</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">random_sample</span><span class="p">()</span> <span class="o">+</span> <span class="n">a</span>
 </pre></div>
 </div>
 <dl class="docutils">
 <dt>size <span class="classifier-delimiter">:</span> <span class="classifier">int or tuple of ints, optional</span></dt>
-<dd>Output shape.  If the given shape is, e.g., <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">n,</span> <span class="pre">k)</span></code>, then
-<code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span> <span class="pre">*</span> <span class="pre">k</span></code> samples are drawn.  Default is None, in which case a
+<dd>Output shape.  If the given shape is, e.g., <code class="docutils literal"><span class="pre">(m,</span> <span class="pre">n,</span> <span class="pre">k)</span></code>, then
+<code class="docutils literal"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span> <span class="pre">*</span> <span class="pre">k</span></code> samples are drawn.  Default is None, in which case a
 single value is returned.</dd>
 </dl>
 <dl class="docutils">
 <dt>out <span class="classifier-delimiter">:</span> <span class="classifier">float or ndarray of floats</span></dt>
-<dd>Array of random floats of shape <cite>size</cite> (unless <code class="docutils literal notranslate"><span class="pre">size=None</span></code>, in which
+<dd>Array of random floats of shape <cite>size</cite> (unless <code class="docutils literal"><span class="pre">size=None</span></code>, in which
 case a single float is returned).</dd>
 </dl>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">()</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">()</span>
 <span class="go">0.47108547995356098</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">())</span>
 <span class="go">&lt;type &#39;float&#39;&gt;</span>
@@ -647,7 +656,7 @@ case a single float is returned).</dd>
 </pre></div>
 </div>
 <p>Three-by-two array of random numbers from [-5, 0):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="mi">5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">-</span> <span class="mi">5</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="mi">5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">-</span> <span class="mi">5</span>
 <span class="go">array([[-3.99149989, -0.52338984],</span>
 <span class="go">       [-2.99091858, -0.79479508],</span>
 <span class="go">       [-1.23204345, -1.75224494]])</span>
@@ -677,14 +686,12 @@ case a single float is returned).</dd>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
-    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -705,7 +712,7 @@ case a single float is returned).</dd>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>
 </html>

@@ -4,18 +4,27 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>pyxtal.crystal module &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
-  </head><body>
+  </head>
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -675,7 +684,7 @@ y-z plane</dd>
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal">
 <em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal</code><span class="sig-paren">(</span><em>sg</em>, <em>species</em>, <em>numIons</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Class for storing and generating atomic crystals based on symmetry
 constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
 and a volume factor, generates a random crystal consistent with the
@@ -765,7 +774,7 @@ multiplicity.</p>
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_1D">
 <em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_1D</code><span class="sig-paren">(</span><em>sg</em>, <em>species</em>, <em>numIons</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_1D" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Class for storing and generating atomic crystals based on symmetry
 constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
 and a volume factor, generates a random crystal consistent with the
@@ -849,7 +858,7 @@ multiplicity.</p>
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_2D">
 <em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>number</em>, <em>species</em>, <em>numIons</em>, <em>thickness</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A 2d counterpart to random_crystal. Generates a random atomic crystal based
 on a 2d layer group instead of a 3d spacegroup. Note that each layer group
 is equal to a corresponding 3d spacegroup, but without periodicity in one
@@ -1048,14 +1057,12 @@ factor: a tolerance factor for checking distances. A larger value means</p>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
-    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -1076,7 +1083,7 @@ factor: a tolerance factor for checking distances. A larger value means</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>
 </html>

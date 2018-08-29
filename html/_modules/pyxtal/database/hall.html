@@ -4,18 +4,27 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>pyxtal.database.hall &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-  </head><body>
+  </head>
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -274,8 +283,8 @@
 <span class="c1">#assumes unique axis b for (a or b or c) Hall symbols</span>
 
 <span class="c1">#TODO: incorporate non-standard setting transformations</span>
-<div class="viewcode-block" id="hall_from_hm"><a class="viewcode-back" href="../../../pyxtal.database.hall.html#pyxtal.database.hall.hall_from_hm">[docs]</a><span class="k">def</span> <span class="nf">hall_from_hm</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
-	<span class="k">return</span> <span class="n">hall_numbers</span><span class="p">[</span><span class="n">num</span><span class="p">]</span></div>
+<div class="viewcode-block" id="hall_from_hm"><a class="viewcode-back" href="../../../pyxtal.database.hall.html#pyxtal.database.hall.hall_from_hm">[docs]</a><span class="k">def</span> <span class="nf">hall_from_hm</span><span class="p">(</span><span class="n">num</span><span class="p">):</span></div>
+	<span class="k">return</span> <span class="n">hall_numbers</span><span class="p">[</span><span class="n">num</span><span class="p">]</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">List of Hermann-Mauguin to Hall symbol conversions:</span>
 <span class="sd">HM #    HM Symbol      Hall Symbol(different from wyckoff.csv)</span>
@@ -819,14 +828,12 @@
         <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
-    <div class="searchformwrapper">
     <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -848,7 +855,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>
 </html>
