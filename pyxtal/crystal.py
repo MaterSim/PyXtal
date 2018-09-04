@@ -2112,9 +2112,9 @@ class random_crystal_1D():
     """
     def __init__(self, number, species, numIons, factor):
 
-        self.lgp = Layergroup(number)
+        self.rod = Rodgroup(number)
         """The number (between 1 and 80) for the crystal's layer group."""
-        self.sg = self.lgp.sgnumber
+        self.sg = self.rod.sgnumber
         """The number (between 1 and 230) for the international spacegroup."""
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
@@ -2125,17 +2125,12 @@ class random_crystal_1D():
         self.numIons0 = numIons
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
-        a = self.lgp.permutation[-1]
-        if a == 1:
-            self.PBC = [2,3]
-        elif a == 2:
-            self.PBC = [1,3]
-        elif a == 3:
-            self.PBC = [1,2]
-        """The periodic axes of the crystal."""
-        self.PB = self.lgp.permutation[3:6] 
+        a = self.rod.permutation[-1]
+        self.PBC = [a]
+        """The periodic axis of the crystal."""
+        self.PB = self.rod.permutation[3:6] 
         #TODO: add docstring
-        self.P = self.lgp.permutation[:3] 
+        self.P = self.rod.permutation[:3] 
         #TODO: add docstring
         self.Msgs()
         """A list of warning messages to use during generation."""
@@ -2235,7 +2230,7 @@ class random_crystal_1D():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice_2D(self.sg, self.volume, self.thickness, self.P, minvec=minvector)
+                cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
@@ -2291,7 +2286,7 @@ class random_crystal_1D():
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
