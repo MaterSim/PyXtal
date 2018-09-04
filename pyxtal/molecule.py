@@ -272,15 +272,16 @@ def get_symmetry(mol, already_oriented=False):
             symm_m.append(op)
         return symm_m
 
-def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
-    exact_orientation=False, already_oriented=False, allow_inversion=False, PBC=None):
+def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=True,
+    exact_orientation=False, already_oriented=False, allow_inversion=False):
     """
     Tests if a molecule meets the symmetry requirements of a Wyckoff position,
     and returns the valid orientations.
 
     Args:
         mol: a Molecule object. Orientation is arbitrary
-        sg: the international spacegroup number
+        wyckoffs: an unorganized list of Wyckoff positions
+        w_symm_all: the site symmetry of the Wyckoff position
         index: the index of the Wyckoff position within the sg to check
         randomize: whether or not to apply a random rotation consistent with
             the symmetry requirements
@@ -297,7 +298,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
         Wyckoff position. If no orientations are found, returns False.
     """
     #Obtain the Wyckoff symmetry
-    symm_w = get_wyckoff_symmetry(sg, PBC=PBC, molecular=True)[index][0]
+    symm_w = deepcopy(w_symm_all[index][0])
     pga = PointGroupAnalyzer(mol)
 
     #Check exact orientation
@@ -328,10 +329,9 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
     #check if WP breaks symmetry
     if chiral is True:
         if allow_inversion is False:
-            gen_pos = get_wyckoffs(sg, PBC=PBC)[0]
             for op in gen_pos:
                 if np.linalg.det(op.rotation_matrix) < 0:
-                    print("Warning: cannot place chiral molecule in spagegroup #"+str(sg))
+                    print("Warning: cannot place chiral molecule in spagegroup")
                     return False
     #Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
     opa_w = []
@@ -487,7 +487,7 @@ def orientation_in_wyckoff_position(mol, sg, index, randomize=True,
             op = o.get_op(angle=0)
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(mo, sg, index, exact_orientation=True, already_oriented=already_oriented) is True:
+        if orientation_in_wyckoff_position(mo, wyckoffs, w_symm_all, index, exact_orientation=True, already_oriented=already_oriented) is True:
             allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
@@ -524,5 +524,5 @@ if __name__ == "__main__":
     #We can choose any of these orientations at random using np.random.choice
     #To use an orientation, do mol.apply_operation(orientation)
     #Spacegroup WP 24l (index 2) in sg 221 has m.. symmetry
-    allowed =  orientation_in_wyckoff_position(mol, 221, 2, randomize=True)
-    print("Found "+str(len(allowed))+" orientations in sg 221 position 1g:")
+    #allowed =  orientation_in_wyckoff_position(mol, w, ws, 2, randomize=True)
+    #print("Found "+str(len(allowed))+" orientations in sg 221 position 1g:")

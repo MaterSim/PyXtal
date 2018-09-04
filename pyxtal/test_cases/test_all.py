@@ -680,90 +680,6 @@ def test_modules():
 
     check()
 
-    #=====molecule=====
-    print("pyxtal.molecule")
-    reset()
-    try:
-        import pyxtal.molecule
-    except Exception as e:
-        fail(e)
-
-    print("  ob_mol_from_string")
-    try:
-        from pyxtal.molecule import ob_mol_from_string
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            h2o = molecule_collection['H2O']
-            ch4 = molecule_collection['CH4']
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    print("  get_inertia_tensor")
-    try:
-        from pyxtal.molecule import get_inertia_tensor
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            get_inertia_tensor(h2o)
-            get_inertia_tensor(ch4)
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    print("  get_moment_of_inertia")
-    try:
-        from pyxtal.molecule import get_moment_of_inertia
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            v = random_vector()
-            get_moment_of_inertia(h2o, v)
-            get_moment_of_inertia(ch4, v)
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    print("  reoriented_molecule")
-    try:
-        from pyxtal.molecule import reoriented_molecule
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            reoriented_molecule(h2o)
-            reoriented_molecule(ch4)
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    print("  orientation_in_wyckoff_position")
-    try:
-        from pyxtal.molecule import orientation_in_wyckoff_position
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            orientation_in_wyckoff_position(h2o, 20, 1)
-            orientation_in_wyckoff_position(ch4, 20, 1)
-        except Exception as e:
-            fail(e)
-
-    check()
-
     #=====crystal=====
     print("pyxtal.crystal")
     reset()
@@ -947,6 +863,92 @@ def test_modules():
 
     check()
 
+    #=====molecule=====
+    print("pyxtal.molecule")
+    reset()
+    try:
+        import pyxtal.molecule
+    except Exception as e:
+        fail(e)
+
+    print("  ob_mol_from_string")
+    try:
+        from pyxtal.molecule import ob_mol_from_string
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            h2o = molecule_collection['H2O']
+            ch4 = molecule_collection['CH4']
+        except Exception as e:
+            fail(e)
+
+    check()
+
+    print("  get_inertia_tensor")
+    try:
+        from pyxtal.molecule import get_inertia_tensor
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            get_inertia_tensor(h2o)
+            get_inertia_tensor(ch4)
+        except Exception as e:
+            fail(e)
+
+    check()
+
+    print("  get_moment_of_inertia")
+    try:
+        from pyxtal.molecule import get_moment_of_inertia
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            v = random_vector()
+            get_moment_of_inertia(h2o, v)
+            get_moment_of_inertia(ch4, v)
+        except Exception as e:
+            fail(e)
+
+    check()
+
+    print("  reoriented_molecule")
+    try:
+        from pyxtal.molecule import reoriented_molecule
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            reoriented_molecule(h2o)
+            reoriented_molecule(ch4)
+        except Exception as e:
+            fail(e)
+
+    check()
+
+    print("  orientation_in_wyckoff_position")
+    try:
+        from pyxtal.molecule import orientation_in_wyckoff_position
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            w = get_wyckoffs(20)
+            ws = get_wyckoff_symmetry(20, molecular=True)
+            orientation_in_wyckoff_position(h2o, w, ws, 1)
+            orientation_in_wyckoff_position(ch4, w, ws, 1)
+        except Exception as e:
+            fail(e)
+
+    check()
+
     #=====molecular_crystal=====
     print("pyxtal.molecular_crystal")
     reset()
@@ -1006,13 +1008,13 @@ if __name__ == "__main__":
 
     test_modules()
 
-    #test_atomic()
+    test_atomic()
 
     test_molecular()
 
-    #test_atomic_2D()
+    test_atomic_2D()
 
-    #test_molecular_2D()
+    test_molecular_2D()
 
     masterend = time()
     mastertime = np.around((masterend-masterstart), decimals=2)

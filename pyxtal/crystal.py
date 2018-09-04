@@ -231,6 +231,8 @@ def i_from_jk(j, k, olist):
             num += 1
             if x == j and y == k:
                 return num
+    print("Error: Incorrect Wyckoff position list or index passed to jk_from_i")
+    return None
 
 def ss_string_from_ops(ops, sg, complete=True):
     """
@@ -816,7 +818,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
+def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=None):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -826,8 +828,9 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
     Args:
         coor: a list of fractional coordinates
         lattice: a 3x3 matrix representing the unit cell
-        wyckoff: an unorganized list of Wyckoff positions to check
-        sg: the international spacegroup number
+        wyckoffs: an unorganized list of Wyckoff positions to check
+        w_symm_all: A list of Wyckoff site symmetry obtained from
+            get_wyckoff_symmetry
         tol: the cutoff distance for merging coordinates
         PBC: a number representing the periodic boundary conditions (used for
             2d and 1d crystals)
@@ -842,13 +845,13 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
         pairs, graph = find_short_dist(coor, lattice, tol, PBC=PBC)
         index = None
         if len(pairs)>0:
-            if len(coor) > len(wyckoff[-1][0]):
+            if len(coor) > len(wyckoffs[-1]):
                 merged = []
                 groups = connected_components(graph)
                 for group in groups:
                     merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
-                index = check_wyckoff_position(merged, sg, exact_translation=False, PBC=PBC)
+                index = check_wyckoff_position(merged, wyckoffs, w_symm_all, exact_translation=False, PBC=PBC)
                 if index is False:
                     return coor, False
                 else:
@@ -858,7 +861,7 @@ def merge_coordinate(coor, lattice, wyckoff, sg, tol, PBC=None):
                 return coor, False
         else:
             if index is None:
-                index = check_wyckoff_position(coor, sg, exact_translation=False, PBC=PBC)
+                index = check_wyckoff_position(coor, wyckoffs, w_symm_all, exact_translation=False, PBC=PBC)
             return coor, index
 
 def estimate_volume(numIons, species, factor=1.0):
@@ -1502,7 +1505,7 @@ def find_generating_point(coords, generators, PBC=None):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, PBC=None):
+def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False, PBC=None):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -1510,8 +1513,10 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
 
     Args:
         points: a list of 3d coordinates or SymmOps to check
-        sg: the international space group number to check
-        wyckoffs: a list of Wyckoff positions obtained from get_wyckoffs.
+        wyckoffs: an unorganized list of Wyckoff positions obtained from
+            get_wyckoffs, get_layer, or get_rod
+        w_symm_all: a list of site symmetry operations obtained from
+            get_wyckoff_symmetry, get_layer_symmetry, or get_rod_symmetry
         exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1
             are considered equal. If points have been directly generated from
@@ -1522,13 +1527,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
         WP is found, returns False
     """
     points = np.array(points)
-    #points = np.around((points*1e+10))/1e+10
-
-    if wyckoffs == None:
-        wyckoffs = get_wyckoffs(sg, PBC=PBC)
-        gen_pos = wyckoffs[0]
-    else:
-        gen_pos = wyckoffs[0][0]
+    gen_pos = wyckoffs[0]
 
     new_points = []
     if exact_translation == False:
@@ -1536,7 +1535,6 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     else:
         new_points = deepcopy(points)
 
-    w_symm_all = get_wyckoff_symmetry(sg, PBC=PBC)
     p_symm = []
     #If exact_translation is false, store WP's which might be a match
     possible = []
@@ -1564,7 +1562,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
             if temp == []:
                 #If we find a match with exact translations
                 if exact_translation:
-                    generators = get_wyckoffs(sg, PBC=PBC)[i]
+                    generators = wyckoffs[i]
                     p = find_generating_point(points, generators, PBC=PBC)
                     if p is not None:
                         return i
@@ -1578,7 +1576,7 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     #If exactly one matching WP is found
     elif len(possible) == 1:
         i = possible[0]
-        generators = get_wyckoffs(sg, PBC=PBC)[i]
+        generators = wyckoffs[i]
         p = find_generating_point(points, generators, PBC=PBC)
         if p is not None:
             return i
@@ -1587,9 +1585,8 @@ def check_wyckoff_position(points, sg, wyckoffs=None, exact_translation=False, P
     #If multiple WP's are found
     else:
         #Check that points are generated from generators
-        allgen = get_wyckoffs(sg, PBC=PBC)
         for i in possible:
-            generators = allgen[i]
+            generators = wyckoffs[i]
             p = find_generating_point(points, generators, PBC=PBC)
             if p is not None:
                 return i
@@ -1654,9 +1651,13 @@ class random_crystal():
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = get_wyckoffs(self.sg, organized=True)
+        self.wyckoffs = get_wyckoffs(self.sg)
+        """The Wyckoff positions for the crystal's spacegroup."""
+        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
+        self.w_symm = get_wyckoff_symmetry(self.sg)
+        """The site symmetry of the Wyckoff positions"""
         self.generate_crystal()
 
 
@@ -1677,7 +1678,7 @@ class random_crystal():
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
         """
-        N_site = [len(x[0]) for x in self.wyckoffs]
+        N_site = [len(x[0]) for x in self.wyckoffs_organized]
         has_freedom = False
         #remove WP's with no freedom once they are filled
         removed_wyckoffs = []
@@ -1687,13 +1688,13 @@ class random_crystal():
                 return False
             else:
                 #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs[-1][-1][0]
+                op = self.wyckoffs_organized[-1][-1][0]
                 if op.rotation_matrix.all() != 0.0:
                     has_freedom = True
                 else:
                     #Subtract from the number of ions beginning with the smallest Wyckoff positions
                     remaining = numIon
-                    for x in self.wyckoffs:
+                    for x in self.wyckoffs_organized:
                         for wp in x:
                             removed = False
                             while remaining >= len(wp) and wp not in removed_wyckoffs:
@@ -1767,13 +1768,13 @@ class random_crystal():
                             #Now we start to add the specie to the wyckoff position
                             for cycle3 in range(max3):
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                                ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
+                                ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added) 
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
                                     point = np.random.random(3)
                                     coords = np.array([op.operate(point) for op in ops])
-                                    #merge_coordinate if the atoms are close
-                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
+                                    #Merge coordinates if the atoms are close
+                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol)
                                     if good_merge is not False:
                                         coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                         if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
@@ -1875,9 +1876,14 @@ class random_crystal_2D():
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = deepcopy(get_wyckoffs(self.sg, organized=True, PBC=self.PBC)) 
+        self.wyckoffs = get_wyckoffs(self.sg, PBC=self.PBC)
+        """The Wyckoff positions for the crystal's spacegroup."""      
+        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True, PBC=self.PBC)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
-        multiplicity."""        
+        multiplicity."""
+        self.w_symm = get_wyckoff_symmetry(self.sg, PBC=self.PBC)
+        """A list of site symmetry operations for the Wyckoff positions, obtained
+            from get_wyckoff_symmetry."""
         self.generate_crystal()
 
 
@@ -1898,7 +1904,7 @@ class random_crystal_2D():
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
         """
-        N_site = [len(x[0]) for x in self.wyckoffs]
+        N_site = [len(x[0]) for x in self.wyckoffs_organized]
         has_freedom = False
         #remove WP's with no freedom once they are filled
         removed_wyckoffs = []
@@ -1908,13 +1914,13 @@ class random_crystal_2D():
                 return False
             else:
                 #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs[-1][-1][0]
+                op = self.wyckoffs_organized[-1][-1][0]
                 if op.rotation_matrix.all() != 0.0:
                     has_freedom = True
                 else:
                     #Subtract from the number of ions beginning with the smallest Wyckoff positions
                     remaining = numIon
-                    for x in self.wyckoffs:
+                    for x in self.wyckoffs_organized:
                         for wp in x:
                             removed = False
                             while remaining >= len(wp) and wp not in removed_wyckoffs:
@@ -1980,12 +1986,12 @@ class random_crystal_2D():
                         #Now we start to add the specie to the wyckoff position
                         for cycle3 in range(max3):
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                            ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added)
+                            ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added)
                             if ops is not False:
                 	    	    #Generate a list of coords from ops
                                 point = np.random.random(3)
                                 coords = np.array([op.operate(point) for op in ops])
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol, PBC=self.PBC)
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
@@ -2075,9 +2081,14 @@ class random_crystal_1D():
         """A list of warning messages to use during generation."""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = get_rod(self.num, organized=True)
+        self.wyckoffs = get_wyckoffs(self.sg)
+        """The Wyckoff positions for the crystal's spacegroup."""
+        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
+        self.w_symm = get_wyckoff_symmetry(self.sg, PBC=self.PBC)
+        """A list of site symmetry operations for the Wyckoff positions, obtained
+            from get_wyckoff_symmetry."""
         self.generate_crystal()
 
 
@@ -2098,7 +2109,7 @@ class random_crystal_1D():
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
         """
-        N_site = [len(x[0]) for x in self.wyckoffs]
+        N_site = [len(x[0]) for x in self.wyckoffs_organized]
         has_freedom = False
         #remove WP's with no freedom once they are filled
         removed_wyckoffs = []
@@ -2108,13 +2119,13 @@ class random_crystal_1D():
                 return False
             else:
                 #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs[-1][-1][0]
+                op = self.wyckoffs_organized[-1][-1][0]
                 if op.rotation_matrix.all() != 0.0:
                     has_freedom = True
                 else:
                     #Subtract from the number of ions beginning with the smallest Wyckoff positions
                     remaining = numIon
-                    for x in self.wyckoffs:
+                    for x in self.wyckoffs_organized:
                         for wp in x:
                             removed = False
                             while remaining >= len(wp) and wp not in removed_wyckoffs:
@@ -2188,13 +2199,13 @@ class random_crystal_1D():
                             #Now we start to add the specie to the wyckoff position
                             for cycle3 in range(max3):
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                                ops = choose_wyckoff(self.wyckoffs, numIon-numIon_added) 
+                                ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added) 
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
                                     point = np.random.random(3)
                                     coords = np.array([op.operate(point) for op in ops])
-                                    #merge_coordinate if the atoms are close
-                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.sg, tol)
+                                    #Merge coordinates if the atoms are close
+                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol)
                                     if good_merge is not False:
                                         coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                         if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
