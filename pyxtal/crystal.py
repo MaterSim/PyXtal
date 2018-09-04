@@ -2094,39 +2094,58 @@ class random_crystal_2D():
 
 class random_crystal_1D():
     """
-    Class for storing and generating atomic crystals based on symmetry
-    constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
-    and a volume factor, generates a random crystal consistent with the
-    spacegroup's symmetry. This crystal is stored as a pymatgen struct via
-    self.struct
-    
+    A 1d counterpart to random_crystal. Generates a random atomic crystal based
+    on a 1d Rod group instead of a 3d spacegroup. Note that each layer group
+    is equal to a corresponding 3d spacegroup, but without periodicity in one
+    direction. The generated pymatgen structure can be accessed via self.struct
+
     Args:
-        sg: the international spacegroup number
+        number: the Rod group number between 1 and 75. NOT equal to the
+            international space group number, which is between 1 and 230
         species: a list of atomic symbols for each ion type
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell)
+        length: the length, in Angstroms, of the unit cell in the
+            periodic direction
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, sg, species, numIons, factor):
-        
-        #Necessary input
+    def __init__(self, number, species, numIons, factor):
+
+        self.lgp = Layergroup(number)
+        """The number (between 1 and 80) for the crystal's layer group."""
+        self.sg = self.lgp.sgnumber
+        """The number (between 1 and 230) for the international spacegroup."""
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
-        """The supplied volume factor for the unit cell."""
+        """"The volume factor used to generate the unit cell."""
+        self.thickness = thickness
+        """the thickness, in Angstroms, of the unit cell in the 3rd
+        dimension."""
         self.numIons0 = numIons
-        self.num = num
-        """The Rod group number (1-75) of the crystal."""
-        self.sg = sg_from_rod(num)
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
+        a = self.lgp.permutation[-1]
+        if a == 1:
+            self.PBC = [2,3]
+        elif a == 2:
+            self.PBC = [1,3]
+        elif a == 3:
+            self.PBC = [1,2]
+        """The periodic axes of the crystal."""
+        self.PB = self.lgp.permutation[3:6] 
+        #TODO: add docstring
+        self.P = self.lgp.permutation[:3] 
+        #TODO: add docstring
         self.Msgs()
         """A list of warning messages to use during generation."""
+        self.numIons = numIons * cellsize(self.sg)
+        """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = get_wyckoffs(self.sg)
-        """The Wyckoff positions for the crystal's spacegroup."""
-        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True)
+        self.wyckoffs = get_wyckoffs(self.sg, PBC=self.PBC)
+        """The Wyckoff positions for the crystal's spacegroup."""      
+        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True, PBC=self.PBC)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
         self.w_symm = get_wyckoff_symmetry(self.sg, PBC=self.PBC)
@@ -2216,94 +2235,87 @@ class random_crystal_1D():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                if cell_para is None:
-                    break
-                else:
-                    cell_matrix = para2matrix(cell_para)
-                    if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                        print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
-                        print('cell_para:  ', cell_para)
-                        sys.exit(0)
+                cell_para = generate_lattice_2D(self.sg, self.volume, self.thickness, self.P, minvec=minvector)
+                cell_matrix = para2matrix(cell_para)
+                coordinates_total = [] #to store the added coordinates
+                sites_total = []      #to store the corresponding specie
+                good_structure = False
 
-                    coordinates_total = [] #to store the added coordinates
-                    sites_total = []      #to store the corresponding specie
-                    good_structure = False
+                for cycle2 in range(max2):
+                    coordinates_tmp = deepcopy(coordinates_total)
+                    sites_tmp = deepcopy(sites_total)
+                    
+            	    #Add specie by specie
+                    for numIon, specie in zip(self.numIons, self.species):
+                        numIon_added = 0
+                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
 
-                    for cycle2 in range(max2):
-                        coordinates_tmp = deepcopy(coordinates_total)
-                        sites_tmp = deepcopy(sites_total)
-                        
-            	        #Add specie by specie
-                        for numIon, specie in zip(self.numIons, self.species):
-                            numIon_added = 0
-                            tol = max(0.5*Element(specie).covalent_radius, tol_m)
+                        #Now we start to add the specie to the wyckoff position
+                        for cycle3 in range(max3):
+                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
+                            ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added)
+                            if ops is not False:
+                	    	    #Generate a list of coords from ops
+                                point = np.random.random(3)
+                                coords = np.array([op.operate(point) for op in ops])
+                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
+                                if good_merge is not False:
+                                    coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
+                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
+                                        coordinates_tmp.append(coords_toadd)
+                                        sites_tmp.append(specie)
+                                        numIon_added += len(coords_toadd)
+                                    if numIon_added == numIon:
+                                        coordinates_total = deepcopy(coordinates_tmp)
+                                        sites_total = deepcopy(sites_tmp)
+                                        break
+                        if numIon_added != numIon:
+                            break  #need to repeat from the 1st species
 
-                            #Now we start to add the specie to the wyckoff position
-                            for cycle3 in range(max3):
-                                #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                                ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added) 
-                                if ops is not False:
-            	        	    #Generate a list of coords from ops
-                                    point = np.random.random(3)
-                                    coords = np.array([op.operate(point) for op in ops])
-                                    #Merge coordinates if the atoms are close
-                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol)
-                                    if good_merge is not False:
-                                        coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
-                                            coordinates_tmp.append(coords_toadd)
-                                            sites_tmp.append(specie)
-                                            numIon_added += len(coords_toadd)
-                                        if numIon_added == numIon:
-                                            coordinates_total = deepcopy(coordinates_tmp)
-                                            sites_total = deepcopy(sites_tmp)
-                                            break
+                    if numIon_added == numIon:
+                        good_structure = True
+                        break
+                    else: #reset the coordinates and sites
+                        coordinates_total = []
+                        sites_total = []
 
-                            if numIon_added != numIon:
-                                break  #need to repeat from the 1st species
-
-                        if numIon_added == numIon:
-                            good_structure = True
-                            break
-                        else: #reset the coordinates and sites
-                            coordinates_total = []
-                            sites_total = []
-
-                    if good_structure:
-                        final_coor = []
-                        final_site = []
-                        final_number = []
-                        final_lattice = cell_matrix
-                        for coor, ele in zip(coordinates_total, sites_total):
-                            for x in coor:
-                                final_coor.append(x)
-                                final_site.append(ele)
-                                final_number.append(Element(ele).z)
-
-                        self.lattice = final_lattice   
-                        """A 3x3 matrix representing the lattice of the unit
-                        cell."""                 
-                        self.coordinates = np.array(final_coor)
-                        """The fractional coordinates for each molecule in the
-                        final structure"""
-                        self.sites = final_site
-                        """A list of atomic symbols corresponding to the type
-                        of atom for each site in self.coordinates"""
-                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                        """A pymatgen.core.structure.Structure object for the
-                        final generated crystal."""
-                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                        """A list of information describing the generated
-                        crystal, which may be used by spglib for symmetry
-                        analysis."""
-                        self.valid = True
-                        """Whether or not a valid crystal was generated."""
-                        return
+                if good_structure:
+                    final_coor = []
+                    final_site = []
+                    final_number = []
+                    final_lattice = cell_matrix
+                    for coor, ele in zip(coordinates_total, sites_total):
+                        for x in coor:
+                            final_coor.append(x)
+                            final_site.append(ele)
+                            final_number.append(Element(ele).z)
+                    final_coor = np.array(final_coor)
+                    final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    self.lattice = final_lattice
+                    """A 3x3 matrix representing the lattice of the unit
+                    cell."""                        
+                    self.coordinates = final_coor
+                    """The fractional coordinates for each molecule in the
+                    final structure"""
+                    self.sites = final_site  
+                    """A list of atomic symbols corresponding to the type
+                    of atom for each site in self.coordinates"""                  
+                    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                    """A pymatgen.core.structure.Structure object for the
+                    final generated crystal."""                    
+                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                    """A list of information describing the generated
+                    crystal, which may be used by spglib for symmetry
+                    analysis."""                    
+                    self.valid = True
+                    """Whether or not a valid crystal was generated."""
+                    return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
         return self.Msg2
+
 
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
