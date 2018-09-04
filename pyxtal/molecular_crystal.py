@@ -90,7 +90,7 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
         volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
     return abs(factor*volume)
 
-def get_sg_orientations(mol, sg, allow_inversion=False, PBC=None):
+def get_sg_orientations(mol, sg, allow_inversion=False, PBC=[1,2,3]):
     """
     Calculate the valid orientations for each Molecule and Wyckoff position.
     Returns a list with 3 indices:
@@ -110,6 +110,7 @@ def get_sg_orientations(mol, sg, allow_inversion=False, PBC=None):
         sg: the international spacegroup number
         allow_inversion: whether or not to allow inversion operations for chiral
             molecules
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
         a list of operations orientation objects for each Wyckoff position. 1st
@@ -157,7 +158,7 @@ def get_box(mol):
         if z+r > maxz: maxz = z+r
     return [minx,maxx,miny,maxy,minz,maxz]
 
-def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0, PBC=None):
+def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0, PBC=[1,2,3]):
     """
     Check the distances between two set of molecules. The first set is generally
     larger than the second. Distances between coordinates within the first set
@@ -178,7 +179,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
             overlap
         d_factor: the tolerance is multiplied by this amount. Larger values
             mean molecules must be farther apart
-        PBC: value to be passed to create_matrix for periodic boundary conditions
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
@@ -205,7 +206,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, f
     else:
         return True
 
-def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all, exact_translation=False, PBC=None):
+def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all, exact_translation=False, PBC=[1,2,3]):
     """
     Given a list of points, returns the index of the Wyckoff position within
     the spacegroup.
@@ -218,6 +219,7 @@ def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all,
         exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1 are
             considered equal
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
         a single index corresponding to the detected Wyckoff position. If no
@@ -245,7 +247,7 @@ def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all,
                 print(g.as_xyz_string())
     return False
 
-def merge_coordinate_molecular(coor, lattice, wyckoffs, w_symm_all, tol, orientations, PBC=None):
+def merge_coordinate_molecular(coor, lattice, wyckoffs, w_symm_all, tol, orientations, PBC=[1,2,3]):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -261,8 +263,7 @@ def merge_coordinate_molecular(coor, lattice, wyckoffs, w_symm_all, tol, orienta
         tol: the cutoff distance for merging coordinates
         orientations: a list of valid molecular orientations within the
             space group
-        PBC: a number representing the periodic boundary conditions (used for
-            2d and 1d crystals)
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
         coor, index: (coor) is the new list of fractional coordinates after
@@ -346,7 +347,7 @@ class mol_site():
     the molecular_crystal class. Each mol_site object represenents an
     entire Wyckoff position, not necessarily a single molecule.
     """
-    def __init__(self, mol, position, sg, wp_index, lattice, PBC=None):
+    def __init__(self, mol, position, sg, wp_index, lattice, PBC=[1,2,3]):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = position
@@ -359,7 +360,7 @@ class mol_site():
         """The multiplicity of the molecule's Wyckoff position"""
         self.letter = letter_from_index(wp_index, sg)
         """The Wyckoff letter of the molecule's Wyckoff position"""
-        self.PBC = None
+        self.PBC = PBC
         """The periodic boundary condition direction"""
 
 class molecular_crystal():
@@ -902,8 +903,14 @@ class molecular_crystal_2D():
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""
-        self.PBC = self.lgp.permutation[-1] 
-        """The axis (between 1 and 3) which is not periodic."""
+        a = self.lgp.permutation[-1]
+        if a == 1:
+            self.PBC = [2,3]
+        elif a == 2:
+            self.PBC = [1,3]
+        elif a == 3:
+            self.PBC = [1,2]
+        """The periodic axes of the crystal."""
         self.PB = self.lgp.permutation[3:6] 
         #TODO: add docstring
         self.P = self.lgp.permutation[:3] 

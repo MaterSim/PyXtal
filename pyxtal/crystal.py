@@ -103,17 +103,17 @@ layer_df = read_csv(resource_filename("pyxtal", "database/layer.csv"))
 #Define functions
 #------------------------------
 
-def filtered_coords(coords, PBC=None):
+def filtered_coords(coords, PBC=[1, 2, 3]):
     """
     Given a list of 3d fractional coordinates or a single 3d point, transform
     all coordinates to less than 1 and greater than 0. If one axis is not
     periodic, does not transform the coordinates along that axis. For example,
     for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
-    not the y axis (PBC=2), the function would return [0.2, 1.6, 0.6].
+    not the y axis (PBC=[1, 3]), the function would return [0.2, 1.6, 0.6].
 
     Args:
         coords: a list or array of real 3d vectors, or a single real 3d vector
-        PBC: the axis, if any, which is not periodic. 1, 2, and 3 correspond
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
             to x, y, and z repectively
 
     Returns:
@@ -125,11 +125,11 @@ def filtered_coords(coords, PBC=None):
     if PBC is not None:
         if len(new_coords.shape) == 2:
             for x in range(0, 3):
-                if x == PBC-1:
+                if x +1 not in PBC:
                     new_coords[:,x] = coords0[:,x]
         elif len(new_coords.shape) == 1:
             for x in range(0, 3):
-                if x == PBC-1:
+                if x +1 not in PBC:
                     new_coords[x] = coords0[x]
         else:
             print("Warning: invalid array dimensions for filtered_coords. Shape: "+str(new_coords.shape))
@@ -454,15 +454,15 @@ def ss_string_from_ops(ops, sg, complete=True):
         print("Error: invalid spacegroup number")
         return
 
-def create_matrix(PBC=None):
+def create_matrix(PBC=[1,2,3]):
     """
     Used for calculating distances in lattices with periodic boundary
     conditions. When multiplied with a set of points, generates additional
     points in cells adjacent to and diagonal to the original cell
 
     Args:
-        PBC: an axis which does not have periodic boundary condition.
-            Ex: PBC=1 cancels periodic boundary conditions along the x axis
+        PBC: The axes with periodic boundary conditions.
+            Ex: PBC=[2,3] cancels periodic boundary conditions along the x axis
 
     Returns:
         A numpy array of matrices which can be multiplied by a set of
@@ -472,11 +472,11 @@ def create_matrix(PBC=None):
     i_list = [-1, 0, 1]
     j_list = [-1, 0, 1]
     k_list = [-1, 0, 1]
-    if PBC == 1:
+    if 1 not in PBC:
         i_list = [0]
-    elif PBC == 2:
+    if 2 not in PBC:
         j_list = [0]
-    elif PBC == 3:
+    if 3 not in PBC:
         k_list = [0]
     for i in i_list:
         for j in j_list:
@@ -484,7 +484,7 @@ def create_matrix(PBC=None):
                 matrix.append([i,j,k])
     return np.array(matrix, dtype=float)
 
-def distance(xyz, lattice, PBC=None):
+def distance(xyz, lattice, PBC=[1,2,3]):
     """
     Returns the Euclidean distance from the origin for a fractional
     displacement vector. Takes into account the lattice metric and periodic
@@ -494,7 +494,7 @@ def distance(xyz, lattice, PBC=None):
         xyz: a fractional 3d displacement vector. Can be obtained by
             subtracting one fractional vector from another
         lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: the axis, if any, which is non-periodic. 1, 2, and 3 correspond
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
             to x, y, and z respectively.
 
     Returns:
@@ -506,7 +506,7 @@ def distance(xyz, lattice, PBC=None):
     matrix = np.dot(matrix, lattice)
     return np.min(cdist(matrix,[[0,0,0]]))       
 
-def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor=1.0):
+def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_factor=1.0):
     """
     Check the distances between two set of atoms. The first set is
     generally larger than the second. Distances between coordinates within the
@@ -522,7 +522,8 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor
         specie1: a list of atomic symbols for coord1. Ex: ['C', 'O']
         specie2: the atomic symbol for coord2. Ex: 'Li'
         lattice: matrix describing the unit cell vectors
-        PBC: value to be passed to create_matrix
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
+            to x, y, and z respectively.
         d_factor: the tolerance is multiplied by this amount. Larger values
             mean atoms must be farther apart
 
@@ -549,7 +550,7 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=None, d_factor
     else:
         return True
 
-def get_center(xyzs, lattice, PBC=None):
+def get_center(xyzs, lattice, PBC=[1,2,3]):
     """
     Finds the geometric centers of the clusters under periodic boundary
     conditions.
@@ -557,7 +558,8 @@ def get_center(xyzs, lattice, PBC=None):
     Args:
         xyzs: a list of fractional coordinates
         lattice: a matrix describing the unit cell
-        PBC: a value to be passed to create_matrix
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
+            to x, y, and z respectively.
 
     Returns:
         x,y,z coordinates for the center of the input coordinate list
@@ -577,9 +579,10 @@ def get_center(xyzs, lattice, PBC=None):
                 matrix_min = matrix0[np.argmin(dists)]
         xyzs[atom1] += matrix_min
     center = xyzs.mean(0)
-    if PBC is not None:
-        if abs(center[PBC-1])<1e-4:
-            center[PBC-1] = 0.5
+    for a in range(1, 4):
+        if a not in PBC:
+            if abs(center[a-1])<1e-4:
+                center[a-1] = 0.5
     return center
 
 def para2matrix(cell_para, radians=True, format='lower'):
@@ -727,7 +730,7 @@ def cellsize(sg):
     	return 4
     else: return "Error: Could not determine lattice type"
 
-def find_short_dist(coor, lattice, tol, PBC=None):
+def find_short_dist(coor, lattice, tol, PBC=[1,2,3]):
     """
     Given a list of fractional coordinates, finds pairs which are closer
     together than tol, and builds the connectivity map
@@ -736,6 +739,8 @@ def find_short_dist(coor, lattice, tol, PBC=None):
         coor: a list of fractional 3-dimensional coordinates
         lattice: a matrix representing the crystal unit cell
         tol: the distance tolerance for pairing coordinates
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
+            to x, y, and z respectively.
     
     Returns:
         pairs, graph: (pairs) is a list whose entries have the form [index1,
@@ -818,7 +823,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=None):
+def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -832,8 +837,8 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=None):
         w_symm_all: A list of Wyckoff site symmetry obtained from
             get_wyckoff_symmetry
         tol: the cutoff distance for merging coordinates
-        PBC: a number representing the periodic boundary conditions (used for
-            2d and 1d crystals)
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
+            to x, y, and z respectively.
 
     Returns:
         coor, index: (coor) is the new list of fractional coordinates after
@@ -1123,7 +1128,7 @@ def choose_wyckoff(wyckoffs, number):
         else:
             return False
 
-def get_wyckoffs(sg, organized=False, PBC=None):
+def get_wyckoffs(sg, organized=False, PBC=[1,2,3]):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
     organize the list based on multiplicity (this is used for
@@ -1150,24 +1155,33 @@ def get_wyckoffs(sg, organized=False, PBC=None):
     Args:
         sg: the international spacegroup number
         organized: whether or not to organize the list based on multiplicity
-        PB: permutation info for 2d crystals, from the layergroup class
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
     
     Returns: 
         a list of Wyckoff positions, each of which is a list of SymmOp's
     """
-    if PBC is not None:
-        coor = [0,0,0]
-        coor[PBC-1] = 0.5
+    if PBC != [1,2,3]:
+        for a in range(1, 4):
+            if a not in PBC:
+                coor = [0,0,0]
+                coor[a-1] = 0.5
         coor = np.array(coor)
 
     wyckoff_strings = eval(wyckoff_df["0"][sg])
     wyckoffs = []
     for x in wyckoff_strings:
-        if PBC is not None:
+        if PBC != [1,2,3]:
             op = SymmOp.from_xyz_string(x[0])
             coor1 = op.operate(coor)
-            if abs(coor1[PBC-1]-0.5) < 1e-2:
-                #invalid wyckoffs for layer group
+            invalid = False
+            for a in range(1, 4):
+                if a not in PBC:
+                    if abs(coor1[a-1]-0.5) < 1e-2:
+                        pass
+                    else:
+                        #invalid wyckoffs for layer group
+                        invalid = True
+            if invalid == False:
                 wyckoffs.append([])
                 for y in x:
                     wyckoffs[-1].append(SymmOp.from_xyz_string(y))
@@ -1296,7 +1310,7 @@ def get_rod(num, organized=False):
     else:
         return wyckoffs
 
-def get_wyckoff_symmetry(sg, PBC=None, molecular=False):
+def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -1305,6 +1319,7 @@ def get_wyckoff_symmetry(sg, PBC=None, molecular=False):
 
     Args:
         sg: the international spacegroup number
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
         molecular: whether or not to return the Euclidean point symmetry
             operations. If True, cuts off translational part of operation, and
             converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -1315,9 +1330,11 @@ def get_wyckoff_symmetry(sg, PBC=None, molecular=False):
         a 3d list of SymmOp objects representing the site symmetry of each
         point in each Wyckoff position
     """
-    if PBC is not None:
+    if PBC != [1,2,3]:
         coor = [0,0,0]
-        coor[PBC-1] = 0.5
+        for a in range(1,4):
+            if a not in PBC:
+                coor[a-1] = 0.5
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
@@ -1330,10 +1347,17 @@ def get_wyckoff_symmetry(sg, PBC=None, molecular=False):
             convert = True
     #Loop over Wyckoff positions
     for x, w in zip(symmetry_strings, wyckoffs):
-        if PBC is not None:
+        if PBC != [1,2,3]:
             op = w[0]
             coor1 = op.operate(coor)
-            if abs(coor1[PBC-1]-0.5) < 1e-2:
+            invalid = False
+            for a in range(1,4):
+                if a not in PBC:
+                    if abs(coor1[a-1]-0.5) < 1e-2:
+                        pass
+                    else:
+                        invalid = True
+            if invalid == False:
                 symmetry.append([])
                 #Loop over points in WP
                 for y in x:
@@ -1367,7 +1391,7 @@ def get_wyckoff_symmetry(sg, PBC=None, molecular=False):
                         symmetry[-1][-1].append(op)
     return symmetry
 
-def get_wyckoff_generators(sg, PBC=None):
+def get_wyckoff_generators(sg, PBC=[1,2,3]):
     """
     Returns a list of Wyckoff generators for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -1379,25 +1403,35 @@ def get_wyckoff_generators(sg, PBC=None):
     
     Args:
         sg: the international spacegroup number
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
     
     Returns:
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-    if PBC is not None:
+    if PBC != [1,2,3]:
         coor = [0,0,0]
-        coor[PBC-1] = 0.5
+        for a in range(1,4):
+            if a not in PBC:
+                coor[a-1] = 0.5
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
     generator_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
     for x, w in zip(generator_strings, wyckoffs):
-        if PBC is not None:
+        if PBC != [1,2,3]:
             op = w[0]
             coor1 = op.operate(coor)
-            if abs(coor1[PBC-1]-0.5) < 1e-2:
-                #invalid generators for layer group
+            invalid = False
+            for a in range(1, 4):
+                if a not in PBC:
+                    if abs(coor1[a-1]-0.5) < 1e-2:
+                        pass
+                    else:
+                        #invalid generators for layer group
+                        invalid = True
+            if invalid == False:
                 generators.append([])
                 for y in x:
                     generators[-1].append(SymmOp.from_xyz_string(y))
@@ -1408,7 +1442,7 @@ def get_wyckoff_generators(sg, PBC=None):
     return generators
 
 
-def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
+def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
     """
     Given a point and a general Wyckoff position, return the list of symmetry
     operations leaving the point (coordinate or SymmOp) invariant. The returned
@@ -1428,6 +1462,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
             orientations.
         lattice:
             a 3x3 matrix representing the lattice vectors of the unit cell
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
         a list of SymmOp objects which leave the given point invariant
@@ -1462,7 +1497,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
             symmetry.append(el)
     return symmetry
 
-def find_generating_point(coords, generators, PBC=None):
+def find_generating_point(coords, generators, PBC=[1,2,3]):
     """
     Given a set of coordinates and Wyckoff generators, return the coord which
     can be used to generate the others. This is useful for molecular Wyckoff
@@ -1476,6 +1511,7 @@ def find_generating_point(coords, generators, PBC=None):
             position
         generators: the list of Wyckoff generators for the Wyckoff position.
             Can be obtained from get_wyckoff_generators
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
     
     Returns:
         a fractional coordinate [x, y, z] corresponding to the first listed
@@ -1505,7 +1541,7 @@ def find_generating_point(coords, generators, PBC=None):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False, PBC=None):
+def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False, PBC=[1,2,3]):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -1521,6 +1557,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False
             translational components. If false, translations related by +-1
             are considered equal. If points have been directly generated from
             a Wyckoff position, we may set this to True. Otherwise, leave False
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
         a single index for the Wyckoff position within the sg. If no matching
@@ -1592,7 +1629,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False
                 return i
         return False
 
-def verify_distances(coordinates, species, lattice, factor=1.0, PBC=None):
+def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
     """
     Checks the inter-atomic distance between all pairs of atoms in a crystal.
 
@@ -1864,8 +1901,14 @@ class random_crystal_2D():
         self.numIons0 = numIons
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
-        self.PBC = self.lgp.permutation[-1] 
-        """The axis (between 1 and 3) which is not periodic."""
+        a = self.lgp.permutation[-1]
+        if a == 1:
+            self.PBC = [2,3]
+        elif a == 2:
+            self.PBC = [1,3]
+        elif a == 3:
+            self.PBC = [1,2]
+        """The periodic axes of the crystal."""
         self.PB = self.lgp.permutation[3:6] 
         #TODO: add docstring
         self.P = self.lgp.permutation[:3] 
