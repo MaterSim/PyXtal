@@ -985,7 +985,7 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
 
-def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_2D(sg, volume, thickness, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -997,7 +997,6 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
         sg: International number of the space group
         volume: volume of the lattice
         thickness: 3rd-dimensional thickness of the unit cell
-        P: permuation info about the cell obtained from the layergroup class
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
@@ -1007,7 +1006,7 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
         generation fails, outputs a warning message and returns empty
     """
     #Store the non-periodic axis
-    PBC = P[-1]
+    PBC = 3
     maxangle = pi-minangle
     abc = np.ones([3])
     abc[PBC-1] = thickness
@@ -1099,6 +1098,97 @@ def generate_lattice_2D(sg, volume, thickness, P, minvec=tol_m, minangle=pi/6, m
     #If maxattempts tries have been made without success
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
+
+def generate_lattice_1D(num, volume, thickness, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+    """
+    Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
+    number of atoms. If the spacegroup has centering, we will transform to
+    conventional cell setting. If the generated lattice does not meet the
+    minimum angle and vector requirements, we try to generate a new one, up to
+    maxattempts times.
+
+    Args:
+        num: number of tRod group
+        volume: volume of the lattice
+        area: 3rd-dimensional thickness of the unit cell
+        minvec: minimum allowed lattice vector length (among a, b, and c)
+        minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
+        max_ratio: largest allowed ratio of two lattice vector lengths
+
+    Returns:
+        a 3x3 matrix representing the lattice vectors of the unit cell. If
+        generation fails, outputs a warning message and returns empty
+    """
+    '''
+    #Store the non-periodic axis
+    maxangle = pi-minangle
+    abc = np.ones([3])
+    alpha, beta, gamma  = pi/2, pi/2, pi/2
+    for n in range(maxattempts):
+        #Triclinic
+        if num <= ?:
+            mat = random_shear_matrix(width=0.2)
+            a, b, c, alpha, beta, gamma = matrix2para(mat)
+            x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
+            abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
+            ab = volume/(abc[PBC-1]*x)
+            ratio = a/b
+
+        #Monoclinic
+        elif num <= ?:
+            a, b, c = random_vector()
+            beta = gaussian(minangle, maxangle)
+            x = sin(beta)
+            ab = volume/(abc[PBC-1]*x)
+            ratio = a/b
+
+        #Orthorhombic
+        elif num <= ?:
+            vec = random_vector()
+            if PBC == 3:
+                ratio = abs(vec[0]/vec[1]) #ratio a/b
+                abc[1] = sqrt(volume/(thickness*ratio))
+                abc[0] = abc[1]* ratio
+            elif PBC == 2:
+                ratio = abs(vec[0]/vec[2]) #ratio a/b
+                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[0] = abc[2]* ratio
+            elif PBC == 1:
+                ratio = abs(vec[1]/vec[2]) #ratio a/b
+                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[1] = abc[2]* ratio
+
+        #Tetragonal
+        elif num <= ?:
+            if PBC == 3:
+                abc[0] = abc[1] = sqrt(volume/thickness)
+            elif PBC == 2:
+                abc[0] = abc[1]
+                abc[2] = volume/(abc[PBC-1]**2)
+            elif PBC == 1:
+                abc[1] = abc[0]
+                abc[2] = volume/(abc[PBC-1]**2)
+
+        #Trigonal/Rhombohedral/Hexagonal
+        elif num <= ?:
+            gamma = pi/3*2
+            x = sqrt(3.)/2.
+            if PBC == 3:
+                abc[0] = abc[1] = sqrt((volume/x)/abc[PBC-1])
+            elif PBC == 2:
+                abc[0] = abc[1]
+                abc[2] = (volume/x)(thickness**2)
+            elif PBC == 1:
+                abc[1] = abc[0]
+                abc[2] = (volume/x)/(thickness**2)
+
+        para = np.array([abc[0], abc[1], abc[2], alpha, beta, gamma])
+        return para
+
+    #If maxattempts tries have been made without success
+    print("Error: Could not generate lattice after "+str(n+1)+" attempts")
+    return'''
+    pass
 
 def choose_wyckoff(wyckoffs, number):
     """
@@ -2155,6 +2245,7 @@ class random_crystal_2D():
     """
     def __init__(self, number, species, numIons, thickness, factor):
 
+        self.number = number
         self.lgp = Layergroup(number)
         """The number (between 1 and 80) for the crystal's layer group."""
         self.sg = self.lgp.sgnumber
@@ -2168,13 +2259,7 @@ class random_crystal_2D():
         self.numIons0 = numIons
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
-        a = self.lgp.permutation[-1]
-        if a == 1:
-            self.PBC = [2,3]
-        elif a == 2:
-            self.PBC = [1,3]
-        elif a == 3:
-            self.PBC = [1,2]
+        self.PBC = [1,2]
         """The periodic axes of the crystal."""
         self.PB = self.lgp.permutation[3:6] 
         #TODO: add docstring
@@ -2186,12 +2271,12 @@ class random_crystal_2D():
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = get_wyckoffs(self.sg, PBC=self.PBC)
+        self.wyckoffs = get_layer(self.number)
         """The Wyckoff positions for the crystal's spacegroup."""      
-        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True, PBC=self.PBC)
+        self.wyckoffs_organized = get_layer(self.number, organized=True)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
-        self.w_symm = get_wyckoff_symmetry(self.sg, PBC=self.PBC)
+        self.w_symm = get_layer_symmetry(self.number, PBC=self.PBC)
         """A list of site symmetry operations for the Wyckoff positions, obtained
             from get_wyckoff_symmetry."""
         self.generate_crystal()
@@ -2333,7 +2418,7 @@ class random_crystal_2D():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
-                    final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                    #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
                     final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
@@ -2379,10 +2464,6 @@ class random_crystal_1D():
     """
     def __init__(self, number, species, numIons, factor):
 
-        self.rod = Rodgroup(number)
-        """The number (between 1 and 80) for the crystal's layer group."""
-        self.sg = self.rod.sgnumber
-        """The number (between 1 and 230) for the international spacegroup."""
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
         """"The volume factor used to generate the unit cell."""
@@ -2392,8 +2473,7 @@ class random_crystal_1D():
         self.numIons0 = numIons
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
-        a = self.rod.permutation[-1]
-        self.PBC = [a]
+        self.PBC = [3]
         """The periodic axis of the crystal."""
         self.PB = self.rod.permutation[3:6] 
         #TODO: add docstring
@@ -2401,18 +2481,18 @@ class random_crystal_1D():
         #TODO: add docstring
         self.Msgs()
         """A list of warning messages to use during generation."""
-        self.numIons = numIons * cellsize(self.sg)
+        self.numIons = numIons #cellsize always == 1
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
-        self.wyckoffs = get_wyckoffs(self.sg, PBC=self.PBC)
+        self.wyckoffs = get_rod(self.number)
         """The Wyckoff positions for the crystal's spacegroup."""      
-        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True, PBC=self.PBC)
+        self.wyckoffs_organized = get_rod(self.number, organized=True)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
-        self.w_symm = get_wyckoff_symmetry(self.sg, PBC=self.PBC)
+        self.w_symm = get_rod_symmetry(self.number, PBC=self.PBC)
         """A list of site symmetry operations for the Wyckoff positions, obtained
-            from get_wyckoff_symmetry."""
+            from get_rod_symmetry."""
         self.generate_crystal()
 
 
@@ -2498,6 +2578,7 @@ class random_crystal_1D():
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
+                #TODO: Implement generate_lattice_1D
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
@@ -2552,8 +2633,8 @@ class random_crystal_1D():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
-                    final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
