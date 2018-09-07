@@ -1,19 +1,30 @@
-from structure import *
+from pyxtal.crystal import *
 from pandas import DataFrame
+
+fpath = "wyckoff_generators_new.csv"
+PBC = [3]
+
 
 def rounded(op):
     v1 = op.translation_vector
     v2 = v1 - np.floor(v1)
-    return SymmOp.from_rotation_and_translation(op.rotation_matrix, v2)
+    if PBC == [1,2,3]:
+        return SymmOp.from_rotation_and_translation(op.rotation_matrix, v2)
+    elif PBC == [1,2]:
+        return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v2[0], v2[1], v1[2]])        
+    elif PBC == [3]:
+        return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v1[0], v1[1], v2[2]])
 
-'''print("-------------------Creating generators-------------------")
+print("-------------------Creating generators-------------------")
 generators = [None]
 #Loop over spacegroups
-for sg in range(1, 231):
+for sg in range(1, 76):
     print("Calculating spacegroup: "+str(sg))
     sg_gen = []
-    wyckoffs = get_wyckoffs(sg)
+    wyckoffs = get_rod(sg)
     gen_pos = wyckoffs[0]
+    if gen_pos == []:
+        print(wyckoffs)
     #Loop over Wyckoff positions
     for i, wp in enumerate(wyckoffs):
         wp_gen = [gen_pos[0].as_xyz_string()]
@@ -24,11 +35,11 @@ for sg in range(1, 231):
                 seen.append(rounded(op*first))
                 wp_gen.append(op.as_xyz_string())
         sg_gen.append(wp_gen)
-    generators.append(sg_gen)'''
+    generators.append(sg_gen)
 
 failed = False
 
-print("-------------------Checking generators-------------------")
+'''print("-------------------Checking generators-------------------")
 for sg in range(1, 231):
     print("Checking spacegroup: "+str(sg))
     wyckoffs = get_wyckoffs(sg)
@@ -46,10 +57,10 @@ for sg in range(1, 231):
             else: print("error")
         if temp != []:
             print("Failed: sg="+str(sg)+", wp="+str(i))
-            failed = True
+            failed = True'''
 
-'''if not failed:
+if not failed:
     print("-------------------Writing to database-------------------")
     array = np.array(generators)
     df = DataFrame(data=array)
-    df.to_csv("wyckoff_generators.csv")'''
+    df.to_csv(fpath)
