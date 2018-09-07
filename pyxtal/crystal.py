@@ -97,8 +97,12 @@ Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
 wyckoff_symmetry_df = read_csv(resource_filename("pyxtal", "database/wyckoff_symmetry.csv"))
 wyckoff_generators_df = read_csv(resource_filename("pyxtal", "database/wyckoff_generators.csv"))
-rod_df = read_csv(resource_filename("pyxtal", "database/rod.csv"))
 layer_df = read_csv(resource_filename("pyxtal", "database/layer.csv"))
+layer_symmetry_df = read_csv(resource_filename("pyxtal", "database/layer_symmetry.csv"))
+layer_generators_df = read_csv(resource_filename("pyxtal", "database/layer_generators.csv"))
+rod_df = read_csv(resource_filename("pyxtal", "database/rod.csv"))
+rod_symmetry_df = read_csv(resource_filename("pyxtal", "database/rod_symmetry.csv"))
+rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generators.csv"))
 
 #Define functions
 #------------------------------
@@ -1391,6 +1395,170 @@ def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
                         symmetry[-1][-1].append(op)
     return symmetry
 
+def get_layer_symmetry(num, PBC=[1, 2], molecular=False):
+    """
+    Returns a list of Wyckoff position site symmetry for a given space group.
+    1st index: index of WP in group (0 is the WP with largest multiplicity)
+    2nd index: a point within the WP
+    3rd index: a site symmetry SymmOp of the point
+
+    Args:
+        num: the layer group number
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        molecular: whether or not to return the Euclidean point symmetry
+            operations. If True, cuts off translational part of operation, and
+            converts non-orthogonal operations (3-fold and 6-fold rotations)
+            to (orthogonal) pure rotations. Should be used when dealing with
+            molecular crystals
+
+    Returns:
+        a 3d list of SymmOp objects representing the site symmetry of each
+        point in each Wyckoff position
+    """
+
+    if PBC != [1,2,3]:
+        coor = [0,0,0]
+        for a in range(1,4):
+            if a not in PBC:
+                coor[a-1] = 0.5
+        coor = np.array(coor)
+    wyckoffs = get_layer(num)
+
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    symmetry_strings = eval(layer_symmetry_df["0"][num])
+    symmetry = []
+    convert = False
+    if molecular is True:
+        if num >= 65:
+            convert = True
+    #Loop over Wyckoff positions
+    for x, w in zip(symmetry_strings, wyckoffs):
+        if PBC != [1,2,3]:
+            op = w[0]
+            coor1 = op.operate(coor)
+            invalid = False
+            for a in range(1,4):
+                if a not in PBC:
+                    if abs(coor1[a-1]-0.5) < 1e-2:
+                        pass
+                    else:
+                        invalid = True
+            if invalid == False:
+                symmetry.append([])
+                #Loop over points in WP
+                for y in x:
+                    symmetry[-1].append([])
+                    #Loop over ops
+                    for z in y:
+                        op = SymmOp.from_xyz_string(z)
+                        if convert is True:
+                            #Convert non-orthogonal trigonal/hexagonal operations
+                            op = P*op*P.inverse
+                        if molecular is False:
+                            symmetry[-1][-1].append(op)
+                        elif molecular is True:
+                            op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                            symmetry[-1][-1].append(op)
+        else:
+            symmetry.append([])
+            #Loop over points in WP
+            for y in x:
+                symmetry[-1].append([])
+                #Loop over ops
+                for z in y:
+                    op = SymmOp.from_xyz_string(z)
+                    if convert is True:
+                        #Convert non-orthogonal trigonal/hexagonal operations
+                        op = P*op*P.inverse
+                    if molecular is False:
+                        symmetry[-1][-1].append(op)
+                    elif molecular is True:
+                        op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                        symmetry[-1][-1].append(op)
+    return symmetry
+
+def get_rod_symmetry(num, PBC=[3], molecular=False):
+    """
+    Returns a list of Wyckoff position site symmetry for a given Rod group.
+    1st index: index of WP in group (0 is the WP with largest multiplicity)
+    2nd index: a point within the WP
+    3rd index: a site symmetry SymmOp of the point
+
+    Args:
+        num: the Rod group number
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        molecular: whether or not to return the Euclidean point symmetry
+            operations. If True, cuts off translational part of operation, and
+            converts non-orthogonal operations (3-fold and 6-fold rotations)
+            to (orthogonal) pure rotations. Should be used when dealing with
+            molecular crystals
+
+    Returns:
+        a 3d list of SymmOp objects representing the site symmetry of each
+        point in each Wyckoff position
+    """
+
+    if PBC != [1,2,3]:
+        coor = [0,0,0]
+        for a in range(1,4):
+            if a not in PBC:
+                coor[a-1] = 0.5
+        coor = np.array(coor)
+    wyckoffs = get_rod(num)
+
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    symmetry_strings = eval(rod_symmetry_df["0"][num])
+    symmetry = []
+    convert = False
+    if molecular is True:
+        if num >= 42:
+            convert = True
+    #Loop over Wyckoff positions
+    for x, w in zip(symmetry_strings, wyckoffs):
+        if PBC != [1,2,3]:
+            op = w[0]
+            coor1 = op.operate(coor)
+            invalid = False
+            for a in range(1,4):
+                if a not in PBC:
+                    if abs(coor1[a-1]-0.5) < 1e-2:
+                        pass
+                    else:
+                        invalid = True
+            if invalid == False:
+                symmetry.append([])
+                #Loop over points in WP
+                for y in x:
+                    symmetry[-1].append([])
+                    #Loop over ops
+                    for z in y:
+                        op = SymmOp.from_xyz_string(z)
+                        if convert is True:
+                            #Convert non-orthogonal trigonal/hexagonal operations
+                            op = P*op*P.inverse
+                        if molecular is False:
+                            symmetry[-1][-1].append(op)
+                        elif molecular is True:
+                            op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                            symmetry[-1][-1].append(op)
+        else:
+            symmetry.append([])
+            #Loop over points in WP
+            for y in x:
+                symmetry[-1].append([])
+                #Loop over ops
+                for z in y:
+                    op = SymmOp.from_xyz_string(z)
+                    if convert is True:
+                        #Convert non-orthogonal trigonal/hexagonal operations
+                        op = P*op*P.inverse
+                    if molecular is False:
+                        symmetry[-1][-1].append(op)
+                    elif molecular is True:
+                        op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                        symmetry[-1][-1].append(op)
+    return symmetry
+
 def get_wyckoff_generators(sg, PBC=[1,2,3]):
     """
     Returns a list of Wyckoff generators for a given space group.
@@ -1441,6 +1609,105 @@ def get_wyckoff_generators(sg, PBC=[1,2,3]):
                 generators[-1].append(SymmOp.from_xyz_string(y))
     return generators
 
+def get_layer_generators(num, PBC=[1,2]):
+    """
+    Returns a list of Wyckoff generators for a given layer group.
+    1st index: index of WP in group (0 is the WP with largest multiplicity)
+    2nd index: a generator for the WP
+    This function is useful for rotating molecules based on Wyckoff position,
+    since special Wyckoff positions only encode positional information, but not
+    information about the orientation. The generators for each Wyckoff position
+    form a subset of the group's general Wyckoff position.
+    
+    Args:
+        num: the layer group number
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+    
+    Returns:
+        a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
+        single fractional (x,y,z) coordinate
+    """
+    if PBC != [1,2,3]:
+        coor = [0,0,0]
+        for a in range(1,4):
+            if a not in PBC:
+                coor[a-1] = 0.5
+        coor = np.array(coor)
+    wyckoffs = get_layer(num)
+
+    generator_strings = eval(layer_generators_df["0"][num])
+    generators = []
+    for x, w in zip(generator_strings, wyckoffs):
+        if PBC != [1,2,3]:
+            op = w[0]
+            coor1 = op.operate(coor)
+            invalid = False
+            for a in range(1, 4):
+                if a not in PBC:
+                    if abs(coor1[a-1]-0.5) < 1e-2:
+                        pass
+                    else:
+                        #invalid generators for layer group
+                        invalid = True
+            if invalid == False:
+                generators.append([])
+                for y in x:
+                    generators[-1].append(SymmOp.from_xyz_string(y))
+        else:
+            generators.append([])
+            for y in x:
+                generators[-1].append(SymmOp.from_xyz_string(y))
+    return generators
+
+def get_rod_generators(num, PBC=[3]):
+    """
+    Returns a list of Wyckoff generators for a given Rod group.
+    1st index: index of WP in group (0 is the WP with largest multiplicity)
+    2nd index: a generator for the WP
+    This function is useful for rotating molecules based on Wyckoff position,
+    since special Wyckoff positions only encode positional information, but not
+    information about the orientation. The generators for each Wyckoff position
+    form a subset of the group's general Wyckoff position.
+    
+    Args:
+        num: the Rod group number
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+    
+    Returns:
+        a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
+        single fractional (x,y,z) coordinate
+    """
+    if PBC != [1,2,3]:
+        coor = [0,0,0]
+        for a in range(1,4):
+            if a not in PBC:
+                coor[a-1] = 0.5
+        coor = np.array(coor)
+    wyckoffs = get_rod(num)
+
+    generator_strings = eval(rod_generators_df["0"][num])
+    generators = []
+    for x, w in zip(generator_strings, wyckoffs):
+        if PBC != [1,2,3]:
+            op = w[0]
+            coor1 = op.operate(coor)
+            invalid = False
+            for a in range(1, 4):
+                if a not in PBC:
+                    if abs(coor1[a-1]-0.5) < 1e-2:
+                        pass
+                    else:
+                        #invalid generators for layer group
+                        invalid = True
+            if invalid == False:
+                generators.append([])
+                for y in x:
+                    generators[-1].append(SymmOp.from_xyz_string(y))
+        else:
+            generators.append([])
+            for y in x:
+                generators[-1].append(SymmOp.from_xyz_string(y))
+    return generators
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
     """
