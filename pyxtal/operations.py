@@ -255,7 +255,7 @@ def rotate_vector(v1, v2):
     v3 = np.cross(v1, v2)
     return aa2matrix(v3, theta)
         
-def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
+def are_equal(op1, op2, PBC=[1,2,3], rtol=1e-3, atol=1e-3):
     """
     Check whether two SymmOp objects are equal up to some numerical tolerance.
     Allows for optional consideration of periodic boundary conditions. This
@@ -283,17 +283,15 @@ def are_equal(op1, op2, allow_pbc=True, rtol=1e-3, atol=1e-3):
         return False
     v1 = op1.translation_vector
     v2 = op2.translation_vector
-    if allow_pbc is False:
-        #Check if translation vectors are equal
-        if np.allclose(v1, v2, rtol=rtol, atol=atol):
-            return True
-        else: return False
-    elif allow_pbc is True:
-        #Check if translation vectors are equal up to integer difference
-        difference = v1 - v2
-        if np.allclose(difference, np.round(difference), rtol=rtol, atol=atol):
-            return True
-        else: return False
+
+    difference = v2 - v1
+    
+    d = distance(difference, [[1,0,0],[0,1,0],[0,0,1]], PBC=PBC)
+
+    if abs(d) < r_tol:
+        return True
+    else:
+        return False
 
 class OperationAnalyzer(SymmOp):
     """

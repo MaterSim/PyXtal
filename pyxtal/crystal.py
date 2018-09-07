@@ -1592,7 +1592,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False
                         for op_p in p:
                             for op_w in w:
                                 #Check that SymmOp's are equal up to some integer translation
-                                if are_equal(op_w, op_p, allow_pbc=True):
+                                if are_equal(op_w, op_p, PBC=PBC):
                                     temp2.remove(op_w)
                         if temp2 == []:
                             temp.remove(w)
