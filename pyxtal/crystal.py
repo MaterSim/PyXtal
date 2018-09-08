@@ -985,7 +985,7 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
 
-def generate_lattice_2D(sg, volume, thickness, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -1008,10 +1008,15 @@ def generate_lattice_2D(sg, volume, thickness, minvec=tol_m, minangle=pi/6, max_
     #Store the non-periodic axis
     PBC = 3
     maxangle = pi-minangle
-    abc = np.ones([3])
-    abc[PBC-1] = thickness
-    alpha, beta, gamma  = pi/2, pi/2, pi/2
     for n in range(maxattempts):
+        abc = np.ones([3])
+        if thickness is None:
+            v = random_vector()
+            thickness1 = np.cbrt(volume)*(v[0]/(v[0]*v[1]*v[2]))
+        else:
+            thickness1 = thickness
+        abc[PBC-1] = thickness1
+        alpha, beta, gamma  = pi/2, pi/2, pi/2
         #Triclinic
         if sg <= 2:
             mat = random_shear_matrix(width=0.2)
@@ -1052,21 +1057,21 @@ def generate_lattice_2D(sg, volume, thickness, minvec=tol_m, minangle=pi/6, max_
             vec = random_vector()
             if PBC == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
-                abc[1] = sqrt(volume/(thickness*ratio))
+                abc[1] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[1]* ratio
             elif PBC == 2:
                 ratio = abs(vec[0]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[2]* ratio
             elif PBC == 1:
                 ratio = abs(vec[1]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
         elif sg <= 142:
             if PBC == 3:
-                abc[0] = abc[1] = sqrt(volume/thickness)
+                abc[0] = abc[1] = sqrt(volume/thickness1)
             elif PBC == 2:
                 abc[0] = abc[1]
                 abc[2] = volume/(abc[PBC-1]**2)
@@ -1082,24 +1087,31 @@ def generate_lattice_2D(sg, volume, thickness, minvec=tol_m, minangle=pi/6, max_
                 abc[0] = abc[1] = sqrt((volume/x)/abc[PBC-1])
             elif PBC == 2:
                 abc[0] = abc[1]
-                abc[2] = (volume/x)(thickness**2)
+                abc[2] = (volume/x)(thickness1**2)
             elif PBC == 1:
                 abc[1] = abc[0]
-                abc[2] = (volume/x)/(thickness**2)
+                abc[2] = (volume/x)/(thickness1**2)
 
         para = np.array([abc[0], abc[1], abc[2], alpha, beta, gamma])
-        return para
-        '''para1 = deepcopy(para)
-        for axis in [0,1,2]:
-            para1[axis] = para[P[axis]-1]
-            para1[axis+3] = para[P[axis]+2]
-        return para1'''
+
+        a, b, c = abc[0], abc[1], abc[2]
+        maxvec = (a*b*c)/(minvec**2)
+        if minvec < maxvec:
+            smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
+            if(a>minvec and b>minvec and c>minvec
+            and a<maxvec and b<maxvec and c<maxvec
+            and smallvec < minvec
+            and alpha>minangle and beta>minangle and gamma>minangle
+            and alpha<maxangle and beta<maxangle and gamma<maxangle
+            and a/b<max_ratio and a/c<max_ratio and b/c<max_ratio
+            and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
+                return para
 
     #If maxattempts tries have been made without success
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
 
-def generate_lattice_1D(num, volume, thickness, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -1110,7 +1122,7 @@ def generate_lattice_1D(num, volume, thickness, minvec=tol_m, minangle=pi/6, max
     Args:
         num: number of tRod group
         volume: volume of the lattice
-        area: 3rd-dimensional thickness of the unit cell
+        area: cross-sectional area of the unit cell in Angstroms squared
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
@@ -1119,49 +1131,73 @@ def generate_lattice_1D(num, volume, thickness, minvec=tol_m, minangle=pi/6, max
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
-    '''
-    #Store the non-periodic axis
+    #Store the periodic axis
+    PBC = 3
     maxangle = pi-minangle
-    abc = np.ones([3])
-    alpha, beta, gamma  = pi/2, pi/2, pi/2
     for n in range(maxattempts):
+        abc = np.ones([3])
+        if area is None:
+            v = random_vector()
+            thickness1 = np.cbrt(volume)*(v[0]/(v[0]*v[1]*v[2]))
+        else:
+            thickness1 = volume/area
+        abc[PBC-1] = thickness1
+        alpha, beta, gamma  = pi/2, pi/2, pi/2
         #Triclinic
-        if num <= ?:
+        if num <= 2:
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
             abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
             ab = volume/(abc[PBC-1]*x)
             ratio = a/b
+            if PBC == 3:
+                abc[0] = sqrt(ab*ratio)
+                abc[1] = sqrt(ab/ratio)
+            elif PBC == 2:
+                abc[0] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
+            elif PBC == 1:
+                abc[1] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
 
         #Monoclinic
-        elif num <= ?:
+        elif num <= 12:
             a, b, c = random_vector()
             beta = gaussian(minangle, maxangle)
             x = sin(beta)
             ab = volume/(abc[PBC-1]*x)
             ratio = a/b
+            if PBC == 3:
+                abc[0] = sqrt(ab*ratio)
+                abc[1] = sqrt(ab/ratio)
+            elif PBC == 2:
+                abc[0] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
+            elif PBC == 1:
+                abc[1] = sqrt(ab*ratio)
+                abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
-        elif num <= ?:
+        elif num <= 22:
             vec = random_vector()
             if PBC == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
-                abc[1] = sqrt(volume/(thickness*ratio))
+                abc[1] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[1]* ratio
             elif PBC == 2:
                 ratio = abs(vec[0]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[2]* ratio
             elif PBC == 1:
                 ratio = abs(vec[1]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness*ratio))
+                abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
-        elif num <= ?:
+        elif num <= 41:
             if PBC == 3:
-                abc[0] = abc[1] = sqrt(volume/thickness)
+                abc[0] = abc[1] = sqrt(volume/thickness1)
             elif PBC == 2:
                 abc[0] = abc[1]
                 abc[2] = volume/(abc[PBC-1]**2)
@@ -1170,25 +1206,36 @@ def generate_lattice_1D(num, volume, thickness, minvec=tol_m, minangle=pi/6, max
                 abc[2] = volume/(abc[PBC-1]**2)
 
         #Trigonal/Rhombohedral/Hexagonal
-        elif num <= ?:
+        elif num <= 75:
             gamma = pi/3*2
             x = sqrt(3.)/2.
             if PBC == 3:
                 abc[0] = abc[1] = sqrt((volume/x)/abc[PBC-1])
             elif PBC == 2:
                 abc[0] = abc[1]
-                abc[2] = (volume/x)(thickness**2)
+                abc[2] = (volume/x)(thickness1**2)
             elif PBC == 1:
                 abc[1] = abc[0]
-                abc[2] = (volume/x)/(thickness**2)
+                abc[2] = (volume/x)/(thickness1**2)
 
         para = np.array([abc[0], abc[1], abc[2], alpha, beta, gamma])
-        return para
+
+        a, b, c = abc[0], abc[1], abc[2]
+        maxvec = (a*b*c)/(minvec**2)
+        if minvec < maxvec:
+            smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
+            if(a>minvec and b>minvec and c>minvec
+            and a<maxvec and b<maxvec and c<maxvec
+            and smallvec < minvec
+            and alpha>minangle and beta>minangle and gamma>minangle
+            and alpha<maxangle and beta<maxangle and gamma<maxangle
+            and a/b<max_ratio and a/c<max_ratio and b/c<max_ratio
+            and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
+                return para
 
     #If maxattempts tries have been made without success
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
-    return'''
-    pass
+    return
 
 def choose_wyckoff(wyckoffs, number):
     """
@@ -1485,7 +1532,7 @@ def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
                         symmetry[-1][-1].append(op)
     return symmetry
 
-def get_layer_symmetry(num, PBC=[1, 2], molecular=False):
+def get_layer_symmetry(num, molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in group (0 is the WP with largest multiplicity)
@@ -1494,7 +1541,6 @@ def get_layer_symmetry(num, PBC=[1, 2], molecular=False):
 
     Args:
         num: the layer group number
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
         molecular: whether or not to return the Euclidean point symmetry
             operations. If True, cuts off translational part of operation, and
             converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -1505,14 +1551,6 @@ def get_layer_symmetry(num, PBC=[1, 2], molecular=False):
         a 3d list of SymmOp objects representing the site symmetry of each
         point in each Wyckoff position
     """
-
-    if PBC != [1,2,3]:
-        coor = [0,0,0]
-        for a in range(1,4):
-            if a not in PBC:
-                coor[a-1] = 0.5
-        coor = np.array(coor)
-    wyckoffs = get_layer(num)
 
     P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(layer_symmetry_df["0"][num])
@@ -1522,52 +1560,25 @@ def get_layer_symmetry(num, PBC=[1, 2], molecular=False):
         if num >= 65:
             convert = True
     #Loop over Wyckoff positions
-    for x, w in zip(symmetry_strings, wyckoffs):
-        if PBC != [1,2,3]:
-            op = w[0]
-            coor1 = op.operate(coor)
-            invalid = False
-            for a in range(1,4):
-                if a not in PBC:
-                    if abs(coor1[a-1]-0.5) < 1e-2:
-                        pass
-                    else:
-                        invalid = True
-            if invalid == False:
-                symmetry.append([])
-                #Loop over points in WP
-                for y in x:
-                    symmetry[-1].append([])
-                    #Loop over ops
-                    for z in y:
-                        op = SymmOp.from_xyz_string(z)
-                        if convert is True:
-                            #Convert non-orthogonal trigonal/hexagonal operations
-                            op = P*op*P.inverse
-                        if molecular is False:
-                            symmetry[-1][-1].append(op)
-                        elif molecular is True:
-                            op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                            symmetry[-1][-1].append(op)
-        else:
-            symmetry.append([])
-            #Loop over points in WP
-            for y in x:
-                symmetry[-1].append([])
-                #Loop over ops
-                for z in y:
-                    op = SymmOp.from_xyz_string(z)
-                    if convert is True:
-                        #Convert non-orthogonal trigonal/hexagonal operations
-                        op = P*op*P.inverse
-                    if molecular is False:
-                        symmetry[-1][-1].append(op)
-                    elif molecular is True:
-                        op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                        symmetry[-1][-1].append(op)
+    for x in symmetry_strings:
+        symmetry.append([])
+        #Loop over points in WP
+        for y in x:
+            symmetry[-1].append([])
+            #Loop over ops
+            for z in y:
+                op = SymmOp.from_xyz_string(z)
+                if convert is True:
+                    #Convert non-orthogonal trigonal/hexagonal operations
+                    op = P*op*P.inverse
+                if molecular is False:
+                    symmetry[-1][-1].append(op)
+                elif molecular is True:
+                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                    symmetry[-1][-1].append(op)
     return symmetry
 
-def get_rod_symmetry(num, PBC=[3], molecular=False):
+def get_rod_symmetry(num, molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given Rod group.
     1st index: index of WP in group (0 is the WP with largest multiplicity)
@@ -1576,7 +1587,6 @@ def get_rod_symmetry(num, PBC=[3], molecular=False):
 
     Args:
         num: the Rod group number
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
         molecular: whether or not to return the Euclidean point symmetry
             operations. If True, cuts off translational part of operation, and
             converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -1588,14 +1598,6 @@ def get_rod_symmetry(num, PBC=[3], molecular=False):
         point in each Wyckoff position
     """
 
-    if PBC != [1,2,3]:
-        coor = [0,0,0]
-        for a in range(1,4):
-            if a not in PBC:
-                coor[a-1] = 0.5
-        coor = np.array(coor)
-    wyckoffs = get_rod(num)
-
     P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(rod_symmetry_df["0"][num])
     symmetry = []
@@ -1604,49 +1606,22 @@ def get_rod_symmetry(num, PBC=[3], molecular=False):
         if num >= 42:
             convert = True
     #Loop over Wyckoff positions
-    for x, w in zip(symmetry_strings, wyckoffs):
-        if PBC != [1,2,3]:
-            op = w[0]
-            coor1 = op.operate(coor)
-            invalid = False
-            for a in range(1,4):
-                if a not in PBC:
-                    if abs(coor1[a-1]-0.5) < 1e-2:
-                        pass
-                    else:
-                        invalid = True
-            if invalid == False:
-                symmetry.append([])
-                #Loop over points in WP
-                for y in x:
-                    symmetry[-1].append([])
-                    #Loop over ops
-                    for z in y:
-                        op = SymmOp.from_xyz_string(z)
-                        if convert is True:
-                            #Convert non-orthogonal trigonal/hexagonal operations
-                            op = P*op*P.inverse
-                        if molecular is False:
-                            symmetry[-1][-1].append(op)
-                        elif molecular is True:
-                            op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                            symmetry[-1][-1].append(op)
-        else:
-            symmetry.append([])
-            #Loop over points in WP
-            for y in x:
-                symmetry[-1].append([])
-                #Loop over ops
-                for z in y:
-                    op = SymmOp.from_xyz_string(z)
-                    if convert is True:
-                        #Convert non-orthogonal trigonal/hexagonal operations
-                        op = P*op*P.inverse
-                    if molecular is False:
-                        symmetry[-1][-1].append(op)
-                    elif molecular is True:
-                        op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                        symmetry[-1][-1].append(op)
+    for x in symmetry_strings:
+        symmetry.append([])
+        #Loop over points in WP
+        for y in x:
+            symmetry[-1].append([])
+            #Loop over ops
+            for z in y:
+                op = SymmOp.from_xyz_string(z)
+                if convert is True:
+                    #Convert non-orthogonal trigonal/hexagonal operations
+                    op = P*op*P.inverse
+                if molecular is False:
+                    symmetry[-1][-1].append(op)
+                elif molecular is True:
+                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                    symmetry[-1][-1].append(op)
     return symmetry
 
 def get_wyckoff_generators(sg, PBC=[1,2,3]):
@@ -1699,7 +1674,7 @@ def get_wyckoff_generators(sg, PBC=[1,2,3]):
                 generators[-1].append(SymmOp.from_xyz_string(y))
     return generators
 
-def get_layer_generators(num, PBC=[1,2]):
+def get_layer_generators(num):
     """
     Returns a list of Wyckoff generators for a given layer group.
     1st index: index of WP in group (0 is the WP with largest multiplicity)
@@ -1711,42 +1686,18 @@ def get_layer_generators(num, PBC=[1,2]):
     
     Args:
         num: the layer group number
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
     
     Returns:
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-    if PBC != [1,2,3]:
-        coor = [0,0,0]
-        for a in range(1,4):
-            if a not in PBC:
-                coor[a-1] = 0.5
-        coor = np.array(coor)
-    wyckoffs = get_layer(num)
 
     generator_strings = eval(layer_generators_df["0"][num])
     generators = []
-    for x, w in zip(generator_strings, wyckoffs):
-        if PBC != [1,2,3]:
-            op = w[0]
-            coor1 = op.operate(coor)
-            invalid = False
-            for a in range(1, 4):
-                if a not in PBC:
-                    if abs(coor1[a-1]-0.5) < 1e-2:
-                        pass
-                    else:
-                        #invalid generators for layer group
-                        invalid = True
-            if invalid == False:
-                generators.append([])
-                for y in x:
-                    generators[-1].append(SymmOp.from_xyz_string(y))
-        else:
-            generators.append([])
-            for y in x:
-                generators[-1].append(SymmOp.from_xyz_string(y))
+    for x in generator_strings:
+        generators.append([])
+        for y in x:
+            generators[-1].append(SymmOp.from_xyz_string(y))
     return generators
 
 def get_rod_generators(num, PBC=[3]):
@@ -1767,36 +1718,13 @@ def get_rod_generators(num, PBC=[3]):
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-    if PBC != [1,2,3]:
-        coor = [0,0,0]
-        for a in range(1,4):
-            if a not in PBC:
-                coor[a-1] = 0.5
-        coor = np.array(coor)
-    wyckoffs = get_rod(num)
 
     generator_strings = eval(rod_generators_df["0"][num])
     generators = []
-    for x, w in zip(generator_strings, wyckoffs):
-        if PBC != [1,2,3]:
-            op = w[0]
-            coor1 = op.operate(coor)
-            invalid = False
-            for a in range(1, 4):
-                if a not in PBC:
-                    if abs(coor1[a-1]-0.5) < 1e-2:
-                        pass
-                    else:
-                        #invalid generators for layer group
-                        invalid = True
-            if invalid == False:
-                generators.append([])
-                for y in x:
-                    generators[-1].append(SymmOp.from_xyz_string(y))
-        else:
-            generators.append([])
-            for y in x:
-                generators[-1].append(SymmOp.from_xyz_string(y))
+    for x in generator_strings:
+        generators.append([])
+        for y in x:
+            generators[-1].append(SymmOp.from_xyz_string(y))
     return generators
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
@@ -2276,7 +2204,7 @@ class random_crystal_2D():
         self.wyckoffs_organized = get_layer(self.number, organized=True)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
-        self.w_symm = get_layer_symmetry(self.number, PBC=self.PBC)
+        self.w_symm = get_layer_symmetry(self.number)
         """A list of site symmetry operations for the Wyckoff positions, obtained
             from get_wyckoff_symmetry."""
         self.generate_crystal()
@@ -2363,7 +2291,7 @@ class random_crystal_2D():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice_2D(self.sg, self.volume, self.thickness, self.P, minvec=minvector)
+                cell_para = generate_lattice_2D(self.sg, self.volume, thickness=self.thickness, minvec=minvector)
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
@@ -2459,26 +2387,25 @@ class random_crystal_1D():
             primitive cell (NOT the conventional cell)
         length: the length, in Angstroms, of the unit cell in the
             periodic direction
+        area: the effective cross-sectional area, in Angstroms squared, of the
+            unit cell
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, number, species, numIons, factor):
+    def __init__(self, number, species, numIons, area, factor):
 
+        self.number = number
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
         """"The volume factor used to generate the unit cell."""
-        self.thickness = thickness
-        """the thickness, in Angstroms, of the unit cell in the 3rd
-        dimension."""
+        self.area = area
+        """the effective cross-sectional area, in Angstroms squared, of the
+        unit cell."""
         self.numIons0 = numIons
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
         self.PBC = [3]
         """The periodic axis of the crystal."""
-        self.PB = self.rod.permutation[3:6] 
-        #TODO: add docstring
-        self.P = self.rod.permutation[:3] 
-        #TODO: add docstring
         self.Msgs()
         """A list of warning messages to use during generation."""
         self.numIons = numIons #cellsize always == 1
@@ -2490,7 +2417,7 @@ class random_crystal_1D():
         self.wyckoffs_organized = get_rod(self.number, organized=True)
         """The Wyckoff positions for the crystal's spacegroup. Sorted by
         multiplicity."""
-        self.w_symm = get_rod_symmetry(self.number, PBC=self.PBC)
+        self.w_symm = get_rod_symmetry(self.number)
         """A list of site symmetry operations for the Wyckoff positions, obtained
             from get_rod_symmetry."""
         self.generate_crystal()
@@ -2577,9 +2504,9 @@ class random_crystal_1D():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                #TODO: Implement generate_lattice_1D
-                cell_matrix = para2matrix(cell_para)
+                cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
+                
+                    cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
                 good_structure = False
@@ -2634,7 +2561,8 @@ class random_crystal_1D():
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    #TODO: Implement Add_vacuum for 1D lattices
+                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        

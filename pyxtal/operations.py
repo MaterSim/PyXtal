@@ -286,9 +286,12 @@ def are_equal(op1, op2, PBC=[1,2,3], rtol=1e-3, atol=1e-3):
 
     difference = v2 - v1
     
-    d = distance(difference, [[1,0,0],[0,1,0],[0,0,1]], PBC=PBC)
+    for a in PBC:
+        difference[a-1] -= np.floor(difference[a-1])
 
-    if abs(d) < r_tol:
+    d = np.linalg.norm(difference)
+
+    if abs(d) < rtol:
         return True
     else:
         return False
