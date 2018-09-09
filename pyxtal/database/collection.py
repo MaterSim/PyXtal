@@ -30,8 +30,8 @@ class Collection:
 
         name: str
             Name of collection.
-        data: dict
-            Data dictionary.
+        data: object
+            Pymetgen molecule object
         filename: str
             Location of json file.
         """
