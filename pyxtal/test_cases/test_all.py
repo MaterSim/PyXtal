@@ -71,7 +71,7 @@ def test_atomic():
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
-    skip = [202, 216, 225, 226, 227, 228, 229, 230] #slow to generate
+    skip = [202, 204, 209, 210, 216, 219, 220, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
@@ -1124,30 +1124,44 @@ def test_modules():
 
     end(condition=2)
 
+from optparse import OptionParser
 if __name__ == "__main__":
     import sys
     from time import time
+    parser = OptionParser()
+    parser.add_option("-m", "--module", dest="module", metavar='module', default='all', type=str,
+            help="modules options: 'all', 'atomic', 'molecular', 'atomic_2D', 'molecular_2D', 'atomic_1D', 'molecular_1D' ")
+    (options, args) = parser.parse_args()
+
     try:
         import numpy as np
     except Exception as e:
         fail(e)
         sys.exit(0)
+    modules_lib = {
+            'atomic': 'test_atomic()', 
+            'molecular': 'test_molecular()',
+            'atomic_2D': 'test_atomic_2D()',
+            'molecular_2D': 'test_molecular_2D()',
+            'atomic_1D': 'test_atomic_1D()', 
+            'molecular_1D': 'test_molecular_1D()', 
+            }
+    if options.module == 'all':
+        modules = modules_lib
+    else:
+        if options.module in modules_lib.keys():
+            modules = [options.module]
+        else:
+            print('please choose the modules from the followings:')
+            for module in modules_lib.keys():
+                print(module)
 
     masterstart = time()
 
     test_modules()
 
-    test_atomic()
-
-    test_molecular()
-
-    test_atomic_2D()
-
-    test_molecular_2D()
-
-    test_atomic_1D()
-    
-    test_molecular_1D()
+    for module in modules:
+        eval(modules_lib[module])
 
     masterend = time()
     mastertime = np.around((masterend-masterstart), decimals=2)
