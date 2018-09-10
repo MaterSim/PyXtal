@@ -67,13 +67,14 @@ def test_atomic():
     from spglib import get_symmetry_dataset
     from pyxtal.crystal import get_wyckoffs
     from pyxtal.crystal import random_crystal
+    from pyxtal.crystal import cellsize
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
     skip = [202, 216, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
             start = time()
             rand_crystal = random_crystal(sg, ['C'], [multiplicity], 1.0)
             end = time()
@@ -126,6 +127,7 @@ def test_molecular():
     from time import time
     from spglib import get_symmetry_dataset
     from pyxtal.crystal import get_wyckoffs
+    from pyxtal.crystal import cellsize
     from pyxtal.molecular_crystal import molecular_crystal
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
@@ -133,7 +135,7 @@ def test_molecular():
     skip = [183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) #multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
             start = time()
             rand_crystal = molecular_crystal(sg, ['H2O'], [multiplicity], 2.5)
             end = time()
@@ -187,6 +189,7 @@ def test_atomic_2D():
     from spglib import get_symmetry_dataset
     from pyxtal.crystal import get_layer
     from pyxtal.crystal import random_crystal_2D
+    from pyxtal.crystal import cellsize
     from pyxtal.database.layergroup import Layergroup
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
@@ -195,9 +198,9 @@ def test_atomic_2D():
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
-            multiplicity = len(get_layer(sg)[0]) #multiplicity of the general position
+            multiplicity = len(get_layer(num)[0]) / cellsize(sg) #multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_2D(num, ['H'], [multiplicity], 3.0, 4.0)
+            rand_crystal = random_crystal_2D(num, ['H'], [multiplicity], None, 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -248,6 +251,7 @@ def test_molecular_2D():
     from time import time
     from spglib import get_symmetry_dataset
     from pyxtal.crystal import get_layer
+    from pyxtal.crystal import cellsize
     from pyxtal.molecular_crystal import molecular_crystal_2D
     from pyxtal.database.layergroup import Layergroup
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -257,7 +261,7 @@ def test_molecular_2D():
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
-            multiplicity = len(get_layer(sg)[0]) #multiplicity of the general position
+            multiplicity = len(get_layer(num)[0]) / cellsize(sg) #multiplicity of the general position
             start = time()
             rand_crystal = molecular_crystal_2D(num, ['H2O'], [multiplicity], None, 4.0)
             end = time()
