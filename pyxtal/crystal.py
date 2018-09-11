@@ -770,8 +770,9 @@ def find_short_dist(coor, lattice, tol, PBC=[1,2,3]):
         d_min = min(pairs[:,-1]) + 1e-3
         sequence = [pairs[:,-1] <= d_min]
         #Avoid Futurewarning
-        pairs1 = deepcopy(pairs)
-        pairs = pairs1[sequence]
+        #pairs1 = deepcopy(pairs)
+        #pairs = pairs1[sequence]
+        pairs = pairs[tuple(sequence)]
         for pair in pairs:
             pair0=int(pair[0])
             pair1=int(pair[1])
