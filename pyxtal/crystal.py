@@ -769,7 +769,9 @@ def find_short_dist(coor, lattice, tol, PBC=[1,2,3]):
     if len(pairs) > 0:
         d_min = min(pairs[:,-1]) + 1e-3
         sequence = [pairs[:,-1] <= d_min]
-        pairs = pairs[sequence]
+        #Avoid Futurewarning
+        pairs1 = deepcopy(pairs)
+        pairs = pairs1[sequence]
         for pair in pairs:
             pair0=int(pair[0])
             pair1=int(pair[1])
@@ -2292,6 +2294,8 @@ class random_crystal_2D():
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice_2D(self.sg, self.volume, thickness=self.thickness, minvec=minvector)
+                if cell_para is None:
+                    break
                 cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
@@ -2505,8 +2509,9 @@ class random_crystal_1D():
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
-                
-                    cell_matrix = para2matrix(cell_para)
+                if cell_para is None:
+                    break
+                cell_matrix = para2matrix(cell_para)
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
                 good_structure = False
