@@ -7,6 +7,40 @@ sys.settrace(None)
 outstructs = []
 outstrings = []
 
+def compare_wyckoffs(num1, num2, dim=3):
+    """Given 2 groups, return whether the second point
+    group has equal or greater symmetry than the first group."""
+    from numpy import allclose
+    if num1 == "???":
+        print("Error: invalid value for num1 passed to compare_wyckoffs")
+        return
+    if num2 == "???":
+        return False
+    #Get general positions for both groups
+    if dim == 3:
+        from pyxtal.crystal import get_wyckoffs
+        g1 = get_wyckoffs(num1)[0]
+        g2 = get_wyckoffs(num2)[0]
+    elif dim == 2:
+        from pyxtal.crystal import get_layer
+        g1 = get_layer(num1)[0]
+        g2 = get_layer(num2)[0]
+    elif dim == 1:
+        from pyxtal.crystal import get_rod
+        g1 = get_rod(num1)[0]
+        g2 = get_rod(num2)[0]
+    #If group 2 has higher symmetry
+    if len(g2) > len(g1):
+        return True
+    #Compare point group operations
+    for i, op2 in enumerate(g2):
+        op1 = g1[i]
+        m1 = op1.rotation_matrix
+        m2 = op2.rotation_matrix
+        if not allclose(m1, m2):
+            return False
+    return True
+
 #Check if module and classes work correctly
 def passed():
     global failed_module
@@ -71,7 +105,7 @@ def test_atomic():
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
-    skip = [202, 204, 209, 210, 216, 219, 220, 225, 226, 227, 228, 229, 230] #slow to generate
+    skip = [166, 202, 210, 216, 217, 219, 220, 221, 223, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
@@ -104,10 +138,18 @@ def test_atomic():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+
+                #Compare expected and detected groups
+                if ans1 != "???" and ans2 == "???":
                     t += " xxxxx"
-                if ans2 != "???":
-                    if int(ans2) < int(sg):
-                        t += " xxxxx"
+                elif ans1 == "???":
+                    if ans2 > sg: pass
+                elif ans2 == "???":
+                    if ans1 > sg: pass
+                else:
+                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                    else: t += " xxxxx"
+
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
@@ -165,10 +207,18 @@ def test_molecular():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+
+                #Compare expected and detected groups
+                if ans1 != "???" and ans2 == "???":
                     t += " xxxxx"
-                if ans2 != "???":
-                    if int(ans2) < int(sg):
-                        t += " xxxxx"
+                elif ans1 == "???":
+                    if ans2 > sg: pass
+                elif ans2 == "???":
+                    if ans1 > sg: pass
+                else:
+                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                    else: t += " xxxxx"
+
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
@@ -194,7 +244,7 @@ def test_atomic_2D():
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     print("   Layergroup   | sg # Expected |Generated (SPG)|Generated (PMG)|Time Elapsed")
-    skip = []#13, 18, 22, 24, 25, 26, 30, 33, 39, 40, 42, 43, 45, 47, 48, 52, 53, 54, 56, 57, 60, 61, 62, 63, 64, 72, 75, 76, 78, 79, 80] #slow to generate
+    skip = []#slow to generate
     for num in range(1, 81):
         if num not in skip:
             sg = Layergroup(num).sgnumber
@@ -228,10 +278,18 @@ def test_atomic_2D():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+
+                #Compare expected and detected groups
+                if ans1 != "???" and ans2 == "???":
                     t += " xxxxx"
-                if ans2 != "???":
-                    if int(ans2) < int(sg):
-                        t += " xxxxx"
+                elif ans1 == "???":
+                    if ans2 > sg: pass
+                elif ans2 == "???":
+                    if ans1 > sg: pass
+                else:
+                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                    else: t += " xxxxx"
+
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
@@ -291,10 +349,18 @@ def test_molecular_2D():
                     ans2 = sga.get_space_group_number()
                 if ans2 is None:
                     ans2 = "???"
+
+                #Compare expected and detected groups
+                if ans1 != "???" and ans2 == "???":
                     t += " xxxxx"
-                if ans2 != "???":
-                    if int(ans2) < int(sg):
-                        t += " xxxxx"
+                elif ans1 == "???":
+                    if ans2 > sg: pass
+                elif ans2 == "???":
+                    if ans1 > sg: pass
+                else:
+                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                    else: t += " xxxxx"
+
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
                 if t[-1] == "x":
