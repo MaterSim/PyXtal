@@ -41,6 +41,72 @@ def compare_wyckoffs(num1, num2, dim=3):
             return False
     return True
 
+def check_struct_group(struct, group, dim=3, tol=1e-2):
+    """Given a pymatgen structure, group number, and dimension, return
+    whether or not the structure matches the group number."""
+
+    from pyxtal.crystal import distance
+    from pyxtal.crystal import filtered_coords
+    from copy import deepcopy
+    lattice = struct.lattice.matrix
+
+    #Obtain the generators for the group
+    if dim == 3:
+        from pyxtal.crystal import get_wyckoffs
+        generators = get_wyckoffs(group)[0]
+
+    elif dim == 2:
+        from pyxtal.crystal import get_layer
+        generators = get_layer(group)[0]
+        PBC = [1,2]
+    elif dim == 1:
+        from pyxtal.crystal import get_rod
+        generators = get_rod(group)[0]
+        PBC = [3]
+
+    #TODO: Add check for lattice symmetry
+
+    #Apply SymmOps to generate new points
+    #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
+    old_coords = deepcopy(struct.frac_coords)
+
+    new_coords = []
+    new_species = []
+    for i, point in enumerate(old_coords):
+        for op in generators:
+            new_coords.append(op.operate(point))
+            new_species.append(struct.atomic_numbers[i])
+    #new_coords = filtered_coords(new_coords,PBC=PBC)
+
+    #Get rid of redundant points
+    i_list = list(range(len(new_coords)))
+    for i, point1 in enumerate(new_coords):
+        if i in i_list:
+            for j, point2 in enumerate(new_coords):
+                if j in i_list:
+                    if new_species[i] == new_species[j]:
+                        difference = point2 - point1
+                        if distance(difference, lattice, PBC=PBC) <= tol:
+                            if j in i_list:
+                                i_list.remove(j)
+
+    #Check that all points in new list are still in old
+    j_list = list(range(len(old_coords)))
+    for i, point1 in enumerate(new_coords):
+        if i in j_list:
+            for j, point2 in enumerate(old_coords):
+                if new_species[i] == new_species[j]:
+                    difference = point2 - point1
+                    if distance(difference, lattice, PBC=PBC) <= tol:
+                        if j in j_list:
+                            j_list.remove(j)
+                        if i in j_list:
+                            j_list.remove(i)
+    if j_list == []:
+        return True
+    else:
+        return False
+
 #Check if module and classes work correctly
 def passed():
     global failed_module
@@ -127,35 +193,42 @@ def test_atomic():
                 t += "~"
                 slow.append(sg)
             if rand_crystal.valid:
+                check = False
                 ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
                 if ans1 is None:
                     ans1 = "???"
                 else:
                     ans1 = ans1['number']
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
-                ans2 = None
+                ans2 = "???"
                 if sga is not None:
-                    ans2 = sga.get_space_group_number()
+                    try:
+                        ans2 = sga.get_space_group_number()
+                    except: ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
 
                 #Compare expected and detected groups
-                if ans1 != "???" and ans2 == "???":
-                    t += " xxxxx"
+                if ans1 == "???" and ans2 == "???":
+                    check = True
                 elif ans1 == "???":
-                    if ans2 > sg: pass
+                    if int(ans2) > sg: pass
                 elif ans2 == "???":
-                    if ans1 > sg: pass
+                    if int(ans1) > sg: pass
                 else:
                     if ans1 < sg and ans2 < sg:
                         if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: t += " xxxxx"
+                        else: check = True
 
-                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
-                if t[-1] == "x":
-                    outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("3D_Atomic_"+str(sg)+".poscar"))
+                if check is True:
+                    if check_struct_group(rand_crystal.struct, sg, dim=3):
+                        pass
+                    else:
+                        t += " xxxxx"
+                        outstructs.append(rand_crystal.struct)
+                        outstrings.append(str("3D_Atomic_"+str(sg)+".poscar"))
+                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -197,35 +270,43 @@ def test_molecular():
                 t += "~"
                 slow.append(sg)
             if rand_crystal.valid:
+                check = False
                 ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
                 if ans1 is None:
                     ans1 = "???"
                 else:
                     ans1 = ans1['number']
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
-                ans2 = None
+                ans2 = "???"
                 if sga is not None:
-                    ans2 = sga.get_space_group_number()
+                    try:
+                        ans2 = sga.get_space_group_number()
+                    except: ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
 
                 #Compare expected and detected groups
-                if ans1 != "???" and ans2 == "???":
-                    t += " xxxxx"
+                if ans1 == "???" and ans2 == "???":
+                    check = True
                 elif ans1 == "???":
-                    if ans2 > sg: pass
+                    if int(ans2) > sg: pass
                 elif ans2 == "???":
-                    if ans1 > sg: pass
+                    if int(ans1) > sg: pass
                 else:
                     if ans1 < sg and ans2 < sg:
                         if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: t += " xxxxx"
+                        else: check = True
 
-                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+
                 #output cif files for incorrect space groups
-                if t[-1] == "x":
-                    outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("3D_Molecular_"+str(sg)+".poscar"))
+                if check is True:
+                    if check_struct_group(rand_crystal.struct, sg, dim=3):
+                        pass
+                    else:
+                        t += " xxxxx"
+                        outstructs.append(rand_crystal.struct)
+                        outstrings.append(str("3D_Molecular_"+str(sg)+".poscar"))
+                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
     if slow != []:
@@ -269,35 +350,42 @@ def test_atomic_2D():
                 t += "~"
                 slow.append(num)
             if rand_crystal.valid:
+                check = False
                 ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
                 if ans1 is None:
                     ans1 = "???"
                 else:
                     ans1 = ans1['number']
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
-                ans2 = None
+                ans2 = "???"
                 if sga is not None:
-                    ans2 = sga.get_space_group_number()
+                    try:
+                        ans2 = sga.get_space_group_number()
+                    except: ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
 
                 #Compare expected and detected groups
-                if ans1 != "???" and ans2 == "???":
-                    t += " xxxxx"
+                if ans1 == "???" and ans2 == "???":
+                    check = True
                 elif ans1 == "???":
-                    if ans2 > sg: pass
+                    if int(ans2) > sg: pass
                 elif ans2 == "???":
-                    if ans1 > sg: pass
+                    if int(ans1) > sg: pass
                 else:
                     if ans1 < sg and ans2 < sg:
                         if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: t += " xxxxx"
+                        else: check = True
 
-                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
-                if t[-1] == "x":
-                    outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("2D_Atomic_"+str(num)+".poscar"))
+                if check is True:
+                    if check_struct_group(rand_crystal.struct, num, dim=2):
+                        pass
+                    else:
+                        t += " xxxxx"
+                        outstructs.append(rand_crystal.struct)
+                        outstrings.append(str("2D_Atomic_"+str(num)+".poscar"))
+                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -341,35 +429,42 @@ def test_molecular_2D():
                 t += "~"
                 slow.append(num)
             if rand_crystal.valid:
+                check = False
                 ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
                 if ans1 is None:
                     ans1 = "???"
                 else:
                     ans1 = ans1['number']
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
-                ans2 = None
+                ans2 = "???"
                 if sga is not None:
-                    ans2 = sga.get_space_group_number()
+                    try:
+                        ans2 = sga.get_space_group_number()
+                    except: ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
 
                 #Compare expected and detected groups
-                if ans1 != "???" and ans2 == "???":
-                    t += " xxxxx"
+                if ans1 == "???" and ans2 == "???":
+                    check = True
                 elif ans1 == "???":
-                    if ans2 > sg: pass
+                    if int(ans2) > sg: pass
                 elif ans2 == "???":
-                    if ans1 > sg: pass
+                    if int(ans1) > sg: pass
                 else:
                     if ans1 < sg and ans2 < sg:
                         if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: t += " xxxxx"
+                        else: check = True
 
-                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
-                if t[-1] == "x":
-                    outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("2D_Molecular_"+str(num)+".poscar"))
+                if check is True:
+                    if check_struct_group(rand_crystal.struct, num, dim=2):
+                        pass
+                    else:
+                        t += " xxxxx"
+                        outstructs.append(rand_crystal.struct)
+                        outstrings.append(str("2D_Molecular_"+str(num)+".poscar"))
+                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -425,13 +520,18 @@ def test_atomic_1D():
                     ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
-                if ans1 == "???" and ans2 == "???":
-                    t += " xxxxx"
-                print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+
+                check = True
+
                 #output cif files for incorrect space groups
-                if t[-1] == "x":
-                    outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("1D_Atomic_"+str(num)+".poscar"))
+                if check is True:
+                    if check_struct_group(rand_crystal.struct, num, dim=1):
+                        pass
+                    else:
+                        t += " xxxxx"
+                        outstructs.append(rand_crystal.struct)
+                        outstrings.append(str("1D_Atomic_"+str(num)+".poscar"))
+                print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
@@ -487,13 +587,18 @@ def test_molecular_1D():
                     ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
-                if ans1 == "???" and ans2 == "???":
-                    t += " xxxxx"
-                print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+
+                check = True
+
                 #output cif files for incorrect space groups
-                if t[-1] == "x":
-                    outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("1D_Molecular_"+str(num)+".poscar"))
+                if check is True:
+                    if check_struct_group(rand_crystal.struct, num, dim=1):
+                        pass
+                    else:
+                        t += " xxxxx"
+                        outstructs.append(rand_crystal.struct)
+                        outstrings.append(str("1D_Molecular_"+str(num)+".poscar"))
+                print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
     if slow != []:
