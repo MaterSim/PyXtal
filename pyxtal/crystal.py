@@ -1679,36 +1679,29 @@ def get_wyckoff_generators(sg, PBC=[1,2,3], molecular=False):
                         invalid = True
             if invalid == False:
                 generators.append([])
-                #Loop over points in WP
-                for y in x:
-                    generators[-1].append([])
-                    #Loop over ops
-                    for z in y:
-                        op = SymmOp.from_xyz_string(z)
-                        if convert is True:
-                            #Convert non-orthogonal trigonal/hexagonal operations
-                            op = P*op*P.inverse
-                        if molecular is False:
-                            generators[-1][-1].append(op)
-                        elif molecular is True:
-                            op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                            generators[-1][-1].append(op)
-        else:
-            generators.append([])
-            #Loop over points in WP
-            for y in x:
-                generators[-1].append([])
                 #Loop over ops
-                for z in y:
-                    op = SymmOp.from_xyz_string(z)
+                for y in x:
+                    op = SymmOp.from_xyz_string(y)
                     if convert is True:
                         #Convert non-orthogonal trigonal/hexagonal operations
                         op = P*op*P.inverse
                     if molecular is False:
-                        generators[-1][-1].append(op)
+                        generators[-1].append(op)
                     elif molecular is True:
                         op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                        generators[-1][-1].append(op)
+                        generators[-1].append(op)
+        else:
+            generators.append([])
+            for y in x:
+                op = SymmOp.from_xyz_string(y)
+                if convert is True:
+                    #Convert non-orthogonal trigonal/hexagonal operations
+                    op = P*op*P.inverse
+                if molecular is False:
+                    generators[-1].append(op)
+                elif molecular is True:
+                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                    generators[-1].append(op)
     return generators
 
 def get_layer_generators(num, molecular=False):
@@ -1744,20 +1737,17 @@ def get_layer_generators(num, molecular=False):
     #Loop over Wyckoff positions
     for x in generator_strings:
         generators.append([])
-        #Loop over points in WP
+        #Loop over ops
         for y in x:
-            generators[-1].append([])
-            #Loop over ops
-            for z in y:
-                op = SymmOp.from_xyz_string(z)
-                if convert is True:
-                    #Convert non-orthogonal trigonal/hexagonal operations
-                    op = P*op*P.inverse
-                if molecular is False:
-                    generators[-1][-1].append(op)
-                elif molecular is True:
-                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                    generators[-1][-1].append(op)
+            op = SymmOp.from_xyz_string(y)
+            if convert is True:
+                #Convert non-orthogonal trigonal/hexagonal operations
+                op = P*op*P.inverse
+            if molecular is False:
+                generators[-1].append(op)
+            elif molecular is True:
+                op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                generators[-1].append(op)
     return generators
 
 def get_rod_generators(num, molecular=False):
@@ -1793,20 +1783,17 @@ def get_rod_generators(num, molecular=False):
     #Loop over Wyckoff positions
     for x in generator_strings:
         generators.append([])
-        #Loop over points in WP
+        #Loop over ops
         for y in x:
-            generators[-1].append([])
-            #Loop over ops
-            for z in y:
-                op = SymmOp.from_xyz_string(z)
-                if convert is True:
-                    #Convert non-orthogonal trigonal/hexagonal operations
-                    op = P*op*P.inverse
-                if molecular is False:
-                    generators[-1][-1].append(op)
-                elif molecular is True:
-                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                    generators[-1][-1].append(op)
+            op = SymmOp.from_xyz_string(y)
+            if convert is True:
+                #Convert non-orthogonal trigonal/hexagonal operations
+                op = P*op*P.inverse
+            if molecular is False:
+                generators[-1].append(op)
+            elif molecular is True:
+                op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
+                generators[-1].append(op)
     return generators
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
