@@ -383,7 +383,8 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
                     if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=.01):
                         list_i.remove(j)
                         list_j.remove(j)
-                    else:# np.isclose(np.dot(c1[0].axis, c2[0].axis), -1, rtol=.01):
+                    #Check if axes are symmetrically equivalent
+                    else:
                         cond1 = False
                         cond2 = False
                         for opa in opa_m:
@@ -487,7 +488,7 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
             op = o.get_op(angle=0)
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(mo, wyckoffs, w_symm_all, index, exact_orientation=True, already_oriented=already_oriented) is True:
+        if orientation_in_wyckoff_position(mo, wyckoffs, w_symm_all, index, exact_orientation=True) is True:
             allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
