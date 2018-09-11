@@ -86,9 +86,8 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
                 if j in i_list:
                     if new_species[i] == new_species[j]:
                         difference = filtered_coords(point2 - point1, PBC=PBC)
-                        if np.linalg.norm(difference) <= tol:
-                            if j in i_list:
-                                i_list.remove(j)
+                        if distance(difference, lattice, PBC=PBC) <= tol:
+                            i_list.remove(j)
 
     #Check that all points in new list are still in old
     j_list = list(range(len(old_coords)))
@@ -97,9 +96,8 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
             if j in j_list:
                 if new_species[i] == new_species[j]:
                     difference = filtered_coords(point2 - point1, PBC=PBC)
-                    if np.linalg.norm(difference) <= tol:
-                        if j in j_list:
-                            j_list.remove(j)
+                    if distance(difference, lattice, PBC=PBC) <= tol:
+                        j_list.remove(j)
 
     if j_list == []:
         return True
