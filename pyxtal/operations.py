@@ -506,7 +506,7 @@ class orientation():
         self.matrix = np.array(matrix)
         """The supplied orientation (and/or inversion) matrix, converted to a
         numpy array."""
-        self.degrees = 0
+        self.degrees = degrees
         """The number of degrees of freedom."""
         self.axis = axis
         """The axis (optional) about which the orientation may rotate."""
