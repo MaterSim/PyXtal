@@ -105,7 +105,7 @@ def test_atomic():
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
-    skip = [166, 202, 210, 216, 217, 219, 220, 221, 223, 225, 226, 227, 228, 229, 230] #slow to generate
+    skip = [124, 139, 166, 167, 196, 202, 203, 204, 207, 209, 210, 216, 217, 219, 220, 221, 223, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
@@ -147,8 +147,9 @@ def test_atomic():
                 elif ans2 == "???":
                     if ans1 > sg: pass
                 else:
-                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                    else: t += " xxxxx"
+                    if ans1 < sg and ans2 < sg:
+                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                        else: t += " xxxxx"
 
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
@@ -216,8 +217,9 @@ def test_molecular():
                 elif ans2 == "???":
                     if ans1 > sg: pass
                 else:
-                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                    else: t += " xxxxx"
+                    if ans1 < sg and ans2 < sg:
+                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                        else: t += " xxxxx"
 
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
@@ -287,8 +289,9 @@ def test_atomic_2D():
                 elif ans2 == "???":
                     if ans1 > sg: pass
                 else:
-                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                    else: t += " xxxxx"
+                    if ans1 < sg and ans2 < sg:
+                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                        else: t += " xxxxx"
 
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
@@ -358,8 +361,9 @@ def test_molecular_2D():
                 elif ans2 == "???":
                     if ans1 > sg: pass
                 else:
-                    if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                    else: t += " xxxxx"
+                    if ans1 < sg and ans2 < sg:
+                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
+                        else: t += " xxxxx"
 
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
                 #output cif files for incorrect space groups
