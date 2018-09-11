@@ -696,7 +696,7 @@ class molecular_crystal():
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
-                                            for point_index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
+                                            for point_index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
                                                 for site in mo:
@@ -783,7 +783,7 @@ class molecular_crystal():
                                 mo.apply_operation(op1)
                                 ms0 = mol_site(mo, center0, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
                                 self.mol_generators.append(ms0)
-                                for index, op2 in enumerate(get_wyckoff_generators(self.sg)[wp_index]):
+                                for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                     for site in mo:
                                         #Place molecular coordinates in relative coordinates
                                         #relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
@@ -1183,7 +1183,7 @@ class molecular_crystal_2D():
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
-                                            for point_index, op2 in enumerate(get_layer_generators(self.number)[wp_index]):
+                                            for point_index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
                                                 for site in mo:
@@ -1268,7 +1268,7 @@ class molecular_crystal_2D():
                                 mo.apply_operation(op1)
                                 ms0 = mol_site(mo, center0, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
                                 mol_generators_total.append(ms0)
-                                for index, op2 in enumerate(get_layer_generators(self.number)[wp_index]):
+                                for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                     for site in mo:
                                         #Place molecular coordinates in relative coordinates
                                         relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
@@ -1659,7 +1659,7 @@ class molecular_crystal_1D():
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
-                                            for point_index, op2 in enumerate(get_rod_generators(self.number)[wp_index]):
+                                            for point_index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
                                                 for site in mo:
@@ -1744,7 +1744,7 @@ class molecular_crystal_1D():
                                 mo.apply_operation(op1)
                                 ms0 = mol_site(mo, center0, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
                                 mol_generators_total.append(ms0)
-                                for index, op2 in enumerate(get_rod_generators(self.number)[wp_index]):
+                                for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                     for site in mo:
                                         #Place molecular coordinates in relative coordinates
                                         relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
