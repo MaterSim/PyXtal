@@ -11,7 +11,7 @@ setup(
     description="Python code for generation of crystal structures based on symmetry constraints.",
     long_description=long_description,
     #long_description_content_type="text/markdown",
-    url="https://github.com/qzhu2017/pyXtal",
+    url="https://github.com/qzhu2017/PyXtal",
     packages=['pyxtal', 'pyxtal.database'],
     package_data={'pyxtal.database': ['*.csv', '*.json']},
     classifiers=(
