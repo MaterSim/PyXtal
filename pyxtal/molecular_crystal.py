@@ -398,6 +398,7 @@ class molecular_crystal():
         #Necessary input
         self.Msgs()
         """A list of warning messages to use during generation."""
+        self.PBC = [1,2,3]
         numMols = np.array(numMols) #must convert it to np.array
         self.factor = volume_factor
         """The supplied volume factor for the unit cell."""
@@ -450,6 +451,9 @@ class molecular_crystal():
         """A list of site symmetry operations for the Wyckoff positions, obtained
             from get_wyckoff_symmetry."""
         self.wyckoff_generators = get_wyckoff_generators(self.sg)
+        """A list of Wyckoff generators (molecular=False)"""
+        self.wyckoff_generators_m = get_wyckoff_generators(self.sg, molecular=True)
+        """A list of Wyckoff generators (molecular=True)"""
         self.check_atomic_distances = check_atomic_distances
         """Whether or not inter-atomic distances are checked at each step."""
         self.allow_inversion = allow_inversion
@@ -697,20 +701,25 @@ class molecular_crystal():
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
                                             for point_index, op2 in enumerate(self.wyckoff_generators[wp_index]):
+
+                                                #Rotate the molecule (Euclidean metric)
+                                                op2_m = self.wyckoff_generators_m[wp_index][point_index]
+                                                mo2 = deepcopy(mo)
+                                                mo2.apply_operation(op2_m)
+                                                #Obtain the center in absolute coords
+                                                center_relative = op2.operate(point)
+                                                center_absolute = np.dot(center_relative, cell_matrix)
+                                                #Add absolute center to molecule
+                                                mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
+
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
-                                                for site in mo:
+                                                for site in mo2:
                                                     #Place molecular coordinates in relative coordinates
-                                                    #relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
-                                                    #relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
                                                     relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                                    center1 = op2.operate(point)
-                                                    rot = SymmOp.from_rotation_and_translation(op2.rotation_matrix,[0,0,0])
-                                                    relative_coords = rot.operate(relative_coords)
-                                                    new_vector = center1 + relative_coords
-                                                    new_vector -= np.floor(new_vector)
+                                                    relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
                                                     current_atomic_sites.append(site.specie.name)
-                                                    current_atomic_coords.append(new_vector)
+                                                    current_atomic_coords.append(relative_coords)
                                                 wp_atomic_sites.append(current_atomic_sites)
                                                 wp_atomic_coords.append(current_atomic_coords)
                                                 #Check distances between molecules in current WP
@@ -784,17 +793,22 @@ class molecular_crystal():
                                 ms0 = mol_site(mo, center0, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
                                 self.mol_generators.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
-                                    for site in mo:
+
+                                    #Rotate the molecule (Euclidean metric)
+                                    op2_m = self.wyckoff_generators_m[wp_index][point_index]
+                                    mo2 = deepcopy(mo)
+                                    mo2.apply_operation(op2_m)
+                                    #Obtain the center in absolute coords
+                                    center_relative = op2.operate(point)
+                                    center_absolute = np.dot(center_relative, cell_matrix)
+                                    #Add absolute center to molecule
+                                    mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
+
+                                    for site in mo2:
                                         #Place molecular coordinates in relative coordinates
-                                        #relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
-                                        #relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
                                         relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                        center1 = op2.operate(center0)
-                                        rot = SymmOp.from_rotation_and_translation(op2.rotation_matrix,[0,0,0])
-                                        relative_coords = rot.operate(relative_coords)
-                                        new_vector = center1 + relative_coords
-                                        new_vector -= np.floor(new_vector)
-                                        final_coor.append(new_vector)
+                                        relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
+                                        final_coor.append(relative_coords)
                                         final_site.append(site.specie.name)
                                         final_number.append(site.specie.number)
 
@@ -939,6 +953,8 @@ class molecular_crystal_2D():
             from get_wyckoff_symmetry."""
         self.wyckoff_generators = get_layer_generators(self.number)
         """A list of Wyckfof generators for the layer group"""
+        self.wyckoff_generators_m = get_layer_generators(self.number, molecular=True)
+        """A list of Wyckfof generators for the layer group (molecular=True)"""
         self.check_atomic_distances = check_atomic_distances
         """Whether or not inter-atomic distances are checked at each step."""
         self.allow_inversion = allow_inversion
@@ -1186,18 +1202,23 @@ class molecular_crystal_2D():
                                             for point_index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
-                                                for site in mo:
+
+                                                #Rotate the molecule (Euclidean metric)
+                                                op2_m = self.wyckoff_generators_m[wp_index][point_index]
+                                                mo2 = deepcopy(mo)
+                                                mo2.apply_operation(op2_m)
+                                                #Obtain the center in absolute coords
+                                                center_relative = op2.operate(point)
+                                                center_absolute = np.dot(center_relative, cell_matrix)
+                                                #Add absolute center to molecule
+                                                mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
+
+                                                for site in mo2:
                                                     #Place molecular coordinates in relative coordinates
-                                                    #relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
-                                                    #relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
                                                     relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                                    center1 = op2.operate(point)
-                                                    rot = SymmOp.from_rotation_and_translation(op2.rotation_matrix,[0,0,0])
-                                                    relative_coords = rot.operate(relative_coords)
-                                                    new_vector = center1 + relative_coords
-                                                    new_vector = filtered_coords(new_vector, PBC=self.PBC)
+                                                    relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
                                                     current_atomic_sites.append(site.specie.name)
-                                                    current_atomic_coords.append(new_vector)
+                                                    current_atomic_coords.append(relative_coords)
                                                 wp_atomic_sites.append(current_atomic_sites)
                                                 wp_atomic_coords.append(current_atomic_coords)
                                                 #Check distances between molecules in current WP
@@ -1269,15 +1290,22 @@ class molecular_crystal_2D():
                                 ms0 = mol_site(mo, center0, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
-                                    for site in mo:
+
+                                    #Rotate the molecule (Euclidean metric)
+                                    op2_m = self.wyckoff_generators_m[wp_index][point_index]
+                                    mo2 = deepcopy(mo)
+                                    mo2.apply_operation(op2_m)
+                                    #Obtain the center in absolute coords
+                                    center_relative = op2.operate(point)
+                                    center_absolute = np.dot(center_relative, cell_matrix)
+                                    #Add absolute center to molecule
+                                    mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
+
+                                    for site in mo2:
                                         #Place molecular coordinates in relative coordinates
                                         relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                        center1 = op2.operate(center0)
-                                        rot = SymmOp.from_rotation_and_translation(op2.rotation_matrix,[0,0,0])
-                                        relative_coords = rot.operate(relative_coords)
-                                        new_vector = center1 + relative_coords
-                                        new_vector = filtered_coords(new_vector, PBC=self.PBC)
-                                        final_coor.append(new_vector)
+                                        relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
+                                        final_coor.append(relative_coords)
                                         final_site.append(site.specie.name)
                                         final_number.append(site.specie.number)
                             self.mol_generators = deepcopy(mol_generators_total)
@@ -1415,6 +1443,9 @@ class molecular_crystal_1D():
         """A list of site symmetry operations for the Wyckoff positions, obtained
             from get_wyckoff_symmetry."""
         self.wyckoff_generators = get_rod_generators(self.number)
+        """A list of Rod Wyckoff generators (molecular=False)"""
+        self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
+        """A list of Rod Wyckoff generators (molecular=True)"""
         self.check_atomic_distances = check_atomic_distances
         """Whether or not inter-atomic distances are checked at each step."""
         self.allow_inversion = allow_inversion
@@ -1662,18 +1693,23 @@ class molecular_crystal_1D():
                                             for point_index, op2 in enumerate(self.wyckoff_generators[wp_index]):
                                                 current_atomic_sites = []
                                                 current_atomic_coords = []
-                                                for site in mo:
+
+                                                #Rotate the molecule (Euclidean metric)
+                                                op2_m = self.wyckoff_generators_m[wp_index][point_index]
+                                                mo2 = deepcopy(mo)
+                                                mo2.apply_operation(op2_m)
+                                                #Obtain the center in absolute coords
+                                                center_relative = op2.operate(point)
+                                                center_absolute = np.dot(center_relative, cell_matrix)
+                                                #Add absolute center to molecule
+                                                mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
+
+                                                for site in mo2:
                                                     #Place molecular coordinates in relative coordinates
-                                                    #relative_coords = np.dot(np.linalg.inv(np.transpose(cell_matrix)), site.coords)
-                                                    #relative_coords = np.dot(np.linalg.inv(cell_matrix), site.coords)
                                                     relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                                    center1 = op2.operate(point)
-                                                    rot = SymmOp.from_rotation_and_translation(op2.rotation_matrix,[0,0,0])
-                                                    relative_coords = rot.operate(relative_coords)
-                                                    new_vector = center1 + relative_coords
-                                                    new_vector = filtered_coords(new_vector, PBC=self.PBC)
+                                                    relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
                                                     current_atomic_sites.append(site.specie.name)
-                                                    current_atomic_coords.append(new_vector)
+                                                    current_atomic_coords.append(relative_coords)
                                                 wp_atomic_sites.append(current_atomic_sites)
                                                 wp_atomic_coords.append(current_atomic_coords)
                                                 #Check distances between molecules in current WP
@@ -1745,15 +1781,22 @@ class molecular_crystal_1D():
                                 ms0 = mol_site(mo, center0, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
-                                    for site in mo:
+
+                                    #Rotate the molecule (Euclidean metric)
+                                    op2_m = self.wyckoff_generators_m[wp_index][point_index]
+                                    mo2 = deepcopy(mo)
+                                    mo2.apply_operation(op2_m)
+                                    #Obtain the center in absolute coords
+                                    center_relative = op2.operate(point)
+                                    center_absolute = np.dot(center_relative, cell_matrix)
+                                    #Add absolute center to molecule
+                                    mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
+
+                                    for site in mo2:
                                         #Place molecular coordinates in relative coordinates
                                         relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                        center1 = op2.operate(center0)
-                                        rot = SymmOp.from_rotation_and_translation(op2.rotation_matrix,[0,0,0])
-                                        relative_coords = rot.operate(relative_coords)
-                                        new_vector = center1 + relative_coords
-                                        new_vector = filtered_coords(new_vector, PBC=self.PBC)
-                                        final_coor.append(new_vector)
+                                        relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
+                                        final_coor.append(relative_coords)
                                         final_site.append(site.specie.name)
                                         final_number.append(site.specie.number)
                             self.mol_generators = deepcopy(mol_generators_total)
