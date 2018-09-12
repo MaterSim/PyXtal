@@ -1813,7 +1813,6 @@ class molecular_crystal_1D():
                         if verify_distances(final_coor, final_site, final_lattice, factor=1.0, PBC=self.PBC) is True:
                             final_coor = np.array(final_coor)
                             #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                            final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                             self.lattice = final_lattice
                             """A 3x3 matrix representing the lattice of the
                             unit cell."""  
