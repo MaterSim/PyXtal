@@ -69,37 +69,33 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
     #Apply SymmOps to generate new points
     #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
     old_coords = deepcopy(struct.frac_coords)
+    old_species = deepcopy(struct.atomic_numbers)
 
     new_coords = []
     new_species = []
     for i, point in enumerate(old_coords):
-        for op in generators:
-            new_coords.append(op.operate(point))
-            new_species.append(struct.atomic_numbers[i])
+        for j, op in enumerate(generators):
+            if j != 0:
+                new_coords.append(op.operate(point))
+                new_species.append(old_species[i])
     #new_coords = filtered_coords(new_coords,PBC=PBC)
 
-    #Get rid of redundant points
+    #Check that all points in new list are still in old
+    failed = False
     i_list = list(range(len(new_coords)))
     for i, point1 in enumerate(new_coords):
-        if i in i_list:
-            for j, point2 in enumerate(new_coords):
-                if j in i_list:
-                    if new_species[i] == new_species[j]:
-                        difference = filtered_coords(point2 - point1, PBC=PBC)
-                        if distance(difference, lattice, PBC=PBC) <= tol:
-                            i_list.remove(j)
-
-    #Check that all points in new list are still in old
-    j_list = list(range(len(old_coords)))
-    for i, point1 in enumerate(new_coords):
+        found = False
         for j, point2 in enumerate(old_coords):
-            if j in j_list:
-                if new_species[i] == new_species[j]:
-                    difference = filtered_coords(point2 - point1, PBC=PBC)
-                    if distance(difference, lattice, PBC=PBC) <= tol:
-                        j_list.remove(j)
+            if new_species[i] == old_species[j]:
+                difference = filtered_coords(point2 - point1, PBC=PBC)
+                if distance(difference, lattice, PBC=PBC) <= tol:
+                    found = True
+                    break
+        if found is False:
+            failed = True
+            break
 
-    if j_list == []:
+    if failed is False:
         return True
     else:
         return False
