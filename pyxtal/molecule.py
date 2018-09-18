@@ -29,9 +29,9 @@ def ob_mol_from_file(fname, ftype="xyz", add_hydrogen=True):
     Import a molecule from a file using OpenBabel
 
         fname: the path string to the file to be opened
+        ftype: the file format
         add_hydrogen: whether or not to insert hydrogens automatically
             openbabel does not always add hydrogens automatically
-        ftype: the file format
 
     Returns:
         an openbabel OBMol molecule object
@@ -74,6 +74,9 @@ def ob_mol_from_string(string, ftype="smi", add_hydrogen=True):
     #Add hydrogens
     if add_hydrogen is True:
         mol.AddHydrogens()
+
+    #TODO: Set atomic coordinates using force field optimization
+    #Currently, all coordinates default to (0,0,0)
 
     return mol
 
@@ -291,6 +294,10 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
         already_oriented: whether or not to reorient the principle axes
             when calling get_symmetry. Setting to True can remove redundancy,
             but is not necessary
+        allow_inversion: whether or not to allow chiral molecules to be
+            inverted. Should only be True if the chemical and biological
+            properties of the mirror image are known to be suitable for the
+            desired application
 
     Returns:
         a list of operations.Orientation objects which can be applied to the
@@ -517,13 +524,5 @@ if __name__ == "__main__":
     print(mol)
     print()
 
-    pga = PointGroupAnalyzer(mol)
-    mol = pga.symmetrize_molecule()['sym_mol']    
-
-    #orientation_in_wyckoff_position(mol, sg, WP's index in sg)
-    #returns a list of orientations consistent with the WP's symmetry.
-    #We can choose any of these orientations at random using np.random.choice
-    #To use an orientation, do mol.apply_operation(orientation)
-    #Spacegroup WP 24l (index 2) in sg 221 has m.. symmetry
-    #allowed =  orientation_in_wyckoff_position(mol, w, ws, 2, randomize=True)
-    #print("Found "+str(len(allowed))+" orientations in sg 221 position 1g:")
+    #pga = PointGroupAnalyzer(mol)
+    #mol = pga.symmetrize_molecule()['sym_mol']    
