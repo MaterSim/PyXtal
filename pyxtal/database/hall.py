@@ -237,6 +237,15 @@ hall_numbers = [0, 1, 2,
 
 #TODO: incorporate non-standard setting transformations
 def hall_from_hm(num):
+    """
+    Returns a space group's Hall number from the international number
+
+    Args:
+        num: the international space group number
+
+    Returns:
+        the Hall number
+    """
 	return hall_numbers[num]
 """
 List of Hermann-Mauguin to Hall symbol conversions:
