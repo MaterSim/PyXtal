@@ -11,7 +11,7 @@ of the module:
 
     element (-e): the chemical symbol of the atom(s) to use. For multiple
         molecule types, separate entries with commas. Ex: "C", "H, O, N".
-        Defaults to Li  
+        Defaults to "Li"  
 
     numIons (-n): the number of atoms in the PRIMITIVE unit cell
         (For P-type spacegroups, this is the same as the number of molecules in
@@ -24,7 +24,7 @@ of the module:
     factor (-f): the relative volume factor used to generate the unit cell.
         Larger values result in larger cells, with atoms spaced further apart.
         If generation fails after max attempts, consider increasing this value.
-        Defaults to 2.0  
+        Defaults to 1.0  
 
     verbosity (-v): the amount of information which should be printed for each
         generated structure. For 0, only prints the requested and generated
@@ -36,11 +36,11 @@ of the module:
         value. Structures will be output to separate cif files. Defaults to 1  
 
     outdir (-o): the file directory where cif files will be output to.
-        Defaults to "out"
+        Defaults to "out"  
 
     dimension (-d): 3 for 3D, or 2 for 2D, 1 for 1D. If 2D, generates a 2D
         crystal using a layer group number instead of a space group number. For
-        1D, we use a Rod group number.  
+        1D, we use a Rod group number. Defaults to 3  
 
     thickness (-t): The thickness, in Angstroms, to use when generating a
         2D crystal. Note that this will not necessarily be one of the lattice
@@ -2736,8 +2736,8 @@ if __name__ == "__main__":
             help="desired elements: e.g., Li", metavar="element")
     parser.add_option("-n", "--numIons", dest="numIons", default=16, 
             help="desired numbers of atoms: 16", metavar="numIons")
-    parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
-            help="volume factor: default 3.0", metavar="factor")
+    parser.add_option("-f", "--factor", dest="factor", default=1.0, type=float, 
+            help="volume factor: default 1.0", metavar="factor")
     parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, 
             help="verbosity: default 0; higher values print more information", metavar="verbosity")
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
@@ -2745,9 +2745,9 @@ if __name__ == "__main__":
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
             help="Directory for storing output cif files: default 'out'", metavar="outdir")
     parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
-            help="desired dimension: (3, 2, or 1 for 3d, 2d, or 1D respectively)")
+            help="desired dimension: (3, 2, or 1 for 3d, 2d, or 1D respectively): default 3")
     parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=None, type=float,
-            help="Thickness, in Angstroms, of a 2D crystal: default 2.0")
+            help="Thickness, in Angstroms, of a 2D crystal, None chooses a value automatically: default None")
 
     (options, args) = parser.parse_args()
     sg = options.sg
