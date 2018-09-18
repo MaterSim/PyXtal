@@ -583,10 +583,10 @@ def get_center(xyzs, lattice, PBC=[1,2,3]):
                 matrix_min = matrix0[np.argmin(dists)]
         xyzs[atom1] += matrix_min
     center = xyzs.mean(0)
-    for a in range(1, 4):
+    '''for a in range(1, 4):
         if a not in PBC:
             if abs(center[a-1])<1e-4:
-                center[a-1] = 0.5
+                center[a-1] = 0.5'''
     return center
 
 def para2matrix(cell_para, radians=True, format='lower'):
@@ -2384,6 +2384,9 @@ class random_crystal_2D():
                             if ops is not False:
                 	    	    #Generate a list of coords from ops
                                 point = np.random.random(3)
+                                for a in range(1, 4):
+                                    if a not in self.PBC:
+                                        point[a-1] -= 0.5
                                 coords = np.array([op.operate(point) for op in ops])
                                 coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
@@ -2418,7 +2421,7 @@ class random_crystal_2D():
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
@@ -2599,6 +2602,9 @@ class random_crystal_1D():
                             if ops is not False:
                 	    	    #Generate a list of coords from ops
                                 point = np.random.random(3)
+                                for a in range(1, 4):
+                                    if a not in self.PBC:
+                                        point[a-1] -= 0.5
                                 coords = np.array([op.operate(point) for op in ops])
                                 coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
