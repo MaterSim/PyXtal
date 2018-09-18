@@ -1142,6 +1142,9 @@ class molecular_crystal_2D():
                 	    	    #Generate a list of coords from ops
                                     ops = self.wyckoffs_organized[j][k]
                                     point = np.random.random(3)
+                                    for a in range(1, 4):
+                                        if a not in self.PBC:
+                                            point[a-1] -= 0.5
                                     coords = np.array([op.operate(point) for op in ops])
                                     #merge coordinates if the atoms are close
                                     if self.check_atomic_distances is False:
@@ -1633,6 +1636,12 @@ class molecular_crystal_1D():
                 	    	    #Generate a list of coords from ops
                                     ops = self.wyckoffs_organized[j][k]
                                     point = np.random.random(3)
+                                    for a in range(1, 4):
+                                        if a not in self.PBC:
+                                            if self.number < 46:
+                                                point[a-1] -= 0.5
+                                            elif self.number >= 46:
+                                                point[a-1] *= 1./sqrt(3.)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #merge coordinates if the atoms are close
                                     if self.check_atomic_distances is False:

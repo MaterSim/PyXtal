@@ -2604,7 +2604,10 @@ class random_crystal_1D():
                                 point = np.random.random(3)
                                 for a in range(1, 4):
                                     if a not in self.PBC:
-                                        point[a-1] -= 0.5
+                                        if self.number < 46:
+                                            point[a-1] -= 0.5
+                                        elif self.number >= 46:
+                                            point[a-1] *= 1./sqrt(3.)
                                 coords = np.array([op.operate(point) for op in ops])
                                 coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
