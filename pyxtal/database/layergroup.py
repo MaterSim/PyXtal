@@ -125,6 +125,13 @@ class Layergroup:
             print('Error:   unable to find the layer group, check your input: ', self.input)
 
     def print_all(self):
+        """
+        Prints information about the layer group: layer group number, layer group symbol,
+        space group number, permutation information
+
+        Returns:
+            Nothing
+        """
         if self.error is False:
             print('Layer group number: ', self.lg)
             print('Layer group symbol: ', self.symbol)
