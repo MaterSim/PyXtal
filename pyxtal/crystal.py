@@ -38,13 +38,15 @@ of the module:
     outdir (-o): the file directory where cif files will be output to.
         Defaults to "out"
 
-    dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using
-        a layer group number instead of a space group number.  
+    dimension (-d): 3 for 3D, or 2 for 2D, 1 for 1D. If 2D, generates a 2D
+        crystal using a layer group number instead of a space group number. For
+        1D, we use a Rod group number.  
 
     thickness (-t): The thickness, in Angstroms, to use when generating a
         2D crystal. Note that this will not necessarily be one of the lattice
         vectors, but will represent the perpendicular distance along the non-
-        periodic direction. Defaults to 2.0    
+        periodic direction. For 1D crystals, we use this value
+        as the cross-sectional area of the crystal. Defaults to None  
 """
 
 import sys
@@ -90,8 +92,7 @@ max1 = 30 #Attempts for generating lattices
 max2 = 30 #Attempts for a given lattice
 max3 = 30 #Attempts for a given Wyckoff position
 minvec = 2.0 #minimum vector length
-ang_min = 30
-ang_max = 150
+#Matrix for a Euclidean metric
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 
 wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
@@ -229,6 +230,18 @@ def jk_from_i(i, olist):
     return None
 
 def i_from_jk(j, k, olist):
+    """
+    Inverse operation of jk_from_i: gives one list index from 2
+
+    Args:
+        j, k: indices corresponding to the location of an element in the
+            organized list
+        olist: the organized list of Wyckoff positions or molecular orientations
+
+    Returns:
+        i: one index corresponding to the item's location in the
+            unorganized list    
+    """
     num = -1
     for x, a in enumerate(olist):
         for y, b in enumerate(a):
@@ -653,7 +666,20 @@ def para2matrix(cell_para, radians=True, format='lower'):
     return matrix
 
 def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
-    #TODO: add docstring
+    """
+    Adds space above and below a 2D crystal. This allows for treating the
+    structure as a 3D crystal during energy optimization
+
+    Args:
+        lattice: the lattice matrix of the crystal
+        coor: the relative coordinates of the crystal
+        vacuum: the amount of space, in Angstroms, to add above and below
+        dim: the axis (0,1,2)->(x,y,z) along which to add space
+
+    Returns:
+        lattice, coor: The transformed lattice and coordinates after the
+            vacuum space is added
+    """
     old = lattice[dim, dim]
     new = old + vacuum
     coor[:,dim] = coor[:,dim]*old/new
@@ -662,7 +688,9 @@ def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
     return lattice, coor
 
 def Permutation(lattice, coor, PB):
-    #TODO: add docstring
+    """
+    Permutes a list of coordinates. Not currently implemented.
+    """
     para = matrix2para(lattice)
     para1 = deepcopy(para)
     coor1 = deepcopy(coor)
@@ -912,6 +940,7 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
+        maxattempts: the maximum number of attempts for generating a lattice
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -991,18 +1020,23 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
 def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
-    number of atoms. If the spacegroup has centering, we will transform to
+    number of atoms. If the layer group has centering, we will use the
     conventional cell setting. If the generated lattice does not meet the
     minimum angle and vector requirements, we try to generate a new one, up to
     maxattempts times.
+    Note: The monoclinic layer groups have different unique axes. Groups 3-7
+        have unique axis c, while 8-18 have unique axis a. We use non-periodic
+        axis c for all layer groups.
 
     Args:
-        sg: International number of the space group
+        num: International number of the space group
         volume: volume of the lattice
-        thickness: 3rd-dimensional thickness of the unit cell
+        thickness: 3rd-dimensional thickness of the unit cell. If set to None,
+            a thickness is chosen automatically
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
+        maxattempts: the maximum number of attempts for generating a lattice
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1124,21 +1158,26 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
 
-def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100, unique_axis="c"):
+def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
     conventional cell setting. If the generated lattice does not meet the
     minimum angle and vector requirements, we try to generate a new one, up to
     maxattempts times.
+    Note: The monoclinic Rod groups have different unique axes. Groups 3-7
+        have unique axis a, while 8-12 have unique axis c. We use periodic
+        axis c for all Rod groups.
 
     Args:
         num: number of the Rod group
         volume: volume of the lattice
-        area: cross-sectional area of the unit cell in Angstroms squared
+        area: cross-sectional area of the unit cell in Angstroms squared. If
+            set to None, a value is chosen automatically
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
+        maxattempts: the maximum number of attempts for generating a lattice
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -2011,6 +2050,7 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
         lattice: a 3x3 matrix representing the lattice vectors of the unit cell
         factor: a tolerance factor for checking distances. A larger value means
             atoms must be farther apart
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
     
     Returns:
         True if no atoms are too close together, False if any pair is too close
@@ -2073,6 +2113,9 @@ class random_crystal():
     def Msgs(self):
         """
         Define a set of error and warning message if generation fails.
+
+        Returns:
+            nothing
         """
         self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
         self.Msg2 = 'Error: failed in the cycle of generating structures'
@@ -2477,8 +2520,6 @@ class random_crystal_1D():
         species: a list of atomic symbols for each ion type
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell)
-        length: the length, in Angstroms, of the unit cell in the
-            periodic direction
         area: the effective cross-sectional area, in Angstroms squared, of the
             unit cell
         factor: a volume factor used to generate a larger or smaller
@@ -2704,8 +2745,8 @@ if __name__ == "__main__":
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
             help="Directory for storing output cif files: default 'out'", metavar="outdir")
     parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
-            help="desired dimension: (3 or 2 for 3d or 2d, respectively)")
-    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=2.0, type=float,
+            help="desired dimension: (3, 2, or 1 for 3d, 2d, or 1D respectively)")
+    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=None, type=float,
             help="Thickness, in Angstroms, of a 2D crystal: default 2.0")
 
     (options, args) = parser.parse_args()
@@ -2720,13 +2761,14 @@ if __name__ == "__main__":
             print("Invalid layer group number. Must be between 1 and 80.")
             sys.exit(0)
     elif dimension == 1:
-        print("1d crystals cannot currently be generated. Use dimension 2 or 3.")
-        sys.exit(0)
+        if sg < 1 or sg > 75:
+            print("Invalid Rod group number. Must be between 1 and 75.")
+            sys.exit(0)
     elif dimension == 0:
-        print("0d clusters cannot currently be generated. Use dimension 2 or 3.")
+        print("0d clusters cannot currently be generated. Use dimension 1, 2, or 3.")
         sys.exit(0)
     else:
-        print("Invalid dimension. Use dimension 2 or 3.")
+        print("Invalid dimension. Use dimension 1, 2, or 3.")
         sys.exit(0)
 
     element = options.element
@@ -2762,8 +2804,13 @@ if __name__ == "__main__":
         start = time()
         if dimension == 3:
             rand_crystal = random_crystal(options.sg, system, numIons0, factor)
+            sg1 = sg
         elif dimension == 2:
             rand_crystal = random_crystal_2D(options.sg, system, numIons0, thickness, factor)
+            sg1 = rand_crystal.sg
+        elif dimension == 1:
+            rand_crystal = random_crystal_1D(options.sg, system, numIons0, thickness, factor)
+            sg1 = "?"
         end = time()
         timespent = np.around((end - start), decimals=2)
 
@@ -2785,7 +2832,7 @@ if __name__ == "__main__":
 
             #spglib style structure called cell
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
-            print('Space group  requested: ', sg, 'generated', ans)
+            print('Space group  requested:', sg1, ' generated:', ans)
             if written is True:
                 print("    Output to "+cifpath)
             else:
