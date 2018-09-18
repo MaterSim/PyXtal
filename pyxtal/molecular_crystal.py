@@ -1096,7 +1096,7 @@ class molecular_crystal_2D():
             minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice_2D(self.sg, self.volume, thickness=self.thickness, minvec=minvector)
+                cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
                 if cell_para is None:
                     break
                 else:

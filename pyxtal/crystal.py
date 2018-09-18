@@ -988,7 +988,7 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
 
-def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -1010,6 +1010,9 @@ def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6,
     """
     #Store the non-periodic axis
     PBC = 3
+    #Set the unique axis for monoclinic cells
+    if num in range(3, 8): unique_axis = "c"
+    elif num in range(8, 19): unique_axis = "a"
     maxangle = pi-minangle
     for n in range(maxattempts):
         abc = np.ones([3])
@@ -1021,7 +1024,7 @@ def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6,
         abc[PBC-1] = thickness1
         alpha, beta, gamma  = pi/2, pi/2, pi/2
         #Triclinic
-        if sg <= 2:
+        if num <= 2:
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
@@ -1039,10 +1042,17 @@ def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6,
                 abc[2] = sqrt(ab/ratio)
 
         #Monoclinic
-        elif sg <= 15:
+        elif num <= 18:
             a, b, c = random_vector()
-            beta = gaussian(minangle, maxangle)
-            x = sin(beta)
+            if unique_axis == "a":
+                alpha = gaussian(minangle, maxangle)
+                x = sin(alpha)
+            elif unique_axis == "b":
+                beta = gaussian(minangle, maxangle)
+                x = sin(beta)
+            elif unique_axis == "c":
+                gamma = gaussian(minangle, maxangle)
+                x = sin(gamma)
             ab = volume/(abc[PBC-1]*x)
             ratio = a/b
             if PBC == 3:
@@ -1056,7 +1066,7 @@ def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6,
                 abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
-        elif sg <= 74:
+        elif num <= 48:
             vec = random_vector()
             if PBC == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
@@ -1072,7 +1082,7 @@ def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6,
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
-        elif sg <= 142:
+        elif num <= 64:
             if PBC == 3:
                 abc[0] = abc[1] = sqrt(volume/thickness1)
             elif PBC == 2:
@@ -1083,7 +1093,7 @@ def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6,
                 abc[2] = volume/(abc[PBC-1]**2)
 
         #Trigonal/Rhombohedral/Hexagonal
-        elif sg <= 194:
+        elif num <= 80:
             gamma = pi/3*2
             x = sqrt(3.)/2.
             if PBC == 3:
@@ -1114,7 +1124,7 @@ def generate_lattice_2D(sg, volume, thickness=None, minvec=tol_m, minangle=pi/6,
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
 
-def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100, unique_axis="c"):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -1123,7 +1133,7 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
     maxattempts times.
 
     Args:
-        num: number of tRod group
+        num: number of the Rod group
         volume: volume of the lattice
         area: cross-sectional area of the unit cell in Angstroms squared
         minvec: minimum allowed lattice vector length (among a, b, and c)
@@ -1136,6 +1146,9 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
     """
     #Store the periodic axis
     PBC = 3
+    #Set the unique axis for monoclinic cells
+    if num in range(3, 8): unique_axis = "a"
+    elif num in range(8, 13): unique_axis = "c"
     maxangle = pi-minangle
     for n in range(maxattempts):
         abc = np.ones([3])
@@ -1167,8 +1180,15 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
         #Monoclinic
         elif num <= 12:
             a, b, c = random_vector()
-            beta = gaussian(minangle, maxangle)
-            x = sin(beta)
+            if unique_axis == "a":
+                alhpa = gaussian(minangle, maxangle)
+                x = sin(alpha)
+            elif unique_axis == "b":
+                beta = gaussian(minangle, maxangle)
+                x = sin(beta)
+            elif unique_axis == "c":
+                gamma = gaussian(minangle, maxangle)
+                x = sin(gamma)
             ab = volume/(abc[PBC-1]*x)
             ratio = a/b
             if PBC == 3:
@@ -2360,7 +2380,7 @@ class random_crystal_2D():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice_2D(self.sg, self.volume, thickness=self.thickness, minvec=minvector)
+                cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
                 if cell_para is None:
                     break
                 cell_matrix = para2matrix(cell_para)
