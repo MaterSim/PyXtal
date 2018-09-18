@@ -1009,7 +1009,7 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
         generation fails, outputs a warning message and returns empty
     """
     #Store the non-periodic axis
-    PBC = 3
+    NPA = 3
     #Set the unique axis for monoclinic cells
     if num in range(3, 8): unique_axis = "c"
     elif num in range(8, 19): unique_axis = "a"
@@ -1021,23 +1021,23 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
             thickness1 = np.cbrt(volume)*(v[0]/(v[0]*v[1]*v[2]))
         else:
             thickness1 = thickness
-        abc[PBC-1] = thickness1
+        abc[NPA-1] = thickness1
         alpha, beta, gamma  = pi/2, pi/2, pi/2
         #Triclinic
         if num <= 2:
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
-            abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
-            ab = volume/(abc[PBC-1]*x)
+            abc[NPA-1] = abc[NPA-1]/x #scale thickness by outer product of vectors
+            ab = volume/(abc[NPA-1]*x)
             ratio = a/b
-            if PBC == 3:
+            if NPA == 3:
                 abc[0] = sqrt(ab*ratio)
                 abc[1] = sqrt(ab/ratio)
-            elif PBC == 2:
+            elif NPA == 2:
                 abc[0] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
-            elif PBC == 1:
+            elif NPA == 1:
                 abc[1] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
 
@@ -1053,55 +1053,55 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
             elif unique_axis == "c":
                 gamma = gaussian(minangle, maxangle)
                 x = sin(gamma)
-            ab = volume/(abc[PBC-1]*x)
+            ab = volume/(abc[NPA-1]*x)
             ratio = a/b
-            if PBC == 3:
+            if NPA == 3:
                 abc[0] = sqrt(ab*ratio)
                 abc[1] = sqrt(ab/ratio)
-            elif PBC == 2:
+            elif NPA == 2:
                 abc[0] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
-            elif PBC == 1:
+            elif NPA == 1:
                 abc[1] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
         elif num <= 48:
             vec = random_vector()
-            if PBC == 3:
+            if NPA == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
                 abc[1] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[1]* ratio
-            elif PBC == 2:
+            elif NPA == 2:
                 ratio = abs(vec[0]/vec[2]) #ratio a/b
                 abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[2]* ratio
-            elif PBC == 1:
+            elif NPA == 1:
                 ratio = abs(vec[1]/vec[2]) #ratio a/b
                 abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
         elif num <= 64:
-            if PBC == 3:
+            if NPA == 3:
                 abc[0] = abc[1] = sqrt(volume/thickness1)
-            elif PBC == 2:
+            elif NPA == 2:
                 abc[0] = abc[1]
-                abc[2] = volume/(abc[PBC-1]**2)
-            elif PBC == 1:
+                abc[2] = volume/(abc[NPA-1]**2)
+            elif NPA == 1:
                 abc[1] = abc[0]
-                abc[2] = volume/(abc[PBC-1]**2)
+                abc[2] = volume/(abc[NPA-1]**2)
 
         #Trigonal/Rhombohedral/Hexagonal
         elif num <= 80:
             gamma = pi/3*2
             x = sqrt(3.)/2.
-            if PBC == 3:
-                abc[0] = abc[1] = sqrt((volume/x)/abc[PBC-1])
-            elif PBC == 2:
+            if NPA == 3:
+                abc[0] = abc[1] = sqrt((volume/x)/abc[NPA-1])
+            elif NPA == 2:
                 abc[0] = abc[1]
                 abc[2] = (volume/x)(thickness1**2)
-            elif PBC == 1:
+            elif NPA == 1:
                 abc[1] = abc[0]
                 abc[2] = (volume/x)/(thickness1**2)
 
@@ -1145,7 +1145,7 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
         generation fails, outputs a warning message and returns empty
     """
     #Store the periodic axis
-    PBC = 3
+    PA = 3
     #Set the unique axis for monoclinic cells
     if num in range(3, 8): unique_axis = "a"
     elif num in range(8, 13): unique_axis = "c"
@@ -1157,23 +1157,23 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
             thickness1 = np.cbrt(volume)*(v[0]/(v[0]*v[1]*v[2]))
         else:
             thickness1 = volume/area
-        abc[PBC-1] = thickness1
+        abc[PA-1] = thickness1
         alpha, beta, gamma  = pi/2, pi/2, pi/2
         #Triclinic
         if num <= 2:
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
-            abc[PBC-1] = abc[PBC-1]/x #scale thickness by outer product of vectors
-            ab = volume/(abc[PBC-1]*x)
+            abc[PA-1] = abc[PA-1]/x #scale thickness by outer product of vectors
+            ab = volume/(abc[PA-1]*x)
             ratio = a/b
-            if PBC == 3:
+            if PA == 3:
                 abc[0] = sqrt(ab*ratio)
                 abc[1] = sqrt(ab/ratio)
-            elif PBC == 2:
+            elif PA == 2:
                 abc[0] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
-            elif PBC == 1:
+            elif PA == 1:
                 abc[1] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
 
@@ -1189,55 +1189,55 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
             elif unique_axis == "c":
                 gamma = gaussian(minangle, maxangle)
                 x = sin(gamma)
-            ab = volume/(abc[PBC-1]*x)
+            ab = volume/(abc[PA-1]*x)
             ratio = a/b
-            if PBC == 3:
+            if PA == 3:
                 abc[0] = sqrt(ab*ratio)
                 abc[1] = sqrt(ab/ratio)
-            elif PBC == 2:
+            elif PA == 2:
                 abc[0] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
-            elif PBC == 1:
+            elif PA == 1:
                 abc[1] = sqrt(ab*ratio)
                 abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
         elif num <= 22:
             vec = random_vector()
-            if PBC == 3:
+            if PA == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
                 abc[1] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[1]* ratio
-            elif PBC == 2:
+            elif PA == 2:
                 ratio = abs(vec[0]/vec[2]) #ratio a/b
                 abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[2]* ratio
-            elif PBC == 1:
+            elif PA == 1:
                 ratio = abs(vec[1]/vec[2]) #ratio a/b
                 abc[2] = sqrt(volume/(thickness1*ratio))
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
         elif num <= 41:
-            if PBC == 3:
+            if PA == 3:
                 abc[0] = abc[1] = sqrt(volume/thickness1)
-            elif PBC == 2:
+            elif PA == 2:
                 abc[0] = abc[1]
-                abc[2] = volume/(abc[PBC-1]**2)
-            elif PBC == 1:
+                abc[2] = volume/(abc[PA-1]**2)
+            elif PA == 1:
                 abc[1] = abc[0]
-                abc[2] = volume/(abc[PBC-1]**2)
+                abc[2] = volume/(abc[PA-1]**2)
 
         #Trigonal/Rhombohedral/Hexagonal
         elif num <= 75:
             gamma = pi/3*2
             x = sqrt(3.)/2.
-            if PBC == 3:
-                abc[0] = abc[1] = sqrt((volume/x)/abc[PBC-1])
-            elif PBC == 2:
+            if PA == 3:
+                abc[0] = abc[1] = sqrt((volume/x)/abc[PA-1])
+            elif PA == 2:
                 abc[0] = abc[1]
                 abc[2] = (volume/x)(thickness1**2)
-            elif PBC == 1:
+            elif PA == 1:
                 abc[1] = abc[0]
                 abc[2] = (volume/x)/(thickness1**2)
 
@@ -1385,7 +1385,6 @@ def get_layer(num, organized=False):
 
     3nd index: corresponds to a SymmOp object within the Wyckoff position
 
-    #TODO: Make jk_from_i and i_from_jk compatible with layer and rod groups
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
     entry in an unorganized list, it will be the [j][k] entry in an organized
@@ -1439,7 +1438,6 @@ def get_rod(num, organized=False):
 
     3nd index: corresponds to a SymmOp object within the Wyckoff position
 
-    #TODO: Make jk_from_i and i_from_jk compatible with layer and rod groups
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
     entry in an unorganized list, it will be the [j][k] entry in an organized
@@ -2441,7 +2439,7 @@ class random_crystal_2D():
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
@@ -2661,9 +2659,7 @@ class random_crystal_1D():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
-                    #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
                     #TODO: Implement Add_vacuum for 1D lattices
-                    #final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
