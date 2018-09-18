@@ -6,8 +6,8 @@ command-line usage of the module:
 
     spacegroup (-s): the international spacegroup number (between 1 and 230)
         to be generated. In the case of a 2D crystal (using option '-d 2'),
-        this will instead be the layer group number (between 1 and 80).
-        Defaults to 36.  
+        this will instead be the layer group number (between 1 and 80). For
+        1D, this will be a Rod group number (1-75). Defaults to 36.  
 
     molecule (-e): the chemical formula of the molecule to use. For multiple
         molecule types, separate entries with commas. Ex: "C60", "H2O, CH4,
@@ -24,7 +24,7 @@ command-line usage of the module:
     factor (-f): the relative volume factor used to generate the unit cell.
         Larger values result in larger cells, with molecules spaced further
         apart. If generation fails after max attempts, consider increasing this
-        value. Defaults to 3.0  
+        value. Defaults to 1.0  
 
     verbosity (-v): the amount of information which should be printed for each
         generated structure. For 0, only prints the requested and generated
@@ -53,13 +53,16 @@ command-line usage of the module:
         properties of the mirror molecule are known and suitable for the desired
         application. Defaults to False  
 
-    dimension (-d): 3 for 3D, or 2 for 2D. If 2D, generates a 2D crystal using
-        a layer group number instead of a space group number.  
+    dimension (-d): 3 for 3D, 2 for 2D, 1 for 1D. If 2D, generates a 2D crystal
+        using a layer group number instead of a space group number. For 1D, uses
+        a Rod group number. Defaults to 3  
 
     thickness (-t): The thickness, in Angstroms, to use when generating a
         2D crystal. Note that this will not necessarily be one of the lattice
         vectors, but will represent the perpendicular distance along the non-
-        periodic direction. Defaults to 2.0  
+        periodic direction. For 1D, this value will be used for the crystal's
+        cross-sectional area. If set to None, chooses a value automatically.
+        Defaults to None  
 """
 from pyxtal.crystal import *
 from pyxtal.molecule import *
@@ -72,7 +75,7 @@ max1 = 30 #Attempts for generating lattices
 max2 = 30 #Attempts for a given lattice
 max3 = 30 #Attempts for a given Wyckoff position
 
-tol_m = 1.0
+tol_m = 1.0 #minimum distance between atoms for distance check
 
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
     """
@@ -160,7 +163,7 @@ def get_box(mol):
         if z+r > maxz: maxz = z+r
     return [minx,maxx,miny,maxy,minz,maxz]
 
-def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, factor = 1.0, PBC=[1,2,3]):
+def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, d_factor=1.0, PBC=[1,2,3]):
     """
     Check the distances between two set of molecules. The first set is generally
     larger than the second. Distances between coordinates within the first set
@@ -865,7 +868,10 @@ class molecular_crystal_2D():
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
         thickness: the thickness, in Angstroms, of the unit cell in the 3rd
-            dimension (the direction which is not repeated periodically)
+            dimension (the direction which is not repeated periodically). A
+            value of None causes a thickness to be chosen automatically. Note
+            that this constraint applies only to the molecular centers; some
+            atomic coordinates may lie outside of this range
         volume_factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
         allow_inversion: Whether or not to allow chiral molecules to be
@@ -1367,7 +1373,10 @@ class molecular_crystal_1D():
             each type of molecule
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
-        area: cross-sectional area of the unit cell in Angstroms squared
+        area: cross-sectional area of the unit cell in Angstroms squared. A
+            value of None causes an area to be chosen automatically. Note that
+            this constraint applies only to the molecular centers; some atomic
+            coordinates may lie outside of this range
         volume_factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
         allow_inversion: Whether or not to allow chiral molecules to be
@@ -1861,8 +1870,8 @@ if __name__ == "__main__":
             help="desired molecules: e.g., H2O", metavar="molecule")
     parser.add_option("-n", "--numMols", dest="numMols", default=4, 
             help="desired numbers of molecules: 4", metavar="numMols")
-    parser.add_option("-f", "--factor", dest="factor", default=3.0, type=float, 
-            help="volume factor: default 3.0", metavar="factor")
+    parser.add_option("-f", "--factor", dest="factor", default=1.0, type=float, 
+            help="volume factor: default 1.0", metavar="factor")
     parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
@@ -1873,9 +1882,9 @@ if __name__ == "__main__":
     parser.add_option("-i", "--allowinversion", dest="allowinversion", default="False", type=str, 
             help="Whether to allow inversion of chiral molecules: default False", metavar="outdir")
     parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
-            help="desired dimension: (3 or 2 for 3d or 2d, respectively)")
-    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=2.0, type=float,
-            help="Thickness, in Angstroms, of a 2D crystal: default 2.0")
+            help="desired dimension: (3 or 2 for 3d or 2d, respectively): default 3")
+    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=None, type=float,
+            help="Thickness, in Angstroms, of a 2D crystal, or area of a 1D crystal, None generates a value automatically: default None")
 
     (options, args) = parser.parse_args()    
     molecule = options.molecule
