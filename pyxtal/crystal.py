@@ -2747,7 +2747,7 @@ if __name__ == "__main__":
     parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
             help="desired dimension: (3, 2, or 1 for 3d, 2d, or 1D respectively): default 3")
     parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=None, type=float,
-            help="Thickness, in Angstroms, of a 2D crystal, None chooses a value automatically: default None")
+            help="Thickness, in Angstroms, of a 2D crystal, or area of a 1D crystal, None generates a value automatically: default None")
 
     (options, args) = parser.parse_args()
     sg = options.sg
