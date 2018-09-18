@@ -2,7 +2,7 @@
 Module for generating and analyzing transformation operations. Several functions
 for working with matrices are provided. The class OperationAnalyzer allows for
 comparison between pymatgen.core.operations.SymmOp objects, and can be used to
-identify conjugate operations. The class orientation can be used to identify
+identify conjugate operations. The orientation class can be used to identify
 degrees of freedom for molecules in Wyckoff positions with certain symmetry
 constraints.
 """
@@ -264,8 +264,7 @@ def are_equal(op1, op2, PBC=[1,2,3], rtol=1e-3, atol=1e-3):
     Args:
         op1: a SymmOp object
         op2: another SymmOp object
-        allow_pbc: if True, two ops differing only by integer translations will
-            be considered equal
+        PBC: A list of the periodic axes (1,2,3)->(x,y,z)
         rtol: the relative numerical tolerance for equivalence (passed to
             numpy.allclose)
         atol: the absolute numerical tolerance for equivalence (passed to
