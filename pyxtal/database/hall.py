@@ -246,7 +246,7 @@ def hall_from_hm(num):
     Returns:
         the Hall number
     """
-	return hall_numbers[num]
+    return hall_numbers[num]
 """
 List of Hermann-Mauguin to Hall symbol conversions:
 HM #    HM Symbol      Hall Symbol(different from wyckoff.csv)
