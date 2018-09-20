@@ -4,27 +4,18 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>pyxtal.molecule &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../',
-        VERSION:     '0.1dev',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
-  </head>
-  <body>
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -76,9 +67,9 @@
 <span class="sd">    Import a molecule from a file using OpenBabel</span>
 
 <span class="sd">        fname: the path string to the file to be opened</span>
+<span class="sd">        ftype: the file format</span>
 <span class="sd">        add_hydrogen: whether or not to insert hydrogens automatically</span>
 <span class="sd">            openbabel does not always add hydrogens automatically</span>
-<span class="sd">        ftype: the file format</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        an openbabel OBMol molecule object</span>
@@ -94,8 +85,8 @@
     <span class="c1">#Add hydrogens</span>
     <span class="k">if</span> <span class="n">add_hydrogen</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">mol</span><span class="o">.</span><span class="n">AddHydrogens</span><span class="p">()</span>
-</div>
-    <span class="k">return</span> <span class="n">mol</span>
+
+    <span class="k">return</span> <span class="n">mol</span></div>
 
 <div class="viewcode-block" id="ob_mol_from_string"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.ob_mol_from_string">[docs]</a><span class="k">def</span> <span class="nf">ob_mol_from_string</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">ftype</span><span class="o">=</span><span class="s2">&quot;smi&quot;</span><span class="p">,</span> <span class="n">add_hydrogen</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -121,8 +112,11 @@
     <span class="c1">#Add hydrogens</span>
     <span class="k">if</span> <span class="n">add_hydrogen</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">mol</span><span class="o">.</span><span class="n">AddHydrogens</span><span class="p">()</span>
-</div>
-    <span class="k">return</span> <span class="n">mol</span>
+
+    <span class="c1">#TODO: Set atomic coordinates using force field optimization</span>
+    <span class="c1">#Currently, all coordinates default to (0,0,0)</span>
+
+    <span class="k">return</span> <span class="n">mol</span></div>
 
 <div class="viewcode-block" id="pmg_from_ob"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.pmg_from_ob">[docs]</a><span class="k">def</span> <span class="nf">pmg_from_ob</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -144,8 +138,8 @@
         <span class="n">positions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="n">a</span><span class="o">.</span><span class="n">y</span><span class="p">(),</span> <span class="n">a</span><span class="o">.</span><span class="n">z</span><span class="p">()])</span> <span class="p">)</span>
         <span class="c1">#Atomic Number</span>
         <span class="n">nums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">a</span><span class="o">.</span><span class="n">GetAtomicNum</span><span class="p">()</span> <span class="p">)</span>
-</div>
-    <span class="k">return</span> <span class="n">Molecule</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Molecule</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="get_inertia_tensor"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_inertia_tensor">[docs]</a><span class="k">def</span> <span class="nf">get_inertia_tensor</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -171,8 +165,8 @@
         <span class="n">I13</span> <span class="o">+=</span> <span class="o">-</span><span class="n">m</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="n">z</span>
         <span class="n">I23</span> <span class="o">+=</span> <span class="o">-</span><span class="n">m</span> <span class="o">*</span> <span class="n">y</span> <span class="o">*</span> <span class="n">z</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">I11</span><span class="p">,</span> <span class="n">I12</span><span class="p">,</span> <span class="n">I13</span><span class="p">],</span>
-                  <span class="p">[</span><span class="n">I12</span><span class="p">,</span> <span class="n">I22</span><span class="p">,</span> <span class="n">I23</span><span class="p">],</span></div>
-                  <span class="p">[</span><span class="n">I13</span><span class="p">,</span> <span class="n">I23</span><span class="p">,</span> <span class="n">I33</span><span class="p">]])</span>
+                  <span class="p">[</span><span class="n">I12</span><span class="p">,</span> <span class="n">I22</span><span class="p">,</span> <span class="n">I23</span><span class="p">],</span>
+                  <span class="p">[</span><span class="n">I13</span><span class="p">,</span> <span class="n">I23</span><span class="p">,</span> <span class="n">I33</span><span class="p">]])</span></div>
 
 <div class="viewcode-block" id="get_moment_of_inertia"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_moment_of_inertia">[docs]</a><span class="k">def</span> <span class="nf">get_moment_of_inertia</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -191,8 +185,8 @@
     <span class="n">moment</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
         <span class="n">v</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">coords</span>
-        <span class="n">moment</span> <span class="o">+=</span> <span class="p">(</span><span class="n">scale</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span> <span class="p">)</span> <span class="o">**</span> <span class="mi">2</span></div>
-    <span class="k">return</span> <span class="n">moment</span>
+        <span class="n">moment</span> <span class="o">+=</span> <span class="p">(</span><span class="n">scale</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span> <span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">moment</span></div>
 
 <div class="viewcode-block" id="reoriented_molecule"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.reoriented_molecule">[docs]</a><span class="k">def</span> <span class="nf">reoriented_molecule</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -251,8 +245,8 @@
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Could not reorient molecule after &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">max_iterations</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; attempts&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">new_mol</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">get_inertia_tensor</span><span class="p">(</span><span class="n">new_mol</span><span class="p">))</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
-    <span class="k">return</span> <span class="n">new_mol</span><span class="p">,</span> <span class="n">P</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="n">new_mol</span><span class="p">,</span> <span class="n">P</span></div>
 
 <div class="viewcode-block" id="get_symmetry"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_symmetry">[docs]</a><span class="k">def</span> <span class="nf">get_symmetry</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -316,18 +310,19 @@
         <span class="n">pg</span> <span class="o">=</span> <span class="n">pga</span><span class="o">.</span><span class="n">get_pointgroup</span><span class="p">()</span>
         <span class="n">symm_m</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">pg</span><span class="p">:</span>
-            <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span></div>
-        <span class="k">return</span> <span class="n">symm_m</span>
+            <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">symm_m</span></div>
 
-<div class="viewcode-block" id="orientation_in_wyckoff_position"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.orientation_in_wyckoff_position">[docs]</a><span class="k">def</span> <span class="nf">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="orientation_in_wyckoff_position"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.orientation_in_wyckoff_position">[docs]</a><span class="k">def</span> <span class="nf">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Tests if a molecule meets the symmetry requirements of a Wyckoff position,</span>
 <span class="sd">    and returns the valid orientations.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        mol: a Molecule object. Orientation is arbitrary</span>
-<span class="sd">        sg: the international spacegroup number</span>
+<span class="sd">        wyckoffs: an unorganized list of Wyckoff positions</span>
+<span class="sd">        w_symm_all: the site symmetry of the Wyckoff position</span>
 <span class="sd">        index: the index of the Wyckoff position within the sg to check</span>
 <span class="sd">        randomize: whether or not to apply a random rotation consistent with</span>
 <span class="sd">            the symmetry requirements</span>
@@ -337,6 +332,10 @@
 <span class="sd">        already_oriented: whether or not to reorient the principle axes</span>
 <span class="sd">            when calling get_symmetry. Setting to True can remove redundancy,</span>
 <span class="sd">            but is not necessary</span>
+<span class="sd">        allow_inversion: whether or not to allow chiral molecules to be</span>
+<span class="sd">            inverted. Should only be True if the chemical and biological</span>
+<span class="sd">            properties of the mirror image are known to be suitable for the</span>
+<span class="sd">            desired application</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a list of operations.Orientation objects which can be applied to the</span>
@@ -344,7 +343,7 @@
 <span class="sd">        Wyckoff position. If no orientations are found, returns False.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">#Obtain the Wyckoff symmetry</span>
-    <span class="n">symm_w</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">symm_w</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">w_symm_all</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">pga</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
 
     <span class="c1">#Check exact orientation</span>
@@ -375,10 +374,9 @@
     <span class="c1">#check if WP breaks symmetry</span>
     <span class="k">if</span> <span class="n">chiral</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">allow_inversion</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-            <span class="n">gen_pos</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">gen_pos</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: cannot place chiral molecule in spagegroup #&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">sg</span><span class="p">))</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: cannot place chiral molecule in spagegroup&quot;</span><span class="p">)</span>
                     <span class="k">return</span> <span class="kc">False</span>
     <span class="c1">#Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp</span>
     <span class="n">opa_w</span> <span class="o">=</span> <span class="p">[]</span>
@@ -430,7 +428,8 @@
                     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">c2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">):</span>
                         <span class="n">list_i</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
                         <span class="n">list_j</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
-                    <span class="k">else</span><span class="p">:</span><span class="c1"># np.isclose(np.dot(c1[0].axis, c2[0].axis), -1, rtol=.01):</span>
+                    <span class="c1">#Check if axes are symmetrically equivalent</span>
+                    <span class="k">else</span><span class="p">:</span>
                         <span class="n">cond1</span> <span class="o">=</span> <span class="kc">False</span>
                         <span class="n">cond2</span> <span class="o">=</span> <span class="kc">False</span>
                         <span class="k">for</span> <span class="n">opa</span> <span class="ow">in</span> <span class="n">opa_m</span><span class="p">:</span>
@@ -534,13 +533,13 @@
             <span class="n">op</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">mo</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
         <span class="n">mo</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="n">already_oriented</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">allowed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
     <span class="c1">#Return the array of allowed orientations. If there are none, return False</span>
     <span class="k">if</span> <span class="n">allowed</span> <span class="o">==</span> <span class="p">[]:</span>
         <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">else</span><span class="p">:</span></div>
-        <span class="k">return</span> <span class="n">allowed</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">allowed</span></div>
 
 <span class="c1">#Test Functionality</span>
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
@@ -563,16 +562,8 @@
     <span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>
 
-    <span class="n">pga</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
-    <span class="n">mol</span> <span class="o">=</span> <span class="n">pga</span><span class="o">.</span><span class="n">symmetrize_molecule</span><span class="p">()[</span><span class="s1">&#39;sym_mol&#39;</span><span class="p">]</span>    
-
-    <span class="c1">#orientation_in_wyckoff_position(mol, sg, WP&#39;s index in sg)</span>
-    <span class="c1">#returns a list of orientations consistent with the WP&#39;s symmetry.</span>
-    <span class="c1">#We can choose any of these orientations at random using np.random.choice</span>
-    <span class="c1">#To use an orientation, do mol.apply_operation(orientation)</span>
-    <span class="c1">#Spacegroup WP 24l (index 2) in sg 221 has m.. symmetry</span>
-    <span class="n">allowed</span> <span class="o">=</span>  <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="mi">221</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Found &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">allowed</span><span class="p">))</span><span class="o">+</span><span class="s2">&quot; orientations in sg 221 position 1g:&quot;</span><span class="p">)</span>
+    <span class="c1">#pga = PointGroupAnalyzer(mol)</span>
+    <span class="c1">#mol = pga.symmetrize_molecule()[&#39;sym_mol&#39;]    </span>
 </pre></div>
 
           </div>
@@ -582,12 +573,14 @@
         <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -609,7 +602,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
     </div>
   </body>
 </html>

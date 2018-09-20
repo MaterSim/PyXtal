@@ -15,5 +15,4 @@ Submodules
    pyxtal.database.element
    pyxtal.database.hall
    pyxtal.database.layergroup
-   pyxtal.database.rod
 
