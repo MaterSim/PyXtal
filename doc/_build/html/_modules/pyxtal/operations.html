@@ -40,7 +40,7 @@
 <span class="sd">Module for generating and analyzing transformation operations. Several functions</span>
 <span class="sd">for working with matrices are provided. The class OperationAnalyzer allows for</span>
 <span class="sd">comparison between pymatgen.core.operations.SymmOp objects, and can be used to</span>
-<span class="sd">identify conjugate operations. The class orientation can be used to identify</span>
+<span class="sd">identify conjugate operations. The orientation class can be used to identify</span>
 <span class="sd">degrees of freedom for molecules in Wyckoff positions with certain symmetry</span>
 <span class="sd">constraints.</span>
 <span class="sd">&quot;&quot;&quot;</span>
@@ -293,7 +293,7 @@
     <span class="n">v3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">aa2matrix</span><span class="p">(</span><span class="n">v3</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span></div>
         
-<div class="viewcode-block" id="are_equal"><a class="viewcode-back" href="../../pyxtal.operations.html#pyxtal.operations.are_equal">[docs]</a><span class="k">def</span> <span class="nf">are_equal</span><span class="p">(</span><span class="n">op1</span><span class="p">,</span> <span class="n">op2</span><span class="p">,</span> <span class="n">allow_pbc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
+<div class="viewcode-block" id="are_equal"><a class="viewcode-back" href="../../pyxtal.operations.html#pyxtal.operations.are_equal">[docs]</a><span class="k">def</span> <span class="nf">are_equal</span><span class="p">(</span><span class="n">op1</span><span class="p">,</span> <span class="n">op2</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check whether two SymmOp objects are equal up to some numerical tolerance.</span>
 <span class="sd">    Allows for optional consideration of periodic boundary conditions. This</span>
@@ -302,8 +302,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        op1: a SymmOp object</span>
 <span class="sd">        op2: another SymmOp object</span>
-<span class="sd">        allow_pbc: if True, two ops differing only by integer translations will</span>
-<span class="sd">            be considered equal</span>
+<span class="sd">        PBC: A list of the periodic axes (1,2,3)-&gt;(x,y,z)</span>
 <span class="sd">        rtol: the relative numerical tolerance for equivalence (passed to</span>
 <span class="sd">            numpy.allclose)</span>
 <span class="sd">        atol: the absolute numerical tolerance for equivalence (passed to</span>
@@ -321,17 +320,18 @@
         <span class="k">return</span> <span class="kc">False</span>
     <span class="n">v1</span> <span class="o">=</span> <span class="n">op1</span><span class="o">.</span><span class="n">translation_vector</span>
     <span class="n">v2</span> <span class="o">=</span> <span class="n">op2</span><span class="o">.</span><span class="n">translation_vector</span>
-    <span class="k">if</span> <span class="n">allow_pbc</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-        <span class="c1">#Check if translation vectors are equal</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">elif</span> <span class="n">allow_pbc</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="c1">#Check if translation vectors are equal up to integer difference</span>
-        <span class="n">difference</span> <span class="o">=</span> <span class="n">v1</span> <span class="o">-</span> <span class="n">v2</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">difference</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">difference</span><span class="p">),</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="kc">False</span></div>
+
+    <span class="n">difference</span> <span class="o">=</span> <span class="n">v2</span> <span class="o">-</span> <span class="n">v1</span>
+    
+    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
+        <span class="n">difference</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">difference</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">difference</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">rtol</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
 
 <div class="viewcode-block" id="OperationAnalyzer"><a class="viewcode-back" href="../../pyxtal.operations.html#pyxtal.operations.OperationAnalyzer">[docs]</a><span class="k">class</span> <span class="nc">OperationAnalyzer</span><span class="p">(</span><span class="n">SymmOp</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -543,7 +543,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span>
         <span class="sd">&quot;&quot;&quot;The supplied orientation (and/or inversion) matrix, converted to a</span>
 <span class="sd">        numpy array.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">degrees</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degrees</span> <span class="o">=</span> <span class="n">degrees</span>
         <span class="sd">&quot;&quot;&quot;The number of degrees of freedom.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span>
         <span class="sd">&quot;&quot;&quot;The axis (optional) about which the orientation may rotate.&quot;&quot;&quot;</span>

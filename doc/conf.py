@@ -14,9 +14,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../pyxtal/'))
-sys.path.insert(0, os.path.abspath('../pyxtal/database'))
-
+sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
@@ -25,7 +23,7 @@ copyright = '2018, Qiang Zhu, Scott Fredericks'
 author = 'Qiang Zhu, Scott Fredericks'
 
 # The short X.Y version
-version = ''
+version = '0.1dev'
 # The full version, including alpha/beta/rc tags
 release = '0.1dev'
 
@@ -45,6 +43,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -39,7 +39,7 @@
 <p>Module for generating and analyzing transformation operations. Several functions
 for working with matrices are provided. The class OperationAnalyzer allows for
 comparison between pymatgen.core.operations.SymmOp objects, and can be used to
-identify conjugate operations. The class orientation can be used to identify
+identify conjugate operations. The orientation class can be used to identify
 degrees of freedom for molecules in Wyckoff positions with certain symmetry
 constraints.</p>
 <dl class="class">
@@ -58,10 +58,14 @@ are either both inverted or both uninverted.</p>
 <dd>even order. For example, the order of (-3) is 6.</dd>
 </dl>
 <p>Note: reflections are treated as rotoinversions of order 2.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>SymmOp: a pymatgen.core.structure.SymmOp object to analyze</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>SymmOp</strong> – a pymatgen.core.structure.SymmOp object to analyze</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="pyxtal.operations.OperationAnalyzer.affine_matrix">
 <code class="descname">affine_matrix</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.OperationAnalyzer.affine_matrix" title="Permalink to this definition">¶</a></dt>
@@ -75,13 +79,21 @@ are either both inverted or both uninverted.</p>
 operation in a different reference frame). Rotations with the same order
 will not always return True. For example, a 5/12 and 1/12 rotation will
 not be considered conjugate.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>op1: a SymmOp or OperationAnalyzer object
-op2: a SymmOp or OperationAnalyzer object to compare with op1</dd>
-<dt>Returns:</dt>
-<dd>True if op2 is conjugate to op1, and False otherwise</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>op1</strong> – a SymmOp or OperationAnalyzer object</li>
+<li><strong>op2</strong> – a SymmOp or OperationAnalyzer object to compare with op1</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">True if op2 is conjugate to op1, and False otherwise</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -102,12 +114,16 @@ op2: a SymmOp or OperationAnalyzer object to compare with op1</dd>
 operation in a different reference frame). Rotations with the same order
 will not always return True. For example, a 5/12 and 1/12 rotation will
 not be considered conjugate.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>op2: a SymmOp or OperationAnalyzer object to compare with</dd>
-<dt>Returns:</dt>
-<dd>True if op2 is conjugate to self.op, and False otherwise</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>op2</strong> – a SymmOp or OperationAnalyzer object to compare with</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if op2 is conjugate to self.op, and False otherwise</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -161,59 +177,74 @@ determine the properties of the operation.</p>
 <dd><p>Given an axis and an angle, return a 3x3 rotation matrix.
 Based on:
 <a class="reference external" href="https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle">https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle</a></p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><p class="first">axis: a vector about which to perform a rotation
-angle: the angle of rotation
-radians: whether the supplied angle is in radians (True)</p>
-<blockquote>
-<div>or in degrees (False)</div></blockquote>
-<dl class="last docutils">
-<dt>random: whether or not to choose a random rotation matrix. If True, the</dt>
-<dd>axis and angle are ignored, and a random orientation is generated</dd>
-</dl>
-</dd>
-<dt>Returns:</dt>
-<dd>a 3x3 numpy array representing a rotation matrix</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>axis</strong> – a vector about which to perform a rotation</li>
+<li><strong>angle</strong> – the angle of rotation</li>
+<li><strong>radians</strong> – whether the supplied angle is in radians (True)
+or in degrees (False)</li>
+<li><strong>random</strong> – whether or not to choose a random rotation matrix. If True, the
+axis and angle are ignored, and a random orientation is generated</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3x3 numpy array representing a rotation matrix</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="pyxtal.operations.angle">
 <code class="descclassname">pyxtal.operations.</code><code class="descname">angle</code><span class="sig-paren">(</span><em>v1</em>, <em>v2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#angle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the angle (in radians) between two vectors.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>v1: a 1x3 vector
-v2: a 1x3 vector</dd>
-<dt>Returns:</dt>
-<dd>the angle in radians between the two vectors</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>v1</strong> – a 1x3 vector</li>
+<li><strong>v2</strong> – a 1x3 vector</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the angle in radians between the two vectors</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="pyxtal.operations.are_equal">
-<code class="descclassname">pyxtal.operations.</code><code class="descname">are_equal</code><span class="sig-paren">(</span><em>op1</em>, <em>op2</em>, <em>allow_pbc=True</em>, <em>rtol=0.001</em>, <em>atol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#are_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.are_equal" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.operations.</code><code class="descname">are_equal</code><span class="sig-paren">(</span><em>op1, op2, PBC=[1, 2, 3], rtol=0.001, atol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#are_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.are_equal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check whether two SymmOp objects are equal up to some numerical tolerance.
 Allows for optional consideration of periodic boundary conditions. This
 option is useful for handling the periodicity of crystals.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><p class="first">op1: a SymmOp object
-op2: another SymmOp object
-allow_pbc: if True, two ops differing only by integer translations will</p>
-<blockquote>
-<div>be considered equal</div></blockquote>
-<dl class="last docutils">
-<dt>rtol: the relative numerical tolerance for equivalence (passed to</dt>
-<dd>numpy.allclose)</dd>
-<dt>atol: the absolute numerical tolerance for equivalence (passed to</dt>
-<dd>numpy.allclose)</dd>
-</dl>
-</dd>
-<dt>Returns:</dt>
-<dd>True if op1 and op2 are equivalent, False otherwise</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>op1</strong> – a SymmOp object</li>
+<li><strong>op2</strong> – another SymmOp object</li>
+<li><strong>PBC</strong> – A list of the periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>rtol</strong> – the relative numerical tolerance for equivalence (passed to
+numpy.allclose)</li>
+<li><strong>atol</strong> – the absolute numerical tolerance for equivalence (passed to
+numpy.allclose)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">True if op1 and op2 are equivalent, False otherwise</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -221,13 +252,21 @@ allow_pbc: if True, two ops differing only by integer translations will</p>
 <code class="descclassname">pyxtal.operations.</code><code class="descname">is_orthogonal</code><span class="sig-paren">(</span><em>m</em>, <em>tol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#is_orthogonal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.is_orthogonal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check whether or not a 3x3 matrix is orthogonal. An orthogonal matrix has
 the property that it is equal to its transpose.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>m: a 3x3 matrix (list or numpy array)
-tol: the numerical tolerance for checking if two matrices are equal</dd>
-<dt>Returns:</dt>
-<dd>True if the matrix is orthogonal, False if it is not</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>m</strong> – a 3x3 matrix (list or numpy array)</li>
+<li><strong>tol</strong> – the numerical tolerance for checking if two matrices are equal</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">True if the matrix is orthogonal, False if it is not</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -238,16 +277,25 @@ matrix with determinant 1. The axis is an eigenvector with eigenvalue 1.
 The angle is determined by the trace and the asymmetryic part of m.
 Based on:
 <a class="reference external" href="https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle">https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle</a></p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><p class="first">m: an orthogonal 3x3 matrix (list, array, or matrix) with determinant 1
-radians: whether the returned angle is in radians (True)</p>
-<blockquote class="last">
-<div>or in degrees (False)</div></blockquote>
-</dd>
-<dt>Returns:</dt>
-<dd>[axis, angle]: the axis (3-vector) and angle (in radians) of the supplied rotation matrix</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>m</strong> – an orthogonal 3x3 matrix (list, array, or matrix) with determinant 1</li>
+<li><strong>radians</strong> – whether the returned angle is in radians (True)
+or in degrees (False)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the axis (3-vector) and angle (in radians) of the supplied rotation matrix</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">[axis, angle]</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="class">
@@ -259,25 +307,25 @@ Can be stored to regenerate orientations consistent with a given constraint
 vector, without re-calling orientation_in_wyckoff_position. Allows for
 generating orientations which differ only in their rotation about a given
 axis.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><dl class="first docutils">
-<dt>matrix: a 3x3 rotation matrix describing the orientation (and/or</dt>
-<dd>inversion) to store</dd>
-</dl>
-<p>degrees: the number of degrees of freedom…</p>
-<blockquote>
-<div><p>0 - The orientation refers to a single rotation matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>matrix</strong> – a 3x3 rotation matrix describing the orientation (and/or
+inversion) to store</li>
+<li><strong>degrees</strong> – <p>the number of degrees of freedom…</p>
+<p>0 - The orientation refers to a single rotation matrix</p>
 <p>1 - The orientation can be rotated about a single axis</p>
 <p>2 - The orientation can be any pure rotation matrix</p>
-</div></blockquote>
-<dl class="last docutils">
-<dt>axis:</dt>
-<dd>an optional axis about which the orientation can rotate. Only used
-if degrees is equal to 1</dd>
-</dl>
-</dd>
-</dl>
+</li>
+<li><strong>axis</strong> – an optional axis about which the orientation can rotate. Only used
+if degrees is equal to 1</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="pyxtal.operations.orientation.axis">
 <code class="descname">axis</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.orientation.axis" title="Permalink to this definition">¶</a></dt>
@@ -296,13 +344,21 @@ if degrees is equal to 1</dd>
 <dd><p>Geneate an orientation object given a constraint axis c1, and a
 corresponding vector v1. v1 will be rotated onto c1, and the resulting
 orientation will have a rotational degree of freedom about c1.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>v1: a 1x3 vector in the original reference frame
-c1: a corresponding axis which v1 must be mapped to</dd>
-<dt>Returns:</dt>
-<dd>an orientation object consistent with the supplied constraint</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>v1</strong> – a 1x3 vector in the original reference frame</li>
+<li><strong>c1</strong> – a corresponding axis which v1 must be mapped to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an orientation object consistent with the supplied constraint</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -311,18 +367,19 @@ c1: a corresponding axis which v1 must be mapped to</dd>
 <dd><p>Generate a 3x3 rotation matrix consistent with the orientation’s
 constraints. Allows for specification of an angle (possibly random) to
 rotate about the constraint axis.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><dl class="first last docutils">
-<dt>angle: an angle to rotate about the constraint axis. If “random”,</dt>
-<dd>chooses a random rotation angle. If self.degrees==2, chooses a
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>angle</strong> – an angle to rotate about the constraint axis. If “random”,
+chooses a random rotation angle. If self.degrees==2, chooses a
 random 3d rotation matrix to multiply by. If the original matrix
-is wanted, set angle=0, or call self.matrix</dd>
-</dl>
-</dd>
-<dt>Returns:</dt>
-<dd>a 3x3 rotation (and/or inversion) matrix (numpy array)</dd>
-</dl>
+is wanted, set angle=0, or call self.matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a 3x3 rotation (and/or inversion) matrix (numpy array)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -331,18 +388,19 @@ is wanted, set angle=0, or call self.matrix</dd>
 <dd><p>Generate a SymmOp object consistent with the orientation’s
 constraints. Allows for specification of an angle (possibly random) to
 rotate about the constraint axis.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><dl class="first last docutils">
-<dt>angle: an angle to rotate about the constraint axis. If “random”,</dt>
-<dd>chooses a random rotation angle. If self.degrees==2, chooses a
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>angle</strong> – an angle to rotate about the constraint axis. If “random”,
+chooses a random rotation angle. If self.degrees==2, chooses a
 random 3d rotation matrix to multiply by. If the original matrix
-is wanted, set angle=0, or call self.matrix</dd>
-</dl>
-</dd>
-<dt>Returns:</dt>
-<dd>pymatgen.core.structure. SymmOp object</dd>
-</dl>
+is wanted, set angle=0, or call self.matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">pymatgen.core.structure. SymmOp object</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -365,17 +423,22 @@ the output of <cite>random_sample</cite> by <cite>(b-a)</cite> and add <cite>a</
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">random_sample</span><span class="p">()</span> <span class="o">+</span> <span class="n">a</span>
 </pre></div>
 </div>
-<dl class="docutils">
-<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">int or tuple of ints, optional</span></dt>
-<dd>Output shape.  If the given shape is, e.g., <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">n,</span> <span class="pre">k)</span></code>, then
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>size</strong> (<em>int</em><em> or </em><em>tuple of ints</em><em>, </em><em>optional</em>) – Output shape.  If the given shape is, e.g., <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">n,</span> <span class="pre">k)</span></code>, then
 <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span> <span class="pre">*</span> <span class="pre">k</span></code> samples are drawn.  Default is None, in which case a
-single value is returned.</dd>
-</dl>
-<dl class="docutils">
-<dt>out <span class="classifier-delimiter">:</span> <span class="classifier">float or ndarray of floats</span></dt>
-<dd>Array of random floats of shape <cite>size</cite> (unless <code class="docutils literal notranslate"><span class="pre">size=None</span></code>, in which
-case a single float is returned).</dd>
-</dl>
+single value is returned.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>out</strong> – Array of random floats of shape <cite>size</cite> (unless <code class="docutils literal notranslate"><span class="pre">size=None</span></code>, in which
+case a single float is returned).</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float or ndarray of floats</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">()</span>
 <span class="go">0.47108547995356098</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">())</span>
@@ -398,17 +461,22 @@ case a single float is returned).</dd>
 <code class="descclassname">pyxtal.operations.</code><code class="descname">random_shear_matrix</code><span class="sig-paren">(</span><em>width=1.0</em>, <em>unitary=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#random_shear_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.random_shear_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a random symmetric shear matrix with Gaussian elements. If unitary
 is True, normalize to determinant 1</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><dl class="first docutils">
-<dt>width: the width of the normal distribution to use when choosing values.</dt>
-<dd>Passed to numpy.random.normal</dd>
-</dl>
-<p class="last">unitary: whether or not to normalize the matrix to determinant 1</p>
-</dd>
-<dt>Returns:</dt>
-<dd>a 3x3 numpy array of floats</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>width</strong> – the width of the normal distribution to use when choosing values.
+Passed to numpy.random.normal</li>
+<li><strong>unitary</strong> – whether or not to normalize the matrix to determinant 1</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3x3 numpy array of floats</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -417,18 +485,24 @@ is True, normalize to determinant 1</p>
 <dd><p>Generate a random vector for lattice constant generation. The ratios between
 x, y, and z of the returned vector correspond to the ratios between a, b,
 and c. Results in a Gaussian distribution of the natural log of the ratios.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><p class="first">minvec: the bottom-left-back minimum point which can be chosen
-maxvec: the top-right-front maximum point which can be chosen
-width: the width of the normal distribution to use when choosing values.</p>
-<blockquote>
-<div>Passed to numpy.random.normal</div></blockquote>
-<p class="last">unit: whether or not to normalize the vector to determinant 1</p>
-</dd>
-<dt>Returns:</dt>
-<dd>a 1x3 numpy array of floats</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>minvec</strong> – the bottom-left-back minimum point which can be chosen</li>
+<li><strong>maxvec</strong> – the top-right-front maximum point which can be chosen</li>
+<li><strong>width</strong> – the width of the normal distribution to use when choosing values.
+Passed to numpy.random.normal</li>
+<li><strong>unit</strong> – whether or not to normalize the vector to determinant 1</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 1x3 numpy array of floats</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -436,14 +510,22 @@ width: the width of the normal distribution to use when choosing values.</p>
 <code class="descclassname">pyxtal.operations.</code><code class="descname">rotate_vector</code><span class="sig-paren">(</span><em>v1</em>, <em>v2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#rotate_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.rotate_vector" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rotates a vector v1 to v2 about an axis perpendicular to both. Returns the
 3x3 rotation matrix used to do so.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>v1: a 1x3 vector (list or array) of floats
-v2: a 1x3 vector (list or array) of floats</dd>
-<dt>Returns:</dt>
-<dd>a 3x3 matrix generated by aa2matrix, corresponding to a rotation which
-can be applied to v1 to obtain v2</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>v1</strong> – a 1x3 vector (list or array) of floats</li>
+<li><strong>v2</strong> – a 1x3 vector (list or array) of floats</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3x3 matrix generated by aa2matrix, corresponding to a rotation which
+can be applied to v1 to obtain v2</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>

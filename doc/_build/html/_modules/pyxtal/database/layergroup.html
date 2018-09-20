@@ -163,6 +163,13 @@
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error:   unable to find the layer group, check your input: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Layergroup.print_all"><a class="viewcode-back" href="../../../pyxtal.database.layergroup.html#pyxtal.database.layergroup.Layergroup.print_all">[docs]</a>    <span class="k">def</span> <span class="nf">print_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prints information about the layer group: layer group number, layer group symbol,</span>
+<span class="sd">        space group number, permutation information</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Nothing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Layer group number: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Layer group symbol: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="p">)</span>

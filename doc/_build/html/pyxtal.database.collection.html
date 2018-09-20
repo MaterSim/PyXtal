@@ -40,7 +40,8 @@
 <dt id="pyxtal.database.collection.Collection">
 <em class="property">class </em><code class="descclassname">pyxtal.database.collection.</code><code class="descname">Collection</code><span class="sig-paren">(</span><em>name='molecules'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/database/collection.html#Collection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.database.collection.Collection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Collection of molecular data.</p>
+<p>Collection of molecular data.
+Used for obtaining pymatgen objects from a small database file.</p>
 <p>Example of use:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyxtal.database.collection</span> <span class="k">import</span> <span class="n">Collection</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">test</span><span class="o">=</span><span class="n">Collection</span><span class="p">(</span><span class="s1">&#39;molecules&#39;</span><span class="p">)</span>
@@ -53,6 +54,14 @@
 <span class="go">[&#39;H2O&#39;, &#39;CH4&#39;]</span>
 </pre></div>
 </div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> – the type of collection to get. Defaults to “molecules”</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>
