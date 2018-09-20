@@ -1008,7 +1008,7 @@
     "pubchem id": 7080
   },
   {
-    "name": "Pentacene",
+    "name": "pentacene",
     "elements": [
       "C",
       "C",
@@ -1971,7 +1971,7 @@
     "pubchem id": 727
   },
   {
-    "name": "Glycine",
+    "name": "glycine",
     "elements": [
       "O",
       "O",
@@ -2040,7 +2040,7 @@
     "pubchem id": 750
   },
   {
-    "name": "Glucose",
+    "name": "glucose",
     "elements": [
       "O",
       "O",
