@@ -79,7 +79,7 @@ Note that the input number of atoms is for the primitive unit cell, while the ou
 
 The function works by attempting to insert atoms into different Wyckoff positions within the unit cell. If a set of inserted atoms is too close together, it will be merged into a lower-multiplicity position. Because each Wyckoff position can only hold a set number of atoms, not all stoichiometries will work with all space groups. In this case, the package will output a warning message, and will not attempt to generate the crystal. Even if the stoichiometry is technically compatible, some parameter sets may still be difficult or impossible to generate. If the atoms are still too close together after a set number of attempts, the generation will fail, and random_crystal.valid will be set to False.
 
-If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1 and 10 should suffice.
+If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1.0 and 3.0 should suffice.
 
 3D Atomic Crystals
 ------------------
@@ -89,13 +89,13 @@ The main function for generating and storing crystals is `crystal.random_crystal
 .. code-block:: Python
 
   from pyxtal.crystal import random_crystal
-  my_crystal = random_crystal(225, ['C'], [3], 8.0)
+  my_crystal = random_crystal(225, ['C'], [3], 1.0)
 
-This would create a crystal structure with space group 225, 3 carbon atoms in the primitive cell, and a volume factor of 8. For stoichiometries with more than one type of atom, replace [‘C’] with a list of atomic symbols, and replace [3] with a list of numbers. For example,
+This would create a crystal structure with space group 225, 3 carbon atoms in the primitive cell, and a volume factor of 1.0. For stoichiometries with more than one type of atom, replace [‘C’] with a list of atomic symbols, and replace [3] with a list of numbers. For example,
 
 .. code-block:: Python
 
-  my_crystal = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 8.0)
+  my_crystal = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.0)
 
 would create a random BaTiO3 crystal.
 
@@ -110,14 +110,14 @@ This will create a file called myfile.cif, which stores the structure informatio
 3D Molecular Crystals
 ---------------------
 
-Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with (rigid) molecules. The molecules may either be strings for the chemical composition, or `pymatgen.core.structure.Molecule <http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule>`_ objects. The generating class is `molecular_crystal.molecular_crystal <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_:
+Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with (rigid) molecules. The molecules may either be strings for the chemical composition (currently supported: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, and ROY), or `pymatgen.core.structure.Molecule <http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule>`_ objects. The generating class is `molecular_crystal.molecular_crystal <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_:
 
 .. code-block:: Python
 
   from pyxtal.molecular_crystal import molecular_crystal
-  my_crystal = molecular_crystal(36, ['H2O'], [4], 8.0)
+  my_crystal = molecular_crystal(36, ['H2O'], [4], 1.0)
 
-This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 8. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
+This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
 
 Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The molecular_crystal class handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric.
 
@@ -135,9 +135,9 @@ To generate a 2d crystal, use the class `crystal.random_crystal_2D <pyxtal.cryst
 .. code-block:: Python
 
   from pyxtal.crystal import random_crystal_2D
-  my_crystal = random_crystal_2D(20, ['C'], [4], 2.0, 2.5)
+  my_crystal = random_crystal_2D(20, ['C'], [4], 2.0, 1.0)
 
-would generate a 2d crystal with layer group 20, 4 carbon atoms in the primitive cell, a thickness of 2.0 Angstroms, and a volume factor of 2.5. As with the 3d case, for crystals with multiple atom types, you may replace [‘C’] and [4] with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. Thus, it is not recommended to store the structure in a .cif or POSCAR file without software specifically designed for handling 2d crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; a value of 1, 2, or 3 corresponds to the x, y, or z axis, respectively.
+would generate a 2d crystal with layer group 20, 4 carbon atoms in the primitive cell, a thickness of 2.0 Angstroms, and a volume factor of 1.0. As with the 3d case, for crystals with multiple atom types, you may replace [‘C’] and [4] with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. Thus, it is not recommended to store the structure in a .cif or POSCAR file without software specifically designed for handling 2d crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; a value of 1, 2, or 3 corresponds to the x, y, or z axis, respectively.
 
 Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see `the International Tables of Crystallography, Volume E, part 4 <https://it.iucr.org/Eb/ch4o1v0001/contents/>`_.
 
@@ -151,7 +151,7 @@ Note that changing the volume factor will not change the thickness of the output
 .. code-block:: Python
 
   from pyxtal.molecular_crystal import molecular_crystal_2D
-  my_crystal = molecular_crystal_2D(20, ['H2O'], [4], 2.0, 2.5)
+  my_crystal = molecular_crystal_2D(20, ['H2O'], [4], 2.0, 1.0)
 
 Here, the parameters correspond to those for `random_crystal_2D <pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D>`_, except the atoms are again replaced with molecules. The additional options available for `molecular_crystal <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_ are also available for `molecular_crystal_2D <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D>`_.
 
