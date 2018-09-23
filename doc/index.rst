@@ -3,11 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. image:: ../images/512px_type1.png
+   :height: 512 px
+   :width: 903 px
+   :scale: 35 %
+   :alt: PyXtal
+   :align: center
 
-Welcome to PyXtal’s documentation!
+Introduction
 ==================================
 
-    PyXtal is a Python library for the ab-initio generation of random crystal structures. It is made available under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible geometries, which can be output to .cif or .vasp files. The structure information can then be used in combination with various optimization methods and software, in order to determine the lowest-energy structure for a given compound. Currently, the software allows random generation of 3D, 2D, and 1D crystals. Both atomic and molecular crystals can be generated; PyXtal will automatically check molecules for their symmetry compatibility with special Wyckoff positions. The software also allows access to symmetry information, including Wyckoff positions and site symmetry for a given space group. A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. For more information about the project's development, see the GitHub page: https://github.com/qzhu2017/PyXtal
+    PyXtal (pronounced "pie-crystal") is an open source Python library for the ab-initio generation of random crystal structures. It is available for use under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible geometries, which can be output to .cif or .vasp files. The structure information can then be used in combination with various optimization methods and software, in order to determine the lowest-energy structure for a given compound. Currently, the software allows random generation of 3D, 2D, and 1D crystals. Both atomic and molecular crystals can be generated; PyXtal will automatically check molecules for their symmetry compatibility with special Wyckoff positions. The software also allows access to symmetry information, including Wyckoff positions and site symmetry for a given space group. A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. For more information about the project's development, see the GitHub page: https://github.com/qzhu2017/PyXtal
 
 Dependencies
 ============
@@ -31,7 +37,7 @@ Note that the openbabel Python bindings require swig to install:
 
 ``sudo apt-get install swig``  
 
-For other systems, you must compile the openbabel bindings yourself. There are tutorials for this on the `openbabel website
+For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the `openbabel website
 <https://openbabel.org/docs/dev/UseTheLibrary/PythonInstall.html>`_, as well as in the `pymatgen documentation
 <http://pymatgen.org/installation.html#openbabel-mac-os-x-tested-on-v2-3-2>`_.
 
@@ -51,6 +57,8 @@ This will install the module. The code can be used within Python via
 .. code-block:: Python
 
   import pyxtal
+
+The current version is 0.1dev. Expect frequent updates.
 
 Usage
 =====
@@ -195,9 +203,9 @@ Space group settings
 For the output 3D structures, PyXtal uses the conventional standard cell (the same as `Bilbao
 <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_). This means unique axis b for monoclinic cells, the obverse triple hexagonal cell for rhombohedral groups, and origin choice 2 (0,0,0) when two origin choices are available.
 
-For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and unique axis a for layer groups 8-18. When two origin choices are available, we use origin choice 1.
+For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and unique axis a for layer groups 8-18. When two origin choices are available, we use origin choice 1. We always choose c as the non-periodic axis.
 
-For 1D structures, we use unique axis a for monoclinic Rod groups 3-7, and unique axis c for Rod groups 8-12. When two settings are available for a group, we use the 1st setting.
+For 1D structures, we use unique axis a for monoclinic Rod groups 3-7, and unique axis c for Rod groups 8-12. When two settings are available for a group, we use the 1st setting. We always choose c as the periodic axis.
 
 .. toctree::
    :maxdepth: 2

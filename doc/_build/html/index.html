@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Welcome to PyXtal’s documentation! &#8212; PyXtal 0.1dev documentation</title>
+    <title>Introduction &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
@@ -34,10 +34,11 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-pyxtals-documentation">
-<h1>Welcome to PyXtal’s documentation!<a class="headerlink" href="#welcome-to-pyxtals-documentation" title="Permalink to this headline">¶</a></h1>
+  <a class="reference internal image-reference" href="_images/512px_type1.png"><img alt="PyXtal" class="align-center" src="_images/512px_type1.png" style="width: 316.04999999999995px; height: 179.2px;" /></a>
+<div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 <blockquote>
-<div>PyXtal is a Python library for the ab-initio generation of random crystal structures. It is made available under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible geometries, which can be output to .cif or .vasp files. The structure information can then be used in combination with various optimization methods and software, in order to determine the lowest-energy structure for a given compound. Currently, the software allows random generation of 3D, 2D, and 1D crystals. Both atomic and molecular crystals can be generated; PyXtal will automatically check molecules for their symmetry compatibility with special Wyckoff positions. The software also allows access to symmetry information, including Wyckoff positions and site symmetry for a given space group. A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. For more information about the project’s development, see the GitHub page: <a class="reference external" href="https://github.com/qzhu2017/PyXtal">https://github.com/qzhu2017/PyXtal</a></div></blockquote>
+<div>PyXtal (pronounced “pie-crystal”) is an open source Python library for the ab-initio generation of random crystal structures. It is available for use under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible geometries, which can be output to .cif or .vasp files. The structure information can then be used in combination with various optimization methods and software, in order to determine the lowest-energy structure for a given compound. Currently, the software allows random generation of 3D, 2D, and 1D crystals. Both atomic and molecular crystals can be generated; PyXtal will automatically check molecules for their symmetry compatibility with special Wyckoff positions. The software also allows access to symmetry information, including Wyckoff positions and site symmetry for a given space group. A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. For more information about the project’s development, see the GitHub page: <a class="reference external" href="https://github.com/qzhu2017/PyXtal">https://github.com/qzhu2017/PyXtal</a></div></blockquote>
 </div>
 <div class="section" id="dependencies">
 <h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
@@ -57,7 +58,7 @@
 <p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">openbabel</span></code></p>
 <p>Note that the openbabel Python bindings require swig to install:</p>
 <p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">swig</span></code></p>
-<p>For other systems, you must compile the openbabel bindings yourself. There are tutorials for this on the <a class="reference external" href="https://openbabel.org/docs/dev/UseTheLibrary/PythonInstall.html">openbabel website</a>, as well as in the <a class="reference external" href="http://pymatgen.org/installation.html#openbabel-mac-os-x-tested-on-v2-3-2">pymatgen documentation</a>.</p>
+<p>For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the <a class="reference external" href="https://openbabel.org/docs/dev/UseTheLibrary/PythonInstall.html">openbabel website</a>, as well as in the <a class="reference external" href="http://pymatgen.org/installation.html#openbabel-mac-os-x-tested-on-v2-3-2">pymatgen documentation</a>.</p>
 </div>
 <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
@@ -69,6 +70,7 @@
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyxtal</span>
 </pre></div>
 </div>
+<p>The current version is 0.1dev. Expect frequent updates.</p>
 </div>
 <div class="section" id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
@@ -162,8 +164,8 @@
 <div class="section" id="space-group-settings">
 <h2>Space group settings<a class="headerlink" href="#space-group-settings" title="Permalink to this headline">¶</a></h2>
 <p>For the output 3D structures, PyXtal uses the conventional standard cell (the same as <a class="reference external" href="http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice">Bilbao</a>). This means unique axis b for monoclinic cells, the obverse triple hexagonal cell for rhombohedral groups, and origin choice 2 (0,0,0) when two origin choices are available.</p>
-<p>For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and unique axis a for layer groups 8-18. When two origin choices are available, we use origin choice 1.</p>
-<p>For 1D structures, we use unique axis a for monoclinic Rod groups 3-7, and unique axis c for Rod groups 8-12. When two settings are available for a group, we use the 1st setting.</p>
+<p>For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and unique axis a for layer groups 8-18. When two origin choices are available, we use origin choice 1. We always choose c as the non-periodic axis.</p>
+<p>For 1D structures, we use unique axis a for monoclinic Rod groups 3-7, and unique axis c for Rod groups 8-12. When two settings are available for a group, we use the 1st setting. We always choose c as the periodic axis.</p>
 <div class="toctree-wrapper compound">
 </div>
 </div>
@@ -185,7 +187,7 @@
         <div class="sphinxsidebarwrapper">
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Welcome to PyXtal’s documentation!</a></li>
+<li><a class="reference internal" href="#">Introduction</a></li>
 <li><a class="reference internal" href="#dependencies">Dependencies</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#usage">Usage</a><ul>
