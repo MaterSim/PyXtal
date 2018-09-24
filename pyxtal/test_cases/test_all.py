@@ -117,7 +117,11 @@ def reset():
     failed = False
 
 #Set flags for package, module, class if error occurs
-def fail(e):
+def fail(*argv):
+    if argv != ():
+        e = argv[0]
+    else:
+        e = "Unknown error"
     global failed_package
     global failed_module
     global failed
