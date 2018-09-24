@@ -2008,23 +2008,18 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
     points = np.array(points)
     gen_pos = wyckoffs[0]
 
-<<<<<<< HEAD
     p_symm = []
     #If exact_translation is false, store WP's which might be a match
-=======
-    p_symm = frozenset([ hash(np.array(site_symm_point(x, gen_pos, PBC=PBC)).tobytes()) for x in points ])
     
     len1 = len(p_symm)
     lens2 = [len(w) for w in w_symm_all]
     lp = len(points)
 
->>>>>>> 7de6a21f371a4232e7fecbec6094c2a4720b05d4
     possible = []
     for x in points:
         p_symm.append(site_symm(x, gen_pos, PBC=PBC))
     
     for i, wp in enumerate(wyckoffs):
-<<<<<<< HEAD
         w_symm = w_symm_all[i]
         if len(p_symm) == len(w_symm) and len(wp) == len(points):
             temp = deepcopy(w_symm)
@@ -2033,13 +2028,6 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
                     if p == w:
                         temp.remove(w)
             if temp == []:
-=======
-        if len(wp) == lp and len1 >= lens2[i]:
-            #Store the Wyckoff position's site symmetry in a frozenset
-            w_set = frozenset([ hash(np.array(w).tobytes()) for w in w_symm_all[i] ])
-            #Check that the points are at least as symmetric as the WP
-            if p_symm == w_set:
->>>>>>> 7de6a21f371a4232e7fecbec6094c2a4720b05d4
                 possible.append(i)
 
     #If no matching WP's are found
