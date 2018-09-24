@@ -891,7 +891,7 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
                 for group in groups:
                     merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
-                index = check_wyckoff_position(merged, wyckoffs, w_symm_all, exact_translation=False, PBC=PBC)
+                index = check_wyckoff_position(merged, wyckoffs, w_symm_all, PBC=PBC)
                 if index is False:
                     return coor, False
                 else:
@@ -901,7 +901,7 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
                 return coor, False
         else:
             if index is None:
-                index = check_wyckoff_position(coor, wyckoffs, w_symm_all, exact_translation=False, PBC=PBC)
+                index = check_wyckoff_position(coor, wyckoffs, w_symm_all, PBC=PBC)
             return coor, index
 
 def estimate_volume(numIons, species, factor=1.0):
@@ -1976,7 +1976,7 @@ def find_generating_point(coords, generators, PBC=[1,2,3]):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False, PBC=[1,2,3]):
+def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -2005,46 +2005,24 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False
             else:
                 return True
     '''
-    
     points = np.array(points)
     gen_pos = wyckoffs[0]
 
-    '''
-    class SymmOp_fast():
-        def __init__(self, op):
-            self.affine_matrix = op.affine_matrix
-        def __hash__(self):
-            a = self.affine_matrix
-            return hash((hash(a[0][0]), hash(a[0][1]), hash(a[0][2]), hash(a[0][3]),
-                hash(a[1][0]), hash(a[1][1]), hash(a[1][2]), hash(a[1][3]),
-                hash(a[2][0]), hash(a[2][1]), hash(a[2][2]), hash(a[2][3]),
-                hash(a[3][0]), hash(a[3][1]), hash(a[3][2]), hash(a[3][3])))
-        def __eq__(self, other):
-            if hash(self) == hash(other):
-                return True
-            else:
-                return False
-    '''
-    def hash_array(a):
-        return hash((hash(a[0][0]), hash(a[0][1]), hash(a[0][2]), hash(a[0][3]),
-            hash(a[1][0]), hash(a[1][1]), hash(a[1][2]), hash(a[1][3]),
-            hash(a[2][0]), hash(a[2][1]), hash(a[2][2]), hash(a[2][3]),
-            hash(a[3][0]), hash(a[3][1]), hash(a[3][2]), hash(a[3][3])))
-
-    p_symm = frozenset([frozenset( [hash_array(y.affine_matrix) for y in site_symm_point(x, gen_pos, PBC=PBC)] ) for x in points])
-    
-    len1 = len(p_symm)
-    lens2 = [len(w) for w in w_symm_all]
-    lp = len(points)
-
+    p_symm = []
+    #If exact_translation is false, store WP's which might be a match
     possible = []
-
+    for x in points:
+        p_symm.append(site_symm(x, gen_pos, PBC=PBC))
+    
     for i, wp in enumerate(wyckoffs):
-        if len(wp) == lp and len1 >= lens2[i]:
-            #Store the Wyckoff position's site symmetry in a frozenset
-            w_set = frozenset([ frozenset([hash_array(y.affine_matrix) for y in w]) for w in w_symm_all[i] ])
-            #Check that the points are at least as symmetric as the WP
-            if p_symm == w_set:
+        w_symm = w_symm_all[i]
+        if len(p_symm) == len(w_symm) and len(wp) == len(points):
+            temp = deepcopy(w_symm)
+            for p in p_symm:
+                for w in temp:
+                    if p == w:
+                        temp.remove(w)
+            if temp == []:
                 possible.append(i)
 
     #If no matching WP's are found
