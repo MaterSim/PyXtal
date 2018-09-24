@@ -1908,6 +1908,30 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
             symmetry.append(el)
     return symmetry
 
+def site_symm_point(point, gen_pos, tol=1e-3, PBC=[1,2,3]):
+    """
+    Given a point and a general Wyckoff position, return the list of symmetry
+    operations leaving the point (coordinate or SymmOp) invariant. The returned
+    SymmOps are a subset of the general position. The site symmetry can be used
+    for determining the Wyckoff position for a set of points, or for
+    determining the valid orientations of a molecule within a given Wyckoff
+    position.
+
+    Args:
+        point: a 1x3 coordinate or SymmOp object to find the symmetry of
+        gen_pos: the general position of the spacegroup. Can be obtained using
+            get_wyckoffs(sg)[0], where sg is the desired spacegroup number
+        tol:
+            the numberical tolerance for determining equivalent positions and
+            orientations.
+        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+
+    Returns:
+        a list of SymmOp objects which leave the given point invariant
+    """
+    ops = [op for op in gen_pos if ( distance(op.operate(point)-point, Euclidean_lattice, PBC=PBC) < tol )]
+    return ops
+
 def find_generating_point(coords, generators, PBC=[1,2,3]):
     """
     Given a set of coordinates and Wyckoff generators, return the coord which
@@ -1964,61 +1988,66 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False
             get_wyckoffs, get_layer, or get_rod
         w_symm_all: a list of site symmetry operations obtained from
             get_wyckoff_symmetry, get_layer_symmetry, or get_rod_symmetry
-        exact_translation: whether we require two SymmOps to have exactly equal
-            translational components. If false, translations related by +-1
-            are considered equal. If points have been directly generated from
-            a Wyckoff position, we may set this to True. Otherwise, leave False
         PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
         a single index for the Wyckoff position within the sg. If no matching
         WP is found, returns False
     """
+    
+    '''
+    class SymmOp(SymmOp):
+        def __hash__(self):
+            return hash(self.affine_matrix)
+        def __eq__(self, other):
+            if hash(self) == hash(other):
+                return True
+            else:
+                return True
+    '''
+    
     points = np.array(points)
     gen_pos = wyckoffs[0]
 
-    new_points = []
-    if exact_translation == False:
-        new_points = filtered_coords(points, PBC=PBC)
-    else:
-        new_points = deepcopy(points)
+    '''
+    class SymmOp_fast():
+        def __init__(self, op):
+            self.affine_matrix = op.affine_matrix
+        def __hash__(self):
+            a = self.affine_matrix
+            return hash((hash(a[0][0]), hash(a[0][1]), hash(a[0][2]), hash(a[0][3]),
+                hash(a[1][0]), hash(a[1][1]), hash(a[1][2]), hash(a[1][3]),
+                hash(a[2][0]), hash(a[2][1]), hash(a[2][2]), hash(a[2][3]),
+                hash(a[3][0]), hash(a[3][1]), hash(a[3][2]), hash(a[3][3])))
+        def __eq__(self, other):
+            if hash(self) == hash(other):
+                return True
+            else:
+                return False
+    '''
+    def hash_array(a):
+        return hash((hash(a[0][0]), hash(a[0][1]), hash(a[0][2]), hash(a[0][3]),
+            hash(a[1][0]), hash(a[1][1]), hash(a[1][2]), hash(a[1][3]),
+            hash(a[2][0]), hash(a[2][1]), hash(a[2][2]), hash(a[2][3]),
+            hash(a[3][0]), hash(a[3][1]), hash(a[3][2]), hash(a[3][3])))
 
-    p_symm = []
-    #If exact_translation is false, store WP's which might be a match
-    possible = []
-    for x in new_points:
-        p_symm.append(site_symm(x, gen_pos, PBC=PBC))
+    p_symm = frozenset([frozenset( [hash_array(y.affine_matrix) for y in site_symm_point(x, gen_pos, PBC=PBC)] ) for x in points])
     
+    len1 = len(p_symm)
+    lens2 = [len(w) for w in w_symm_all]
+    lp = len(points)
+
+    possible = []
+
     for i, wp in enumerate(wyckoffs):
-        w_symm = w_symm_all[i]
-        if len(p_symm) == len(w_symm) and len(wp) == len(points):
-            temp = deepcopy(w_symm)
-            for p in p_symm:
-                for w in temp:
-                    if exact_translation:
-                        if p == w:
-                            temp.remove(w)
-                    elif not exact_translation:
-                        temp2 = deepcopy(w)
-                        for op_p in p:
-                            for op_w in w:
-                                #Check that SymmOp's are equal up to some integer translation
-                                if are_equal(op_w, op_p, PBC=PBC):
-                                    temp2.remove(op_w)
-                        if temp2 == []:
-                            temp.remove(w)
-            if temp == []:
-                #If we find a match with exact translations
-                if exact_translation:
-                    generators = wyckoffs[i]
-                    p = find_generating_point(points, generators, PBC=PBC)
-                    if p is not None:
-                        return i
-                    else:
-                        return False
-                elif not exact_translation:
-                    possible.append(i)
-        #If no matching WP's are found
+        if len(wp) == lp and len1 >= lens2[i]:
+            #Store the Wyckoff position's site symmetry in a frozenset
+            w_set = frozenset([ frozenset([hash_array(y.affine_matrix) for y in w]) for w in w_symm_all[i] ])
+            #Check that the points are at least as symmetric as the WP
+            if p_symm == w_set:
+                possible.append(i)
+
+    #If no matching WP's are found
     if len(possible) == 0:
         return False
     #If exactly one matching WP is found

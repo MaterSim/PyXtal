@@ -211,7 +211,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, d
     else:
         return True
 
-def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all, exact_translation=False, PBC=[1,2,3]):
+def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all, PBC=[1,2,3]):
     """
     Given a list of points, returns the index of the Wyckoff position within
     the spacegroup.
@@ -221,7 +221,6 @@ def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all,
         wyckoffs: a list of unorganized Wyckoff positions obtained from
             get_wyckoffs
         w_symm_all: a list of site symmetry obtained from get_wyckoff_symmetry
-        exact_translation: whether we require two SymmOps to have exactly equal
             translational components. If false, translations related by +-1 are
             considered equal
         PBC: a list of periodic axes (1,2,3)->(x,y,z)
@@ -230,17 +229,13 @@ def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all,
         a single index corresponding to the detected Wyckoff position. If no
         valid Wyckoff position is found, returns False
     """
-    index = check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=exact_translation, PBC=PBC)
+    index = check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=PBC)
     if index is not False:
-        generators = wyckoffs[index]
-        point = find_generating_point(points, generators, PBC=PBC)
-        if point is not None:
-            j, k = jk_from_i(index, orientations)
-            if orientations[j][k] != []:
-                return index
-            else:
-                return False
+        j, k = jk_from_i(index, orientations)
+        if orientations[j][k] != []:
+            return index
         else:
+            return False
             print("(Inside check_wyckoff_position_molecular)")
             print("Error: Could not generate points from Wyckoff generators")
             print("wp_index: "+str(index))
@@ -287,7 +282,7 @@ def merge_coordinate_molecular(coor, lattice, wyckoffs, w_symm_all, tol, orienta
                 for group in groups:
                     merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
-                index = check_wyckoff_position_molecular(merged, orientations, wyckoffs, w_symm_all, exact_translation=False, PBC=PBC)
+                index = check_wyckoff_position_molecular(merged, orientations, wyckoffs, w_symm_all, PBC=PBC)
                 if index is False:
                     return coor, False
                 elif index is None:
@@ -300,7 +295,7 @@ def merge_coordinate_molecular(coor, lattice, wyckoffs, w_symm_all, tol, orienta
                 return coor, False
         else:
             if index is None:
-                index = check_wyckoff_position_molecular(coor, orientations, wyckoffs, w_symm_all, exact_translation=False, PBC=PBC)
+                index = check_wyckoff_position_molecular(coor, orientations, wyckoffs, w_symm_all, PBC=PBC)
             return coor, index
 
 def choose_wyckoff_molecular(wyckoffs, number, orientations):
