@@ -2009,29 +2009,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False
     points = np.array(points)
     gen_pos = wyckoffs[0]
 
-    '''
-    class SymmOp_fast():
-        def __init__(self, op):
-            self.affine_matrix = op.affine_matrix
-        def __hash__(self):
-            a = self.affine_matrix
-            return hash((hash(a[0][0]), hash(a[0][1]), hash(a[0][2]), hash(a[0][3]),
-                hash(a[1][0]), hash(a[1][1]), hash(a[1][2]), hash(a[1][3]),
-                hash(a[2][0]), hash(a[2][1]), hash(a[2][2]), hash(a[2][3]),
-                hash(a[3][0]), hash(a[3][1]), hash(a[3][2]), hash(a[3][3])))
-        def __eq__(self, other):
-            if hash(self) == hash(other):
-                return True
-            else:
-                return False
-    '''
-    def hash_array(a):
-        return hash((hash(a[0][0]), hash(a[0][1]), hash(a[0][2]), hash(a[0][3]),
-            hash(a[1][0]), hash(a[1][1]), hash(a[1][2]), hash(a[1][3]),
-            hash(a[2][0]), hash(a[2][1]), hash(a[2][2]), hash(a[2][3]),
-            hash(a[3][0]), hash(a[3][1]), hash(a[3][2]), hash(a[3][3])))
-
-    p_symm = frozenset([frozenset( [hash_array(y.affine_matrix) for y in site_symm_point(x, gen_pos, PBC=PBC)] ) for x in points])
+    p_symm = frozenset([ hash(np.array(site_symm_point(x, gen_pos, PBC=PBC)).tobytes()) for x in points ])
     
     len1 = len(p_symm)
     lens2 = [len(w) for w in w_symm_all]
@@ -2042,7 +2020,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, exact_translation=False
     for i, wp in enumerate(wyckoffs):
         if len(wp) == lp and len1 >= lens2[i]:
             #Store the Wyckoff position's site symmetry in a frozenset
-            w_set = frozenset([ frozenset([hash_array(y.affine_matrix) for y in w]) for w in w_symm_all[i] ])
+            w_set = frozenset([ hash(np.array(w).tobytes()) for w in w_symm_all[i] ])
             #Check that the points are at least as symmetric as the WP
             if p_symm == w_set:
                 possible.append(i)
