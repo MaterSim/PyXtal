@@ -24,6 +24,16 @@ identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
 
 def mol_from_file(fname):
+    """
+    Reads a file into a pymatgen Molecule. Supported formats include xyz, gaussian,
+    and pymatgen JSON. Openbabel is optional but adds additional format options.
+    
+    Args:
+        fname: the file path string
+    
+    Returns:
+        a pymatgen Molecule object
+    """
     try:
         return Molecule.from_file(fname)
     except:
@@ -33,6 +43,16 @@ def mol_from_file(fname):
         return
 
 def mol_from_string(string, fmt)
+    """
+    Reads a string into a pymatgen Molecule. Uses the pymatgen IMolecule method from_str.
+    
+    Args:
+        string: a string containing the molecular data
+        fmt: the conversion format to use
+    
+    Returns:
+        a pymatgen Molecule object
+    """
     try:
         return Molecule.from_str(string, fmt)
     except:
@@ -40,91 +60,6 @@ def mol_from_string(string, fmt)
         print("Default supported formats are xyz, gaussian and pymatgen JSON molecules.")
         print("Installing openbabel allows for more extensions.")
         return
-
-'''
-def ob_mol_from_file(fname, ftype="xyz", add_hydrogen=True):
-    """
-    Import a molecule from a file using OpenBabel
-
-        fname: the path string to the file to be opened
-        ftype: the file format
-        add_hydrogen: whether or not to insert hydrogens automatically
-            openbabel does not always add hydrogens automatically
-
-    Returns:
-        an openbabel OBMol molecule object
-    """
-    #Set input/output format
-    obConversion = openbabel.OBConversion()
-    obConversion.SetInAndOutFormats(ftype, "mol2")
-
-    #Read the file
-    mol = openbabel.OBMol()
-    obConversion.ReadFile(mol, fname)
-
-    #Add hydrogens
-    if add_hydrogen is True:
-        mol.AddHydrogens()
-
-    return mol
-'''
-
-'''
-def ob_mol_from_string(string, ftype="smi", add_hydrogen=True):
-    """
-    Create a molecule from a string using OpenBabel
-
-    Args:
-        string: a string describing the molecule (SMILES format by default)
-        ftype: the format to use for interpreting the string
-        add_hydrogen: whether or not to insert hydrogens automatically
-            (SMILES strings do not typically show hydrogens)
-
-    Returns:
-        an openbabel OBMol molecule object
-    """
-    #Set input/output format
-    obConversion = openbabel.OBConversion()
-    obConversion.SetInAndOutFormats("smi", "mol2")
-
-    #Read the string
-    mol = openbabel.OBMol()
-    obConversion.ReadString(mol, string)
-
-    #Add hydrogens
-    if add_hydrogen is True:
-        mol.AddHydrogens()
-
-    #TODO: Set atomic coordinates using force field optimization
-    #Currently, all coordinates default to (0,0,0)
-
-    return mol
-'''
-
-'''
-def pmg_from_ob(mol):
-    """
-    Convert an openbabel molecule to Pymatgen format
-
-    Args:
-        mol: an openbabel OBMol object
-
-    Returns:
-        a pymatgen Molecule object
-    """
-    nums = []
-    positions = []
-    #Loop over atoms in the molecule
-    for i in range(mol.NumAtoms()):
-        #OBAtom object
-        a = mol.GetAtom(i+1)
-        #Position vector
-        positions.append( np.array([a.x(), a.y(), a.z()]) )
-        #Atomic Number
-        nums.append( a.GetAtomicNum() )
-
-    return Molecule(nums, positions)
-'''
 
 def get_inertia_tensor(mol):
     """
