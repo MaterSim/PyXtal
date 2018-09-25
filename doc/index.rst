@@ -40,7 +40,7 @@ Also note that the openbabel Python bindings require swig to install:
 
 ``sudo apt-get install swig``  
 
-For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the `openbabel website
+Older version of swig (before 2.0) will not work. For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the `openbabel website
 <https://openbabel.org/docs/dev/UseTheLibrary/PythonInstall.html>`_, as well as in the `pymatgen documentation
 <http://pymatgen.org/installation.html#openbabel-mac-os-x-tested-on-v2-3-2>`_.
 
