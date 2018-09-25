@@ -372,7 +372,8 @@ class molecular_crystal():
     Args:
         sg: The international spacegroup number
         molecules: a list of pymatgen.core.structure.Molecule objects for
-            each type of molecule
+            each type of molecule. Alternatively, you may supply a file path,
+            or give a string to convert (in which case fmt must be defined)
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
         volume_factor: A volume factor used to generate a larger or smaller
@@ -390,8 +391,10 @@ class molecular_crystal():
             time, but vastly improves accuracy. For approximately spherical
             molecules, or for large inter-molecular distances, this may be
             turned off
+        fmt: Optional value for the input molecule string format. Used only
+            when molecule values are strings
     """
-    def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
+    def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
         
         #Necessary input
         self.Msgs()
@@ -416,7 +419,7 @@ class molecular_crystal():
                     try:
                         mo = mol_from_file(mol)
                     except:
-                        mo = mol_from_string(mol, 'xyz')
+                        mo = mol_from_string(mol, fmt)
                 if mo is not None:
                     molecules[i] = mo
                 else:
@@ -868,7 +871,8 @@ class molecular_crystal_2D():
         number: the layer group number between 1 and 80. NOT equal to the
             international space group number, which is between 1 and 230
         molecules: a list of pymatgen.core.structure.Molecule objects for
-            each type of molecule
+            each type of molecule. Alternatively, you may supply a file path,
+            or give a string to convert (in which case fmt must be defined)
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
         thickness: the thickness, in Angstroms, of the unit cell in the 3rd
@@ -891,8 +895,10 @@ class molecular_crystal_2D():
             time, but vastly improves accuracy. For approximately spherical
             molecules, or for large inter-molecular distances, this may be
             turned off
+        fmt: Optional value for the input molecule string format. Used only
+            when molecule values are strings
     """
-    def __init__(self, number, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
+    def __init__(self, number, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
         
         #Necessary input
         self.number = number
@@ -920,7 +926,7 @@ class molecular_crystal_2D():
                     try:
                         mo = mol_from_file(mol)
                     except:
-                        mo = mol_from_string(mol, 'xyz')
+                        mo = mol_from_string(mol, fmt)
                 if mo is not None:
                     molecules[i] = mo
                 else:
@@ -1381,7 +1387,8 @@ class molecular_crystal_1D():
         number: the Rod group number between 1 and 80. NOT equal to the
             international space group number, which is between 1 and 230
         molecules: a list of pymatgen.core.structure.Molecule objects for
-            each type of molecule
+            each type of molecule. Alternatively, you may supply a file path,
+            or give a string to convert (in which case fmt must be defined)
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
         area: cross-sectional area of the unit cell in Angstroms squared. A
@@ -1403,8 +1410,10 @@ class molecular_crystal_1D():
             time, but vastly improves accuracy. For approximately spherical
             molecules, or for large inter-molecular distances, this may be
             turned off
+        fmt: Optional value for the input molecule string format. Used only
+            when molecule values are strings
     """
-    def __init__(self, number, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True):
+    def __init__(self, number, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
         
         #Necessary input
         self.number = number
@@ -1429,7 +1438,7 @@ class molecular_crystal_1D():
                     try:
                         mo = mol_from_file(mol)
                     except:
-                        mo = mol_from_string(mol, 'xyz')
+                        mo = mol_from_string(mol, fmt)
                 if mo is not None:
                     molecules[i] = mo
                 else:
