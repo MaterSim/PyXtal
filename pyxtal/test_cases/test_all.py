@@ -49,6 +49,7 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
     from pyxtal.crystal import filtered_coords
     from copy import deepcopy
     lattice = struct.lattice.matrix
+    PBC = [1,2,3]
 
     #Obtain the generators for the group
     if dim == 3:
