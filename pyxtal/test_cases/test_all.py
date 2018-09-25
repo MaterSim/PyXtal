@@ -663,11 +663,10 @@ def test_modules():
 
     print("Importing openbabel...")
     try:
-        import openbabel
+        import ase
         print("Success!")
     except:
-        print("Could not import openbabel.")
-        print("Openbabel is not necessary, but adds additional molecule file support.")
+        print("Error: could not import openbabel. Try reinstalling the package.")
 
     print("Importing pyxtal...")
     try:
@@ -1174,6 +1173,12 @@ def test_modules():
     except Exception as e:
         fail(e)
 
+    print("  ob_mol_from_string")
+    try:
+        from pyxtal.molecule import ob_mol_from_string
+    except Exception as e:
+        fail(e)
+
     if passed():
         try:
             h2o = molecule_collection['H2O']
@@ -1355,6 +1360,7 @@ if __name__ == "__main__":
         print("POSCAR files for these groups will be output to the directory " + outdir + ":")
         for struct, string in zip(outstructs, outstrings):
             fpath = outdir + "/" + string
+            struct = struct.get_sorted_structure()
             struct.to(filename=fpath, fmt="poscar")
             #CifWriter(struct, symprec=0.1).write_file(filename = fpath)
             print("  "+string)
