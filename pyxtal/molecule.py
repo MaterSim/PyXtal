@@ -42,7 +42,7 @@ def mol_from_file(fname):
         print("Installing openbabel allows for more extensions.")
         return
 
-def mol_from_string(string, fmt)
+def mol_from_string(string, fmt):
     """
     Reads a string into a pymatgen Molecule. Uses the pymatgen IMolecule method from_str.
     
