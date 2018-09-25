@@ -578,6 +578,7 @@ class molecular_crystal():
             self.valid = False
             return
         else:
+            self.numattempts = 0
             if degrees == 0:
                 max1 = 10
                 max2 = 10
@@ -628,6 +629,7 @@ class molecular_crystal():
 
                             #Now we start to add the specie to the wyckoff position
                             for cycle3 in range(max3):
+                                self.numattempts += 1
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                                 #NOTE: The molecular version return wyckoff indices, not ops
                                 indices = choose_wyckoff_molecular(self.wyckoffs_organized, numMol-numMol_added, self.valid_orientations[i])

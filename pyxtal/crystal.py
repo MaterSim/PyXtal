@@ -2005,29 +2005,42 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
             else:
                 return True
     '''
+    '''def compact(op):
+        a = op.affine_matrix
+        return hash((a[0][0], a[0][1], a[0][2], a[0][3],
+                a[1][0], a[1][1], a[1][2], a[1][3],
+                a[2][0], a[2][1], a[2][2], a[2][3]))'''
+
     points = np.array(points)
     gen_pos = wyckoffs[0]
 
-    p_symm = []
     #If exact_translation is false, store WP's which might be a match
-    
+
+    p_symm = []
+    for x in points:
+        p_symm.append(site_symm_point(x, gen_pos, PBC=PBC))
+
     len1 = len(p_symm)
-    lens2 = [len(w) for w in w_symm_all]
     lp = len(points)
 
-    possible = []
-    for x in points:
-        p_symm.append(site_symm(x, gen_pos, PBC=PBC))
-    
+    possible = []    
+
     for i, wp in enumerate(wyckoffs):
-        w_symm = w_symm_all[i]
-        if len(p_symm) == len(w_symm) and len(wp) == len(points):
-            temp = deepcopy(w_symm)
-            for p in p_symm:
-                for w in temp:
-                    if p == w:
-                        temp.remove(w)
-            if temp == []:
+        if len1 == len(w_symm_all[i]) and lp == len(wp):
+            w_symm = w_symm_all[i]
+            j_list = list(range(len(p_symm)))
+            for j, p in enumerate(p_symm):
+                #b = tuple(compact(op) for op in p)
+                found = False
+                for w in w_symm:
+                    #a = tuple(compact(op) for op in w)
+                    if hash(tuple(w)) == hash(tuple(p)):
+                        j_list.remove(j)
+                        found = True
+                        break
+                    if not found:
+                        break
+            if j_list == []:
                 possible.append(i)
 
     #If no matching WP's are found
@@ -2204,6 +2217,7 @@ class random_crystal():
                 max3 = 5
             #Calculate a minimum vector length for generating a lattice
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
+            self.numattempts = 0
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
@@ -2231,6 +2245,7 @@ class random_crystal():
 
                             #Now we start to add the specie to the wyckoff position
                             for cycle3 in range(max3):
+                                self.numattempts += 1
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                                 ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added) 
                                 if ops is not False:
