@@ -50,13 +50,18 @@
 <li><a class="reference external" href="https://pandas.pydata.org/getpandas.html">Pandas 0.20.3</a></li>
 <li><a class="reference external" href="http://pymatgen.org/#getting-pymatgen">Pymatgen 2017.9.3</a></li>
 <li><a class="reference external" href="https://atztogo.github.io/spglib/python-spglib.html#installation">SpgLib for Python 1.9.9.44</a></li>
+</ul>
+</div></blockquote>
+<p>Optional:</p>
+<blockquote>
+<div><ul class="simple">
 <li><a class="reference external" href="http://openbabel.org/wiki/Category:Installation">Openbabel 2.4.1</a></li>
 </ul>
 </div></blockquote>
-<p>Note that for openbabel, you must install the C++ pacakge before installing the Python bindings. For Debian based systems, your distribution may already have installable packages:</p>
+<p>Openbabel is not necessary, and only adds additional file format support for importing molecules. You must install the C++ pacakge before installing the Python bindings. For Debian based systems, your distribution may already have installable packages:</p>
 <p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">openbabel</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">openbabel</span></code></p>
-<p>Note that the openbabel Python bindings require swig to install:</p>
+<p>Also note that the openbabel Python bindings require swig to install:</p>
 <p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">swig</span></code></p>
 <p>For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the <a class="reference external" href="https://openbabel.org/docs/dev/UseTheLibrary/PythonInstall.html">openbabel website</a>, as well as in the <a class="reference external" href="http://pymatgen.org/installation.html#openbabel-mac-os-x-tested-on-v2-3-2">pymatgen documentation</a>.</p>
 </div>

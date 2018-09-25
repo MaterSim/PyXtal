@@ -47,7 +47,6 @@
 <span class="kn">from</span> <span class="nn">pymatgen.core.operations</span> <span class="k">import</span> <span class="n">SymmOp</span>
 <span class="kn">from</span> <span class="nn">pymatgen.symmetry.analyzer</span> <span class="k">import</span> <span class="n">PointGroupAnalyzer</span>
 <span class="kn">from</span> <span class="nn">pymatgen.symmetry.analyzer</span> <span class="k">import</span> <span class="n">generate_full_symmops</span>
-<span class="kn">import</span> <span class="nn">openbabel</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="k">import</span> <span class="n">eigh</span>
 <span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="k">import</span> <span class="n">det</span>
@@ -62,84 +61,43 @@
 <span class="n">identity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
 <span class="n">inversion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
 
-<div class="viewcode-block" id="ob_mol_from_file"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.ob_mol_from_file">[docs]</a><span class="k">def</span> <span class="nf">ob_mol_from_file</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ftype</span><span class="o">=</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">add_hydrogen</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="mol_from_file"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.mol_from_file">[docs]</a><span class="k">def</span> <span class="nf">mol_from_file</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Import a molecule from a file using OpenBabel</span>
-
-<span class="sd">        fname: the path string to the file to be opened</span>
-<span class="sd">        ftype: the file format</span>
-<span class="sd">        add_hydrogen: whether or not to insert hydrogens automatically</span>
-<span class="sd">            openbabel does not always add hydrogens automatically</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        an openbabel OBMol molecule object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1">#Set input/output format</span>
-    <span class="n">obConversion</span> <span class="o">=</span> <span class="n">openbabel</span><span class="o">.</span><span class="n">OBConversion</span><span class="p">()</span>
-    <span class="n">obConversion</span><span class="o">.</span><span class="n">SetInAndOutFormats</span><span class="p">(</span><span class="n">ftype</span><span class="p">,</span> <span class="s2">&quot;mol2&quot;</span><span class="p">)</span>
-
-    <span class="c1">#Read the file</span>
-    <span class="n">mol</span> <span class="o">=</span> <span class="n">openbabel</span><span class="o">.</span><span class="n">OBMol</span><span class="p">()</span>
-    <span class="n">obConversion</span><span class="o">.</span><span class="n">ReadFile</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
-
-    <span class="c1">#Add hydrogens</span>
-    <span class="k">if</span> <span class="n">add_hydrogen</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">mol</span><span class="o">.</span><span class="n">AddHydrogens</span><span class="p">()</span>
-
-    <span class="k">return</span> <span class="n">mol</span></div>
-
-<div class="viewcode-block" id="ob_mol_from_string"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.ob_mol_from_string">[docs]</a><span class="k">def</span> <span class="nf">ob_mol_from_string</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">ftype</span><span class="o">=</span><span class="s2">&quot;smi&quot;</span><span class="p">,</span> <span class="n">add_hydrogen</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Create a molecule from a string using OpenBabel</span>
-
+<span class="sd">    Reads a file into a pymatgen Molecule. Supported formats include xyz, gaussian,</span>
+<span class="sd">    and pymatgen JSON. Openbabel is optional but adds additional format options.</span>
+<span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        string: a string describing the molecule (SMILES format by default)</span>
-<span class="sd">        ftype: the format to use for interpreting the string</span>
-<span class="sd">        add_hydrogen: whether or not to insert hydrogens automatically</span>
-<span class="sd">            (SMILES strings do not typically show hydrogens)</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        an openbabel OBMol molecule object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1">#Set input/output format</span>
-    <span class="n">obConversion</span> <span class="o">=</span> <span class="n">openbabel</span><span class="o">.</span><span class="n">OBConversion</span><span class="p">()</span>
-    <span class="n">obConversion</span><span class="o">.</span><span class="n">SetInAndOutFormats</span><span class="p">(</span><span class="s2">&quot;smi&quot;</span><span class="p">,</span> <span class="s2">&quot;mol2&quot;</span><span class="p">)</span>
-
-    <span class="c1">#Read the string</span>
-    <span class="n">mol</span> <span class="o">=</span> <span class="n">openbabel</span><span class="o">.</span><span class="n">OBMol</span><span class="p">()</span>
-    <span class="n">obConversion</span><span class="o">.</span><span class="n">ReadString</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
-
-    <span class="c1">#Add hydrogens</span>
-    <span class="k">if</span> <span class="n">add_hydrogen</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">mol</span><span class="o">.</span><span class="n">AddHydrogens</span><span class="p">()</span>
-
-    <span class="c1">#TODO: Set atomic coordinates using force field optimization</span>
-    <span class="c1">#Currently, all coordinates default to (0,0,0)</span>
-
-    <span class="k">return</span> <span class="n">mol</span></div>
-
-<div class="viewcode-block" id="pmg_from_ob"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.pmg_from_ob">[docs]</a><span class="k">def</span> <span class="nf">pmg_from_ob</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convert an openbabel molecule to Pymatgen format</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        mol: an openbabel OBMol object</span>
-
+<span class="sd">        fname: the file path string</span>
+<span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        a pymatgen Molecule object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">nums</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">positions</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="c1">#Loop over atoms in the molecule</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">NumAtoms</span><span class="p">()):</span>
-        <span class="c1">#OBAtom object</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">GetAtom</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-        <span class="c1">#Position vector</span>
-        <span class="n">positions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="n">a</span><span class="o">.</span><span class="n">y</span><span class="p">(),</span> <span class="n">a</span><span class="o">.</span><span class="n">z</span><span class="p">()])</span> <span class="p">)</span>
-        <span class="c1">#Atomic Number</span>
-        <span class="n">nums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">a</span><span class="o">.</span><span class="n">GetAtomicNum</span><span class="p">()</span> <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Molecule</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: could not import file &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; to Molecule.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Default supported formats are xyz, gaussian and pymatgen JSON molecules.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Installing openbabel allows for more extensions.&quot;</span><span class="p">)</span>
+        <span class="k">return</span></div>
 
-    <span class="k">return</span> <span class="n">Molecule</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span></div>
+<div class="viewcode-block" id="mol_from_string"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.mol_from_string">[docs]</a><span class="k">def</span> <span class="nf">mol_from_string</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reads a string into a pymatgen Molecule. Uses the pymatgen IMolecule method from_str.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        string: a string containing the molecular data</span>
+<span class="sd">        fmt: the conversion format to use</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        a pymatgen Molecule object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Molecule</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: could not convert string &#39;&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&#39; to Molecule.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Default supported formats are xyz, gaussian and pymatgen JSON molecules.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Installing openbabel allows for more extensions.&quot;</span><span class="p">)</span>
+        <span class="k">return</span></div>
 
 <div class="viewcode-block" id="get_inertia_tensor"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_inertia_tensor">[docs]</a><span class="k">def</span> <span class="nf">get_inertia_tensor</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -544,13 +502,10 @@
 <span class="c1">#Test Functionality</span>
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
 <span class="c1">#---------------------------------------------------</span>
-    <span class="c1">#Test cases: water, methane, and c60 via pymatgen</span>
-    <span class="c1">#h2o = Molecule.from_file(&#39;xyz/water.xyz&#39;)</span>
-    <span class="c1">#pga_h2o = PointGroupAnalyzer(h2o)</span>
-    <span class="c1">#pg_h2o = pga_h2o.get_pointgroup()</span>
+    <span class="kn">from</span> <span class="nn">pyxtal.database.collection</span> <span class="k">import</span> <span class="n">Collection</span>
 
     <span class="c1">#Testing water</span>
-    <span class="n">mol</span> <span class="o">=</span> <span class="n">ob_mol_from_string</span><span class="p">(</span><span class="s2">&quot;O&quot;</span><span class="p">)</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">Collection</span><span class="p">(</span><span class="s1">&#39;molecules&#39;</span><span class="p">)[</span><span class="s1">&#39;H2O&#39;</span><span class="p">]</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original molecule:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>

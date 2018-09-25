@@ -104,43 +104,37 @@ reoriented. Can save time if True, but is not required.</li>
 </dd></dl>
 
 <dl class="function">
-<dt id="pyxtal.molecule.ob_mol_from_file">
-<code class="descclassname">pyxtal.molecule.</code><code class="descname">ob_mol_from_file</code><span class="sig-paren">(</span><em>fname</em>, <em>ftype='xyz'</em>, <em>add_hydrogen=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#ob_mol_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.ob_mol_from_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Import a molecule from a file using OpenBabel</p>
-<blockquote>
-<div><p>fname: the path string to the file to be opened
-ftype: the file format
-add_hydrogen: whether or not to insert hydrogens automatically</p>
-<blockquote>
-<div>openbabel does not always add hydrogens automatically</div></blockquote>
-</div></blockquote>
+<dt id="pyxtal.molecule.mol_from_file">
+<code class="descclassname">pyxtal.molecule.</code><code class="descname">mol_from_file</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#mol_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.mol_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a file into a pymatgen Molecule. Supported formats include xyz, gaussian,
+and pymatgen JSON. Openbabel is optional but adds additional format options.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">an openbabel OBMol molecule object</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> – the file path string</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a pymatgen Molecule object</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="function">
-<dt id="pyxtal.molecule.ob_mol_from_string">
-<code class="descclassname">pyxtal.molecule.</code><code class="descname">ob_mol_from_string</code><span class="sig-paren">(</span><em>string</em>, <em>ftype='smi'</em>, <em>add_hydrogen=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#ob_mol_from_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.ob_mol_from_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a molecule from a string using OpenBabel</p>
+<dt id="pyxtal.molecule.mol_from_string">
+<code class="descclassname">pyxtal.molecule.</code><code class="descname">mol_from_string</code><span class="sig-paren">(</span><em>string</em>, <em>fmt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#mol_from_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.mol_from_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a string into a pymatgen Molecule. Uses the pymatgen IMolecule method from_str.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>string</strong> – a string describing the molecule (SMILES format by default)</li>
-<li><strong>ftype</strong> – the format to use for interpreting the string</li>
-<li><strong>add_hydrogen</strong> – whether or not to insert hydrogens automatically
-(SMILES strings do not typically show hydrogens)</li>
+<li><strong>string</strong> – a string containing the molecular data</li>
+<li><strong>fmt</strong> – the conversion format to use</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an openbabel OBMol molecule object</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a pymatgen Molecule object</p>
 </td>
 </tr>
 </tbody>
@@ -180,22 +174,6 @@ desired application</li>
 molecule while allowing it to satisfy the symmetry requirements of the
 Wyckoff position. If no orientations are found, returns False.</p>
 </td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="pyxtal.molecule.pmg_from_ob">
-<code class="descclassname">pyxtal.molecule.</code><code class="descname">pmg_from_ob</code><span class="sig-paren">(</span><em>mol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#pmg_from_ob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.pmg_from_ob" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert an openbabel molecule to Pymatgen format</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mol</strong> – an openbabel OBMol object</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a pymatgen Molecule object</td>
 </tr>
 </tbody>
 </table>

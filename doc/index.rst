@@ -25,15 +25,18 @@ Versions indicated are those used during development. Other versions may be comp
   * `Pandas 0.20.3 <https://pandas.pydata.org/getpandas.html>`_  
   * `Pymatgen 2017.9.3 <http://pymatgen.org/#getting-pymatgen>`_  
   * `SpgLib for Python 1.9.9.44 <https://atztogo.github.io/spglib/python-spglib.html#installation>`_  
+
+Optional:
+
   * `Openbabel 2.4.1 <http://openbabel.org/wiki/Category:Installation>`_  
 
-Note that for openbabel, you must install the C++ pacakge before installing the Python bindings. For Debian based systems, your distribution may already have installable packages:
+Openbabel is not necessary, and only adds additional file format support for importing molecules. You must install the C++ pacakge before installing the Python bindings. For Debian based systems, your distribution may already have installable packages:
 
 ``sudo apt-get install openbabel``  
 
 ``pip install openbabel``
 
-Note that the openbabel Python bindings require swig to install:
+Also note that the openbabel Python bindings require swig to install:
 
 ``sudo apt-get install swig``  
 

@@ -171,7 +171,7 @@ mean atoms must be farther apart</li>
 
 <dl class="function">
 <dt id="pyxtal.crystal.check_wyckoff_position">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_wyckoff_position</code><span class="sig-paren">(</span><em>points, wyckoffs, w_symm_all, exact_translation=False, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_wyckoff_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_wyckoff_position" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_wyckoff_position</code><span class="sig-paren">(</span><em>points, wyckoffs, w_symm_all, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_wyckoff_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_wyckoff_position" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a list of points, returns a single index of a matching Wyckoff
 position in the space group. Checks the site symmetry of each supplied
 point against the site symmetry for each point in the Wyckoff position.</p>
@@ -185,10 +185,6 @@ point against the site symmetry for each point in the Wyckoff position.</p>
 get_wyckoffs, get_layer, or get_rod</li>
 <li><strong>w_symm_all</strong> – a list of site symmetry operations obtained from
 get_wyckoff_symmetry, get_layer_symmetry, or get_rod_symmetry</li>
-<li><strong>exact_translation</strong> – whether we require two SymmOps to have exactly equal
-translational components. If false, translations related by +-1
-are considered equal. If points have been directly generated from
-a Wyckoff position, we may set this to True. Otherwise, leave False</li>
 <li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
 </ul>
 </td>
@@ -1468,6 +1464,36 @@ get_wyckoffs(sg)[0], where sg is the desired spacegroup number</li>
 <li><strong>tol</strong> – the numberical tolerance for determining equivalent positions and
 orientations.</li>
 <li><strong>lattice</strong> – a 3x3 matrix representing the lattice vectors of the unit cell</li>
+<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list of SymmOp objects which leave the given point invariant</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.site_symm_point">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">site_symm_point</code><span class="sig-paren">(</span><em>point, gen_pos, tol=0.001, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#site_symm_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.site_symm_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a point and a general Wyckoff position, return the list of symmetry
+operations leaving the point (coordinate or SymmOp) invariant. The returned
+SymmOps are a subset of the general position. The site symmetry can be used
+for determining the Wyckoff position for a set of points, or for
+determining the valid orientations of a molecule within a given Wyckoff
+position.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>point</strong> – a 1x3 coordinate or SymmOp object to find the symmetry of</li>
+<li><strong>gen_pos</strong> – the general position of the spacegroup. Can be obtained using
+get_wyckoffs(sg)[0], where sg is the desired spacegroup number</li>
+<li><strong>tol</strong> – the numberical tolerance for determining equivalent positions and
+orientations.</li>
 <li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
 </ul>
 </td>

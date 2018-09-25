@@ -131,7 +131,7 @@ mean molecules must be farther apart</li>
 
 <dl class="function">
 <dt id="pyxtal.molecular_crystal.check_wyckoff_position_molecular">
-<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">check_wyckoff_position_molecular</code><span class="sig-paren">(</span><em>points, orientations, wyckoffs, w_symm_all, exact_translation=False, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#check_wyckoff_position_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.check_wyckoff_position_molecular" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">check_wyckoff_position_molecular</code><span class="sig-paren">(</span><em>points, orientations, wyckoffs, w_symm_all, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#check_wyckoff_position_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.check_wyckoff_position_molecular" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a list of points, returns the index of the Wyckoff position within
 the spacegroup.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -142,8 +142,7 @@ the spacegroup.</p>
 <li><strong>points</strong> – a list of 3d fractional coordinates or SymmOps to check</li>
 <li><strong>wyckoffs</strong> – a list of unorganized Wyckoff positions obtained from
 get_wyckoffs</li>
-<li><strong>w_symm_all</strong> – a list of site symmetry obtained from get_wyckoff_symmetry</li>
-<li><strong>exact_translation</strong> – whether we require two SymmOps to have exactly equal
+<li><strong>w_symm_all</strong> – a list of site symmetry obtained from get_wyckoff_symmetry
 translational components. If false, translations related by +-1 are
 considered equal</li>
 <li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
@@ -350,7 +349,7 @@ entire Wyckoff position, not necessarily a single molecule.</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal</code><span class="sig-paren">(</span><em>sg</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal</code><span class="sig-paren">(</span><em>sg</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing and generating molecular crystals based on symmetry
 constraints. Based on the crystal.random_crystal class for atomic crystals.
@@ -364,7 +363,8 @@ constraints. This crystal is stored as a pymatgen struct via self.struct</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>sg</strong> – The international spacegroup number</li>
 <li><strong>molecules</strong> – a list of pymatgen.core.structure.Molecule objects for
-each type of molecule</li>
+each type of molecule. Alternatively, you may supply a file path,
+or give a string to convert (in which case fmt must be defined)</li>
 <li><strong>numMols</strong> – A list of the number of each type of molecule within the
 primitive cell (NOT the conventioal cell)</li>
 <li><strong>volume_factor</strong> – A volume factor used to generate a larger or smaller
@@ -382,6 +382,8 @@ after each Wyckoff position is added. This requires slightly more
 time, but vastly improves accuracy. For approximately spherical
 molecules, or for large inter-molecular distances, this may be
 turned off</li>
+<li><strong>fmt</strong> – Optional value for the input molecule string format. Used only
+when molecule values are strings</li>
 </ul>
 </td>
 </tr>
@@ -537,7 +539,7 @@ multiplicity.</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_1D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>area</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>area</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A 1d counterpart to molecular_crystal. Given a Rod group, list of
 molecule objects, molecular stoichiometry, volume factor, and area,
@@ -551,7 +553,8 @@ The crystal is stored as a pymatgen struct via self.struct</p>
 <li><strong>number</strong> – the Rod group number between 1 and 80. NOT equal to the
 international space group number, which is between 1 and 230</li>
 <li><strong>molecules</strong> – a list of pymatgen.core.structure.Molecule objects for
-each type of molecule</li>
+each type of molecule. Alternatively, you may supply a file path,
+or give a string to convert (in which case fmt must be defined)</li>
 <li><strong>numMols</strong> – A list of the number of each type of molecule within the
 primitive cell (NOT the conventioal cell)</li>
 <li><strong>area</strong> – cross-sectional area of the unit cell in Angstroms squared. A
@@ -573,6 +576,8 @@ after each Wyckoff position is added. This requires slightly more
 time, but vastly improves accuracy. For approximately spherical
 molecules, or for large inter-molecular distances, this may be
 turned off</li>
+<li><strong>fmt</strong> – Optional value for the input molecule string format. Used only
+when molecule values are strings</li>
 </ul>
 </td>
 </tr>
@@ -741,7 +746,7 @@ multiplicity.</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_2D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A 2d counterpart to molecular_crystal. Given a layer group, list of
 molecule objects, molecular stoichiometry, and
@@ -755,7 +760,8 @@ constraints. This crystal is stored as a pymatgen struct via self.struct</p>
 <li><strong>number</strong> – the layer group number between 1 and 80. NOT equal to the
 international space group number, which is between 1 and 230</li>
 <li><strong>molecules</strong> – a list of pymatgen.core.structure.Molecule objects for
-each type of molecule</li>
+each type of molecule. Alternatively, you may supply a file path,
+or give a string to convert (in which case fmt must be defined)</li>
 <li><strong>numMols</strong> – A list of the number of each type of molecule within the
 primitive cell (NOT the conventioal cell)</li>
 <li><strong>thickness</strong> – the thickness, in Angstroms, of the unit cell in the 3rd
@@ -778,6 +784,8 @@ after each Wyckoff position is added. This requires slightly more
 time, but vastly improves accuracy. For approximately spherical
 molecules, or for large inter-molecular distances, this may be
 turned off</li>
+<li><strong>fmt</strong> – Optional value for the input molecule string format. Used only
+when molecule values are strings</li>
 </ul>
 </td>
 </tr>
