@@ -9,7 +9,6 @@ from pymatgen.core.structure import Molecule
 from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pymatgen.symmetry.analyzer import generate_full_symmops
-import openbabel
 import numpy as np
 from numpy.linalg import eigh
 from numpy.linalg import det
@@ -24,6 +23,25 @@ from pyxtal.crystal import get_wyckoff_symmetry
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
 
+def mol_from_file(fname):
+    try:
+        return Molecule.from_file(fname)
+    except:
+        print("Error: could not import file "+str(fname)+" to Molecule.")
+        print("Default supported formats are xyz, gaussian and pymatgen JSON molecules.")
+        print("Installing openbabel allows for more extensions.")
+        return
+
+def mol_from_string(string, fmt)
+    try:
+        return Molecule.from_str(string, fmt)
+    except:
+        print("Error: could not convert string '"+str(fmt)+"' to Molecule.")
+        print("Default supported formats are xyz, gaussian and pymatgen JSON molecules.")
+        print("Installing openbabel allows for more extensions.")
+        return
+
+'''
 def ob_mol_from_file(fname, ftype="xyz", add_hydrogen=True):
     """
     Import a molecule from a file using OpenBabel
@@ -49,7 +67,9 @@ def ob_mol_from_file(fname, ftype="xyz", add_hydrogen=True):
         mol.AddHydrogens()
 
     return mol
+'''
 
+'''
 def ob_mol_from_string(string, ftype="smi", add_hydrogen=True):
     """
     Create a molecule from a string using OpenBabel
@@ -79,7 +99,9 @@ def ob_mol_from_string(string, ftype="smi", add_hydrogen=True):
     #Currently, all coordinates default to (0,0,0)
 
     return mol
+'''
 
+'''
 def pmg_from_ob(mol):
     """
     Convert an openbabel molecule to Pymatgen format
@@ -102,6 +124,7 @@ def pmg_from_ob(mol):
         nums.append( a.GetAtomicNum() )
 
     return Molecule(nums, positions)
+'''
 
 def get_inertia_tensor(mol):
     """
@@ -506,13 +529,10 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
 #Test Functionality
 if __name__ == "__main__":
 #---------------------------------------------------
-    #Test cases: water, methane, and c60 via pymatgen
-    #h2o = Molecule.from_file('xyz/water.xyz')
-    #pga_h2o = PointGroupAnalyzer(h2o)
-    #pg_h2o = pga_h2o.get_pointgroup()
+    from pyxtal.database.collection import Collection
 
     #Testing water
-    mol = ob_mol_from_string("O")
+    mol = Collection('molecules')['H2O']
     print("Original molecule:")
     print(mol)
     print()

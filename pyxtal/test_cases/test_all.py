@@ -663,10 +663,11 @@ def test_modules():
 
     print("Importing openbabel...")
     try:
-        import ase
+        import openbabel
         print("Success!")
     except:
-        print("Error: could not import openbabel. Try reinstalling the package.")
+        print("Could not import openbabel.")
+        print("Openbabel is not necessary, but adds additional molecule file support.")
 
     print("Importing pyxtal...")
     try:

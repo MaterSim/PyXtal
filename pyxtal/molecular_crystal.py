@@ -409,13 +409,20 @@ class molecular_crystal():
         for i, mol in enumerate(molecules):
             if type(mol) == str:
                 #Read strings into molecules, try collection first,
-                #If string not in collection, use SMILES format
+                #If string not in collection, use pymatgen format
                 try:
                     mo = molecule_collection[mol]
                 except:
-                    mo = ob_mol_from_string(mol)
-                    mo = pmg_from_ob(mo)
-                molecules[i] = mo
+                    try:
+                        mo = mol_from_file(mol)
+                    except:
+                        mo = mol_from_string(mol, 'xyz')
+                if mo is not None:
+                    molecules[i] = mo
+                else:
+                    print("Error: Could not create molecules from given parameters.")
+                    print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
+                    print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
@@ -906,13 +913,20 @@ class molecular_crystal_2D():
         for i, mol in enumerate(molecules):
             if type(mol) == str:
                 #Read strings into molecules, try collection first,
-                #If string not in collection, use SMILES format
+                #If string not in collection, use pymatgen format
                 try:
                     mo = molecule_collection[mol]
                 except:
-                    mo = ob_mol_from_string(mol)
-                    mo = pmg_from_ob(mo)
-                molecules[i] = mo
+                    try:
+                        mo = mol_from_file(mol)
+                    except:
+                        mo = mol_from_string(mol, 'xyz')
+                if mo is not None:
+                    molecules[i] = mo
+                else:
+                    print("Error: Could not create molecules from given parameters.")
+                    print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
+                    print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
@@ -1408,13 +1422,20 @@ class molecular_crystal_1D():
         for i, mol in enumerate(molecules):
             if type(mol) == str:
                 #Read strings into molecules, try collection first,
-                #If string not in collection, use SMILES format
+                #If string not in collection, use pymatgen format
                 try:
                     mo = molecule_collection[mol]
                 except:
-                    mo = ob_mol_from_string(mol)
-                    mo = pmg_from_ob(mo)
-                molecules[i] = mo
+                    try:
+                        mo = mol_from_file(mol)
+                    except:
+                        mo = mol_from_string(mol, 'xyz')
+                if mo is not None:
+                    molecules[i] = mo
+                else:
+                    print("Error: Could not create molecules from given parameters.")
+                    print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
+                    print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
@@ -1909,11 +1930,11 @@ if __name__ == "__main__":
         strings = molecule.split(',')
         system = []
         for mol in strings:
-            system.append(ob_mol_from_string(mol))
+            system.append(mol)
         for x in number.split(','):
             numMols.append(int(x))
     else:
-        system = [ob_mol_from_string(molecule)]
+        system = [molecule]
         numMols = [int(number)]
     orientations = None
 
