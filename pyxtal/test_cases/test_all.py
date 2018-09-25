@@ -1174,12 +1174,6 @@ def test_modules():
     except Exception as e:
         fail(e)
 
-    print("  ob_mol_from_string")
-    try:
-        from pyxtal.molecule import ob_mol_from_string
-    except Exception as e:
-        fail(e)
-
     if passed():
         try:
             h2o = molecule_collection['H2O']
