@@ -1175,6 +1175,19 @@ def test_modules():
 
     check()
 
+    print("  Collections")
+    try:
+        from pyxtal.molecule import mol_from_collection
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            h2o = mol_from_collection('H2O')
+            ch4 = mol_from_collection('CH4')
+        except Exception as e:
+            fail(e)
+
     print("  get_inertia_tensor")
     try:
         from pyxtal.molecule import get_inertia_tensor

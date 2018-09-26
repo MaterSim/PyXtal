@@ -20,6 +20,8 @@ from random import choice as choose
 from pyxtal.operations import *
 from pyxtal.crystal import get_wyckoff_symmetry
 
+from pyxtal.database.collection import Collection
+
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
 
@@ -59,6 +61,22 @@ def mol_from_string(string, fmt):
         print("Error: could not convert string '"+str(fmt)+"' to Molecule.")
         print("Default supported formats are xyz, gaussian and pymatgen JSON molecules.")
         print("Installing openbabel allows for more extensions.")
+        return
+
+def mol_from_collection(mname):
+    """
+    Get a molecule from pyxtal.database.collection
+
+    Args:
+        mname: the name of the molecule
+    
+    Returns:
+        a pymatgen Molecule object
+    """
+    try:
+        return Collection('molecules')[mname]
+    except:
+        print("Could not find molecule '"+str(mname)+"' in pyxtal.database.")
         return
 
 def get_inertia_tensor(mol):
@@ -464,7 +482,6 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
 #Test Functionality
 if __name__ == "__main__":
 #---------------------------------------------------
-    from pyxtal.database.collection import Collection
 
     #Testing water
     mol = Collection('molecules')['H2O']
