@@ -225,7 +225,7 @@ def test_atomic():
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("3D_Atomic_"+str(sg)+".poscar"))
+                        outstrings.append(str("3D_Atomic_"+str(sg)+".vasp"))
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
@@ -303,7 +303,7 @@ def test_molecular():
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("3D_Molecular_"+str(sg)+".poscar"))
+                        outstrings.append(str("3D_Molecular_"+str(sg)+".vasp"))
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
@@ -382,7 +382,7 @@ def test_atomic_2D():
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("2D_Atomic_"+str(num)+".poscar"))
+                        outstrings.append(str("2D_Atomic_"+str(num)+".vasp"))
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
@@ -461,7 +461,7 @@ def test_molecular_2D():
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("2D_Molecular_"+str(num)+".poscar"))
+                        outstrings.append(str("2D_Molecular_"+str(num)+".vasp"))
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
@@ -528,7 +528,7 @@ def test_atomic_1D():
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("1D_Atomic_"+str(num)+".poscar"))
+                        outstrings.append(str("1D_Atomic_"+str(num)+".vasp"))
                 print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
@@ -595,7 +595,7 @@ def test_molecular_1D():
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("1D_Molecular_"+str(num)+".poscar"))
+                        outstrings.append(str("1D_Molecular_"+str(num)+".vasp"))
                 print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
