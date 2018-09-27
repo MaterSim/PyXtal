@@ -355,7 +355,7 @@ class mol_site():
         self.wp = wp
         """The Wyckoff position for the site"""
         self.wp_generators = wp_generators
-        """The Wyckoff pgenerators for the site"""
+        """The Wyckoff generators for the site"""
         self.multiplicity = len(wp)
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = PBC
