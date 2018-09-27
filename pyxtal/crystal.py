@@ -1953,6 +1953,8 @@ def find_generating_point(coords, generators, PBC=[1,2,3]):
         point in the Wyckoff position
      """
     for coord in coords:
+        if not np.allclose(coord, generators[0].operate(coord)):
+            continue
         tmp_c = deepcopy(coords)
         tmp_c = filtered_coords(tmp_c, PBC=PBC)
         generated = list(gen.operate(coord) for gen in generators)
@@ -2005,11 +2007,11 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
             else:
                 return True
     '''
-    '''def compact(op):
+    def compact(op):
         a = op.affine_matrix
         return hash((a[0][0], a[0][1], a[0][2], a[0][3],
                 a[1][0], a[1][1], a[1][2], a[1][3],
-                a[2][0], a[2][1], a[2][2], a[2][3]))'''
+                a[2][0], a[2][1], a[2][2], a[2][3]))
 
     points = np.array(points)
     gen_pos = wyckoffs[0]
@@ -2025,22 +2027,13 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
 
     possible = []    
 
+    a2 = frozenset(tuple(tuple(compact(op2) for op2 in p) for p in p_symm))
+
     for i, wp in enumerate(wyckoffs):
         if len1 == len(w_symm_all[i]) and lp == len(wp):
             w_symm = w_symm_all[i]
-            j_list = list(range(len(p_symm)))
-            for j, p in enumerate(p_symm):
-                #b = tuple(compact(op) for op in p)
-                found = False
-                for w in w_symm:
-                    #a = tuple(compact(op) for op in w)
-                    if hash(tuple(w)) == hash(tuple(p)):
-                        j_list.remove(j)
-                        found = True
-                        break
-                    if not found:
-                        break
-            if j_list == []:
+            a1 = frozenset(tuple(tuple(compact(op1) for op1 in w) for w in w_symm))
+            if a1 == a2:
                 possible.append(i)
 
     #If no matching WP's are found
