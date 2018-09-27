@@ -354,7 +354,7 @@ class mol_site():
         """Relative coordinates of the molecule's center within the unit cell"""
         self.wp = wp
         """The Wyckoff position for the site"""
-        self.wp = wp_generators
+        self.wp_generators = wp_generators
         """The Wyckoff pgenerators for the site"""
         self.multiplicity = len(wp)
         """The multiplicity of the molecule's Wyckoff position"""
