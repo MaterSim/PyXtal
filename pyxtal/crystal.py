@@ -549,6 +549,34 @@ def distance_matrix(points1, points2, lattice, PBC=[1,2,3], metric='euclidean'):
     all_distances = np.array([cdist(l, l2, metric) for l in m1])
     return np.apply_along_axis(np.min, 0, all_distances)
 
+def distance_matrix_euclidean(points1, points2, PBC=[1,2,3]):
+    """
+    Returns the distances between two sets of fractional coordinates.
+    Takes into account periodic boundary conditions, but assumes a Euclidean matrix.
+    
+    Args:
+        points1: a list of fractional coordinates
+        points2: another list of fractional coordinates
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
+            to x, y, and z respectively.
+
+    Returns:
+        a 2x2 np array of scalar distances
+    """
+    def f(value):
+        if value < 0.5:
+            return value
+        else:
+            return 1 - value
+    filter = np.vectorize(f)
+
+    #get displacement vectors
+    displacements = np.array([filtered_coords(points2-p, PBC=PBC) for p in points1])
+    displacements_PBC = np.array([filter(filtered_coords(points2-p, PBC=PBC)) for p in points1])
+    for a in PBC:
+        displacements[:,:,a-1] = displacements_PBC[:,:,a-1] 
+    return np.apply_along_axis(np.linalg.norm, 2, displacements)
+
 def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_factor=1.0):
     """
     Check the distances between two set of atoms. The first set is
@@ -2005,7 +2033,7 @@ def find_generating_point(coords, generators, PBC=[1,2,3]):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
+def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -2020,6 +2048,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
         w_symm_all: a list of site symmetry operations obtained from
             get_wyckoff_symmetry, get_layer_symmetry, or get_rod_symmetry
         PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        tol: the max distance between equivalent points
 
     Returns:
         index, p: index is a single index for the Wyckoff position within
@@ -2027,18 +2056,68 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
         coordinate taken from the list points. When plugged into the Wyckoff
         position, it will generate all the other points.
     """
-    
-    '''
-    class SymmOp(SymmOp):
-        def __hash__(self):
-            return hash(self.affine_matrix)
-        def __eq__(self, other):
-            if hash(self) == hash(other):
-                return True
-            else:
-                return True
-    '''
-    def compact(op):
+    #new method
+    #Store the squared distance tolerance
+    t = tol**2
+    #Loop over Wyckoff positions
+    for i, wp in enumerate(wyckoffs):
+        #Check that length of points and wp are equal
+        if len(wp) != len(points): continue
+        failed = False
+        #Check site symmetry of points
+        for p in points:
+            #Calculate distance between original and generated points
+            ps = np.array([op.operate(p) for op in w_symm_all[i][0]])
+            #ds = distance_matrix([p], ps, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
+            ds = distance_matrix_euclidean([p], ps, PBC=PBC)
+            #Check whether any generated points are too far away
+            num = (ds > tol).sum()
+            if num > 0:
+                failed = True
+                break
+        
+        if failed is True: continue
+
+        #Search for a generating point
+        for p in points:
+            failed = False
+            #Check that point works as x,y,z value for wp
+            xyz = wp[0].operate(p) - p
+            if distance(xyz, Euclidean_lattice, PBC=PBC) > tol: continue
+            #Calculate distances between original and generated points
+            pw = np.array([op.operate(p) for op in wp])
+            #dw = distance_matrix(points, pw, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
+            dw = distance_matrix_euclidean(points, pw, PBC=PBC)
+            
+            #Check each row for a zero
+            for row in dw:
+                num = (row < tol).sum()
+                if num < 1:
+                    failed = True
+                    break
+            if failed is True: continue
+            #Check each column for a zero
+            for column in dw.T:
+                num = (column < tol).sum()
+                if num < 1:
+                    failed = True
+                    break
+            if failed is True: continue
+            
+            '''z = np.where(dw < t)
+            if len(z[0]) != len(dw) or len(z[1]) != len(dw):
+                print("-----------")
+                print(dw)
+                print("xxxxxx")
+                print(z)'''
+
+            #Create a new matrix
+            
+            return i, p
+    return False, None
+
+    #old method
+    '''def compact(op):
         a = op.affine_matrix
         return hash((a[0][0], a[0][1], a[0][2], a[0][3],
                 a[1][0], a[1][1], a[1][2], a[1][3],
@@ -2087,7 +2166,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
             p = find_generating_point(points, generators, PBC=PBC)
             if p is not None:
                 return i, p
-        return False, None
+        return False, None'''
 
 def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
     """
