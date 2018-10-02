@@ -525,9 +525,8 @@ def distance(xyz, lattice, PBC=[1,2,3]):
 
 def distance_matrix(points1, points2, lattice, PBC=[1,2,3], metric='euclidean'):
     """
-    Returns the Euclidean distance from the origin for a fractional
-    displacement vector. Takes into account the lattice metric and periodic
-    boundary conditions, including up to one non-periodic axis.
+    Returns the distances between two sets of fractional coordinates.
+    Takes into account the lattice metric and periodic boundary conditions.
     
     Args:
         points1: a list of fractional coordinates
@@ -539,7 +538,7 @@ def distance_matrix(points1, points2, lattice, PBC=[1,2,3], metric='euclidean'):
             'sqeuclidean', 'minkowski', and others
 
     Returns:
-        a scalar for the distance of the point from the origin
+        a 2x2 np array of scalar distances
     """
     l1 = filtered_coords(points1, PBC=PBC)
     l2 = filtered_coords(points2, PBC=PBC)
