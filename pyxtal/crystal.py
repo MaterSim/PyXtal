@@ -521,7 +521,34 @@ def distance(xyz, lattice, PBC=[1,2,3]):
     matrix = create_matrix(PBC=PBC)
     matrix += xyz
     matrix = np.dot(matrix, lattice)
-    return np.min(cdist(matrix,[[0,0,0]]))       
+    return np.min(cdist(matrix,[[0,0,0]]))     
+
+def distance_matrix(points1, points2, lattice, PBC=[1,2,3], metric='euclidean'):
+    """
+    Returns the Euclidean distance from the origin for a fractional
+    displacement vector. Takes into account the lattice metric and periodic
+    boundary conditions, including up to one non-periodic axis.
+    
+    Args:
+        points1: a list of fractional coordinates
+        points2: another list of fractional coordinates
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
+            to x, y, and z respectively.
+        metric: the metric to use with cdist. Possible values include 'euclidean',
+            'sqeuclidean', 'minkowski', and others
+
+    Returns:
+        a scalar for the distance of the point from the origin
+    """
+    l1 = filtered_coords(points1, PBC=PBC)
+    l2 = filtered_coords(points2, PBC=PBC)
+    l2 = np.dot(l2, lattice)
+    matrix = create_matrix(PBC=PBC)
+    m1 = np.array([(l1 + v) for v in matrix])
+    m1 = np.dot(m1, lattice)
+    all_distances = np.array([cdist(l, l2, metric) for l in m1])
+    return np.apply_along_axis(np.min, 0, all_distances)
 
 def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_factor=1.0):
     """
