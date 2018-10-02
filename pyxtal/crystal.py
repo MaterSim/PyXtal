@@ -876,10 +876,11 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
             to x, y, and z respectively.
 
     Returns:
-        coor, index: (coor) is the new list of fractional coordinates after
-        merging, and index is a single index of the Wyckoff position within
-        the spacegroup. If merging is unsuccesful, or no index is found,
-        returns the original coordinates and False
+        coor, index, point: (coor) is the new list of fractional coordinates after
+        merging. index is a single index for the Wyckoff position within
+        the sg. If no matching WP is found, returns False. point is a 3-vector;
+        when plugged into the Wyckoff position, it will generate all the other
+        points.
     """
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol, PBC=PBC)
@@ -891,18 +892,18 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
                 for group in groups:
                     merged.append(get_center(coor[group], lattice, PBC=PBC))
                 merged = np.array(merged)
-                index = check_wyckoff_position(merged, wyckoffs, w_symm_all, PBC=PBC)
+                index, point = check_wyckoff_position(merged, wyckoffs, w_symm_all, PBC=PBC)
                 if index is False:
-                    return coor, False
+                    return coor, False, None
                 else:
                     coor = merged
 
             else:#no way to merge
-                return coor, False
+                return coor, False, None
         else:
             if index is None:
-                index = check_wyckoff_position(coor, wyckoffs, w_symm_all, PBC=PBC)
-            return coor, index
+                index, point = check_wyckoff_position(coor, wyckoffs, w_symm_all, PBC=PBC)
+            return coor, index, point
 
 def estimate_volume(numIons, species, factor=1.0):
     """
@@ -1983,6 +1984,8 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
     point against the site symmetry for each point in the Wyckoff position.
+    Also returns a point which can be used to generate the rest using the
+    Wyckoff position operators
 
     Args:
         points: a list of 3d coordinates or SymmOps to check
@@ -1993,8 +1996,10 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
         PBC: a list of periodic axes (1,2,3)->(x,y,z)
 
     Returns:
-        a single index for the Wyckoff position within the sg. If no matching
-        WP is found, returns False
+        index, p: index is a single index for the Wyckoff position within
+        the sg. If no matching WP is found, returns False. point is a
+        coordinate taken from the list points. When plugged into the Wyckoff
+        position, it will generate all the other points.
     """
     
     '''
@@ -2038,16 +2043,16 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
 
     #If no matching WP's are found
     if len(possible) == 0:
-        return False
+        return False, None
     #If exactly one matching WP is found
     elif len(possible) == 1:
         i = possible[0]
         generators = wyckoffs[i]
         p = find_generating_point(points, generators, PBC=PBC)
         if p is not None:
-            return i
+            return i, p
         else:
-            return False
+            return False, None
     #If multiple WP's are found
     else:
         #Check that points are generated from generators
@@ -2055,8 +2060,8 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3]):
             generators = wyckoffs[i]
             p = find_generating_point(points, generators, PBC=PBC)
             if p is not None:
-                return i
-        return False
+                return i, p
+        return False, None
 
 def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
     """
@@ -2246,7 +2251,7 @@ class random_crystal():
                                     point = np.random.random(3)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #Merge coordinates if the atoms are close
-                                    coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol)
+                                    coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol)
                                     if good_merge is not False:
                                         coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                         if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
@@ -2469,7 +2474,7 @@ class random_crystal_2D():
                                     if a not in self.PBC:
                                         point[a-1] -= 0.5
                                 coords = np.array([op.operate(point) for op in ops])
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
+                                coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
@@ -2688,7 +2693,7 @@ class random_crystal_1D():
                                         elif self.number >= 46:
                                             point[a-1] *= 1./sqrt(3.)
                                 coords = np.array([op.operate(point) for op in ops])
-                                coords_toadd, good_merge = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
+                                coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
