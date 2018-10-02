@@ -185,6 +185,7 @@ def test_atomic():
     from pyxtal.crystal import cellsize
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
+    failed = []
     print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
     skip = []#[124, 139, 166, 167, 196, 202, 203, 204, 207, 209, 210, 216, 217, 219, 220, 221, 223, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
@@ -246,9 +247,13 @@ def test_atomic():
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
+                failed.append(sg)
     if slow != []:
         print("~~~~ The following space groups took more than 60 seconds to generate:")
         for i in slow:
+            print("     "+str(i))
+        print("~~~~ The following space groups failed to generate:")
+        for i in failed:
             print("     "+str(i))
 
 def test_molecular():
@@ -262,6 +267,7 @@ def test_molecular():
     from pyxtal.molecular_crystal import molecular_crystal
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
+    failed = []
     print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
     skip = []#[24, 183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
@@ -324,9 +330,13 @@ def test_molecular():
                 print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
+                failed.append(sg)
     if slow != []:
         print("~~~~ The following space groups took more than 60 seconds to generate:")
         for i in slow:
+            print("     "+str(i))
+        print("~~~~ The following space groups failed to generate:")
+        for i in failed:
             print("     "+str(i))
 
 def test_atomic_2D():
@@ -341,6 +351,7 @@ def test_atomic_2D():
     from pyxtal.database.layergroup import Layergroup
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
+    failed = []
     print("   Layergroup   | sg # Expected |Generated (SPG)|Generated (PMG)|Time Elapsed")
     skip = []#slow to generate
     for num in range(1, 81):
@@ -403,9 +414,13 @@ def test_atomic_2D():
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
+                failed.append(num)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
+            print("     "+str(i))
+        print("~~~~ The following layer groups failed to generate:")
+        for i in failed:
             print("     "+str(i))
 
 def test_molecular_2D():
@@ -420,6 +435,7 @@ def test_molecular_2D():
     from pyxtal.database.layergroup import Layergroup
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
+    failed = []
     print("   Layergroup   | sg # Expected |Generated (SPG)|Generated (PMG)|Time Elapsed")
     skip = []#12, 64, 65, 80] #slow to generate
     for num in range(1, 81):
@@ -482,9 +498,13 @@ def test_molecular_2D():
                 print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
+                failed.append(num)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
+            print("     "+str(i))
+        print("~~~~ The following layer groups failed to generate:")
+        for i in failed:
             print("     "+str(i))
 
 def test_atomic_1D():
@@ -497,6 +517,7 @@ def test_atomic_1D():
     from pyxtal.crystal import random_crystal_1D
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
+    failed = []
     print("   Layergroup   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
     skip = []#slow to generate
     for num in range(1, 76):
@@ -549,9 +570,13 @@ def test_atomic_1D():
                 print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
+                failed.append(num)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
+            print("     "+str(i))
+        print("~~~~ The following layer groups failed to generate:")
+        for i in failed:
             print("     "+str(i))
 
 def test_molecular_1D():
@@ -564,6 +589,7 @@ def test_molecular_1D():
     from pyxtal.molecular_crystal import molecular_crystal_1D
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
+    failed = []
     print("    Rod group   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
     skip = []#slow to generate
     for num in range(1, 76):
@@ -616,9 +642,13 @@ def test_molecular_1D():
                 print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
+                failed.append(num)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
+            print("     "+str(i))
+        print("~~~~ The following layer groups failed to generate:")
+        for i in failed:
             print("     "+str(i))
 
 
