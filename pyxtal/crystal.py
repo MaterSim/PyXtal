@@ -110,36 +110,51 @@ rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generator
 
 def filtered_coords(coords, PBC=[1, 2, 3]):
     """
-    Given a list of 3d fractional coordinates or a single 3d point, transform
+    Given an array of 3d fractional coordinates or a single 3d point, transform
     all coordinates to less than 1 and greater than 0. If one axis is not
     periodic, does not transform the coordinates along that axis. For example,
     for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
     not the y axis (PBC=[1, 3]), the function would return [0.2, 1.6, 0.6].
 
     Args:
-        coords: a list or array of real 3d vectors, or a single real 3d vector
+        coords: an array of real 3d vectors. The shape does not matter
         PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
             to x, y, and z repectively
 
     Returns:
-        a new list of coordinates (or single point) with values scaled between
-        0 and 1, except for values on the non-periodic axis
+        an array of filtered coords with the same shape as coords
     """
-    coords0 = np.array(coords)
-    new_coords = coords0 - np.floor(coords0)
-    if PBC is not None:
-        if len(new_coords.shape) == 2:
-            for x in range(0, 3):
-                if x +1 not in PBC:
-                    new_coords[:,x] = coords0[:,x]
-        elif len(new_coords.shape) == 1:
-            for x in range(0, 3):
-                if x +1 not in PBC:
-                    new_coords[x] = coords0[x]
-        else:
-            print("Warning: invalid array dimensions for filtered_coords. Shape: "+str(new_coords.shape))
-            return coords
-    return new_coords
+    def filter_vector(vector):
+        for a in PBC:
+            vector[a-1] -= np.floor(vector[a-1])
+        return vector
+
+    return np.apply_along_axis(filter_vector, -1, coords)
+
+def filtered_coords_euclidean(coords, PBC=[1,2,3]):
+    """
+    Given an array of fractional 3-vectors, filters coordinates to between 0 and
+    1. Then, values which are greater than 0.5 are converted to 1 minus their
+    value. This is used for converting displacement vectors with a Euclidean
+    lattice.
+    
+    Args:
+        coords: an array of real 3d vectors. The shape does not matter
+        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
+            to x, y, and z repectively
+
+    Returns:
+        an array of filtered coords with the same shape as coords
+    """
+    def filter_vector_euclidean(vector):
+        for a in PBC:
+            vector[a-1] -= np.floor(vector[a-1])
+            if vector[a-1] > 0.5:
+                vector[a-1] = 1 - vector[a-1]
+        return vector
+    #c = filtered_coords(coords, PBC=PBC)
+
+    return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
 def gaussian(min, max, sigma=3.0):
     """
@@ -563,19 +578,14 @@ def distance_matrix_euclidean(points1, points2, PBC=[1,2,3]):
     Returns:
         a 2x2 np array of scalar distances
     """
-    def f(value):
-        if value < 0.5:
-            return value
-        else:
-            return 1 - value
-    filter = np.vectorize(f)
-
+    def subtract(p):
+        return points2 - p
+    def dsquared(v):
+        return v[0]**2 + v[1]**2 + v[2]**2
     #get displacement vectors
-    displacements = np.array([filtered_coords(points2-p, PBC=PBC) for p in points1])
-    displacements_PBC = np.array([filter(filtered_coords(points2-p, PBC=PBC)) for p in points1])
-    for a in PBC:
-        displacements[:,:,a-1] = displacements_PBC[:,:,a-1] 
-    return np.apply_along_axis(np.linalg.norm, 2, displacements)
+    displacements = filtered_coords_euclidean(np.apply_along_axis(subtract, -1, points1), PBC=PBC)
+    #Calculate norms
+    return np.apply_along_axis(np.linalg.norm, -1, displacements)
 
 def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_factor=1.0):
     """
@@ -2103,16 +2113,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
                     failed = True
                     break
             if failed is True: continue
-            
-            '''z = np.where(dw < t)
-            if len(z[0]) != len(dw) or len(z[1]) != len(dw):
-                print("-----------")
-                print(dw)
-                print("xxxxxx")
-                print(z)'''
 
-            #Create a new matrix
-            
             return i, p
     return False, None
 
