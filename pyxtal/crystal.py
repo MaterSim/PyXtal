@@ -859,7 +859,7 @@ def find_short_dist(coor, lattice, tol, PBC=[1,2,3]):
 
     d = distance_matrix(coor, coor, lattice, PBC=PBC)
     ijs = np.where(d<= tol)
-    for i in ijs[0]:
+    for i in np.unique(ijs[0]):
         j = ijs[1][i]
         if j <= i: continue
         pairs.append([i, j, d[i][j]])
