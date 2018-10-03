@@ -62,6 +62,8 @@ from pymatgen.io.cif import CifWriter
 
 from optparse import OptionParser
 from scipy.spatial.distance import cdist
+from scipy.spatial.distance import pdist
+from scipy.spatial.distance import squareform
 import numpy as np
 from random import uniform as rand
 from random import choice as choose
@@ -855,12 +857,13 @@ def find_short_dist(coor, lattice, tol, PBC=[1,2,3]):
     for i in range(len(coor)):
         graph.append([])
 
-    for i1 in range(len(coor)-1):
-        for i2 in range(i1+1,len(coor)):
-            dist = distance(coor[i1]-coor[i2], lattice, PBC=PBC)
-            if dist <= tol:
-                #dists.append(dist)
-                pairs.append([i1,i2,dist])
+    d = distance_matrix(coor, coor, lattice, PBC=PBC)
+    ijs = np.where(d<= tol)
+    for i in ijs[0]:
+        j = ijs[1][i]
+        if j <= i: continue
+        pairs.append([i, j, d[i][j]])
+
     pairs = np.array(pairs)
     if len(pairs) > 0:
         d_min = min(pairs[:,-1]) + 1e-3
@@ -2096,8 +2099,8 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
         for p in points:
             failed = False
             #Check that point works as x,y,z value for wp
-            xyz = wp[0].operate(p) - p
-            if distance(xyz, Euclidean_lattice, PBC=PBC) > tol: continue
+            xyz = filtered_coords_euclidean(wp[0].operate(p) - p)
+            if dsquared(xyz) > t: continue
             #Calculate distances between original and generated points
             pw = np.array([op.operate(p) for op in wp])
             #dw = distance_matrix(points, pw, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
@@ -2189,6 +2192,8 @@ class random_crystal():
         multiplicity."""
         self.w_symm = get_wyckoff_symmetry(self.sg)
         """The site symmetry of the Wyckoff positions"""
+        self.PBC = [1,2,3]
+        """The periodic boundary axes of the crystal"""
         self.generate_crystal()
 
 
@@ -2503,6 +2508,7 @@ class random_crystal_2D():
                 max3 = 5
             #Calculate a minimum vector length for generating a lattice
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
+            self.numattempts = 0
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
@@ -2524,6 +2530,7 @@ class random_crystal_2D():
 
                         #Now we start to add the specie to the wyckoff position
                         for cycle3 in range(max3):
+                            self.numattempts += 1
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                             ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added)
                             if ops is not False:
@@ -2719,6 +2726,7 @@ class random_crystal_1D():
                 max3 = 5
             #Calculate a minimum vector length for generating a lattice
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
+            self.numattempts = 0
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
@@ -2740,6 +2748,7 @@ class random_crystal_1D():
 
                         #Now we start to add the specie to the wyckoff position
                         for cycle3 in range(max3):
+                            self.numattempts += 1
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                             ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added)
                             if ops is not False:
