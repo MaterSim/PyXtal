@@ -617,15 +617,50 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_fac
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
     """
-    #add PBC
+    '''#add PBC
     coord2s = []
     matrix = create_matrix(PBC=PBC)
     for coord in coord2:
         for m in matrix:
             coord2s.append(coord+m)
-    coord2 = np.array(coord2s)
+    coord2 = np.array(coord2s)'''
 
-    coord2 = np.dot(coord2, lattice)
+    '''
+    print("coord1:")
+    print(coord1)
+    print("coord2:")
+    print(coord2)
+    print("specie1:")
+    print(specie1)
+    print("specie2:")
+    print(specie2)
+    '''
+
+    if len(coord1) <= 1 or len(coord2) <= 1:
+        return True
+
+    def tol_i(s1):
+        return d_factor*0.5*(Element(s1).covalent_radius + Element(specie2).covalent_radius)
+
+    d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
+
+    tols = []
+    for i, c1 in enumerate(coord1):
+        tols.append([tol_i(specie1[i]) for c2 in coord2])
+    tols = np.array(tols)
+
+    '''
+    print(d)
+    print("---")
+    print(tols)
+    '''
+
+    if (d < tols).sum() > 0:
+        return False
+    else:
+        return True
+
+    '''coord2 = np.dot(coord2, lattice)
     if len(coord1)>0:
         for coord, element in zip(coord1, specie1):
             coord = np.dot(coord, lattice)
@@ -635,7 +670,7 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_fac
                 return False
         return True
     else:
-        return True
+        return True'''
 
 def get_center(xyzs, lattice, PBC=[1,2,3]):
     """
@@ -2319,8 +2354,11 @@ class random_crystal():
                                     if good_merge is not False:
                                         coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
                                         if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
-                                            coordinates_tmp.append(coords_toadd)
-                                            sites_tmp.append(specie)
+                                            if coordinates_tmp == []:
+                                                coordinates_tmp = coords_toadd
+                                            else:
+                                                coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                            sites_tmp += [specie]*len(coords_toadd)
                                             numIon_added += len(coords_toadd)
                                         if numIon_added == numIon:
                                             coordinates_total = deepcopy(coordinates_tmp)
@@ -2343,10 +2381,9 @@ class random_crystal():
                         final_number = []
                         final_lattice = cell_matrix
                         for coor, ele in zip(coordinates_total, sites_total):
-                            for x in coor:
-                                final_coor.append(x)
-                                final_site.append(ele)
-                                final_number.append(Element(ele).z)
+                            final_coor.append(coor)
+                            final_site.append(ele)
+                            final_number.append(Element(ele).z)
 
                         self.lattice = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
@@ -2544,8 +2581,11 @@ class random_crystal_2D():
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
-                                        coordinates_tmp.append(coords_toadd)
-                                        sites_tmp.append(specie)
+                                        if coordinates_tmp == []:
+                                            coordinates_tmp = coords_toadd
+                                        else:
+                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                        sites_tmp += [specie]*len(coords_toadd)
                                         numIon_added += len(coords_toadd)
                                     if numIon_added == numIon:
                                         coordinates_total = deepcopy(coordinates_tmp)
@@ -2567,10 +2607,9 @@ class random_crystal_2D():
                     final_number = []
                     final_lattice = cell_matrix
                     for coor, ele in zip(coordinates_total, sites_total):
-                        for x in coor:
-                            final_coor.append(x)
-                            final_site.append(ele)
-                            final_number.append(Element(ele).z)
+                        final_coor.append(coor)
+                        final_site.append(ele)
+                        final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
                     final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
@@ -2765,8 +2804,11 @@ class random_crystal_1D():
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
-                                        coordinates_tmp.append(coords_toadd)
-                                        sites_tmp.append(specie)
+                                        if coordinates_tmp == []:
+                                            coordinates_tmp = coords_toadd
+                                        else:
+                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                        sites_tmp += [specie]*len(coords_toadd)
                                         numIon_added += len(coords_toadd)
                                     if numIon_added == numIon:
                                         coordinates_total = deepcopy(coordinates_tmp)
@@ -2788,10 +2830,9 @@ class random_crystal_1D():
                     final_number = []
                     final_lattice = cell_matrix
                     for coor, ele in zip(coordinates_total, sites_total):
-                        for x in coor:
-                            final_coor.append(x)
-                            final_site.append(ele)
-                            final_number.append(Element(ele).z)
+                        final_coor.append(coor)
+                        final_site.append(ele)
+                        final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     #TODO: Implement Add_vacuum for 1D lattices
                     self.lattice = final_lattice
