@@ -62,8 +62,6 @@ from pymatgen.io.cif import CifWriter
 
 from optparse import OptionParser
 from scipy.spatial.distance import cdist
-from scipy.spatial.distance import pdist
-from scipy.spatial.distance import squareform
 import numpy as np
 from random import uniform as rand
 from random import choice as choose
@@ -595,19 +593,18 @@ def distance_matrix_euclidean(points1, points2, PBC=[1,2,3], squared=False):
 
 def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_factor=1.0):
     """
-    Check the distances between two set of atoms. The first set is
-    generally larger than the second. Distances between coordinates within the
-    first set are not checked, and distances between coordinates within the
-    second set are not checked. Only distances between points from different
+    Check the distances between two set of atoms. Distances between coordinates
+    within the first set are not checked, and distances between coordinates within
+    the second set are not checked. Only distances between points from different
     sets are checked.
 
     Args:
-        coord1: multiple lists of fractional coordinates e.g. [[[.1,.6,.4]
-            [.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]
+        coord1: a list of fractional coordinates e.g. [[.1,.6,.4]
+            [.3,.8,.2]]
         coord2: a list of new fractional coordinates e.g. [[.7,.8,.9],
             [.4,.5,.6]]
         specie1: a list of atomic symbols for coord1. Ex: ['C', 'O']
-        specie2: the atomic symbol for coord2. Ex: 'Li'
+        specie2: a list of atomic symbols for coord2. Ex: ['H', 'N']
         lattice: matrix describing the unit cell vectors
         PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
             to x, y, and z respectively.
@@ -617,60 +614,28 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_fac
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
     """
-    '''#add PBC
-    coord2s = []
-    matrix = create_matrix(PBC=PBC)
-    for coord in coord2:
-        for m in matrix:
-            coord2s.append(coord+m)
-    coord2 = np.array(coord2s)'''
-
-    '''
-    print("coord1:")
-    print(coord1)
-    print("coord2:")
-    print(coord2)
-    print("specie1:")
-    print(specie1)
-    print("specie2:")
-    print(specie2)
-    '''
-
+    #Check that there are points to compare
     if len(coord1) <= 1 or len(coord2) <= 1:
         return True
 
-    def tol_i(s1):
-        return d_factor*0.5*(Element(s1).covalent_radius + Element(specie2).covalent_radius)
+    #Get the tolerance between two species
+    def tol_ij(s1, s2):
+        return d_factor*0.5*(Element(s1).covalent_radius + Element(s2).covalent_radius)
 
+    #Calculate the distance between each i, j pair
     d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
 
+    #Calculate the tolerance for each i, j pair
     tols = []
-    for i, c1 in enumerate(coord1):
-        tols.append([tol_i(specie1[i]) for c2 in coord2])
+    for s1 in specie1:
+        tols.append([tol_ij(s1, s2) for s2 in specie2])
     tols = np.array(tols)
 
-    '''
-    print(d)
-    print("---")
-    print(tols)
-    '''
-
+    #Check if the distance is ever less than the tolerance
     if (d < tols).sum() > 0:
         return False
     else:
         return True
-
-    '''coord2 = np.dot(coord2, lattice)
-    if len(coord1)>0:
-        for coord, element in zip(coord1, specie1):
-            coord = np.dot(coord, lattice)
-            d_min = np.min(cdist(coord, coord2))
-            tol = d_factor*0.5*(Element(element).covalent_radius + Element(specie2).covalent_radius)
-            if d_min < tol:
-                return False
-        return True
-    else:
-        return True'''
 
 def get_center(xyzs, lattice, PBC=[1,2,3]):
     """
@@ -2353,7 +2318,7 @@ class random_crystal():
                                     coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol)
                                     if good_merge is not False:
                                         coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix):
+                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix):
                                             if coordinates_tmp == []:
                                                 coordinates_tmp = coords_toadd
                                             else:
@@ -2580,7 +2545,7 @@ class random_crystal_2D():
                                 coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
-                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
+                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC):
                                         if coordinates_tmp == []:
                                             coordinates_tmp = coords_toadd
                                         else:
@@ -2803,7 +2768,7 @@ class random_crystal_1D():
                                 coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                 if good_merge is not False:
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
-                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, specie, cell_matrix, PBC=self.PBC):
+                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC):
                                         if coordinates_tmp == []:
                                             coordinates_tmp = coords_toadd
                                         else:
