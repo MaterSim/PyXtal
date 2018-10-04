@@ -2140,17 +2140,29 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
     Returns:
         True if no atoms are too close together, False if any pair is too close
     """
-    for i, c1 in enumerate(coordinates):
-        specie1 = species[i]
-        for j, c2 in enumerate(coordinates):
-            if j > i:
-                specie2 = species[j]
-                diff = np.array(c2) - np.array(c1)
-                d_min = distance(diff, lattice, PBC=PBC)
-                tol = factor*0.5*(Element(specie1).covalent_radius + Element(specie2).covalent_radius)
-                if d_min < tol:
-                    return False
-    return True
+    if len(coordinates) <= 1:
+        return True
+
+    #Get the tolerance between two species
+    def tol_ij(s1, s2):
+        return factor*0.5*(Element(s1).covalent_radius + Element(s2).covalent_radius)
+
+    #Calculate the distance between each i, j pair
+    d = distance_matrix(coordinates, coordinates, lattice, PBC=PBC)
+
+    #Calculate the tolerance for each i, j pair
+    tols = []
+    for s1 in species:
+        tols.append([tol_ij(s1, s2) for s2 in species])
+    tols = np.array(tols)
+
+    d += (np.eye(len(coordinates)) * 2 * np.max(tols))
+    
+    #Check if the distance is ever less than the tolerance
+    if (d < tols).sum() > 0:
+        return False
+    else:
+        return True
 
 class random_crystal():
     """
