@@ -2073,9 +2073,6 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
         coordinate taken from the list points. When plugged into the Wyckoff
         position, it will generate all the other points.
     """
-    #new method
-    #Store the squared distance tolerance
-    t = tol**2
     #Loop over Wyckoff positions
     for i, wp in enumerate(wyckoffs):
         #Check that length of points and wp are equal
@@ -2087,9 +2084,9 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
             #Calculate distance between original and generated points
             ps = np.array([op.operate(p) for op in w_symm_all[i][0]])
             #ds = distance_matrix([p], ps, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
-            ds = distance_matrix_euclidean([p], ps, PBC=PBC, squared=True)
+            ds = distance_matrix_euclidean([p], ps, PBC=PBC)
             #Check whether any generated points are too far away
-            num = (ds > t).sum()
+            num = (ds > tol).sum()
             if num > 0:
                 failed = True
                 break
@@ -2104,11 +2101,11 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
             #Calculate distances between original and generated points
             pw = np.array([op.operate(p) for op in wp])
             #dw = distance_matrix(points, pw, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
-            dw = distance_matrix_euclidean(points, pw, PBC=PBC, squared=True)
+            dw = distance_matrix_euclidean(points, pw, PBC=PBC)
             
             #Check each row for a zero
             for row in dw:
-                num = (row < t).sum()
+                num = (row < tol).sum()
                 if num < 1:
                     failed = True
                     break
@@ -2116,7 +2113,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
             if failed is True: continue
             #Check each column for a zero
             for column in dw.T:
-                num = (column < t).sum()
+                num = (column < tol).sum()
                 if num < 1:
                     failed = True
                     break
