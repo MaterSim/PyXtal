@@ -231,22 +231,57 @@ def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all,
         point is a 3-vector from the list points; when plugged into the Wyckoff
         position, it will generate the other points
     """
-    index, point = check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=PBC)
-    if index is not False:
+    #Loop over Wyckoff positions
+    for i, wp in enumerate(wyckoffs):
+        #Check that length of points and wp are equal
+        if len(wp) != len(points): continue
+        #Check that orientations exist for the Wyckoff position
+        #Only difference from non-molecular version of function
         j, k = jk_from_i(index, orientations)
-        if orientations[j][k] != []:
-            return index, point
-        else:
-            return False, None
-            print("(Inside check_wyckoff_position_molecular)")
-            print("Error: Could not generate points from Wyckoff generators")
-            print("wp_index: "+str(index))
-            print("Coordinates:")
-            for c in points:
-                print(c)
-            print("Generators:")
-            for g in generators:
-                print(g.as_xyz_string())
+        if orientations[j][k] == []: continue
+        failed = False
+
+        #Check site symmetry of points
+        for p in points:
+            #Calculate distance between original and generated points
+            ps = np.array([op.operate(p) for op in w_symm_all[i][0]])
+            #ds = distance_matrix([p], ps, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
+            ds = distance_matrix_euclidean([p], ps, PBC=PBC)
+            #Check whether any generated points are too far away
+            num = (ds > tol).sum()
+            if num > 0:
+                failed = True
+                break
+        
+        if failed is True: continue
+        #Search for a generating point
+        for p in points:
+            failed = False
+            #Check that point works as x,y,z value for wp
+            xyz = filtered_coords_euclidean(wp[0].operate(p) - p)
+            if dsquared(xyz) > t: continue
+            #Calculate distances between original and generated points
+            pw = np.array([op.operate(p) for op in wp])
+            #dw = distance_matrix(points, pw, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
+            dw = distance_matrix_euclidean(points, pw, PBC=PBC)
+            
+            #Check each row for a zero
+            for row in dw:
+                num = (row < tol).sum()
+                if num < 1:
+                    failed = True
+                    break
+
+            if failed is True: continue
+            #Check each column for a zero
+            for column in dw.T:
+                num = (column < tol).sum()
+                if num < 1:
+                    failed = True
+                    break
+
+            if failed is True: continue
+            return i, p
     return False, None
 
 def merge_coordinate_molecular(coor, lattice, wyckoffs, w_symm_all, tol, orientations, PBC=[1,2,3]):
