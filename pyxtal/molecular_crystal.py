@@ -401,20 +401,9 @@ class mol_site():
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = PBC
         """The periodic axes"""
-        def get_coords_and_species(self, absolute=False):
+        def _get_coords_and_species(self, absolute=False):
             """
-            Generates and returns the atomic coordinate and species for the
-            Wyckoff position. Plugs the molecule into the provided orientation
-            (with angle=0), and calculates the new positions.
-
-            Args:
-                absolute: whether or not to return absolute (Euclidean)
-                    coordinates. If false,
-            
-            Returns:
-                coords, species: coords is an np array of 3-vectors. species is
-                    a list of atomic species names, for example
-                    ['H', 'H', 'O', 'H', 'H', 'O']
+            Used to lazily generate coords and species for get_coords and species
             """
             #Get the species names to return
             species = [s.specie.name for s in self.mol]*self.multiplicity
@@ -437,6 +426,35 @@ class mol_site():
                 #Calculate the relative coordinates
                 relative_coords = np.inner(absolute_coords, np.linalg.inv(self.lattice))
                 return filtered_coords(relative_coords, PBC=self.PBC), species
+
+        def get_coords_and_species(self, absolute=False):
+            """
+            Generates and/or returns the atomic coordinate and species for the
+            Wyckoff position. Plugs the molecule into the provided orientation
+            (with angle=0), and calculates the new positions.
+
+            Args:
+                absolute: whether or not to return absolute (Euclidean)
+                    coordinates. If false,
+            
+            Returns:
+                coords, species: coords is an np array of 3-vectors. species is
+                    a list of atomic species names, for example
+                    ['H', 'H', 'O', 'H', 'H', 'O']
+            """
+            if absolute is True:
+                if not self.absolute_coords:
+                    self.absolute_coords, self.species = _get_coords_and_species(self, absolute=True)
+                return self.absolute_coords, self.species
+            elif absolute is False:
+                if not self.relative_coords:
+                    self.relative_coords, self.species = _get_coords_and_species(self, absolute=False)
+                return self.relative_coords, self.species
+            else:
+                print("Error: parameter absolute must be True or False")
+                return
+            
+                    
 
 class molecular_crystal():
     """
