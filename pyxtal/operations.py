@@ -23,6 +23,23 @@ from copy import deepcopy
 rad = pi/180.
 deg = 180./pi
 
+def apply_ops(coord, ops):
+    """
+    Apply a list of SymmOps to a single 3-vector and return an array of
+    the generated vectors. This is the inverse of SymmOp.operate_multi.
+
+    Args:
+        coord: a 3-vector (list or numpy array)
+        ops: a list, tuple, or array of SymmOp objects
+
+    Returns:
+        an np array of floating-point 3-vectors
+    """
+    coord = np.array(coord)
+    affine_point = np.concatenate([coord, np.ones(coord.shape[:-1] + (1,))], axis=-1)
+    matrices = np.array([op.affine_matrix for op in ops])
+    return np.inner(affine_point, matrices)[..., :-1]
+
 def angle(v1, v2):
     """
     Calculate the angle (in radians) between two vectors.
