@@ -593,6 +593,16 @@ class orientation():
         m = rotate_vector(v1, c1)
         return orientation(m, degrees=1, axis=c1)
 
+    def random_orientation(self):
+        """
+        Applies random rotation (if possible) and returns a new orientation with
+        the new base matrix.
+
+        Returns:
+            a new orientation object with a different base rotation matrix
+        """
+        return orientation(self.get_matrix(), degrees=self.degrees, axis=self.axis)
+
 #Test Functionality
 if __name__ == "__main__":
 #----------------------------------------------------
