@@ -396,11 +396,11 @@ class mol_site():
         self.wp = wp
         """The Wyckoff position for the site"""
         self.wp_generators = wp_generators
-        """The Wyckoff generators for the site"""
+        """The (molecular) Wyckoff generators for the site"""
         self.multiplicity = len(wp)
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = PBC
-        """The periodic boundary condition direction"""
+        """The periodic axes"""
         def get_coords_and_species(self, absolute=False):
             """
             Generates and returns the atomic coordinate and species for the
@@ -768,7 +768,7 @@ class molecular_crystal():
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                             op1 = ori.get_op(angle=0)
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
+                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
@@ -863,7 +863,7 @@ class molecular_crystal():
                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                 op1 = ori.get_op(angle=0)
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
+                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
                                 self.mol_generators.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
 
@@ -1278,7 +1278,7 @@ class molecular_crystal_2D():
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                             op1 = ori.get_op(angle=0)
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
+                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
@@ -1371,7 +1371,7 @@ class molecular_crystal_2D():
                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                 op1 = ori.get_op(angle=0)
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
+                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
 
@@ -1786,7 +1786,7 @@ class molecular_crystal_1D():
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                             op1 = ori.get_op(angle=0)
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
+                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
@@ -1879,7 +1879,7 @@ class molecular_crystal_1D():
                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                 op1 = ori.get_op(angle=0)
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], cell_matrix)
+                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
 
