@@ -211,7 +211,7 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, d
     else:
         return True
 
-def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all, PBC=[1,2,3]):
+def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
     """
     Given a list of points, returns the index of the Wyckoff position within
     the spacegroup.
@@ -231,13 +231,14 @@ def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all,
         point is a 3-vector from the list points; when plugged into the Wyckoff
         position, it will generate the other points
     """
+    t = tol**2
     #Loop over Wyckoff positions
     for i, wp in enumerate(wyckoffs):
         #Check that length of points and wp are equal
         if len(wp) != len(points): continue
         #Check that orientations exist for the Wyckoff position
         #Only difference from non-molecular version of function
-        j, k = jk_from_i(index, orientations)
+        j, k = jk_from_i(i, orientations)
         if orientations[j][k] == []: continue
         failed = False
 
