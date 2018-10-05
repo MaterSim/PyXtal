@@ -435,7 +435,8 @@ class mol_site():
                 return absolute_coords, species
             else:
                 #Calculate the relative coordinates
-                return filtered_coords( np.inner(absolute_coords, np.linalg.inv(self.lattice)), PBC=self.PBC)
+                relative_coords = np.inner(absolute_coords, np.linalg.inv(self.lattice))
+                return filtered_coords(relative_coords, PBC=self.PBC), species
 
 class molecular_crystal():
     """
