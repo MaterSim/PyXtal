@@ -2073,6 +2073,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
         coordinate taken from the list points. When plugged into the Wyckoff
         position, it will generate all the other points.
     """
+    t = tol**2
     #Loop over Wyckoff positions
     for i, wp in enumerate(wyckoffs):
         #Check that length of points and wp are equal
