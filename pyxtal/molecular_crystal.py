@@ -403,7 +403,7 @@ class mol_site():
         """The periodic axes"""
         def _get_coords_and_species(self, absolute=False):
             """
-            Used to lazily generate coords and species for get_coords and species
+            Used to lazily generate coords and species for get_coords_and_species
             """
             #Get the species names to return
             species = [s.specie.name for s in self.mol]*self.multiplicity
@@ -427,15 +427,18 @@ class mol_site():
                 relative_coords = np.inner(absolute_coords, np.linalg.inv(self.lattice))
                 return filtered_coords(relative_coords, PBC=self.PBC), species
 
-        def get_coords_and_species(self, absolute=False):
+        def get_coords_and_species(self, absolute=False, force=False):
             """
-            Generates and/or returns the atomic coordinate and species for the
+            Lazily generates and returns the atomic coordinate and species for the
             Wyckoff position. Plugs the molecule into the provided orientation
             (with angle=0), and calculates the new positions.
 
             Args:
                 absolute: whether or not to return absolute (Euclidean)
                     coordinates. If false,
+                force: if True, forces regeneration of coordinates, even if the
+                    values have already been calculated. Used to override lazy
+                    generation
             
             Returns:
                 coords, species: coords is an np array of 3-vectors. species is
@@ -443,18 +446,39 @@ class mol_site():
                     ['H', 'H', 'O', 'H', 'H', 'O']
             """
             if absolute is True:
-                if not self.absolute_coords:
+                if (not self.absolute_coords) or (force is True):
                     self.absolute_coords, self.species = _get_coords_and_species(self, absolute=True)
                 return self.absolute_coords, self.species
             elif absolute is False:
-                if not self.relative_coords:
+                if (not self.relative_coords) or (force is True):
                     self.relative_coords, self.species = _get_coords_and_species(self, absolute=False)
                 return self.relative_coords, self.species
             else:
                 print("Error: parameter absolute must be True or False")
                 return
+
+        def check_distances(self, factor=1.0):
+            """
+            Checks if the atoms in the Wyckoff position are too close to each other
+            or not. Does not check distances between atoms in the same molecule. Uses
+            crystal.check_distance as the base code.
             
-                    
+            Args:
+                factor: the tolerance factor to use. A higher value means atoms must
+                    be farther apart
+            
+            Returns:
+                True if the atoms are not too close together, False otherwise
+            """
+            coords, species = self.get_coords_and_species(force=True)
+            #Store the coords and species for a single molecule
+            coords_m = coords[:len(self.mol)]
+            species_m = species[:len(self.mol)]
+            #Store the coords and species for the other molecule
+            coords_other = coords[len(self.mol):]
+            species_other = species[len(self.mol):]
+            #Check the distances
+            return check_distance(coords_m, coords_other, species_m, species_other, self.lattice, PBS=self.PBC, d_factor=factor)
 
 class molecular_crystal():
     """
