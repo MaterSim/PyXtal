@@ -259,7 +259,7 @@ def check_wyckoff_position_molecular(points, orientations, wyckoffs, w_symm_all,
         for p in points:
             failed = False
             #Check that point works as x,y,z value for wp
-            xyz = filtered_coords_euclidean(wp[0].operate(p) - p)
+            xyz = filtered_coords_euclidean(wp[0].operate(p) - p, PBC=PBC)
             if dsquared(xyz) > t: continue
             #Calculate distances between original and generated points
             pw = np.array([op.operate(p) for op in wp])
@@ -439,6 +439,7 @@ class molecular_crystal():
         self.Msgs()
         """A list of warning messages to use during generation."""
         self.PBC = [1,2,3]
+        """The periodic axes of the crystal"""
         numMols = np.array(numMols) #must convert it to np.array
         self.factor = volume_factor
         """The supplied volume factor for the unit cell."""
@@ -700,17 +701,7 @@ class molecular_crystal():
                                             self.wyckoffs, self.w_symm, mtol, self.valid_orientations[i])
                                     if good_merge is not False:
                                         wp_index = good_merge
-
-                                        if point is None:
-                                            print("Error: Could not generate merged coordinates from Wyckoff generators")
-                                            print("Space group: "+str(self.sg))
-                                            print("wp_index: "+str(wp_index))
-                                            print("Coordinates:")
-                                            for c in coords_toadd:
-                                                print(c)
-                                            self.valid = False
-                                            return
-                                        coords_toadd = filtered_coords(coords_toadd) #scale the coordinates to [0,1], very important!
+                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
 
                                         #Check inter-molecular distances
                                         if self.check_atomic_distances is False:
