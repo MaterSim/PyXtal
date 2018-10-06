@@ -623,7 +623,7 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_fac
 
     #Get the tolerance between two species
     def tol_ij(s1, s2):
-        return d_factor*0.5*(Element(s1).covalent_radius + Element(s2).covalent_radius)
+        return d_factor*(Element(s1).covalent_radius + Element(s2).covalent_radius)
 
     #Calculate the distance between each i, j pair
     d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
@@ -2146,7 +2146,7 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
 
     #Get the tolerance between two species
     def tol_ij(s1, s2):
-        return factor*0.5*(Element(s1).covalent_radius + Element(s2).covalent_radius)
+        return factor*(Element(s1).covalent_radius + Element(s2).covalent_radius)
 
     #Calculate the distance between each i, j pair
     d = distance_matrix(coordinates, coordinates, lattice, PBC=PBC)
