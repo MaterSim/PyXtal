@@ -108,7 +108,7 @@ rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generator
 #Define functions
 #------------------------------
 
-def filtered_coords(coords, PBC=[1, 2, 3]):
+def filtered_coords(coords, PBC=[1, 2, 3], tol=1e-4):
     """
     Given an array of 3d fractional coordinates or a single 3d point, transform
     all coordinates to less than 1 and greater than 0. If one axis is not
@@ -127,11 +127,13 @@ def filtered_coords(coords, PBC=[1, 2, 3]):
     def filter_vector(vector):
         for a in PBC:
             vector[a-1] -= np.floor(vector[a-1])
+            if np.isclose(vector[a-1], 1.0, atol=tol):
+                vector[a-1] = 0
         return vector
 
     return np.apply_along_axis(filter_vector, -1, coords)
 
-def filtered_coords_euclidean(coords, PBC=[1,2,3]):
+def filtered_coords_euclidean(coords, PBC=[1,2,3], tol=1e-4):
     """
     Given an array of fractional 3-vectors, filters coordinates to between 0 and
     1. Then, values which are greater than 0.5 are converted to 1 minus their
@@ -151,8 +153,9 @@ def filtered_coords_euclidean(coords, PBC=[1,2,3]):
             vector[a-1] -= np.floor(vector[a-1])
             if vector[a-1] > 0.5:
                 vector[a-1] = 1 - vector[a-1]
+            if np.isclose(vector[a-1], 1.0, atol=tol):
+                vector[a-1] = 0
         return vector
-    #c = filtered_coords(coords, PBC=PBC)
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
