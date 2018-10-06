@@ -1012,9 +1012,9 @@ def test_modules():
 
     check()
 
-    print("  class orientation")
+    print("  class Orientation")
     try:
-        from pyxtal.operations import orientation
+        from pyxtal.operations import Orientation
     except Exception as e:
         fail(e)
 
@@ -1023,7 +1023,7 @@ def test_modules():
             for i in range(10):
                 v1 = random_vector()
                 c1 = random_vector()
-                o = orientation.from_constraint(v1, c1)
+                o = Orientation.from_constraint(v1, c1)
         except Exception as e:
             fail(e)
 
