@@ -171,6 +171,135 @@ determine the properties of the operation.</p>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="pyxtal.operations.Orientation">
+<em class="property">class </em><code class="descclassname">pyxtal.operations.</code><code class="descname">Orientation</code><span class="sig-paren">(</span><em>matrix</em>, <em>degrees=0</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#Orientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.Orientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Stores orientations for molecular crystals based on vector constraints.
+Can be stored to regenerate orientations consistent with a given constraint
+vector, without re-calling orientation_in_wyckoff_position. Allows for
+generating orientations which differ only in their rotation about a given
+axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>matrix</strong> – a 3x3 rotation matrix describing the orientation (and/or
+inversion) to store</li>
+<li><strong>degrees</strong> – <p>the number of degrees of freedom…</p>
+<p>0 - The orientation refers to a single rotation matrix</p>
+<p>1 - The orientation can be rotated about a single axis</p>
+<p>2 - The orientation can be any pure rotation matrix</p>
+</li>
+<li><strong>axis</strong> – an optional axis about which the orientation can rotate. Only used
+if degrees is equal to 1</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="pyxtal.operations.Orientation.axis">
+<code class="descname">axis</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.Orientation.axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>The axis (optional) about which the orientation may rotate.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.operations.Orientation.degrees">
+<code class="descname">degrees</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.Orientation.degrees" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of degrees of freedom.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.operations.Orientation.from_constraint">
+<code class="descname">from_constraint</code><span class="sig-paren">(</span><em>c1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#Orientation.from_constraint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.Orientation.from_constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Geneate an orientation object given a constraint axis c1, and a
+corresponding vector v1. v1 will be rotated onto c1, and the resulting
+orientation will have a rotational degree of freedom about c1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>v1</strong> – a 1x3 vector in the original reference frame</li>
+<li><strong>c1</strong> – a corresponding axis which v1 must be mapped to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an orientation object consistent with the supplied constraint</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.operations.Orientation.get_matrix">
+<code class="descname">get_matrix</code><span class="sig-paren">(</span><em>angle='random'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#Orientation.get_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.Orientation.get_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a 3x3 rotation matrix consistent with the orientation’s
+constraints. Allows for specification of an angle (possibly random) to
+rotate about the constraint axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>angle</strong> – an angle to rotate about the constraint axis. If “random”,
+chooses a random rotation angle. If self.degrees==2, chooses a
+random 3d rotation matrix to multiply by. If the original matrix
+is wanted, set angle=0, or call self.matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a 3x3 rotation (and/or inversion) matrix (numpy array)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.operations.Orientation.get_op">
+<code class="descname">get_op</code><span class="sig-paren">(</span><em>angle='random'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#Orientation.get_op"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.Orientation.get_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a SymmOp object consistent with the orientation’s
+constraints. Allows for specification of an angle (possibly random) to
+rotate about the constraint axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>angle</strong> – an angle to rotate about the constraint axis. If “random”,
+chooses a random rotation angle. If self.degrees==2, chooses a
+random 3d rotation matrix to multiply by. If the original matrix
+is wanted, set angle=0, or call self.matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">pymatgen.core.structure. SymmOp object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.operations.Orientation.matrix">
+<code class="descname">matrix</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.Orientation.matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>The supplied orientation (and/or inversion) matrix, converted to a
+numpy array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.operations.Orientation.random_orientation">
+<code class="descname">random_orientation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#Orientation.random_orientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.Orientation.random_orientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies random rotation (if possible) and returns a new orientation with
+the new base matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a new orientation object with a different base rotation matrix</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="function">
 <dt id="pyxtal.operations.aa2matrix">
 <code class="descclassname">pyxtal.operations.</code><code class="descname">aa2matrix</code><span class="sig-paren">(</span><em>axis</em>, <em>angle</em>, <em>radians=True</em>, <em>random=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#aa2matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.aa2matrix" title="Permalink to this definition">¶</a></dt>
@@ -213,6 +342,28 @@ axis and angle are ignored, and a random orientation is generated</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the angle in radians between the two vectors</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.operations.apply_ops">
+<code class="descclassname">pyxtal.operations.</code><code class="descname">apply_ops</code><span class="sig-paren">(</span><em>coord</em>, <em>ops</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#apply_ops"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.apply_ops" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a list of SymmOps to a single 3-vector and return an array of
+the generated vectors. This is the inverse of SymmOp.operate_multi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coord</strong> – a 3-vector (list or numpy array)</li>
+<li><strong>ops</strong> – a list, tuple, or array of SymmOp objects</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an np array of floating-point 3-vectors</p>
 </td>
 </tr>
 </tbody>
@@ -296,120 +447,6 @@ or in degrees (False)</li>
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="class">
-<dt id="pyxtal.operations.orientation">
-<em class="property">class </em><code class="descclassname">pyxtal.operations.</code><code class="descname">orientation</code><span class="sig-paren">(</span><em>matrix</em>, <em>degrees=0</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#orientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.orientation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Stores orientations for molecular crystals based on vector constraints.
-Can be stored to regenerate orientations consistent with a given constraint
-vector, without re-calling orientation_in_wyckoff_position. Allows for
-generating orientations which differ only in their rotation about a given
-axis.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>matrix</strong> – a 3x3 rotation matrix describing the orientation (and/or
-inversion) to store</li>
-<li><strong>degrees</strong> – <p>the number of degrees of freedom…</p>
-<p>0 - The orientation refers to a single rotation matrix</p>
-<p>1 - The orientation can be rotated about a single axis</p>
-<p>2 - The orientation can be any pure rotation matrix</p>
-</li>
-<li><strong>axis</strong> – an optional axis about which the orientation can rotate. Only used
-if degrees is equal to 1</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="attribute">
-<dt id="pyxtal.operations.orientation.axis">
-<code class="descname">axis</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.orientation.axis" title="Permalink to this definition">¶</a></dt>
-<dd><p>The axis (optional) about which the orientation may rotate.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyxtal.operations.orientation.degrees">
-<code class="descname">degrees</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.orientation.degrees" title="Permalink to this definition">¶</a></dt>
-<dd><p>The number of degrees of freedom.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyxtal.operations.orientation.from_constraint">
-<code class="descname">from_constraint</code><span class="sig-paren">(</span><em>c1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#orientation.from_constraint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.orientation.from_constraint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Geneate an orientation object given a constraint axis c1, and a
-corresponding vector v1. v1 will be rotated onto c1, and the resulting
-orientation will have a rotational degree of freedom about c1.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>v1</strong> – a 1x3 vector in the original reference frame</li>
-<li><strong>c1</strong> – a corresponding axis which v1 must be mapped to</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an orientation object consistent with the supplied constraint</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyxtal.operations.orientation.get_matrix">
-<code class="descname">get_matrix</code><span class="sig-paren">(</span><em>angle='random'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#orientation.get_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.orientation.get_matrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate a 3x3 rotation matrix consistent with the orientation’s
-constraints. Allows for specification of an angle (possibly random) to
-rotate about the constraint axis.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>angle</strong> – an angle to rotate about the constraint axis. If “random”,
-chooses a random rotation angle. If self.degrees==2, chooses a
-random 3d rotation matrix to multiply by. If the original matrix
-is wanted, set angle=0, or call self.matrix</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a 3x3 rotation (and/or inversion) matrix (numpy array)</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyxtal.operations.orientation.get_op">
-<code class="descname">get_op</code><span class="sig-paren">(</span><em>angle='random'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#orientation.get_op"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.orientation.get_op" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate a SymmOp object consistent with the orientation’s
-constraints. Allows for specification of an angle (possibly random) to
-rotate about the constraint axis.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>angle</strong> – an angle to rotate about the constraint axis. If “random”,
-chooses a random rotation angle. If self.degrees==2, chooses a
-random 3d rotation matrix to multiply by. If the original matrix
-is wanted, set angle=0, or call self.matrix</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">pymatgen.core.structure. SymmOp object</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyxtal.operations.orientation.matrix">
-<code class="descname">matrix</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.operations.orientation.matrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>The supplied orientation (and/or inversion) matrix, converted to a
-numpy array.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="function">

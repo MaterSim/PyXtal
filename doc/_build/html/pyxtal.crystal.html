@@ -138,22 +138,21 @@ A, C, I, R, or F)</p>
 <dl class="function">
 <dt id="pyxtal.crystal.check_distance">
 <code class="descclassname">pyxtal.crystal.</code><code class="descname">check_distance</code><span class="sig-paren">(</span><em>coord1, coord2, specie1, specie2, lattice, PBC=[1, 2, 3], d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_distance" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check the distances between two set of atoms. The first set is
-generally larger than the second. Distances between coordinates within the
-first set are not checked, and distances between coordinates within the
-second set are not checked. Only distances between points from different
+<dd><p>Check the distances between two set of atoms. Distances between coordinates
+within the first set are not checked, and distances between coordinates within
+the second set are not checked. Only distances between points from different
 sets are checked.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>coord1</strong> – multiple lists of fractional coordinates e.g. [[[.1,.6,.4]
-[.3,.8,.2]],[[.4,.4,.4],[.3,.3,.3]]]</li>
+<li><strong>coord1</strong> – a list of fractional coordinates e.g. [[.1,.6,.4]
+[.3,.8,.2]]</li>
 <li><strong>coord2</strong> – a list of new fractional coordinates e.g. [[.7,.8,.9],
 [.4,.5,.6]]</li>
 <li><strong>specie1</strong> – a list of atomic symbols for coord1. Ex: [‘C’, ‘O’]</li>
-<li><strong>specie2</strong> – the atomic symbol for coord2. Ex: ‘Li’</li>
+<li><strong>specie2</strong> – a list of atomic symbols for coord2. Ex: [‘H’, ‘N’]</li>
 <li><strong>lattice</strong> – matrix describing the unit cell vectors</li>
 <li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
 to x, y, and z respectively.</li>
@@ -171,10 +170,12 @@ mean atoms must be farther apart</li>
 
 <dl class="function">
 <dt id="pyxtal.crystal.check_wyckoff_position">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_wyckoff_position</code><span class="sig-paren">(</span><em>points, wyckoffs, w_symm_all, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_wyckoff_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_wyckoff_position" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_wyckoff_position</code><span class="sig-paren">(</span><em>points, wyckoffs, w_symm_all, PBC=[1, 2, 3], tol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_wyckoff_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_wyckoff_position" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a list of points, returns a single index of a matching Wyckoff
 position in the space group. Checks the site symmetry of each supplied
-point against the site symmetry for each point in the Wyckoff position.</p>
+point against the site symmetry for each point in the Wyckoff position.
+Also returns a point which can be used to generate the rest using the
+Wyckoff position operators</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -186,11 +187,17 @@ get_wyckoffs, get_layer, or get_rod</li>
 <li><strong>w_symm_all</strong> – a list of site symmetry operations obtained from
 get_wyckoff_symmetry, get_layer_symmetry, or get_rod_symmetry</li>
 <li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>tol</strong> – the max distance between equivalent points</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a single index for the Wyckoff position within the sg. If no matching
-WP is found, returns False</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">index is a single index for the Wyckoff position within
+the sg. If no matching WP is found, returns False. point is a
+coordinate taken from the list points. When plugged into the Wyckoff
+position, it will generate all the other points.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">index, p</p>
 </td>
 </tr>
 </tbody>
@@ -298,6 +305,62 @@ to x, y, and z respectively.</li>
 </dd></dl>
 
 <dl class="function">
+<dt id="pyxtal.crystal.distance_matrix">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>points1, points2, lattice, PBC=[1, 2, 3], metric='euclidean'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the distances between two sets of fractional coordinates.
+Takes into account the lattice metric and periodic boundary conditions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points1</strong> – a list of fractional coordinates</li>
+<li><strong>points2</strong> – another list of fractional coordinates</li>
+<li><strong>lattice</strong> – a 3x3 matrix describing a unit cell’s lattice vectors</li>
+<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
+to x, y, and z respectively.</li>
+<li><strong>metric</strong> – the metric to use with cdist. Possible values include ‘euclidean’,
+‘sqeuclidean’, ‘minkowski’, and others</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 2x2 np array of scalar distances</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.distance_matrix_euclidean">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">distance_matrix_euclidean</code><span class="sig-paren">(</span><em>points1, points2, PBC=[1, 2, 3], squared=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#distance_matrix_euclidean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.distance_matrix_euclidean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the distances between two sets of fractional coordinates.
+Takes into account periodic boundary conditions, but assumes a Euclidean matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points1</strong> – a list of fractional coordinates</li>
+<li><strong>points2</strong> – another list of fractional coordinates</li>
+<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
+to x, y, and z respectively.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 2x2 np array of scalar distances</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.dsquared">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">dsquared</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#dsquared"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.dsquared" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
 <dt id="pyxtal.crystal.estimate_volume">
 <code class="descclassname">pyxtal.crystal.</code><code class="descname">estimate_volume</code><span class="sig-paren">(</span><em>numIons</em>, <em>species</em>, <em>factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#estimate_volume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.estimate_volume" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimates the volume of a unit cell based on the number and types of ions.
@@ -325,8 +388,8 @@ allow more space between atoms</li>
 
 <dl class="function">
 <dt id="pyxtal.crystal.filtered_coords">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">filtered_coords</code><span class="sig-paren">(</span><em>coords, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#filtered_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.filtered_coords" title="Permalink to this definition">¶</a></dt>
-<dd><p>Given a list of 3d fractional coordinates or a single 3d point, transform
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">filtered_coords</code><span class="sig-paren">(</span><em>coords, PBC=[1, 2, 3], tol=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#filtered_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.filtered_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an array of 3d fractional coordinates or a single 3d point, transform
 all coordinates to less than 1 and greater than 0. If one axis is not
 periodic, does not transform the coordinates along that axis. For example,
 for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
@@ -336,14 +399,38 @@ not the y axis (PBC=[1, 3]), the function would return [0.2, 1.6, 0.6].</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>coords</strong> – a list or array of real 3d vectors, or a single real 3d vector</li>
+<li><strong>coords</strong> – an array of real 3d vectors. The shape does not matter</li>
 <li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
 to x, y, and z repectively</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a new list of coordinates (or single point) with values scaled between
-0 and 1, except for values on the non-periodic axis</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an array of filtered coords with the same shape as coords</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.filtered_coords_euclidean">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">filtered_coords_euclidean</code><span class="sig-paren">(</span><em>coords, PBC=[1, 2, 3], tol=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#filtered_coords_euclidean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.filtered_coords_euclidean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an array of fractional 3-vectors, filters coordinates to between 0 and
+1. Then, values which are greater than 0.5 are converted to 1 minus their
+value. This is used for converting displacement vectors with a Euclidean
+lattice.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coords</strong> – an array of real 3d vectors. The shape does not matter</li>
+<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
+to x, y, and z repectively</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an array of filtered coords with the same shape as coords</p>
 </td>
 </tr>
 </tbody>
@@ -1024,12 +1111,13 @@ to x, y, and z respectively.</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(coor) is the new list of fractional coordinates after
-merging, and index is a single index of the Wyckoff position within
-the spacegroup. If merging is unsuccesful, or no index is found,
-returns the original coordinates and False</p>
+merging. index is a single index for the Wyckoff position within
+the sg. If no matching WP is found, returns False. point is a 3-vector;
+when plugged into the Wyckoff position, it will generate all the other
+points.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">coor, index</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">coor, index, point</p>
 </td>
 </tr>
 </tbody>
@@ -1103,6 +1191,12 @@ unit cell. Increasing this gives extra space between atoms</li>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.random_crystal.PBC">
+<code class="descname">PBC</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.random_crystal.PBC" title="Permalink to this definition">¶</a></dt>
+<dd><p>The periodic boundary axes of the crystal</p>
 </dd></dl>
 
 <dl class="method">

@@ -83,10 +83,10 @@
 </li>
       <li><a href="pyxtal.database.element.html#pyxtal.database.element.Element.all_vdw_radii">all_vdw_radii() (pyxtal.database.element.Element method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.database.element.html#pyxtal.database.element.Element.all_z">all_z() (pyxtal.database.element.Element method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.allow_inversion">allow_inversion (pyxtal.molecular_crystal.molecular_crystal attribute)</a>
 
       <ul>
@@ -96,6 +96,8 @@
 </li>
       </ul></li>
       <li><a href="pyxtal.operations.html#pyxtal.operations.angle">angle() (in module pyxtal.operations)</a>
+</li>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.apply_ops">apply_ops() (in module pyxtal.operations)</a>
 </li>
       <li><a href="pyxtal.operations.html#pyxtal.operations.OperationAnalyzer.are_conjugate">are_conjugate() (pyxtal.operations.OperationAnalyzer method)</a>
 </li>
@@ -107,7 +109,7 @@
         <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_1D.area">(pyxtal.molecular_crystal.molecular_crystal_1D attribute)</a>
 </li>
       </ul></li>
-      <li><a href="pyxtal.operations.html#pyxtal.operations.orientation.axis">axis (pyxtal.operations.orientation attribute)</a>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation.axis">axis (pyxtal.operations.Orientation attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -159,6 +161,8 @@
 </li>
       <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_distance_molecular">check_distance_molecular() (in module pyxtal.molecular_crystal)</a>
 </li>
+      <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.check_distances">check_distances() (pyxtal.molecular_crystal.mol_site method)</a>
+</li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.check_wyckoff_position">check_wyckoff_position() (in module pyxtal.crystal)</a>
 </li>
       <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_wyckoff_position_molecular">check_wyckoff_position_molecular() (in module pyxtal.molecular_crystal)</a>
@@ -181,13 +185,19 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="pyxtal.operations.html#pyxtal.operations.orientation.degrees">degrees (pyxtal.operations.orientation attribute)</a>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation.degrees">degrees (pyxtal.operations.Orientation attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.operations.html#pyxtal.operations.OperationAnalyzer.det">det (pyxtal.operations.OperationAnalyzer attribute)</a>
 </li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.distance">distance() (in module pyxtal.crystal)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pyxtal.crystal.html#pyxtal.crystal.distance_matrix">distance_matrix() (in module pyxtal.crystal)</a>
+</li>
+      <li><a href="pyxtal.crystal.html#pyxtal.crystal.distance_matrix_euclidean">distance_matrix_euclidean() (in module pyxtal.crystal)</a>
+</li>
+      <li><a href="pyxtal.crystal.html#pyxtal.crystal.dsquared">dsquared() (in module pyxtal.crystal)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -229,11 +239,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.filtered_coords">filtered_coords() (in module pyxtal.crystal)</a>
 </li>
+      <li><a href="pyxtal.crystal.html#pyxtal.crystal.filtered_coords_euclidean">filtered_coords_euclidean() (in module pyxtal.crystal)</a>
+</li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.find_generating_point">find_generating_point() (in module pyxtal.crystal)</a>
 </li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.find_short_dist">find_short_dist() (in module pyxtal.crystal)</a>
 </li>
-      <li><a href="pyxtal.operations.html#pyxtal.operations.orientation.from_constraint">from_constraint() (pyxtal.operations.orientation method)</a>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation.from_constraint">from_constraint() (pyxtal.operations.Orientation method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -269,6 +281,8 @@
 </li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.get_center">get_center() (in module pyxtal.crystal)</a>
 </li>
+      <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_coords_and_species">get_coords_and_species() (pyxtal.molecular_crystal.mol_site method)</a>
+</li>
       <li><a href="pyxtal.molecule.html#pyxtal.molecule.get_inertia_tensor">get_inertia_tensor() (in module pyxtal.molecule)</a>
 </li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.get_layer">get_layer() (in module pyxtal.crystal)</a>
@@ -279,11 +293,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.get_layer_symmetry">get_layer_symmetry() (in module pyxtal.crystal)</a>
 </li>
-      <li><a href="pyxtal.operations.html#pyxtal.operations.orientation.get_matrix">get_matrix() (pyxtal.operations.orientation method)</a>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation.get_matrix">get_matrix() (pyxtal.operations.Orientation method)</a>
 </li>
       <li><a href="pyxtal.molecule.html#pyxtal.molecule.get_moment_of_inertia">get_moment_of_inertia() (in module pyxtal.molecule)</a>
 </li>
-      <li><a href="pyxtal.operations.html#pyxtal.operations.orientation.get_op">get_op() (pyxtal.operations.orientation method)</a>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation.get_op">get_op() (pyxtal.operations.Orientation method)</a>
 </li>
       <li><a href="pyxtal.operations.html#pyxtal.operations.OperationAnalyzer.get_order">get_order() (pyxtal.operations.OperationAnalyzer method)</a>
 </li>
@@ -351,14 +365,16 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.lattice">lattice (pyxtal.molecular_crystal.mol_site attribute)</a>
+</li>
       <li><a href="pyxtal.database.layergroup.html#pyxtal.database.layergroup.Layergroup">Layergroup (class in pyxtal.database.layergroup)</a>
 </li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.letter_from_index">letter_from_index() (in module pyxtal.crystal)</a>
 </li>
-      <li><a href="pyxtal.database.layergroup.html#pyxtal.database.layergroup.Layergroup.lg">lg (pyxtal.database.layergroup.Layergroup attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pyxtal.database.layergroup.html#pyxtal.database.layergroup.Layergroup.lg">lg (pyxtal.database.layergroup.Layergroup attribute)</a>
+</li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D.lgp">lgp (pyxtal.crystal.random_crystal_2D attribute)</a>
 
       <ul>
@@ -375,7 +391,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.operations.html#pyxtal.operations.OperationAnalyzer.m">m (pyxtal.operations.OperationAnalyzer attribute)</a>
 </li>
-      <li><a href="pyxtal.operations.html#pyxtal.operations.orientation.matrix">matrix (pyxtal.operations.orientation attribute)</a>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation.matrix">matrix (pyxtal.operations.Orientation attribute)</a>
 </li>
       <li><a href="pyxtal.operations.html#pyxtal.operations.matrix2aa">matrix2aa() (in module pyxtal.operations)</a>
 </li>
@@ -386,6 +402,8 @@
       <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.merge_coordinate_molecular">merge_coordinate_molecular() (in module pyxtal.molecular_crystal)</a>
 </li>
       <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.mol">mol (pyxtal.molecular_crystal.mol_site attribute)</a>
+</li>
+      <li><a href="pyxtal.molecule.html#pyxtal.molecule.mol_from_collection">mol_from_collection() (in module pyxtal.molecule)</a>
 </li>
       <li><a href="pyxtal.molecule.html#pyxtal.molecule.mol_from_file">mol_from_file() (in module pyxtal.molecule)</a>
 </li>
@@ -467,11 +485,13 @@
 </li>
       <li><a href="pyxtal.operations.html#pyxtal.operations.OperationAnalyzer">OperationAnalyzer (class in pyxtal.operations)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.operations.html#pyxtal.operations.OperationAnalyzer.order">order (pyxtal.operations.OperationAnalyzer attribute)</a>
 </li>
-      <li><a href="pyxtal.operations.html#pyxtal.operations.orientation">orientation (class in pyxtal.operations)</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation">Orientation (class in pyxtal.operations)</a>
+</li>
+      <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.orientation">orientation (pyxtal.molecular_crystal.mol_site attribute)</a>
 </li>
       <li><a href="pyxtal.molecule.html#pyxtal.molecule.orientation_in_wyckoff_position">orientation_in_wyckoff_position() (in module pyxtal.molecule)</a>
 </li>
@@ -483,12 +503,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.para2matrix">para2matrix() (in module pyxtal.crystal)</a>
 </li>
-      <li><a href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D.PBC">PBC (pyxtal.crystal.random_crystal_1D attribute)</a>
+      <li><a href="pyxtal.crystal.html#pyxtal.crystal.random_crystal.PBC">PBC (pyxtal.crystal.random_crystal attribute)</a>
 
       <ul>
+        <li><a href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D.PBC">(pyxtal.crystal.random_crystal_1D attribute)</a>
+</li>
         <li><a href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D.PBC">(pyxtal.crystal.random_crystal_2D attribute)</a>
 </li>
         <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.PBC">(pyxtal.molecular_crystal.mol_site attribute)</a>
+</li>
+        <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.PBC">(pyxtal.molecular_crystal.molecular_crystal attribute)</a>
 </li>
         <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D.PBC">(pyxtal.molecular_crystal.molecular_crystal_2D attribute)</a>
 </li>
@@ -499,10 +523,10 @@
 </li>
       <li><a href="pyxtal.database.layergroup.html#pyxtal.database.layergroup.Layergroup.print_all">print_all() (pyxtal.database.layergroup.Layergroup method)</a>
 </li>
-      <li><a href="pyxtal.html#module-pyxtal">pyxtal (module)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pyxtal.html#module-pyxtal">pyxtal (module)</a>
+</li>
       <li><a href="pyxtal.crystal.html#module-pyxtal.crystal">pyxtal.crystal (module)</a>
 </li>
       <li><a href="pyxtal.database.html#module-pyxtal.database">pyxtal.database (module)</a>
@@ -556,6 +580,8 @@
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D">random_crystal_1D (class in pyxtal.crystal)</a>
 </li>
       <li><a href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D">random_crystal_2D (class in pyxtal.crystal)</a>
+</li>
+      <li><a href="pyxtal.operations.html#pyxtal.operations.Orientation.random_orientation">random_orientation() (pyxtal.operations.Orientation method)</a>
 </li>
       <li><a href="pyxtal.operations.html#pyxtal.operations.random_shear_matrix">random_shear_matrix() (in module pyxtal.operations)</a>
 </li>
@@ -684,6 +710,10 @@
 </li>
       </ul></li>
       <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.wp">wp (pyxtal.molecular_crystal.mol_site attribute)</a>
+</li>
+      <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.wp_generators">wp_generators (pyxtal.molecular_crystal.mol_site attribute)</a>
+</li>
+      <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.wp_generators_m">wp_generators_m (pyxtal.molecular_crystal.mol_site attribute)</a>
 </li>
       <li><a href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.wyckoff_generators">wyckoff_generators (pyxtal.molecular_crystal.molecular_crystal attribute)</a>
 

@@ -131,7 +131,7 @@ mean molecules must be farther apart</li>
 
 <dl class="function">
 <dt id="pyxtal.molecular_crystal.check_wyckoff_position_molecular">
-<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">check_wyckoff_position_molecular</code><span class="sig-paren">(</span><em>points, orientations, wyckoffs, w_symm_all, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#check_wyckoff_position_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.check_wyckoff_position_molecular" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">check_wyckoff_position_molecular</code><span class="sig-paren">(</span><em>points, orientations, wyckoffs, w_symm_all, PBC=[1, 2, 3], tol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#check_wyckoff_position_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.check_wyckoff_position_molecular" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a list of points, returns the index of the Wyckoff position within
 the spacegroup.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -149,8 +149,13 @@ considered equal</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a single index corresponding to the detected Wyckoff position. If no
-valid Wyckoff position is found, returns False</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">index is a single index corresponding to the detected
+Wyckoff position. If no valid Wyckoff position is found, returns False.
+point is a 3-vector from the list points; when plugged into the Wyckoff
+position, it will generate the other points</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">index, point</p>
 </td>
 </tr>
 </tbody>
@@ -298,10 +303,11 @@ space group</li>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(coor) is the new list of fractional coordinates after
 merging, and index is a single index of the Wyckoff position within
 the spacegroup. If merging is unsuccesful, or no index is found,
-returns the original coordinates and False</p>
+returns the original coordinates and False. point is a 3-vector which can
+be plugged into the Wyckoff position to generate the rest of the points</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">coor, index</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">coor, index, point</p>
 </td>
 </tr>
 </tbody>
@@ -310,7 +316,7 @@ returns the original coordinates and False</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.mol_site">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">mol_site</code><span class="sig-paren">(</span><em>mol, position, wp, wp_generators, lattice, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">mol_site</code><span class="sig-paren">(</span><em>mol, position, orientation, wp, wp_generators, wp_generators_m, lattice, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing molecular Wyckoff positions and orientations within
 the molecular_crystal class. Each mol_site object represenents an
@@ -318,7 +324,58 @@ entire Wyckoff position, not necessarily a single molecule.</p>
 <dl class="attribute">
 <dt id="pyxtal.molecular_crystal.mol_site.PBC">
 <code class="descname">PBC</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.PBC" title="Permalink to this definition">¶</a></dt>
-<dd><p>The periodic boundary condition direction</p>
+<dd><p>The periodic axes</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.molecular_crystal.mol_site.check_distances">
+<code class="descname">check_distances</code><span class="sig-paren">(</span><em>factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.check_distances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.check_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the atoms in the Wyckoff position are too close to each other
+or not. Does not check distances between atoms in the same molecule. Uses
+crystal.check_distance as the base code.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>factor</strong> – the tolerance factor to use. A higher value means atoms must
+be farther apart</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if the atoms are not too close together, False otherwise</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.molecular_crystal.mol_site.get_coords_and_species">
+<code class="descname">get_coords_and_species</code><span class="sig-paren">(</span><em>absolute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_coords_and_species"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_coords_and_species" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazily generates and returns the atomic coordinate and species for the
+Wyckoff position. Plugs the molecule into the provided orientation
+(with angle=0), and calculates the new positions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>absolute</strong> – whether or not to return absolute (Euclidean)
+coordinates. If false, return relative coordinates instead</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>coords is an np array of 3-vectors. species is</dt>
+<dd>a list of atomic species names, for example
+[‘H’, ‘H’, ‘O’, ‘H’, ‘H’, ‘O’]</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">coords, species</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.molecular_crystal.mol_site.lattice">
+<code class="descname">lattice</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.lattice" title="Permalink to this definition">¶</a></dt>
+<dd><p>The crystal lattice in which the molecule resides</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -334,6 +391,12 @@ entire Wyckoff position, not necessarily a single molecule.</p>
 </dd></dl>
 
 <dl class="attribute">
+<dt id="pyxtal.molecular_crystal.mol_site.orientation">
+<code class="descname">orientation</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.orientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The orientation object of the Mol in the first point in the WP</p>
+</dd></dl>
+
+<dl class="attribute">
 <dt id="pyxtal.molecular_crystal.mol_site.position">
 <code class="descname">position</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.position" title="Permalink to this definition">¶</a></dt>
 <dd><p>Relative coordinates of the molecule’s center within the unit cell</p>
@@ -342,7 +405,19 @@ entire Wyckoff position, not necessarily a single molecule.</p>
 <dl class="attribute">
 <dt id="pyxtal.molecular_crystal.mol_site.wp">
 <code class="descname">wp</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.wp" title="Permalink to this definition">¶</a></dt>
-<dd><p>The Wyckoff pgenerators for the site</p>
+<dd><p>The Wyckoff position for the site</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.molecular_crystal.mol_site.wp_generators">
+<code class="descname">wp_generators</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.wp_generators" title="Permalink to this definition">¶</a></dt>
+<dd><p>The (non-molecular) Wyckoff generators for the site</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.molecular_crystal.mol_site.wp_generators_m">
+<code class="descname">wp_generators_m</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.wp_generators_m" title="Permalink to this definition">¶</a></dt>
+<dd><p>The (molecular) Wyckoff generators for the site</p>
 </dd></dl>
 
 </dd></dl>
@@ -393,6 +468,12 @@ when molecule values are strings</li>
 <dt id="pyxtal.molecular_crystal.molecular_crystal.Msgs">
 <code class="descname">Msgs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.Msgs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.Msgs" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.molecular_crystal.molecular_crystal.PBC">
+<code class="descname">PBC</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.PBC" title="Permalink to this definition">¶</a></dt>
+<dd><p>The periodic axes of the crystal</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="pyxtal.molecular_crystal.molecular_crystal.allow_inversion">

@@ -40,7 +40,7 @@ Also note that the openbabel Python bindings require swig to install:
 
 ``sudo apt-get install swig``  
 
-For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the `openbabel website
+Older version of swig (before 2.0) will not work. For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the `openbabel website
 <https://openbabel.org/docs/dev/UseTheLibrary/PythonInstall.html>`_, as well as in the `pymatgen documentation
 <http://pymatgen.org/installation.html#openbabel-mac-os-x-tested-on-v2-3-2>`_.
 
@@ -124,12 +124,46 @@ This will create a file called myfile.cif, which stores the structure informatio
 Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with (rigid) molecules. The molecules may either be strings for the chemical composition (currently supported: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, and ROY), or `pymatgen.core.structure.Molecule <http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule>`_ objects. The generating class is `molecular_crystal.molecular_crystal <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_:
 
 .. code-block:: Python
-
+ 
   from pyxtal.molecular_crystal import molecular_crystal
   my_crystal = molecular_crystal(36, ['H2O'], [4], 1.0)
 
 This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
 
+Specify molecules
+**********************
+
+One can specify the geometry of molecule in several ways. 
+
+* Load from PyXtal library
+.. code-block:: Python
+
+>>> from pyxtal.database.collection import Collection
+>>> test=Collection('molecules')
+>>> list(test)
+    ['C60', 'H2O', 'CH4', 'NH3', 'benzene', 'naphthalene', 'teracene', .......]
+
+To use these molecules from the library, one just needs to give the name
+
+.. code-block:: Python
+
+	from pyxtal.molecular_crystal import molecular_crystal
+	my_crystal = molecular_crystal(36, ['H2O'], [4], 1.0)
+
+* Load from a file (using mol_from_file, which is in molecule.py)
+
+.. code-block:: Python
+	
+	from pyxtal.molecular_crystal import molecular_crystal
+	my_crystal = molecular_crystal(36, ['H2O'], [4], 1.0) # to change
+  
+* Load from a string (using mol_from_string, which is also in molecule.py)
+
+.. code-block:: Python
+	
+	from pyxtal.molecular_crystal import molecular_crystal
+ 	my_crystal = molecular_crystal(36, ['H2O'], [4], 1.0) # to change
+   
 Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The molecular_crystal class handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric.
 
 Like atomic crystals, the atomic positions may be accessed with the struct attribute. However, for accessing the positions and orientations of the molecules themselves, there is an attribute called mol_generators. This provides a list of `mol_site <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site>`_ objects, which in turn give the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit. This can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule’s center of mass.
