@@ -392,93 +392,136 @@ class mol_site():
         self.position = position
         """Relative coordinates of the molecule's center within the unit cell"""
         self.orientation = orientation
-        """The orientation SymmOp of the Mol in the first point in the WP"""
+        """The orientation object of the Mol in the first point in the WP"""
         self.wp = wp
         """The Wyckoff position for the site"""
         self.wp_generators = wp_generators
         """The (molecular) Wyckoff generators for the site"""
+        self.lattice = lattice
+        """The crystal lattice in which the molecule resides"""
         self.multiplicity = len(wp)
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = PBC
         """The periodic axes"""
-        def _get_coords_and_species(self, absolute=False):
-            """
-            Used to lazily generate coords and species for get_coords_and_species
-            """
-            #Get the species names to return
-            species = [s.specie.name for s in self.mol]*self.multiplicity
-            #Get the molecular centers
-            centers0 = apply_ops(self.position, self.wp)
-            centers1 = np.inner(centers1, self.lattice)
-            centers = np.repeat(centers1, len(self.wp), axis=0)
-            #Get the coordintaes of the generating molecule
-            coords0 = [s.coords for s in self.mol]
-            #Reorient the molecule
-            op1 = orientation.get_op(angle=0)
-            coords1 = op1.operate_multi(coords0)
-            #Apply generators to coords
-            rotated_coords = np.apply_along_axis(apply_ops, -1, coords1, self.wp_generators)
-            #Add centers to coordinates
-            absolute_coords = rotated_coords + centers
-            if absolute is True:
-                return absolute_coords, species
+
+    def _get_coords_and_species(self, absolute=False):
+        """
+        Used to generate coords and species for get_coords_and_species
+        """
+        mo = deepcopy(self.mol)
+        mo.apply_operation(self.orientation.get_op(angle=0))
+        wp_atomic_sites = []
+        wp_atomic_coords = []
+        for point_index, op2 in enumerate(self.wp):
+            current_atomic_sites = []
+            current_atomic_coords = []
+
+            #Rotate the molecule (Euclidean metric)
+            op2_m = self.wp_generators[point_index]
+            mo2 = deepcopy(mo)
+            mo2.apply_operation(op2_m)
+            #Obtain the center in absolute coords
+            center_relative = op2.operate(self.position)
+            center_absolute = np.dot(center_relative, self.lattice)
+            #Add absolute center to molecule
+            mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
+
+            for site in mo2:
+                #Place molecular coordinates in relative coordinates
+                relative_coords = np.dot(site.coords, np.linalg.inv(self.lattice))
+                relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
+                current_atomic_sites.append(site.specie.name)
+                current_atomic_coords.append(relative_coords)
+            for s in current_atomic_sites:
+                wp_atomic_sites.append(s)
+            for c in current_atomic_coords:
+                wp_atomic_coords.append(c)
+        #print(np.array(wp_atomic_coords), wp_atomic_sites)
+        return np.array(wp_atomic_coords), wp_atomic_sites
+
+
+        #New method, sometimes fails for sg's 109 and 110
+        '''#Apply the initial orientation
+        mo = deepcopy(self.mol)
+        mo.apply_operation(self.orientation.get_op(angle=0))
+        coords1 = [s.coords for s in mo]
+        #Get the species names to return
+        species = [s.specie.name for s in mo]*self.multiplicity
+        #Get the molecular centers
+        centers0 = apply_ops(self.position, self.wp)
+        centers1 = np.dot(centers0, self.lattice)
+        centers = np.repeat(centers1, len(self.mol), axis=0)
+
+        #Apply generators to coords
+        rotated_coords = []        
+        for i, op in enumerate(self.wp_generators):
+            if rotated_coords == []:
+                rotated_coords = op.operate_multi(coords1)
             else:
-                #Calculate the relative coordinates
-                relative_coords = np.inner(absolute_coords, np.linalg.inv(self.lattice))
-                return filtered_coords(relative_coords, PBC=self.PBC), species
+                rotated_coords = np.vstack([rotated_coords, op.operate_multi(coords1)])
 
-        def get_coords_and_species(self, absolute=False, force=False):
-            """
-            Lazily generates and returns the atomic coordinate and species for the
-            Wyckoff position. Plugs the molecule into the provided orientation
-            (with angle=0), and calculates the new positions.
+        #Add centers to coordinates
+        absolute_coords = rotated_coords + centers
+        if absolute is True:
+            return absolute_coords, species
+        else:
+            #Calculate the relative coordinates
+            relative_coords = np.dot(absolute_coords, np.linalg.inv(self.lattice))
+            return filtered_coords(relative_coords, PBC=self.PBC), species'''
 
-            Args:
-                absolute: whether or not to return absolute (Euclidean)
-                    coordinates. If false,
-                force: if True, forces regeneration of coordinates, even if the
-                    values have already been calculated. Used to override lazy
-                    generation
-            
-            Returns:
-                coords, species: coords is an np array of 3-vectors. species is
-                    a list of atomic species names, for example
-                    ['H', 'H', 'O', 'H', 'H', 'O']
-            """
-            if absolute is True:
-                if (not self.absolute_coords) or (force is True):
-                    self.absolute_coords, self.species = _get_coords_and_species(self, absolute=True)
+    def get_coords_and_species(self, absolute=False):
+        """
+        Lazily generates and returns the atomic coordinate and species for the
+        Wyckoff position. Plugs the molecule into the provided orientation
+        (with angle=0), and calculates the new positions.
+
+        Args:
+            absolute: whether or not to return absolute (Euclidean)
+                coordinates. If false, return relative coordinates instead
+        
+        Returns:
+            coords, species: coords is an np array of 3-vectors. species is
+                a list of atomic species names, for example
+                ['H', 'H', 'O', 'H', 'H', 'O']
+        """
+        if absolute is True:
+            try:
                 return self.absolute_coords, self.species
-            elif absolute is False:
-                if (not self.relative_coords) or (force is True):
-                    self.relative_coords, self.species = _get_coords_and_species(self, absolute=False)
+            except:
+                self.absolute_coords, self.species = self._get_coords_and_species(absolute=absolute)
+            return self.absolute_coords, self.species
+        elif absolute is False:
+            try:
                 return self.relative_coords, self.species
-            else:
-                print("Error: parameter absolute must be True or False")
-                return
+            except:
+                self.relative_coords, self.species = self._get_coords_and_species(absolute=absolute)
+            return self.relative_coords, self.species
+        else:
+            print("Error: parameter absolute must be True or False")
+            return
 
-        def check_distances(self, factor=1.0):
-            """
-            Checks if the atoms in the Wyckoff position are too close to each other
-            or not. Does not check distances between atoms in the same molecule. Uses
-            crystal.check_distance as the base code.
-            
-            Args:
-                factor: the tolerance factor to use. A higher value means atoms must
-                    be farther apart
-            
-            Returns:
-                True if the atoms are not too close together, False otherwise
-            """
-            coords, species = self.get_coords_and_species(force=True)
-            #Store the coords and species for a single molecule
-            coords_m = coords[:len(self.mol)]
-            species_m = species[:len(self.mol)]
-            #Store the coords and species for the other molecule
-            coords_other = coords[len(self.mol):]
-            species_other = species[len(self.mol):]
-            #Check the distances
-            return check_distance(coords_m, coords_other, species_m, species_other, self.lattice, PBS=self.PBC, d_factor=factor)
+    def check_distances(self, factor=1.0):
+        """
+        Checks if the atoms in the Wyckoff position are too close to each other
+        or not. Does not check distances between atoms in the same molecule. Uses
+        crystal.check_distance as the base code.
+        
+        Args:
+            factor: the tolerance factor to use. A higher value means atoms must
+                be farther apart
+        
+        Returns:
+            True if the atoms are not too close together, False otherwise
+        """
+        coords, species = self._get_coords_and_species()
+        #Store the coords and species for a single molecule
+        coords_m = coords[:len(self.mol)]
+        species_m = species[:len(self.mol)]
+        #Store the coords and species for the other molecule
+        coords_other = coords[len(self.mol):]
+        species_other = species[len(self.mol):]
+        #Check the distances
+        return check_distance(coords_m, coords_other, species_m, species_other, self.lattice, PBC=self.PBC, d_factor=factor)
 
 class molecular_crystal():
     """
@@ -736,8 +779,8 @@ class molecular_crystal():
 
                     molecular_coordinates_total = [] #to store the added molecular coordinates
                     molecular_sites_total = []      #to store the corresponding molecular specie
-                    atomic_coordinates_total = [] #to store the added atomic coordinates
-                    atomic_sites_total = []      #to store the corresponding atomic specie
+                    coordinates_total = [] #to store the added atomic coordinates
+                    species_total = []      #to store the corresponding atomic specie
                     wps_total = []      #to store corresponding Wyckoff position indices
                     points_total = []   #to store the generating x,y,z points
                     mol_generators_total = []
@@ -746,8 +789,8 @@ class molecular_crystal():
                     for cycle2 in range(max2):
                         molecular_coordinates_tmp = deepcopy(molecular_coordinates_total)
                         molecular_sites_tmp = deepcopy(molecular_sites_total)
-                        atomic_coordinates_tmp = deepcopy(atomic_coordinates_total)
-                        atomic_sites_tmp = deepcopy(atomic_sites_total)
+                        coordinates_tmp = deepcopy(coordinates_total)
+                        species_tmp = deepcopy(species_total)
                         wps_tmp = deepcopy(wps_total)
                         points_tmp = deepcopy(points_total)
                         mol_generators_tmp = []
@@ -776,7 +819,7 @@ class molecular_crystal():
                                     if self.check_atomic_distances is False:
                                         mtol = self.radii[i]*2
                                     elif self.check_atomic_distances is True:
-                                        mtol = 3.0
+                                        mtol = self.radii[i]*0.5
                                     coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, 
                                             self.wyckoffs, self.w_symm, mtol, self.valid_orientations[i])
                                     if good_merge is not False:
@@ -785,7 +828,6 @@ class molecular_crystal():
 
                                         #Check inter-molecular distances
                                         if self.check_atomic_distances is False:
-                                            #if check_distance_molecular(molecular_coordinates_tmp, coords_toadd, molecular_sites_tmp, i, cell_matrix, self.radii):
                                             molecular_coordinates_tmp.append(coords_toadd)
                                             #indices of the molecule in the WP
                                             molecular_sites_tmp.append(i)
@@ -801,79 +843,30 @@ class molecular_crystal():
 
                                         #Check inter-atomic distances
                                         elif self.check_atomic_distances is True:
-                                            #Generate atomic coordinates from molecules
+                                            #Create a mol_site object
                                             mo = deepcopy(self.molecules[i])
-                                            #get j, k from wp_index
-                                            num = 0
-                                            found = False
                                             j, k = jk_from_i(wp_index, self.wyckoffs_organized)
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
-                                            op1 = ori.get_op(angle=0)
-                                            mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
-                                            wp_atomic_sites = [] #The species for the Wyckoff position
-                                            wp_atomic_coords = [] #The coords for the Wyckoff position
-                                            flag1 = True
-                                            for point_index, op2 in enumerate(self.wyckoff_generators[wp_index]):
-
-                                                #Rotate the molecule (Euclidean metric)
-                                                op2_m = self.wyckoff_generators_m[wp_index][point_index]
-                                                mo2 = deepcopy(mo)
-                                                mo2.apply_operation(op2_m)
-                                                #Obtain the center in absolute coords
-                                                center_relative = op2.operate(point)
-                                                center_absolute = np.dot(center_relative, cell_matrix)
-                                                #Add absolute center to molecule
-                                                mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
-
-                                                current_atomic_sites = []
-                                                current_atomic_coords = []
-                                                for site in mo2:
-                                                    #Place molecular coordinates in relative coordinates
-                                                    relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                                    relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
-                                                    current_atomic_sites.append(site.specie.name)
-                                                    current_atomic_coords.append(relative_coords)
-                                                wp_atomic_sites.append(current_atomic_sites)
-                                                wp_atomic_coords.append(current_atomic_coords)
-                                                #Check distances between molecules in current WP
-                                                if point_index == 1:
-                                                    for a_index, specie2 in enumerate(current_atomic_sites):
-                                                        flag1 = check_distance([wp_atomic_coords[0]], [current_atomic_coords[a_index]], wp_atomic_sites[0], specie2, cell_matrix, d_factor=2.0)
-                                                        if flag1 is False:
-                                                            break
-                                                    if flag1 is False:
-                                                        break
-                                            if flag1 is True:
-                                                #Check distances between current and previous molecular atoms
-                                                a = []
-                                                for x in wp_atomic_coords:
-                                                    a += x
-                                                b = []
-                                                for x in wp_atomic_sites:
-                                                    b += x
-                                                flag2 = True
-                                                for a_index, specie2 in enumerate(b):
-                                                    flag2 = check_distance([atomic_coordinates_total], [a[a_index]], atomic_sites_total, specie2, cell_matrix, d_factor=2.0)
-                                                    if flag2 is False: break
-                                                if flag2 is True:
-                                                    mol_generators_tmp.append(ms0)
-                                                    molecular_coordinates_tmp.append(coords_toadd)
-                                                    molecular_sites_tmp.append(i)
-                                                    atomic_coordinates_tmp += a
-                                                    atomic_sites_tmp += b
-                                                    wps_tmp.append(wp_index)
-                                                    points_tmp.append(point)
-                                                    numMol_added += len(coords_toadd)
-                                                    if numMol_added == numMol:
-                                                        mol_generators_total = deepcopy(mol_generators_tmp)
-                                                        molecular_coordinates_total = deepcopy(molecular_coordinates_tmp)
-                                                        atomic_sites_total = deepcopy(atomic_sites_tmp)
-                                                        atomic_coordinates_total = deepcopy(atomic_coordinates_tmp)
-                                                        molecular_sites_total = deepcopy(molecular_sites_tmp)
-                                                        wps_total = deepcopy(wps_tmp)
-                                                        points_total = deepcopy(points_tmp)
-                                                        break
+                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
+                                            #Check inter-atomic distances for single WP
+                                            if ms0.check_distances() is False: continue
+                                            #Check inter-atomic distances with other WP's
+                                            coords_toadd, species_toadd = ms0.get_coords_and_species()
+                                            if check_distance(coords_toadd, coordinates_total, species_toadd, species_total, cell_matrix, PBC=self.PBC):
+                                                #Distance checks passed; store the new Wyckoff position
+                                                mol_generators_tmp.append(ms0)
+                                                if coordinates_tmp == []:
+                                                    coordinates_tmp = coords_toadd
+                                                else:
+                                                    coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                                species_tmp += species_toadd
+                                                numMol_added += len(coords_toadd)/len(mo)
+                                                if numMol_added == numMol:
+                                                    #We have enough molecules of the current type
+                                                    mol_generators_total = deepcopy(mol_generators_tmp)
+                                                    coordinates_total = deepcopy(coordinates_tmp)
+                                                    species_total = deepcopy(species_tmp)
+                                                    break
 
                             if numMol_added != numMol:
                                 break  #need to repeat from the 1st species
@@ -896,61 +889,39 @@ class molecular_crystal():
                         """A list of mol_site objects which can be used to regenerate the crystal."""
 
                         if self.check_atomic_distances is False:
-                            for center0, i, wp_index in zip(points_total, molecular_sites_total, wps_total):
-                                mo = deepcopy(self.molecules[i])
-                                #get j, k from wp_index
-                                num = 0
-                                found = False
-                                j, k = jk_from_i(wp_index, self.wyckoffs_organized)
-                                ori = choose(self.valid_orientations[i][j][k]).random_orientation()
-                                op1 = ori.get_op(angle=0)
-                                mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
-                                self.mol_generators.append(ms0)
-                                for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
-
-                                    #Rotate the molecule (Euclidean metric)
-                                    op2_m = self.wyckoff_generators_m[wp_index][point_index]
-                                    mo2 = deepcopy(mo)
-                                    mo2.apply_operation(op2_m)
-                                    #Obtain the center in absolute coords
-                                    center_relative = op2.operate(point)
-                                    center_absolute = np.dot(center_relative, cell_matrix)
-                                    #Add absolute center to molecule
-                                    mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
-
-                                    for site in mo2:
-                                        #Place molecular coordinates in relative coordinates
-                                        relative_coords = np.dot(site.coords, np.linalg.inv(cell_matrix))
-                                        relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
-                                        final_coor.append(relative_coords)
-                                        final_site.append(site.specie.name)
-                                        final_number.append(site.specie.number)
-
-                        elif self.check_atomic_distances is True:
                             final_coor = deepcopy(atomic_coordinates_total)
                             final_site = deepcopy(atomic_sites_total)
                             final_number = list(Element(ele).z for ele in atomic_sites_total)
                             self.mol_generators = deepcopy(mol_generators_total)
+
+                        elif self.check_atomic_distances is True:
+                            final_coor = deepcopy(coordinates_total)
+                            final_site = deepcopy(species_total)
+                            final_number = list(Element(ele).z for ele in species_total)
+                            self.mol_generators = deepcopy(mol_generators_total)
                             """A list of mol_site objects which can be used
                             for generating the crystal."""
 
-                        final_coor -= np.floor(final_coor)
-                        if verify_distances(final_coor, final_site, final_lattice, factor=1.0) is True:
+                        #print("before:")
+                        #print(final_coor)
+                        final_coor = filtered_coords(final_coor, PBC=self.PBC)
+                        #print("after:")
+                        #print(final_coor)
+                        if verify_distances(final_coor, final_site, final_lattice, factor=1.0, PBC=self.PBC):
                             self.lattice = final_lattice
                             """A 3x3 matrix representing the lattice of the
                             unit cell."""  
-                            self.coordinates = np.array(final_coor)
+                            self.coordinates = filtered_coords(final_coor, PBC=self.PBC)
                             """The fractional coordinates for each molecule
                             in the final structure"""
                             self.sites = final_site
                             """The indices within self.molecules corresponding
                             to the type of molecule for each site in
                             self.coordinates."""              
-                            self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                            self.struct = Structure(final_lattice, self.sites, self.coordinates)
                             """A pymatgen.core.structure.Structure object for
                             the final generated crystal."""
-                            self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                            self.spg_struct = (final_lattice, self.coordinates, final_number)
                             """A list of information describing the generated
                             crystal, which may be used by spglib for symmetry
                             analysis."""
@@ -1320,7 +1291,7 @@ class molecular_crystal_2D():
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                             op1 = ori.get_op(angle=0)
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
+                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
@@ -1413,7 +1384,7 @@ class molecular_crystal_2D():
                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                 op1 = ori.get_op(angle=0)
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
+                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
 
@@ -1828,7 +1799,7 @@ class molecular_crystal_1D():
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                             op1 = ori.get_op(angle=0)
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
+                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
@@ -1921,7 +1892,7 @@ class molecular_crystal_1D():
                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                 op1 = ori.get_op(angle=0)
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix)
+                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
 
