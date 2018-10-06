@@ -905,7 +905,7 @@ class molecular_crystal():
                             for generating the crystal."""
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
-                        if verify_distances(final_coor, final_site, final_lattice, factor=1.0, PBC=self.PBC):
+                        if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC):
                             self.lattice = final_lattice
                             """A 3x3 matrix representing the lattice of the
                             unit cell."""  
@@ -1414,7 +1414,7 @@ class molecular_crystal_2D():
                             for generating the crystal."""
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
-                        if verify_distances(final_coor, final_site, final_lattice, factor=1.0, PBC=self.PBC) is True:
+                        if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC) is True:
                             final_coor = np.array(final_coor)
                             #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
                             final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
@@ -1922,7 +1922,7 @@ class molecular_crystal_1D():
                             for generating the crystal."""
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
-                        if verify_distances(final_coor, final_site, final_lattice, factor=1.0, PBC=self.PBC) is True:
+                        if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC) is True:
                             final_coor = np.array(final_coor)
                             #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
                             self.lattice = final_lattice
