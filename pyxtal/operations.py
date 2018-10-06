@@ -489,7 +489,7 @@ class OperationAnalyzer(SymmOp):
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
 
-class orientation():
+class Orientation():
     """
     Stores orientations for molecular crystals based on vector constraints.
     Can be stored to regenerate orientations consistent with a given constraint
@@ -591,7 +591,7 @@ class orientation():
         """
         #c1 is the constraint vector; v1 will be rotated onto it
         m = rotate_vector(v1, c1)
-        return orientation(m, degrees=1, axis=c1)
+        return Orientation(m, degrees=1, axis=c1)
 
     def random_orientation(self):
         """
@@ -601,7 +601,7 @@ class orientation():
         Returns:
             a new orientation object with a different base rotation matrix
         """
-        return orientation(self.get_matrix(), degrees=self.degrees, axis=self.axis)
+        return Orientation(self.get_matrix(), degrees=self.degrees, axis=self.axis)
 
 #Test Functionality
 if __name__ == "__main__":

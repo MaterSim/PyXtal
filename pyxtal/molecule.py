@@ -430,15 +430,15 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
                 if not np.isclose(a, 0, rtol=.01):
                     print("Error: Generated incorrect rotation: "+str(theta))
-                o = orientation(T2, degrees=0)
+                o = Orientation(T2, degrees=0)
                 orientations.append(o)
         #If there is only one constraint
         if c1[1] == []:
-            o = orientation(T, degrees=1, axis=constraint1.axis)
+            o = Orientation(T, degrees=1, axis=constraint1.axis)
             orientations.append(o)
     #Ensure the identity orientation is checked if no constraints are found
     if constraints_m == []:
-        o = orientation(np.identity(3), degrees=2)
+        o = Orientation(np.identity(3), degrees=2)
         orientations.append(o)
     
     #Remove redundancy from orientations
