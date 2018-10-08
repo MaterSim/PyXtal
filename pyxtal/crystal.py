@@ -108,7 +108,7 @@ rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generator
 #Define functions
 #------------------------------
 
-def filtered_coords(coords, PBC=[1, 2, 3], tol=1e-4):
+def filtered_coords(coords, PBC=[1, 2, 3]):
     """
     Given an array of 3d fractional coordinates or a single 3d point, transform
     all coordinates to less than 1 and greater than 0. If one axis is not
@@ -127,13 +127,11 @@ def filtered_coords(coords, PBC=[1, 2, 3], tol=1e-4):
     def filter_vector(vector):
         for a in PBC:
             vector[a-1] -= np.floor(vector[a-1])
-            if np.isclose(vector[a-1], 1.0, atol=tol):
-                vector[a-1] = 0
         return vector
 
     return np.apply_along_axis(filter_vector, -1, coords)
 
-def filtered_coords_euclidean(coords, PBC=[1,2,3], tol=1e-4):
+def filtered_coords_euclidean(coords, PBC=[1,2,3]):
     """
     Given an array of fractional 3-vectors, filters coordinates to between 0 and
     1. Then, values which are greater than 0.5 are converted to 1 minus their
@@ -153,9 +151,8 @@ def filtered_coords_euclidean(coords, PBC=[1,2,3], tol=1e-4):
             vector[a-1] -= np.floor(vector[a-1])
             if vector[a-1] > 0.5:
                 vector[a-1] = 1 - vector[a-1]
-            if np.isclose(vector[a-1], 1.0, atol=tol):
-                vector[a-1] = 0
         return vector
+    #c = filtered_coords(coords, PBC=PBC)
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
@@ -594,7 +591,31 @@ def distance_matrix_euclidean(points1, points2, PBC=[1,2,3], squared=False):
     else:
         return np.apply_along_axis(np.linalg.norm, -1, displacements)
 
-def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_factor=1.0):
+def get_tol(specie):
+    """
+    Given an atomic specie name, return the covalent radius.
+    
+    Args:
+        specie: a string for the atomic symbol
+
+    Returns:
+        the covalent radius in Angstroms
+    """
+    return Element(specie).covalent_radius
+
+tols_from_species = np.vectorize(get_tol)
+"""
+Given a list of atomic species names, returns a list of
+covalent radii
+
+Args:
+    species: a list of strings for atomic species names or symbols
+
+Returns:
+    A 1D numpy array of distances in Angstroms
+"""
+
+def check_distance(coord1, coord2, tols1, tols2, lattice, PBC=[1,2,3], d_factor=1.0):
     """
     Check the distances between two set of atoms. Distances between coordinates
     within the first set are not checked, and distances between coordinates within
@@ -606,8 +627,8 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_fac
             [.3,.8,.2]]
         coord2: a list of new fractional coordinates e.g. [[.7,.8,.9],
             [.4,.5,.6]]
-        specie1: a list of atomic symbols for coord1. Ex: ['C', 'O']
-        specie2: a list of atomic symbols for coord2. Ex: ['H', 'N']
+        tols1: a list of distance tolerances (in Angstroms) for coord1
+        tols2: a list of distance tolerances (in Angstroms) for coord2
         lattice: matrix describing the unit cell vectors
         PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
             to x, y, and z respectively.
@@ -621,18 +642,20 @@ def check_distance(coord1, coord2, specie1, specie2, lattice, PBC=[1,2,3], d_fac
     if len(coord1) <= 1 or len(coord2) <= 1:
         return True
 
-    #Get the tolerance between two species
-    def tol_ij(s1, s2):
-        return d_factor*(Element(s1).covalent_radius + Element(s2).covalent_radius)
+    #Convert atomic symbol strings to tolerances if needed
+    if type(tols1[0]) == str:
+        tols1 = tols_from_species(tols1)
+    if type(tols2[0]) == str:
+        tols2 = tols_from_species(tols2)
 
     #Calculate the distance between each i, j pair
     d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
 
-    #Calculate the tolerance for each i, j pair
-    tols = []
-    for s1 in specie1:
-        tols.append([tol_ij(s1, s2) for s2 in specie2])
-    tols = np.array(tols)
+    #Create a tolerance matrix from tols1 and tols2
+    tols1x = np.transpose(np.repeat([tols1,], len(tols2), axis=0))
+    tols2x = np.repeat([tols2,], len(tols1), axis=0)
+
+    tols = tols1x + tols2x
 
     #Check if the distance is ever less than the tolerance
     if (d < tols).sum() > 0:
@@ -2076,6 +2099,8 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
         coordinate taken from the list points. When plugged into the Wyckoff
         position, it will generate all the other points.
     """
+    #new method
+    #Store the squared distance tolerance
     t = tol**2
     #Loop over Wyckoff positions
     for i, wp in enumerate(wyckoffs):
@@ -2088,9 +2113,9 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
             #Calculate distance between original and generated points
             ps = np.array([op.operate(p) for op in w_symm_all[i][0]])
             #ds = distance_matrix([p], ps, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
-            ds = distance_matrix_euclidean([p], ps, PBC=PBC)
+            ds = distance_matrix_euclidean([p], ps, PBC=PBC, squared=True)
             #Check whether any generated points are too far away
-            num = (ds > tol).sum()
+            num = (ds > t).sum()
             if num > 0:
                 failed = True
                 break
@@ -2105,11 +2130,11 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
             #Calculate distances between original and generated points
             pw = np.array([op.operate(p) for op in wp])
             #dw = distance_matrix(points, pw, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
-            dw = distance_matrix_euclidean(points, pw, PBC=PBC)
+            dw = distance_matrix_euclidean(points, pw, PBC=PBC, squared=True)
             
             #Check each row for a zero
             for row in dw:
-                num = (row < tol).sum()
+                num = (row < t).sum()
                 if num < 1:
                     failed = True
                     break
@@ -2117,7 +2142,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
             if failed is True: continue
             #Check each column for a zero
             for column in dw.T:
-                num = (column < tol).sum()
+                num = (column < t).sum()
                 if num < 1:
                     failed = True
                     break
@@ -2141,29 +2166,17 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
     Returns:
         True if no atoms are too close together, False if any pair is too close
     """
-    if len(coordinates) <= 1:
-        return True
-
-    #Get the tolerance between two species
-    def tol_ij(s1, s2):
-        return factor*(Element(s1).covalent_radius + Element(s2).covalent_radius)
-
-    #Calculate the distance between each i, j pair
-    d = distance_matrix(coordinates, coordinates, lattice, PBC=PBC)
-
-    #Calculate the tolerance for each i, j pair
-    tols = []
-    for s1 in species:
-        tols.append([tol_ij(s1, s2) for s2 in species])
-    tols = np.array(tols)
-
-    d += (np.eye(len(coordinates)) * 2 * np.max(tols))
-    
-    #Check if the distance is ever less than the tolerance
-    if (d < tols).sum() > 0:
-        return False
-    else:
-        return True
+    for i, c1 in enumerate(coordinates):
+        specie1 = species[i]
+        for j, c2 in enumerate(coordinates):
+            if j > i:
+                specie2 = species[j]
+                diff = np.array(c2) - np.array(c1)
+                d_min = distance(diff, lattice, PBC=PBC)
+                tol = factor*0.5*(Element(specie1).covalent_radius + Element(specie2).covalent_radius)
+                if d_min < tol:
+                    return False
+    return True
 
 class random_crystal():
     """
