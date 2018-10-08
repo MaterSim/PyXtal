@@ -761,27 +761,27 @@ def para2matrix(cell_para, radians=True, format='lower'):
         pass
     return matrix
 
-def Add_vacuum(lattice, coor, vacuum=10.0, dim = 2):
+def Add_vacuum(lattice, coor, vacuum=10, PBC=[1,2,3]):
     """
-    Adds space above and below a 2D crystal. This allows for treating the
+    Adds space above and below a 2D or 1D crystal. This allows for treating the
     structure as a 3D crystal during energy optimization
 
     Args:
         lattice: the lattice matrix of the crystal
         coor: the relative coordinates of the crystal
         vacuum: the amount of space, in Angstroms, to add above and below
-        dim: the axis (0,1,2)->(x,y,z) along which to add space
+        PBC: the periodic axes of the crystal
 
     Returns:
         lattice, coor: The transformed lattice and coordinates after the
             vacuum space is added
     """
-    old = lattice[dim, dim]
-    new = old + vacuum
-    coor[:,dim] = coor[:,dim]*old/new
-    coor[:,dim] = coor[:,dim] - np.mean(coor[:,dim]) + 0.5
-    lattice[dim, dim] = new
-    return lattice, coor
+    absolute_coords = np.dot(coor, lattice)
+    for a in range(1, 4):
+        if a not in PBC:
+            lattice[a-1] += (lattice[a-1]/np.linalg.norm(lattice[a-1])) * vacuum
+    new_coor = np.dot(absolute_coords, np.linalg.inv(lattice))
+    return lattice, new_coor
 
 def Permutation(lattice, coor, PB):
     """
@@ -2603,7 +2603,7 @@ class random_crystal_2D():
                         final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
                     #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
                     cell."""                        
@@ -2825,6 +2825,7 @@ class random_crystal_1D():
                         final_site.append(ele)
                         final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
+                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
                     #TODO: Implement Add_vacuum for 1D lattices
                     self.lattice = final_lattice
                     """A 3x3 matrix representing the lattice of the unit
