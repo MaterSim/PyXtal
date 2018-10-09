@@ -905,27 +905,27 @@ class molecular_crystal():
                             for generating the crystal."""
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
-                        if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC):
-                            self.lattice = final_lattice
-                            """A 3x3 matrix representing the lattice of the
-                            unit cell."""  
-                            self.coordinates = final_coor
-                            """The fractional coordinates for each molecule
-                            in the final structure"""
-                            self.sites = final_site
-                            """The indices within self.molecules corresponding
-                            to the type of molecule for each site in
-                            self.coordinates."""              
-                            self.struct = Structure(final_lattice, self.sites, self.coordinates)
-                            """A pymatgen.core.structure.Structure object for
-                            the final generated crystal."""
-                            self.spg_struct = (final_lattice, self.coordinates, final_number)
-                            """A list of information describing the generated
-                            crystal, which may be used by spglib for symmetry
-                            analysis."""
-                            self.valid = True
-                            """Whether or not a valid crystal was generated."""
-                            return
+                        #if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC):
+                        self.lattice = final_lattice
+                        """A 3x3 matrix representing the lattice of the
+                        unit cell."""  
+                        self.coordinates = final_coor
+                        """The fractional coordinates for each molecule
+                        in the final structure"""
+                        self.sites = final_site
+                        """The indices within self.molecules corresponding
+                        to the type of molecule for each site in
+                        self.coordinates."""              
+                        self.struct = Structure(final_lattice, self.sites, self.coordinates)
+                        """A pymatgen.core.structure.Structure object for
+                        the final generated crystal."""
+                        self.spg_struct = (final_lattice, self.coordinates, final_number)
+                        """A list of information describing the generated
+                        crystal, which may be used by spglib for symmetry
+                        analysis."""
+                        self.valid = True
+                        """Whether or not a valid crystal was generated."""
+                        return
                         #else: print("Failed final distance check.")
         print("Couldn't generate crystal after max attempts.")
         if degrees == 0:
@@ -1415,30 +1415,29 @@ class molecular_crystal_2D():
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
                         final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                        if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC) is True:
-                            final_coor = np.array(final_coor)
-                            #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                            final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
-                            self.lattice = final_lattice
-                            """A 3x3 matrix representing the lattice of the
-                            unit cell."""  
-                            self.coordinates = np.array(final_coor)
-                            """The fractional coordinates for each molecule
-                            in the final structure"""
-                            self.sites = final_site
-                            """The indices within self.molecules corresponding
-                            to the type of molecule for each site in
-                            self.coordinates."""              
-                            self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                            """A pymatgen.core.structure.Structure object for
-                            the final generated crystal."""
-                            self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                            """A list of information describing the generated
-                            crystal, which may be used by spglib for symmetry
-                            analysis."""
-                            self.valid = True
-                            """Whether or not a valid crystal was generated."""
-                            return
+                        #if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC) is True:
+                        final_coor = np.array(final_coor)
+                        final_lattice, final_coor = Add_vacuum(final_lattice, final_coor)
+                        self.lattice = final_lattice
+                        """A 3x3 matrix representing the lattice of the
+                        unit cell."""  
+                        self.coordinates = np.array(final_coor)
+                        """The fractional coordinates for each molecule
+                        in the final structure"""
+                        self.sites = final_site
+                        """The indices within self.molecules corresponding
+                        to the type of molecule for each site in
+                        self.coordinates."""              
+                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        """A pymatgen.core.structure.Structure object for
+                        the final generated crystal."""
+                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                        """A list of information describing the generated
+                        crystal, which may be used by spglib for symmetry
+                        analysis."""
+                        self.valid = True
+                        """Whether or not a valid crystal was generated."""
+                        return
         print("Couldn't generate crystal after max attempts.")
         if degrees == 0:
             print("Note: Wyckoff positions have no degrees of freedom.")
@@ -1924,29 +1923,29 @@ class molecular_crystal_1D():
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
                         final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                        if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC) is True:
-                            final_coor = np.array(final_coor)
-                            #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                            self.lattice = final_lattice
-                            """A 3x3 matrix representing the lattice of the
-                            unit cell."""  
-                            self.coordinates = np.array(final_coor)
-                            """The fractional coordinates for each molecule
-                            in the final structure"""
-                            self.sites = final_site
-                            """The indices within self.molecules corresponding
-                            to the type of molecule for each site in
-                            self.coordinates."""              
-                            self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                            """A pymatgen.core.structure.Structure object for
-                            the final generated crystal."""
-                            self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                            """A list of information describing the generated
-                            crystal, which may be used by spglib for symmetry
-                            analysis."""
-                            self.valid = True
-                            """Whether or not a valid crystal was generated."""
-                            return
+                        #if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC) is True:
+                        final_coor = np.array(final_coor)
+                        #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
+                        self.lattice = final_lattice
+                        """A 3x3 matrix representing the lattice of the
+                        unit cell."""  
+                        self.coordinates = np.array(final_coor)
+                        """The fractional coordinates for each molecule
+                        in the final structure"""
+                        self.sites = final_site
+                        """The indices within self.molecules corresponding
+                        to the type of molecule for each site in
+                        self.coordinates."""              
+                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        """A pymatgen.core.structure.Structure object for
+                        the final generated crystal."""
+                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                        """A list of information describing the generated
+                        crystal, which may be used by spglib for symmetry
+                        analysis."""
+                        self.valid = True
+                        """Whether or not a valid crystal was generated."""
+                        return
         print("Couldn't generate crystal after max attempts.")
         if degrees == 0:
             print("Note: Wyckoff positions have no degrees of freedom.")
