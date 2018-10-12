@@ -77,6 +77,71 @@ max3 = 30 #Attempts for a given Wyckoff position
 
 tol_m = 1.0 #minimum distance between atoms for distance check
 
+def check_intersection(ellipsoid1, ellipsoid2):
+    """
+    Given SymmOp's for 2 ellipsoids, checks whether or not they overlap
+
+    Args:
+        ellipsoid1: a SymmOp representing the first ellipsoid
+        ellipsoid2: a SymmOp representing the second ellipsoid
+
+    Returns:
+        False if the ellipsoids overlap.
+        True if they do not overlap.
+    """
+    #Transform so that one ellipsoid becomes a unit sphere at (0,0,0)
+    Op = ellipsoid1.inverse * ellipsoid2
+    #We define a new ellipsoid by moving the sphere around the old ellipsoid
+    M = Op.rotation_matrix
+    a = 1.0 /(1.0 / np.linalg.norm(M[0]) + 1)
+    M[0] = M[0] / np.linalg.norm(M[0]) * a
+    b = 1.0 / (1.0 / np.linalg.norm(M[1]) + 1)
+    M[1] = M[1] / np.linalg.norm(M[1]) * b
+    c = 1.0 / (1.0 / np.linalg.norm(M[2]) + 1)
+    M[2] = M[2] / np.linalg.norm(M[2]) * c
+    p = Op.translation_vector
+    #Calculate the transformed distance from the sphere's center to the new ellipsoid
+    dsq = np.dot(p, M[0])**2 + np.dot(p, M[1])**2 + np.dot(p, M[2])**2
+    if dsq < 2:
+        return False
+    else:
+        return True
+
+def check_mol_sites(ms1, ms2, atomic=False):
+    """
+    Checks whether or not the molecules of two mol sites overlap. Uses
+    ellipsoid overlapping approximation to check. Takes PBC and lattice
+    into consideration.
+
+    Args:
+        ms1: a mol_site object
+        ms2: another mol_site object
+        atomic: if True, checks inter-atomic distances. If False, checks
+            overlap between molecular ellipsoids
+
+    Returns:
+        False if the Wyckoff positions overlap. True otherwise
+    """
+    if atomic is False:
+        es0 = ms1.get_ellipsoids()
+        PBC_vectors = np.dot(create_matrix(PBC=ms1.PBC), ms1.lattice)
+        PBC_ops = [SymmOp.from_rotation_and_translation(Euclidean_lattice, v) for v in PBC_vectors]
+        es1 = []
+        for op in PBC_ops:
+            es1.append(np.dot(es0, op))
+        es1 = np.squeeze(es1)
+        truth_values = np.vectorize(check_intersection)(es1, ms2.get_ellipsoid())
+        if np.sum(truth_values) < len(truth_values):
+            return False
+        else:
+            return True
+
+    elif atomic is True:
+        c1, s1 = ms1.get_coords_and_species()
+        c2, s2 = ms1.get_coords_and_species()
+        return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC)
+    
+
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
     """
     Estimate the volume needed for a molecular crystal conventional unit cell.
@@ -386,13 +451,15 @@ class mol_site():
     the molecular_crystal class. Each mol_site object represenents an
     entire Wyckoff position, not necessarily a single molecule.
     """
-    def __init__(self, mol, position, orientation, wp, wp_generators, wp_generators_m, lattice, PBC=[1,2,3]):
+    def __init__(self, mol, position, orientation, ellipsoid, wp, wp_generators, wp_generators_m, lattice, PBC=[1,2,3]):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = position
         """Relative coordinates of the molecule's center within the unit cell"""
         self.orientation = orientation
         """The orientation object of the Mol in the first point in the WP"""
+        self.ellipsoid = ellipsoid
+        """A SymmOp representing the minimal ellipsoid for the molecule"""
         self.wp = wp
         """The Wyckoff position for the site"""
         self.wp_generators = wp_generators
@@ -405,6 +472,42 @@ class mol_site():
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = PBC
         """The periodic axes"""
+
+    def get_ellipsoid(self):
+        #TODO: make lazy
+        """
+        Returns the bounding ellipsoid for the molecule. Applies the orientation
+        transformation first.
+
+        Returns:
+            a re-orientated SymmOp representing the molecule's bounding ellipsoid
+        """
+        e = self.ellipsoid
+        #Appy orientation
+        m = np.dot(e.rotation_matrix, self.orientation.get_matrix(angle=0))
+        return SymmOp.from_rotation_and_translation(m, e.translation_vector)
+
+    def get_ellipsoids(self):
+        #TODO: make lazy
+        """
+        Returns the bounding ellipsoids for the molecules in the WP. Includes the correct
+        molecular centers and orientations.
+
+        Returns:
+            an array of re-orientated SymmOp's representing the molecule's bounding ellipsoids
+        """
+        #Get molecular centers
+        centers0 = apply_ops(self.position, self.wp_generators)
+        centers1 = np.dot(centers0, self.lattice)
+        #Rotate ellipsoids
+        e1 = self.get_ellipsoid()
+        es = np.dot(self.wp_generators_m, e1)
+        #Add centers to ellipsoids
+        center_ops = [SymmOp.from_rotation_and_translation(Euclidean_lattice, c) for c in centers1]
+        es_final = []
+        for e, c in zip(es, center_ops):
+            es_final.append(e*c)
+        return np.array(es_final)
 
     def _get_coords_and_species(self, absolute=False):
         """
@@ -502,7 +605,7 @@ class mol_site():
             print("Error: parameter absolute must be True or False")
             return
 
-    def check_distances(self, factor=1.0):
+    def check_distances(self, factor=1.0, atomic=False):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
@@ -511,19 +614,39 @@ class mol_site():
         Args:
             factor: the tolerance factor to use. A higher value means atoms must
                 be farther apart
+            atomic: if True, checks inter-atomic distances. If False, checks ellipsoid
+                overlap between molecules instead
         
         Returns:
             True if the atoms are not too close together, False otherwise
         """
-        coords, species = self._get_coords_and_species()
-        #Store the coords and species for a single molecule
-        coords_m = coords[:len(self.mol)]
-        species_m = species[:len(self.mol)]
-        #Store the coords and species for the other molecule
-        coords_other = coords[len(self.mol):]
-        species_other = species[len(self.mol):]
-        #Check the distances
-        return check_distance(coords_m, coords_other, species_m, species_other, self.lattice, PBC=self.PBC, d_factor=factor)
+        if atomic is True:
+            #Check inter-atomic distances
+            coords, species = self._get_coords_and_species()
+            #Store the coords and species for a single molecule
+            coords_m = coords[:len(self.mol)]
+            species_m = species[:len(self.mol)]
+            #Store the coords and species for the other molecule
+            coords_other = coords[len(self.mol):]
+            species_other = species[len(self.mol):]
+            #Check the distances
+            return check_distance(coords_m, coords_other, species_m, species_other, self.lattice, PBC=self.PBC, d_factor=factor)
+        elif atomic is False:
+            #Check molecular ellipsoid overlap
+            if self.multiplicity == 1:
+                return True
+            es0 = self.get_ellipsoids()[1:]
+            PBC_vectors = np.dot(create_matrix(PBC=self.PBC), self.lattice)
+            PBC_ops = [SymmOp.from_rotation_and_translation(Euclidean_lattice, v) for v in PBC_vectors]
+            es1 = []
+            for op in PBC_ops:
+                es1.append(np.dot(es0, op))
+            es1 = np.squeeze(es1)
+            truth_values = np.vectorize(check_intersection)(es1, self.get_ellipsoid())
+            if np.sum(truth_values) < len(truth_values):
+                return False
+            else:
+                return True
 
 class molecular_crystal():
     """
@@ -611,6 +734,9 @@ class molecular_crystal():
                 radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
                 if radius > max_r: max_r = radius
             self.radii.append(max_r+1.0)
+
+        self.ellipsoids = [SymmOp.from_rotation_and_translation(Euclidean_lattice / r, [0,0,0]) for r in self.radii]
+
         self.numMols = numMols * cellsize(self.sg)
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
@@ -828,47 +954,37 @@ class molecular_crystal():
                                         wp_index = good_merge
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
 
-                                        #Check inter-molecular distances
-                                        if self.check_atomic_distances is False:
-                                            molecular_coordinates_tmp.append(coords_toadd)
-                                            #indices of the molecule in the WP
-                                            molecular_sites_tmp.append(i)
-                                            wps_tmp.append(wp_index)
-                                            points_tmp.append(point)
-                                            numMol_added += len(coords_toadd)
-                                            if numMol_added == numMol:
-                                                molecular_coordinates_total = deepcopy(molecular_coordinates_tmp)
-                                                molecular_sites_total = deepcopy(molecular_sites_tmp)
-                                                wps_total = deepcopy(wps_tmp)
-                                                points_total = deepcopy(points_tmp)
+                                        #Create a mol_site object
+                                        mo = deepcopy(self.molecules[i])
+                                        j, k = jk_from_i(wp_index, self.wyckoffs_organized)
+                                        ori = choose(self.valid_orientations[i][j][k]).random_orientation()
+                                        ms0 = mol_site(mo, point, ori, self.ellipsoids[i], self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
+                                        #Check distances within the WP
+                                        if ms0.check_distances(atomic=self.check_atomic_distances) is False: continue
+                                        #Check distances with other WP's
+                                        coords_toadd, species_toadd = ms0.get_coords_and_species()
+                                        passed = True
+                                        for ms1 in mol_generators_tmp:
+                                            if check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances) is False:
+                                                passed = False
                                                 break
-
-                                        #Check inter-atomic distances
-                                        elif self.check_atomic_distances is True:
-                                            #Create a mol_site object
-                                            mo = deepcopy(self.molecules[i])
-                                            j, k = jk_from_i(wp_index, self.wyckoffs_organized)
-                                            ori = choose(self.valid_orientations[i][j][k]).random_orientation()
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
-                                            #Check inter-atomic distances for single WP
-                                            if ms0.check_distances() is False: continue
-                                            #Check inter-atomic distances with other WP's
-                                            coords_toadd, species_toadd = ms0.get_coords_and_species()
-                                            if check_distance(coords_toadd, coordinates_total, species_toadd, species_total, cell_matrix, PBC=self.PBC):
-                                                #Distance checks passed; store the new Wyckoff position
-                                                mol_generators_tmp.append(ms0)
-                                                if coordinates_tmp == []:
-                                                    coordinates_tmp = coords_toadd
-                                                else:
-                                                    coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
-                                                species_tmp += species_toadd
-                                                numMol_added += len(coords_toadd)/len(mo)
-                                                if numMol_added == numMol:
-                                                    #We have enough molecules of the current type
-                                                    mol_generators_total = deepcopy(mol_generators_tmp)
-                                                    coordinates_total = deepcopy(coordinates_tmp)
-                                                    species_total = deepcopy(species_tmp)
-                                                    break
+                                        if passed is False: continue
+                                        elif passed is True:
+                                        #if check_distance(coords_toadd, coordinates_total, species_toadd, species_total, cell_matrix, PBC=self.PBC):
+                                            #Distance checks passed; store the new Wyckoff position
+                                            mol_generators_tmp.append(ms0)
+                                            if coordinates_tmp == []:
+                                                coordinates_tmp = coords_toadd
+                                            else:
+                                                coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                            species_tmp += species_toadd
+                                            numMol_added += len(coords_toadd)/len(mo)
+                                            if numMol_added == numMol:
+                                                #We have enough molecules of the current type
+                                                mol_generators_total = deepcopy(mol_generators_tmp)
+                                                coordinates_total = deepcopy(coordinates_tmp)
+                                                species_total = deepcopy(species_tmp)
+                                                break
 
                             if numMol_added != numMol:
                                 break  #need to repeat from the 1st species
@@ -890,19 +1006,12 @@ class molecular_crystal():
                         self.mol_generators = []
                         """A list of mol_site objects which can be used to regenerate the crystal."""
 
-                        if self.check_atomic_distances is False:
-                            final_coor = deepcopy(atomic_coordinates_total)
-                            final_site = deepcopy(atomic_sites_total)
-                            final_number = list(Element(ele).z for ele in atomic_sites_total)
-                            self.mol_generators = deepcopy(mol_generators_total)
-
-                        elif self.check_atomic_distances is True:
-                            final_coor = deepcopy(coordinates_total)
-                            final_site = deepcopy(species_total)
-                            final_number = list(Element(ele).z for ele in species_total)
-                            self.mol_generators = deepcopy(mol_generators_total)
-                            """A list of mol_site objects which can be used
-                            for generating the crystal."""
+                        final_coor = deepcopy(coordinates_total)
+                        final_site = deepcopy(species_total)
+                        final_number = list(Element(ele).z for ele in species_total)
+                        self.mol_generators = deepcopy(mol_generators_total)
+                        """A list of mol_site objects which can be used
+                        for generating the crystal."""
 
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
                         #if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC):
@@ -1036,6 +1145,9 @@ class molecular_crystal_2D():
                 radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
                 if radius > max_r: max_r = radius
             self.radii.append(max_r+1.0)
+
+        self.ellipsoids = self.boxes
+
         self.numMols = numMols * cellsize(self.sg)
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
@@ -1289,7 +1401,7 @@ class molecular_crystal_2D():
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                             op1 = ori.get_op(angle=0)
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
+                                            ms0 = mol_site(mo, point, ori, self.ellipsoids[i], self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
@@ -1382,7 +1494,7 @@ class molecular_crystal_2D():
                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                 op1 = ori.get_op(angle=0)
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
+                                ms0 = mol_site(mo, center0, ori, self.ellipsoids[i], self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
 
@@ -1538,6 +1650,9 @@ class molecular_crystal_1D():
                 radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
                 if radius > max_r: max_r = radius
             self.radii.append(max_r+1.0)
+
+        self.ellipsoids = self.boxes
+
         self.numMols = numMols
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
@@ -1797,7 +1912,7 @@ class molecular_crystal_1D():
                                             ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                             op1 = ori.get_op(angle=0)
                                             mo.apply_operation(op1)
-                                            ms0 = mol_site(mo, point, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
+                                            ms0 = mol_site(mo, point, ori, self.ellipsoids[i], self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                             wp_atomic_sites = [] #The species for the Wyckoff position
                                             wp_atomic_coords = [] #The coords for the Wyckoff position
                                             flag1 = True
@@ -1890,7 +2005,7 @@ class molecular_crystal_1D():
                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                 op1 = ori.get_op(angle=0)
                                 mo.apply_operation(op1)
-                                ms0 = mol_site(mo, center0, ori, self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
+                                ms0 = mol_site(mo, center0, ori, self.ellipsoids[i], self.wyckoffs[wp_index], self.wyckoff_generators[wp_index], self.wyckoff_generators_m[wp_index], cell_matrix, PBC=self.PBC)
                                 mol_generators_total.append(ms0)
                                 for index, op2 in enumerate(self.wyckoff_generators[wp_index]):
 
