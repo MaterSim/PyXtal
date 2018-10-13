@@ -110,7 +110,7 @@ This would create a crystal structure with space group 225, 3 carbon atoms in th
 
 would create a random BaTiO3 crystal.
 
-If the generation is successful, the value my_crystal.valid will be set to True; otherwise, it will be False. The geometric properties of the crystal are stored in my_crystal.struct, which is a `pymatgen.core.structure.Structure <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure>`_ object. You can print my_crystal.struct directly to view the lattice vectors and atomic positions, or you can output the information using
+If the generation is successful, the value ``my_crystal.valid`` will be set to True; otherwise, it will be False. The geometric properties of the crystal are stored in ``my_crystal.struct``, which is a `pymatgen.core.structure.Structure <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure>`_ object. You can print ``my_crystal.struct`` directly to view the lattice vectors and atomic positions, or you can output the information using
 
 .. code-block:: Python
 
