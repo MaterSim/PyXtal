@@ -2195,7 +2195,8 @@ class random_crystal():
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, sg, species, numIons, factor):
-        
+        self.numattempts = 0
+        """The number of attempts needed to generate the crystal."""
         #Necessary input
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
@@ -2305,10 +2306,14 @@ class random_crystal():
                 max3 = 5
             #Calculate a minimum vector length for generating a lattice
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
-            self.numattempts = 0
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
+                if len(self.PBC) == 3:
+                    cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
+                elif len(self.PBC) == 2:
+                    cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
+                elif len(self.PBC) == 1:
+                    cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
                 if cell_para is None:
                     break
                 else:
@@ -2339,12 +2344,24 @@ class random_crystal():
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
                                     point = np.random.random(3)
+                                    #Filter coords for 2D and 1D crystals
+                                    if len(self.PBC) == 2:
+                                        for a in range(1, 4):
+                                            if a not in self.PBC:
+                                                point[a-1] -= 0.5
+                                    elif len(self.PBC) == 1:
+                                        for a in range(1, 4):
+                                            if a not in self.PBC:
+                                                if self.number < 46:
+                                                    point[a-1] -= 0.5
+                                                elif self.number >= 46:
+                                                    point[a-1] *= 1./sqrt(3.)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #Merge coordinates if the atoms are close
-                                    coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol)
+                                    coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                     if good_merge is not False:
-                                        coords_toadd -= np.floor(coords_toadd) #scale the coordinates to [0,1], very important!
-                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix):
+                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
+                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC):
                                             if coordinates_tmp == []:
                                                 coordinates_tmp = coords_toadd
                                             else:
@@ -2376,6 +2393,7 @@ class random_crystal():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
 
+                        final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
                         self.lattice = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
                         cell."""                 
@@ -2400,7 +2418,7 @@ class random_crystal():
         self.valid = False
         return self.Msg2
 
-class random_crystal_2D():
+class random_crystal_2D(random_crystal):
     """
     A 2d counterpart to random_crystal. Generates a random atomic crystal based
     on a 2d layer group instead of a 3d spacegroup. Note that each layer group
@@ -2419,10 +2437,12 @@ class random_crystal_2D():
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, thickness, factor):
-
+        self.numattempts = 0
+        """The number of attempts needed to generate the crystal."""
         self.number = number
+        """The layer group number (between 1 and 80) for the crystal's layer group."""
         self.lgp = Layergroup(number)
-        """The number (between 1 and 80) for the crystal's layer group."""
+        """A Layergroup object for the crystal's layer group."""
         self.sg = self.lgp.sgnumber
         """The number (between 1 and 230) for the international spacegroup."""
         numIons = np.array(numIons) #must convert it to np.array
@@ -2510,125 +2530,7 @@ class random_crystal_2D():
             #Wyckoff Positions have no degrees of freedom
             return 0
 
-    def generate_crystal(self, max1=max1, max2=max2, max3=max3):
-        """
-        The main code to generate a random atomic crystal. If successful,
-        stores a pymatgen.core.structure object in self.struct and sets
-        self.valid to True. If unsuccessful, sets self.valid to False and
-        outputs an error message.
-
-        Args:
-            max1: the number of attempts for generating a lattice
-            max2: the number of attempts for a given lattice
-            max3: the number of attempts for a given Wyckoff position
-        """
-        #Check the minimum number of degrees of freedom within the Wyckoff positions
-        degrees = self.check_compatible()
-        if degrees is False:
-            print(self.Msg1)
-            self.struct = None
-            self.valid = False
-            return
-        else:
-            if degrees is 0:
-                max1 = 5
-                max2 = 5
-                max3 = 5
-            #Calculate a minimum vector length for generating a lattice
-            minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
-            self.numattempts = 0
-            for cycle1 in range(max1):
-                #1, Generate a lattice
-                cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
-                if cell_para is None:
-                    break
-                cell_matrix = para2matrix(cell_para)
-                coordinates_total = [] #to store the added coordinates
-                sites_total = []      #to store the corresponding specie
-                good_structure = False
-
-                for cycle2 in range(max2):
-                    coordinates_tmp = deepcopy(coordinates_total)
-                    sites_tmp = deepcopy(sites_total)
-                    
-            	    #Add specie by specie
-                    for numIon, specie in zip(self.numIons, self.species):
-                        numIon_added = 0
-                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
-
-                        #Now we start to add the specie to the wyckoff position
-                        for cycle3 in range(max3):
-                            self.numattempts += 1
-                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                            ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added)
-                            if ops is not False:
-                	    	    #Generate a list of coords from ops
-                                point = np.random.random(3)
-                                for a in range(1, 4):
-                                    if a not in self.PBC:
-                                        point[a-1] -= 0.5
-                                coords = np.array([op.operate(point) for op in ops])
-                                coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
-                                if good_merge is not False:
-                                    coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
-                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC):
-                                        if coordinates_tmp == []:
-                                            coordinates_tmp = coords_toadd
-                                        else:
-                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
-                                        sites_tmp += [specie]*len(coords_toadd)
-                                        numIon_added += len(coords_toadd)
-                                    if numIon_added == numIon:
-                                        coordinates_total = deepcopy(coordinates_tmp)
-                                        sites_total = deepcopy(sites_tmp)
-                                        break
-                        if numIon_added != numIon:
-                            break  #need to repeat from the 1st species
-
-                    if numIon_added == numIon:
-                        good_structure = True
-                        break
-                    else: #reset the coordinates and sites
-                        coordinates_total = []
-                        sites_total = []
-
-                if good_structure:
-                    final_coor = []
-                    final_site = []
-                    final_number = []
-                    final_lattice = cell_matrix
-                    for coor, ele in zip(coordinates_total, sites_total):
-                        final_coor.append(coor)
-                        final_site.append(ele)
-                        final_number.append(Element(ele).z)
-                    final_coor = np.array(final_coor)
-                    #final_lattice, final_coor = Permutation(final_lattice, final_coor, self.PB)
-                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                    self.lattice = final_lattice
-                    """A 3x3 matrix representing the lattice of the unit
-                    cell."""                        
-                    self.coordinates = final_coor
-                    """The fractional coordinates for each molecule in the
-                    final structure"""
-                    self.sites = final_site  
-                    """A list of atomic symbols corresponding to the type
-                    of atom for each site in self.coordinates"""                  
-                    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                    """A pymatgen.core.structure.Structure object for the
-                    final generated crystal."""                    
-                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                    """A list of information describing the generated
-                    crystal, which may be used by spglib for symmetry
-                    analysis."""                    
-                    self.valid = True
-                    """Whether or not a valid crystal was generated."""
-                    return
-        if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
-        self.struct = self.Msg2
-        self.valid = False
-        return self.Msg2
-
-class random_crystal_1D():
+class random_crystal_1D(random_crystal):
     """
     A 1d counterpart to random_crystal. Generates a random atomic crystal based
     on a 1d Rod group instead of a 3d spacegroup. Note that each layer group
@@ -2647,8 +2549,10 @@ class random_crystal_1D():
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, area, factor):
-
+        self.numattempts = 0
+        """The number of attempts needed to generate the crystal."""
         self.number = number
+        """The Rod group number (between 1 and 75) for the crystal's Rod group."""
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
         """"The volume factor used to generate the unit cell."""
@@ -2729,127 +2633,6 @@ class random_crystal_1D():
         else:
             #Wyckoff Positions have no degrees of freedom
             return 0
-
-    def generate_crystal(self, max1=max1, max2=max2, max3=max3):
-        """
-        The main code to generate a random atomic crystal. If successful,
-        stores a pymatgen.core.structure object in self.struct and sets
-        self.valid to True. If unsuccessful, sets self.valid to False and
-        outputs an error message.
-
-        Args:
-            max1: the number of attempts for generating a lattice
-            max2: the number of attempts for a given lattice
-            max3: the number of attempts for a given Wyckoff position
-        """
-        #Check the minimum number of degrees of freedom within the Wyckoff positions
-        degrees = self.check_compatible()
-        if degrees is False:
-            print(self.Msg1)
-            self.struct = None
-            self.valid = False
-            return
-        else:
-            if degrees is 0:
-                max1 = 5
-                max2 = 5
-                max3 = 5
-            #Calculate a minimum vector length for generating a lattice
-            minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
-            self.numattempts = 0
-            for cycle1 in range(max1):
-                #1, Generate a lattice
-                cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
-                if cell_para is None:
-                    break
-                cell_matrix = para2matrix(cell_para)
-                coordinates_total = [] #to store the added coordinates
-                sites_total = []      #to store the corresponding specie
-                good_structure = False
-
-                for cycle2 in range(max2):
-                    coordinates_tmp = deepcopy(coordinates_total)
-                    sites_tmp = deepcopy(sites_total)
-                    
-            	    #Add specie by specie
-                    for numIon, specie in zip(self.numIons, self.species):
-                        numIon_added = 0
-                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
-
-                        #Now we start to add the specie to the wyckoff position
-                        for cycle3 in range(max3):
-                            self.numattempts += 1
-                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                            ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added)
-                            if ops is not False:
-                	    	    #Generate a list of coords from ops
-                                point = np.random.random(3)
-                                for a in range(1, 4):
-                                    if a not in self.PBC:
-                                        if self.number < 46:
-                                            point[a-1] -= 0.5
-                                        elif self.number >= 46:
-                                            point[a-1] *= 1./sqrt(3.)
-                                coords = np.array([op.operate(point) for op in ops])
-                                coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
-                                if good_merge is not False:
-                                    coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
-                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC):
-                                        if coordinates_tmp == []:
-                                            coordinates_tmp = coords_toadd
-                                        else:
-                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
-                                        sites_tmp += [specie]*len(coords_toadd)
-                                        numIon_added += len(coords_toadd)
-                                    if numIon_added == numIon:
-                                        coordinates_total = deepcopy(coordinates_tmp)
-                                        sites_total = deepcopy(sites_tmp)
-                                        break
-                        if numIon_added != numIon:
-                            break  #need to repeat from the 1st species
-
-                    if numIon_added == numIon:
-                        good_structure = True
-                        break
-                    else: #reset the coordinates and sites
-                        coordinates_total = []
-                        sites_total = []
-
-                if good_structure:
-                    final_coor = []
-                    final_site = []
-                    final_number = []
-                    final_lattice = cell_matrix
-                    for coor, ele in zip(coordinates_total, sites_total):
-                        final_coor.append(coor)
-                        final_site.append(ele)
-                        final_number.append(Element(ele).z)
-                    final_coor = np.array(final_coor)
-                    final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                    #TODO: Implement Add_vacuum for 1D lattices
-                    self.lattice = final_lattice
-                    """A 3x3 matrix representing the lattice of the unit
-                    cell."""                        
-                    self.coordinates = final_coor
-                    """The fractional coordinates for each molecule in the
-                    final structure"""
-                    self.sites = final_site  
-                    """A list of atomic symbols corresponding to the type
-                    of atom for each site in self.coordinates"""                  
-                    self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                    """A pymatgen.core.structure.Structure object for the
-                    final generated crystal."""                    
-                    self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                    """A list of information describing the generated
-                    crystal, which may be used by spglib for symmetry
-                    analysis."""                    
-                    self.valid = True
-                    """Whether or not a valid crystal was generated."""
-                    return
-        if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
-        self.struct = self.Msg2
-        self.valid = False
-        return self.Msg2
 
 
 if __name__ == "__main__":
