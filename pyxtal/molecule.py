@@ -18,7 +18,6 @@ from random import random
 from random import choice as choose
 
 from pyxtal.operations import *
-from pyxtal.crystal import get_wyckoff_symmetry
 
 from pyxtal.database.collection import Collection
 
@@ -471,7 +470,7 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
             op = o.get_op(angle=0)
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(mo, wyckoffs, w_symm_all, index, exact_orientation=True) is True:
+        if orientation_in_wyckoff_position(mo, wyckoffs, w_symm_all, index, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:
             allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
