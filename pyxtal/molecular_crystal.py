@@ -681,23 +681,20 @@ class molecular_crystal():
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
-        self.dim = 3
-        """The number of periodic dimensions of the crystal"""
+
+    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances):
+        """
+        init functionality which is shared by 3D, 2D, and 1D crystals
+        """
         self.numattempts = 0
         """The number of attempts needed to generate the crystal."""
-        #Necessary input
         self.Msgs()
         """A list of warning messages to use during generation."""
-        self.PBC = [1,2,3]
-        """The periodic axes of the crystal"""
-        numMols = np.array(numMols) #must convert it to np.array
         self.factor = volume_factor
         """The supplied volume factor for the unit cell."""
+        numMols = np.array(numMols) #must convert it to np.array
         self.numMols0 = numMols
-        self.sg = sg
-        """The international spacegroup number of the crystal."""
-        #Reorient the molecules along their principle axes
+        """Number of molecules in the primitive cell for a given type"""
         oriented_molecules = []
         #Allow support for generating molecules from text via openbable
         for i, mol in enumerate(molecules):
@@ -737,10 +734,25 @@ class molecular_crystal():
                 radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
                 if radius > max_r: max_r = radius
             self.radii.append(max_r+1.0)
-
+        self.check_atomic_distances = check_atomic_distances
+        """Whether or not inter-atomic distances are checked at each step."""
+        self.allow_inversion = allow_inversion
+        """Whether or not to allow chiral molecules to be inverted."""
         self.ellipsoids = [SymmOp.from_rotation_and_translation(Euclidean_lattice / r, [0,0,0]) for r in self.radii]
+        #When generating multiple crystals of the same stoichiometry and sg,
+        #allow the user to re-use the allowed orientations, to reduce time cost
 
-        self.numMols = numMols * cellsize(self.sg)
+    def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances)
+        self.dim = 3
+        """The number of periodic dimensions of the crystal"""
+        #Necessary input
+        self.PBC = [1,2,3]
+        """The periodic axes of the crystal"""
+        self.sg = sg
+        """The international spacegroup number of the crystal."""
+        #Reorient the molecules along their principle axes
+        self.numMols = self.numMols0 * cellsize(self.sg)
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         """The volume of the generated unit cell"""
@@ -756,12 +768,6 @@ class molecular_crystal():
         """A list of Wyckoff generators (molecular=False)"""
         self.wyckoff_generators_m = get_wyckoff_generators(self.sg, molecular=True)
         """A list of Wyckoff generators (molecular=True)"""
-        self.check_atomic_distances = check_atomic_distances
-        """Whether or not inter-atomic distances are checked at each step."""
-        self.allow_inversion = allow_inversion
-        """Whether or not to allow chiral molecules to be inverted."""
-        #When generating multiple crystals of the same stoichiometry and sg,
-        #allow the user to re-use the allowed orientations, to reduce time cost
         if orientations is None:
             self.get_orientations()
         else:
@@ -770,7 +776,6 @@ class molecular_crystal():
             May be copied when generating a new molecular_crystal to save a
             small amount of time"""
         self.generate_crystal()
-
 
     def Msgs(self):
         self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
@@ -1101,6 +1106,7 @@ class molecular_crystal_2D(molecular_crystal):
             when molecule values are strings
     """
     def __init__(self, number, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances)
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
@@ -1108,43 +1114,10 @@ class molecular_crystal_2D(molecular_crystal):
         #Necessary input
         self.number = number
         """The layer group number of the crystal."""
-        self.Msgs()
-        """A list of warning messages to use during generation."""
-        numMols = np.array(numMols) #must convert it to np.array
-        self.factor = volume_factor
-        """The supplied volume factor for the unit cell."""
-        self.numMols0 = numMols
         self.lgp = Layergroup(number)
         """The number (between 1 and 80) for the crystal's layer group."""
         self.sg = self.lgp.sgnumber
         """The number (between 1 and 230) for the international spacegroup."""
-        #Reorient the molecules along their principle axes
-        oriented_molecules = []
-        #Allow support for generating molecules from text via openbabel
-        for i, mol in enumerate(molecules):
-            if type(mol) == str:
-                #Read strings into molecules, try collection first,
-                #If string not in collection, use pymatgen format
-                try:
-                    mo = molecule_collection[mol]
-                except:
-                    try:
-                        mo = mol_from_file(mol)
-                    except:
-                        mo = mol_from_string(mol, fmt)
-                if mo is not None:
-                    molecules[i] = mo
-                else:
-                    print("Error: Could not create molecules from given parameters.")
-                    print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
-                    print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
-        for mol in molecules:
-            pga = PointGroupAnalyzer(mol)
-            mo = pga.symmetrize_molecule()['sym_mol']
-            oriented_molecules.append(mo)
-        self.molecules = oriented_molecules
-        """A list of pymatgen.core.structure.Molecule objects, symmetrized and
-        oriented along their symmetry axes."""
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""
@@ -1154,23 +1127,7 @@ class molecular_crystal_2D(molecular_crystal):
         #TODO: add docstring
         self.P = self.lgp.permutation[:3] 
         #TODO: add docstring
-        self.boxes = []
-        """A list of bounding boxes for each molecule. Used for estimating
-        volume of the unit cell."""
-        self.radii = []
-        """A list of approximated radii for each molecule type. Used for
-        checking inter-molecular distances."""
-        for mol in self.molecules:
-            self.boxes.append(get_box(reoriented_molecule(mol)[0]))
-            max_r = 0
-            for site in mol:
-                radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
-                if radius > max_r: max_r = radius
-            self.radii.append(max_r+1.0)
-
-        self.ellipsoids = self.boxes
-
-        self.numMols = numMols * cellsize(self.sg)
+        self.numMols = self.numMols0 * cellsize(self.sg)
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         """The volume of the generated unit cell"""
@@ -1186,10 +1143,6 @@ class molecular_crystal_2D(molecular_crystal):
         """A list of Wyckfof generators for the layer group"""
         self.wyckoff_generators_m = get_layer_generators(self.number, molecular=True)
         """A list of Wyckfof generators for the layer group (molecular=True)"""
-        self.check_atomic_distances = check_atomic_distances
-        """Whether or not inter-atomic distances are checked at each step."""
-        self.allow_inversion = allow_inversion
-        """Whether or not to allow chiral molecules to be inverted."""
         #When generating multiple crystals of the same stoichiometry and sg,
         #allow the user to re-use the allowed orientations, to reduce time cost
         if orientations is None:
@@ -1200,97 +1153,6 @@ class molecular_crystal_2D(molecular_crystal):
             May be copied when generating a new molecular_crystal to save a
             small amount of time"""
         self.generate_crystal()
-
-
-    def Msgs(self):
-        self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
-        self.Msg2 = 'Error: failed in the cycle of generating structures'
-        self.Msg3 = 'Warning: failed in the cycle of adding species'
-        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
-        self.Msg5 = 'Finishing: added the specie'
-        self.Msg6 = 'Finishing: added the whole structure'
-
-    def get_orientations(self):
-        """
-        Calculates the valid orientations for each Molecule and Wyckoff
-        position. Returns a list with 4 indices:
-
-        index 1: the molecular prototype's index within self.molecules
-
-        index 2: the Wyckoff position's 1st index (based on multiplicity)
-
-        index 3: the WP's 2nd index (within the group of equal multiplicity)
-
-        index 4: the index of the valid orientation for the molecule/WP pair
-
-        For example, self.valid_orientations[i][j][k] would be a list of valid
-        orientations for self.molecules[i], in the Wyckoff position
-        self.wyckoffs_organized[j][k]
-        """
-        self.valid_orientations = []
-        for mol in self.molecules:
-            self.valid_orientations.append([])
-            wp_index = -1
-            for i, x in enumerate(self.wyckoffs_organized):
-                self.valid_orientations[-1].append([])
-                for j, wp in enumerate(x):
-                    wp_index += 1
-                    allowed = orientation_in_wyckoff_position(mol, self.wyckoffs, self.w_symm, wp_index, already_oriented=True, allow_inversion=self.allow_inversion)
-                    if allowed is not False:
-                        self.valid_orientations[-1][-1].append(allowed)
-                    else:
-                        self.valid_orientations[-1][-1].append([])
-
-    def check_compatible(self):
-        """
-        Checks if the number of molecules is compatible with the Wyckoff
-        positions. Considers the number of degrees of freedom for each Wyckoff
-        position, and makes sure at least one valid combination of WP's exists.
-        """
-        N_site = [len(x[0]) for x in self.wyckoffs_organized]
-        has_freedom = False
-        #remove WP's with no freedom once they are filled
-        removed_wyckoffs = []
-        for i, numMol in enumerate(self.numMols):
-            #Check that the number of molecules is a multiple of the smallest Wyckoff position
-            if numMol % N_site[-1] > 0:
-                return False
-            else:
-                #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs_organized[-1][-1][0]
-                if op.rotation_matrix.all() != 0.0:
-                    if self.valid_orientations[i][-1][-1] != []:
-                        has_freedom = True
-                else:
-                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
-                    remaining = numMol
-                    for j, x in enumerate(self.wyckoffs_organized):
-                        for k, wp in enumerate(x):
-                            while remaining >= len(wp) and wp not in removed_wyckoffs:
-                                if self.valid_orientations[i][j][k] != []:
-                                    #Check if WP has at least one degree of freedom
-                                    op = wp[0]
-                                    remaining -= len(wp)
-                                    if np.allclose(op.rotation_matrix, np.zeros([3,3])):
-                                        if (len(self.valid_orientations[i][j][k]) > 1 or
-                                            self.valid_orientations[i][j][k][0].degrees > 0):
-                                            #NOTE: degrees of freedom may be inaccurate for linear molecules
-                                            has_freedom = True
-                                        else:
-                                            removed_wyckoffs.append(wp)
-                                    else:
-                                        has_freedom = True
-                                else:
-                                    removed_wyckoffs.append(wp)
-                    if remaining != 0:
-                        return False
-        if has_freedom:
-            return True
-        else:
-            #print("Warning: Wyckoff Positions have no degrees of freedom.")
-            return 0
-
-        return True
 
 class molecular_crystal_1D(molecular_crystal):
     """
@@ -1330,68 +1192,18 @@ class molecular_crystal_1D(molecular_crystal):
             when molecule values are strings
     """
     def __init__(self, number, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances)
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
-        self.numattempts = 0
-        """The number of attempts needed to generate the crystal."""
         #Necessary input
         self.number = number
         """The number (between 1 and 80) for the crystal's Rod group."""
-        self.Msgs()
-        """A list of warning messages to use during generation."""
-        numMols = np.array(numMols) #must convert it to np.array
-        self.factor = volume_factor
-        """The supplied volume factor for the unit cell."""
-        self.numMols0 = numMols
-        """The number of molecules of each type in the primitive cell"""
-        #Reorient the molecules along their principle axes
-        oriented_molecules = []
-        #Allow support for generating molecules from text via openbabel
-        for i, mol in enumerate(molecules):
-            if type(mol) == str:
-                #Read strings into molecules, try collection first,
-                #If string not in collection, use pymatgen format
-                try:
-                    mo = molecule_collection[mol]
-                except:
-                    try:
-                        mo = mol_from_file(mol)
-                    except:
-                        mo = mol_from_string(mol, fmt)
-                if mo is not None:
-                    molecules[i] = mo
-                else:
-                    print("Error: Could not create molecules from given parameters.")
-                    print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
-                    print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
-        for mol in molecules:
-            pga = PointGroupAnalyzer(mol)
-            mo = pga.symmetrize_molecule()['sym_mol']
-            oriented_molecules.append(mo)
-        self.molecules = oriented_molecules
-        """A list of pymatgen.core.structure.Molecule objects, symmetrized and
-        oriented along their symmetry axes."""
         self.area = area
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
         self.PBC = [3]
-        self.boxes = []
-        """A list of bounding boxes for each molecule. Used for estimating
-        volume of the unit cell."""
-        self.radii = []
-        """A list of approximated radii for each molecule type. Used for
-        checking inter-molecular distances."""
-        for mol in self.molecules:
-            self.boxes.append(get_box(reoriented_molecule(mol)[0]))
-            max_r = 0
-            for site in mol:
-                radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
-                if radius > max_r: max_r = radius
-            self.radii.append(max_r+1.0)
-
-        self.ellipsoids = self.boxes
-
-        self.numMols = numMols
+        """The periodic axes of the crystal (1,2,3)->(x,y,z)."""
+        self.numMols = self.numMols0
         """The number of each type of molecule in the CONVENTIONAL cell"""
         self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         """The volume of the generated unit cell"""
@@ -1407,12 +1219,6 @@ class molecular_crystal_1D(molecular_crystal):
         """A list of Rod Wyckoff generators (molecular=False)"""
         self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
         """A list of Rod Wyckoff generators (molecular=True)"""
-        self.check_atomic_distances = check_atomic_distances
-        """Whether or not inter-atomic distances are checked at each step."""
-        self.allow_inversion = allow_inversion
-        """Whether or not to allow chiral molecules to be inverted."""
-        #When generating multiple crystals of the same stoichiometry and sg,
-        #allow the user to re-use the allowed orientations, to reduce time cost
         if orientations is None:
             self.get_orientations()
         else:
@@ -1421,97 +1227,6 @@ class molecular_crystal_1D(molecular_crystal):
             May be copied when generating a new molecular_crystal to save a
             small amount of time"""
         self.generate_crystal()
-
-
-    def Msgs(self):
-        self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
-        self.Msg2 = 'Error: failed in the cycle of generating structures'
-        self.Msg3 = 'Warning: failed in the cycle of adding species'
-        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
-        self.Msg5 = 'Finishing: added the specie'
-        self.Msg6 = 'Finishing: added the whole structure'
-
-    def get_orientations(self):
-        """
-        Calculates the valid orientations for each Molecule and Wyckoff
-        position. Returns a list with 4 indices:
-
-        index 1: the molecular prototype's index within self.molecules
-
-        index 2: the Wyckoff position's 1st index (based on multiplicity)
-
-        index 3: the WP's 2nd index (within the group of equal multiplicity)
-
-        index 4: the index of the valid orientation for the molecule/WP pair
-
-        For example, self.valid_orientations[i][j][k] would be a list of valid
-        orientations for self.molecules[i], in the Wyckoff position
-        self.wyckoffs_organized[j][k]
-        """
-        self.valid_orientations = []
-        for mol in self.molecules:
-            self.valid_orientations.append([])
-            wp_index = -1
-            for i, x in enumerate(self.wyckoffs_organized):
-                self.valid_orientations[-1].append([])
-                for j, wp in enumerate(x):
-                    wp_index += 1
-                    allowed = orientation_in_wyckoff_position(mol, self.wyckoffs, self.w_symm, wp_index, already_oriented=True, allow_inversion=self.allow_inversion)
-                    if allowed is not False:
-                        self.valid_orientations[-1][-1].append(allowed)
-                    else:
-                        self.valid_orientations[-1][-1].append([])
-
-    def check_compatible(self):
-        """
-        Checks if the number of molecules is compatible with the Wyckoff
-        positions. Considers the number of degrees of freedom for each Wyckoff
-        position, and makes sure at least one valid combination of WP's exists.
-        """
-        N_site = [len(x[0]) for x in self.wyckoffs_organized]
-        has_freedom = False
-        #remove WP's with no freedom once they are filled
-        removed_wyckoffs = []
-        for i, numMol in enumerate(self.numMols):
-            #Check that the number of molecules is a multiple of the smallest Wyckoff position
-            if numMol % N_site[-1] > 0:
-                return False
-            else:
-                #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs_organized[-1][-1][0]
-                if op.rotation_matrix.all() != 0.0:
-                    if self.valid_orientations[i][-1][-1] != []:
-                        has_freedom = True
-                else:
-                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
-                    remaining = numMol
-                    for j, x in enumerate(self.wyckoffs_organized):
-                        for k, wp in enumerate(x):
-                            while remaining >= len(wp) and wp not in removed_wyckoffs:
-                                if self.valid_orientations[i][j][k] != []:
-                                    #Check if WP has at least one degree of freedom
-                                    op = wp[0]
-                                    remaining -= len(wp)
-                                    if np.allclose(op.rotation_matrix, np.zeros([3,3])):
-                                        if (len(self.valid_orientations[i][j][k]) > 1 or
-                                            self.valid_orientations[i][j][k][0].degrees > 0):
-                                            #NOTE: degrees of freedom may be inaccurate for linear molecules
-                                            has_freedom = True
-                                        else:
-                                            removed_wyckoffs.append(wp)
-                                    else:
-                                        has_freedom = True
-                                else:
-                                    removed_wyckoffs.append(wp)
-                    if remaining != 0:
-                        return False
-        if has_freedom:
-            return True
-        else:
-            #print("Warning: Wyckoff Positions have no degrees of freedom.")
-            return 0
-
-        return True
 
 
 if __name__ == "__main__":

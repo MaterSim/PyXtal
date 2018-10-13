@@ -2194,23 +2194,26 @@ class random_crystal():
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, sg, species, numIons, factor):
-        self.dim = 3
-        """The number of periodic dimensions of the crystal"""
+    def init_common(self, species, numIons, factor):
         self.numattempts = 0
         """The number of attempts needed to generate the crystal."""
-        #Necessary input
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
         """The supplied volume factor for the unit cell."""
         self.numIons0 = numIons
-        self.sg = sg
-        """The international spacegroup number of the crystal."""
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
         self.Msgs()
         """A list of warning messages to use during generation."""
-        self.numIons = numIons * cellsize(self.sg)
+
+    def __init__(self, sg, species, numIons, factor):
+        self.init_common(species, numIons, factor)
+        self.dim = 3
+        """The number of periodic dimensions of the crystal"""
+        #Necessary input
+        self.sg = sg
+        """The international spacegroup number of the crystal."""
+        self.numIons = self.numIons0 * cellsize(self.sg)
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
@@ -2439,25 +2442,18 @@ class random_crystal_2D(random_crystal):
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, thickness, factor):
+        self.init_common(species, numIons, factor)
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
-        self.numattempts = 0
-        """The number of attempts needed to generate the crystal."""
         self.number = number
         """The layer group number (between 1 and 80) for the crystal's layer group."""
         self.lgp = Layergroup(number)
         """A Layergroup object for the crystal's layer group."""
         self.sg = self.lgp.sgnumber
         """The number (between 1 and 230) for the international spacegroup."""
-        numIons = np.array(numIons) #must convert it to np.array
-        self.factor = factor
-        """"The volume factor used to generate the unit cell."""
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""
-        self.numIons0 = numIons
-        self.species = species
-        """A list of atomic symbols for the types of atoms in the crystal."""
         self.PBC = [1,2]
         """The periodic axes of the crystal."""
         self.PB = self.lgp.permutation[3:6] 
@@ -2466,7 +2462,7 @@ class random_crystal_2D(random_crystal):
         #TODO: add docstring
         self.Msgs()
         """A list of warning messages to use during generation."""
-        self.numIons = numIons * cellsize(self.sg)
+        self.numIons = self.numIons0 * cellsize(self.sg)
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
@@ -2480,59 +2476,6 @@ class random_crystal_2D(random_crystal):
             from get_wyckoff_symmetry."""
         self.generate_crystal()
 
-
-    def Msgs(self):
-        """
-        Define a set of error and warning message if generation fails.
-        """
-        self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
-        self.Msg2 = 'Error: failed in the cycle of generating structures'
-        self.Msg3 = 'Warning: failed in the cycle of adding species'
-        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
-        self.Msg5 = 'Finishing: added the specie'
-        self.Msg6 = 'Finishing: added the whole structure'
-
-    def check_compatible(self):
-        """
-        Checks if the number of atoms is compatible with the Wyckoff
-        positions. Considers the number of degrees of freedom for each Wyckoff
-        position, and makes sure at least one valid combination of WP's exists.
-        """
-        N_site = [len(x[0]) for x in self.wyckoffs_organized]
-        has_freedom = False
-        #remove WP's with no freedom once they are filled
-        removed_wyckoffs = []
-        for numIon in self.numIons:
-            #Check that the number of ions is a multiple of the smallest Wyckoff position
-            if numIon % N_site[-1] > 0:
-                return False
-            else:
-                #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs_organized[-1][-1][0]
-                if op.rotation_matrix.all() != 0.0:
-                    has_freedom = True
-                else:
-                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
-                    remaining = numIon
-                    for x in self.wyckoffs_organized:
-                        for wp in x:
-                            removed = False
-                            while remaining >= len(wp) and wp not in removed_wyckoffs:
-                                #Check if WP has at least one degree of freedom
-                                op = wp[0]
-                                remaining -= len(wp)
-                                if np.allclose(op.rotation_matrix, np.zeros([3,3])):
-                                    removed_wyckoffs.append(wp)
-                                    removed = True
-                                else:
-                                    has_freedom = True
-                    if remaining != 0:
-                        return False
-        if has_freedom:
-            return True
-        else:
-            #Wyckoff Positions have no degrees of freedom
-            return 0
 
 class random_crystal_1D(random_crystal):
     """
@@ -2553,26 +2496,17 @@ class random_crystal_1D(random_crystal):
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, area, factor):
+        self.init_common(species, numIons, factor)
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
-        self.numattempts = 0
-        """The number of attempts needed to generate the crystal."""
         self.number = number
         """The Rod group number (between 1 and 75) for the crystal's Rod group."""
-        numIons = np.array(numIons) #must convert it to np.array
-        self.factor = factor
-        """"The volume factor used to generate the unit cell."""
         self.area = area
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
-        self.numIons0 = numIons
-        self.species = species
-        """A list of atomic symbols for the types of atoms in the crystal."""
         self.PBC = [3]
         """The periodic axis of the crystal."""
-        self.Msgs()
-        """A list of warning messages to use during generation."""
-        self.numIons = numIons #cellsize always == 1
+        self.numIons = self.numIons0 #cellsize always == 1
         """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell"""
@@ -2585,60 +2519,6 @@ class random_crystal_1D(random_crystal):
         """A list of site symmetry operations for the Wyckoff positions, obtained
             from get_rod_symmetry."""
         self.generate_crystal()
-
-
-    def Msgs(self):
-        """
-        Define a set of error and warning message if generation fails.
-        """
-        self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
-        self.Msg2 = 'Error: failed in the cycle of generating structures'
-        self.Msg3 = 'Warning: failed in the cycle of adding species'
-        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
-        self.Msg5 = 'Finishing: added the specie'
-        self.Msg6 = 'Finishing: added the whole structure'
-
-    def check_compatible(self):
-        """
-        Checks if the number of atoms is compatible with the Wyckoff
-        positions. Considers the number of degrees of freedom for each Wyckoff
-        position, and makes sure at least one valid combination of WP's exists.
-        """
-        N_site = [len(x[0]) for x in self.wyckoffs_organized]
-        has_freedom = False
-        #remove WP's with no freedom once they are filled
-        removed_wyckoffs = []
-        for numIon in self.numIons:
-            #Check that the number of ions is a multiple of the smallest Wyckoff position
-            if numIon % N_site[-1] > 0:
-                return False
-            else:
-                #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs_organized[-1][-1][0]
-                if op.rotation_matrix.all() != 0.0:
-                    has_freedom = True
-                else:
-                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
-                    remaining = numIon
-                    for x in self.wyckoffs_organized:
-                        for wp in x:
-                            removed = False
-                            while remaining >= len(wp) and wp not in removed_wyckoffs:
-                                #Check if WP has at least one degree of freedom
-                                op = wp[0]
-                                remaining -= len(wp)
-                                if np.allclose(op.rotation_matrix, np.zeros([3,3])):
-                                    removed_wyckoffs.append(wp)
-                                    removed = True
-                                else:
-                                    has_freedom = True
-                    if remaining != 0:
-                        return False
-        if has_freedom:
-            return True
-        else:
-            #Wyckoff Positions have no degrees of freedom
-            return 0
 
 
 if __name__ == "__main__":
