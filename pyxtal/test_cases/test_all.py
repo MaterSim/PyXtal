@@ -1,6 +1,21 @@
 """
 Test script for pyXtal version 0.1dev. Tests core functions for all modules.
 """
+
+#Custom print function for output to file
+_summary_text_ = ""
+
+oldprint = print
+
+def newprint(text):
+    global _summary_text_
+    oldprint(text)
+    if _summary_text_ != "":
+        _summary_text_ += "\n"
+    _summary_text_ += text
+
+print = newprint
+
 import sys
 sys.settrace(None)
 
@@ -1350,8 +1365,12 @@ if __name__ == "__main__":
     from time import time
     parser = OptionParser()
     parser.add_option("-m", "--module", dest="module", metavar='module', default='all', type=str,
-            help="modules options: 'all', 'atomic', 'molecular', 'atomic_2D', 'molecular_2D', 'atomic_1D', 'molecular_1D' ")
+        help="modules options: 'all', 'atomic', 'molecular', 'atomic_2D', 'molecular_2D', 'atomic_1D', 'molecular_1D' ")
+    parser.add_option("-s", "--summary", action="store_true", dest="output", default=False,
+        help="output summary.txt file")
     (options, args) = parser.parse_args()
+
+    output = options.output
 
     try:
         import numpy as np
@@ -1390,6 +1409,8 @@ if __name__ == "__main__":
     print("Total time elapsed: "+str(mastertime)+" s")
 
     if outstructs != []:
+        output = True
+    if output is True:
         #from pymatgen.io.cif import CifWriter
         from os import mkdir
         from os.path import isdir
@@ -1403,11 +1424,15 @@ if __name__ == "__main__":
             i += 1
             if i > 100:
                 break
-        print("Some generated space groups did not match the expected group.")
-        print("POSCAR files for these groups will be output to the directory " + outdir + ":")
+        if outstructs != []:
+            print("Some generated space groups did not match the expected group.")
+            print("POSCAR files for these groups will be output to the directory " + outdir + ":")
         for struct, string in zip(outstructs, outstrings):
             fpath = outdir + "/" + string
             struct = struct.get_sorted_structure()
             struct.to(filename=fpath, fmt="poscar")
             #CifWriter(struct, symprec=0.1).write_file(filename = fpath)
             print("  "+string)
+        #Output summary text file
+        txtfile = open(outdir+"/summary.txt", "w")
+        txtfile.write(_summary_text_)
