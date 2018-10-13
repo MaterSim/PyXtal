@@ -682,7 +682,10 @@ class molecular_crystal():
             when molecule values are strings
     """
     def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
-        
+        self.dim = 3
+        """The number of periodic dimensions of the crystal"""
+        self.numattempts = 0
+        """The number of attempts needed to generate the crystal."""
         #Necessary input
         self.Msgs()
         """A list of warning messages to use during generation."""
@@ -879,7 +882,6 @@ class molecular_crystal():
             self.valid = False
             return
         else:
-            self.numattempts = 0
             if degrees == 0:
                 max1 = 10
                 max2 = 10
@@ -895,11 +897,11 @@ class molecular_crystal():
             minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                if len(self.PBC) == 3:
+                if self.dim == 3:
                     cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                elif len(self.PBC) == 2:
+                elif self.dim == 2:
                     cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
-                elif len(self.PBC) == 1:
+                elif self.dim == 1:
                     cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
                 if cell_para is None:
                     break
@@ -947,11 +949,11 @@ class molecular_crystal():
                 	    	    #Generate a list of coords from ops
                                     ops = self.wyckoffs_organized[j][k]
                                     point = np.random.random(3)
-                                    if len(self.PBC) == 2:
+                                    if self.dim == 2:
                                         for a in range(1, 4):
                                             if a not in self.PBC:
                                                 point[a-1] -= 0.5
-                                    elif len(self.PBC) == 1:
+                                    elif self.dim == 1:
                                         for a in range(1, 4):
                                             if a not in self.PBC:
                                                 if self.number < 46:
@@ -1099,7 +1101,10 @@ class molecular_crystal_2D(molecular_crystal):
             when molecule values are strings
     """
     def __init__(self, number, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
-        
+        self.dim = 2
+        """The number of periodic dimensions of the crystal"""
+        self.numattempts = 0
+        """The number of attempts needed to generate the crystal."""
         #Necessary input
         self.number = number
         """The layer group number of the crystal."""
@@ -1325,7 +1330,10 @@ class molecular_crystal_1D(molecular_crystal):
             when molecule values are strings
     """
     def __init__(self, number, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
-        
+        self.dim = 1
+        """The number of periodic dimensions of the crystal"""
+        self.numattempts = 0
+        """The number of attempts needed to generate the crystal."""
         #Necessary input
         self.number = number
         """The number (between 1 and 80) for the crystal's Rod group."""

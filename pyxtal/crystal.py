@@ -2195,6 +2195,8 @@ class random_crystal():
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, sg, species, numIons, factor):
+        self.dim = 3
+        """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
         """The number of attempts needed to generate the crystal."""
         #Necessary input
@@ -2308,11 +2310,11 @@ class random_crystal():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                if len(self.PBC) == 3:
+                if self.dim == 3:
                     cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                elif len(self.PBC) == 2:
+                elif self.dim == 2:
                     cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
-                elif len(self.PBC) == 1:
+                elif self.dim == 1:
                     cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
                 if cell_para is None:
                     break
@@ -2345,11 +2347,11 @@ class random_crystal():
             	        	    #Generate a list of coords from ops
                                     point = np.random.random(3)
                                     #Filter coords for 2D and 1D crystals
-                                    if len(self.PBC) == 2:
+                                    if self.dim == 2:
                                         for a in range(1, 4):
                                             if a not in self.PBC:
                                                 point[a-1] -= 0.5
-                                    elif len(self.PBC) == 1:
+                                    elif self.dim == 1:
                                         for a in range(1, 4):
                                             if a not in self.PBC:
                                                 if self.number < 46:
@@ -2437,6 +2439,8 @@ class random_crystal_2D(random_crystal):
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, thickness, factor):
+        self.dim = 2
+        """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
         """The number of attempts needed to generate the crystal."""
         self.number = number
@@ -2549,6 +2553,8 @@ class random_crystal_1D(random_crystal):
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, area, factor):
+        self.dim = 1
+        """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
         """The number of attempts needed to generate the crystal."""
         self.number = number
