@@ -311,7 +311,7 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
     #check if WP breaks symmetry
     if chiral is True:
         if allow_inversion is False:
-            for op in gen_pos:
+            for op in wyckoffs[0]:
                 if np.linalg.det(op.rotation_matrix) < 0:
                     print("Warning: cannot place chiral molecule in spagegroup")
                     return False
