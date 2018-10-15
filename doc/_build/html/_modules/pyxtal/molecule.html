@@ -56,7 +56,6 @@
 <span class="kn">from</span> <span class="nn">random</span> <span class="k">import</span> <span class="n">choice</span> <span class="k">as</span> <span class="n">choose</span>
 
 <span class="kn">from</span> <span class="nn">pyxtal.operations</span> <span class="k">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="k">import</span> <span class="n">get_wyckoff_symmetry</span>
 
 <span class="kn">from</span> <span class="nn">pyxtal.database.collection</span> <span class="k">import</span> <span class="n">Collection</span>
 
@@ -350,7 +349,7 @@
     <span class="c1">#check if WP breaks symmetry</span>
     <span class="k">if</span> <span class="n">chiral</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">allow_inversion</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">gen_pos</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wyckoffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: cannot place chiral molecule in spagegroup&quot;</span><span class="p">)</span>
                     <span class="k">return</span> <span class="kc">False</span>
@@ -509,7 +508,7 @@
             <span class="n">op</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">mo</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
         <span class="n">mo</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allow_inversion</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">allowed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
     <span class="c1">#Return the array of allowed orientations. If there are none, return False</span>
     <span class="k">if</span> <span class="n">allowed</span> <span class="o">==</span> <span class="p">[]:</span>
