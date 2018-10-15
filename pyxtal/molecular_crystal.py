@@ -107,7 +107,7 @@ def check_intersection(ellipsoid1, ellipsoid2):
     else:
         return True
 
-def check_mol_sites(ms1, ms2, atomic=False):
+def check_mol_sites(ms1, ms2, atomic=False, factor=2.4):
     """
     Checks whether or not the molecules of two mol sites overlap. Uses
     ellipsoid overlapping approximation to check. Takes PBC and lattice
@@ -118,6 +118,8 @@ def check_mol_sites(ms1, ms2, atomic=False):
         ms2: another mol_site object
         atomic: if True, checks inter-atomic distances. If False, checks
             overlap between molecular ellipsoids
+        factor: the distance factor to pass to check_distances. (only for
+            inter-atomic distance checking)
 
     Returns:
         False if the Wyckoff positions overlap. True otherwise
@@ -139,7 +141,7 @@ def check_mol_sites(ms1, ms2, atomic=False):
     elif atomic is True:
         c1, s1 = ms1.get_coords_and_species()
         c2, s2 = ms1.get_coords_and_species()
-        return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC)
+        return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC, d_factor=factor)
     
 
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
@@ -605,7 +607,7 @@ class mol_site():
             print("Error: parameter absolute must be True or False")
             return
 
-    def check_distances(self, factor=1.0, atomic=False):
+    def check_distances(self, factor=2.4, atomic=False):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
