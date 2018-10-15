@@ -18,4 +18,6 @@ Distributed under the MIT License.
 * [Pandas 0.20.3](https://pandas.pydata.org/getpandas.html)
 * [Pymatgen 2017.9.3](http://pymatgen.org/#getting-pymatgen)
 * [SpgLib for Python 1.9.9.44](https://atztogo.github.io/spglib/python-spglib.html#installation)
+
+###Optional:
 * [openbabel 2.4.1 (Python bindings)](http://openbabel.org/wiki/Main_Page)
