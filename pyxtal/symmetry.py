@@ -16,6 +16,7 @@ from pyxtal.operations import *
 #Define variables
 #------------------------------
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
+letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
 wyckoff_symmetry_df = read_csv(resource_filename("pyxtal", "database/wyckoff_symmetry.csv"))
@@ -912,7 +913,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
             return i, p
     return False, None
 
-def letter_from_index(index, sg):
+def letter_from_index(index, arr):
     """
     Given a Wyckoff position's index within a spacegroup, return its number
     and letter e.g. '4a'
@@ -926,12 +927,10 @@ def letter_from_index(index, sg):
         the Wyckoff letter corresponding to the Wyckoff position (for example,
         for position 4a, the function would return 'a')
     """
-    letters = "abcdefghijklmnopqrstuvwxyzA"
-    wyckoffs = get_wyckoffs(sg)
-    length = len(wyckoffs)
+    length = len(arr)
     return letters[length - 1 - index]
 
-def index_from_letter(letter, sg):
+def index_from_letter(letter, arr):
     """
     Given the Wyckoff letter, returns the index of a Wyckoff position within
     the spacegroup
@@ -944,9 +943,7 @@ def index_from_letter(letter, sg):
         a single index specifying the location of the Wyckoff position within
         the spacegroup (0 is the general position)
     """
-    letters = "abcdefghijklmnopqrstuvwxyzA"
-    wyckoffs = get_wyckoffs(sg)
-    length = len(wyckoffs)
+    length = len(arr)
     return length - 1 - letters.index(letter)
 
 def jk_from_i(i, olist):
@@ -1216,3 +1213,93 @@ def ss_string_from_ops(ops, sg, complete=True):
     else:
         print("Error: invalid spacegroup number")
         return
+
+#TODO: Add functions for getting symbols for n-dimensional groups
+
+class Wyckoff_position():
+    """
+    Class for a single Wyckoff position within a symmetry group
+    """
+    def from_group_and_index(group, index, dim=3, PBC=None):
+        """
+        Creates a Wyckoff_position using the space group number and index
+        
+        Args:
+            group: the international number of the symmetry group
+            index: the index or letter of the Wyckoff position within the group.
+                0 is always the general position, and larger indeces represent positions
+                with lower multiplicity. Alternatively, index can be the Wyckoff letter
+                ("4a" or "f")
+        """
+        wp = Wyckoff_position
+        wp.dim = dim
+        if type(group) == int:
+            wp.number = group
+        #TODO: Allow init using Schoenflies symbol
+        else:
+            print("Invalid value for group. Use a number or Schoenflies symbol.")
+            return
+        use_letter = False
+        if type(index) == int:
+            wp.index = index
+        elif type(index) == str:
+            use_letter = True
+        if dim == 3:
+            if PBC == None:
+                wp.PBC = [1,2,3]
+            else:
+                wp.PBC = 
+            ops_all = get_wyckoffs(wp.number)
+            if use_letter is True:
+                wp.index = index_from_letter(index, ops_all)
+            if wp.index >= len(ops_all):
+                print("Error while generating Wyckoff_position: index out of range for specified group")
+                return
+            self.ops = ops[wp.index]
+            """The Wyckoff positions for the crystal's spacegroup."""
+            self.symmetry = get_wyckoff_symmetry(wp.number, molecular=True)[wp.index]
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry."""
+            self.generators = get_wyckoff_generators(wp.number)[wp.index]
+            """A list of Wyckoff generators (molecular=False)"""
+            self.generators_m = get_wyckoff_generators(wp.number, molecular=True)[wp.index]
+        elif dim == 2:
+            
+        elif dim == 1:
+            
+        elif dim == 0:
+            print("0D clusters currently unavailable.")
+            #TODO: add support for 0D clusters
+            return
+        return wp
+    #TODO: Define __iter__
+    #TODO: Define __getitem__
+
+class Wyckoff():
+    """
+    Class for storing a set of Wyckoff positions for a symmetry group
+    """
+    def __init__(self, sg, dim=3):
+        self.dim = dim
+        if type(sg) == int:
+            self.sg = 
+        if dim == 3:
+            self.wyckoffs = get_wyckoffs(self.sg)
+            """The Wyckoff positions for the crystal's spacegroup."""
+            self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True)
+            """The Wyckoff positions for the crystal's spacegroup. Sorted by
+            multiplicity."""
+            self.w_symm = get_wyckoff_symmetry(self.sg, molecular=True)
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry."""
+            self.wyckoff_generators = get_wyckoff_generators(self.sg)
+            """A list of Wyckoff generators (molecular=False)"""
+            self.wyckoff_generators_m = get_wyckoff_generators(self.sg, molecular=True)
+        elif dim == 2:
+            
+        elif dim == 1:
+            
+        elif dim == 0:
+            pass
+    #TODO: Define __iter__
+    #TODO: Define __getitem__
