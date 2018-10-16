@@ -64,6 +64,7 @@ command-line usage of the module:
         cross-sectional area. If set to None, chooses a value automatically.
         Defaults to None  
 """
+from pyxtal.symmetry import *
 from pyxtal.crystal import *
 from pyxtal.molecule import *
 from pyxtal.operations import *
@@ -966,7 +967,7 @@ class molecular_crystal():
                                                 if self.number < 46:
                                                     point[a-1] -= 0.5
                                                 elif self.number >= 46:
-                                                    point[a-1] *= 1./sqrt(3.)
+                                                    point[a-1] *= 1./math.sqrt(3.)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #merge_coordinate if the atoms are close
                                     if self.check_atomic_distances is False:

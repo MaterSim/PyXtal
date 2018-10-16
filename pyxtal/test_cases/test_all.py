@@ -1044,17 +1044,17 @@ def test_modules():
 
     check()
 
-    #=====crystal=====
-    print("pyxtal.crystal")
+    #=====symmetry=====
+    print("pyxtal.symmetry")
     reset()
     try:
-        import pyxtal.crystal
+        import pyxtal.symmetry
     except Exception as e:
         fail(e)
 
     print("  get_wyckoffs (may take a moment)")
     try:
-        from pyxtal.crystal import get_wyckoffs
+        from pyxtal.symmetry import get_wyckoffs
     except Exception as e:
         fail(e)
 
@@ -1070,7 +1070,7 @@ def test_modules():
 
     print("  get_wyckoff_symmetry (may take a moment)")
     try:
-        from pyxtal.crystal import get_wyckoff_symmetry
+        from pyxtal.symmetry import get_wyckoff_symmetry
     except Exception as e:
         fail(e)
 
@@ -1086,7 +1086,7 @@ def test_modules():
 
     print("  get_wyckoffs_generators (may take a moment)")
     try:
-        from pyxtal.crystal import get_wyckoff_generators
+        from pyxtal.symmetry import get_wyckoff_generators
     except Exception as e:
         fail(e)
 
@@ -1101,7 +1101,7 @@ def test_modules():
 
     print("  letter_from_index")
     try:
-        from pyxtal.crystal import letter_from_index
+        from pyxtal.symmetry import letter_from_index
     except Exception as e:
         fail(e)
 
@@ -1118,7 +1118,7 @@ def test_modules():
 
     print("  index_from_letter")
     try:
-        from pyxtal.crystal import index_from_letter
+        from pyxtal.symmetry import index_from_letter
     except Exception as e:
         fail(e)
 
@@ -1135,7 +1135,7 @@ def test_modules():
 
     print("  jk_from_i")
     try:
-        from pyxtal.crystal import jk_from_i
+        from pyxtal.symmetry import jk_from_i
     except Exception as e:
         fail(e)
 
@@ -1155,7 +1155,7 @@ def test_modules():
 
     print("  i_from_jk")
     try:
-        from pyxtal.crystal import i_from_jk
+        from pyxtal.symmetry import i_from_jk
     except Exception as e:
         fail(e)
 
@@ -1176,7 +1176,7 @@ def test_modules():
 
     print("  ss_string_from_ops")
     try:
-        from pyxtal.crystal import ss_string_from_ops
+        from pyxtal.symmetry import ss_string_from_ops
     except Exception as e:
         fail(e)
 
@@ -1190,6 +1190,14 @@ def test_modules():
             fail(e)
 
     check()
+
+    #=====crystal=====
+    print("pyxtal.crystal")
+    reset()
+    try:
+        import pyxtal.crystal
+    except Exception as e:
+        fail(e)
 
     print("  random_crystal")
     try:
