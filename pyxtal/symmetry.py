@@ -1214,12 +1214,27 @@ def ss_string_from_ops(ops, sg, complete=True):
         print("Error: invalid spacegroup number")
         return
 
-#TODO: Add functions for getting symbols for n-dimensional groups
+def symbol_from_number(number, symbol):
+    """
+    Returns the H-M symbol for a given international group number
+    """
+    #TODO: Create database/lists of symbols for groups
+    pass
 
 class Wyckoff_position():
     """
     Class for a single Wyckoff position within a symmetry group
     """
+    def from_dict(self, dictionary):
+        """
+        Constructs a Wyckoff_position object using a dictionary. Used mainly by the
+        Wyckoff class for constructing a list of Wyckoff_position objects at once
+        """
+        wp = Wyckoff_position()
+        for key in dictionary:
+            setattr(wp, key, dictionary[key])
+        return wp
+
     def __str__(self):
         try:
             return self.string
@@ -1231,9 +1246,14 @@ class Wyckoff_position():
                 s += "layer "
             elif self.dim == 1:
                 s += "Rod "
-            s += "group "+str(self.number)+" with site symmetry "+ss_string_from_ops(self.symmetry, self.number)
+            s += "group "+str(self.number)
+            #TODO: Implement ss_string_from_ops for d=2,1,0
+            #s += " with site symmetry "+ss_string_from_ops(self.symmetry, self.number)
+            for op in self.ops:
+                s += "\n" + op.as_xyz_string()
             self.string = s
             return self.string
+
     def __repr__(self):
         return str(self)
 
@@ -1252,15 +1272,20 @@ class Wyckoff_position():
         wp.dim = dim
         if type(group) == int:
             wp.number = group
-        #TODO: Allow init using Schoenflies symbol
+        #TODO: Allow init using H-M symbol and store value
         else:
-            print("Invalid value for group. Use a number or Schoenflies symbol.")
+            print("Invalid value for group. Use a number or Hermann-Mauguin symbol.")
             return
         use_letter = False
         if type(index) == int:
             wp.index = index
         elif type(index) == str:
             use_letter = True
+            #Extract letter from number-letter combinations ("4d"->"d")
+            for c in index:
+                if c.isalpha():
+                    index = c
+                    break
 
         if dim == 3:
             if PBC == None:
@@ -1273,7 +1298,7 @@ class Wyckoff_position():
                 wp.letter = index
             else:
                 wp.letter = letter_from_index(wp.index, ops_all)
-            if wp.index >= len(ops_all):
+            if wp.index >= len(ops_all) or wp.index < 0:
                 print("Error while generating Wyckoff_position: index out of range for specified group")
                 return
             wp.ops = ops_all[wp.index]
@@ -1297,7 +1322,7 @@ class Wyckoff_position():
                 wp.letter = index
             else:
                 wp.letter = letter_from_index(wp.index, ops_all)
-            if wp.index >= len(ops_all):
+            if wp.index >= len(ops_all) or wp.index < 0:
                 print("Error while generating Wyckoff_position: index out of range for specified group")
                 return
             wp.ops = ops_all[wp.index]
@@ -1321,7 +1346,7 @@ class Wyckoff_position():
                 wp.letter = index
             else:
                 wp.letter = letter_from_index(wp.index, ops_all)
-            if wp.index >= len(ops_all):
+            if wp.index >= len(ops_all) or wp.index < 0:
                 print("Error while generating Wyckoff_position: index out of range for specified group")
                 return
             wp.ops = ops_all[wp.index]
@@ -1338,38 +1363,120 @@ class Wyckoff_position():
             #TODO: add support for 0D clusters
             return
         return wp
-    #TODO: Define __iter__
-    #TODO: Define __getitem__
 
-class Wyckoff():
+    def __iter__(self):
+        yield from self.ops
+
+    def __getitem__(self, index):
+        return self.ops[index]
+
+class Group():
     """
     Class for storing a set of Wyckoff positions for a symmetry group
     """
-    def __init__(self, sg, dim=3):
+    def __str__(self):
+        try:
+            return self.string
+        except:
+            if self.dim == 3:
+                s = "~~~Space "
+            elif self.dim == 2:
+                s = "~~~Layer "
+            elif self.dim == 1:
+                s = "~~~Rod "
+            elif self.dim == 0:
+                s = "~~~Point "
+            #TODO: implement ss_string_from_ops
+            s += "group # "+str(self.number)+"~~~"#+"with site symmetry "+ss_string_from_ops(self.Wyckoff_positions[0], self.number, dim=self.dim)
+            for wp in self.Wyckoff_positions:
+                s += "\n---"+str(wp.multiplicity)+wp.letter+"--- site symm: "#+ss_string_from_ops(sp.symmetry, self.number, dim=self.dim)
+                #for op in wp.ops:
+                #    s += "\n" + op.as_xyz_string()
+            self.string = s
+            return self.string
+
+    def __repr__(self):
+        return str(self)
+        
+    def __init__(self, number, dim=3):
         self.dim = dim
-        if type(sg) == int:
-            self.sg = sg
+        if type(number) == int:
+            self.number = number
         else:
-            #TODO: Allow init using Schoenflies symbol
+            #TODO: Allow init using H-M symbol, store value
             print("Error: sg must be an integer for the international group number.")
             pass
         if dim == 3:
-            self.wyckoffs = get_wyckoffs(self.sg)
+            self.PBC = [1,2,3]
+            self.wyckoffs = get_wyckoffs(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
-            self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True)
+            self.wyckoffs_organized = get_wyckoffs(self.number, organized=True)
             """The Wyckoff positions for the crystal's spacegroup. Sorted by
             multiplicity."""
-            self.w_symm = get_wyckoff_symmetry(self.sg, molecular=True)
+            self.w_symm = get_wyckoff_symmetry(self.number, molecular=True)
             """A list of site symmetry operations for the Wyckoff positions, obtained
                 from get_wyckoff_symmetry."""
-            self.wyckoff_generators = get_wyckoff_generators(self.sg)
+            self.wyckoff_generators = get_wyckoff_generators(self.number)
             """A list of Wyckoff generators (molecular=False)"""
-            self.wyckoff_generators_m = get_wyckoff_generators(self.sg, molecular=True)
+            self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True)
         elif dim == 2:
-            pass
+            self.PBC = [1,2]
+            self.wyckoffs = get_layer(self.number)
+            """The Wyckoff positions for the crystal's spacegroup."""
+            self.wyckoffs_organized = get_layer(self.number, organized=True)
+            """The Wyckoff positions for the crystal's spacegroup. Sorted by
+            multiplicity."""
+            self.w_symm = get_layer_symmetry(self.number, molecular=True)
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry."""
+            self.wyckoff_generators = get_layer_generators(self.number)
+            """A list of Wyckoff generators (molecular=False)"""
+            self.wyckoff_generators_m = get_layer_generators(self.number, molecular=True)
         elif dim == 1:
-            pass
+            self.PBC = [3]
+            self.wyckoffs = get_rod(self.number)
+            """The Wyckoff positions for the crystal's spacegroup."""
+            self.wyckoffs_organized = get_rod(self.number, organized=True)
+            """The Wyckoff positions for the crystal's spacegroup. Sorted by
+            multiplicity."""
+            self.w_symm = get_rod_symmetry(self.number, molecular=True)
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry."""
+            self.wyckoff_generators = get_rod_generators(self.number)
+            """A list of Wyckoff generators (molecular=False)"""
+            self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
         elif dim == 0:
             pass
-    #TODO: Define __iter__
-    #TODO: Define __getitem__
+        #TODO: Add self.symbol to dictionary
+        wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs), "ops": self.wyckoffs[i],
+            "multiplicity": len(self.wyckoffs[i]), "symmetry": self.w_symm[i],
+            "generators": self.wyckoff_generators[i], "generators_m": self.wyckoff_generators_m[i],
+            "PBC": self.PBC, "dim": self.dim, "number": self.number} for i in range(len(self.wyckoffs))]
+        self.Wyckoff_positions = [Wyckoff_position.from_dict(wpdict) for wpdict in wpdicts]
+    
+    def __iter__(self):
+        yield from self.Wyckoff_positions
+
+    def __getitem__(self, index):
+        return self.Wyckoff_positions[index]
+
+    def print_all(self):
+        try:
+            print(self.string_long)
+        except:
+            if self.dim == 3:
+                s = "~~~Space "
+            elif self.dim == 2:
+                s = "~~~Layer "
+            elif self.dim == 1:
+                s = "~~~Rod "
+            elif self.dim == 0:
+                s = "~~~Point "
+            #TODO: implement ss_string_from_ops
+            s += "group # "+str(self.number)+"~~~"#+"with site symmetry "+ss_string_from_ops(self.Wyckoff_positions[0], self.number, dim=self.dim)
+            for wp in self.Wyckoff_positions:
+                s += "\n---"+str(wp.multiplicity)+wp.letter+"--- site symm: "#+ss_string_from_ops(sp.symmetry, self.number, dim=self.dim)
+                for op in wp.ops:
+                    s += "\n" + op.as_xyz_string()
+            self.string_long = s
+            print(self.string_long)
