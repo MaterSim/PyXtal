@@ -108,7 +108,7 @@ def check_intersection(ellipsoid1, ellipsoid2):
     else:
         return True
 
-def check_mol_sites(ms1, ms2, atomic=False, factor=2.4):
+def check_mol_sites(ms1, ms2, atomic=False, factor=1.2):
     """
     Checks whether or not the molecules of two mol sites overlap. Uses
     ellipsoid overlapping approximation to check. Takes PBC and lattice
@@ -608,7 +608,7 @@ class mol_site():
             print("Error: parameter absolute must be True or False")
             return
 
-    def check_distances(self, factor=2.4, atomic=False):
+    def check_distances(self, factor=1.2, atomic=False):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
@@ -627,13 +627,19 @@ class mol_site():
             #Check inter-atomic distances
             coords, species = self._get_coords_and_species()
             #Store the coords and species for a single molecule
-            coords_m = coords[:len(self.mol)]
-            species_m = species[:len(self.mol)]
-            #Store the coords and species for the other molecule
-            coords_other = coords[len(self.mol):]
-            species_other = species[len(self.mol):]
-            #Check the distances
-            return check_distance(coords_m, coords_other, species_m, species_other, self.lattice, PBC=self.PBC, d_factor=factor)
+            d = distance_matrix(coords, coords, self.lattice, PBC=self.PBC)
+            tols = tols_from_species(species)
+            tols_matrix = factor*2*np.repeat([tols,], len(tols), axis=0)
+            #Find pairs which are closer than the tolerance
+            x = np.where(d<tols_matrix)
+            list1 = x[0]
+            list2 = x[1]
+            m_length = len(self.mol)
+            #Ignore intramolecular distances
+            for i, j in zip(list1, list2):
+                if abs(i-j) >= m_length:
+                    return False
+            return True
         elif atomic is False:
             #Check molecular ellipsoid overlap
             if self.multiplicity == 1:
