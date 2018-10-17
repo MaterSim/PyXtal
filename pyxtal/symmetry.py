@@ -1220,6 +1220,23 @@ class Wyckoff_position():
     """
     Class for a single Wyckoff position within a symmetry group
     """
+    def __str__(self):
+        try:
+            return self.string
+        except:
+            s = "Wyckoff position "+str(self.multiplicity)+self.letter+" in "
+            if self.dim == 3:
+                s += "space "
+            elif self.dim == 2:
+                s += "layer "
+            elif self.dim == 1:
+                s += "Rod "
+            s += "group "+str(self.number)+" with site symmetry "+ss_string_from_ops(self.symmetry, self.number)
+            self.string = s
+            return self.string
+    def __repr__(self):
+        return str(self)
+
     def from_group_and_index(group, index, dim=3, PBC=None):
         """
         Creates a Wyckoff_position using the space group number and index
@@ -1229,9 +1246,9 @@ class Wyckoff_position():
             index: the index or letter of the Wyckoff position within the group.
                 0 is always the general position, and larger indeces represent positions
                 with lower multiplicity. Alternatively, index can be the Wyckoff letter
-                ("4a" or "f")
+                ("4a6" or "f")
         """
-        wp = Wyckoff_position
+        wp = Wyckoff_position()
         wp.dim = dim
         if type(group) == int:
             wp.number = group
@@ -1244,29 +1261,78 @@ class Wyckoff_position():
             wp.index = index
         elif type(index) == str:
             use_letter = True
+
         if dim == 3:
             if PBC == None:
                 wp.PBC = [1,2,3]
             else:
-                wp.PBC = 
+                wp.PBC = PBC
             ops_all = get_wyckoffs(wp.number)
             if use_letter is True:
                 wp.index = index_from_letter(index, ops_all)
+                wp.letter = index
+            else:
+                wp.letter = letter_from_index(wp.index, ops_all)
             if wp.index >= len(ops_all):
                 print("Error while generating Wyckoff_position: index out of range for specified group")
                 return
-            self.ops = ops[wp.index]
+            wp.ops = ops_all[wp.index]
             """The Wyckoff positions for the crystal's spacegroup."""
-            self.symmetry = get_wyckoff_symmetry(wp.number, molecular=True)[wp.index]
+            wp.multiplicity = len(wp.ops)
+            wp.symmetry = get_wyckoff_symmetry(wp.number, molecular=True)[wp.index]
             """A list of site symmetry operations for the Wyckoff positions, obtained
                 from get_wyckoff_symmetry."""
-            self.generators = get_wyckoff_generators(wp.number)[wp.index]
+            wp.generators = get_wyckoff_generators(wp.number)[wp.index]
             """A list of Wyckoff generators (molecular=False)"""
-            self.generators_m = get_wyckoff_generators(wp.number, molecular=True)[wp.index]
+            wp.generators_m = get_wyckoff_generators(wp.number, molecular=True)[wp.index]
+
         elif dim == 2:
-            
+            if PBC == None:
+                wp.PBC = [1,2]
+            else:
+                wp.PBC = PBC
+            ops_all = get_layer(wp.number)
+            if use_letter is True:
+                wp.index = index_from_letter(index, ops_all)
+                wp.letter = index
+            else:
+                wp.letter = letter_from_index(wp.index, ops_all)
+            if wp.index >= len(ops_all):
+                print("Error while generating Wyckoff_position: index out of range for specified group")
+                return
+            wp.ops = ops_all[wp.index]
+            """The Wyckoff positions for the crystal's spacegroup."""
+            wp.multiplicity = len(wp.ops)
+            wp.symmetry = get_layer_symmetry(wp.number, molecular=True)[wp.index]
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry."""
+            wp.generators = get_layer_generators(wp.number)[wp.index]
+            """A list of Wyckoff generators (molecular=False)"""
+            wp.generators_m = get_layer_generators(wp.number, molecular=True)[wp.index]
+
         elif dim == 1:
-            
+            if PBC == None:
+                wp.PBC = [1,2]
+            else:
+                wp.PBC = PBC
+            ops_all = get_rod(wp.number)
+            if use_letter is True:
+                wp.index = index_from_letter(index, ops_all)
+                wp.letter = index
+            else:
+                wp.letter = letter_from_index(wp.index, ops_all)
+            if wp.index >= len(ops_all):
+                print("Error while generating Wyckoff_position: index out of range for specified group")
+                return
+            wp.ops = ops_all[wp.index]
+            """The Wyckoff positions for the crystal's spacegroup."""
+            wp.multiplicity = len(wp.ops)
+            wp.symmetry = get_rod_symmetry(wp.number, molecular=True)[wp.index]
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry."""
+            wp.generators = get_rod_generators(wp.number)[wp.index]
+            """A list of Wyckoff generators (molecular=False)"""
+            wp.generators_m = get_rod_generators(wp.number, molecular=True)[wp.index]
         elif dim == 0:
             print("0D clusters currently unavailable.")
             #TODO: add support for 0D clusters
@@ -1282,7 +1348,11 @@ class Wyckoff():
     def __init__(self, sg, dim=3):
         self.dim = dim
         if type(sg) == int:
-            self.sg = 
+            self.sg = sg
+        else:
+            #TODO: Allow init using Schoenflies symbol
+            print("Error: sg must be an integer for the international group number.")
+            pass
         if dim == 3:
             self.wyckoffs = get_wyckoffs(self.sg)
             """The Wyckoff positions for the crystal's spacegroup."""
@@ -1296,9 +1366,9 @@ class Wyckoff():
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_wyckoff_generators(self.sg, molecular=True)
         elif dim == 2:
-            
+            pass
         elif dim == 1:
-            
+            pass
         elif dim == 0:
             pass
     #TODO: Define __iter__
