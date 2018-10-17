@@ -267,6 +267,7 @@ def test_atomic():
         print("~~~~ The following space groups took more than 60 seconds to generate:")
         for i in slow:
             print("     "+str(i))
+    if failed != []:
         print("~~~~ The following space groups failed to generate:")
         for i in failed:
             print("     "+str(i))
@@ -350,6 +351,7 @@ def test_molecular():
         print("~~~~ The following space groups took more than 60 seconds to generate:")
         for i in slow:
             print("     "+str(i))
+    if failed != []:
         print("~~~~ The following space groups failed to generate:")
         for i in failed:
             print("     "+str(i))
@@ -434,6 +436,7 @@ def test_atomic_2D():
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
             print("     "+str(i))
+    if failed != []:
         print("~~~~ The following layer groups failed to generate:")
         for i in failed:
             print("     "+str(i))
@@ -518,6 +521,7 @@ def test_molecular_2D():
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
             print("     "+str(i))
+    if failed != []:
         print("~~~~ The following layer groups failed to generate:")
         for i in failed:
             print("     "+str(i))
@@ -590,6 +594,7 @@ def test_atomic_1D():
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
             print("     "+str(i))
+    if failed != []:
         print("~~~~ The following layer groups failed to generate:")
         for i in failed:
             print("     "+str(i))
@@ -662,6 +667,7 @@ def test_molecular_1D():
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
             print("     "+str(i))
+    if failed != []:
         print("~~~~ The following layer groups failed to generate:")
         for i in failed:
             print("     "+str(i))
