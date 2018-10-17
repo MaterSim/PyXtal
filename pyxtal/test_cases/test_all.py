@@ -1107,7 +1107,7 @@ def test_modules():
 
     if passed():
         try:
-            if letter_from_index(0, 47) == "A":
+            if letter_from_index(0, get_wyckoffs(47)) == "A":
                 pass
             else:
                 fail()
@@ -1124,7 +1124,7 @@ def test_modules():
 
     if passed():
         try:
-            if index_from_letter("A", 47) == 0:
+            if index_from_letter("A", get_wyckoffs(47)) == 0:
                 pass
             else:
                 fail()
