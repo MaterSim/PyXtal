@@ -1173,7 +1173,7 @@ class random_crystal():
                                     coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
                                     if good_merge is not False:
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
-                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC):
+                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC, d_factor=0.5):
                                             if coordinates_tmp == []:
                                                 coordinates_tmp = coords_toadd
                                             else:
