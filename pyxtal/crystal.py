@@ -363,6 +363,7 @@ def matrix2para(matrix, radians=True):
         cell_para[5] *= deg
     return cell_para
 
+#TODO: replace sg with number, dim
 def cellsize(sg):
     """
     Returns the number of duplicate atoms in the conventional lattice (in
@@ -375,6 +376,10 @@ def cellsize(sg):
     Returns:
         a number between 1 and 4
     """
+    #For 1D crystals
+    if sg == None:
+        return 1
+    #Get the H-M symbol
     symbol = sg_symbol_from_int_number(sg)
     letter = symbol[0]
     if letter == 'P':
@@ -484,7 +489,7 @@ def connected_components(graph):
         i += 1
     return sets
 
-def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
+def merge_coordinate(coor, lattice, group, tol):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -494,12 +499,8 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
     Args:
         coor: a list of fractional coordinates
         lattice: a 3x3 matrix representing the unit cell
-        wyckoffs: an unorganized list of Wyckoff positions to check
-        w_symm_all: A list of Wyckoff site symmetry obtained from
-            get_wyckoff_symmetry
+        group: a pyxtal.symmetry.Group object
         tol: the cutoff distance for merging coordinates
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z respectively.
 
     Returns:
         coor, index, point: (coor) is the new list of fractional coordinates after
@@ -508,17 +509,19 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
         when plugged into the Wyckoff position, it will generate all the other
         points.
     """
+    wyckoffs = group.wyckoffs
+    PBC = group.PBC
     while True:
         pairs, graph = find_short_dist(coor, lattice, tol, PBC=PBC)
         index = None
         if len(pairs)>0:
             if len(coor) > len(wyckoffs[-1]):
                 merged = []
-                groups = connected_components(graph)
-                for group in groups:
-                    merged.append(get_center(coor[group], lattice, PBC=PBC))
+                components = connected_components(graph)
+                for c in components:
+                    merged.append(get_center(coor[c], lattice, PBC=PBC))
                 merged = np.array(merged)
-                index, point = check_wyckoff_position(merged, wyckoffs, w_symm_all, PBC=PBC)
+                index, point = check_wyckoff_position(merged, group)
                 if index is False:
                     return coor, False, None
                 else:
@@ -528,7 +531,7 @@ def merge_coordinate(coor, lattice, wyckoffs, w_symm_all, tol, PBC=[1,2,3]):
                 return coor, False, None
         else:
             if index is None:
-                index, point = check_wyckoff_position(coor, wyckoffs, w_symm_all, PBC=PBC)
+                index, point = check_wyckoff_position(coor, group)
             return coor, index, point
 
 def estimate_volume(numIons, species, factor=1.0):
@@ -926,7 +929,7 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
 
-def choose_wyckoff(wyckoffs, number):
+def choose_wyckoff(group, number):
     """
     Choose a Wyckoff position to fill based on the current number of atoms
     needed to be placed within a unit cell
@@ -935,21 +938,23 @@ def choose_wyckoff(wyckoffs, number):
         2) We prefer positions with large multiplicity.
 
     Args:
-        wyckoffs: an organized list of Wyckoff positions
+        group: a pyxtal.symmetry.Group object
         number: the number of atoms still needed in the unit cell
 
     Returns:
         a single index for the Wyckoff position. If no position is found,
         returns False
     """
+    wyckoffs_organized = group.wyckoffs_organized
+    
     if rand_u(0,1)>0.5: #choose from high to low
-        for wyckoff in wyckoffs:
+        for wyckoff in wyckoffs_organized:
             if len(wyckoff[0]) <= number:
                 return choose(wyckoff)
         return False
     else:
         good_wyckoff = []
-        for wyckoff in wyckoffs:
+        for wyckoff in wyckoffs_organized:
             if len(wyckoff[0]) <= number:
                 for w in wyckoff:
                     good_wyckoff.append(w)
@@ -1001,40 +1006,45 @@ class random_crystal():
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def init_common(self, species, numIons, factor):
+    def init_common(self, species, numIons, factor, number):
+        """
+        Common init functionality for 0-3D cases of random_crystal.
+        """
+        self.number = number
+        """The international group number of the crystal:
+        1-230 for 3D space groups
+        1-80 for 2D layer groups
+        1-75 for 1D Rod groups"""
         self.numattempts = 0
-        """The number of attempts needed to generate the crystal."""
+        """The number of attempts needed to generate the crystal. Has a maximum
+        value of max1*max2*max3."""
         numIons = np.array(numIons) #must convert it to np.array
         self.factor = factor
         """The supplied volume factor for the unit cell."""
         self.numIons0 = numIons
+        """The number of each type of atom in the PRIMITIVE cell."""
+        self.numIons = self.numIons0 * cellsize(self.sg)
+        """The number of each type of atom in the CONVENTIONAL cell."""
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
         self.Msgs()
         """A list of warning messages to use during generation."""
-
-    def __init__(self, sg, species, numIons, factor):
-        self.init_common(species, numIons, factor)
-        self.dim = 3
-        """The number of periodic dimensions of the crystal"""
-        #Necessary input
-        self.sg = sg
-        """The international spacegroup number of the crystal."""
-        self.numIons = self.numIons0 * cellsize(self.sg)
-        """The number of each type of atom in the CONVENTIONAL cell"""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
-        """The volume of the generated unit cell"""
-        self.wyckoffs = get_wyckoffs(self.sg)
-        """The Wyckoff positions for the crystal's spacegroup."""
-        self.wyckoffs_organized = get_wyckoffs(self.sg, organized=True)
-        """The Wyckoff positions for the crystal's spacegroup. Sorted by
-        multiplicity."""
-        self.w_symm = get_wyckoff_symmetry(self.sg)
-        """The site symmetry of the Wyckoff positions"""
-        self.PBC = [1,2,3]
-        """The periodic boundary axes of the crystal"""
+        """The volume of the generated unit cell."""
+        self.group = Group(number, dim=self.dim)
+        """A pyxtal.symmetry.Group object storing information about the space/layer
+        /Rod/point group, and its Wyckoff positions."""
+        #Generate the crystal
         self.generate_crystal()
 
+    def __init__(self, sg, species, numIons, factor):
+        self.dim = 3
+        """The number of periodic dimensions of the crystal"""
+        self.sg = sg
+        """The international spacegroup number of the crystal."""
+        self.PBC = [1,2,3]
+        """The periodic boundary axes of the crystal"""
+        self.init_common(species, numIons, factor, sg)
 
     def Msgs(self):
         """
@@ -1056,7 +1066,7 @@ class random_crystal():
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
         """
-        N_site = [len(x[0]) for x in self.wyckoffs_organized]
+        N_site = [len(x[0]) for x in self.group.wyckoffs_organized]
         has_freedom = False
         #remove WP's with no freedom once they are filled
         removed_wyckoffs = []
@@ -1066,13 +1076,13 @@ class random_crystal():
                 return False
             else:
                 #Check if smallest WP has at least one degree of freedom
-                op = self.wyckoffs_organized[-1][-1][0]
+                op = self.group.wyckoffs_organized[-1][-1][0]
                 if op.rotation_matrix.all() != 0.0:
                     has_freedom = True
                 else:
                     #Subtract from the number of ions beginning with the smallest Wyckoff positions
                     remaining = numIon
-                    for x in self.wyckoffs_organized:
+                    for x in self.group.wyckoffs_organized:
                         for wp in x:
                             removed = False
                             while remaining >= len(wp) and wp not in removed_wyckoffs:
@@ -1152,7 +1162,7 @@ class random_crystal():
                             for cycle3 in range(max3):
                                 self.numattempts += 1
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                                ops = choose_wyckoff(self.wyckoffs_organized, numIon-numIon_added) 
+                                ops = choose_wyckoff(self.group, numIon-numIon_added) 
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
                                     point = np.random.random(3)
@@ -1170,7 +1180,7 @@ class random_crystal():
                                                     point[a-1] *= 1./sqrt(3.)
                                     coords = np.array([op.operate(point) for op in ops])
                                     #Merge coordinates if the atoms are close
-                                    coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.wyckoffs, self.w_symm, tol, PBC=self.PBC)
+                                    coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
                                     if good_merge is not False:
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
                                         if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC, d_factor=0.5):
@@ -1249,11 +1259,10 @@ class random_crystal_2D(random_crystal):
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, thickness, factor):
-        self.init_common(species, numIons, factor)
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
-        self.number = number
-        """The layer group number (between 1 and 80) for the crystal's layer group."""
+        self.PBC = [1,2]
+        """The periodic boundary axes of the crystal"""
         self.lgp = Layergroup(number)
         """A Layergroup object for the crystal's layer group."""
         self.sg = self.lgp.sgnumber
@@ -1261,28 +1270,7 @@ class random_crystal_2D(random_crystal):
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""
-        self.PBC = [1,2]
-        """The periodic axes of the crystal."""
-        self.PB = self.lgp.permutation[3:6] 
-        #TODO: add docstring
-        self.P = self.lgp.permutation[:3] 
-        #TODO: add docstring
-        self.Msgs()
-        """A list of warning messages to use during generation."""
-        self.numIons = self.numIons0 * cellsize(self.sg)
-        """The number of each type of atom in the CONVENTIONAL cell"""
-        self.volume = estimate_volume(self.numIons, self.species, self.factor)
-        """The volume of the generated unit cell"""
-        self.wyckoffs = get_layer(self.number)
-        """The Wyckoff positions for the crystal's spacegroup."""      
-        self.wyckoffs_organized = get_layer(self.number, organized=True)
-        """The Wyckoff positions for the crystal's spacegroup. Sorted by
-        multiplicity."""
-        self.w_symm = get_layer_symmetry(self.number)
-        """A list of site symmetry operations for the Wyckoff positions, obtained
-            from get_wyckoff_symmetry."""
-        self.generate_crystal()
-
+        self.init_common(species, numIons, factor, number)
 
 class random_crystal_1D(random_crystal):
     """
@@ -1303,29 +1291,17 @@ class random_crystal_1D(random_crystal):
             unit cell. Increasing this gives extra space between atoms
     """
     def __init__(self, number, species, numIons, area, factor):
-        self.init_common(species, numIons, factor)
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
-        self.number = number
-        """The Rod group number (between 1 and 75) for the crystal's Rod group."""
+        self.PBC = [3]
+        """The periodic axis of the crystal."""
+        self.sg = None
+        """The international space group number (there is not a 1-1 correspondence
+        with Rod groups)."""
         self.area = area
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
-        self.PBC = [3]
-        """The periodic axis of the crystal."""
-        self.numIons = self.numIons0 #cellsize always == 1
-        """The number of each type of atom in the CONVENTIONAL cell"""
-        self.volume = estimate_volume(self.numIons, self.species, self.factor)
-        """The volume of the generated unit cell"""
-        self.wyckoffs = get_rod(self.number)
-        """The Wyckoff positions for the crystal's spacegroup."""      
-        self.wyckoffs_organized = get_rod(self.number, organized=True)
-        """The Wyckoff positions for the crystal's spacegroup. Sorted by
-        multiplicity."""
-        self.w_symm = get_rod_symmetry(self.number)
-        """A list of site symmetry operations for the Wyckoff positions, obtained
-            from get_rod_symmetry."""
-        self.generate_crystal()
+        self.init_common(species, numIons, factor, number)
 
 
 if __name__ == "__main__":

@@ -715,7 +715,21 @@ def get_rod_generators(num, molecular=False):
                 generators[-1].append(op)
     return generators
 
-def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
+def general_position(number, dim=3):
+    """
+    Returns a Wyckoff_position object for the general Wyckoff position of the given
+    group.
+
+    Args:
+        number: the international number of the group
+        dim: the dimension of the group 3: space group, 2: layer group, 1: Rod group
+
+    Returns:
+        a Wyckoff_position object for the general position
+    """
+    return Wyckoff_position.from_group_and_index(number, 0, dim=dim)
+
+def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
     """
     Given a point and a general Wyckoff position, return the list of symmetry
     operations leaving the point (coordinate or SymmOp) invariant. The returned
@@ -728,8 +742,9 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
         point: a 1x3 coordinate or SymmOp object to find the symmetry of. If a
             SymmOp is given, the returned symmetries must also preserve the
             point's orientaion
-        gen_pos: the general position of the spacegroup. Can be obtained using
-            get_wyckoffs(sg)[0], where sg is the desired spacegroup number
+        gen_pos: the general position of the spacegroup. Can be a Wyckoff_position
+            object or list of SymmOp objects.
+            Can be obtained using general_position()
         tol:
             the numberical tolerance for determining equivalent positions and
             orientations.
@@ -740,6 +755,11 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
     Returns:
         a list of SymmOp objects which leave the given point invariant
     """
+    if PBC == None:
+        if type(gen_pos) == Wyckoff_position:
+            PBC = gen_pos.PBC
+        else:
+            PBC=[1,2,3]
     #Convert point into a SymmOp
     if type(point) != SymmOp:
         point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point)
@@ -770,31 +790,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=[1,2,3]):
             symmetry.append(el)
     return symmetry
 
-def site_symm_point(point, gen_pos, tol=1e-3, PBC=[1,2,3]):
-    """
-    Given a point and a general Wyckoff position, return the list of symmetry
-    operations leaving the point (coordinate or SymmOp) invariant. The returned
-    SymmOps are a subset of the general position. The site symmetry can be used
-    for determining the Wyckoff position for a set of points, or for
-    determining the valid orientations of a molecule within a given Wyckoff
-    position.
-
-    Args:
-        point: a 1x3 coordinate or SymmOp object to find the symmetry of
-        gen_pos: the general position of the spacegroup. Can be obtained using
-            get_wyckoffs(sg)[0], where sg is the desired spacegroup number
-        tol:
-            the numberical tolerance for determining equivalent positions and
-            orientations.
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
-
-    Returns:
-        a list of SymmOp objects which leave the given point invariant
-    """
-    ops = [op for op in gen_pos if ( distance(op.operate(point)-point, Euclidean_lattice, PBC=PBC) < tol )]
-    return ops
-
-def find_generating_point(coords, generators, PBC=[1,2,3]):
+def find_generating_point(coords, wyckoff_position):
     """
     Given a set of coordinates and Wyckoff generators, return the coord which
     can be used to generate the others. This is useful for molecular Wyckoff
@@ -806,14 +802,14 @@ def find_generating_point(coords, generators, PBC=[1,2,3]):
     Args:
         coords: a list of fractional coordinates corresponding to a Wyckoff
             position
-        generators: the list of Wyckoff generators for the Wyckoff position.
-            Can be obtained from get_wyckoff_generators
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        wyckoff_position: a Wyckoff_position object
     
     Returns:
         a fractional coordinate [x, y, z] corresponding to the first listed
         point in the Wyckoff position
      """
+    generators = wyckoff_position.generators
+    PBC = wyckoff_position.PBC
     for coord in coords:
         if not np.allclose(coord, generators[0].operate(coord)):
             continue
@@ -840,7 +836,7 @@ def find_generating_point(coords, generators, PBC=[1,2,3]):
     #If no valid coordinate is found
     return None
 
-def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
+def check_wyckoff_position(points, group, tol=1e-3):
     """
     Given a list of points, returns a single index of a matching Wyckoff
     position in the space group. Checks the site symmetry of each supplied
@@ -850,11 +846,7 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
 
     Args:
         points: a list of 3d coordinates or SymmOps to check
-        wyckoffs: an unorganized list of Wyckoff positions obtained from
-            get_wyckoffs, get_layer, or get_rod
-        w_symm_all: a list of site symmetry operations obtained from
-            get_wyckoff_symmetry, get_layer_symmetry, or get_rod_symmetry
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        group: a Group object
         tol: the max distance between equivalent points
 
     Returns:
@@ -863,6 +855,9 @@ def check_wyckoff_position(points, wyckoffs, w_symm_all, PBC=[1,2,3], tol=1e-3):
         coordinate taken from the list points. When plugged into the Wyckoff
         position, it will generate all the other points.
     """
+    wyckoffs = group.wyckoffs
+    w_symm_all = group.w_symm
+    PBC = group.PBC
     #new method
     #Store the squared distance tolerance
     t = tol**2
@@ -1013,6 +1008,7 @@ def ss_string_from_ops(ops, sg, complete=True):
     Returns:
         a string representing the site symmetry. Ex: "2mm"
     """
+    #TODO: replace sg with number, add dim variable
     #Return the symbol for a single axis
     #Will be called later in the function
     def get_symbol(opas, order, has_reflection):
@@ -1221,11 +1217,37 @@ def symbol_from_number(number, symbol):
     #TODO: Create database/lists of symbols for groups
     pass
 
+def organized_wyckoffs(group):
+    """
+    Takes a Group object or unorganized list of Wyckoff positions and returns
+    a 2D list of Wyckoff positions organized by multiplicity.
+
+    Args:
+        group: a pyxtal.symmetry.Group object
+    
+    Returns:
+        a 2D list of Wyckoff_position objects if group is a Group object.
+        a 3D list of SymmOp objects if group is a 2D list of SymmOps
+    """
+    if type(group) == Group:
+        wyckoffs = group.Wyckoff_positions
+    else:
+        wyckoffs = group
+    wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
+    old = len(wyckoffs[0])
+    for wp in wyckoffs:
+        mult = len(wp)
+        if mult != old:
+            wyckoffs_organized.append([])
+            old = mult
+        wyckoffs_organized[-1].append(wp)
+    return wyckoffs_organized
+
 class Wyckoff_position():
     """
     Class for a single Wyckoff position within a symmetry group
     """
-    def from_dict(self, dictionary):
+    def from_dict(dictionary):
         """
         Constructs a Wyckoff_position object using a dictionary. Used mainly by the
         Wyckoff class for constructing a list of Wyckoff_position objects at once
@@ -1304,12 +1326,16 @@ class Wyckoff_position():
             wp.ops = ops_all[wp.index]
             """The Wyckoff positions for the crystal's spacegroup."""
             wp.multiplicity = len(wp.ops)
-            wp.symmetry = get_wyckoff_symmetry(wp.number, molecular=True)[wp.index]
+            wp.symmetry = get_wyckoff_symmetry(wp.number)[wp.index]
             """A list of site symmetry operations for the Wyckoff positions, obtained
-                from get_wyckoff_symmetry."""
+                from get_wyckoff_symmetry (molecular=False)"""
+            wp.symmetry_m = get_wyckoff_symmetry(wp.number, molecular=True)[wp.index]
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry (molecular=False)"""
             wp.generators = get_wyckoff_generators(wp.number)[wp.index]
             """A list of Wyckoff generators (molecular=False)"""
             wp.generators_m = get_wyckoff_generators(wp.number, molecular=True)[wp.index]
+            """A list of Wyckoff generators (molecular=True)"""
 
         elif dim == 2:
             if PBC == None:
@@ -1328,12 +1354,16 @@ class Wyckoff_position():
             wp.ops = ops_all[wp.index]
             """The Wyckoff positions for the crystal's spacegroup."""
             wp.multiplicity = len(wp.ops)
-            wp.symmetry = get_layer_symmetry(wp.number, molecular=True)[wp.index]
+            wp.symmetry = get_layer_symmetry(wp.number)[wp.index]
             """A list of site symmetry operations for the Wyckoff positions, obtained
-                from get_wyckoff_symmetry."""
+                from get_wyckoff_symmetry (molecular=False)"""
+            wp.symmetry_m = get_layer_symmetry(wp.number, molecular=True)[wp.index]
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry (molecular=False)"""
             wp.generators = get_layer_generators(wp.number)[wp.index]
             """A list of Wyckoff generators (molecular=False)"""
             wp.generators_m = get_layer_generators(wp.number, molecular=True)[wp.index]
+            """A list of Wyckoff generators (molecular=True)"""
 
         elif dim == 1:
             if PBC == None:
@@ -1352,12 +1382,17 @@ class Wyckoff_position():
             wp.ops = ops_all[wp.index]
             """The Wyckoff positions for the crystal's spacegroup."""
             wp.multiplicity = len(wp.ops)
-            wp.symmetry = get_rod_symmetry(wp.number, molecular=True)[wp.index]
+            wp.symmetry = get_rod_symmetry(wp.number)[wp.index]
             """A list of site symmetry operations for the Wyckoff positions, obtained
-                from get_wyckoff_symmetry."""
+                from get_wyckoff_symmetry (molecular=False)"""
+            wp.symmetry_m = get_rod_symmetry(wp.number, molecular=True)[wp.index]
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry (molecular=False)"""
             wp.generators = get_rod_generators(wp.number)[wp.index]
             """A list of Wyckoff generators (molecular=False)"""
             wp.generators_m = get_rod_generators(wp.number, molecular=True)[wp.index]
+            """A list of Wyckoff generators (molecular=True)"""
+
         elif dim == 0:
             print("0D clusters currently unavailable.")
             #TODO: add support for 0D clusters
@@ -1369,6 +1404,9 @@ class Wyckoff_position():
 
     def __getitem__(self, index):
         return self.ops[index]
+
+    def __len__(self):
+        return self.multiplicity
 
 class Group():
     """
@@ -1410,55 +1448,97 @@ class Group():
             self.PBC = [1,2,3]
             self.wyckoffs = get_wyckoffs(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
-            self.wyckoffs_organized = get_wyckoffs(self.number, organized=True)
-            """The Wyckoff positions for the crystal's spacegroup. Sorted by
-            multiplicity."""
-            self.w_symm = get_wyckoff_symmetry(self.number, molecular=True)
+            self.w_symm = get_wyckoff_symmetry(self.number)
             """A list of site symmetry operations for the Wyckoff positions, obtained
-                from get_wyckoff_symmetry."""
+                from get_wyckoff_symmetry (molecular=False)"""
+            self.w_symm_m = get_wyckoff_symmetry(self.number, molecular=True)
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry (molecular=True)"""
             self.wyckoff_generators = get_wyckoff_generators(self.number)
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True)
+            """A list of Wyckoff generators (molecular=True)"""
         elif dim == 2:
             self.PBC = [1,2]
             self.wyckoffs = get_layer(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
-            self.wyckoffs_organized = get_layer(self.number, organized=True)
-            """The Wyckoff positions for the crystal's spacegroup. Sorted by
-            multiplicity."""
-            self.w_symm = get_layer_symmetry(self.number, molecular=True)
+            self.w_symm = get_layer_symmetry(self.number)
             """A list of site symmetry operations for the Wyckoff positions, obtained
-                from get_wyckoff_symmetry."""
+                from get_wyckoff_symmetry (molecular=False)."""
+            self.w_symm_m = get_layer_symmetry(self.number, molecular=True)
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry (molecular=True)"""
             self.wyckoff_generators = get_layer_generators(self.number)
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_layer_generators(self.number, molecular=True)
+            """A list of Wyckoff generators (molecular=True)"""
         elif dim == 1:
             self.PBC = [3]
             self.wyckoffs = get_rod(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
-            self.wyckoffs_organized = get_rod(self.number, organized=True)
-            """The Wyckoff positions for the crystal's spacegroup. Sorted by
-            multiplicity."""
-            self.w_symm = get_rod_symmetry(self.number, molecular=True)
+            self.w_symm = get_rod_symmetry(self.number)
             """A list of site symmetry operations for the Wyckoff positions, obtained
-                from get_wyckoff_symmetry."""
+                from get_wyckoff_symmetry (molecular=False)"""
+            self.w_symm_m = get_rod_symmetry(self.number, molecular=True)
+            """A list of site symmetry operations for the Wyckoff positions, obtained
+                from get_wyckoff_symmetry (molecular=True)"""
             self.wyckoff_generators = get_rod_generators(self.number)
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
+            """A list of Wyckoff generators (molecular=True)"""
         elif dim == 0:
             pass
         #TODO: Add self.symbol to dictionary
         wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs), "ops": self.wyckoffs[i],
-            "multiplicity": len(self.wyckoffs[i]), "symmetry": self.w_symm[i],
+            "multiplicity": len(self.wyckoffs[i]), "symmetry": self.w_symm[i], "symmetry_m": self.w_symm_m[i],
             "generators": self.wyckoff_generators[i], "generators_m": self.wyckoff_generators_m[i],
             "PBC": self.PBC, "dim": self.dim, "number": self.number} for i in range(len(self.wyckoffs))]
         self.Wyckoff_positions = [Wyckoff_position.from_dict(wpdict) for wpdict in wpdicts]
+        """A list of Wyckoff_position objects, sorted by descending multiplicity"""
+        self.wyckoffs_organized = organized_wyckoffs(self)
+        """A 2D list of Wyckoff_position objects, grouped and sorted by
+        multiplicity."""
     
+    def get_wyckoff_position(self, index):
+        if type(index) == int:
+            pass
+        elif type(index) == str:
+            #Extract letter from number-letter combinations ("4d"->"d")
+            for c in index:
+                if c.isalpha():
+                    letter = c
+                    break
+            index = index_from_letter(letter, self.wyckoffs)
+        return self.Wyckoff_positions[index]
+
+    def get_wyckoff_symmetry(self, index, molecular=False):
+        if type(index) == int:
+            pass
+        elif type(index) == str:
+            #Extract letter from number-letter combinations ("4d"->"d")
+            for c in index:
+                if c.isalpha():
+                    letter = c
+                    break
+            index = index_from_letter(letter, self.wyckoffs)
+        if molecular is False:
+            ops = self.w_symm[index][0]
+        if molecular is True:
+            ops = self.w_symm_m[index][0]
+        #TODO: implement ss_string_from_ops
+        #return ss_string_from_ops(ops, self.number, dim=self.dim)
+
+    def get_wyckoff_symmetry_m(self, index):
+        return self.get_wyckoff_symmetry(index, molecular=True)
+
     def __iter__(self):
         yield from self.Wyckoff_positions
 
     def __getitem__(self, index):
-        return self.Wyckoff_positions[index]
+        return self.get_wyckoff_position(index)
+
+    def __len__(self):
+        return self.multiplicity
 
     def print_all(self):
         try:

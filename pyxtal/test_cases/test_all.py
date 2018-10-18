@@ -1197,6 +1197,36 @@ def test_modules():
 
     check()
 
+    print("  Wyckoff_position")
+    try:
+        from pyxtal.symmetry import Wyckoff_position
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            wp = Wyckoff_position.from_group_and_index(20, 1)
+        except Exception as e:
+            fail(e)
+
+    check()
+
+    print("  Group")
+    try:
+        from pyxtal.symmetry import Group
+    except Exception as e:
+        fail(e)
+
+    if passed():
+        try:
+            g3 = Group(230)
+            g2 = Group(80, dim=2)
+            g1 = Group(75, dim=1)
+        except Exception as e:
+            fail(e)
+
+    check()
+
     #=====crystal=====
     print("pyxtal.crystal")
     reset()
@@ -1320,8 +1350,9 @@ def test_modules():
         try:
             w = get_wyckoffs(20)
             ws = get_wyckoff_symmetry(20, molecular=True)
-            orientation_in_wyckoff_position(h2o, w, ws, 1)
-            orientation_in_wyckoff_position(ch4, w, ws, 1)
+            wp = Wyckoff_position.from_group_and_index(20, 1)
+            orientation_in_wyckoff_position(h2o, wp)
+            orientation_in_wyckoff_position(ch4, wp)
         except Exception as e:
             fail(e)
 

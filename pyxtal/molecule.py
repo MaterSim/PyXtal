@@ -24,6 +24,11 @@ from pyxtal.database.collection import Collection
 identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
 inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
 
+#TODO: implement minimal enclosing ellipsoid algorithm
+def find_ellipsoid(mol):
+    print("Error: bounding ellipsoid calculator not yet implemented.")
+    pass
+
 def mol_from_file(fname):
     """
     Reads a file into a pymatgen Molecule. Supported formats include xyz, gaussian,
@@ -250,7 +255,7 @@ def get_symmetry(mol, already_oriented=False):
             symm_m.append(op)
         return symm_m
 
-def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=True,
+def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
     exact_orientation=False, already_oriented=False, allow_inversion=False):
     """
     Tests if a molecule meets the symmetry requirements of a Wyckoff position,
@@ -258,9 +263,7 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
 
     Args:
         mol: a Molecule object. Orientation is arbitrary
-        wyckoffs: an unorganized list of Wyckoff positions
-        w_symm_all: the site symmetry of the Wyckoff position
-        index: the index of the Wyckoff position within the sg to check
+        wyckoff_position: a pyxtal.symmetry.Wyckoff_position object
         randomize: whether or not to apply a random rotation consistent with
             the symmetry requirements
         exact_orientation: whether to only check compatibility for the provided
@@ -279,8 +282,12 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
         molecule while allowing it to satisfy the symmetry requirements of the
         Wyckoff position. If no orientations are found, returns False.
     """
+    wyckoffs = wyckoff_position.ops
+    w_symm = wyckoff_position.symmetry_m
+    index = wyckoff_position.index
+
     #Obtain the Wyckoff symmetry
-    symm_w = deepcopy(w_symm_all[index][0])
+    symm_w = w_symm[0]
     pga = PointGroupAnalyzer(mol)
 
     #Check exact orientation
@@ -470,7 +477,7 @@ def orientation_in_wyckoff_position(mol, wyckoffs, w_symm_all, index, randomize=
             op = o.get_op(angle=0)
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(mo, wyckoffs, w_symm_all, index, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:
+        if orientation_in_wyckoff_position(mo, wyckoff_position, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:
             allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
