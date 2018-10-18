@@ -102,6 +102,7 @@
 <span class="sd">        cross-sectional area. If set to None, chooses a value automatically.</span>
 <span class="sd">        Defaults to None  </span>
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">pyxtal.symmetry</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">pyxtal.molecule</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">pyxtal.operations</span> <span class="k">import</span> <span class="o">*</span>
@@ -145,7 +146,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="check_mol_sites"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_mol_sites">[docs]</a><span class="k">def</span> <span class="nf">check_mol_sites</span><span class="p">(</span><span class="n">ms1</span><span class="p">,</span> <span class="n">ms2</span><span class="p">,</span> <span class="n">atomic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.4</span><span class="p">):</span>
+<div class="viewcode-block" id="check_mol_sites"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_mol_sites">[docs]</a><span class="k">def</span> <span class="nf">check_mol_sites</span><span class="p">(</span><span class="n">ms1</span><span class="p">,</span> <span class="n">ms2</span><span class="p">,</span> <span class="n">atomic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Checks whether or not the molecules of two mol sites overlap. Uses</span>
 <span class="sd">    ellipsoid overlapping approximation to check. Takes PBC and lattice</span>
@@ -200,7 +201,7 @@
         <span class="n">volume</span> <span class="o">+=</span> <span class="n">numMol</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
     <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">factor</span><span class="o">*</span><span class="n">volume</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="get_sg_orientations"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.get_sg_orientations">[docs]</a><span class="k">def</span> <span class="nf">get_sg_orientations</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="get_group_orientations"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.get_group_orientations">[docs]</a><span class="k">def</span> <span class="nf">get_group_orientations</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculate the valid orientations for each Molecule and Wyckoff position.</span>
 <span class="sd">    Returns a list with 3 indices:</span>
@@ -213,7 +214,7 @@
 
 <span class="sd">    For example, self.valid_orientations[i][j] would be a list of valid</span>
 <span class="sd">    orientations for self.molecules[i], in the Wyckoff position</span>
-<span class="sd">    self.wyckoffs_organized[i][j]</span>
+<span class="sd">    self.group.wyckoffs_organized[i][j]</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        mol: a pymatgen Molecule object.</span>
@@ -226,15 +227,15 @@
 <span class="sd">        a list of operations orientation objects for each Wyckoff position. 1st</span>
 <span class="sd">            and 2nd indices correspond to the Wyckoff position</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="n">organized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">w_symm_all</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">wyckoffs_organized</span>
+    <span class="n">w_symm_all</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">w_symm_m</span>
     <span class="n">valid_orientations</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">wp_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wyckoffs</span><span class="p">):</span>
         <span class="n">valid_orientations</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">wp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
             <span class="n">wp_index</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="n">allowed</span> <span class="o">=</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">wp_index</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allow_inversion</span><span class="p">)</span>
+            <span class="n">allowed</span> <span class="o">=</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">wp</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allow_inversion</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">allowed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
                 <span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -316,19 +317,14 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="check_wyckoff_position_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_wyckoff_position_molecular">[docs]</a><span class="k">def</span> <span class="nf">check_wyckoff_position_molecular</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
+<div class="viewcode-block" id="check_wyckoff_position_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_wyckoff_position_molecular">[docs]</a><span class="k">def</span> <span class="nf">check_wyckoff_position_molecular</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given a list of points, returns the index of the Wyckoff position within</span>
 <span class="sd">    the spacegroup.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        points: a list of 3d fractional coordinates or SymmOps to check</span>
-<span class="sd">        wyckoffs: a list of unorganized Wyckoff positions obtained from</span>
-<span class="sd">            get_wyckoffs</span>
-<span class="sd">        w_symm_all: a list of site symmetry obtained from get_wyckoff_symmetry</span>
-<span class="sd">            translational components. If false, translations related by +-1 are</span>
-<span class="sd">            considered equal</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
+<span class="sd">        group: a pyxtal.symmetry.Group object</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        index, point: index is a single index corresponding to the detected</span>
@@ -336,6 +332,10 @@
 <span class="sd">        point is a 3-vector from the list points; when plugged into the Wyckoff</span>
 <span class="sd">        position, it will generate the other points</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">wyckoffs</span>
+    <span class="n">w_symm_all</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">w_symm</span>
+    <span class="n">PBC</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">PBC</span>
+    
     <span class="n">t</span> <span class="o">=</span> <span class="n">tol</span><span class="o">**</span><span class="mi">2</span>
     <span class="c1">#Loop over Wyckoff positions</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">wp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wyckoffs</span><span class="p">):</span>
@@ -390,7 +390,7 @@
             <span class="k">return</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span>
     <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="merge_coordinate_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.merge_coordinate_molecular">[docs]</a><span class="k">def</span> <span class="nf">merge_coordinate_molecular</span><span class="p">(</span><span class="n">coor</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="merge_coordinate_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.merge_coordinate_molecular">[docs]</a><span class="k">def</span> <span class="nf">merge_coordinate_molecular</span><span class="p">(</span><span class="n">coor</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">orientations</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given a list of fractional coordinates, merges them within a given</span>
 <span class="sd">    tolerance, and checks if the merged coordinates satisfy a Wyckoff</span>
@@ -400,13 +400,10 @@
 <span class="sd">    Args:</span>
 <span class="sd">        coor: a list of fractional coordinates</span>
 <span class="sd">        lattice: a 3x3 matrix representing the unit cell</span>
-<span class="sd">        wyckoffs: an unorganized list of Wyckoff positions to check</span>
-<span class="sd">        w_symm_all: A list of Wyckoff site symmetry obtained from</span>
-<span class="sd">            get_wyckoff_symmetry</span>
+<span class="sd">        group: a pyxtal.symmetry.Group object</span>
 <span class="sd">        tol: the cutoff distance for merging coordinates</span>
 <span class="sd">        orientations: a list of valid molecular orientations within the</span>
 <span class="sd">            space group</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        coor, index, point: (coor) is the new list of fractional coordinates after</span>
@@ -415,6 +412,10 @@
 <span class="sd">        returns the original coordinates and False. point is a 3-vector which can</span>
 <span class="sd">        be plugged into the Wyckoff position to generate the rest of the points</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">wyckoffs</span>
+    <span class="n">w_symm_all</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">w_symm</span>
+    <span class="n">PBC</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">PBC</span>
+
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">pairs</span><span class="p">,</span> <span class="n">graph</span> <span class="o">=</span> <span class="n">find_short_dist</span><span class="p">(</span><span class="n">coor</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
         <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span>
@@ -422,11 +423,11 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">valid</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">wyckoffs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
                 <span class="n">merged</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="n">groups</span> <span class="o">=</span> <span class="n">connected_components</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
-                    <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_center</span><span class="p">(</span><span class="n">coor</span><span class="p">[</span><span class="n">group</span><span class="p">],</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">))</span>
+                <span class="n">components</span> <span class="o">=</span> <span class="n">connected_components</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+                    <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_center</span><span class="p">(</span><span class="n">coor</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">))</span>
                 <span class="n">merged</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">merged</span><span class="p">)</span>
-                <span class="n">index</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">check_wyckoff_position_molecular</span><span class="p">(</span><span class="n">merged</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+                <span class="n">index</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">check_wyckoff_position_molecular</span><span class="p">(</span><span class="n">merged</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">orientations</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">coor</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
                 <span class="k">elif</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -439,10 +440,10 @@
                 <span class="k">return</span> <span class="n">coor</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">index</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">check_wyckoff_position_molecular</span><span class="p">(</span><span class="n">coor</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+                <span class="n">index</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">check_wyckoff_position_molecular</span><span class="p">(</span><span class="n">coor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">orientations</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">coor</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">point</span></div>
 
-<div class="viewcode-block" id="choose_wyckoff_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.choose_wyckoff_molecular">[docs]</a><span class="k">def</span> <span class="nf">choose_wyckoff_molecular</span><span class="p">(</span><span class="n">wyckoffs</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">orientations</span><span class="p">):</span>
+<div class="viewcode-block" id="choose_wyckoff_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.choose_wyckoff_molecular">[docs]</a><span class="k">def</span> <span class="nf">choose_wyckoff_molecular</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">orientations</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Choose a Wyckoff position to fill based on the current number of molecules</span>
 <span class="sd">    needed to be placed within a unit cell</span>
@@ -454,7 +455,7 @@
 <span class="sd">        3) The site must admit valid orientations for the desired molecule.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        wyckoffs: an unsorted list of Wyckoff positions</span>
+<span class="sd">        group: a pyxtal.symmetry.Group object</span>
 <span class="sd">        number: the number of molecules still needed in the unit cell</span>
 <span class="sd">        orientations: the valid orientations for a given molecule. Obtained</span>
 <span class="sd">            from get_sg_orientations, which is called within molecular_crystal</span>
@@ -463,13 +464,15 @@
 <span class="sd">        a single index for the Wyckoff position. If no position is found,</span>
 <span class="sd">        returns False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">wyckoffs_organized</span>
+    
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span><span class="o">&gt;</span><span class="mf">0.5</span><span class="p">:</span> <span class="c1">#choose from high to low</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">wyckoff</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wyckoffs</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wyckoff</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">number</span><span class="p">:</span>
                 <span class="n">good_wyckoff</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wyckoff</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">orientations</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="p">[]:</span>
-                        <span class="n">good_wyckoff</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">])</span>
+                        <span class="n">good_wyckoff</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">good_wyckoff</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">choose</span><span class="p">(</span><span class="n">good_wyckoff</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>
@@ -479,7 +482,7 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wyckoff</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">number</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wyckoff</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">orientations</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="p">[]:</span>
-                        <span class="n">good_wyckoff</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">])</span>
+                        <span class="n">good_wyckoff</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">good_wyckoff</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">choose</span><span class="p">(</span><span class="n">good_wyckoff</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -491,7 +494,7 @@
 <span class="sd">    the molecular_crystal class. Each mol_site object represenents an</span>
 <span class="sd">    entire Wyckoff position, not necessarily a single molecule.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">ellipsoid</span><span class="p">,</span> <span class="n">wp</span><span class="p">,</span> <span class="n">wp_generators</span><span class="p">,</span> <span class="n">wp_generators_m</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">wyckoff_position</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">ellipsoid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span> <span class="o">=</span> <span class="n">mol</span>
         <span class="sd">&quot;&quot;&quot;A Pymatgen molecule object&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">position</span>
@@ -500,17 +503,12 @@
         <span class="sd">&quot;&quot;&quot;The orientation object of the Mol in the first point in the WP&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ellipsoid</span> <span class="o">=</span> <span class="n">ellipsoid</span>
         <span class="sd">&quot;&quot;&quot;A SymmOp representing the minimal ellipsoid for the molecule&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wp</span> <span class="o">=</span> <span class="n">wp</span>
-        <span class="sd">&quot;&quot;&quot;The Wyckoff position for the site&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wp_generators</span> <span class="o">=</span> <span class="n">wp_generators</span>
-        <span class="sd">&quot;&quot;&quot;The (non-molecular) Wyckoff generators for the site&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wp_generators_m</span> <span class="o">=</span> <span class="n">wp_generators_m</span>
-        <span class="sd">&quot;&quot;&quot;The (molecular) Wyckoff generators for the site&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wp</span> <span class="o">=</span> <span class="n">wyckoff_position</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">lattice</span>
         <span class="sd">&quot;&quot;&quot;The crystal lattice in which the molecule resides&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span>
         <span class="sd">&quot;&quot;&quot;The multiplicity of the molecule&#39;s Wyckoff position&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="n">PBC</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="n">wyckoff_position</span><span class="o">.</span><span class="n">PBC</span>
         <span class="sd">&quot;&quot;&quot;The periodic axes&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="mol_site.get_ellipsoid"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_ellipsoid">[docs]</a>    <span class="k">def</span> <span class="nf">get_ellipsoid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -522,6 +520,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            a re-orientated SymmOp representing the molecule&#39;s bounding ellipsoid</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ellipsoid</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ellipsoid</span> <span class="o">=</span> <span class="n">find_ellipsoid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">)</span>
         <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ellipsoid</span>
         <span class="c1">#Appy orientation</span>
         <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
@@ -537,11 +537,11 @@
 <span class="sd">            an array of re-orientated SymmOp&#39;s representing the molecule&#39;s bounding ellipsoids</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1">#Get molecular centers</span>
-        <span class="n">centers0</span> <span class="o">=</span> <span class="n">apply_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wp_generators</span><span class="p">)</span>
+        <span class="n">centers0</span> <span class="o">=</span> <span class="n">apply_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">generators</span><span class="p">)</span>
         <span class="n">centers1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">centers0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">)</span>
         <span class="c1">#Rotate ellipsoids</span>
         <span class="n">e1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ellipsoid</span><span class="p">()</span>
-        <span class="n">es</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wp_generators_m</span><span class="p">,</span> <span class="n">e1</span><span class="p">)</span>
+        <span class="n">es</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">generators_m</span><span class="p">,</span> <span class="n">e1</span><span class="p">)</span>
         <span class="c1">#Add centers to ellipsoids</span>
         <span class="n">center_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">Euclidean_lattice</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">centers1</span><span class="p">]</span>
         <span class="n">es_final</span> <span class="o">=</span> <span class="p">[]</span>
@@ -557,12 +557,12 @@
         <span class="n">mo</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
         <span class="n">wp_atomic_sites</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">wp_atomic_coords</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">op2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wp_generators</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">op2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">generators</span><span class="p">):</span>
             <span class="n">current_atomic_sites</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">current_atomic_coords</span> <span class="o">=</span> <span class="p">[]</span>
 
             <span class="c1">#Rotate the molecule (Euclidean metric)</span>
-            <span class="n">op2_m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wp_generators_m</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+            <span class="n">op2_m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">generators_m</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
             <span class="n">mo2</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mo</span><span class="p">)</span>
             <span class="n">mo2</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">op2_m</span><span class="p">)</span>
             <span class="c1">#Obtain the center in absolute coords</span>
@@ -583,36 +583,6 @@
                 <span class="n">wp_atomic_coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
         <span class="c1">#print(np.array(wp_atomic_coords), wp_atomic_sites)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">wp_atomic_coords</span><span class="p">),</span> <span class="n">wp_atomic_sites</span>
-
-
-        <span class="c1">#New method, sometimes fails for sg&#39;s 109 and 110</span>
-        <span class="sd">&#39;&#39;&#39;#Apply the initial orientation</span>
-<span class="sd">        mo = deepcopy(self.mol)</span>
-<span class="sd">        mo.apply_operation(self.orientation.get_op(angle=0))</span>
-<span class="sd">        coords1 = [s.coords for s in mo]</span>
-<span class="sd">        #Get the species names to return</span>
-<span class="sd">        species = [s.specie.name for s in mo]*self.multiplicity</span>
-<span class="sd">        #Get the molecular centers</span>
-<span class="sd">        centers0 = apply_ops(self.position, self.wp_generators)</span>
-<span class="sd">        centers1 = np.dot(centers0, self.lattice)</span>
-<span class="sd">        centers = np.repeat(centers1, len(self.mol), axis=0)</span>
-
-<span class="sd">        #Apply generators to coords</span>
-<span class="sd">        rotated_coords = []        </span>
-<span class="sd">        for i, op in enumerate(self.wp_generators_m):</span>
-<span class="sd">            if rotated_coords == []:</span>
-<span class="sd">                rotated_coords = op.operate_multi(coords1)</span>
-<span class="sd">            else:</span>
-<span class="sd">                rotated_coords = np.vstack([rotated_coords, op.operate_multi(coords1)])</span>
-
-<span class="sd">        #Add centers to coordinates</span>
-<span class="sd">        absolute_coords = rotated_coords + centers</span>
-<span class="sd">        if absolute is True:</span>
-<span class="sd">            return absolute_coords, species</span>
-<span class="sd">        else:</span>
-<span class="sd">            #Calculate the relative coordinates</span>
-<span class="sd">            relative_coords = np.dot(absolute_coords, np.linalg.inv(self.lattice))</span>
-<span class="sd">            return filtered_coords(relative_coords, PBC=self.PBC), species&#39;&#39;&#39;</span>
 
 <div class="viewcode-block" id="mol_site.get_coords_and_species"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_coords_and_species">[docs]</a>    <span class="k">def</span> <span class="nf">get_coords_and_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">absolute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -645,7 +615,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: parameter absolute must be True or False&quot;</span><span class="p">)</span>
             <span class="k">return</span></div>
 
-<div class="viewcode-block" id="mol_site.check_distances"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.check_distances">[docs]</a>    <span class="k">def</span> <span class="nf">check_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.4</span><span class="p">,</span> <span class="n">atomic</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="mol_site.check_distances"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.check_distances">[docs]</a>    <span class="k">def</span> <span class="nf">check_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">atomic</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Checks if the atoms in the Wyckoff position are too close to each other</span>
 <span class="sd">        or not. Does not check distances between atoms in the same molecule. Uses</span>
@@ -664,13 +634,19 @@
             <span class="c1">#Check inter-atomic distances</span>
             <span class="n">coords</span><span class="p">,</span> <span class="n">species</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_coords_and_species</span><span class="p">()</span>
             <span class="c1">#Store the coords and species for a single molecule</span>
-            <span class="n">coords_m</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">)]</span>
-            <span class="n">species_m</span> <span class="o">=</span> <span class="n">species</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">)]</span>
-            <span class="c1">#Store the coords and species for the other molecule</span>
-            <span class="n">coords_other</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">):]</span>
-            <span class="n">species_other</span> <span class="o">=</span> <span class="n">species</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">):]</span>
-            <span class="c1">#Check the distances</span>
-            <span class="k">return</span> <span class="n">check_distance</span><span class="p">(</span><span class="n">coords_m</span><span class="p">,</span> <span class="n">coords_other</span><span class="p">,</span> <span class="n">species_m</span><span class="p">,</span> <span class="n">species_other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+            <span class="n">tols</span> <span class="o">=</span> <span class="n">tols_from_species</span><span class="p">(</span><span class="n">species</span><span class="p">)</span>
+            <span class="n">tols_matrix</span> <span class="o">=</span> <span class="n">factor</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="n">tols</span><span class="p">,],</span> <span class="nb">len</span><span class="p">(</span><span class="n">tols</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="c1">#Find pairs which are closer than the tolerance</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">d</span><span class="o">&lt;</span><span class="n">tols_matrix</span><span class="p">)</span>
+            <span class="n">list1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">list2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">m_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">)</span>
+            <span class="c1">#Ignore intramolecular distances</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">list1</span><span class="p">,</span> <span class="n">list2</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="n">j</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">m_length</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="kc">True</span>
         <span class="k">elif</span> <span class="n">atomic</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="c1">#Check molecular ellipsoid overlap</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -722,19 +698,23 @@
 <span class="sd">            when molecule values are strings</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="molecular_crystal.init_common"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.init_common">[docs]</a>    <span class="k">def</span> <span class="nf">init_common</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">):</span>
+<div class="viewcode-block" id="molecular_crystal.init_common"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.init_common">[docs]</a>    <span class="k">def</span> <span class="nf">init_common</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        init functionality which is shared by 3D, 2D, and 1D crystals</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="sd">&quot;&quot;&quot;The number of attempts needed to generate the crystal.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">number</span>
+        <span class="sd">&quot;&quot;&quot;The international number of the symmetry group.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Msgs</span><span class="p">()</span>
         <span class="sd">&quot;&quot;&quot;A list of warning messages to use during generation.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">factor</span> <span class="o">=</span> <span class="n">volume_factor</span>
         <span class="sd">&quot;&quot;&quot;The supplied volume factor for the unit cell.&quot;&quot;&quot;</span>
         <span class="n">numMols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numMols</span><span class="p">)</span> <span class="c1">#must convert it to np.array</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span> <span class="o">=</span> <span class="n">numMols</span>
-        <span class="sd">&quot;&quot;&quot;Number of molecules in the primitive cell for a given type&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;The number of each type of molecule in the PRIMITIVE cell&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span> <span class="o">*</span> <span class="n">cellsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;The number of each type of molecule in the CONVENTIONAL cell&quot;&quot;&quot;</span>
         <span class="n">oriented_molecules</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1">#Allow support for generating molecules from text via openbable</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">molecules</span><span class="p">):</span>
@@ -767,6 +747,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">radii</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="sd">&quot;&quot;&quot;A list of approximated radii for each molecule type. Used for</span>
 <span class="sd">        checking inter-molecular distances.&quot;&quot;&quot;</span>
+        <span class="c1">#Calculate boxes and radii for each molecule</span>
         <span class="k">for</span> <span class="n">mol</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_box</span><span class="p">(</span><span class="n">reoriented_molecule</span><span class="p">(</span><span class="n">mol</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
             <span class="n">max_r</span> <span class="o">=</span> <span class="mi">0</span>
@@ -774,40 +755,15 @@
                 <span class="n">radius</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">site</span><span class="o">.</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">site</span><span class="o">.</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">site</span><span class="o">.</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
                 <span class="k">if</span> <span class="n">radius</span> <span class="o">&gt;</span> <span class="n">max_r</span><span class="p">:</span> <span class="n">max_r</span> <span class="o">=</span> <span class="n">radius</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">radii</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">max_r</span><span class="o">+</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span> <span class="o">=</span> <span class="n">check_atomic_distances</span>
         <span class="sd">&quot;&quot;&quot;Whether or not inter-atomic distances are checked at each step.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">allow_inversion</span> <span class="o">=</span> <span class="n">allow_inversion</span>
         <span class="sd">&quot;&quot;&quot;Whether or not to allow chiral molecules to be inverted.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ellipsoids</span> <span class="o">=</span> <span class="p">[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">Euclidean_lattice</span> <span class="o">/</span> <span class="n">r</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">radii</span><span class="p">]</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
         <span class="c1">#When generating multiple crystals of the same stoichiometry and sg,</span>
         <span class="c1">#allow the user to re-use the allowed orientations, to reduce time cost</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
-        <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
-        <span class="c1">#Necessary input</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
-        <span class="sd">&quot;&quot;&quot;The periodic axes of the crystal&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sg</span> <span class="o">=</span> <span class="n">sg</span>
-        <span class="sd">&quot;&quot;&quot;The international spacegroup number of the crystal.&quot;&quot;&quot;</span>
-        <span class="c1">#Reorient the molecules along their principle axes</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span> <span class="o">*</span> <span class="n">cellsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The number of each type of molecule in the CONVENTIONAL cell&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">organized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup. Sorted by</span>
-<span class="sd">        multiplicity.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of site symmetry operations for the Wyckoff positions, obtained</span>
-<span class="sd">            from get_wyckoff_symmetry.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">get_wyckoff_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=False)&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_wyckoff_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">orientations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">get_orientations</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
@@ -815,7 +771,17 @@
             <span class="sd">&quot;&quot;&quot;The valid orientations for each molecule and Wyckoff position.</span>
 <span class="sd">            May be copied when generating a new molecular_crystal to save a</span>
 <span class="sd">            small amount of time&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_crystal</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_crystal</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
+        <span class="c1">#Necessary input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+        <span class="sd">&quot;&quot;&quot;The periodic axes of the crystal&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sg</span> <span class="o">=</span> <span class="n">sg</span>
+        <span class="sd">&quot;&quot;&quot;The international spacegroup number of the crystal.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">,</span> <span class="n">sg</span><span class="p">)</span>
 
 <div class="viewcode-block" id="molecular_crystal.Msgs"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.Msgs">[docs]</a>    <span class="k">def</span> <span class="nf">Msgs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Msg1</span> <span class="o">=</span> <span class="s1">&#39;Error: the stoichiometry is incompatible with the wyckoff sites choice&#39;</span>
@@ -840,17 +806,17 @@
 
 <span class="sd">        For example, self.valid_orientations[i][j][k] would be a list of valid</span>
 <span class="sd">        orientations for self.molecules[i], in the Wyckoff position</span>
-<span class="sd">        self.wyckoffs_organized[j][k]</span>
+<span class="sd">        self.group.wyckoffs_organized[j][k]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mol</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
             <span class="n">wp_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
                 <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">wp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
                     <span class="n">wp_index</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">allowed</span> <span class="o">=</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">,</span> <span class="n">wp_index</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allow_inversion</span><span class="p">)</span>
+                    <span class="n">allowed</span> <span class="o">=</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">wp</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allow_inversion</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">allowed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -862,7 +828,7 @@
 <span class="sd">        positions. Considers the number of degrees of freedom for each Wyckoff</span>
 <span class="sd">        position, and makes sure at least one valid combination of WP&#39;s exists.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">N_site</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">]</span>
+        <span class="n">N_site</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">]</span>
         <span class="n">has_freedom</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="c1">#remove WP&#39;s with no freedom once they are filled</span>
         <span class="n">removed_wyckoffs</span> <span class="o">=</span> <span class="p">[]</span>
@@ -872,14 +838,14 @@
                 <span class="k">return</span> <span class="kc">False</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1">#Check if smallest WP has at least one degree of freedom</span>
-                <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="p">[]:</span>
                         <span class="n">has_freedom</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c1">#Subtract from the number of ions beginning with the smallest Wyckoff positions</span>
                     <span class="n">remaining</span> <span class="o">=</span> <span class="n">numMol</span>
-                    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">):</span>
                         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">wp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
                             <span class="k">while</span> <span class="n">remaining</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span> <span class="ow">and</span> <span class="n">wp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">removed_wyckoffs</span><span class="p">:</span>
                                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="p">[]:</span>
@@ -985,14 +951,9 @@
                                 <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">+=</span> <span class="mi">1</span>
                                 <span class="c1">#Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c</span>
                                 <span class="c1">#NOTE: The molecular version return wyckoff indices, not ops</span>
-                                <span class="n">indices</span> <span class="o">=</span> <span class="n">choose_wyckoff_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">,</span> <span class="n">numMol</span><span class="o">-</span><span class="n">numMol_added</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                                <span class="k">if</span> <span class="n">indices</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
-                                    <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">indices</span>
-                                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">==</span> <span class="p">[]:</span>
-                                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Failed to catch empty set...&quot;</span><span class="p">)</span>
-                                        <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span>
-                	    	    <span class="c1">#Generate a list of coords from ops</span>
-                                    <span class="n">ops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span>
+                                <span class="n">wp</span> <span class="o">=</span> <span class="n">choose_wyckoff_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">numMol</span><span class="o">-</span><span class="n">numMol_added</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                                <span class="k">if</span> <span class="n">wp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+                	    	        <span class="c1">#Generate a list of coords from the wyckoff position</span>
                                     <span class="n">point</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
                                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                                         <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
@@ -1004,24 +965,23 @@
                                                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;</span> <span class="mi">46</span><span class="p">:</span>
                                                     <span class="n">point</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">0.5</span>
                                                 <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">46</span><span class="p">:</span>
-                                                    <span class="n">point</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="p">)</span>
-                                    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">])</span>
-                                    <span class="c1">#merge_coordinate if the atoms are close</span>
+                                                    <span class="n">point</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="p">)</span>
+                                    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wp</span><span class="p">])</span>
+                                    <span class="c1">#merge coordinates if the atoms are close</span>
                                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
                                         <span class="n">mtol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radii</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span>
                                     <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
                                         <span class="n">mtol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radii</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span>
-                                    <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">good_merge</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">merge_coordinate_molecular</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">,</span> 
-                                            <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">,</span> <span class="n">mtol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                                    <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">good_merge</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">merge_coordinate_molecular</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">mtol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                                     <span class="k">if</span> <span class="n">good_merge</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
                                         <span class="n">wp_index</span> <span class="o">=</span> <span class="n">good_merge</span>
                                         <span class="n">coords_toadd</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span> <span class="c1">#scale the coordinates to [0,1], very important!</span>
 
                                         <span class="c1">#Create a mol_site object</span>
                                         <span class="n">mo</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                                        <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">jk_from_i</span><span class="p">(</span><span class="n">wp_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">)</span>
+                                        <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">jk_from_i</span><span class="p">(</span><span class="n">wp_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">wyckoffs_organized</span><span class="p">)</span>
                                         <span class="n">ori</span> <span class="o">=</span> <span class="n">choose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">random_orientation</span><span class="p">()</span>
-                                        <span class="n">ms0</span> <span class="o">=</span> <span class="n">mol_site</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">ori</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ellipsoids</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">[</span><span class="n">wp_index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span><span class="p">[</span><span class="n">wp_index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span><span class="p">[</span><span class="n">wp_index</span><span class="p">],</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+                                        <span class="n">ms0</span> <span class="o">=</span> <span class="n">mol_site</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">ori</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">[</span><span class="n">wp_index</span><span class="p">],</span> <span class="n">cell_matrix</span><span class="p">)</span>
                                         <span class="c1">#Check distances within the WP</span>
                                         <span class="k">if</span> <span class="n">ms0</span><span class="o">.</span><span class="n">check_distances</span><span class="p">(</span><span class="n">atomic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span> <span class="k">continue</span>
                                         <span class="c1">#Check distances with other WP&#39;s</span>
@@ -1033,7 +993,6 @@
                                                 <span class="k">break</span>
                                         <span class="k">if</span> <span class="n">passed</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span> <span class="k">continue</span>
                                         <span class="k">elif</span> <span class="n">passed</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-                                        <span class="c1">#if check_distance(coords_toadd, coordinates_total, species_toadd, species_total, cell_matrix, PBC=self.PBC):</span>
                                             <span class="c1">#Distance checks passed; store the new Wyckoff position</span>
                                             <span class="n">mol_generators_tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ms0</span><span class="p">)</span>
                                             <span class="k">if</span> <span class="n">coordinates_tmp</span> <span class="o">==</span> <span class="p">[]:</span>
@@ -1146,7 +1105,6 @@
 <span class="sd">            when molecule values are strings</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1163,36 +1121,7 @@
 <span class="sd">        dimension.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;The periodic axes of the crystal.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">PB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lgp</span><span class="o">.</span><span class="n">permutation</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> 
-        <span class="c1">#TODO: add docstring</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lgp</span><span class="o">.</span><span class="n">permutation</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> 
-        <span class="c1">#TODO: add docstring</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span> <span class="o">*</span> <span class="n">cellsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The number of each type of molecule in the CONVENTIONAL cell&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span> <span class="o">=</span> <span class="n">get_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">organized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup. Sorted by</span>
-<span class="sd">        multiplicity.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_layer_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of site symmetry operations for the Wyckoff positions, obtained</span>
-<span class="sd">            from get_wyckoff_symmetry.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">get_layer_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of Wyckfof generators for the layer group&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_layer_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of Wyckfof generators for the layer group (molecular=True)&quot;&quot;&quot;</span>
-        <span class="c1">#When generating multiple crystals of the same stoichiometry and sg,</span>
-        <span class="c1">#allow the user to re-use the allowed orientations, to reduce time cost</span>
-        <span class="k">if</span> <span class="n">orientations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">get_orientations</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span> <span class="o">=</span> <span class="n">orientations</span>
-            <span class="sd">&quot;&quot;&quot;The valid orientations for each molecule and Wyckoff position.</span>
-<span class="sd">            May be copied when generating a new molecular_crystal to save a</span>
-<span class="sd">            small amount of time&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_crystal</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">,</span> <span class="n">number</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="molecular_crystal_1D"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_1D">[docs]</a><span class="k">class</span> <span class="nc">molecular_crystal_1D</span><span class="p">(</span><span class="n">molecular_crystal</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1232,7 +1161,6 @@
 <span class="sd">            when molecule values are strings</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="c1">#Necessary input</span>
@@ -1243,30 +1171,10 @@
 <span class="sd">        unit cell.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;The periodic axes of the crystal (1,2,3)-&gt;(x,y,z).&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span>
-        <span class="sd">&quot;&quot;&quot;The number of each type of molecule in the CONVENTIONAL cell&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_rod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s Rod group.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span> <span class="o">=</span> <span class="n">get_rod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">organized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s Rod group. Sorted by</span>
-<span class="sd">        multiplicity.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_rod_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of site symmetry operations for the Wyckoff positions, obtained</span>
-<span class="sd">            from get_wyckoff_symmetry.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">get_rod_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of Rod Wyckoff generators (molecular=False)&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_rod_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;A list of Rod Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">orientations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">get_orientations</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span> <span class="o">=</span> <span class="n">orientations</span>
-            <span class="sd">&quot;&quot;&quot;The valid orientations for each molecule and Wyckoff position.</span>
-<span class="sd">            May be copied when generating a new molecular_crystal to save a</span>
-<span class="sd">            small amount of time&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_crystal</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sg</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="sd">&quot;&quot;&quot;The international space group number (there is not a 1-1 correspondence</span>
+<span class="sd">        with Rod groups).&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">,</span> <span class="n">number</span><span class="p">)</span></div>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>

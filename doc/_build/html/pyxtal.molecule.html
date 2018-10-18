@@ -41,6 +41,11 @@ class as a base. Has a function for reorienting molecules
 (reoriented_molecule), and for calculating valid orientations within a Wyckoff
 position based on symmetry (orientation_in_wyckoff_position).</p>
 <dl class="function">
+<dt id="pyxtal.molecule.find_ellipsoid">
+<code class="descclassname">pyxtal.molecule.</code><code class="descname">find_ellipsoid</code><span class="sig-paren">(</span><em>mol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#find_ellipsoid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.find_ellipsoid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
 <dt id="pyxtal.molecule.get_inertia_tensor">
 <code class="descclassname">pyxtal.molecule.</code><code class="descname">get_inertia_tensor</code><span class="sig-paren">(</span><em>mol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#get_inertia_tensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.get_inertia_tensor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the symmetric inertia tensor for a Molecule object. Used to find
@@ -159,7 +164,7 @@ and pymatgen JSON. Openbabel is optional but adds additional format options.</p>
 
 <dl class="function">
 <dt id="pyxtal.molecule.orientation_in_wyckoff_position">
-<code class="descclassname">pyxtal.molecule.</code><code class="descname">orientation_in_wyckoff_position</code><span class="sig-paren">(</span><em>mol</em>, <em>wyckoffs</em>, <em>w_symm_all</em>, <em>index</em>, <em>randomize=True</em>, <em>exact_orientation=False</em>, <em>already_oriented=False</em>, <em>allow_inversion=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#orientation_in_wyckoff_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.orientation_in_wyckoff_position" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.molecule.</code><code class="descname">orientation_in_wyckoff_position</code><span class="sig-paren">(</span><em>mol</em>, <em>wyckoff_position</em>, <em>randomize=True</em>, <em>exact_orientation=False</em>, <em>already_oriented=False</em>, <em>allow_inversion=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecule.html#orientation_in_wyckoff_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecule.orientation_in_wyckoff_position" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tests if a molecule meets the symmetry requirements of a Wyckoff position,
 and returns the valid orientations.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -168,9 +173,7 @@ and returns the valid orientations.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>mol</strong> – a Molecule object. Orientation is arbitrary</li>
-<li><strong>wyckoffs</strong> – an unorganized list of Wyckoff positions</li>
-<li><strong>w_symm_all</strong> – the site symmetry of the Wyckoff position</li>
-<li><strong>index</strong> – the index of the Wyckoff position within the sg to check</li>
+<li><strong>wyckoff_position</strong> – a pyxtal.symmetry.Wyckoff_position object</li>
 <li><strong>randomize</strong> – whether or not to apply a random rotation consistent with
 the symmetry requirements</li>
 <li><strong>exact_orientation</strong> – whether to only check compatibility for the provided

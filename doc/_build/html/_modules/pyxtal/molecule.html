@@ -62,6 +62,11 @@
 <span class="n">identity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
 <span class="n">inversion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
 
+<span class="c1">#TODO: implement minimal enclosing ellipsoid algorithm</span>
+<div class="viewcode-block" id="find_ellipsoid"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.find_ellipsoid">[docs]</a><span class="k">def</span> <span class="nf">find_ellipsoid</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: bounding ellipsoid calculator not yet implemented.&quot;</span><span class="p">)</span>
+    <span class="k">pass</span></div>
+
 <div class="viewcode-block" id="mol_from_file"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.mol_from_file">[docs]</a><span class="k">def</span> <span class="nf">mol_from_file</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Reads a file into a pymatgen Molecule. Supported formats include xyz, gaussian,</span>
@@ -288,7 +293,7 @@
             <span class="n">symm_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">symm_m</span></div>
 
-<div class="viewcode-block" id="orientation_in_wyckoff_position"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.orientation_in_wyckoff_position">[docs]</a><span class="k">def</span> <span class="nf">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<div class="viewcode-block" id="orientation_in_wyckoff_position"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.orientation_in_wyckoff_position">[docs]</a><span class="k">def</span> <span class="nf">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">wyckoff_position</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">already_oriented</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Tests if a molecule meets the symmetry requirements of a Wyckoff position,</span>
@@ -296,9 +301,7 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        mol: a Molecule object. Orientation is arbitrary</span>
-<span class="sd">        wyckoffs: an unorganized list of Wyckoff positions</span>
-<span class="sd">        w_symm_all: the site symmetry of the Wyckoff position</span>
-<span class="sd">        index: the index of the Wyckoff position within the sg to check</span>
+<span class="sd">        wyckoff_position: a pyxtal.symmetry.Wyckoff_position object</span>
 <span class="sd">        randomize: whether or not to apply a random rotation consistent with</span>
 <span class="sd">            the symmetry requirements</span>
 <span class="sd">        exact_orientation: whether to only check compatibility for the provided</span>
@@ -317,8 +320,12 @@
 <span class="sd">        molecule while allowing it to satisfy the symmetry requirements of the</span>
 <span class="sd">        Wyckoff position. If no orientations are found, returns False.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">wyckoff_position</span><span class="o">.</span><span class="n">ops</span>
+    <span class="n">w_symm</span> <span class="o">=</span> <span class="n">wyckoff_position</span><span class="o">.</span><span class="n">symmetry_m</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">wyckoff_position</span><span class="o">.</span><span class="n">index</span>
+
     <span class="c1">#Obtain the Wyckoff symmetry</span>
-    <span class="n">symm_w</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">w_symm_all</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">symm_w</span> <span class="o">=</span> <span class="n">w_symm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">pga</span> <span class="o">=</span> <span class="n">PointGroupAnalyzer</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
 
     <span class="c1">#Check exact orientation</span>
@@ -508,7 +515,7 @@
             <span class="n">op</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">mo</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
         <span class="n">mo</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">,</span> <span class="n">w_symm_all</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allow_inversion</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">orientation_in_wyckoff_position</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">wyckoff_position</span><span class="p">,</span> <span class="n">exact_orientation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="n">allow_inversion</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">allowed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
     <span class="c1">#Return the array of allowed orientations. If there are none, return False</span>
     <span class="k">if</span> <span class="n">allowed</span> <span class="o">==</span> <span class="p">[]:</span>

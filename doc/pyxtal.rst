@@ -22,4 +22,5 @@ Submodules
    pyxtal.molecular_crystal
    pyxtal.molecule
    pyxtal.operations
+   pyxtal.symmetry
 
