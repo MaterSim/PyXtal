@@ -1327,9 +1327,10 @@ class Wyckoff_position():
         wp.dim = dim
         if type(group) == int:
             wp.number = group
-        #TODO: Allow init using H-M symbol and store value
+            number = group
         else:
-            print("Invalid value for group. Use a number or Hermann-Mauguin symbol.")
+            #TODO: add symbol interpretation
+            print("Error: must use an integer group number.")
             return
         use_letter = False
         if type(index) == int:
@@ -1343,6 +1344,9 @@ class Wyckoff_position():
                     break
 
         if dim == 3:
+            if number not in range(1, 231):
+                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                return
             if PBC == None:
                 wp.PBC = [1,2,3]
             else:
@@ -1371,6 +1375,9 @@ class Wyckoff_position():
             """A list of Wyckoff generators (molecular=True)"""
 
         elif dim == 2:
+            if number not in range(1, 81):
+                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                return
             if PBC == None:
                 wp.PBC = [1,2]
             else:
@@ -1399,6 +1406,9 @@ class Wyckoff_position():
             """A list of Wyckoff generators (molecular=True)"""
 
         elif dim == 1:
+            if number not in range(1, 76):
+                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                return
             if PBC == None:
                 wp.PBC = [1,2]
             else:
@@ -1475,15 +1485,19 @@ class Group():
     def __repr__(self):
         return str(self)
         
-    def __init__(self, number, dim=3):
+    def __init__(self, group, dim=3):
         self.dim = dim
-        if type(number) == int:
-            self.number = number
+        if type(group) == int:
+            self.number = group
+            number = group
         else:
-            #TODO: Allow init using H-M symbol, store value
-            print("Error: sg must be an integer for the international group number.")
-            pass
+            #TODO: add symbol interpretation
+            print("Error: must use an integer group number.")
+            return
         if dim == 3:
+            if number not in range(1, 231):
+                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                return
             self.PBC = [1,2,3]
             self.wyckoffs = get_wyckoffs(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
@@ -1498,6 +1512,9 @@ class Group():
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
         elif dim == 2:
+            if number not in range(1, 81):
+                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                return
             self.PBC = [1,2]
             self.wyckoffs = get_layer(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
@@ -1512,6 +1529,9 @@ class Group():
             self.wyckoff_generators_m = get_layer_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
         elif dim == 1:
+            if number not in range(1, 76):
+                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                return
             self.PBC = [3]
             self.wyckoffs = get_rod(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
