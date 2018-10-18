@@ -989,7 +989,7 @@ def i_from_jk(j, k, olist):
     print("Error: Incorrect Wyckoff position list or index passed to jk_from_i")
     return None
 
-def ss_string_from_ops(ops, sg, complete=True):
+def ss_string_from_ops(ops, number, dim=3, complete=True):
     """
     Print the Hermann-Mauguin symbol for a site symmetry group, using a list of
     SymmOps as input. Note that the symbol does not necessarily refer to the
@@ -998,16 +998,45 @@ def ss_string_from_ops(ops, sg, complete=True):
 
     Args:
         ops: a list of SymmOp objects representing the site symmetry
-        sg: International number of the spacegroup. Used to determine which
+        number: International number of the symmetry group. Used to determine which
             axes to show. For example, a 3-fold rotation in a cubic system is
             written as ".3.", whereas a 3-fold rotation in a trigonal system is
             written as "3.."
+        dim: the dimension of the crystal. Also used to determine notation type
         complete: whether or not all symmetry operations in the group
             are present. If False, we generate the rest
 
     Returns:
         a string representing the site symmetry. Ex: "2mm"
     """
+    #TODO: Automatically detect which symm_type to use based on ops
+    #Determine which notation to use
+    symm_type = "high"
+    if dim == 3:
+        if number >= 1 and number <= 74:
+            #Triclinic, monoclinic, orthorhombic
+            symm_type = "low"
+        elif number >= 75 and number <= 194:
+            #Trigonal, Hexagonal, Tetragonal
+            symm_type = "medium"
+        elif number >= 195 and number <= 230:
+            #cubic
+            symm_type = "high"
+    if dim == 2:
+        if number >= 1 and number <= 48:
+            #Triclinic, monoclinic, orthorhombic
+            symm_type = "low"
+        elif number >= 49 and number <= 80:
+            #Trigonal, Hexagonal, Tetragonal
+            symm_type = "medium"
+    if dim == 1:
+        if number >= 1 and number <= 22:
+            #Triclinic, monoclinic, orthorhombic
+            symm_type = "low"
+        elif number >= 23 and number <= 75:
+            #Trigonal, Hexagonal, Tetragonal
+            symm_type = "medium"
+
     #TODO: replace sg with number, add dim variable
     #Return the symbol for a single axis
     #Will be called later in the function
@@ -1162,7 +1191,7 @@ def ss_string_from_ops(ops, sg, complete=True):
         reflections.append(has_reflection)
     #Triclinic, monoclinic, orthorhombic
     #Positions in symbol refer to x,y,z axes respectively
-    if sg >= 1 and sg <= 74:
+    if symm_type == "low":
         symbol = (get_symbol(params[0], orders[0], reflections[0])+
                 get_symbol(params[1], orders[1], reflections[1])+
                 get_symbol(params[2], orders[2], reflections[2]))
@@ -1174,7 +1203,7 @@ def ss_string_from_ops(ops, sg, complete=True):
             else:
                 return "1"
     #Trigonal, Hexagonal, Tetragonal
-    elif sg >= 75 and sg <= 194:
+    elif symm_type == "medium":
         #1st symbol: z axis
         s1 = get_symbol(params[2], orders[2], reflections[2])
         #2nd symbol: x or y axes (whichever have higher symmetry)
@@ -1190,7 +1219,7 @@ def ss_string_from_ops(ops, sg, complete=True):
             else:
                 return "1"
     #Cubic
-    elif sg >= 195 and sg <= 230:
+    elif symm_type == "high":
         pass
         #1st symbol: x, y, and/or z axes (whichever have highest symmetry)
         s1 = combine_axes([0,1,2])
@@ -1261,6 +1290,11 @@ class Wyckoff_position():
         try:
             return self.string
         except:
+            if self.dim == 0:
+                #TODO: implement clusters
+                return "Error: 0D clusters are not yet implemented. Check back soon."
+            if not self.dim:
+                return "Error: invalid crystal dimension. Must be a number between 0 and 3."
             s = "Wyckoff position "+str(self.multiplicity)+self.letter+" in "
             if self.dim == 3:
                 s += "space "
@@ -1269,8 +1303,7 @@ class Wyckoff_position():
             elif self.dim == 1:
                 s += "Rod "
             s += "group "+str(self.number)
-            #TODO: Implement ss_string_from_ops for d=2,1,0
-            #s += " with site symmetry "+ss_string_from_ops(self.symmetry, self.number)
+            s += " with site symmetry "+ss_string_from_ops(self.symmetry_m[0], self.number, dim=self.dim)
             for op in self.ops:
                 s += "\n" + op.as_xyz_string()
             self.string = s
@@ -1394,9 +1427,8 @@ class Wyckoff_position():
             """A list of Wyckoff generators (molecular=True)"""
 
         elif dim == 0:
-            print("0D clusters currently unavailable.")
-            #TODO: add support for 0D clusters
-            return
+            #TODO: implement Clusters
+            return Wyckoff_position.from_dict({"dim": 0})
         return wp
 
     def __iter__(self):
@@ -1416,18 +1448,22 @@ class Group():
         try:
             return self.string
         except:
+            if self.dim == 0:
+                #TODO: implement Clusters
+                return "Error: 0D clusters are not yet implemented. Check back soon."
             if self.dim == 3:
-                s = "~~~Space "
+                s = "-- Space "
             elif self.dim == 2:
-                s = "~~~Layer "
+                s = "-- Layer "
             elif self.dim == 1:
-                s = "~~~Rod "
-            elif self.dim == 0:
-                s = "~~~Point "
-            #TODO: implement ss_string_from_ops
-            s += "group # "+str(self.number)+"~~~"#+"with site symmetry "+ss_string_from_ops(self.Wyckoff_positions[0], self.number, dim=self.dim)
+                s = "-- Rod "
+            else:
+                return "Error: invalid crystal dimension. Must be a number between 0 and 3."
+            s += "group # "+str(self.number)+" --"
+            #TODO: implement H-M symbol
+            #s += symbol_from_number(self.number, dim=self.dim)
             for wp in self.Wyckoff_positions:
-                s += "\n---"+str(wp.multiplicity)+wp.letter+"--- site symm: "#+ss_string_from_ops(sp.symmetry, self.number, dim=self.dim)
+                s += "\n  "+str(wp.multiplicity)+wp.letter+"\tsite symm: " + ss_string_from_ops(wp.symmetry_m[0], self.number, dim=self.dim)
                 #for op in wp.ops:
                 #    s += "\n" + op.as_xyz_string()
             self.string = s
@@ -1487,7 +1523,9 @@ class Group():
             self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
         elif dim == 0:
-            pass
+            #TODO: implement Clusters
+            self.dim = 0
+            return
         #TODO: Add self.symbol to dictionary
         wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs), "ops": self.wyckoffs[i],
             "multiplicity": len(self.wyckoffs[i]), "symmetry": self.w_symm[i], "symmetry_m": self.w_symm_m[i],
@@ -1525,8 +1563,7 @@ class Group():
             ops = self.w_symm[index][0]
         if molecular is True:
             ops = self.w_symm_m[index][0]
-        #TODO: implement ss_string_from_ops
-        #return ss_string_from_ops(ops, self.number, dim=self.dim)
+        return ss_string_from_ops(ops, self.number, dim=self.dim)
 
     def get_wyckoff_symmetry_m(self, index):
         return self.get_wyckoff_symmetry(index, molecular=True)
@@ -1545,17 +1582,19 @@ class Group():
             print(self.string_long)
         except:
             if self.dim == 3:
-                s = "~~~Space "
+                s = "-- Space "
             elif self.dim == 2:
-                s = "~~~Layer "
+                s = "-- Layer "
             elif self.dim == 1:
-                s = "~~~Rod "
+                s = "-- Rod "
             elif self.dim == 0:
-                s = "~~~Point "
+                #TODO: implement Clusters
+                return "Error: 0D clusters are not yet implemented. Check back soon."
             #TODO: implement ss_string_from_ops
-            s += "group # "+str(self.number)+"~~~"#+"with site symmetry "+ss_string_from_ops(self.Wyckoff_positions[0], self.number, dim=self.dim)
+            s += "group # "+str(self.number)+" --"
             for wp in self.Wyckoff_positions:
-                s += "\n---"+str(wp.multiplicity)+wp.letter+"--- site symm: "#+ss_string_from_ops(sp.symmetry, self.number, dim=self.dim)
+                s += "\n  "+str(wp.multiplicity)+wp.letter+"\tsite symm: "
+                s += ss_string_from_ops(sp.symmetry_m[0], self.number, dim=self.dim)
                 for op in wp.ops:
                     s += "\n" + op.as_xyz_string()
             self.string_long = s

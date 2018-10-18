@@ -1191,7 +1191,7 @@ def test_modules():
             strings = ['1','4 . .','2 3 .']
             for i, sg in enumerate([1, 75, 195]):
                 ops = get_wyckoffs(sg)[0]
-                ss_string_from_ops(ops, sg)
+                ss_string_from_ops(ops, sg, dim=3)
         except Exception as e:
             fail(e)
 
