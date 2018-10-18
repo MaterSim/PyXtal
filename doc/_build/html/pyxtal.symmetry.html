@@ -895,7 +895,7 @@ orientations.</li>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.ss_string_from_ops">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">ss_string_from_ops</code><span class="sig-paren">(</span><em>ops</em>, <em>sg</em>, <em>complete=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#ss_string_from_ops"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.ss_string_from_ops" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">ss_string_from_ops</code><span class="sig-paren">(</span><em>ops</em>, <em>number</em>, <em>dim=3</em>, <em>complete=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#ss_string_from_ops"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.ss_string_from_ops" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print the Hermann-Mauguin symbol for a site symmetry group, using a list of
 SymmOps as input. Note that the symbol does not necessarily refer to the
 x,y,z axes. For information on reading these symbols, see:
@@ -906,10 +906,11 @@ x,y,z axes. For information on reading these symbols, see:
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>ops</strong> – a list of SymmOp objects representing the site symmetry</li>
-<li><strong>sg</strong> – International number of the spacegroup. Used to determine which
+<li><strong>number</strong> – International number of the symmetry group. Used to determine which
 axes to show. For example, a 3-fold rotation in a cubic system is
 written as “.3.”, whereas a 3-fold rotation in a trigonal system is
 written as “3..”</li>
+<li><strong>dim</strong> – the dimension of the crystal. Also used to determine notation type</li>
 <li><strong>complete</strong> – whether or not all symmetry operations in the group
 are present. If False, we generate the rest</li>
 </ul>

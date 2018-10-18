@@ -1027,7 +1027,7 @@
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Incorrect Wyckoff position list or index passed to jk_from_i&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="ss_string_from_ops"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.ss_string_from_ops">[docs]</a><span class="k">def</span> <span class="nf">ss_string_from_ops</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="ss_string_from_ops"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.ss_string_from_ops">[docs]</a><span class="k">def</span> <span class="nf">ss_string_from_ops</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Print the Hermann-Mauguin symbol for a site symmetry group, using a list of</span>
 <span class="sd">    SymmOps as input. Note that the symbol does not necessarily refer to the</span>
@@ -1036,16 +1036,45 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        ops: a list of SymmOp objects representing the site symmetry</span>
-<span class="sd">        sg: International number of the spacegroup. Used to determine which</span>
+<span class="sd">        number: International number of the symmetry group. Used to determine which</span>
 <span class="sd">            axes to show. For example, a 3-fold rotation in a cubic system is</span>
 <span class="sd">            written as &quot;.3.&quot;, whereas a 3-fold rotation in a trigonal system is</span>
 <span class="sd">            written as &quot;3..&quot;</span>
+<span class="sd">        dim: the dimension of the crystal. Also used to determine notation type</span>
 <span class="sd">        complete: whether or not all symmetry operations in the group</span>
 <span class="sd">            are present. If False, we generate the rest</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a string representing the site symmetry. Ex: &quot;2mm&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#TODO: Automatically detect which symm_type to use based on ops</span>
+    <span class="c1">#Determine which notation to use</span>
+    <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">74</span><span class="p">:</span>
+            <span class="c1">#Triclinic, monoclinic, orthorhombic</span>
+            <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+        <span class="k">elif</span> <span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">75</span> <span class="ow">and</span> <span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">194</span><span class="p">:</span>
+            <span class="c1">#Trigonal, Hexagonal, Tetragonal</span>
+            <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+        <span class="k">elif</span> <span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">195</span> <span class="ow">and</span> <span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">230</span><span class="p">:</span>
+            <span class="c1">#cubic</span>
+            <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">48</span><span class="p">:</span>
+            <span class="c1">#Triclinic, monoclinic, orthorhombic</span>
+            <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+        <span class="k">elif</span> <span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">49</span> <span class="ow">and</span> <span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">80</span><span class="p">:</span>
+            <span class="c1">#Trigonal, Hexagonal, Tetragonal</span>
+            <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">22</span><span class="p">:</span>
+            <span class="c1">#Triclinic, monoclinic, orthorhombic</span>
+            <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+        <span class="k">elif</span> <span class="n">number</span> <span class="o">&gt;=</span> <span class="mi">23</span> <span class="ow">and</span> <span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">75</span><span class="p">:</span>
+            <span class="c1">#Trigonal, Hexagonal, Tetragonal</span>
+            <span class="n">symm_type</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+
     <span class="c1">#TODO: replace sg with number, add dim variable</span>
     <span class="c1">#Return the symbol for a single axis</span>
     <span class="c1">#Will be called later in the function</span>
@@ -1200,7 +1229,7 @@
         <span class="n">reflections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">has_reflection</span><span class="p">)</span>
     <span class="c1">#Triclinic, monoclinic, orthorhombic</span>
     <span class="c1">#Positions in symbol refer to x,y,z axes respectively</span>
-    <span class="k">if</span> <span class="n">sg</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">sg</span> <span class="o">&lt;=</span> <span class="mi">74</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">symm_type</span> <span class="o">==</span> <span class="s2">&quot;low&quot;</span><span class="p">:</span>
         <span class="n">symbol</span> <span class="o">=</span> <span class="p">(</span><span class="n">get_symbol</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">orders</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">reflections</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span>
                 <span class="n">get_symbol</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">orders</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reflections</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span>
                 <span class="n">get_symbol</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">orders</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">reflections</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
@@ -1212,7 +1241,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="s2">&quot;1&quot;</span>
     <span class="c1">#Trigonal, Hexagonal, Tetragonal</span>
-    <span class="k">elif</span> <span class="n">sg</span> <span class="o">&gt;=</span> <span class="mi">75</span> <span class="ow">and</span> <span class="n">sg</span> <span class="o">&lt;=</span> <span class="mi">194</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">symm_type</span> <span class="o">==</span> <span class="s2">&quot;medium&quot;</span><span class="p">:</span>
         <span class="c1">#1st symbol: z axis</span>
         <span class="n">s1</span> <span class="o">=</span> <span class="n">get_symbol</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">orders</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">reflections</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
         <span class="c1">#2nd symbol: x or y axes (whichever have higher symmetry)</span>
@@ -1228,7 +1257,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="s2">&quot;1&quot;</span>
     <span class="c1">#Cubic</span>
-    <span class="k">elif</span> <span class="n">sg</span> <span class="o">&gt;=</span> <span class="mi">195</span> <span class="ow">and</span> <span class="n">sg</span> <span class="o">&lt;=</span> <span class="mi">230</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">symm_type</span> <span class="o">==</span> <span class="s2">&quot;high&quot;</span><span class="p">:</span>
         <span class="k">pass</span>
         <span class="c1">#1st symbol: x, y, and/or z axes (whichever have highest symmetry)</span>
         <span class="n">s1</span> <span class="o">=</span> <span class="n">combine_axes</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span>
@@ -1299,6 +1328,11 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span>
         <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1">#TODO: implement clusters</span>
+                <span class="k">return</span> <span class="s2">&quot;Error: 0D clusters are not yet implemented. Check back soon.&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;Error: invalid crystal dimension. Must be a number between 0 and 3.&quot;</span>
             <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;Wyckoff position &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot; in &quot;</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;space &quot;</span>
@@ -1307,8 +1341,7 @@
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Rod &quot;</span>
             <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-            <span class="c1">#TODO: Implement ss_string_from_ops for d=2,1,0</span>
-            <span class="c1">#s += &quot; with site symmetry &quot;+ss_string_from_ops(self.symmetry, self.number)</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot; with site symmetry &quot;</span><span class="o">+</span><span class="n">ss_string_from_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ops</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">op</span><span class="o">.</span><span class="n">as_xyz_string</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">string</span> <span class="o">=</span> <span class="n">s</span>
@@ -1432,9 +1465,8 @@
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
 
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;0D clusters currently unavailable.&quot;</span><span class="p">)</span>
-            <span class="c1">#TODO: add support for 0D clusters</span>
-            <span class="k">return</span>
+            <span class="c1">#TODO: implement Clusters</span>
+            <span class="k">return</span> <span class="n">Wyckoff_position</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s2">&quot;dim&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">wp</span></div>
 
     <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1454,18 +1486,22 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span>
         <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1">#TODO: implement Clusters</span>
+                <span class="k">return</span> <span class="s2">&quot;Error: 0D clusters are not yet implemented. Check back soon.&quot;</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Space &quot;</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Space &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Layer &quot;</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Layer &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Rod &quot;</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Point &quot;</span>
-            <span class="c1">#TODO: implement ss_string_from_ops</span>
-            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;~~~&quot;</span><span class="c1">#+&quot;with site symmetry &quot;+ss_string_from_ops(self.Wyckoff_positions[0], self.number, dim=self.dim)</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Rod &quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;Error: invalid crystal dimension. Must be a number between 0 and 3.&quot;</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; --&quot;</span>
+            <span class="c1">#TODO: implement H-M symbol</span>
+            <span class="c1">#s += symbol_from_number(self.number, dim=self.dim)</span>
             <span class="k">for</span> <span class="n">wp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wyckoff_positions</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">---&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="n">wp</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot;--- site symm: &quot;</span><span class="c1">#+ss_string_from_ops(sp.symmetry, self.number, dim=self.dim)</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="n">wp</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">site symm: &quot;</span> <span class="o">+</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
                 <span class="c1">#for op in wp.ops:</span>
                 <span class="c1">#    s += &quot;\n&quot; + op.as_xyz_string()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">string</span> <span class="o">=</span> <span class="n">s</span>
@@ -1525,7 +1561,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_rod_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">pass</span>
+            <span class="c1">#TODO: implement Clusters</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">return</span>
         <span class="c1">#TODO: Add self.symbol to dictionary</span>
         <span class="n">wpdicts</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;letter&quot;</span><span class="p">:</span> <span class="n">letter_from_index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">),</span> <span class="s2">&quot;ops&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
             <span class="s2">&quot;multiplicity&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="s2">&quot;symmetry&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s2">&quot;symmetry_m&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
@@ -1562,9 +1600,8 @@
         <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="n">ops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">ops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span></div>
-        <span class="c1">#TODO: implement ss_string_from_ops</span>
-        <span class="c1">#return ss_string_from_ops(ops, self.number, dim=self.dim)</span>
+            <span class="n">ops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Group.get_wyckoff_symmetry_m"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group.get_wyckoff_symmetry_m">[docs]</a>    <span class="k">def</span> <span class="nf">get_wyckoff_symmetry_m</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
@@ -1583,17 +1620,19 @@
             <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">string_long</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Space &quot;</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Space &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Layer &quot;</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Layer &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Rod &quot;</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Rod &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;~~~Point &quot;</span>
+                <span class="c1">#TODO: implement Clusters</span>
+                <span class="k">return</span> <span class="s2">&quot;Error: 0D clusters are not yet implemented. Check back soon.&quot;</span>
             <span class="c1">#TODO: implement ss_string_from_ops</span>
-            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;~~~&quot;</span><span class="c1">#+&quot;with site symmetry &quot;+ss_string_from_ops(self.Wyckoff_positions[0], self.number, dim=self.dim)</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; --&quot;</span>
             <span class="k">for</span> <span class="n">wp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wyckoff_positions</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">---&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="n">wp</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot;--- site symm: &quot;</span><span class="c1">#+ss_string_from_ops(sp.symmetry, self.number, dim=self.dim)</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="n">wp</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">site symm: &quot;</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wp</span><span class="o">.</span><span class="n">ops</span><span class="p">:</span>
                     <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">op</span><span class="o">.</span><span class="n">as_xyz_string</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">string_long</span> <span class="o">=</span> <span class="n">s</span>

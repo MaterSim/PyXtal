@@ -356,7 +356,7 @@
     <span class="c1">#check if WP breaks symmetry</span>
     <span class="k">if</span> <span class="n">chiral</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">allow_inversion</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wyckoffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wyckoffs</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: cannot place chiral molecule in spagegroup&quot;</span><span class="p">)</span>
                     <span class="k">return</span> <span class="kc">False</span>
