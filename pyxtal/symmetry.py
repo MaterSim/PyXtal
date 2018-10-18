@@ -1440,6 +1440,9 @@ class Wyckoff_position():
     def __len__(self):
         return self.multiplicity
 
+    def get_site_symmetry(self):
+        return ss_string_from_ops(self.symmetry_m[0], self.number, dim=self.dim)
+
 class Group():
     """
     Class for storing a set of Wyckoff positions for a symmetry group
