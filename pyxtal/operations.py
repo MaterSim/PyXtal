@@ -40,7 +40,7 @@ def apply_ops(coord, ops):
     matrices = np.array([op.affine_matrix for op in ops])
     return np.inner(affine_point, matrices)[..., :-1]
 
-def angle(v1, v2):
+def angle(v1, v2, radians=True):
     """
     Calculate the angle (in radians) between two vectors.
 
@@ -58,7 +58,11 @@ def angle(v1, v2):
         return 0
     elif isclose(dot, -1.0):
         return pi
-    return acos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
+    a = acos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
+    if radians is True:
+        return a
+    else:
+        return a * deg
 
 def random_shear_matrix(width=1.0, unitary=False):
     """
