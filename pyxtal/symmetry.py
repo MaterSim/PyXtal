@@ -28,6 +28,8 @@ rod_df = read_csv(resource_filename("pyxtal", "database/rod.csv"))
 rod_symmetry_df = read_csv(resource_filename("pyxtal", "database/rod_symmetry.csv"))
 rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generators.csv"))
 
+pi = np.pi
+
 
 #Define functions
 #------------------------------
@@ -1462,8 +1464,8 @@ class Group():
             return self.string
         except:
             if self.dim == 0:
-                #TODO: implement Clusters
-                return "Error: 0D clusters are not yet implemented. Check back soon."
+                #TODO: implement point group symbols
+                return "Point group. Symbols to be implemented"
             if self.dim == 3:
                 s = "-- Space "
             elif self.dim == 2:
@@ -1490,9 +1492,16 @@ class Group():
         if type(group) == int:
             self.number = group
             number = group
-        else:
+        elif type(group) == str:
             #TODO: add symbol interpretation
-            print("Error: must use an integer group number.")
+            if dim != 0:
+                print("Cannot currently interpret symbols for Rod, layer, and space groups.")
+                print("Please use an integer.")
+                return
+            symbol = group
+            number = None
+        else:
+            print("Error: Please input a symbol (str) or integer (int) for the group.")
             return
         if dim == 3:
             if number not in range(1, 231):
@@ -1546,9 +1555,137 @@ class Group():
             self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
         elif dim == 0:
-            #TODO: implement Clusters
+            #0-D clusters. Except for group "I" and "Ih", z axis is the high-symmetry axis
+            #https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups
             self.dim = 0
+            #Interpret number
+            #TODO: Add numbers for point groups
+            if type(group) == int:
+                print("Cannot currently interpret numbers for point groups.")
+                print("Please use a Schoenflies symbol.")
+                return
+            #Remove whitespace
+            symbol = ''.join(c for c in symbol if not c.isspace())
+            #Find rotation order from symbol
+            num_str = ''.join(c for c in symbol if not c.isalpha())
+            if num_str == "*":
+                num = 0 #infinite rotation order
+            elif num_str == "":
+                num = 1 #No rotation order
+            else:
+                try:
+                    num = int(num_str) #rotation order
+                    1 / num
+                except:
+                    print("Error: invalid rotation order for point group symbol.")
+                    return
+            gens = [SymmOp.from_xyz_string('x,y,z')] # List of generator SymmOps
+            generate = True
+            #interpret symbol
+            #TODO: Finish all point groups
+            #TODO: Save symbol to self.symbol for each case
+            if symbol[0] == "T":
+                #Tetrahedral
+                gens.append(SymmOp.from_xyz_string('-x,-y,z')) #2 0,0,z
+                gens.append(SymmOp.from_xyz_string('z,x,y')) #3+ x,x,x
+                if symbol == "Td":
+                    #Add diagonal reflection
+                    gens.append(SymmOp.from_xyz_string('y,x,z')) #m x,x,z
+                elif symbol == "Th":
+                    #Add horizontal mirror plane
+                    gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
+            elif symbol[0] == "O":
+                #Octohedral
+                gens.append(SymmOp.from_xyz_string('-y,x,z')) #4+ 0,0,z
+                gens.append(SymmOp.from_xyz_string('z,x,y')) #3+ x,x,x
+                if symbol == "Oh":
+                    #Add horizontal mirror plane
+                    gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
+            elif symbol[0] == "I":
+                #Icosohedral
+                #Temporary fix: get symmetry from C60
+                from pyxtal.molecule import mol_from_collection
+                from pyxtal.molecule import get_symmetry
+                c = mol_from_collection('C60')
+                generate = False
+                symm = get_symmetry(c)
+                if symbol == "Ih":
+                    ops = symm
+                else:
+                    opas = [OperationAnalyzer(op) for op in get_symmetry(c)]
+                    i_list = []
+                    for i, opa in enumerate(opas):
+                        if opa.type == "rotation" or opa.type == "identity":
+                            i_list.append(i)
+                    ops = [symm[i] for i in i_list]
+                '''gens.append(SymmOp.from_xyz_string('-x,-y,z')) #2 0,0,z
+                gens.append(SymmOp.from_xyz_string('z,x,y')) #3+ x,x,x
+                m = aa2matrix([0.5, 0.5*np.sqrt(3), 0], 2*pi/5)
+                gens.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
+                if symbol == "Ih":
+                    #Add horizontal mirror plane
+                    gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0'''
+            elif symbol[0] == "C" and symbol[-1] != "i":
+                #n-fold rotation
+                if num == 0:
+                    #infinite-order rotation
+                    pass
+                else:
+                    #Add rotation
+                    m = aa2matrix([0.,0.,1.], 2*pi/num)
+                    gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
+                    if symbol[-1] == "v":
+                        #Add vertical mirror plane
+                        gens.append(SymmOp.from_xyz_string('-x,y,z')) #m 0,y,z
+                if symbol[-1] == "h":
+                    #Add horizontal mirror plane
+                    gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
+            elif symbol[0] == "C" and symbol[-1] == "i":
+                #n-fold rotinversion, usually just Ci
+                if symbol == "Ci":
+                    gens.append(SymmOp.from_xyz_string('-x,-y,-z'))
+                else:
+                    if num == 0:
+                        #infinite-order rotation
+                        gens.append(SymmOp.from_xyz_string('-x,-y,-z'))
+                        gens.append(SymmOp.from_xyz_string('x,y,-z'))
+                    else:
+                        #Add rotoinversion
+                        m = np.dot(aa2matrix([0.,0.,1.], 2*pi/num), [[-1.,0.,0.],[0.,-1.,0.],[0.,0.,-1.]])
+                        gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
+            elif symbol[0] == "D":
+                #n-fold rotation and n 2-fold perpendicular rotations
+                if num == 0:
+                    #infinite-order rotation
+                    pass
+                else:
+                    #Add rotation
+                    m = aa2matrix([0.,0.,1.], 2*pi/num)
+                    gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
+                    if symbol[-1] == "d":
+                        #Add half-way rotation matrix
+                        mr = aa2matrix([0.,0.,1.], pi/num)
+                        #invert x axis to get reflection matrix
+                        mf = [mr[0] * -1, mr[1], mr[2]]
+                        gens.append(SymmOp.from_rotation_and_translation(mf, [0.,0.,0.]))
+                if symbol[-1] == "h":
+                    #Add horizontal mirror plane
+                    gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
+            elif symbol[0] == "S":
+                #2n-fold rotation-reflection axis
+                #Equivalent to Cnh for odd n
+                m = np.dot(aa2matrix([0.,0.,1.], 2*pi/num), [[1.,0.,0.],[0.,1.,0.],[0.,0.,-1.]])
+                gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
+            else:
+                print("Error: Invalid point group symbol.")
+                return
+            #Generate full set of SymmOps
+            if generate is True:
+                self.ops = generate_full_symmops(gens, 0.03)
+            else:
+                self.ops = ops
             return
+            
         #TODO: Add self.symbol to dictionary
         wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs), "ops": self.wyckoffs[i],
             "multiplicity": len(self.wyckoffs[i]), "symmetry": self.w_symm[i], "symmetry_m": self.w_symm_m[i],
@@ -1622,3 +1759,9 @@ class Group():
                     s += "\n" + op.as_xyz_string()
             self.string_long = s
             print(self.string_long)
+
+    def gen_pos(self):
+        """
+        Returns the general Wyckoff position
+        """
+        return self.Wyckoff_positions[0]
