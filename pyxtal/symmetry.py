@@ -1753,10 +1753,10 @@ class Group():
             #TODO: implement ss_string_from_ops
             s += "group # "+str(self.number)+" --"
             for wp in self.Wyckoff_positions:
-                s += "\n  "+str(wp.multiplicity)+wp.letter+"\tsite symm: "
-                s += ss_string_from_ops(sp.symmetry_m[0], self.number, dim=self.dim)
+                s += "\n"+str(wp.multiplicity)+wp.letter+" site symm: "
+                s += ss_string_from_ops(wp.symmetry_m[0], self.number, dim=self.dim)
                 for op in wp.ops:
-                    s += "\n" + op.as_xyz_string()
+                    s += "\n  " + op.as_xyz_string()
             self.string_long = s
             print(self.string_long)
 
