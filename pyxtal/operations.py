@@ -597,6 +597,38 @@ class Orientation():
         m = rotate_vector(v1, c1)
         return Orientation(m, degrees=1, axis=c1)
 
+    def from_constraints(v1, c1, v2, c2):
+        """
+        Geneate an orientation object given two constraint vectors
+
+        Args:
+            v1: a 1x3 vector in the original reference frame
+            c1: a corresponding axis which v1 must be mapped to
+            v1: a second 1x3 vector in the original reference frame
+            c1: a corresponding axis which v2 must be mapped to
+
+        Returns:
+            an orientation object consistent with the supplied constraints
+        """
+        T = rotate_vector(v1, c1)
+        phi = angle(c1, c2)
+        phi2 = angle(c1, (np.dot(T, v2)))
+        if not isclose(phi, phi2, rtol=.01):
+            print("Error: constraints and vectors do not match.")
+            return
+        r = np.sin(phi)
+        c = np.linalg.norm(np.dot(T, v2) - c2)
+        theta = np.arccos(1 - (c**2)/(2*(r**2)))
+        R = aa2matrix(c1, theta)
+        T2 = np.dot(R, T)
+        a = angle(np.dot(T2, v2), c2)
+        if not np.isclose(a, 0, rtol=.01):
+            T2 = np.dot(np.linalg.inv(R), T)
+        a = angle(np.dot(T2, v2), c2)
+        if not np.isclose(a, 0, rtol=.01):
+            print("Error: Generated incorrect rotation: "+str(theta))
+        return Orientation(T2, degrees=0)
+
     def random_orientation(self):
         """
         Applies random rotation (if possible) and returns a new orientation with
