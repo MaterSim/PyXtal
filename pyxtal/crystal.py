@@ -339,7 +339,7 @@ def matrix2para(matrix, radians=True):
     Returns:
         a 1x6 list of lattice parameters [a, b, c, alpha, beta, gamma]. a, b,
         and c are the length of the lattice vectos, and alpha, beta, and gamma
-        are the angles between these vectors
+        are the angles between these vectors (in radians by default)
     """
     cell_para = np.zeros(6)
     #a
@@ -1031,6 +1031,9 @@ class random_crystal():
         """A list of warning messages to use during generation."""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell."""
+        if self.dim == 0:
+            #Define a maximum radius for generating points
+            self.radius = np.cbrt((3*self.volume)/(4*pi))
         self.group = Group(number, dim=self.dim)
         """A pyxtal.symmetry.Group object storing information about the space/layer
         /Rod/point group, and its Wyckoff positions."""
@@ -1115,6 +1118,7 @@ class random_crystal():
             max3: the number of attempts for a given Wyckoff position
         """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
+        self.numattempts = 1
         degrees = self.check_compatible()
         if degrees is False:
             print(self.Msg1)
@@ -1136,11 +1140,14 @@ class random_crystal():
                     cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
                 elif self.dim == 1:
                     cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
+                elif self.dim == 0:
+                    cell_para = [1,1,1, pi/2, pi/2, pi/2]
                 if cell_para is None:
                     break
                 else:
                     cell_matrix = para2matrix(cell_para)
-                    if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
+                    #Check that the correct volume was generated
+                    if self.dim != 0 and abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
                         print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
                         print('cell_para:  ', cell_para)
                         sys.exit(0)
@@ -1159,14 +1166,14 @@ class random_crystal():
                             tol = max(0.5*Element(specie).covalent_radius, tol_m)
 
                             #Now we start to add the specie to the wyckoff position
-                            for cycle3 in range(max3):
-                                self.numattempts += 1
+                            cycle3 = 0
+                            while cycle3 < max3:
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                                 ops = choose_wyckoff(self.group, numIon-numIon_added) 
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
                                     point = np.random.random(3)
-                                    #Filter coords for 2D and 1D crystals
+                                    #Filter coords for low-dimension crystals
                                     if self.dim == 2:
                                         for a in range(1, 4):
                                             if a not in self.PBC:
@@ -1178,6 +1185,16 @@ class random_crystal():
                                                     point[a-1] -= 0.5
                                                 elif self.number >= 46:
                                                     point[a-1] *= 1./sqrt(3.)
+                                    elif self.dim == 0:
+                                        #Choose a point within an octant of the unit sphere
+                                        while dsquared(point) > 1:
+                                            point = np.random.random(3)
+                                        #Randomly flip some coordinates
+                                        for index, x in enumerate(point):
+                                            #Scale the point by the max radius
+                                            point[index] *= self.radius
+                                            if rand_u(0,1) < 0.5:
+                                                point[index] *= -1
                                     coords = np.array([op.operate(point) for op in ops])
                                     #Merge coordinates if the atoms are close
                                     coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
@@ -1190,10 +1207,16 @@ class random_crystal():
                                                 coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
                                             sites_tmp += [specie]*len(coords_toadd)
                                             numIon_added += len(coords_toadd)
+                                        else:
+                                            cycle3 += 1
+                                            self.numattempts ++ 1
                                         if numIon_added == numIon:
                                             coordinates_total = deepcopy(coordinates_tmp)
                                             sites_total = deepcopy(sites_tmp)
                                             break
+                                    else:
+                                        cycle3 += 1
+                                        self.numattempts += 1
 
                             if numIon_added != numIon:
                                 break  #need to repeat from the 1st species
@@ -1275,9 +1298,8 @@ class random_crystal_2D(random_crystal):
 class random_crystal_1D(random_crystal):
     """
     A 1d counterpart to random_crystal. Generates a random atomic crystal based
-    on a 1d Rod group instead of a 3d spacegroup. Note that each layer group
-    is equal to a corresponding 3d spacegroup, but without periodicity in one
-    direction. The generated pymatgen structure can be accessed via self.struct
+    on a 1d Rod group instead of a 3d spacegroup. The generated pymatgen
+    structure can be accessed via self.struct
 
     Args:
         number: the Rod group number between 1 and 75. NOT equal to the
@@ -1302,6 +1324,33 @@ class random_crystal_1D(random_crystal):
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
         self.init_common(species, numIons, factor, number)
+
+class random_cluster(random_crystal):
+    """
+    A 0d counterpart to random_crystal. Generates a random atomic cluster based
+    on a 0d Point group instead of a 3d spacegroup. The generated pymatgen
+    structure can be accessed via self.struct
+
+    Args:
+        group: the Schoenflies symbol for the point group (ex: "Oh", "C5v", "D3")
+            See:
+            https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups
+            for more information
+        species: a list of atomic symbols for each ion type
+        numIons: a list of the number of each type of atom within the
+            primitive cell (NOT the conventional cell)
+        factor: a volume factor used to generate a larger or smaller
+            unit cell. Increasing this gives extra space between atoms
+    """
+    def __init__(self, group, species, numIons, factor):
+        self.dim = 0
+        """The number of periodic dimensions of the crystal"""
+        self.PBC = []
+        """The periodic axis of the crystal."""
+        self.sg = None
+        """The international space group number (there is not a 1-1 correspondence
+        with Point groups)."""
+        self.init_common(species, numIons, factor, group)
 
 
 if __name__ == "__main__":
