@@ -27,6 +27,8 @@ layer_generators_df = read_csv(resource_filename("pyxtal", "database/layer_gener
 rod_df = read_csv(resource_filename("pyxtal", "database/rod.csv"))
 rod_symmetry_df = read_csv(resource_filename("pyxtal", "database/rod_symmetry.csv"))
 rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generators.csv"))
+point_df = read_csv(resource_filename("pyxtal", "database/point.csv"))
+point_symmetry_df = read_csv(resource_filename("pyxtal", "database/point_symmetry.csv"))
 
 pi = np.pi
 
@@ -375,6 +377,43 @@ def get_rod(num, organized=False):
     else:
         return wyckoffs
 
+def get_point(num, organized=False):
+    """
+    Returns a list of Wyckoff positions for a given crystallographic point group.
+    Has option to organize the list based on multiplicity.
+
+    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
+
+    2nd index: a SymmOp object in the WP
+
+    For point groups except T, Th, O, Td, and Oh, unique axis z is used.
+
+    Args:
+        num: the point group number (see bottom of source code for a list)
+        organized: whether or not to organize the list based on multiplicity
+    
+    Returns: 
+        a list of Wyckoff positions, each of which is a list of SymmOp's
+    """
+    wyckoff_strings = eval(point_df["0"][num])
+    wyckoffs = []
+    for x in wyckoff_strings:
+        wyckoffs.append([])
+        for y in x:
+            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+    if organized:
+        wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
+        old = len(wyckoffs[0])
+        for wp in wyckoffs:
+            mult = len(wp)
+            if mult != old:
+                wyckoffs_organized.append([])
+                old = mult
+            wyckoffs_organized[-1].append(wp)
+        return wyckoffs_organized
+    else:
+        return wyckoffs
+
 def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
@@ -547,6 +586,37 @@ def get_rod_symmetry(num, molecular=False):
                     op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
                     symmetry[-1][-1].append(op)
     return symmetry
+
+def get_point_symmetry(num):
+    """
+    Returns a list of Wyckoff position site symmetry for a given point group.
+    1st index: index of WP in group (0 is the WP with largest multiplicity)
+    2nd index: a point within the WP
+    3rd index: a site symmetry SymmOp of the point
+
+    Args:
+        num: the point group number
+
+    Returns:
+        a 3d list of SymmOp objects representing the site symmetry of each
+        point in each Wyckoff position
+    """
+
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    symmetry_strings = eval(point_symmetry_df["0"][num])
+    symmetry = []
+    #Loop over Wyckoff positions
+    for x in symmetry_strings:
+        symmetry.append([])
+        #Loop over points in WP
+        for y in x:
+            symmetry[-1].append([])
+            #Loop over ops
+            for z in y:
+                op = SymmOp.from_xyz_string(z)
+                symmetry[-1][-1].append(op)
+    return symmetry
+
 
 def get_wyckoff_generators(sg, PBC=[1,2,3], molecular=False):
     """
