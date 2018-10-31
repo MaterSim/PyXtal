@@ -14,10 +14,10 @@ setup(
     url="https://github.com/qzhu2017/PyXtal",
     packages=['pyxtal', 'pyxtal.database'],
     package_data={'pyxtal.database': ['*.csv', '*.json']},
-    classifiers=(
+    classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-    ),
+    ],
     requires=['spglib', 'pymatgen', 'numpy', 'scipy', 'openbabel'],
 )
