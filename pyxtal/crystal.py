@@ -55,6 +55,7 @@ from time import time
 
 from spglib import get_symmetry_dataset
 from pymatgen.core.structure import Structure
+from pymatgen.core.structure import Molecule
 from pymatgen.io.cif import CifWriter
 
 from optparse import OptionParser
@@ -1240,26 +1241,40 @@ class random_crystal():
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
 
-                        final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                        self.lattice = final_lattice   
-                        """A 3x3 matrix representing the lattice of the unit
-                        cell."""                 
-                        self.coordinates = np.array(final_coor)
-                        """The fractional coordinates for each molecule in the
-                        final structure"""
-                        self.sites = final_site
-                        """A list of atomic symbols corresponding to the type
-                        of atom for each site in self.coordinates"""
-                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                        """A pymatgen.core.structure.Structure object for the
-                        final generated crystal."""
-                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                        """A list of information describing the generated
-                        crystal, which may be used by spglib for symmetry
-                        analysis."""
-                        self.valid = True
-                        """Whether or not a valid crystal was generated."""
-                        return
+                        if self.dim != 0:
+                            final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
+                            self.lattice = final_lattice   
+                            """A 3x3 matrix representing the lattice of the unit
+                            cell."""                 
+                            self.coordinates = np.array(final_coor)
+                            """The fractional coordinates for each atom in the
+                            final structure"""
+                            self.sites = final_site
+                            """A list of atomic symbols corresponding to the type
+                            of atom for each site in self.coordinates"""
+                            self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                            """A pymatgen.core.structure.Structure object for the
+                            final generated crystal."""
+                            self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                            """A list of information describing the generated
+                            crystal, which may be used by spglib for symmetry
+                            analysis."""
+                            self.valid = True
+                            return
+                        elif self.dim == 0:
+                            if verify_distances(final_coor, final_site, Euclidean_lattice, PBC=self.PBC):
+                                self.coordinates = final_coor
+                                """The absolute coordinates for each atom in the
+                                final structure"""
+                                self.species = final_site
+                                """A list of atomic symbols corresponding to the type
+                                of atom for each site in self.coordinates"""
+                                self.molecule = Molecule(self.species, self.coordinates)
+                                """A pymatgen.core.structure.Molecule object for the
+                                final generated cluster."""
+                                self.valid = True
+                                """Whether or not a valid crystal was generated."""
+                                return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
