@@ -835,6 +835,50 @@ class molecular_crystal():
 
         return True
 
+    def to_file(self, fmt=None, filename=None):
+        """
+        Creates a file with the given filename and file type to store the structure.
+        By default, creates cif files for crystals and xyz files for clusters.
+        By default, the filename is based on the stoichiometry.
+
+        Args:
+            fmt: the file type ('cif', 'xyz', etc.)
+            filename: the file path
+
+        Returns:
+            Nothing. Creates a file at the specified path
+        """
+        if filename == None:
+            given = False
+        else:
+            given = True
+        if self.valid:
+            if fmt == None:
+                fmt = "cif"
+            if filename == None:
+                filename = str(self.struct.formula).replace(" ","") + "." + fmt
+            #Check if filename already exists
+            #If it does, add a new number to end of filename
+            if exists(filename):
+                if given is False:
+                    filename = filename[:(-len(fmt)-1)]
+                i = 1
+                while True:
+                    outdir = filename + "_" + str(i)
+                    if given is False:
+                        outdir += "." + fmt
+                    if not exists(outdir):
+                        break
+                    i += 1
+                    if i > 10000:
+                        return "Could not create file: too many files already created."
+            else:
+                outdir = filename
+            self.struct.to(fmt=fmt, filename=outdir)
+            return "Output file to " + outdir
+        elif self.valid:
+            print("Cannot create file: structure did not generate.")
+
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """
         The main code to generate a random molecular crystal. If successful,

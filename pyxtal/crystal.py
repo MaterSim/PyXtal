@@ -1113,30 +1113,37 @@ class random_crystal():
         By default, the filename is based on the stoichiometry.
 
         Args:
-            fmt: the file type ('.cif', '.xyz', etc.)
+            fmt: the file type ('cif', 'xyz', etc.)
             filename: the file path
 
         Returns:
             Nothing. Creates a file at the specified path
         """
+        if filename == None:
+            given = False
+        else:
+            given = True
         if self.valid:
             if self.dim == 0:
                 if fmt == None:
-                    fmt = ".xyz"
+                    fmt = "xyz"
                 if filename == None:
-                    filename = str(self.molecule.formula) + str(fmt)
+                    filename = str(self.molecule.formula).replace(" ","") + "." + fmt
             if self.dim != 0:
                 if fmt == None:
-                    fmt = ".cif"
+                    fmt = "cif"
                 if filename == None:
-                    filename = str(self.struct.formula) + str(fmt)
+                    filename = str(self.struct.formula).replace(" ","") + "." + fmt
             #Check if filename already exists
             #If it does, add a new number to end of filename
             if exists(filename):
-                outdir0 = filename + "_"
+                if given is False:
+                    filename = filename[:(-len(fmt)-1)]
                 i = 1
                 while True:
-                    outdir = outdir0 + str(i)
+                    outdir = filename + "_" + str(i)
+                    if given is False:
+                        outdir += "." + fmt
                     if not exists(outdir):
                         break
                     i += 1
