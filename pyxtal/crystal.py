@@ -51,7 +51,7 @@ of the module:
 
 import sys
 from time import time
-#from pkg_resources import resource_string
+from os.path import exists
 
 from spglib import get_symmetry_dataset
 from pymatgen.core.structure import Structure
@@ -1105,6 +1105,52 @@ class random_crystal():
         else:
             #Wyckoff Positions have no degrees of freedom
             return 0
+
+    def to_file(self, fmt=None, filename=None):
+        """
+        Creates a file with the given filename and file type to store the structure.
+        By default, creates cif files for crystals and xyz files for clusters.
+        By default, the filename is based on the stoichiometry.
+
+        Args:
+            fmt: the file type ('.cif', '.xyz', etc.)
+            filename: the file path
+
+        Returns:
+            Nothing. Creates a file at the specified path
+        """
+        if self.valid:
+            if self.dim == 0:
+                if fmt == None:
+                    fmt = ".xyz"
+                if filename == None:
+                    filename = str(self.molecule.formula) + str(fmt)
+            if self.dim != 0:
+                if fmt == None:
+                    fmt = ".cif"
+                if filename == None:
+                    filename = str(self.struct.formula) + str(fmt)
+            #Check if filename already exists
+            #If it does, add a new number to end of filename
+            if exists(filename):
+                outdir0 = filename + "_"
+                i = 1
+                while True:
+                    outdir = outdir0 + str(i)
+                    if not exists(outdir):
+                        break
+                    i += 1
+                    if i > 10000:
+                        return "Could not create file: too many files already created."
+            else:
+                outdir = filename
+            if self.dim == 0:
+                self.molecule.to(fmt=fmt, filename=outdir)
+            if self.dim != 0:
+                self.struct.to(fmt=fmt, filename=outdir)
+            return "Output file to " + outdir
+        elif self.valid:
+            print("Cannot create file: structure did not generate.")
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """
