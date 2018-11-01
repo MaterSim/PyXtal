@@ -29,6 +29,7 @@ rod_symmetry_df = read_csv(resource_filename("pyxtal", "database/rod_symmetry.cs
 rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generators.csv"))
 point_df = read_csv(resource_filename("pyxtal", "database/point.csv"))
 point_symmetry_df = read_csv(resource_filename("pyxtal", "database/point_symmetry.csv"))
+point_generators_df = read_csv(resource_filename("pyxtal", "database/point_generators.csv"))
 
 pi = np.pi
 
@@ -785,6 +786,34 @@ def get_rod_generators(num, molecular=False):
             elif molecular is True:
                 op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
                 generators[-1].append(op)
+    return generators
+
+def get_point_generators(num):
+    """
+    Returns a list of Wyckoff generators for a given point group.
+    1st index: index of WP in group (0 is the WP with largest multiplicity)
+    2nd index: a generator for the WP
+    This function is useful for rotating molecules based on Wyckoff position,
+    since special Wyckoff positions only encode positional information, but not
+    information about the orientation. The generators for each Wyckoff position
+    form a subset of the group's general Wyckoff position.
+    
+    Args:
+        num: the Rod group number
+    
+    Returns:
+        a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
+        single fractional (x,y,z) coordinate
+    """
+    generator_strings = eval(point_generators_df["0"][num])
+    generators = []
+    #Loop over Wyckoff positions
+    for x in generator_strings:
+        generators.append([])
+        #Loop over ops
+        for y in x:
+            op = SymmOp.from_xyz_string(y)
+            generators[-1].append(op)
     return generators
 
 def general_position(number, dim=3):
