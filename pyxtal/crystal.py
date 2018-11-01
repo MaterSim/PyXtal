@@ -1293,6 +1293,7 @@ class random_crystal():
                             final_coor.append(coor)
                             final_site.append(ele)
                             final_number.append(Element(ele).z)
+                        final_coor = np.array(final_coor)
 
                         if self.dim != 0:
                             final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
@@ -1325,6 +1326,16 @@ class random_crystal():
                                 self.molecule = Molecule(self.species, self.coordinates)
                                 """A pymatgen.core.structure.Molecule object for the
                                 final generated cluster."""
+                                #Calculate binding box
+                                maxx = max(final_coor[:,0])
+                                minx = min(final_coor[:,0])
+                                maxy = max(final_coor[:,1])
+                                miny = min(final_coor[:,1])
+                                maxz = max(final_coor[:,2])
+                                minz = min(final_coor[:,2])
+                                self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
+                                """A pymatgen.core.structure.Structure object for the
+                                final generated object."""
                                 self.valid = True
                                 """Whether or not a valid crystal was generated."""
                                 return
