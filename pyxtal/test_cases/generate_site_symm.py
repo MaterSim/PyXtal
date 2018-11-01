@@ -7,16 +7,16 @@ Generate the site symmetry csv files
 """
 
 #EDIT
-path = "wyckoff_symmetry_new.csv"
-PBC = [3]
+path = "point_symmetry_new.csv"
+PBC = []
 #Change 231 to 81 for 2D, 76 for 1D
-maxn = 76
+maxn = 33
 
 site_symmetry = [None]
 
 #site_symm is stored by space group number starting with 1 (site_symm[1] is P1))
 print("Generating site symmetry to store in ")
-print("Calculating space group:")
+print("Calculating group:")
 
 
 for num in range(1, maxn):
@@ -24,7 +24,7 @@ for num in range(1, maxn):
     site_symmetry.append([])
 
     #EDIT
-    wyckoffs = get_rod(num)
+    wyckoffs = get_point(num)
 
     gen_pos = wyckoffs[0]
     for wp in wyckoffs:

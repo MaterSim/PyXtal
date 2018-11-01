@@ -1,8 +1,8 @@
 from pyxtal.crystal import *
 from pandas import DataFrame
 
-fpath = "wyckoff_generators_new.csv"
-PBC = [3]
+fpath = "point_generators_new.csv"
+PBC = []
 
 
 def rounded(op):
@@ -14,14 +14,16 @@ def rounded(op):
         return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v2[0], v2[1], v1[2]])        
     elif PBC == [3]:
         return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v1[0], v1[1], v2[2]])
+    elif PBC == []:
+        return op
 
 print("-------------------Creating generators-------------------")
 generators = [None]
 #Loop over spacegroups
-for sg in range(1, 76):
+for sg in range(1, 33):
     print("Calculating spacegroup: "+str(sg))
     sg_gen = []
-    wyckoffs = get_rod(sg)
+    wyckoffs = get_point(sg)
     gen_pos = wyckoffs[0]
     if gen_pos == []:
         print(wyckoffs)
