@@ -50,17 +50,21 @@ def compare_wyckoffs(num1, num2, dim=3):
         return False
     #Get general positions for both groups
     if dim == 3:
-        from pyxtal.crystal import get_wyckoffs
+        from pyxtal.symmetry import get_wyckoffs
         g1 = get_wyckoffs(num1)[0]
         g2 = get_wyckoffs(num2)[0]
     elif dim == 2:
-        from pyxtal.crystal import get_layer
+        from pyxtal.symmetry import get_layer
         g1 = get_layer(num1)[0]
         g2 = get_layer(num2)[0]
     elif dim == 1:
-        from pyxtal.crystal import get_rod
+        from pyxtal.symmetry import get_rod
         g1 = get_rod(num1)[0]
         g2 = get_rod(num2)[0]
+    elif dim == 0:
+        from pyxtal.symmetry import get_point
+        g1 = get_point(num1)[0]
+        g2 = get_point(num2)[0]
     #If group 2 has higher symmetry
     if len(g2) > len(g1):
         return True
@@ -77,31 +81,37 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
     """Given a pymatgen structure, group number, and dimension, return
     whether or not the structure matches the group number."""
 
-    from pyxtal.crystal import distance
-    from pyxtal.crystal import filtered_coords
+    from pyxtal.symmetry import distance
+    from pyxtal.symmetry import filtered_coords
     from copy import deepcopy
     lattice = struct.lattice.matrix
     PBC = [1,2,3]
 
     #Obtain the generators for the group
     if dim == 3:
-        from pyxtal.crystal import get_wyckoffs
+        from pyxtal.symmetry import get_wyckoffs
         generators = get_wyckoffs(group)[0]
 
     elif dim == 2:
-        from pyxtal.crystal import get_layer
+        from pyxtal.symmetry import get_layer
         generators = get_layer(group)[0]
         PBC = [1,2]
     elif dim == 1:
-        from pyxtal.crystal import get_rod
+        from pyxtal.symmetry import get_rod
         generators = get_rod(group)[0]
         PBC = [3]
+    elif dim == 0:
+        from pyxtal.symmetry import get_point
+        generators = get_point(group)[0]
+        PBC = []
 
     #TODO: Add check for lattice symmetry
 
     #Apply SymmOps to generate new points
     #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
     old_coords = deepcopy(struct.frac_coords)
+    if dim == 0:
+        old_coords = old_coords - 0.5
     old_species = deepcopy(struct.atomic_numbers)
 
     new_coords = []
@@ -195,7 +205,7 @@ def test_atomic():
     print("=== Testing generation of atomic 3D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
-    from pyxtal.crystal import get_wyckoffs
+    from pyxtal.symmetry import get_wyckoffs
     from pyxtal.crystal import random_crystal
     from pyxtal.crystal import cellsize
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -278,7 +288,7 @@ def test_molecular():
     print("=== Testing generation of molecular 3D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
-    from pyxtal.crystal import get_wyckoffs
+    from pyxtal.symmetry import get_wyckoffs
     from pyxtal.crystal import cellsize
     from pyxtal.molecular_crystal import molecular_crystal
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -362,7 +372,7 @@ def test_atomic_2D():
     print("=== Testing generation of atomic 2D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
-    from pyxtal.crystal import get_layer
+    from pyxtal.symmetry import get_layer
     from pyxtal.crystal import random_crystal_2D
     from pyxtal.crystal import cellsize
     from pyxtal.database.layergroup import Layergroup
@@ -447,7 +457,7 @@ def test_molecular_2D():
     print("=== Testing generation of molecular 2D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
-    from pyxtal.crystal import get_layer
+    from pyxtal.symmetry import get_layer
     from pyxtal.crystal import cellsize
     from pyxtal.molecular_crystal import molecular_crystal_2D
     from pyxtal.database.layergroup import Layergroup
@@ -532,7 +542,7 @@ def test_atomic_1D():
     print("=== Testing generation of atomic 1D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
-    from pyxtal.crystal import get_rod
+    from pyxtal.symmetry import get_rod
     from pyxtal.crystal import random_crystal_1D
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
@@ -605,7 +615,7 @@ def test_molecular_1D():
     print("=== Testing generation of molecular 1D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
-    from pyxtal.crystal import get_rod
+    from pyxtal.symmetry import get_rod
     from pyxtal.molecular_crystal import molecular_crystal_1D
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
@@ -672,6 +682,58 @@ def test_molecular_1D():
         for i in failed:
             print("     "+str(i))
 
+def test_cluster():
+    global outstructs
+    global outstrings
+    print("=== Testing generation of point group clusters. This may take some time. ===")
+    from time import time
+    from spglib import get_symmetry_dataset
+    from pyxtal.symmetry import get_point
+    from pyxtal.crystal import random_cluster
+    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    slow = []
+    failed = []
+    print("  Point group #  |  Time Elapsed")
+    skip = []
+    for sg in range(1, 33):
+        if sg not in skip:
+            multiplicity = len(get_point(sg)[0])#multiplicity of the general position
+            start = time()
+            rand_crystal = random_cluster(sg, ['C'], [multiplicity], 1.0)
+            end = time()
+            timespent = np.around((end - start), decimals=2)
+            t = str(timespent)
+            if len(t) == 3:
+                t += "0"
+            t += " s"
+            if timespent >= 1.0:
+                t += " ~"
+            if timespent >= 3.0:
+                t += "~"
+            if timespent >= 10.0:
+                t += "~"
+            if timespent >= 60.0:
+                t += "~"
+                slow.append(sg)
+            if rand_crystal.valid:
+                if check_struct_group(rand_crystal.struct, sg, dim=0):
+                    pass
+                else:
+                    t += " xxxxx"
+                    outstructs.append(rand_crystal.struct)
+                    outstrings.append(str("Cluster_"+str(sg)+".vasp"))
+                print("\t"+str(sg)+"\t|\t"+t)
+            else:
+                print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
+                failed.append(sg)
+    if slow != []:
+        print("~~~~ The following space groups took more than 60 seconds to generate:")
+        for i in slow:
+            print("     "+str(i))
+    if failed != []:
+        print("~~~~ The following space groups failed to generate:")
+        for i in failed:
+            print("     "+str(i))
 
 def test_modules():
     print("====== Testing functionality for pyXtal version 0.1dev ======")
@@ -1429,6 +1491,7 @@ if __name__ == "__main__":
             'molecular_2D': 'test_molecular_2D()',
             'atomic_1D': 'test_atomic_1D()', 
             'molecular_1D': 'test_molecular_1D()', 
+            'cluster': 'test_cluster()', 
             }
     if options.module == 'all':
         modules = modules_lib
@@ -1474,7 +1537,10 @@ if __name__ == "__main__":
             print("POSCAR files for these groups will be output to the directory " + outdir + ":")
         for struct, string in zip(outstructs, outstrings):
             fpath = outdir + "/" + string
-            struct = struct.get_sorted_structure()
+            try:
+                struct = struct.get_sorted_structure()
+            except:
+                pass
             struct.to(filename=fpath, fmt="poscar")
             #CifWriter(struct, symprec=0.1).write_file(filename = fpath)
             print("  "+string)
