@@ -557,7 +557,7 @@ def estimate_volume(numIons, species, factor=1.0):
         volume += numIon*4/3*pi*r**3
     return factor*volume
 
-def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100, **kwargs):
     """
     Generates a lattice (3x3 matrix) according to the space group symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -580,7 +580,8 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     maxangle = pi-minangle
     for n in range(maxattempts):
         #Triclinic
-        if sg <= 2:
+        #if sg <= 2:
+        if ltype == "triclinic":
             #Derive lattice constants from a random matrix
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
@@ -592,7 +593,8 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             b = vec[1]*np.cbrt(abc)/np.cbrt(xyz)
             c = vec[2]*np.cbrt(abc)/np.cbrt(xyz)
         #Monoclinic
-        elif sg <= 15:
+        #elif sg <= 15:
+        elif ltype == "monoclinic":
             alpha, gamma  = pi/2, pi/2
             beta = gaussian(minangle, maxangle)
             x = sin(beta)
@@ -603,7 +605,8 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             b = vec[1]*np.cbrt(abc)/np.cbrt(xyz)
             c = vec[2]*np.cbrt(abc)/np.cbrt(xyz)
         #Orthorhombic
-        elif sg <= 74:
+        #elif sg <= 74:
+        elif ltype == "orthorhombic":
             alpha, beta, gamma = pi/2, pi/2, pi/2
             x = 1
             vec = random_vector()
@@ -613,21 +616,24 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
             b = vec[1]*np.cbrt(abc)/np.cbrt(xyz)
             c = vec[2]*np.cbrt(abc)/np.cbrt(xyz)
         #Tetragonal
-        elif sg <= 142:
+        #elif sg <= 142:
+        elif ltype == "tetragonal":
             alpha, beta, gamma = pi/2, pi/2, pi/2
             x = 1
             vec = random_vector()
             c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
             a = b = sqrt((volume/x)/c)
         #Trigonal/Rhombohedral/Hexagonal
-        elif sg <= 194:
+        #elif sg <= 194:
+        elif ltype == "hexagonal":
             alpha, beta, gamma = pi/2, pi/2, pi/3*2
             x = sqrt(3.)/2.
             vec = random_vector()
             c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
             a = b = sqrt((volume/x)/c)
         #Cubic
-        else:
+        #else:
+        elif ltype == "cubic":
             alpha, beta, gamma = pi/2, pi/2, pi/2
             s = (volume) ** (1./3.)
             a, b, c = s, s, s
@@ -648,7 +654,7 @@ def generate_lattice(sg, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0, ma
     print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
     return
 
-def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100, **kwargs):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the layer group has centering, we will use the
@@ -673,11 +679,15 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    try:
+        unique_axis = kwargs['unique_axis']
+    except:
+        unique_axis = "c"
     #Store the non-periodic axis
     NPA = 3
     #Set the unique axis for monoclinic cells
-    if num in range(3, 8): unique_axis = "c"
-    elif num in range(8, 19): unique_axis = "a"
+    #if num in range(3, 8): unique_axis = "c"
+    #elif num in range(8, 19): unique_axis = "a"
     maxangle = pi-minangle
     for n in range(maxattempts):
         abc = np.ones([3])
@@ -689,7 +699,8 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
         abc[NPA-1] = thickness1
         alpha, beta, gamma  = pi/2, pi/2, pi/2
         #Triclinic
-        if num <= 2:
+        #if num <= 2:
+        if ltype == "triclinic":
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
@@ -707,7 +718,8 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
                 abc[2] = sqrt(ab/ratio)
 
         #Monoclinic
-        elif num <= 18:
+        #elif num <= 18:
+        elif ltype == "monoclinic":
             a, b, c = random_vector()
             if unique_axis == "a":
                 alpha = gaussian(minangle, maxangle)
@@ -731,7 +743,8 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
                 abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
-        elif num <= 48:
+        #elif num <= 48:
+        elif ltype == "orthorhombic":
             vec = random_vector()
             if NPA == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
@@ -747,7 +760,8 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
-        elif num <= 64:
+        #elif num <= 64:
+        elif ltype == "tetragonal":
             if NPA == 3:
                 abc[0] = abc[1] = sqrt(volume/thickness1)
             elif NPA == 2:
@@ -758,7 +772,8 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
                 abc[2] = volume/(abc[NPA-1]**2)
 
         #Trigonal/Rhombohedral/Hexagonal
-        elif num <= 80:
+        #elif num <= 80:
+        elif ltype == "hexagonal":
             gamma = pi/3*2
             x = sqrt(3.)/2.
             if NPA == 3:
@@ -789,7 +804,7 @@ def generate_lattice_2D(num, volume, thickness=None, minvec=tol_m, minangle=pi/6
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
 
-def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100):
+def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100, **kwargs):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -814,11 +829,15 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    try:
+        unique_axis = kwargs['unique_axis']
+    except:
+        unique_axis = "a"
     #Store the periodic axis
     PA = 3
     #Set the unique axis for monoclinic cells
-    if num in range(3, 8): unique_axis = "a"
-    elif num in range(8, 13): unique_axis = "c"
+    #if num in range(3, 8): unique_axis = "a"
+    #elif num in range(8, 13): unique_axis = "c"
     maxangle = pi-minangle
     for n in range(maxattempts):
         abc = np.ones([3])
@@ -830,7 +849,8 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
         abc[PA-1] = thickness1
         alpha, beta, gamma  = pi/2, pi/2, pi/2
         #Triclinic
-        if num <= 2:
+        #if num <= 2:
+        if ltype == "triclinic":
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
@@ -848,7 +868,8 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
                 abc[2] = sqrt(ab/ratio)
 
         #Monoclinic
-        elif num <= 12:
+        #elif num <= 12:
+        elif ltype == "monoclinic":
             a, b, c = random_vector()
             if unique_axis == "a":
                 alhpa = gaussian(minangle, maxangle)
@@ -872,7 +893,8 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
                 abc[2] = sqrt(ab/ratio)
 
         #Orthorhombic
-        elif num <= 22:
+        #lif num <= 22:
+        elif ltype == "orthorhombic":
             vec = random_vector()
             if PA == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
@@ -888,7 +910,8 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
-        elif num <= 41:
+        #elif num <= 41:
+        elif ltype == "tetragonal":
             if PA == 3:
                 abc[0] = abc[1] = sqrt(volume/thickness1)
             elif PA == 2:
@@ -899,7 +922,8 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
                 abc[2] = volume/(abc[PA-1]**2)
 
         #Trigonal/Rhombohedral/Hexagonal
-        elif num <= 75:
+        #elif num <= 75:
+        elif ltype == "hexagonal":
             gamma = pi/3*2
             x = sqrt(3.)/2.
             if PA == 3:
@@ -929,6 +953,42 @@ def generate_lattice_1D(num, volume, area=None, minvec=tol_m, minangle=pi/6, max
     #If maxattempts tries have been made without success
     print("Error: Could not generate lattice after "+str(n+1)+" attempts")
     return
+
+def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=20.0, maxattempts = 100, **kwargs):
+    """
+    Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
+    number of atoms. If the spacegroup has centering, we will transform to
+    conventional cell setting. If the generated lattice does not meet the
+    minimum angle and vector requirements, we try to generate a new one, up to
+    maxattempts times.
+    Note: The monoclinic Rod groups have different unique axes. Groups 3-7
+        have unique axis a, while 8-12 have unique axis c. We use periodic
+        axis c for all Rod groups.
+
+    Args:
+        num: number of the Rod group
+        volume: volume of the lattice
+        area: cross-sectional area of the unit cell in Angstroms squared. If
+            set to None, a value is chosen automatically
+        minvec: minimum allowed lattice vector length (among a, b, and c)
+        max_ratio: largest allowed ratio of two lattice vector lengths
+        maxattempts: the maximum number of attempts for generating a lattice
+
+    Returns:
+        a 3x3 matrix representing the lattice vectors of the unit cell. If
+        generation fails, outputs a warning message and returns empty
+    """
+    if ltype == "spherical":
+        #Use a cubic lattice with altered volume
+        a = b = c = np.cbrt((3 * volume)/(4 * pi))
+        alpha = beta = gamma = 0.5 * pi
+        if a < minvec:
+            print("Error: Could not generate spherical lattice; volume too small compared to minvec")
+            return
+        return np.array([a, b, c, alpha, beta, gamma])
+    if ltype == "cylindrical":
+        #Use a tetragonal lattice with altered volume
+        return generate_lattice("tetragonal", volume*4/pi, minvec=minvec, max_ratio=max_ratio, maxattempts=maxattempts, **kwargs)
 
 def choose_wyckoff(group, number):
     """
@@ -991,6 +1051,91 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
                     return False
     return True
 
+class Lattice():
+    """
+    Class for storing and generating crystal lattices. Allows for specification
+    of constraint values. Lattice types include triclinic, monoclinic, orthorhombic,
+    tetragonal, trigonal, hexagonal, cubic, spherical, and cylindrical. The last
+    two are used for generating point group structures, and do not actually represent
+    a parallelepiped lattice.
+
+    Args:
+        ltype: a string representing the type of lattice (from the above list)
+        volume: the volume, in Angstroms cubed, of the lattice
+        kwargs: various values which may be defined. If none are defined, random ones
+            will be generated.
+    """
+    def __init__(self, ltype, volume, PBC=[1,2,3], **kwargs):
+        #Set required parameters
+        if ltype in ["triclinic", "monoclinic", "orthorhombic", "tetragonal",
+                "trigonal", "hexagonal", "cubic", "spherical", "cylindrical"]:
+            self.ltype = ltype
+        else:
+            print("Error: Invalid lattice type.")
+            return
+        self.volume = float(volume)
+        self.PBC = PBC
+        self.dim = len(PBC)
+        self.kwargs = {}
+        #Set optional values
+        for key, value in kwargs.items():
+            if key in ["a", "b", "c", "alpha", "beta", "gamma", "area", "thickness", "unique_axis"]:
+                setattr(self, key, value)
+                self.kwargs[key] = value
+        
+    def generate_matrix(self):
+        """
+        Generates a 3x3 matrix for the lattice based on the lattice type and volume
+        """
+        if self.dim == 3:
+            return generate_lattice(self.ltype, self.volume, **self.kwargs)
+        elif self.dim == 2:
+            return generate_lattice_2D(self.ltype, self.volume, **self.kwargs)
+        elif self.dim == 1:
+            return generate_lattice_1D(self.ltype, self.volume, **self.kwargs)
+        elif self.dim == 0:
+            return generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
+
+    def set_matrix(self, matrix=None):
+        if matrix != None:
+            m = np.array(matrix)
+            if np.shape(m) == (3,3):
+                self.matrix = m
+            else:
+                print("Error: matrix must be a 3x3 numpy array or list")
+        elif matrix == None:
+            self.matrix = self.generate_matrix()
+
+    def generate_point(self):
+        point = np.random.random(3)
+        if self.ltype == "spherical":
+            #Choose a point within an octant of the unit sphere
+            while dsquared(point) > 1:
+                point = np.random.random(3)
+            #Randomly flip some coordinates
+            for index, x in enumerate(point):
+                #Scale the point by the max radius
+                if rand_u(0,1) < 0.5:
+                    point[index] *= -1
+
+        elif self.ltype == "cylindrical":
+            #Choose a point within an octant of the unit sphere
+            while dsquared([point[0], point[1], 0]) > 1:
+                point = np.random.random(3)
+            #Randomly flip some coordinates
+            for index, x in enumerate(point):
+                #Scale the point by the max radius
+                if rand_u(0,1) < 0.5:
+                    point[index] *= -1
+        else:
+            for a in range(1,4):
+                if a not in self.PBC:
+                    if self.ltype == "hexagonal":
+                        point[a-1] *= 1./sqrt(3.)
+                    else:
+                        point[a-1] -= 0.5
+        return point
+
 class random_crystal():
     """
     Class for storing and generating atomic crystals based on symmetry
@@ -1038,6 +1183,19 @@ class random_crystal():
         self.group = Group(number, dim=self.dim)
         """A pyxtal.symmetry.Group object storing information about the space/layer
         /Rod/point group, and its Wyckoff positions."""
+        if self.dim == 2:
+            if self.number in range(3, 8):
+                unique_axis = "c"
+            else:
+                unique_axis = "a"
+        elif self.dim == 1:
+            if self.number in range(3, 8):
+                unique_axis = "a"
+            else:
+                unique_axis = "c"
+        else:
+            unique_axis = "c"
+        self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         #Generate the crystal
         self.generate_crystal()
 
@@ -1188,14 +1346,15 @@ class random_crystal():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                if self.dim == 3:
+                '''if self.dim == 3:
                     cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
                 elif self.dim == 2:
                     cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
                 elif self.dim == 1:
                     cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
                 elif self.dim == 0:
-                    cell_para = [1,1,1, pi/2, pi/2, pi/2]
+                    cell_para = [1,1,1, pi/2, pi/2, pi/2]'''
+                cell_para = self.lattice.generate_matrix()
                 if cell_para is None:
                     break
                 else:
@@ -1226,9 +1385,9 @@ class random_crystal():
                                 ops = choose_wyckoff(self.group, numIon-numIon_added) 
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
-                                    point = np.random.random(3)
+                                    point = self.lattice.generate_point()
                                     #Filter coords for low-dimension crystals
-                                    if self.dim == 2:
+                                    '''if self.dim == 2:
                                         for a in range(1, 4):
                                             if a not in self.PBC:
                                                 point[a-1] -= 0.5
@@ -1248,7 +1407,7 @@ class random_crystal():
                                             #Scale the point by the max radius
                                             point[index] *= self.radius
                                             if rand_u(0,1) < 0.5:
-                                                point[index] *= -1
+                                                point[index] *= -1'''
                                     coords = np.array([op.operate(point) for op in ops])
                                     #Merge coordinates if the atoms are close
                                     coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
@@ -1316,10 +1475,16 @@ class random_crystal():
                             self.valid = True
                             return
                         elif self.dim == 0:
-                            if verify_distances(final_coor, final_site, Euclidean_lattice, PBC=self.PBC):
+                            if verify_distances(final_coor, final_site, cell_matrix, PBC=self.PBC):
+                                self.lattice = final_lattice   
+                                """A 3x3 matrix representing the lattice of the unit
+                                cell."""        
                                 self.coordinates = final_coor
                                 """The absolute coordinates for each atom in the
                                 final structure"""
+                                self.sites = final_site
+                                """A list of atomic symbols corresponding to the type
+                                of atom for each site in self.coordinates"""
                                 self.species = final_site
                                 """A list of atomic symbols corresponding to the type
                                 of atom for each site in self.coordinates"""

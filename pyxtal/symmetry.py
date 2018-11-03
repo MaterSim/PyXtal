@@ -1622,6 +1622,18 @@ class Group():
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
+            if self.number <= 2:
+                self.lattice_type = "triclinic"
+            elif self.number <= 15:
+                self.lattice_type = "monoclinic"
+            elif self.number <= 74:
+                self.lattice_type = "orthorhombic"
+            elif self.number <= 142:
+                self.lattice_type = "tetragonal"
+            elif self.number <= 194:
+                self.lattice_type = "hexagonal"
+            elif self.number <= 230:
+                self.lattice_type = "cubic"
         elif dim == 2:
             if number not in range(1, 81):
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
@@ -1639,6 +1651,16 @@ class Group():
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_layer_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
+            if self.number <= 2:
+                self.lattice_type = "triclinic"
+            elif self.number <= 18:
+                self.lattice_type = "monoclinic"
+            elif self.number <= 48:
+                self.lattice_type = "orthorhombic"
+            elif self.number <= 64:
+                self.lattice_type = "tetragonal"
+            elif self.number <= 80:
+                self.lattice_type = "hexagonal"
         elif dim == 1:
             if number not in range(1, 76):
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
@@ -1656,6 +1678,16 @@ class Group():
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
+            if self.number <= 2:
+                self.lattice_type = "triclinic"
+            elif self.number <= 12:
+                self.lattice_type = "monoclinic"
+            elif self.number <= 22:
+                self.lattice_type = "orthorhombic"
+            elif self.number <= 41:
+                self.lattice_type = "tetragonal"
+            elif self.number <= 75:
+                self.lattice_type = "hexagonal"
         elif dim == 0:
             #0-D clusters. Except for group "I" and "Ih", z axis is the high-symmetry axis
             #https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups
@@ -1680,6 +1712,10 @@ class Group():
                 """A list of Wyckoff generators (molecular=False)"""
                 self.wyckoff_generators_m = get_point_generators(self.number)
                 """A list of Wyckoff generators (molecular=True)"""
+                if self.number <= 27:
+                    self.lattice_type = "cylindrical"
+                elif self.number <= 32:
+                    self.lattice_type = "spherical"
             else:
                 #Remove whitespace
                 symbol = ''.join(c for c in symbol if not c.isspace())
@@ -1701,6 +1737,7 @@ class Group():
                 #interpret symbol
                 if symbol[0] == "T":
                     #Tetrahedral
+                    self.lattice_type = "spherical"
                     gens.append(SymmOp.from_xyz_string('-x,-y,z')) #2 0,0,z
                     gens.append(SymmOp.from_xyz_string('z,x,y')) #3+ x,x,x
                     if symbol == "Td":
@@ -1715,6 +1752,7 @@ class Group():
                         self.symbol = "T"
                 elif symbol[0] == "O":
                     #Octohedral
+                    self.lattice_type = "spherical"
                     gens.append(SymmOp.from_xyz_string('-y,x,z')) #4+ 0,0,z
                     gens.append(SymmOp.from_xyz_string('z,x,y')) #3+ x,x,x
                     if symbol == "Oh":
@@ -1725,6 +1763,7 @@ class Group():
                         self.symbol = "O"
                 elif symbol[0] == "I":
                     #Icosohedral
+                    self.lattice_type = "spherical"
                     #Temporary fix: get symmetry from C60
                     from pyxtal.molecule import mol_from_collection
                     from pyxtal.molecule import get_symmetry
@@ -1751,6 +1790,7 @@ class Group():
                         gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0'''
                 elif symbol[0] == "C" and symbol[-1] != "i":
                     #n-fold rotation
+                    self.lattice_type = "cylindrical"
                     if symbol[-1] == "d":
                         print("Error: Invalid point group symbol.")
                         return
@@ -1773,6 +1813,7 @@ class Group():
                         self.symbol += "h"
                 elif symbol[0] == "C" and symbol[-1] == "i":
                     #n-fold rotinversion, usually just Ci
+                    self.lattice_type = "cylindrical"
                     if "d" in symbol or "h" in symbol or "v" in symbol:
                         print("Error: Invalid point group symbol.")
                         return
@@ -1794,6 +1835,7 @@ class Group():
                                 self.symbol = "C" + str(num) + "i"
                 elif symbol[0] == "D":
                     #n-fold rotation and n 2-fold perpendicular rotations
+                    self.lattice_type = "cylindrical"
                     if num == 0:
                         #infinite-order rotation
                         self.symbol = "D*"
@@ -1818,6 +1860,7 @@ class Group():
                         return
                 elif symbol[0] == "S":
                     #2n-fold rotation-reflection axis
+                    self.lattice_type = "cylindrical"
                     #Equivalent to Cnh for odd n
                     if num == 0 or symbol[-1]=="v" or symbol[-1]=="i" or symbol[-1]=="h" or symbol[-1]=="d":
                         print("Error: invalid point group symbol.")

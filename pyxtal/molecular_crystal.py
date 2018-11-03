@@ -733,6 +733,19 @@ class molecular_crystal():
             """The valid orientations for each molecule and Wyckoff position.
             May be copied when generating a new molecular_crystal to save a
             small amount of time"""
+        if self.dim == 2:
+            if self.number in range(3, 8):
+                unique_axis = "c"
+            else:
+                unique_axis = "a"
+        elif self.dim == 1:
+            if self.number in range(3, 8):
+                unique_axis = "a"
+            else:
+                unique_axis = "c"
+        else:
+            unique_axis = "c"
+        self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         self.generate_crystal()
 
     def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
@@ -914,12 +927,14 @@ class molecular_crystal():
             minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                if self.dim == 3:
+                '''if self.dim == 3:
                     cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
                 elif self.dim == 2:
                     cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
                 elif self.dim == 1:
-                    cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
+                    cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)'''
+                cell_para = self.lattice.generate_matrix()
+
                 if cell_para is None:
                     break
                 else:
@@ -960,8 +975,8 @@ class molecular_crystal():
                                 wp = choose_wyckoff_molecular(self.group, numMol-numMol_added, self.valid_orientations[i])
                                 if wp is not False:
                 	    	        #Generate a list of coords from the wyckoff position
-                                    point = np.random.random(3)
-                                    if self.dim == 2:
+                                    point = self.lattice.generate_point()
+                                    '''if self.dim == 2:
                                         for a in range(1, 4):
                                             if a not in self.PBC:
                                                 point[a-1] -= 0.5
@@ -971,7 +986,7 @@ class molecular_crystal():
                                                 if self.number < 46:
                                                     point[a-1] -= 0.5
                                                 elif self.number >= 46:
-                                                    point[a-1] *= 1./math.sqrt(3.)
+                                                    point[a-1] *= 1./math.sqrt(3.)'''
                                     coords = np.array([op.operate(point) for op in wp])
                                     #merge coordinates if the atoms are close
                                     if self.check_atomic_distances is False:
