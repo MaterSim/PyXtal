@@ -1123,7 +1123,7 @@ class Lattice():
             while dsquared([point[0], point[1], 0]) > 1:
                 point = np.random.random(3)
             #Randomly flip some coordinates
-            for index, x in enumerate(point):
+            for index, x in enumerate(point[:-1]):
                 #Scale the point by the max radius
                 if rand_u(0,1) < 0.5:
                     point[index] *= -1
