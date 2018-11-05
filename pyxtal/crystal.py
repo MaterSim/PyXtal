@@ -1079,9 +1079,12 @@ class Lattice():
         self.kwargs = {}
         #Set optional values
         for key, value in kwargs.items():
-            if key in ["a", "b", "c", "alpha", "beta", "gamma", "area", "thickness", "unique_axis"]:
-                setattr(self, key, value)
-                self.kwargs[key] = value
+            if key in ["a", "b", "c", "alpha", "beta", "gamma", "area", "thickness", "unique_axis", "matrix"]:
+                if key != "matrix":
+                    setattr(self, key, value)
+                    self.kwargs[key] = value
+                elif key == "matrix":
+                    self.set_matrix(value)
         
     def generate_matrix(self):
         """
@@ -1096,6 +1099,13 @@ class Lattice():
         elif self.dim == 0:
             return generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
 
+    def get_matrix(self):
+        try:
+            return self.matrix
+        except:
+            print("Error: Lattice matrix undefined.")
+            return
+
     def set_matrix(self, matrix=None):
         if matrix != None:
             m = np.array(matrix)
@@ -1105,6 +1115,9 @@ class Lattice():
                 print("Error: matrix must be a 3x3 numpy array or list")
         elif matrix == None:
             self.matrix = self.generate_matrix()
+
+    def reset_matrix(self):
+        self.matrix = self.generate_matrix()
 
     def generate_point(self):
         point = np.random.random(3)
@@ -1354,7 +1367,8 @@ class random_crystal():
                     cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
                 elif self.dim == 0:
                     cell_para = [1,1,1, pi/2, pi/2, pi/2]'''
-                cell_para = self.lattice.generate_matrix()
+                self.lattice.reset_matrix()
+                cell_para = self.lattice.get_matrix()
                 if cell_para is None:
                     break
                 else:
