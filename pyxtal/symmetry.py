@@ -1764,30 +1764,22 @@ class Group():
                 elif symbol[0] == "I":
                     #Icosohedral
                     self.lattice_type = "spherical"
-                    #Temporary fix: get symmetry from C60
-                    from pyxtal.molecule import mol_from_collection
-                    from pyxtal.molecule import get_symmetry
-                    c = mol_from_collection('C60')
-                    generate = False
-                    symm = get_symmetry(c)
-                    if symbol == "Ih":
-                        ops = symm
-                        self.symbol = "Ih"
-                    else:
-                        opas = [OperationAnalyzer(op) for op in get_symmetry(c)]
-                        i_list = []
-                        for i, opa in enumerate(opas):
-                            if opa.type == "rotation" or opa.type == "identity":
-                                i_list.append(i)
-                        ops = [symm[i] for i in i_list]
-                        self.symbol = "I"
-                    '''gens.append(SymmOp.from_xyz_string('-x,-y,z')) #2 0,0,z
+
+                    gens.append(SymmOp.from_xyz_string('-x,-y,z')) #2 0,0,z
                     gens.append(SymmOp.from_xyz_string('z,x,y')) #3+ x,x,x
-                    m = aa2matrix([0.5, 0.5*np.sqrt(3), 0], 2*pi/5)
+                    tau = 0.5*(sqrt(5)+1)
+                    m = aa2matrix([1., tau, 0.], 2*pi/5)
                     gens.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
                     if symbol == "Ih":
                         #Add horizontal mirror plane
-                        gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0'''
+                        gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
+
+                    '''self.wyckoffs = [ops]
+                    self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
+                    self.w_symm_m = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
+                    self.wyckoff_generators = deepcopy(self.wyckoffs)
+                    self.wyckoff_generators_m = deepcopy(self.wyckoffs)'''
+
                 elif symbol[0] == "C" and symbol[-1] != "i":
                     #n-fold rotation
                     self.lattice_type = "cylindrical"
