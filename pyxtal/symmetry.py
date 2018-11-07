@@ -970,28 +970,30 @@ def check_wyckoff_position(points, group, tol=1e-3):
         if len(wp) != len(points): continue
         failed = False
 
-        #Check site symmetry of points
+        '''#Check site symmetry of points
         for p in points:
             #Calculate distance between original and generated points
             ps = np.array([op.operate(p) for op in w_symm_all[i][0]])
             ds = distance_matrix_euclidean([p], ps, PBC=PBC, squared=True)
             #Check whether any generated points are too far away
-            num = (ds > t).sum()
+            num = (ds > tol).sum()
             if num > 0:
                 failed = True
                 break
         
-        if failed is True: continue
+        if failed is True: continue'''
+
         #Search for a generating point
         for p in points:
             failed = False
             #Check that point works as x,y,z value for wp
-            xyz = filtered_coords_euclidean(wp[0].operate(p) - p)
+            xyz = filtered_coords_euclidean(wp[0].operate(p) - p, PBC=PBC)
+
             if dsquared(xyz) > t: continue
             #Calculate distances between original and generated points
             pw = np.array([op.operate(p) for op in wp])
             dw = distance_matrix_euclidean(points, pw, PBC=PBC, squared=True)
-            
+
             #Check each row for a zero
             for row in dw:
                 num = (row < t).sum()
@@ -1006,6 +1008,14 @@ def check_wyckoff_position(points, group, tol=1e-3):
                 if num < 1:
                     failed = True
                     break
+
+            #Calculate distance between original and generated points
+            ps = np.array([op.operate(p) for op in w_symm_all[i][0]])
+            ds = distance_matrix_euclidean([p], ps, PBC=PBC, squared=True)
+            #Check whether any generated points are too far away
+            num = (ds > t).sum()
+            if num > 0:
+                failed = True
 
             if failed is True: continue
             return i, p
