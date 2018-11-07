@@ -33,6 +33,8 @@ point_generators_df = read_csv(resource_filename("pyxtal", "database/point_gener
 
 pi = np.pi
 
+Inversion = SymmOp.from_xyz_string('-x,-y,-z')
+
 
 #Define functions
 #------------------------------
@@ -863,7 +865,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
             PBC=[1,2,3]
     #Convert point into a SymmOp
     if type(point) != SymmOp:
-        point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], point)
+        point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], np.array(point))
     symmetry = []
     for op in gen_pos:
         is_symmetry = True
@@ -1542,6 +1544,27 @@ class Wyckoff_position():
             return Wyckoff_position.from_dict({"dim": 0})
         return wp
 
+    def wyckoff_from_generating_op(gen_op, gen_pos):
+        """
+        Given a general position and generating operation (ex: "x,0,0"), returns a
+        Wyckoff_position object.
+        
+        Args:
+            gen_op: a SymmOp into which the generating coordinate will be plugged
+            gen_pos: a list of SymmOps representing the general position
+
+        Returns:
+            a list of SymmOps
+        """
+        new_ops = [op*gen_op for op in gen_pos]
+        return list(set(new_ops))
+    
+    def symmetry_from_wyckoff(wp, gen_pos):
+        symm = []
+        for op in wp:
+            symm.append(site_symm(op, gen_pos))
+        return symm
+
     def __iter__(self):
         yield from self.ops
 
@@ -1764,21 +1787,48 @@ class Group():
                 elif symbol[0] == "I":
                     #Icosohedral
                     self.lattice_type = "spherical"
+                    generate = False
+                    self.number = None
 
-                    gens.append(SymmOp.from_xyz_string('-x,-y,z')) #2 0,0,z
-                    gens.append(SymmOp.from_xyz_string('z,x,y')) #3+ x,x,x
+                    R2 = SymmOp.from_xyz_string('-x,-y,z')
+                    R3 = SymmOp.from_xyz_string('z,x,y')
                     tau = 0.5*(sqrt(5)+1)
                     m = aa2matrix([1., tau, 0.], 2*pi/5)
-                    gens.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
+                    R5 = SymmOp.from_rotation_and_translation(m, [0,0,0])
+
+                    gen_pos = generate_full_symmops([R2, R3, R5], .03)
+                    op_c = SymmOp.from_xyz_string('x,0,0')
+                    op_b = SymmOp.from_xyz_string('x,x,x')
+                    m = [[0,0,0,0],[0,1,0,0],[0,tau,0,0],[0,0,0,0]]
+                    op_a = SymmOp(m)
+                    op_o = SymmOp.from_xyz_string('0,0,0')
+                    gen_ops = [op_c, op_b, op_a, op_o]
+
                     if symbol == "Ih":
                         #Add horizontal mirror plane
-                        gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
+                        mirror = SymmOp.from_xyz_string('x,y,-z') #m x,y,0
+                        gen_pos = generate_full_symmops([R2, R3, R5, mirror], .03)
+                        op_d = SymmOp.from_xyz_string('0,y,z')
+                        gen_ops = [op_d, op_c, op_b, op_a, op_o]
 
-                    '''self.wyckoffs = [ops]
-                    self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
-                    self.w_symm_m = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
+                    #Add general position
+                    self.wyckoffs = [gen_pos]
+                    #Calculate special positions
+                    for op in gen_ops:
+                        wp = Wyckoff_position.wyckoff_from_generating_op(op, gen_pos)
+                        if wp[0] != op:
+                            index = wp.index(op)
+                            op2 = wp[0]
+                            wp[index] = op2
+                            wp[0] = op
+                        self.wyckoffs.append(wp)
+                    #Calculate site symmetry and generators
+                    self.w_symm = []
+                    for wp in self.wyckoffs:
+                        self.w_symm.append(Wyckoff_position.symmetry_from_wyckoff(wp, gen_pos))
+                    self.w_symm_m = deepcopy(self.w_symm)
                     self.wyckoff_generators = deepcopy(self.wyckoffs)
-                    self.wyckoff_generators_m = deepcopy(self.wyckoffs)'''
+                    self.wyckoff_generators_m = deepcopy(self.wyckoffs)
 
                 elif symbol[0] == "C" and symbol[-1] != "i":
                     #n-fold rotation
@@ -1866,11 +1916,14 @@ class Group():
                 if generate is True:
                     ops = generate_full_symmops(gens, 0.03)
                 if "*" not in self.symbol:
-                    self.wyckoffs = [ops]
-                    self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
-                    self.w_symm_m = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
-                    self.wyckoff_generators = deepcopy(self.wyckoffs)
-                    self.wyckoff_generators_m = deepcopy(self.wyckoffs)
+                    if self.symbol in ["I", "Ih"]:
+                        pass
+                    else:
+                        self.wyckoffs = [ops]
+                        self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
+                        self.w_symm_m = [[[SymmOp.from_xyz_string('x,y,z')] for op in ops]]
+                        self.wyckoff_generators = deepcopy(self.wyckoffs)
+                        self.wyckoff_generators_m = deepcopy(self.wyckoffs)
                 elif "*" in self.symbol:
                     #infinite rotational groups
                     if self.symbol == "C*":

@@ -1359,14 +1359,6 @@ class random_crystal():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                '''if self.dim == 3:
-                    cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                elif self.dim == 2:
-                    cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
-                elif self.dim == 1:
-                    cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)
-                elif self.dim == 0:
-                    cell_para = [1,1,1, pi/2, pi/2, pi/2]'''
                 self.lattice.reset_matrix()
                 cell_para = self.lattice.get_matrix()
                 if cell_para is None:
@@ -1400,28 +1392,6 @@ class random_crystal():
                                 if ops is not False:
             	        	    #Generate a list of coords from ops
                                     point = self.lattice.generate_point()
-                                    #Filter coords for low-dimension crystals
-                                    '''if self.dim == 2:
-                                        for a in range(1, 4):
-                                            if a not in self.PBC:
-                                                point[a-1] -= 0.5
-                                    elif self.dim == 1:
-                                        for a in range(1, 4):
-                                            if a not in self.PBC:
-                                                if self.number < 46:
-                                                    point[a-1] -= 0.5
-                                                elif self.number >= 46:
-                                                    point[a-1] *= 1./sqrt(3.)
-                                    elif self.dim == 0:
-                                        #Choose a point within an octant of the unit sphere
-                                        while dsquared(point) > 1:
-                                            point = np.random.random(3)
-                                        #Randomly flip some coordinates
-                                        for index, x in enumerate(point):
-                                            #Scale the point by the max radius
-                                            point[index] *= self.radius
-                                            if rand_u(0,1) < 0.5:
-                                                point[index] *= -1'''
                                     coords = np.array([op.operate(point) for op in ops])
                                     #Merge coordinates if the atoms are close
                                     coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
