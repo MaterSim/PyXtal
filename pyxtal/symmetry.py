@@ -1008,6 +1008,8 @@ def check_wyckoff_position(points, group, tol=1e-3):
                     break
 
             if failed is True: continue
+            print("Yoohoo!")
+            print(i, p)
             return i, p
     return False, None
 
@@ -1797,6 +1799,7 @@ class Group():
                     R5 = SymmOp.from_rotation_and_translation(m, [0,0,0])
 
                     gen_pos = generate_full_symmops([R2, R3, R5], .03)
+                    op_gen = SymmOp.from_xyz_string('x,y,z')
                     op_c = SymmOp.from_xyz_string('x,0,0')
                     op_b = SymmOp.from_xyz_string('x,x,x')
                     m = [[0,0,0,0],[0,1,0,0],[0,tau,0,0],[0,0,0,0]]
@@ -1809,10 +1812,10 @@ class Group():
                         mirror = SymmOp.from_xyz_string('x,y,-z') #m x,y,0
                         gen_pos = generate_full_symmops([R2, R3, R5, mirror], .03)
                         op_d = SymmOp.from_xyz_string('0,y,z')
-                        gen_ops = [op_d, op_c, op_b, op_a, op_o]
+                        gen_ops = [op_gen, op_d, op_c, op_b, op_a, op_o]
 
                     #Add general position
-                    self.wyckoffs = [gen_pos]
+                    self.wyckoffs = []
                     #Calculate special positions
                     for op in gen_ops:
                         wp = Wyckoff_position.wyckoff_from_generating_op(op, gen_pos)
