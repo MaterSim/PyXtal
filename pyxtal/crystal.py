@@ -1472,16 +1472,17 @@ class random_crystal():
                                 self.species = final_site
                                 """A list of atomic symbols corresponding to the type
                                 of atom for each site in self.coordinates"""
-                                self.molecule = Molecule(self.species, np.dot(self.coordinates, cell_matrix))
+                                absolute_coords = np.dot(self.coordinates, cell_matrix)
+                                self.molecule = Molecule(self.species, absolute_coords)
                                 """A pymatgen.core.structure.Molecule object for the
                                 final generated cluster."""
                                 #Calculate binding box
-                                maxx = max(final_coor[:,0])
-                                minx = min(final_coor[:,0])
-                                maxy = max(final_coor[:,1])
-                                miny = min(final_coor[:,1])
-                                maxz = max(final_coor[:,2])
-                                minz = min(final_coor[:,2])
+                                maxx = max(absolute_coords[:,0])
+                                minx = min(absolute_coords[:,0])
+                                maxy = max(absolute_coords[:,1])
+                                miny = min(absolute_coords[:,1])
+                                maxz = max(absolute_coords[:,2])
+                                minz = min(absolute_coords[:,2])
                                 self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
                                 """A pymatgen.core.structure.Structure object for the
                                 final generated object."""
