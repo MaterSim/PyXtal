@@ -1472,7 +1472,7 @@ class random_crystal():
                                 self.species = final_site
                                 """A list of atomic symbols corresponding to the type
                                 of atom for each site in self.coordinates"""
-                                self.molecule = Molecule(self.species, self.coordinates)
+                                self.molecule = Molecule(self.species, np.dot(self.coordinates, cell_matrix))
                                 """A pymatgen.core.structure.Molecule object for the
                                 final generated cluster."""
                                 #Calculate binding box
