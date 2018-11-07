@@ -1008,8 +1008,6 @@ def check_wyckoff_position(points, group, tol=1e-3):
                     break
 
             if failed is True: continue
-            print("Yoohoo!")
-            print(i, p)
             return i, p
     return False, None
 
