@@ -635,7 +635,8 @@ class molecular_crystal():
     constraints. This crystal is stored as a pymatgen struct via self.struct
     
     Args:
-        sg: The international spacegroup number
+        group: The international spacegroup number
+            OR, a pyxtal.symmetry.Group object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or give a string to convert (in which case fmt must be defined)
@@ -660,14 +661,26 @@ class molecular_crystal():
             when molecule values are strings
     """
 
-    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, number):
+    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group):
         """
         init functionality which is shared by 3D, 2D, and 1D crystals
         """
         self.numattempts = 0
         """The number of attempts needed to generate the crystal."""
-        self.number = number
-        """The international number of the symmetry group."""
+        if type(group) == Group:
+            self.group = group
+            """A pyxtal.symmetry.Group object storing information about the space/layer
+            /Rod/point group, and its Wyckoff positions."""
+        else:
+            self.group = Group(group, dim=self.dim)
+        self.number = self.group.number
+        """The international group number of the crystal:
+        1-230 for 3D space groups
+        1-80 for 2D layer groups
+        1-75 for 1D Rod groups
+        1-32 for crystallographic point groups
+        None otherwise
+        """
         self.Msgs()
         """A list of warning messages to use during generation."""
         self.factor = volume_factor
@@ -723,7 +736,6 @@ class molecular_crystal():
         """Whether or not inter-atomic distances are checked at each step."""
         self.allow_inversion = allow_inversion
         """Whether or not to allow chiral molecules to be inverted."""
-        self.group = Group(self.number, dim=self.dim)
         #When generating multiple crystals of the same stoichiometry and sg,
         #allow the user to re-use the allowed orientations, to reduce time cost
         if orientations is None:
@@ -748,15 +760,17 @@ class molecular_crystal():
         self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         self.generate_crystal()
 
-    def __init__(self, sg, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         #Necessary input
         self.PBC = [1,2,3]
         """The periodic axes of the crystal"""
-        self.sg = sg
+        if type(group) != Group:
+            group = Group(group, self.dim)
+        self.sg = group.number
         """The international spacegroup number of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, sg)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group)
 
     def Msgs(self):
         self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
@@ -1095,8 +1109,9 @@ class molecular_crystal_2D(molecular_crystal):
     constraints. This crystal is stored as a pymatgen struct via self.struct
     
     Args:
-        number: the layer group number between 1 and 80. NOT equal to the
+        group: the layer group number between 1 and 80. NOT equal to the
             international space group number, which is between 1 and 230
+            OR, a pyxtal.symmetry.Group object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or give a string to convert (in which case fmt must be defined)
@@ -1125,13 +1140,15 @@ class molecular_crystal_2D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, number, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
         """The number of attempts needed to generate the crystal."""
         #Necessary input
-        self.number = number
+        if type(group) != Group:
+            group = Group(group, self.dim)
+        number = group.number
         """The layer group number of the crystal."""
         self.lgp = Layergroup(number)
         """The number (between 1 and 80) for the crystal's layer group."""
@@ -1142,7 +1159,7 @@ class molecular_crystal_2D(molecular_crystal):
         dimension."""
         self.PBC = [1,2]
         """The periodic axes of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, number)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group)
 
 class molecular_crystal_1D(molecular_crystal):
     """
@@ -1152,8 +1169,9 @@ class molecular_crystal_1D(molecular_crystal):
     The crystal is stored as a pymatgen struct via self.struct
     
     Args:
-        number: the Rod group number between 1 and 80. NOT equal to the
+        group: the Rod group number between 1 and 80. NOT equal to the
             international space group number, which is between 1 and 230
+            OR, a pyxtal.symmetry.Group object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or give a string to convert (in which case fmt must be defined)
@@ -1181,12 +1199,10 @@ class molecular_crystal_1D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, number, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         #Necessary input
-        self.number = number
-        """The number (between 1 and 80) for the crystal's Rod group."""
         self.area = area
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
@@ -1195,7 +1211,7 @@ class molecular_crystal_1D(molecular_crystal):
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence
         with Rod groups)."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, number)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group)
 
 
 if __name__ == "__main__":

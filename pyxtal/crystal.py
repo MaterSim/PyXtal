@@ -1221,11 +1221,10 @@ class random_crystal():
     def __init__(self, group, species, numIons, factor):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
-        if type(group) == int:
-            self.sg = group
-            """The international spacegroup number of the crystal."""
-        elif type(group) == Group:
-            self.sg = group.number
+        if type(group) != Group:
+            group = Group(group, self.dim)
+        self.sg = group.number
+        """The international spacegroup number of the crystal."""
         self.PBC = [1,2,3]
         """The periodic boundary axes of the crystal"""
         self.init_common(species, numIons, factor, group)
@@ -1507,8 +1506,9 @@ class random_crystal_2D(random_crystal):
     direction. The generated pymatgen structure can be accessed via self.struct
 
     Args:
-        number: the layer group number between 1 and 80. NOT equal to the
+        group: the layer group number between 1 and 80. NOT equal to the
             international space group number, which is between 1 and 230
+            OR, a pyxtal.symmetry.Group object
         species: a list of atomic symbols for each ion type
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell)
@@ -1517,11 +1517,15 @@ class random_crystal_2D(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, number, species, numIons, thickness, factor):
+    def __init__(self, group, species, numIons, thickness, factor):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.PBC = [1,2]
         """The periodic boundary axes of the crystal"""
+        if type(group) != Group:
+            group = Group(group, self.dim)
+        number = group.number
+        """The layer group number of the crystal."""
         self.lgp = Layergroup(number)
         """A Layergroup object for the crystal's layer group."""
         self.sg = self.lgp.sgnumber
@@ -1540,6 +1544,7 @@ class random_crystal_1D(random_crystal):
     Args:
         group: the Rod group number between 1 and 75. NOT equal to the
             international space group number, which is between 1 and 230
+            OR, a pyxtal.symmetry.Group object
         species: a list of atomic symbols for each ion type
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell)
