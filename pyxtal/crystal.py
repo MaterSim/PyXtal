@@ -1165,15 +1165,24 @@ class random_crystal():
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def init_common(self, species, numIons, factor, number):
+    def init_common(self, species, numIons, factor, group):
         """
         Common init functionality for 0-3D cases of random_crystal.
         """
-        self.number = number
+        if type(group) == Group:
+            self.group = group
+            """A pyxtal.symmetry.Group object storing information about the space/layer
+            /Rod/point group, and its Wyckoff positions."""
+        else:
+            self.group = Group(group, dim=self.dim)
+        self.number = self.group.number
         """The international group number of the crystal:
         1-230 for 3D space groups
         1-80 for 2D layer groups
-        1-75 for 1D Rod groups"""
+        1-75 for 1D Rod groups
+        1-32 for crystallographic point groups
+        None otherwise
+        """
         self.numattempts = 0
         """The number of attempts needed to generate the crystal. Has a maximum
         value of max1*max2*max3."""
@@ -1193,9 +1202,6 @@ class random_crystal():
         if self.dim == 0:
             #Define a maximum radius for generating points
             self.radius = np.cbrt((3*self.volume)/(4*pi))
-        self.group = Group(number, dim=self.dim)
-        """A pyxtal.symmetry.Group object storing information about the space/layer
-        /Rod/point group, and its Wyckoff positions."""
         if self.dim == 2:
             if self.number in range(3, 8):
                 unique_axis = "c"
@@ -1212,14 +1218,17 @@ class random_crystal():
         #Generate the crystal
         self.generate_crystal()
 
-    def __init__(self, sg, species, numIons, factor):
+    def __init__(self, group, species, numIons, factor):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
-        self.sg = sg
-        """The international spacegroup number of the crystal."""
+        if type(group) == int:
+            self.sg = group
+            """The international spacegroup number of the crystal."""
+        elif type(group) == Group:
+            self.sg = group.number
         self.PBC = [1,2,3]
         """The periodic boundary axes of the crystal"""
-        self.init_common(species, numIons, factor, sg)
+        self.init_common(species, numIons, factor, group)
 
     def Msgs(self):
         """
@@ -1277,7 +1286,7 @@ class random_crystal():
             #Wyckoff Positions have no degrees of freedom
             return 0
 
-    def to_file(self, fmt=None, filename=None):
+    def to_file(self, fmt="cif", filename=None):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
@@ -1296,13 +1305,9 @@ class random_crystal():
             given = True
         if self.valid:
             if self.dim == 0:
-                if fmt == None:
-                    fmt = "xyz"
                 if filename == None:
                     filename = str(self.molecule.formula).replace(" ","") + "." + fmt
             if self.dim != 0:
-                if fmt == None:
-                    fmt = "cif"
                 if filename == None:
                     filename = str(self.struct.formula).replace(" ","") + "." + fmt
             #Check if filename already exists
@@ -1322,9 +1327,9 @@ class random_crystal():
                         return "Could not create file: too many files already created."
             else:
                 outdir = filename
-            if self.dim == 0:
+            if self.dim == 0 and fmt == "xyz":
                 self.molecule.to(fmt=fmt, filename=outdir)
-            if self.dim != 0:
+            else:
                 self.struct.to(fmt=fmt, filename=outdir)
             return "Output file to " + outdir
         elif self.valid:
@@ -1533,7 +1538,7 @@ class random_crystal_1D(random_crystal):
     structure can be accessed via self.struct
 
     Args:
-        number: the Rod group number between 1 and 75. NOT equal to the
+        group: the Rod group number between 1 and 75. NOT equal to the
             international space group number, which is between 1 and 230
         species: a list of atomic symbols for each ion type
         numIons: a list of the number of each type of atom within the
@@ -1543,7 +1548,7 @@ class random_crystal_1D(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, number, species, numIons, area, factor):
+    def __init__(self, group, species, numIons, area, factor):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         self.PBC = [3]
@@ -1554,7 +1559,7 @@ class random_crystal_1D(random_crystal):
         self.area = area
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
-        self.init_common(species, numIons, factor, number)
+        self.init_common(species, numIons, factor, group)
 
 class random_cluster(random_crystal):
     """
@@ -1564,6 +1569,8 @@ class random_cluster(random_crystal):
 
     Args:
         group: the Schoenflies symbol for the point group (ex: "Oh", "C5v", "D3")
+            OR the number between 1-32 for a crystallographic point group,
+            OR, a pyxtal.symmetry.Group object
             See:
             https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups
             for more information
