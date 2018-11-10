@@ -1199,9 +1199,6 @@ class random_crystal():
         """A list of warning messages to use during generation."""
         self.volume = estimate_volume(self.numIons, self.species, self.factor)
         """The volume of the generated unit cell."""
-        if self.dim == 0:
-            #Define a maximum radius for generating points
-            self.radius = np.cbrt((3*self.volume)/(4*pi))
         if self.dim == 2:
             if self.number in range(3, 8):
                 unique_axis = "c"
