@@ -210,7 +210,20 @@ PyXtal also supports generation of 1D crystals using Rod groups (between 1 and 7
 <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_1D>`_. The parameters for these functions are the same as those for `random_crystal_2D
 <pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D>`_ and `molecular_crystal_2D <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D>`_. However, in place of the thickness of the unit cell, you should use the cross-sectional area of the unit cell (in Angstroms squared). Again, using an area of None will generate a value automatically.
 
-Wyckoff Positions
+0D Clusters
+-----------
+
+PyXtal also supports generation of 0D clusters using point groups, which include both 32 crystallographic point groups and a few important noncrystallographic point groups as follows.
+
+To generate the cluster from PyXtal, one just needs to invoke the following commands.
+
+.. code-block:: Python
+
+  from pyxtal.crystal import random_cluster
+  my_cluster = random_cluster('C6', ['C'], [7], 1.0)
+
+
+Wyckoff Positions (QZ: needs to rewritten completely)
 -----------------
 
 The package has several utilities for working with Wyckoff positions and their symmetries. Most of these functions are found within the `crystal <pyxtal.crystal.html>`_ module.
