@@ -1441,7 +1441,7 @@ class random_crystal():
 
                         if self.dim != 0:
                             final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                            self.lattice = final_lattice   
+                            self.lattice_matrix = final_lattice   
                             """A 3x3 matrix representing the lattice of the unit
                             cell."""                 
                             self.coordinates = np.array(final_coor)
@@ -1461,7 +1461,7 @@ class random_crystal():
                             return
                         elif self.dim == 0:
                             if verify_distances(final_coor, final_site, cell_matrix, PBC=self.PBC):
-                                self.lattice = final_lattice   
+                                self.lattice_matrix = final_lattice   
                                 """A 3x3 matrix representing the lattice of the unit
                                 cell."""        
                                 self.coordinates = final_coor
