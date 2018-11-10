@@ -709,6 +709,8 @@ class molecular_crystal():
                     print("Error: Could not create molecules from given parameters.")
                     print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
                     print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
+                    print('Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)')
+                    print("Installing the OpenBabel Python bindings allows more file formats.")
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']

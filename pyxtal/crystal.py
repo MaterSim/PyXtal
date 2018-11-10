@@ -1631,11 +1631,8 @@ if __name__ == "__main__":
         if sg < 1 or sg > 75:
             print("Invalid Rod group number. Must be between 1 and 75.")
             sys.exit(0)
-    elif dimension == 0:
-        print("0d clusters cannot currently be generated. Use dimension 1, 2, or 3.")
-        sys.exit(0)
     else:
-        print("Invalid dimension. Use dimension 1, 2, or 3.")
+        print("Invalid dimension. Use dimension 0, 1, 2, or 3.")
         sys.exit(0)
 
     element = options.element
@@ -1678,6 +1675,9 @@ if __name__ == "__main__":
         elif dimension == 1:
             rand_crystal = random_crystal_1D(options.sg, system, numIons0, thickness, factor)
             sg1 = "?"
+        if dimension == 0:
+            rand_crystal = random_cluster(options.sg, system, numIons0, factor)
+            sg1 = sg
         end = time()
         timespent = np.around((end - start), decimals=2)
 

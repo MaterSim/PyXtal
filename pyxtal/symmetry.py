@@ -45,6 +45,8 @@ pglist = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
     'C3i','D3','C3v','D3d','C6','C3h','C6h','D6',
     'C6v','D3h','D6h','T','Th','O','Td','Oh']
 
+#TODO: Add space, layer, and Rod group symbol lists
+
 #Define functions
 #------------------------------
 def symmetry_element_from_axis(axis):
@@ -1689,7 +1691,7 @@ class Group():
             else:
                 return "Error: invalid crystal dimension. Must be a number between 0 and 3."
             if self.dim != 0:
-                s += "group # "+str(self.number)+" --"
+                s += "group # "+str(self.number)+" ("+self.symbol+")--"
             #TODO: implement H-M symbol
             #s += symbol_from_number(self.number, dim=self.dim)
             for wp in self.Wyckoff_positions:
@@ -1718,6 +1720,7 @@ class Group():
             elif dim == 0:
                 symbol = group
                 if group in pglist:
+                    self.symbol = symbol
                     number = self.number = group = pglist.index(group) + 1
                 else:
                     number = self.number = None
@@ -1866,8 +1869,8 @@ class Group():
                     self.number = None
 
                     #Add 2, 3, and 5-fold rotations
-                    gens.append(R2 = SymmOp.from_xyz_string('-x,-y,z'))
-                    gens.append(R3 = SymmOp.from_xyz_string('z,x,y'))
+                    gens.append(SymmOp.from_xyz_string('-x,-y,z'))
+                    gens.append(SymmOp.from_xyz_string('z,x,y'))
                     tau = 0.5*(sqrt(5)+1)
                     m = aa2matrix([1., tau, 0.], 2*pi/5)
                     gens.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))

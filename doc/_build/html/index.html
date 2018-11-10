@@ -38,7 +38,7 @@
 <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 <blockquote>
-<div>PyXtal (pronounced “pie-crystal”) is an open source Python library for the ab-initio generation of random crystal structures. It is available for use under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible geometries, which can be output to .cif or .vasp files. The structure information can then be used in combination with various optimization methods and software, in order to determine the lowest-energy structure for a given compound. Currently, the software allows random generation of 3D, 2D, and 1D crystals. Both atomic and molecular crystals can be generated; PyXtal will automatically check molecules for their symmetry compatibility with special Wyckoff positions. The software also allows access to symmetry information, including Wyckoff positions and site symmetry for a given space group. A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. For more information about the project’s development, see the GitHub page: <a class="reference external" href="https://github.com/qzhu2017/PyXtal">https://github.com/qzhu2017/PyXtal</a></div></blockquote>
+<div>PyXtal (pronounced “pie-crystal”) is an open source Python library for the ab-initio generation of random crystal structures. It is available for use under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible geometries, which can be output to .cif or .vasp files. The structure information can then be used in combination with various optimization methods and software, in order to determine the lowest-energy structure for a given compound. Currently, the software allows random generation of 3D, 2D, and 1D crystals, as well as point group clusters. Both atomic and molecular crystals can be generated; PyXtal will automatically check molecules for their symmetry compatibility with special Wyckoff positions. The software also allows access to symmetry information, including Wyckoff positions and site symmetry for a given space group. A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. For more information about the project’s development, see the GitHub page: <a class="reference external" href="https://github.com/qzhu2017/PyXtal">https://github.com/qzhu2017/PyXtal</a></div></blockquote>
 </div>
 <div class="section" id="dependencies">
 <h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
@@ -83,12 +83,12 @@
 <p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.crystal</span></code></p>
 <p>or</p>
 <p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span></code></p>
-<p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="pyxtal.crystal.html">crystal.py</a>, <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal.py.</a>. To explore the full options, please use the -h flag:</p>
+<p>As scripts, these modules will generate 3d crystals with a given space group, stoichiometry, and size. There are various command line options for these modules, which are listed in their documentation: <a class="reference external" href="pyxtal.crystal.html">crystal.py</a>, <a class="reference external" href="pyxtal.molecular_crystal.html">molecular_crystal.py</a>. To explore the full options, please use the -h flag:</p>
 <p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pyxtal.molecular_crystal</span> <span class="pre">-h</span></code></p>
 <p>Alternatively, the functions can be called directly within Python, as illustrated in the following examples.</p>
 <div class="section" id="understanding-the-parameters">
 <h2>Understanding the Parameters<a class="headerlink" href="#understanding-the-parameters" title="Permalink to this headline">¶</a></h2>
-<p>There are 230 types of space groups (with International number between 1 and 230), each of which has a different set of symmetry operations and shape of unit cell. For a list of space groups and their symmetry operations, see the free online utility <a class="reference external" href="http://www.cryst.ehu.es/cryst/get_wp.html">WYCKPOS</a>, which is maintained by the Bilbao Crystallographic Server. For more information about space groups and crystals in general, consult <a class="reference external" href="https://it.iucr.org/">the International Tables of Crystallography</a>. For 2D crystals, we instead use layer groups, and for 1D crystals, we use Rod groups. A list of these groups and their operations can be accessed using the <a class="reference external" href="http://www.cryst.ehu.es/subperiodic/get_sub_wp.html">WPOS utility</a> on Bilbao.</p>
+<p>There are 230 types of space groups (with International number between 1 and 230), each of which has a different set of symmetry operations and shape of unit cell. For a list of space groups and their symmetry operations, see the free online utility <a class="reference external" href="http://www.cryst.ehu.es/cryst/get_wp.html">WYCKPOS</a>, which is maintained by the Bilbao Crystallographic Server. For more information about space groups and crystals in general, consult <a class="reference external" href="https://it.iucr.org/">the International Tables of Crystallography</a>. For 2D crystals, we instead use layer groups, and for 1D crystals, we use Rod groups. For clusters, we use point groups. A list of these groups and their operations can be accessed using the <a class="reference external" href="http://www.cryst.ehu.es/subperiodic/get_sub_wp.html">WPOS utility</a> on Bilbao.</p>
 <p>Note that the input number of atoms is for the primitive unit cell, while the output uses the conventional unit cell. This means that for some space groups, the number of atoms in the output structure will be multiplied by 2, 3, or 4 compared to the input. Specifically, space groups beginning with “A”, “C” or “I” have twice as many atoms in the conventional cell, space groups beginning with “R” have 3 times as many, and space groups beginning with “F” have 4 times as many. Keep this in mind when choosing a range of stoichiometries and space groups to generate.</p>
 <p>The function works by attempting to insert atoms into different Wyckoff positions within the unit cell. If a set of inserted atoms is too close together, it will be merged into a lower-multiplicity position. Because each Wyckoff position can only hold a set number of atoms, not all stoichiometries will work with all space groups. In this case, the package will output a warning message, and will not attempt to generate the crystal. Even if the stoichiometry is technically compatible, some parameter sets may still be difficult or impossible to generate. If the atoms are still too close together after a set number of attempts, the generation will fail, and random_crystal.valid will be set to False.</p>
 <p>If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1.0 and 3.0 should suffice.</p>
@@ -106,58 +106,35 @@
 </div>
 <p>would create a random BaTiO3 crystal.</p>
 <p>If the generation is successful, the value <code class="docutils literal notranslate"><span class="pre">my_crystal.valid</span></code> will be set to True; otherwise, it will be False. The geometric properties of the crystal are stored in <code class="docutils literal notranslate"><span class="pre">my_crystal.struct</span></code>, which is a <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure">pymatgen.core.structure.Structure</a> object. You can print <code class="docutils literal notranslate"><span class="pre">my_crystal.struct</span></code> directly to view the lattice vectors and atomic positions, or you can output the information using</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_crystal</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s1">&#39;myfile&#39;</span><span class="p">,</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;cif&#39;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_crystal</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This will create a file called myfile.cif, which stores the structure information. Other file types are supported by changing the value of fmt to ‘poscar’, ‘cssr’, or ‘json’.</p>
+<p>By default, this will create a cif file storing the structure information. Other file types are supported by specifying the value fmt as ‘poscar’, ‘cssr’, or ‘json’.</p>
 </div>
 <div class="section" id="d-molecular-crystals">
 <h2>3D Molecular Crystals<a class="headerlink" href="#d-molecular-crystals" title="Permalink to this headline">¶</a></h2>
-<p>Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with (rigid) molecules. The molecules may either be strings for the chemical composition (currently supported: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, and ROY), or <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule">pymatgen.core.structure.Molecule</a> objects. The generating class is <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal">molecular_crystal.molecular_crystal</a>:</p>
+<p>Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with (rigid) molecules.</p>
+<p>The generating class is <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal">molecular_crystal.molecular_crystal</a>:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
 <span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.</p>
-<div class="section" id="specify-molecules">
-<h3>Specify molecules<a class="headerlink" href="#specify-molecules" title="Permalink to this headline">¶</a></h3>
-<p>One can specify the geometry of molecule in several ways.</p>
-<ul class="simple">
-<li>Load from PyXtal library</li>
-</ul>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
+<p>There are a few other parameters which may be passed to the class. See the <a class="reference external" href="pyxtal.molecular_crystal.html">module documentation</a> for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one of the imput molecules is chiral.</p>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyxtal.database.collection</span> <span class="k">import</span> <span class="n">Collection</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">test</span><span class="o">=</span><span class="n">Collection</span><span class="p">(</span><span class="s1">&#39;molecules&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
-<span class="go">    [&#39;C60&#39;, &#39;H2O&#39;, &#39;CH4&#39;, &#39;NH3&#39;, &#39;benzene&#39;, &#39;naphthalene&#39;, &#39;teracene&#39;, .......]</span>
-</pre></div>
-</div>
-<p>To use these molecules from the library, one just needs to give the name</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
-<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li>Load from a file (using mol_from_file, which is in molecule.py)</li>
-</ul>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
-<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span> <span class="c1"># to change</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li>Load from a string (using mol_from_string, which is also in molecule.py)</li>
-</ul>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
-<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span> <span class="c1"># to change</span>
-</pre></div>
-</div>
-<p>Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The molecular_crystal class handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric.</p>
-<p>Like atomic crystals, the atomic positions may be accessed with the struct attribute. However, for accessing the positions and orientations of the molecules themselves, there is an attribute called mol_generators. This provides a list of <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site">mol_site</a> objects, which in turn give the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit. This can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule’s center of mass.</p>
+<div class="section" id="working-with-molecules">
+<h2>Working with Molecules<a class="headerlink" href="#working-with-molecules" title="Permalink to this headline">¶</a></h2>
+<p>There are 4 options for defining molecules within the molecular_crystal class. You may use a list with any of the following input types:</p>
+<ol class="arabic simple">
+<li>a pre-defined string for the chemical composition (currently supported: “C60”, “H2O”, “CH4”, “NH3”, “benzene”, “naphthalene”, “anthracene”, “tetracene”, “pentacene”, “coumarin”, “resorcinol”, “benzamide”, “aspirin”, “ddt”, “lindane”, “glycine”, “glucose”, and “ROY”). This will load a molecule from PyXtal’s database.</li>
+<li>a <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule">pymatgen.core.structure.Molecule</a> object.</li>
+<li>the path to a molecule file (as a string). This will generate a pymatgen Molecule object using the <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.IMolecule.from_file">from_file</a> method. Supported formats include .xyz, .gjf, .g03, .g09, .com, .inp, .out, and pymatgen’s JSON serialized molecules.</li>
+<li>a string representing the molecule. This will generate a pymatgen Molecule object using the <a class="reference external" href="http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.IMolecule.from_str">from_str</a> method. For this option, you must specify the string format (fmt) within the call to molecular_crystal. fmt must be one of: “xyz”, “gjf”, “g03”, or “json”.</li>
+</ol>
+<p>For options 3 and 4, installing OpenBabel will allow additional file formats, but is not required.</p>
+<p>Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The molecular_crystal class handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric. Currently, PyXtal only works with rigid molecules; this simplifies the calculation of symmetry compatibility.</p>
+<p>Like atomic crystals, the atomic positions may be accessed with the struct attribute, and stored using to_file(filename). However, for accessing the positions and orientations of the molecules themselves, there is an attribute called mol_generators. This provides a list of <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site">mol_site</a> objects, which in turn give the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit. This can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule’s center of mass.</p>
 <p>The orientations stored in the mol_site class are members of the <a class="reference external" href="pyxtal.operations.html#pyxtal.operations.orientation">operations.orientation</a> class. A molecule in a Wyckoff position may be allowed to rotate about a certain axis, allowed to rotate freely, or may be rigidly constrained. This information is stored in the orientation class. To obtain a SymmOp which can be applied to the molecule, and which is consistent with the geometric constraints, call <a class="reference external" href="pyxtal.operations.html#pyxtal.operations.orientation.get_op">orientation.get_op</a>. For a 3x3 matrix instead, call <a class="reference external" href="pyxtal.operations.html#pyxtal.operations.orientation.get_matrix">orientation.get_matrix</a>. In either case, this will give a random rotation consistent with the degrees of freedom. To obtain the exact rotation used when generating the crystal (and avoid the random rotation), pass the parameter angle=0.</p>
-<p>There are a few other parameters which may be passed to the class. See the <a class="reference external" href="pyxtal.molecular_crystal.html">module documentation</a> for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one molecule is chiral.</p>
-</div>
 </div>
 <div class="section" id="id3">
 <h2>2D Atomic Crystals<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
@@ -184,28 +161,128 @@
 <h2>1D Crystals<a class="headerlink" href="#d-crystals" title="Permalink to this headline">¶</a></h2>
 <p>PyXtal also supports generation of 1D crystals using Rod groups (between 1 and 75). The corresponding classes are <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D">crystal.random_crystal_1D</a> and <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_1D">molecular_crystal_1D</a>. The parameters for these functions are the same as those for <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D">random_crystal_2D</a> and <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D">molecular_crystal_2D</a>. However, in place of the thickness of the unit cell, you should use the cross-sectional area of the unit cell (in Angstroms squared). Again, using an area of None will generate a value automatically.</p>
 </div>
-<div class="section" id="wyckoff-positions">
-<h2>Wyckoff Positions<a class="headerlink" href="#wyckoff-positions" title="Permalink to this headline">¶</a></h2>
-<p>The package has several utilities for working with Wyckoff positions and their symmetries. Most of these functions are found within the <a class="reference external" href="pyxtal.crystal.html">crystal</a> module.</p>
-<p>The main function is <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.get_wyckoffs">get_wyckoffs(sg)</a>, where sg is the international space group of interest. This will return a list of Wyckoff positions for the space group, with the 0th list element being the general Wyckoff position, and the remaining elements being the special Wyckoff positions. Each of the Wyckoff positions is, in turn, a list of symmetry operations (<a class="reference external" href="http://pymatgen.org/pymatgen.core.operations.html#pymatgen.core.operations.SymmOp">pymatgen.core.operations.SymmOp</a>). These symmetry operations can be applied to 3d vectors using op.operate(vector), or can be composed together via multiplication: op3 = op1 * op2. Each SymmOp consists of a rotation matrix (op.rotation_matrix) and a translation vector (op.translation), and is represented by a 4x4 affine matrix (op.affine_matrix).</p>
-<p>A Wyckoff position is typically denoted with a number-letter combination, depending on its multiplicity. For example, for space group 16 (P222), the general Wyckoff position is called “4u”. This is because the position has a multiplicity of 4, and the letters a-t are used by special Wyckoff positions. If you know the letter of a Wyckoff position, you can obtain its index within a get_wyckoffs(sg) list using the function <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.index_from_letter">index_from_letter(letter, sg)</a>. Likewise, if you know the index, you can obtain the letter using <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.letter_from_index">letter_from_index(index, sg)</a>. An example is provided below.</p>
-<p>For a given space group, each Wyckoff position is a subgroup of the general Wyckoff position. Furthermore, the Wyckoff position occupied by a given structure is determined by the symmetry of that structure with respect to the crystal as a whole. Naturally, each Wyckoff position requires some symmetry for an atom or molecule to occupy it. This symmetry can be accessed using <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.get_wyckoff_symmetry">get_wyckoff_symmetry(sg)</a>. This returns a nested list, where the first index specifies a Wyckoff position, the second index specifies a point within that Wyckoff position, and the third index specifies a list of symmetry operations corresponding to that point. This list of operations can then be used to check whether a given molecule is consistent with a given Wyckoff position.</p>
-<p>In order to make this information more human-readable, the function <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.ss_string_from_ops">ss_string_from_ops(ops, sg)</a> can be used to generate a Hermann-Mauguin symbol for a given point group. Here, ops is a list of symmetry options, and sg is the international spacegroup number. So, for example, if we wanted to know the site symmetry of the Wyckoff position 2b in space group 35, we could use:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">sg</span> <span class="o">=</span> <span class="mi">35</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">index</span> <span class="o">=</span> <span class="n">index_from_letter</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">sg</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">ops</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">)[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">sg</span><span class="p">)</span>
-<span class="s1">&#39;mm2&#39;</span>
+<div class="section" id="point-group-clusters">
+<h2>Point Group Clusters<a class="headerlink" href="#point-group-clusters" title="Permalink to this headline">¶</a></h2>
+<p>PyXtal also supports generation of atomic clusters with point group symmetry. The corresponding class is <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_cluster">crystal.random_cluster</a>. As an example, the following code will generate a carbon cluster with 60 atoms and full icosohedral symmetry:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">random_cluster</span>
+<span class="n">my_cluster</span> <span class="o">=</span> <span class="n">molecular_crystal_2D</span><span class="p">(</span><span class="s1">&#39;Ih&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">60</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>In this example, ‘mm2’ denotes mirror planes accross the x and y axes, and a 2-fold rotation about the z axis. Note that in Hermann-Mauguin notation, the symbols do not always follow this x,y,z format. For more information on reading these symbols, see <a class="reference external" href="https://en.wikipedia.org/wiki/Hermann%E2%80%93Mauguin_notation">https://en.wikipedia.org/wiki/Hermann%E2%80%93Mauguin_notation</a>.</p>
+<p>The parameters are the same as those for <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D">random_crystal</a>. The resulting structure can be accessed either via a pymatgen Molecule object (my_cluster.molecule) or via a boxed pymatgen Structure object (my_cluster.struct)</p>
+<p>The point group may be specified either by a number (only for the crystallographic point groups), or by a <a class="reference external" href="https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups">Schoenflies symbol</a> (ex: ‘Ih’, ‘C*’, ‘D6h’). The numbers 1-32 correspond to the following crystallograpic point groups:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="26%" />
+<col width="24%" />
+<col width="24%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>1: C1</td>
+<td>2: Ci</td>
+<td>3: C2</td>
+<td>4: Cs</td>
+</tr>
+<tr class="row-even"><td>5: C2h</td>
+<td>6: D2</td>
+<td>7: C2v</td>
+<td>8: D2h</td>
+</tr>
+<tr class="row-odd"><td>9: C4</td>
+<td>10: S4</td>
+<td>11: C4h</td>
+<td>12: D4</td>
+</tr>
+<tr class="row-even"><td>13: C4v</td>
+<td>14: D2d</td>
+<td>15: D4h</td>
+<td>16: C3</td>
+</tr>
+<tr class="row-odd"><td>17: C3i</td>
+<td>18: D3</td>
+<td>19: C3v</td>
+<td>20: D3d</td>
+</tr>
+<tr class="row-even"><td>21: C6</td>
+<td>22: C3h</td>
+<td>23: C6h</td>
+<td>24: D6</td>
+</tr>
+<tr class="row-odd"><td>25: C6v</td>
+<td>26: D3h</td>
+<td>27: D6h</td>
+<td>28: T</td>
+</tr>
+<tr class="row-even"><td>29: Th</td>
+<td>30: O</td>
+<td>31: Td</td>
+<td>32: Oh</td>
+</tr>
+</tbody>
+</table>
+<p>For a list of Wyckoff positions, see the <a class="reference external" href="http://www.cryst.ehu.es/cryst/point_wp.html">Bilbao 3D WYCKPOS utility</a>. The following finite noncrystallographic point groups are also available:</p>
+<p>I, Ih, Cn, Cnh, Cnv, Sn, Cni, Dn, Dnh, Dnd.</p>
+<p>where n should be replaced by an integer. I and Ih, which are the icosohedral and full icosohedral groups, are particularly useful (Buckminsterfullerene, for example has point group symmetry Ih). Finally, the infinite rotational and dihedral point groups are also available:</p>
+<p>C*, C*v, C*h, C*v, D*h</p>
+<p>However, only C* and C*h are needed, as the atomic positions will all lie along the z axis. These groups can thus be used for generating linear structures. C*h will have mirror symmetry, while C* will not.</p>
 </div>
-<div class="section" id="space-group-settings">
-<h2>Space group settings<a class="headerlink" href="#space-group-settings" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="symmetry-groups">
+<h2>Symmetry Groups<a class="headerlink" href="#symmetry-groups" title="Permalink to this headline">¶</a></h2>
+<p>The package makes working with symmetry groups simple. Useful information can be accessed directly through the <a class="reference external" href="pyxtal.crystal.html#pyxtal.symmetry.Group">Group</a> class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyxtal.symmetry</span> <span class="k">import</span> <span class="n">Group</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span>
+<span class="go">-- Space group # 45 --</span>
+<span class="go">  8c  site symm: 1</span>
+<span class="go">  4b  site symm: ..2</span>
+<span class="go">  4a  site symm: ..2</span>
+</pre></div>
+</div>
+<p>Layer, Rod, and point groups can be accessed by passing the parameter dim=2, dim=1, or dim=0 respectively:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Group</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">-- Layer group # 5 --</span>
+<span class="go">  2a  site symm: 1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Group</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">-- Rod group # 5 --</span>
+<span class="go">  2a  site symm: 1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Group</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="go">-- Point group 5 --</span>
+<span class="go">  4d  site symm: 1</span>
+<span class="go">  2c  site symm: m . .</span>
+<span class="go">  2b  site symm: 2 . .</span>
+<span class="go">  1a  site symm: 2/m . .</span>
+</pre></div>
+</div>
+<p>A Group instance contains the Wyckoff positions, site symmetry, and generators for the group. These are stored in the attributes (wyckoffs, w_symm, wyckoff_generators), respectively. Additionally, the Group class stores the lattice type (lattice_type), international number (number), symbol (symbol), and the periodic boundary conditions (PBC). Each group is divided into Wyckoff positions, which are sets of points which possess some subset of the complete group symmetry. Each Wyckoff position in the group has its own <a class="reference external" href="pyxtal.symmetry.html#pyxtal.symmetry.Wyckoff_position">Wyckoff_position</a> class object, which can be accessed with either a numerical index or the Wyckoff letter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">g</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">Wyckoff position 8c in space group 45 with site symmetry 1</span>
+<span class="go">x, y, z</span>
+<span class="go">-x, -y, z</span>
+<span class="go">x+1/2, -y+1/2, z</span>
+<span class="go">-x+1/2, y+1/2, z</span>
+<span class="go">x+1/2, y+1/2, z+1/2</span>
+<span class="go">-x+1/2, -y+1/2, z+1/2</span>
+<span class="go">x+1, -y+1, z+1/2</span>
+<span class="go">-x+1, y+1, z+1/2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">]</span>
+<span class="go">Wyckoff position 4b in space group 45 with site symmetry ..2</span>
+<span class="go">0, 1/2, z</span>
+<span class="go">1/2, 0, z</span>
+<span class="go">1/2, 1, z+1/2</span>
+<span class="go">1, 1/2, z+1/2</span>
+</pre></div>
+</div>
+<p>A Wyckoff position is typically denoted with a number-letter combination, depending on its multiplicity. For example, for space group 45 (Iba2), the general Wyckoff position is called “8c”. This is because the position has a multiplicity of 8, and the letters a and b are used by special Wyckoff positions. Note that the naming convention is slightly different for point groups; a point group may have the special Wyckoff position 1o, which corresponds to the point (0,0,0). This is in contrast to the default name 1a.</p>
+<p>Each Wyckoff position is further separated into individual operations (‘-x,-y,z’, ‘1,1/2,z+1/2’, etc.). These are stored as <a class="reference external" href="http://pymatgen.org/pymatgen.core.operations.html#pymatgen.core.operations.SymmOp">pymatgen.core.operations.SymmOp</a> objects. These symmetry operations can be applied to 3d vectors using op.operate(vector), or can be composed together via multiplication: op3 = op1 * op2. Each SymmOp consists of a rotation matrix (op.rotation_matrix) and a translation vector (op.translation), and is represented by a 4x4 affine matrix (op.affine_matrix).</p>
+<p>For a given symmetry group, each Wyckoff position is a subgroup of the general Wyckoff position. As a result, each Wyckoff position requires some point group symmetry for a molecule to occupy it. This symmetry can be accessed using g.w_symm. This returns a nested list, where the first index specifies a Wyckoff position, the second index specifies a point within that Wyckoff position, and the third index specifies a list of symmetry operations corresponding to that point. This list of operations can then be used to check whether a given molecule is consistent with a given Wyckoff position.</p>
+<p>As displayed in the example above, the Wyckoff position 4b has site symmetry ‘..2’. In this example, ‘.’ denotes no symmetry about the x and y axes, and ‘2’ denotes a 2-fold rotation about the z axis. Note that in Hermann-Mauguin notation, the symbols do not always follow this x,y,z format. For more information on reading these symbols, see <a class="reference external" href="https://en.wikipedia.org/wiki/Hermann%E2%80%93Mauguin_notation">https://en.wikipedia.org/wiki/Hermann%E2%80%93Mauguin_notation</a>.</p>
+</div>
+<div class="section" id="group-settings">
+<h2>Group Settings<a class="headerlink" href="#group-settings" title="Permalink to this headline">¶</a></h2>
 <p>For the output 3D structures, PyXtal uses the conventional standard cell (the same as <a class="reference external" href="http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice">Bilbao</a>). This means unique axis b for monoclinic cells, the obverse triple hexagonal cell for rhombohedral groups, and origin choice 2 (0,0,0) when two origin choices are available.</p>
 <p>For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and unique axis a for layer groups 8-18. When two origin choices are available, we use origin choice 1. We always choose c as the non-periodic axis.</p>
 <p>For 1D structures, we use unique axis a for monoclinic Rod groups 3-7, and unique axis c for Rod groups 8-12. When two settings are available for a group, we use the 1st setting. We always choose c as the periodic axis.</p>
+<p>For point group structures, we use unique axis c for all groups except the polyhedral groups T, Th, O, Td, Oh, I, and Ih. For all of these groups, we place the 2-fold rotation about the z axis and a 3-fold rotation about the (x,x,x) axis. For I and Ih, we use a 5-fold rotation about the axis (1,tau,0), where tau is the golden ratio ( tau = 0.5(sqrt(5)+1) ~ 1.618 ).</p>
 <div class="toctree-wrapper compound">
 </div>
 </div>
@@ -233,15 +310,14 @@
 <li><a class="reference internal" href="#usage">Usage</a><ul>
 <li><a class="reference internal" href="#understanding-the-parameters">Understanding the Parameters</a></li>
 <li><a class="reference internal" href="#d-atomic-crystals">3D Atomic Crystals</a></li>
-<li><a class="reference internal" href="#d-molecular-crystals">3D Molecular Crystals</a><ul>
-<li><a class="reference internal" href="#specify-molecules">Specify molecules</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#d-molecular-crystals">3D Molecular Crystals</a></li>
+<li><a class="reference internal" href="#working-with-molecules">Working with Molecules</a></li>
 <li><a class="reference internal" href="#id3">2D Atomic Crystals</a></li>
 <li><a class="reference internal" href="#id4">2D Molecular Crystals</a></li>
 <li><a class="reference internal" href="#d-crystals">1D Crystals</a></li>
-<li><a class="reference internal" href="#wyckoff-positions">Wyckoff Positions</a></li>
-<li><a class="reference internal" href="#space-group-settings">Space group settings</a></li>
+<li><a class="reference internal" href="#point-group-clusters">Point Group Clusters</a></li>
+<li><a class="reference internal" href="#symmetry-groups">Symmetry Groups</a></li>
+<li><a class="reference internal" href="#group-settings">Group Settings</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
