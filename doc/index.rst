@@ -93,7 +93,7 @@ The function works by attempting to insert atoms into different Wyckoff position
 If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1.0 and 3.0 should suffice.
 
 Lattices
-~~~~~~~~
+------------------
 
 It is possible to supply your own unit cell lattice for a random crystal, via the `Lattice <pyxtal.crystal.html#pyxtal.crystal.Lattice>`_ class. You can define a lattice using either a 3x3 matrix, or using the lattice parameters:
 
@@ -112,7 +112,7 @@ Here, both l1 and l2 describe the same lattice. In this case, it is an orthorhom
 
 This would generate a random water ice crystal, with space group 36, 4 molecules in the conventional cell (2 in the primitive cell), and using the lattice which we specified above. If you do not specify a lattice, a random one will be generated which is consistent with the chosen space group.
 
-Note: For monoclinic layer groups, be careful when choosing the unique axis (see the "Group settins" section below).
+Note: For monoclinic layer groups, be careful when choosing the unique axis (see the "Group settings" section below).
 
 3D Atomic Crystals
 ------------------
