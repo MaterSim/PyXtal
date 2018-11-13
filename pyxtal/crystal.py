@@ -1070,6 +1070,8 @@ class Lattice():
         if ltype in ["triclinic", "monoclinic", "orthorhombic", "tetragonal",
                 "trigonal", "hexagonal", "cubic", "spherical", "cylindrical"]:
             self.ltype = ltype
+        elif ltype == None:
+            self.ltype = "triclinic"
         else:
             print("Error: Invalid lattice type.")
             return
@@ -1077,16 +1079,15 @@ class Lattice():
         self.PBC = PBC
         self.dim = len(PBC)
         self.kwargs = {}
+        self.random = True
         #Set optional values
         for key, value in kwargs.items():
-            if key in ["a", "b", "c", "alpha", "beta", "gamma", "area", "thickness", "unique_axis", "matrix"]:
-                if key != "matrix":
-                    setattr(self, key, value)
-                    self.kwargs[key] = value
-                elif key == "matrix":
-                    self.set_matrix(value)
+            if key in ["area", "thickness", "unique_axis", "random"]:
+                setattr(self, key, value)
+                self.kwargs[key] = value
+        self.reset_matrix()
         
-    def generate_matrix(self):
+    def generate_para(self):
         """
         Generates a 3x3 matrix for the lattice based on the lattice type and volume
         """
@@ -1099,12 +1100,22 @@ class Lattice():
         elif self.dim == 0:
             return generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
 
+    def generate_matrix(self):
+        para = self.generate_para()
+        return para2matrix(para)
+
     def get_matrix(self):
         try:
             return self.matrix
         except:
             print("Error: Lattice matrix undefined.")
             return
+
+    def get_para(self):
+        """
+        Returns a tuple of lattice parameters.
+        """
+        return (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
 
     def set_matrix(self, matrix=None):
         if matrix != None:
@@ -1114,10 +1125,30 @@ class Lattice():
             else:
                 print("Error: matrix must be a 3x3 numpy array or list")
         elif matrix == None:
-            self.matrix = self.generate_matrix()
+            self.reset_matrix()
+        para = matrix2para(self.matrix)
+        self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
+
+    def set_para(self, para=None, radians=False):
+        if para is not None:
+            if radians is False:
+                para[3] *= rad
+                para[4] *= rad
+                para[5] *= rad
+            self.set_matrix(para2matrix(para))
+        else:
+            self.set_matrix()
 
     def reset_matrix(self):
-        self.matrix = self.generate_matrix()
+        if self.random is True:
+            self.matrix = self.generate_matrix()
+            [a, b, c, alpha, beta, gamma] = matrix2para(self.matrix)
+            self.a = a
+            self.b = b
+            self.c = c
+            self.alpha = alpha
+            self.beta = beta
+            self.gamma = gamma
 
     def generate_point(self):
         point = np.random.random(3)
@@ -1149,6 +1180,116 @@ class Lattice():
                         point[a-1] -= 0.5
         return point
 
+    def from_para(a, b, c, alpha, beta, gamma, ltype="triclinic", radians=False, PBC=[1,2,3], **kwargs):
+        """
+        Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
+        are available. Unless specified by the keyword random=True, does not create a
+        new matrix upon calling reset_matrix. This allows for generation of random
+        crystals with a specific choice of unit cell.
+
+        Args:
+            a, b, c: The length (in Angstroms) of the unit cell vectors
+            alpha: the angle (in degrees) between the b and c vectors
+            beta: the angle (in degrees) between the a and c vectors
+            gamma: the angle (in degrees) between the a and b vectors
+            ltype: the lattice type ("cubic, tetragonal, etc."). Also available are "spherical",
+                which confines generated points to lie within a sphere, and "cylindrical", which
+                confines generated points to lie within a cylinder (oriented about the z axis)
+            radians: whether or not to use radians (instead of degrees) for the lattice angles
+            PBC: The periodic boundary conditions
+            area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
+                crystals
+            thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
+                generate 2D crystals
+            unique_axis: The unique axis for certain symmetry (and especially layer) groups.
+                Because the symmetry operations are not also transformed, you should use the
+                default values for random crystal generation
+            random: If False, keeps the stored values for the lattice geometry even upon applying
+                reset_matrix. To alter the matrix, use set_matrix() or set_para
+
+        Returns:
+            a Lattice object with the specified parameters
+        """
+        try:
+            cell_matrix = para2matrix((a,b,c,alpha,beta,gamma), radians=radians)
+        except:
+            print("Error: invalid cell parameters for lattice.")
+            return
+        volume = np.linalg.det(cell_matrix)
+        #Initialize a Lattice instance
+        l = Lattice(ltype, volume, PBC=PBC, **kwargs)
+        l.a = a
+        l.b = b
+        l.c = c
+        l.alpha = alpha*rad
+        l.beta = beta*rad
+        l.gamma = gamma*rad
+        l.matrix = cell_matrix
+        l.ltype = ltype
+        l.volume = volume
+        l.random = False
+        return l
+
+    def from_matrix(matrix, ltype="triclinic", PBC=[1,2,3], **kwargs):
+        """
+        Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
+        are available. Unless specified by the keyword random=True, does not create a
+        new matrix upon calling reset_matrix. This allows for generation of random
+        crystals with a specific choice of unit cell.
+
+        Args:
+            matrix: a 3x3 real matrix (numpy array or nested list) describing the cell vectors
+            ltype: the lattice type ("cubic, tetragonal, etc."). Also available are "spherical",
+                which confines generated points to lie within a sphere, and "cylindrical", which
+                confines generated points to lie within a cylinder (oriented about the z axis)
+            PBC: The periodic boundary conditions
+            area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
+                crystals
+            thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
+                generate 2D crystals
+            unique_axis: The unique axis for certain symmetry (and especially layer) groups.
+                Because the symmetry operations are not also transformed, you should use the
+                default values for random crystal generation
+            random: If False, keeps the stored values for the lattice geometry even upon applying
+                reset_matrix. To alter the matrix, use set_matrix() or set_para
+
+        Returns:
+            a Lattice object with the specified parameters
+        """
+        pass
+        m = np.array(matrix)
+        if np.shape(m) != (3,3):
+            print("Error: Lattice matrix must be 3x3")
+            return
+        [a, b, c, alpha, beta, gamma] = matrix2para(m)
+        volume = np.linalg.det(m)
+        #Initialize a Lattice instance
+        l = Lattice(ltype, volume, PBC=PBC, **kwargs)
+        l.a = a
+        l.b = b
+        l.c = c
+        l.alpha = alpha
+        l.beta = beta
+        l.gamma = gamma
+        l.matrix = m
+        l.ltype = ltype
+        l.volume = volume
+        l.random = False
+        return l
+
+    def __str__(self):
+        s = str(self.ltype)+" lattice:"
+        s += "\na: "+str(self.a)
+        s += "\nb: "+str(self.b)
+        s += "\nc: "+str(self.c)
+        s += "\nalpha: "+str(self.alpha*deg)
+        s += "\nbeta: "+str(self.beta*deg)
+        s += "\ngamma: "+str(self.gamma*deg)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
 class random_crystal():
     """
     Class for storing and generating atomic crystals based on symmetry
@@ -1165,7 +1306,7 @@ class random_crystal():
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def init_common(self, species, numIons, factor, group):
+    def init_common(self, species, numIons, factor, group, lattice):
         """
         Common init functionality for 0-3D cases of random_crystal.
         """
@@ -1197,25 +1338,32 @@ class random_crystal():
         """A list of atomic symbols for the types of atoms in the crystal."""
         self.Msgs()
         """A list of warning messages to use during generation."""
-        self.volume = estimate_volume(self.numIons, self.species, self.factor)
-        """The volume of the generated unit cell."""
-        if self.dim == 2:
-            if self.number in range(3, 8):
-                unique_axis = "c"
+        if lattice is not None:
+            #Use the provided lattice
+            self.lattice = lattice
+            self.volume = lattice.volume
+        elif lattice == None:
+            #Determine the unique axis
+            if self.dim == 2:
+                if self.number in range(3, 8):
+                    unique_axis = "c"
+                else:
+                    unique_axis = "a"
+            elif self.dim == 1:
+                if self.number in range(3, 8):
+                    unique_axis = "a"
+                else:
+                    unique_axis = "c"
             else:
-                unique_axis = "a"
-        elif self.dim == 1:
-            if self.number in range(3, 8):
-                unique_axis = "a"
-            else:
                 unique_axis = "c"
-        else:
-            unique_axis = "c"
-        self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
+            #Generate a Lattice instance
+            self.volume = estimate_volume(self.numIons, self.species, self.factor)
+            """The volume of the generated unit cell."""
+            self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         #Generate the crystal
         self.generate_crystal()
 
-    def __init__(self, group, species, numIons, factor):
+    def __init__(self, group, species, numIons, factor, lattice=None):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         if type(group) != Group:
@@ -1224,7 +1372,7 @@ class random_crystal():
         """The international spacegroup number of the crystal."""
         self.PBC = [1,2,3]
         """The periodic boundary axes of the crystal"""
-        self.init_common(species, numIons, factor, group)
+        self.init_common(species, numIons, factor, group, lattice)
 
     def Msgs(self):
         """
@@ -1361,135 +1509,137 @@ class random_crystal():
             for cycle1 in range(max1):
                 #1, Generate a lattice
                 self.lattice.reset_matrix()
-                cell_para = self.lattice.get_matrix()
+                '''cell_para = self.lattice.get_para()
                 if cell_para is None:
                     break
-                else:
-                    cell_matrix = para2matrix(cell_para)
-                    #Check that the correct volume was generated
+                else:'''
+                cell_matrix = self.lattice.get_matrix()
+                #Check that the correct volume was generated
+                if self.lattice.random is True:
                     if self.dim != 0 and abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
                         print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
-                        print('cell_para:  ', cell_para)
+                        print('cell_para:  ', matrix2para(cell_matrix))
                         sys.exit(0)
 
-                    coordinates_total = [] #to store the added coordinates
-                    sites_total = []      #to store the corresponding specie
-                    good_structure = False
+                coordinates_total = [] #to store the added coordinates
+                sites_total = []      #to store the corresponding specie
+                good_structure = False
 
-                    for cycle2 in range(max2):
-                        coordinates_tmp = deepcopy(coordinates_total)
-                        sites_tmp = deepcopy(sites_total)
-                        
-            	        #Add specie by specie
-                        for numIon, specie in zip(self.numIons, self.species):
-                            numIon_added = 0
-                            tol = max(0.5*Element(specie).covalent_radius, tol_m)
+                for cycle2 in range(max2):
+                    coordinates_tmp = deepcopy(coordinates_total)
+                    sites_tmp = deepcopy(sites_total)
+                    
+        	        #Add specie by specie
+                    for numIon, specie in zip(self.numIons, self.species):
+                        numIon_added = 0
+                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
 
-                            #Now we start to add the specie to the wyckoff position
-                            cycle3 = 0
-                            while cycle3 < max3:
-                                #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                                ops = choose_wyckoff(self.group, numIon-numIon_added) 
-                                if ops is not False:
-            	        	    #Generate a list of coords from ops
-                                    point = self.lattice.generate_point()
-                                    coords = np.array([op.operate(point) for op in ops])
-                                    #Merge coordinates if the atoms are close
-                                    coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
-                                    if good_merge is not False:
-                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
-                                        if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC, d_factor=0.5):
-                                            if coordinates_tmp == []:
-                                                coordinates_tmp = coords_toadd
-                                            else:
-                                                coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
-                                            sites_tmp += [specie]*len(coords_toadd)
-                                            numIon_added += len(coords_toadd)
+                        #Now we start to add the specie to the wyckoff position
+                        cycle3 = 0
+                        while cycle3 < max3:
+                            #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
+                            ops = choose_wyckoff(self.group, numIon-numIon_added) 
+                            if ops is not False:
+        	        	    #Generate a list of coords from ops
+                                point = self.lattice.generate_point()
+                                coords = np.array([op.operate(point) for op in ops])
+                                #Merge coordinates if the atoms are close
+                                coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
+                                if good_merge is not False:
+                                    coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
+                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, PBC=self.PBC, d_factor=0.5):
+                                        if coordinates_tmp == []:
+                                            coordinates_tmp = coords_toadd
                                         else:
-                                            cycle3 += 1
-                                            self.numattempts ++ 1
-                                        if numIon_added == numIon:
-                                            coordinates_total = deepcopy(coordinates_tmp)
-                                            sites_total = deepcopy(sites_tmp)
-                                            break
+                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                        sites_tmp += [specie]*len(coords_toadd)
+                                        numIon_added += len(coords_toadd)
                                     else:
                                         cycle3 += 1
                                         self.numattempts += 1
+                                    if numIon_added == numIon:
+                                        coordinates_total = deepcopy(coordinates_tmp)
+                                        sites_total = deepcopy(sites_tmp)
+                                        break
                                 else:
-                                    self.numattempts ++ 1
+                                    cycle3 += 1
+                                    self.numattempts += 1
+                            else:
+                                cycle3 += 1
+                                self.numattempts ++ 1
 
-                            if numIon_added != numIon:
-                                break  #need to repeat from the 1st species
+                        if numIon_added != numIon:
+                            break  #need to repeat from the 1st species
 
-                        if numIon_added == numIon:
-                            good_structure = True
-                            break
-                        else: #reset the coordinates and sites
-                            coordinates_total = []
-                            sites_total = []
+                    if numIon_added == numIon:
+                        good_structure = True
+                        break
+                    else: #reset the coordinates and sites
+                        coordinates_total = []
+                        sites_total = []
 
-                    if good_structure:
-                        final_coor = []
-                        final_site = []
-                        final_number = []
-                        final_lattice = cell_matrix
-                        for coor, ele in zip(coordinates_total, sites_total):
-                            final_coor.append(coor)
-                            final_site.append(ele)
-                            final_number.append(Element(ele).z)
-                        final_coor = np.array(final_coor)
+                if good_structure:
+                    final_coor = []
+                    final_site = []
+                    final_number = []
+                    final_lattice = cell_matrix
+                    for coor, ele in zip(coordinates_total, sites_total):
+                        final_coor.append(coor)
+                        final_site.append(ele)
+                        final_number.append(Element(ele).z)
+                    final_coor = np.array(final_coor)
 
-                        if self.dim != 0:
-                            final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
+                    if self.dim != 0:
+                        final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
+                        self.lattice_matrix = final_lattice   
+                        """A 3x3 matrix representing the lattice of the unit
+                        cell."""                 
+                        self.coordinates = np.array(final_coor)
+                        """The fractional coordinates for each atom in the
+                        final structure"""
+                        self.sites = final_site
+                        """A list of atomic symbols corresponding to the type
+                        of atom for each site in self.coordinates"""
+                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                        """A pymatgen.core.structure.Structure object for the
+                        final generated crystal."""
+                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
+                        """A list of information describing the generated
+                        crystal, which may be used by spglib for symmetry
+                        analysis."""
+                        self.valid = True
+                        return
+                    elif self.dim == 0:
+                        if verify_distances(final_coor, final_site, cell_matrix, PBC=self.PBC):
                             self.lattice_matrix = final_lattice   
                             """A 3x3 matrix representing the lattice of the unit
-                            cell."""                 
-                            self.coordinates = np.array(final_coor)
-                            """The fractional coordinates for each atom in the
+                            cell."""        
+                            self.coordinates = final_coor
+                            """The absolute coordinates for each atom in the
                             final structure"""
                             self.sites = final_site
                             """A list of atomic symbols corresponding to the type
                             of atom for each site in self.coordinates"""
-                            self.struct = Structure(final_lattice, final_site, np.array(final_coor))
+                            self.species = final_site
+                            """A list of atomic symbols corresponding to the type
+                            of atom for each site in self.coordinates"""
+                            absolute_coords = np.dot(self.coordinates, cell_matrix)
+                            self.molecule = Molecule(self.species, absolute_coords)
+                            """A pymatgen.core.structure.Molecule object for the
+                            final generated cluster."""
+                            #Calculate binding box
+                            maxx = max(absolute_coords[:,0])
+                            minx = min(absolute_coords[:,0])
+                            maxy = max(absolute_coords[:,1])
+                            miny = min(absolute_coords[:,1])
+                            maxz = max(absolute_coords[:,2])
+                            minz = min(absolute_coords[:,2])
+                            self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
                             """A pymatgen.core.structure.Structure object for the
-                            final generated crystal."""
-                            self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                            """A list of information describing the generated
-                            crystal, which may be used by spglib for symmetry
-                            analysis."""
+                            final generated object."""
                             self.valid = True
+                            """Whether or not a valid crystal was generated."""
                             return
-                        elif self.dim == 0:
-                            if verify_distances(final_coor, final_site, cell_matrix, PBC=self.PBC):
-                                self.lattice_matrix = final_lattice   
-                                """A 3x3 matrix representing the lattice of the unit
-                                cell."""        
-                                self.coordinates = final_coor
-                                """The absolute coordinates for each atom in the
-                                final structure"""
-                                self.sites = final_site
-                                """A list of atomic symbols corresponding to the type
-                                of atom for each site in self.coordinates"""
-                                self.species = final_site
-                                """A list of atomic symbols corresponding to the type
-                                of atom for each site in self.coordinates"""
-                                absolute_coords = np.dot(self.coordinates, cell_matrix)
-                                self.molecule = Molecule(self.species, absolute_coords)
-                                """A pymatgen.core.structure.Molecule object for the
-                                final generated cluster."""
-                                #Calculate binding box
-                                maxx = max(absolute_coords[:,0])
-                                minx = min(absolute_coords[:,0])
-                                maxy = max(absolute_coords[:,1])
-                                miny = min(absolute_coords[:,1])
-                                maxz = max(absolute_coords[:,2])
-                                minz = min(absolute_coords[:,2])
-                                self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
-                                """A pymatgen.core.structure.Structure object for the
-                                final generated object."""
-                                self.valid = True
-                                """Whether or not a valid crystal was generated."""
-                                return
         if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
         self.struct = self.Msg2
         self.valid = False
@@ -1514,7 +1664,7 @@ class random_crystal_2D(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, group, species, numIons, thickness, factor):
+    def __init__(self, group, species, numIons, thickness, factor, lattice=None):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.PBC = [1,2]
@@ -1530,7 +1680,7 @@ class random_crystal_2D(random_crystal):
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""
-        self.init_common(species, numIons, factor, number)
+        self.init_common(species, numIons, factor, number, lattice)
 
 class random_crystal_1D(random_crystal):
     """
@@ -1550,7 +1700,7 @@ class random_crystal_1D(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, group, species, numIons, area, factor):
+    def __init__(self, group, species, numIons, area, factor, lattice=None):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         self.PBC = [3]
@@ -1561,7 +1711,7 @@ class random_crystal_1D(random_crystal):
         self.area = area
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
-        self.init_common(species, numIons, factor, group)
+        self.init_common(species, numIons, factor, group, lattice)
 
 class random_cluster(random_crystal):
     """
@@ -1582,7 +1732,7 @@ class random_cluster(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, group, species, numIons, factor):
+    def __init__(self, group, species, numIons, factor, lattice=None):
         self.dim = 0
         """The number of periodic dimensions of the crystal"""
         self.PBC = []
@@ -1590,7 +1740,7 @@ class random_cluster(random_crystal):
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence
         with Point groups)."""
-        self.init_common(species, numIons, factor, group)
+        self.init_common(species, numIons, factor, group, lattice)
 
 
 if __name__ == "__main__":
