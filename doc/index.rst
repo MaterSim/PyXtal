@@ -92,6 +92,28 @@ The function works by attempting to insert atoms into different Wyckoff position
 
 If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1.0 and 3.0 should suffice.
 
+Lattices
+~~~~~~~~
+
+It is possible to supply your own unit cell lattice for a random crystal, via the `Lattice <pyxtal.crystal.html#pyxtal.crystal.Lattice>`_ class. You can define a lattice using either a 3x3 matrix, or using the lattice parameters:
+
+.. code-block:: Python
+
+  from pyxtal.crystal import Lattice
+  l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
+  l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
+
+Here, both l1 and l2 describe the same lattice. In this case, it is an orthorhombic lattice with side lengths 4.08 Angstroms, 9.13 Angstroms, and 5.50 Angstroms, which is the unit cell for common water ice. The lattice parameters are, in order: (a, b, c, alpha, beta, gamma). a, b, and c are the lengths of the lattice vectors; alpha, beta, and gamma are the angles (in degrees) between these vectors. You can use a custom Lattice to generate a random_crystal or molecular_crystal:
+
+.. code-block:: Python
+ 
+  from pyxtal.molecular_crystal import molecular_crystal
+  my_crystal = molecular_crystal(36, ['H2O'], [2], 1.0, lattice=l1)
+
+This would generate a random water ice crystal, with space group 36, 4 molecules in the conventional cell (2 in the primitive cell), and using the lattice which we specified above. If you do not specify a lattice, a random one will be generated which is consistent with the chosen space group.
+
+Note: For monoclinic layer groups, be careful when choosing the unique axis (see the "Group settins" section below).
+
 3D Atomic Crystals
 ------------------
 
@@ -128,9 +150,9 @@ The generating class is `molecular_crystal.molecular_crystal <pyxtal.molecular_c
 .. code-block:: Python
  
   from pyxtal.molecular_crystal import molecular_crystal
-  my_crystal = molecular_crystal(36, ['H2O'], [4], 1.0)
+  my_crystal = molecular_crystal(36, ['H2O'], [2], 1.0)
 
-This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
+This would give a crystal with spacegroup 36, 4 molecules in the conventional cell (2 in the primitive cell), and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
 
 There are a few other parameters which may be passed to the class. See the `module documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one of the imput molecules is chiral.
 

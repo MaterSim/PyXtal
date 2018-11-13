@@ -92,6 +92,22 @@
 <p>Note that the input number of atoms is for the primitive unit cell, while the output uses the conventional unit cell. This means that for some space groups, the number of atoms in the output structure will be multiplied by 2, 3, or 4 compared to the input. Specifically, space groups beginning with “A”, “C” or “I” have twice as many atoms in the conventional cell, space groups beginning with “R” have 3 times as many, and space groups beginning with “F” have 4 times as many. Keep this in mind when choosing a range of stoichiometries and space groups to generate.</p>
 <p>The function works by attempting to insert atoms into different Wyckoff positions within the unit cell. If a set of inserted atoms is too close together, it will be merged into a lower-multiplicity position. Because each Wyckoff position can only hold a set number of atoms, not all stoichiometries will work with all space groups. In this case, the package will output a warning message, and will not attempt to generate the crystal. Even if the stoichiometry is technically compatible, some parameter sets may still be difficult or impossible to generate. If the atoms are still too close together after a set number of attempts, the generation will fail, and random_crystal.valid will be set to False.</p>
 <p>If this happens consistently, or if generation takes an unreasonably long time, consider increasing the volume factor. This creates a larger unit cell with more space between atoms, making it easier to find a possible structure. However, increasing the volume factor too much will influence which Wyckoff positions are chosen, and may thus give less accurate results. A combination of physical insight and trial/error should be used to determine an appropriate value. Typically, a value between 1.0 and 3.0 should suffice.</p>
+<div class="section" id="lattices">
+<h3>Lattices<a class="headerlink" href="#lattices" title="Permalink to this headline">¶</a></h3>
+<p>It is possible to supply your own unit cell lattice for a random crystal, via the <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.Lattice">Lattice</a> class. You can define a lattice using either a 3x3 matrix, or using the lattice parameters:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">Lattice</span>
+<span class="n">l1</span> <span class="o">=</span> <span class="n">Lattice</span><span class="o">.</span><span class="n">from_matrix</span><span class="p">([[</span><span class="mf">4.08</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mf">9.13</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mf">5.50</span><span class="p">]])</span>
+<span class="n">l2</span> <span class="o">=</span> <span class="n">Lattice</span><span class="o">.</span><span class="n">from_para</span><span class="p">(</span><span class="mf">4.08</span><span class="p">,</span> <span class="mf">9.13</span><span class="p">,</span> <span class="mf">5.50</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, both l1 and l2 describe the same lattice. In this case, it is an orthorhombic lattice with side lengths 4.08 Angstroms, 9.13 Angstroms, and 5.50 Angstroms, which is the unit cell for common water ice. The lattice parameters are, in order: (a, b, c, alpha, beta, gamma). a, b, and c are the lengths of the lattice vectors; alpha, beta, and gamma are the angles (in degrees) between these vectors. You can use a custom Lattice to generate a random_crystal or molecular_crystal:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
+<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="n">l1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This would generate a random water ice crystal, with space group 36, 4 molecules in the conventional cell (2 in the primitive cell), and using the lattice which we specified above. If you do not specify a lattice, a random one will be generated which is consistent with the chosen space group.</p>
+<p>Note: For monoclinic layer groups, be careful when choosing the unique axis (see the “Group settins” section below).</p>
+</div>
 </div>
 <div class="section" id="d-atomic-crystals">
 <h2>3D Atomic Crystals<a class="headerlink" href="#d-atomic-crystals" title="Permalink to this headline">¶</a></h2>
@@ -116,10 +132,10 @@
 <p>Molecular 3d crystals are generated in the same way as atomic 3d crystals, but atomic species are replaced with (rigid) molecules.</p>
 <p>The generating class is <a class="reference external" href="pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal">molecular_crystal.molecular_crystal</a>:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.molecular_crystal</span> <span class="kn">import</span> <span class="n">molecular_crystal</span>
-<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="n">my_crystal</span> <span class="o">=</span> <span class="n">molecular_crystal</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;H2O&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This would give a crystal with spacegroup 36, 4 water molecules in the primitive cell, and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.</p>
+<p>This would give a crystal with spacegroup 36, 4 molecules in the conventional cell (2 in the primitive cell), and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.</p>
 <p>There are a few other parameters which may be passed to the class. See the <a class="reference external" href="pyxtal.molecular_crystal.html">module documentation</a> for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one of the imput molecules is chiral.</p>
 </div>
 <div class="section" id="working-with-molecules">
@@ -308,7 +324,10 @@
 <li><a class="reference internal" href="#dependencies">Dependencies</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#usage">Usage</a><ul>
-<li><a class="reference internal" href="#understanding-the-parameters">Understanding the Parameters</a></li>
+<li><a class="reference internal" href="#understanding-the-parameters">Understanding the Parameters</a><ul>
+<li><a class="reference internal" href="#lattices">Lattices</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#d-atomic-crystals">3D Atomic Crystals</a></li>
 <li><a class="reference internal" href="#d-molecular-crystals">3D Molecular Crystals</a></li>
 <li><a class="reference internal" href="#working-with-molecules">Working with Molecules</a></li>

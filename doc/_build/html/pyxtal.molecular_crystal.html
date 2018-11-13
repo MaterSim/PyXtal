@@ -489,7 +489,7 @@ molecular centers and orientations.</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing and generating molecular crystals based on symmetry
 constraints. Based on the crystal.random_crystal class for atomic crystals.
@@ -593,7 +593,7 @@ self.group.wyckoffs_organized[j][k]</p>
 
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.molecular_crystal.init_common">
-<code class="descname">init_common</code><span class="sig-paren">(</span><em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion</em>, <em>orientations</em>, <em>check_atomic_distances</em>, <em>group</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.init_common" title="Permalink to this definition">¶</a></dt>
+<code class="descname">init_common</code><span class="sig-paren">(</span><em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion</em>, <em>orientations</em>, <em>check_atomic_distances</em>, <em>group</em>, <em>lattice</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.init_common" title="Permalink to this definition">¶</a></dt>
 <dd><p>init functionality which is shared by 3D, 2D, and 1D crystals</p>
 </dd></dl>
 
@@ -630,7 +630,7 @@ By default, the filename is based on the stoichiometry.</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_1D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>area</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>area</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.molecular_crystal.molecular_crystal" title="pyxtal.molecular_crystal.molecular_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.molecular_crystal.molecular_crystal</span></code></a></p>
 <p>A 1d counterpart to molecular_crystal. Given a Rod group, list of
 molecule objects, molecular stoichiometry, volume factor, and area,
@@ -705,7 +705,7 @@ with Rod groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_2D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.molecular_crystal.molecular_crystal" title="pyxtal.molecular_crystal.molecular_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.molecular_crystal.molecular_crystal</span></code></a></p>
 <p>A 2d counterpart to molecular_crystal. Given a layer group, list of
 molecule objects, molecular stoichiometry, and

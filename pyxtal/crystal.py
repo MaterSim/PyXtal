@@ -1088,9 +1088,6 @@ class Lattice():
         self.reset_matrix()
         
     def generate_para(self):
-        """
-        Generates a 3x3 matrix for the lattice based on the lattice type and volume
-        """
         if self.dim == 3:
             return generate_lattice(self.ltype, self.volume, **self.kwargs)
         elif self.dim == 2:
@@ -1101,10 +1098,16 @@ class Lattice():
             return generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
 
     def generate_matrix(self):
+        """
+        Generates a 3x3 matrix for the lattice based on the lattice type and volume
+        """
         para = self.generate_para()
         return para2matrix(para)
 
     def get_matrix(self):
+        """
+        Returns a 3x3 numpy array representing the lattice vectors.
+        """
         try:
             return self.matrix
         except:

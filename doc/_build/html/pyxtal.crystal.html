@@ -135,10 +135,91 @@ will be generated.</li>
 </tbody>
 </table>
 <dl class="method">
+<dt id="pyxtal.crystal.Lattice.from_matrix">
+<code class="descname">from_matrix</code><span class="sig-paren">(</span><em>ltype='triclinic', PBC=[1, 2, 3], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.from_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.from_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
+are available. Unless specified by the keyword random=True, does not create a
+new matrix upon calling reset_matrix. This allows for generation of random
+crystals with a specific choice of unit cell.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>matrix</strong> – a 3x3 real matrix (numpy array or nested list) describing the cell vectors</li>
+<li><strong>ltype</strong> – the lattice type (“cubic, tetragonal, etc.”). Also available are “spherical”,
+which confines generated points to lie within a sphere, and “cylindrical”, which
+confines generated points to lie within a cylinder (oriented about the z axis)</li>
+<li><strong>PBC</strong> – The periodic boundary conditions</li>
+<li><strong>area</strong> – The cross-sectional area (in Angstroms squared). Only used to generate 1D
+crystals</li>
+<li><strong>thickness</strong> – The unit cell’s non-periodic thickness (in Angstroms). Only used to
+generate 2D crystals</li>
+<li><strong>unique_axis</strong> – The unique axis for certain symmetry (and especially layer) groups.
+Because the symmetry operations are not also transformed, you should use the
+default values for random crystal generation</li>
+<li><strong>random</strong> – If False, keeps the stored values for the lattice geometry even upon applying
+reset_matrix. To alter the matrix, use set_matrix() or set_para</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a Lattice object with the specified parameters</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Lattice.from_para">
+<code class="descname">from_para</code><span class="sig-paren">(</span><em>b, c, alpha, beta, gamma, ltype='triclinic', radians=False, PBC=[1, 2, 3], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.from_para"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.from_para" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
+are available. Unless specified by the keyword random=True, does not create a
+new matrix upon calling reset_matrix. This allows for generation of random
+crystals with a specific choice of unit cell.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>b</strong><strong>, </strong><strong>c</strong> (<em>a</em><em>,</em>) – The length (in Angstroms) of the unit cell vectors</li>
+<li><strong>alpha</strong> – the angle (in degrees) between the b and c vectors</li>
+<li><strong>beta</strong> – the angle (in degrees) between the a and c vectors</li>
+<li><strong>gamma</strong> – the angle (in degrees) between the a and b vectors</li>
+<li><strong>ltype</strong> – the lattice type (“cubic, tetragonal, etc.”). Also available are “spherical”,
+which confines generated points to lie within a sphere, and “cylindrical”, which
+confines generated points to lie within a cylinder (oriented about the z axis)</li>
+<li><strong>radians</strong> – whether or not to use radians (instead of degrees) for the lattice angles</li>
+<li><strong>PBC</strong> – The periodic boundary conditions</li>
+<li><strong>area</strong> – The cross-sectional area (in Angstroms squared). Only used to generate 1D
+crystals</li>
+<li><strong>thickness</strong> – The unit cell’s non-periodic thickness (in Angstroms). Only used to
+generate 2D crystals</li>
+<li><strong>unique_axis</strong> – The unique axis for certain symmetry (and especially layer) groups.
+Because the symmetry operations are not also transformed, you should use the
+default values for random crystal generation</li>
+<li><strong>random</strong> – If False, keeps the stored values for the lattice geometry even upon applying
+reset_matrix. To alter the matrix, use set_matrix() or set_para</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a Lattice object with the specified parameters</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyxtal.crystal.Lattice.generate_matrix">
 <code class="descname">generate_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.generate_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.generate_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates a 3x3 matrix for the lattice based on the lattice type and volume</p>
 </dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Lattice.generate_para">
+<code class="descname">generate_para</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.generate_para"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.generate_para" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="pyxtal.crystal.Lattice.generate_point">
@@ -148,7 +229,14 @@ will be generated.</li>
 <dl class="method">
 <dt id="pyxtal.crystal.Lattice.get_matrix">
 <code class="descname">get_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.get_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.get_matrix" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns a 3x3 numpy array representing the lattice vectors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Lattice.get_para">
+<code class="descname">get_para</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.get_para"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.get_para" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a tuple of lattice parameters.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="pyxtal.crystal.Lattice.reset_matrix">
@@ -158,6 +246,11 @@ will be generated.</li>
 <dl class="method">
 <dt id="pyxtal.crystal.Lattice.set_matrix">
 <code class="descname">set_matrix</code><span class="sig-paren">(</span><em>matrix=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.set_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.set_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Lattice.set_para">
+<code class="descname">set_para</code><span class="sig-paren">(</span><em>para=None</em>, <em>radians=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.set_para"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.set_para" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -671,7 +764,7 @@ case a single float is returned).</td>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_cluster">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_cluster</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_cluster" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_cluster</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_cluster" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 0d counterpart to random_crystal. Generates a random atomic cluster based
 on a 0d Point group instead of a 3d spacegroup. The generated pymatgen
@@ -720,7 +813,7 @@ with Point groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing and generating atomic crystals based on symmetry
 constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
@@ -801,7 +894,7 @@ outputs an error message.</p>
 
 <dl class="method">
 <dt id="pyxtal.crystal.random_crystal.init_common">
-<code class="descname">init_common</code><span class="sig-paren">(</span><em>species</em>, <em>numIons</em>, <em>factor</em>, <em>group</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.init_common" title="Permalink to this definition">¶</a></dt>
+<code class="descname">init_common</code><span class="sig-paren">(</span><em>species</em>, <em>numIons</em>, <em>factor</em>, <em>group</em>, <em>lattice</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.init_common" title="Permalink to this definition">¶</a></dt>
 <dd><p>Common init functionality for 0-3D cases of random_crystal.</p>
 </dd></dl>
 
@@ -838,7 +931,7 @@ By default, the filename is based on the stoichiometry.</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_1D">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>area</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_1D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>area</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_1D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 1d counterpart to random_crystal. Generates a random atomic crystal based
 on a 1d Rod group instead of a 3d spacegroup. The generated pymatgen
@@ -893,7 +986,7 @@ with Rod groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_2D">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>thickness</em>, <em>factor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>thickness</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 2d counterpart to random_crystal. Generates a random atomic crystal based
 on a 2d layer group instead of a 3d spacegroup. Note that each layer group

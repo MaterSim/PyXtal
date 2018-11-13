@@ -1108,6 +1108,8 @@
         <span class="k">if</span> <span class="n">ltype</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;triclinic&quot;</span><span class="p">,</span> <span class="s2">&quot;monoclinic&quot;</span><span class="p">,</span> <span class="s2">&quot;orthorhombic&quot;</span><span class="p">,</span> <span class="s2">&quot;tetragonal&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;trigonal&quot;</span><span class="p">,</span> <span class="s2">&quot;hexagonal&quot;</span><span class="p">,</span> <span class="s2">&quot;cubic&quot;</span><span class="p">,</span> <span class="s2">&quot;spherical&quot;</span><span class="p">,</span> <span class="s2">&quot;cylindrical&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ltype</span> <span class="o">=</span> <span class="n">ltype</span>
+        <span class="k">elif</span> <span class="n">ltype</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ltype</span> <span class="o">=</span> <span class="s2">&quot;triclinic&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid lattice type.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
@@ -1115,19 +1117,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="n">PBC</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">PBC</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="c1">#Set optional values</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="s2">&quot;gamma&quot;</span><span class="p">,</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;thickness&quot;</span><span class="p">,</span> <span class="s2">&quot;unique_axis&quot;</span><span class="p">,</span> <span class="s2">&quot;matrix&quot;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="s2">&quot;matrix&quot;</span><span class="p">:</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-                <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;matrix&quot;</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">set_matrix</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;thickness&quot;</span><span class="p">,</span> <span class="s2">&quot;unique_axis&quot;</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">]:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_matrix</span><span class="p">()</span>
         
-<div class="viewcode-block" id="Lattice.generate_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.generate_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">generate_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Generates a 3x3 matrix for the lattice based on the lattice type and volume</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Lattice.generate_para"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.generate_para">[docs]</a>    <span class="k">def</span> <span class="nf">generate_para</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">generate_lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ltype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -1137,12 +1135,28 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">generate_lattice_0D</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ltype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="Lattice.generate_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.generate_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">generate_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a 3x3 matrix for the lattice based on the lattice type and volume</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">para</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_para</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">para2matrix</span><span class="p">(</span><span class="n">para</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="Lattice.get_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.get_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a 3x3 numpy array representing the lattice vectors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Lattice matrix undefined.&quot;</span><span class="p">)</span>
             <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Lattice.get_para"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.get_para">[docs]</a>    <span class="k">def</span> <span class="nf">get_para</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a tuple of lattice parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Lattice.set_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.set_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">matrix</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
@@ -1152,10 +1166,30 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: matrix must be a 3x3 numpy array or list&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">matrix</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_matrix</span><span class="p">()</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_matrix</span><span class="p">()</span>
+        <span class="n">para</span> <span class="o">=</span> <span class="n">matrix2para</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">para</span></div>
+
+<div class="viewcode-block" id="Lattice.set_para"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.set_para">[docs]</a>    <span class="k">def</span> <span class="nf">set_para</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">para</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">para</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">radians</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">para</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*=</span> <span class="n">rad</span>
+                <span class="n">para</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">*=</span> <span class="n">rad</span>
+                <span class="n">para</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">*=</span> <span class="n">rad</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_matrix</span><span class="p">(</span><span class="n">para2matrix</span><span class="p">(</span><span class="n">para</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_matrix</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Lattice.reset_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.reset_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">reset_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_matrix</span><span class="p">()</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">random</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_matrix</span><span class="p">()</span>
+            <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">]</span> <span class="o">=</span> <span class="n">matrix2para</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">b</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">c</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma</span></div>
 
 <div class="viewcode-block" id="Lattice.generate_point"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.generate_point">[docs]</a>    <span class="k">def</span> <span class="nf">generate_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">point</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
@@ -1185,7 +1219,117 @@
                         <span class="n">point</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">point</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">0.5</span>
-        <span class="k">return</span> <span class="n">point</span></div></div>
+        <span class="k">return</span> <span class="n">point</span></div>
+
+<div class="viewcode-block" id="Lattice.from_para"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.from_para">[docs]</a>    <span class="k">def</span> <span class="nf">from_para</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">ltype</span><span class="o">=</span><span class="s2">&quot;triclinic&quot;</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a Lattice object from 6 lattice parameters. Additional keyword arguments</span>
+<span class="sd">        are available. Unless specified by the keyword random=True, does not create a</span>
+<span class="sd">        new matrix upon calling reset_matrix. This allows for generation of random</span>
+<span class="sd">        crystals with a specific choice of unit cell.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            a, b, c: The length (in Angstroms) of the unit cell vectors</span>
+<span class="sd">            alpha: the angle (in degrees) between the b and c vectors</span>
+<span class="sd">            beta: the angle (in degrees) between the a and c vectors</span>
+<span class="sd">            gamma: the angle (in degrees) between the a and b vectors</span>
+<span class="sd">            ltype: the lattice type (&quot;cubic, tetragonal, etc.&quot;). Also available are &quot;spherical&quot;,</span>
+<span class="sd">                which confines generated points to lie within a sphere, and &quot;cylindrical&quot;, which</span>
+<span class="sd">                confines generated points to lie within a cylinder (oriented about the z axis)</span>
+<span class="sd">            radians: whether or not to use radians (instead of degrees) for the lattice angles</span>
+<span class="sd">            PBC: The periodic boundary conditions</span>
+<span class="sd">            area: The cross-sectional area (in Angstroms squared). Only used to generate 1D</span>
+<span class="sd">                crystals</span>
+<span class="sd">            thickness: The unit cell&#39;s non-periodic thickness (in Angstroms). Only used to</span>
+<span class="sd">                generate 2D crystals</span>
+<span class="sd">            unique_axis: The unique axis for certain symmetry (and especially layer) groups.</span>
+<span class="sd">                Because the symmetry operations are not also transformed, you should use the</span>
+<span class="sd">                default values for random crystal generation</span>
+<span class="sd">            random: If False, keeps the stored values for the lattice geometry even upon applying</span>
+<span class="sd">                reset_matrix. To alter the matrix, use set_matrix() or set_para</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            a Lattice object with the specified parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cell_matrix</span> <span class="o">=</span> <span class="n">para2matrix</span><span class="p">((</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">alpha</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">gamma</span><span class="p">),</span> <span class="n">radians</span><span class="o">=</span><span class="n">radians</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid cell parameters for lattice.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">cell_matrix</span><span class="p">)</span>
+        <span class="c1">#Initialize a Lattice instance</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="n">ltype</span><span class="p">,</span> <span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">b</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">*</span><span class="n">rad</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="n">rad</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma</span><span class="o">*</span><span class="n">rad</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="n">cell_matrix</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">ltype</span> <span class="o">=</span> <span class="n">ltype</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">random</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">l</span></div>
+
+<div class="viewcode-block" id="Lattice.from_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Lattice.from_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">from_matrix</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">ltype</span><span class="o">=</span><span class="s2">&quot;triclinic&quot;</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments</span>
+<span class="sd">        are available. Unless specified by the keyword random=True, does not create a</span>
+<span class="sd">        new matrix upon calling reset_matrix. This allows for generation of random</span>
+<span class="sd">        crystals with a specific choice of unit cell.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            matrix: a 3x3 real matrix (numpy array or nested list) describing the cell vectors</span>
+<span class="sd">            ltype: the lattice type (&quot;cubic, tetragonal, etc.&quot;). Also available are &quot;spherical&quot;,</span>
+<span class="sd">                which confines generated points to lie within a sphere, and &quot;cylindrical&quot;, which</span>
+<span class="sd">                confines generated points to lie within a cylinder (oriented about the z axis)</span>
+<span class="sd">            PBC: The periodic boundary conditions</span>
+<span class="sd">            area: The cross-sectional area (in Angstroms squared). Only used to generate 1D</span>
+<span class="sd">                crystals</span>
+<span class="sd">            thickness: The unit cell&#39;s non-periodic thickness (in Angstroms). Only used to</span>
+<span class="sd">                generate 2D crystals</span>
+<span class="sd">            unique_axis: The unique axis for certain symmetry (and especially layer) groups.</span>
+<span class="sd">                Because the symmetry operations are not also transformed, you should use the</span>
+<span class="sd">                default values for random crystal generation</span>
+<span class="sd">            random: If False, keeps the stored values for the lattice geometry even upon applying</span>
+<span class="sd">                reset_matrix. To alter the matrix, use set_matrix() or set_para</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            a Lattice object with the specified parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Lattice matrix must be 3x3&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">]</span> <span class="o">=</span> <span class="n">matrix2para</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="c1">#Initialize a Lattice instance</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="n">ltype</span><span class="p">,</span> <span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">b</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="n">m</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">ltype</span> <span class="o">=</span> <span class="n">ltype</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">random</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">l</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ltype</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; lattice:&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">a: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">b: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">c: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">alpha: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">*</span><span class="n">deg</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">beta: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">*</span><span class="n">deg</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">gamma: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">*</span><span class="n">deg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="random_crystal"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal">[docs]</a><span class="k">class</span> <span class="nc">random_crystal</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1203,7 +1347,7 @@
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="random_crystal.init_common"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal.init_common">[docs]</a>    <span class="k">def</span> <span class="nf">init_common</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+<div class="viewcode-block" id="random_crystal.init_common"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal.init_common">[docs]</a>    <span class="k">def</span> <span class="nf">init_common</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Common init functionality for 0-3D cases of random_crystal.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1235,25 +1379,32 @@
         <span class="sd">&quot;&quot;&quot;A list of atomic symbols for the types of atoms in the crystal.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Msgs</span><span class="p">()</span>
         <span class="sd">&quot;&quot;&quot;A list of warning messages to use during generation.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numIons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
-                <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span>
+        <span class="k">if</span> <span class="n">lattice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">#Use the provided lattice</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">lattice</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">lattice</span><span class="o">.</span><span class="n">volume</span>
+        <span class="k">elif</span> <span class="n">lattice</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">#Determine the unique axis</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
+                    <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
+                    <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
-                <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
                 <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">)</span>
+            <span class="c1">#Generate a Lattice instance</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numIons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
+            <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell.&quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">)</span>
         <span class="c1">#Generate the crystal</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_crystal</span><span class="p">()</span></div>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Group</span><span class="p">:</span>
@@ -1262,7 +1413,7 @@
         <span class="sd">&quot;&quot;&quot;The international spacegroup number of the crystal.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;The periodic boundary axes of the crystal&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
 
 <div class="viewcode-block" id="random_crystal.Msgs"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal.Msgs">[docs]</a>    <span class="k">def</span> <span class="nf">Msgs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1399,135 +1550,137 @@
             <span class="k">for</span> <span class="n">cycle1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max1</span><span class="p">):</span>
                 <span class="c1">#1, Generate a lattice</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">reset_matrix</span><span class="p">()</span>
-                <span class="n">cell_para</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">cell_para</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">break</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">cell_matrix</span> <span class="o">=</span> <span class="n">para2matrix</span><span class="p">(</span><span class="n">cell_para</span><span class="p">)</span>
-                    <span class="c1">#Check that the correct volume was generated</span>
+                <span class="sd">&#39;&#39;&#39;cell_para = self.lattice.get_para()</span>
+<span class="sd">                if cell_para is None:</span>
+<span class="sd">                    break</span>
+<span class="sd">                else:&#39;&#39;&#39;</span>
+                <span class="n">cell_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">()</span>
+                <span class="c1">#Check that the correct volume was generated</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">random</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">cell_matrix</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span> 
                         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error, volume is not equal to the estimated value: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="s1">&#39; -&gt; &#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">cell_matrix</span><span class="p">))</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;cell_para:  &#39;</span><span class="p">,</span> <span class="n">cell_para</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;cell_para:  &#39;</span><span class="p">,</span> <span class="n">matrix2para</span><span class="p">(</span><span class="n">cell_matrix</span><span class="p">))</span>
                         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-                    <span class="n">coordinates_total</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1">#to store the added coordinates</span>
-                    <span class="n">sites_total</span> <span class="o">=</span> <span class="p">[]</span>      <span class="c1">#to store the corresponding specie</span>
-                    <span class="n">good_structure</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">coordinates_total</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1">#to store the added coordinates</span>
+                <span class="n">sites_total</span> <span class="o">=</span> <span class="p">[]</span>      <span class="c1">#to store the corresponding specie</span>
+                <span class="n">good_structure</span> <span class="o">=</span> <span class="kc">False</span>
 
-                    <span class="k">for</span> <span class="n">cycle2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max2</span><span class="p">):</span>
-                        <span class="n">coordinates_tmp</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">coordinates_total</span><span class="p">)</span>
-                        <span class="n">sites_tmp</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sites_total</span><span class="p">)</span>
-                        
-            	        <span class="c1">#Add specie by specie</span>
-                        <span class="k">for</span> <span class="n">numIon</span><span class="p">,</span> <span class="n">specie</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numIons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">):</span>
-                            <span class="n">numIon_added</span> <span class="o">=</span> <span class="mi">0</span>
-                            <span class="n">tol</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">Element</span><span class="p">(</span><span class="n">specie</span><span class="p">)</span><span class="o">.</span><span class="n">covalent_radius</span><span class="p">,</span> <span class="n">tol_m</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">cycle2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max2</span><span class="p">):</span>
+                    <span class="n">coordinates_tmp</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">coordinates_total</span><span class="p">)</span>
+                    <span class="n">sites_tmp</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sites_total</span><span class="p">)</span>
+                    
+        	        <span class="c1">#Add specie by specie</span>
+                    <span class="k">for</span> <span class="n">numIon</span><span class="p">,</span> <span class="n">specie</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numIons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">):</span>
+                        <span class="n">numIon_added</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">tol</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">Element</span><span class="p">(</span><span class="n">specie</span><span class="p">)</span><span class="o">.</span><span class="n">covalent_radius</span><span class="p">,</span> <span class="n">tol_m</span><span class="p">)</span>
 
-                            <span class="c1">#Now we start to add the specie to the wyckoff position</span>
-                            <span class="n">cycle3</span> <span class="o">=</span> <span class="mi">0</span>
-                            <span class="k">while</span> <span class="n">cycle3</span> <span class="o">&lt;</span> <span class="n">max3</span><span class="p">:</span>
-                                <span class="c1">#Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c</span>
-                                <span class="n">ops</span> <span class="o">=</span> <span class="n">choose_wyckoff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">numIon</span><span class="o">-</span><span class="n">numIon_added</span><span class="p">)</span> 
-                                <span class="k">if</span> <span class="n">ops</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
-            	        	    <span class="c1">#Generate a list of coords from ops</span>
-                                    <span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">generate_point</span><span class="p">()</span>
-                                    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">])</span>
-                                    <span class="c1">#Merge coordinates if the atoms are close</span>
-                                    <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">good_merge</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">merge_coordinate</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">tol</span><span class="p">)</span>
-                                    <span class="k">if</span> <span class="n">good_merge</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
-                                        <span class="n">coords_toadd</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
-                                        <span class="k">if</span> <span class="n">check_distance</span><span class="p">(</span><span class="n">coordinates_tmp</span><span class="p">,</span> <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">sites_tmp</span><span class="p">,</span> <span class="p">[</span><span class="n">specie</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">),</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
-                                            <span class="k">if</span> <span class="n">coordinates_tmp</span> <span class="o">==</span> <span class="p">[]:</span>
-                                                <span class="n">coordinates_tmp</span> <span class="o">=</span> <span class="n">coords_toadd</span>
-                                            <span class="k">else</span><span class="p">:</span>
-                                                <span class="n">coordinates_tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">coordinates_tmp</span><span class="p">,</span> <span class="n">coords_toadd</span><span class="p">])</span>
-                                            <span class="n">sites_tmp</span> <span class="o">+=</span> <span class="p">[</span><span class="n">specie</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">)</span>
-                                            <span class="n">numIon_added</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">)</span>
+                        <span class="c1">#Now we start to add the specie to the wyckoff position</span>
+                        <span class="n">cycle3</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="k">while</span> <span class="n">cycle3</span> <span class="o">&lt;</span> <span class="n">max3</span><span class="p">:</span>
+                            <span class="c1">#Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c</span>
+                            <span class="n">ops</span> <span class="o">=</span> <span class="n">choose_wyckoff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">numIon</span><span class="o">-</span><span class="n">numIon_added</span><span class="p">)</span> 
+                            <span class="k">if</span> <span class="n">ops</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+        	        	    <span class="c1">#Generate a list of coords from ops</span>
+                                <span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">generate_point</span><span class="p">()</span>
+                                <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">])</span>
+                                <span class="c1">#Merge coordinates if the atoms are close</span>
+                                <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">good_merge</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">merge_coordinate</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">tol</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="n">good_merge</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+                                    <span class="n">coords_toadd</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+                                    <span class="k">if</span> <span class="n">check_distance</span><span class="p">(</span><span class="n">coordinates_tmp</span><span class="p">,</span> <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">sites_tmp</span><span class="p">,</span> <span class="p">[</span><span class="n">specie</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">),</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+                                        <span class="k">if</span> <span class="n">coordinates_tmp</span> <span class="o">==</span> <span class="p">[]:</span>
+                                            <span class="n">coordinates_tmp</span> <span class="o">=</span> <span class="n">coords_toadd</span>
                                         <span class="k">else</span><span class="p">:</span>
-                                            <span class="n">cycle3</span> <span class="o">+=</span> <span class="mi">1</span>
-                                            <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">++</span> <span class="mi">1</span>
-                                        <span class="k">if</span> <span class="n">numIon_added</span> <span class="o">==</span> <span class="n">numIon</span><span class="p">:</span>
-                                            <span class="n">coordinates_total</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">coordinates_tmp</span><span class="p">)</span>
-                                            <span class="n">sites_total</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sites_tmp</span><span class="p">)</span>
-                                            <span class="k">break</span>
+                                            <span class="n">coordinates_tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">coordinates_tmp</span><span class="p">,</span> <span class="n">coords_toadd</span><span class="p">])</span>
+                                        <span class="n">sites_tmp</span> <span class="o">+=</span> <span class="p">[</span><span class="n">specie</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">)</span>
+                                        <span class="n">numIon_added</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">)</span>
                                     <span class="k">else</span><span class="p">:</span>
                                         <span class="n">cycle3</span> <span class="o">+=</span> <span class="mi">1</span>
                                         <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">+=</span> <span class="mi">1</span>
+                                    <span class="k">if</span> <span class="n">numIon_added</span> <span class="o">==</span> <span class="n">numIon</span><span class="p">:</span>
+                                        <span class="n">coordinates_total</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">coordinates_tmp</span><span class="p">)</span>
+                                        <span class="n">sites_total</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sites_tmp</span><span class="p">)</span>
+                                        <span class="k">break</span>
                                 <span class="k">else</span><span class="p">:</span>
-                                    <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">++</span> <span class="mi">1</span>
+                                    <span class="n">cycle3</span> <span class="o">+=</span> <span class="mi">1</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">+=</span> <span class="mi">1</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">cycle3</span> <span class="o">+=</span> <span class="mi">1</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">++</span> <span class="mi">1</span>
 
-                            <span class="k">if</span> <span class="n">numIon_added</span> <span class="o">!=</span> <span class="n">numIon</span><span class="p">:</span>
-                                <span class="k">break</span>  <span class="c1">#need to repeat from the 1st species</span>
+                        <span class="k">if</span> <span class="n">numIon_added</span> <span class="o">!=</span> <span class="n">numIon</span><span class="p">:</span>
+                            <span class="k">break</span>  <span class="c1">#need to repeat from the 1st species</span>
 
-                        <span class="k">if</span> <span class="n">numIon_added</span> <span class="o">==</span> <span class="n">numIon</span><span class="p">:</span>
-                            <span class="n">good_structure</span> <span class="o">=</span> <span class="kc">True</span>
-                            <span class="k">break</span>
-                        <span class="k">else</span><span class="p">:</span> <span class="c1">#reset the coordinates and sites</span>
-                            <span class="n">coordinates_total</span> <span class="o">=</span> <span class="p">[]</span>
-                            <span class="n">sites_total</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">if</span> <span class="n">numIon_added</span> <span class="o">==</span> <span class="n">numIon</span><span class="p">:</span>
+                        <span class="n">good_structure</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span> <span class="c1">#reset the coordinates and sites</span>
+                        <span class="n">coordinates_total</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="n">sites_total</span> <span class="o">=</span> <span class="p">[]</span>
 
-                    <span class="k">if</span> <span class="n">good_structure</span><span class="p">:</span>
-                        <span class="n">final_coor</span> <span class="o">=</span> <span class="p">[]</span>
-                        <span class="n">final_site</span> <span class="o">=</span> <span class="p">[]</span>
-                        <span class="n">final_number</span> <span class="o">=</span> <span class="p">[]</span>
-                        <span class="n">final_lattice</span> <span class="o">=</span> <span class="n">cell_matrix</span>
-                        <span class="k">for</span> <span class="n">coor</span><span class="p">,</span> <span class="n">ele</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">coordinates_total</span><span class="p">,</span> <span class="n">sites_total</span><span class="p">):</span>
-                            <span class="n">final_coor</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
-                            <span class="n">final_site</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ele</span><span class="p">)</span>
-                            <span class="n">final_number</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Element</span><span class="p">(</span><span class="n">ele</span><span class="p">)</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
-                        <span class="n">final_coor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">good_structure</span><span class="p">:</span>
+                    <span class="n">final_coor</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">final_site</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">final_number</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">final_lattice</span> <span class="o">=</span> <span class="n">cell_matrix</span>
+                    <span class="k">for</span> <span class="n">coor</span><span class="p">,</span> <span class="n">ele</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">coordinates_total</span><span class="p">,</span> <span class="n">sites_total</span><span class="p">):</span>
+                        <span class="n">final_coor</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
+                        <span class="n">final_site</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ele</span><span class="p">)</span>
+                        <span class="n">final_number</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Element</span><span class="p">(</span><span class="n">ele</span><span class="p">)</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+                    <span class="n">final_coor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">)</span>
 
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                            <span class="n">final_lattice</span><span class="p">,</span> <span class="n">final_coor</span> <span class="o">=</span> <span class="n">Add_vacuum</span><span class="p">(</span><span class="n">final_lattice</span><span class="p">,</span> <span class="n">final_coor</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">final_lattice</span><span class="p">,</span> <span class="n">final_coor</span> <span class="o">=</span> <span class="n">Add_vacuum</span><span class="p">(</span><span class="n">final_lattice</span><span class="p">,</span> <span class="n">final_coor</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">lattice_matrix</span> <span class="o">=</span> <span class="n">final_lattice</span>   
+                        <span class="sd">&quot;&quot;&quot;A 3x3 matrix representing the lattice of the unit</span>
+<span class="sd">                        cell.&quot;&quot;&quot;</span>                 
+                        <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">)</span>
+                        <span class="sd">&quot;&quot;&quot;The fractional coordinates for each atom in the</span>
+<span class="sd">                        final structure&quot;&quot;&quot;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="o">=</span> <span class="n">final_site</span>
+                        <span class="sd">&quot;&quot;&quot;A list of atomic symbols corresponding to the type</span>
+<span class="sd">                        of atom for each site in self.coordinates&quot;&quot;&quot;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">struct</span> <span class="o">=</span> <span class="n">Structure</span><span class="p">(</span><span class="n">final_lattice</span><span class="p">,</span> <span class="n">final_site</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">))</span>
+                        <span class="sd">&quot;&quot;&quot;A pymatgen.core.structure.Structure object for the</span>
+<span class="sd">                        final generated crystal.&quot;&quot;&quot;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">spg_struct</span> <span class="o">=</span> <span class="p">(</span><span class="n">final_lattice</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">),</span> <span class="n">final_number</span><span class="p">)</span>
+                        <span class="sd">&quot;&quot;&quot;A list of information describing the generated</span>
+<span class="sd">                        crystal, which may be used by spglib for symmetry</span>
+<span class="sd">                        analysis.&quot;&quot;&quot;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">return</span>
+                    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">verify_distances</span><span class="p">(</span><span class="n">final_coor</span><span class="p">,</span> <span class="n">final_site</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">):</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">lattice_matrix</span> <span class="o">=</span> <span class="n">final_lattice</span>   
                             <span class="sd">&quot;&quot;&quot;A 3x3 matrix representing the lattice of the unit</span>
-<span class="sd">                            cell.&quot;&quot;&quot;</span>                 
-                            <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">)</span>
-                            <span class="sd">&quot;&quot;&quot;The fractional coordinates for each atom in the</span>
+<span class="sd">                            cell.&quot;&quot;&quot;</span>        
+                            <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">final_coor</span>
+                            <span class="sd">&quot;&quot;&quot;The absolute coordinates for each atom in the</span>
 <span class="sd">                            final structure&quot;&quot;&quot;</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="o">=</span> <span class="n">final_site</span>
                             <span class="sd">&quot;&quot;&quot;A list of atomic symbols corresponding to the type</span>
 <span class="sd">                            of atom for each site in self.coordinates&quot;&quot;&quot;</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">struct</span> <span class="o">=</span> <span class="n">Structure</span><span class="p">(</span><span class="n">final_lattice</span><span class="p">,</span> <span class="n">final_site</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">))</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">species</span> <span class="o">=</span> <span class="n">final_site</span>
+                            <span class="sd">&quot;&quot;&quot;A list of atomic symbols corresponding to the type</span>
+<span class="sd">                            of atom for each site in self.coordinates&quot;&quot;&quot;</span>
+                            <span class="n">absolute_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">molecule</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="n">absolute_coords</span><span class="p">)</span>
+                            <span class="sd">&quot;&quot;&quot;A pymatgen.core.structure.Molecule object for the</span>
+<span class="sd">                            final generated cluster.&quot;&quot;&quot;</span>
+                            <span class="c1">#Calculate binding box</span>
+                            <span class="n">maxx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+                            <span class="n">minx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+                            <span class="n">maxy</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+                            <span class="n">miny</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+                            <span class="n">maxz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
+                            <span class="n">minz</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">struct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">get_boxed_structure</span><span class="p">(</span><span class="n">maxx</span><span class="o">-</span><span class="n">minx</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span> <span class="n">maxy</span><span class="o">-</span><span class="n">miny</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span> <span class="n">maxz</span><span class="o">-</span><span class="n">minz</span><span class="o">+</span><span class="mi">10</span><span class="p">)</span>
                             <span class="sd">&quot;&quot;&quot;A pymatgen.core.structure.Structure object for the</span>
-<span class="sd">                            final generated crystal.&quot;&quot;&quot;</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">spg_struct</span> <span class="o">=</span> <span class="p">(</span><span class="n">final_lattice</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">final_coor</span><span class="p">),</span> <span class="n">final_number</span><span class="p">)</span>
-                            <span class="sd">&quot;&quot;&quot;A list of information describing the generated</span>
-<span class="sd">                            crystal, which may be used by spglib for symmetry</span>
-<span class="sd">                            analysis.&quot;&quot;&quot;</span>
+<span class="sd">                            final generated object.&quot;&quot;&quot;</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="sd">&quot;&quot;&quot;Whether or not a valid crystal was generated.&quot;&quot;&quot;</span>
                             <span class="k">return</span>
-                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                            <span class="k">if</span> <span class="n">verify_distances</span><span class="p">(</span><span class="n">final_coor</span><span class="p">,</span> <span class="n">final_site</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">):</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_matrix</span> <span class="o">=</span> <span class="n">final_lattice</span>   
-                                <span class="sd">&quot;&quot;&quot;A 3x3 matrix representing the lattice of the unit</span>
-<span class="sd">                                cell.&quot;&quot;&quot;</span>        
-                                <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">final_coor</span>
-                                <span class="sd">&quot;&quot;&quot;The absolute coordinates for each atom in the</span>
-<span class="sd">                                final structure&quot;&quot;&quot;</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="o">=</span> <span class="n">final_site</span>
-                                <span class="sd">&quot;&quot;&quot;A list of atomic symbols corresponding to the type</span>
-<span class="sd">                                of atom for each site in self.coordinates&quot;&quot;&quot;</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">species</span> <span class="o">=</span> <span class="n">final_site</span>
-                                <span class="sd">&quot;&quot;&quot;A list of atomic symbols corresponding to the type</span>
-<span class="sd">                                of atom for each site in self.coordinates&quot;&quot;&quot;</span>
-                                <span class="n">absolute_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">)</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">molecule</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="n">absolute_coords</span><span class="p">)</span>
-                                <span class="sd">&quot;&quot;&quot;A pymatgen.core.structure.Molecule object for the</span>
-<span class="sd">                                final generated cluster.&quot;&quot;&quot;</span>
-                                <span class="c1">#Calculate binding box</span>
-                                <span class="n">maxx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
-                                <span class="n">minx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
-                                <span class="n">maxy</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
-                                <span class="n">miny</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
-                                <span class="n">maxz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
-                                <span class="n">minz</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">absolute_coords</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">struct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">get_boxed_structure</span><span class="p">(</span><span class="n">maxx</span><span class="o">-</span><span class="n">minx</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span> <span class="n">maxy</span><span class="o">-</span><span class="n">miny</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span> <span class="n">maxz</span><span class="o">-</span><span class="n">minz</span><span class="o">+</span><span class="mi">10</span><span class="p">)</span>
-                                <span class="sd">&quot;&quot;&quot;A pymatgen.core.structure.Structure object for the</span>
-<span class="sd">                                final generated object.&quot;&quot;&quot;</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
-                                <span class="sd">&quot;&quot;&quot;Whether or not a valid crystal was generated.&quot;&quot;&quot;</span>
-                                <span class="k">return</span>
         <span class="k">if</span> <span class="n">degrees</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wyckoff positions have no degrees of freedom.&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">struct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Msg2</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1552,7 +1705,7 @@
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
@@ -1568,7 +1721,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">thickness</span>
         <span class="sd">&quot;&quot;&quot;the thickness, in Angstroms, of the unit cell in the 3rd</span>
 <span class="sd">        dimension.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">number</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="random_crystal_1D"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D">[docs]</a><span class="k">class</span> <span class="nc">random_crystal_1D</span><span class="p">(</span><span class="n">random_crystal</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1588,7 +1741,7 @@
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
@@ -1599,7 +1752,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span>
         <span class="sd">&quot;&quot;&quot;the effective cross-sectional area, in Angstroms squared, of the</span>
 <span class="sd">        unit cell.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="random_cluster"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_cluster">[docs]</a><span class="k">class</span> <span class="nc">random_cluster</span><span class="p">(</span><span class="n">random_crystal</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1620,7 +1773,7 @@
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1628,7 +1781,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sg</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="sd">&quot;&quot;&quot;The international space group number (there is not a 1-1 correspondence</span>
 <span class="sd">        with Point groups).&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span></div>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
