@@ -1183,34 +1183,6 @@ class Lattice():
                         point[a-1] -= 0.5
         return point
 
-class tolerance_matrix():
-    """
-    Class for variable distance tolerance checking. Used within random_crystal and
-    molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-
-    atom pair tolerances.
-
-    Args:
-        string: a string representing the type of radii to use
-            ("atomic", "molecular")
-        factor: a float to scale the distances by. A smaller value means a smaller
-            tolerance for distance checking
-    """
-    def __init__(self, string="atomic", factor=1.0):
-        f = factor
-        if string == "atomic":
-            f *= 0.5
-            attrindex = 5
-        elif string == "molecular":
-            attrindex = 5
-        H = Element('H')
-        #m = np.eyes((len(H.elements_list)+1,len(H.element_list)+1))
-        m = [[0.]*(len(H.elements_list)+1)]
-        for i, tup1 in enumerate(H.elements_list):
-            m.append([0.])
-            for j, tup2 in enumerate(H.elements_list):
-                m[-1].append( f * (tup1[attrindex] + tup2[attrindex]) )
-        self.matrix = np.array(m)
-
     def from_para(a, b, c, alpha, beta, gamma, ltype="triclinic", radians=False, PBC=[1,2,3], **kwargs):
         """
         Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
@@ -1320,6 +1292,34 @@ class tolerance_matrix():
 
     def __repr__(self):
         return str(self)
+
+class tolerance_matrix():
+    """
+    Class for variable distance tolerance checking. Used within random_crystal and
+    molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-
+    atom pair tolerances.
+
+    Args:
+        string: a string representing the type of radii to use
+            ("atomic", "molecular")
+        factor: a float to scale the distances by. A smaller value means a smaller
+            tolerance for distance checking
+    """
+    def __init__(self, string="atomic", factor=1.0):
+        f = factor
+        if string == "atomic":
+            f *= 0.5
+            attrindex = 5
+        elif string == "molecular":
+            attrindex = 5
+        H = Element('H')
+        #m = np.eyes((len(H.elements_list)+1,len(H.element_list)+1))
+        m = [[0.]*(len(H.elements_list)+1)]
+        for i, tup1 in enumerate(H.elements_list):
+            m.append([0.])
+            for j, tup2 in enumerate(H.elements_list):
+                m[-1].append( f * (tup1[attrindex] + tup2[attrindex]) )
+        self.matrix = np.array(m)
 
 class random_crystal():
     """
