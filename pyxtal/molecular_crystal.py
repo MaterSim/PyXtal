@@ -661,7 +661,7 @@ class molecular_crystal():
             when molecule values are strings
     """
 
-    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group):
+    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice):
         """
         init functionality which is shared by 3D, 2D, and 1D crystals
         """
@@ -709,6 +709,8 @@ class molecular_crystal():
                     print("Error: Could not create molecules from given parameters.")
                     print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
                     print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
+                    print('Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)')
+                    print("Installing the OpenBabel Python bindings allows more file formats.")
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
@@ -730,7 +732,6 @@ class molecular_crystal():
                 radius = math.sqrt( site.x**2 + site.y**2 + site.z**2 )
                 if radius > max_r: max_r = radius
             self.radii.append(max_r+1.0)
-        self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
         """The volume of the generated unit cell"""
         self.check_atomic_distances = check_atomic_distances
         """Whether or not inter-atomic distances are checked at each step."""
@@ -745,22 +746,31 @@ class molecular_crystal():
             """The valid orientations for each molecule and Wyckoff position.
             May be copied when generating a new molecular_crystal to save a
             small amount of time"""
-        if self.dim == 2:
-            if self.number in range(3, 8):
-                unique_axis = "c"
+        if lattice is not None:
+            #Use the provided lattice
+            self.lattice = lattice
+            self.volume = lattice.volume
+        elif lattice == None:
+            #Determine the unique axis
+            if self.dim == 2:
+                if self.number in range(3, 8):
+                    unique_axis = "c"
+                else:
+                    unique_axis = "a"
+            elif self.dim == 1:
+                if self.number in range(3, 8):
+                    unique_axis = "a"
+                else:
+                    unique_axis = "c"
             else:
-                unique_axis = "a"
-        elif self.dim == 1:
-            if self.number in range(3, 8):
-                unique_axis = "a"
-            else:
                 unique_axis = "c"
-        else:
-            unique_axis = "c"
-        self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
+            #Generate a Lattice instance
+            self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
+            """The volume of the generated unit cell."""
+            self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         self.generate_crystal()
 
-    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         #Necessary input
@@ -770,7 +780,7 @@ class molecular_crystal():
             group = Group(group, self.dim)
         self.sg = group.number
         """The international spacegroup number of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice)
 
     def Msgs(self):
         self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
@@ -947,7 +957,9 @@ class molecular_crystal():
                     cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
                 elif self.dim == 1:
                     cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)'''
-                cell_para = self.lattice.generate_matrix()
+                self.lattice.reset_matrix()
+                cell_matrix = self.lattice.matrix
+                cell_para = self.lattice.get_para()
 
                 if cell_para is None:
                     break
@@ -1140,7 +1152,7 @@ class molecular_crystal_2D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
@@ -1159,7 +1171,7 @@ class molecular_crystal_2D(molecular_crystal):
         dimension."""
         self.PBC = [1,2]
         """The periodic axes of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice)
 
 class molecular_crystal_1D(molecular_crystal):
     """
@@ -1199,7 +1211,7 @@ class molecular_crystal_1D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz'):
+    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         #Necessary input
@@ -1211,7 +1223,7 @@ class molecular_crystal_1D(molecular_crystal):
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence
         with Rod groups)."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice)
 
 
 if __name__ == "__main__":

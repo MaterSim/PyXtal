@@ -235,6 +235,29 @@ orientation will have a rotational degree of freedom about c1.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyxtal.operations.Orientation.from_constraints">
+<code class="descname">from_constraints</code><span class="sig-paren">(</span><em>c1</em>, <em>v2</em>, <em>c2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#Orientation.from_constraints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.Orientation.from_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Geneate an orientation object given two constraint vectors</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>v1</strong> – a 1x3 vector in the original reference frame</li>
+<li><strong>c1</strong> – a corresponding axis which v1 must be mapped to</li>
+<li><strong>v1</strong> – a second 1x3 vector in the original reference frame</li>
+<li><strong>c1</strong> – a corresponding axis which v2 must be mapped to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an orientation object consistent with the supplied constraints</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyxtal.operations.Orientation.get_matrix">
 <code class="descname">get_matrix</code><span class="sig-paren">(</span><em>angle='random'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#Orientation.get_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.Orientation.get_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a 3x3 rotation matrix consistent with the orientation’s
@@ -329,7 +352,7 @@ axis and angle are ignored, and a random orientation is generated</li>
 
 <dl class="function">
 <dt id="pyxtal.operations.angle">
-<code class="descclassname">pyxtal.operations.</code><code class="descname">angle</code><span class="sig-paren">(</span><em>v1</em>, <em>v2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#angle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.angle" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.operations.</code><code class="descname">angle</code><span class="sig-paren">(</span><em>v1</em>, <em>v2</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#angle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the angle (in radians) between two vectors.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

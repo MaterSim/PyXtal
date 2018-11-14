@@ -65,10 +65,56 @@
 <span class="n">rod_df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="n">resource_filename</span><span class="p">(</span><span class="s2">&quot;pyxtal&quot;</span><span class="p">,</span> <span class="s2">&quot;database/rod.csv&quot;</span><span class="p">))</span>
 <span class="n">rod_symmetry_df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="n">resource_filename</span><span class="p">(</span><span class="s2">&quot;pyxtal&quot;</span><span class="p">,</span> <span class="s2">&quot;database/rod_symmetry.csv&quot;</span><span class="p">))</span>
 <span class="n">rod_generators_df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="n">resource_filename</span><span class="p">(</span><span class="s2">&quot;pyxtal&quot;</span><span class="p">,</span> <span class="s2">&quot;database/rod_generators.csv&quot;</span><span class="p">))</span>
+<span class="n">point_df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="n">resource_filename</span><span class="p">(</span><span class="s2">&quot;pyxtal&quot;</span><span class="p">,</span> <span class="s2">&quot;database/point.csv&quot;</span><span class="p">))</span>
+<span class="n">point_symmetry_df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="n">resource_filename</span><span class="p">(</span><span class="s2">&quot;pyxtal&quot;</span><span class="p">,</span> <span class="s2">&quot;database/point_symmetry.csv&quot;</span><span class="p">))</span>
+<span class="n">point_generators_df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="n">resource_filename</span><span class="p">(</span><span class="s2">&quot;pyxtal&quot;</span><span class="p">,</span> <span class="s2">&quot;database/point_generators.csv&quot;</span><span class="p">))</span>
 
+<span class="n">pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+<span class="n">Identity</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)</span>
+<span class="n">Inversion</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,-y,-z&#39;</span><span class="p">)</span>
+<span class="n">op_o</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,0&#39;</span><span class="p">)</span>
+<span class="n">op_x</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,0,0&#39;</span><span class="p">)</span>
+<span class="n">op_y</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,y,0&#39;</span><span class="p">)</span>
+<span class="n">op_z</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,z&#39;</span><span class="p">)</span>
+
+<span class="n">pglist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;C1&#39;</span><span class="p">,</span><span class="s1">&#39;Ci&#39;</span><span class="p">,</span><span class="s1">&#39;C2&#39;</span><span class="p">,</span><span class="s1">&#39;Cs&#39;</span><span class="p">,</span><span class="s1">&#39;C2h&#39;</span><span class="p">,</span><span class="s1">&#39;D2&#39;</span><span class="p">,</span><span class="s1">&#39;C2v&#39;</span><span class="p">,</span><span class="s1">&#39;D2h&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;C4&#39;</span><span class="p">,</span><span class="s1">&#39;S4&#39;</span><span class="p">,</span><span class="s1">&#39;C4h&#39;</span><span class="p">,</span><span class="s1">&#39;D4&#39;</span><span class="p">,</span><span class="s1">&#39;C4v&#39;</span><span class="p">,</span><span class="s1">&#39;D2d&#39;</span><span class="p">,</span><span class="s1">&#39;D4h&#39;</span><span class="p">,</span><span class="s1">&#39;C3&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;C3i&#39;</span><span class="p">,</span><span class="s1">&#39;D3&#39;</span><span class="p">,</span><span class="s1">&#39;C3v&#39;</span><span class="p">,</span><span class="s1">&#39;D3d&#39;</span><span class="p">,</span><span class="s1">&#39;C6&#39;</span><span class="p">,</span><span class="s1">&#39;C3h&#39;</span><span class="p">,</span><span class="s1">&#39;C6h&#39;</span><span class="p">,</span><span class="s1">&#39;D6&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;C6v&#39;</span><span class="p">,</span><span class="s1">&#39;D3h&#39;</span><span class="p">,</span><span class="s1">&#39;D6h&#39;</span><span class="p">,</span><span class="s1">&#39;T&#39;</span><span class="p">,</span><span class="s1">&#39;Th&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">,</span><span class="s1">&#39;Td&#39;</span><span class="p">,</span><span class="s1">&#39;Oh&#39;</span><span class="p">]</span>
+
+<span class="c1">#TODO: Add space, layer, and Rod group symbol lists</span>
 
 <span class="c1">#Define functions</span>
 <span class="c1">#------------------------------</span>
+<div class="viewcode-block" id="symmetry_element_from_axis"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.symmetry_element_from_axis">[docs]</a><span class="k">def</span> <span class="nf">symmetry_element_from_axis</span><span class="p">(</span><span class="n">axis</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given an axis, returns a SymmOp representing a symmetry element on the axis.</span>
+<span class="sd">    For example, the symmetry element for the vector (0,0,2) would be (0,0,z).</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        axis: a 3-vector representing the symmetry element</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a SymmOp object of form (ax, bx, cx), (ay, by, cy), or (az, bz, cz)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="c1">#Vector must be non-zero</span>
+    <span class="k">if</span> <span class="n">dsquared</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+    <span class="c1">#Find largest component (x, y, or z)</span>
+    <span class="n">abs_vals</span> <span class="o">=</span> <span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">v</span><span class="p">]</span>
+    <span class="n">f1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">abs_vals</span><span class="p">)</span>
+    <span class="n">index1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">abs_vals</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">f1</span><span class="p">)</span>
+    <span class="c1">#Initialize an affine matrix</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">m</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]</span>
+    <span class="c1">#Set values for affine matrix</span>
+    <span class="n">m</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span><span class="n">index1</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+    <span class="k">return</span> <span class="n">SymmOp</span><span class="p">(</span><span class="n">m</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="create_matrix"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.create_matrix">[docs]</a><span class="k">def</span> <span class="nf">create_matrix</span><span class="p">(</span><span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Used for calculating distances in lattices with periodic boundary</span>
@@ -411,6 +457,60 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">wyckoffs</span></div>
 
+<div class="viewcode-block" id="get_point"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_point">[docs]</a><span class="k">def</span> <span class="nf">get_point</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">organized</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a list of Wyckoff positions for a given crystallographic point group.</span>
+<span class="sd">    Has option to organize the list based on multiplicity.</span>
+
+<span class="sd">    1st index: index of WP in layer group (0 is the WP with largest multiplicity)</span>
+
+<span class="sd">    2nd index: a SymmOp object in the WP</span>
+
+<span class="sd">    For point groups except T, Th, O, Td, and Oh, unique axis z is used.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num: the point group number (see bottom of source code for a list)</span>
+<span class="sd">        organized: whether or not to organize the list based on multiplicity</span>
+<span class="sd">        molecular: whether or not to convert to Euclidean reference frame</span>
+<span class="sd">            (for hexagonal lattices: point groups 16-27)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns: </span>
+<span class="sd">        a list of Wyckoff positions, each of which is a list of SymmOp&#39;s</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">convert</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">28</span><span class="p">):</span>
+            <span class="n">convert</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">wyckoff_strings</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">point_df</span><span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">][</span><span class="n">num</span><span class="p">])</span>
+    <span class="n">wyckoffs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wyckoff_strings</span><span class="p">:</span>
+        <span class="n">wyckoffs</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+
+            <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">convert</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="c1">#Convert non-orthogonal trigonal/hexagonal operations</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="n">P</span><span class="o">*</span><span class="n">op</span><span class="o">*</span><span class="n">P</span><span class="o">.</span><span class="n">inverse</span>
+            <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">wyckoffs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">wyckoffs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">organized</span><span class="p">:</span>
+        <span class="n">wyckoffs_organized</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="c1">#2D Array of WP&#39;s organized by multiplicity</span>
+        <span class="n">old</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">wyckoffs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">wp</span> <span class="ow">in</span> <span class="n">wyckoffs</span><span class="p">:</span>
+            <span class="n">mult</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mult</span> <span class="o">!=</span> <span class="n">old</span><span class="p">:</span>
+                <span class="n">wyckoffs_organized</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+                <span class="n">old</span> <span class="o">=</span> <span class="n">mult</span>
+            <span class="n">wyckoffs_organized</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wyckoffs_organized</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">wyckoffs</span></div>
+
 <div class="viewcode-block" id="get_wyckoff_symmetry"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_wyckoff_symmetry">[docs]</a><span class="k">def</span> <span class="nf">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a list of Wyckoff position site symmetry for a given space group.</span>
@@ -564,6 +664,48 @@
     <span class="n">convert</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;=</span> <span class="mi">42</span><span class="p">:</span>
+            <span class="n">convert</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1">#Loop over Wyckoff positions</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">symmetry_strings</span><span class="p">:</span>
+        <span class="n">symmetry</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="c1">#Loop over points in WP</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+            <span class="n">symmetry</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+            <span class="c1">#Loop over ops</span>
+            <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">y</span><span class="p">:</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">convert</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="c1">#Convert non-orthogonal trigonal/hexagonal operations</span>
+                    <span class="n">op</span> <span class="o">=</span> <span class="n">P</span><span class="o">*</span><span class="n">op</span><span class="o">*</span><span class="n">P</span><span class="o">.</span><span class="n">inverse</span>
+                <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">symmetry</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">symmetry</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">symmetry</span></div>
+
+<div class="viewcode-block" id="get_point_symmetry"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_point_symmetry">[docs]</a><span class="k">def</span> <span class="nf">get_point_symmetry</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a list of Wyckoff position site symmetry for a given point group.</span>
+<span class="sd">    1st index: index of WP in group (0 is the WP with largest multiplicity)</span>
+<span class="sd">    2nd index: a point within the WP</span>
+<span class="sd">    3rd index: a site symmetry SymmOp of the point</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num: the point group number</span>
+<span class="sd">        molecular: whether or not to convert to Euclidean reference frame</span>
+<span class="sd">            (for hexagonal lattices: point groups 16-27)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a 3d list of SymmOp objects representing the site symmetry of each</span>
+<span class="sd">        point in each Wyckoff position</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">symmetry_strings</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">point_symmetry_df</span><span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">][</span><span class="n">num</span><span class="p">])</span>
+    <span class="n">symmetry</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">convert</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">28</span><span class="p">):</span>
             <span class="n">convert</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="c1">#Loop over Wyckoff positions</span>
     <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">symmetry_strings</span><span class="p">:</span>
@@ -753,6 +895,48 @@
                 <span class="n">generators</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">generators</span></div>
 
+<div class="viewcode-block" id="get_point_generators"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_point_generators">[docs]</a><span class="k">def</span> <span class="nf">get_point_generators</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a list of Wyckoff generators for a given point group.</span>
+<span class="sd">    1st index: index of WP in group (0 is the WP with largest multiplicity)</span>
+<span class="sd">    2nd index: a generator for the WP</span>
+<span class="sd">    This function is useful for rotating molecules based on Wyckoff position,</span>
+<span class="sd">    since special Wyckoff positions only encode positional information, but not</span>
+<span class="sd">    information about the orientation. The generators for each Wyckoff position</span>
+<span class="sd">    form a subset of the group&#39;s general Wyckoff position.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        num: the Rod group number</span>
+<span class="sd">        molecular: whether or not to convert to Euclidean reference frame</span>
+<span class="sd">            (for hexagonal lattices: point groups 16-27)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a</span>
+<span class="sd">        single fractional (x,y,z) coordinate</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">generator_strings</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">point_generators_df</span><span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">][</span><span class="n">num</span><span class="p">])</span>
+    <span class="n">generators</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">convert</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">28</span><span class="p">):</span>
+            <span class="n">convert</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1">#Loop over Wyckoff positions</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">generator_strings</span><span class="p">:</span>
+        <span class="n">generators</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="c1">#Loop over ops</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">convert</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="c1">#Convert non-orthogonal trigonal/hexagonal operations</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="n">P</span><span class="o">*</span><span class="n">op</span><span class="o">*</span><span class="n">P</span><span class="o">.</span><span class="n">inverse</span>
+            <span class="k">if</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">generators</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">molecular</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">generators</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">generators</span></div>
+
 <div class="viewcode-block" id="general_position"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.general_position">[docs]</a><span class="k">def</span> <span class="nf">general_position</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a Wyckoff_position object for the general Wyckoff position of the given</span>
@@ -800,7 +984,7 @@
             <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
     <span class="c1">#Convert point into a SymmOp</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="o">!=</span> <span class="n">SymmOp</span><span class="p">:</span>
-        <span class="n">point</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span> <span class="n">point</span><span class="p">)</span>
+        <span class="n">point</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">point</span><span class="p">))</span>
     <span class="n">symmetry</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">gen_pos</span><span class="p">:</span>
         <span class="n">is_symmetry</span> <span class="o">=</span> <span class="kc">True</span>
@@ -905,28 +1089,17 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">):</span> <span class="k">continue</span>
         <span class="n">failed</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="c1">#Check site symmetry of points</span>
-        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
-            <span class="c1">#Calculate distance between original and generated points</span>
-            <span class="n">ps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">w_symm_all</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]])</span>
-            <span class="n">ds</span> <span class="o">=</span> <span class="n">distance_matrix_euclidean</span><span class="p">([</span><span class="n">p</span><span class="p">],</span> <span class="n">ps</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="n">squared</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="c1">#Check whether any generated points are too far away</span>
-            <span class="n">num</span> <span class="o">=</span> <span class="p">(</span><span class="n">ds</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">failed</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">break</span>
-        
-        <span class="k">if</span> <span class="n">failed</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="k">continue</span>
         <span class="c1">#Search for a generating point</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
             <span class="n">failed</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="c1">#Check that point works as x,y,z value for wp</span>
-            <span class="n">xyz</span> <span class="o">=</span> <span class="n">filtered_coords_euclidean</span><span class="p">(</span><span class="n">wp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">xyz</span> <span class="o">=</span> <span class="n">filtered_coords_euclidean</span><span class="p">(</span><span class="n">wp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">-</span> <span class="n">p</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">dsquared</span><span class="p">(</span><span class="n">xyz</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">:</span> <span class="k">continue</span>
             <span class="c1">#Calculate distances between original and generated points</span>
             <span class="n">pw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wp</span><span class="p">])</span>
             <span class="n">dw</span> <span class="o">=</span> <span class="n">distance_matrix_euclidean</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">pw</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="n">squared</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            
+
             <span class="c1">#Check each row for a zero</span>
             <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dw</span><span class="p">:</span>
                 <span class="n">num</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span> <span class="o">&lt;</span> <span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
@@ -941,6 +1114,14 @@
                 <span class="k">if</span> <span class="n">num</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">failed</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="k">break</span>
+
+            <span class="c1">#Calculate distance between original and generated points</span>
+            <span class="n">ps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">w_symm_all</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]])</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">distance_matrix_euclidean</span><span class="p">([</span><span class="n">p</span><span class="p">],</span> <span class="n">ps</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">,</span> <span class="n">squared</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1">#Check whether any generated points are too far away</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="p">(</span><span class="n">ds</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">failed</span> <span class="o">=</span> <span class="kc">True</span>
 
             <span class="k">if</span> <span class="n">failed</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="k">continue</span>
             <span class="k">return</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span>
@@ -1106,11 +1287,27 @@
     <span class="k">def</span> <span class="nf">get_highest_symbol</span><span class="p">(</span><span class="n">symbols</span><span class="p">):</span>
         <span class="n">symbol_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="s1">&#39;2&#39;</span><span class="p">,</span><span class="s1">&#39;m&#39;</span><span class="p">,</span><span class="s1">&#39;-2&#39;</span><span class="p">,</span><span class="s1">&#39;2/m&#39;</span><span class="p">,</span><span class="s1">&#39;3&#39;</span><span class="p">,</span><span class="s1">&#39;4&#39;</span><span class="p">,</span><span class="s1">&#39;-4&#39;</span><span class="p">,</span><span class="s1">&#39;4/m&#39;</span><span class="p">,</span><span class="s1">&#39;-3&#39;</span><span class="p">,</span><span class="s1">&#39;6&#39;</span><span class="p">,</span><span class="s1">&#39;-6&#39;</span><span class="p">,</span><span class="s1">&#39;6/m&#39;</span><span class="p">]</span>
         <span class="n">max_index</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">:</span>
-            <span class="n">i</span> <span class="o">=</span> <span class="n">symbol_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+        <span class="n">use_list</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">symbols</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">symbol_list</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">symbol_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">use_list</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">num_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span>
+                <span class="n">i1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_str</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;m&#39;</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="ow">or</span> <span class="s1">&#39;-&#39;</span> <span class="ow">in</span> <span class="n">symbol</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i1</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">i</span> <span class="o">=</span> <span class="n">i1</span>
+                    <span class="k">elif</span> <span class="n">i1</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">i</span> <span class="o">=</span> <span class="n">i1</span> <span class="o">*</span> <span class="mi">2</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">max_index</span><span class="p">:</span>
+                <span class="n">max_j</span> <span class="o">=</span> <span class="n">j</span>
                 <span class="n">max_index</span> <span class="o">=</span> <span class="n">i</span>
-        <span class="k">return</span> <span class="n">symbol_list</span><span class="p">[</span><span class="n">max_index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">use_list</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">symbol_list</span><span class="p">[</span><span class="n">max_index</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">symbols</span><span class="p">[</span><span class="n">max_j</span><span class="p">]</span>
+        
     <span class="c1">#Return whether or not two axes are symmetrically equivalent</span>
     <span class="c1">#It is assumed that both axes possess the same symbol</span>
     <span class="c1">#Will be called within combine_axes</span>
@@ -1328,10 +1525,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span>
         <span class="k">except</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="c1">#TODO: implement clusters</span>
-                <span class="k">return</span> <span class="s2">&quot;Error: 0D clusters are not yet implemented. Check back soon.&quot;</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)):</span>
                 <span class="k">return</span> <span class="s2">&quot;Error: invalid crystal dimension. Must be a number between 0 and 3.&quot;</span>
             <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;Wyckoff position &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot; in &quot;</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
@@ -1340,7 +1534,10 @@
                 <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;layer &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Rod &quot;</span>
-            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Point group &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot; with site symmetry &quot;</span><span class="o">+</span><span class="n">ss_string_from_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ops</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">op</span><span class="o">.</span><span class="n">as_xyz_string</span><span class="p">()</span>
@@ -1365,9 +1562,10 @@
         <span class="n">wp</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
             <span class="n">wp</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">group</span>
-        <span class="c1">#TODO: Allow init using H-M symbol and store value</span>
+            <span class="n">number</span> <span class="o">=</span> <span class="n">group</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Invalid value for group. Use a number or Hermann-Mauguin symbol.&quot;</span><span class="p">)</span>
+            <span class="c1">#TODO: add symbol interpretation</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: must use an integer group number.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
         <span class="n">use_letter</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
@@ -1381,6 +1579,9 @@
                     <span class="k">break</span>
 
         <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">231</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
@@ -1409,6 +1610,9 @@
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
 
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">81</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
@@ -1437,6 +1641,9 @@
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
 
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">76</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
@@ -1469,6 +1676,27 @@
             <span class="k">return</span> <span class="n">Wyckoff_position</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s2">&quot;dim&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">wp</span></div>
 
+<div class="viewcode-block" id="Wyckoff_position.wyckoff_from_generating_op"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Wyckoff_position.wyckoff_from_generating_op">[docs]</a>    <span class="k">def</span> <span class="nf">wyckoff_from_generating_op</span><span class="p">(</span><span class="n">gen_op</span><span class="p">,</span> <span class="n">gen_pos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a general position and generating operation (ex: &quot;x,0,0&quot;), returns a</span>
+<span class="sd">        Wyckoff_position object.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            gen_op: a SymmOp into which the generating coordinate will be plugged</span>
+<span class="sd">            gen_pos: a list of SymmOps representing the general position</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            a list of SymmOps</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">op</span><span class="o">*</span><span class="n">gen_op</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">gen_pos</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">new_ops</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="Wyckoff_position.symmetry_from_wyckoff"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Wyckoff_position.symmetry_from_wyckoff">[docs]</a>    <span class="k">def</span> <span class="nf">symmetry_from_wyckoff</span><span class="p">(</span><span class="n">wp</span><span class="p">,</span> <span class="n">gen_pos</span><span class="p">):</span>
+        <span class="n">symm</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wp</span><span class="p">:</span>
+            <span class="n">symm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">site_symm</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">gen_pos</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">symm</span></div>
+
     <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">ops</span>
 
@@ -1476,7 +1704,10 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ops</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span>
+
+<div class="viewcode-block" id="Wyckoff_position.get_site_symmetry"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Wyckoff_position.get_site_symmetry">[docs]</a>    <span class="k">def</span> <span class="nf">get_site_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="Group"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group">[docs]</a><span class="k">class</span> <span class="nc">Group</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1487,9 +1718,9 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="c1">#TODO: implement Clusters</span>
-                <span class="k">return</span> <span class="s2">&quot;Error: 0D clusters are not yet implemented. Check back soon.&quot;</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="c1">#TODO: implement point group symbols</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Point group &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">+</span> <span class="s2">&quot; --&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Space &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Layer &quot;</span>
@@ -1497,7 +1728,8 @@
                 <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Rod &quot;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="s2">&quot;Error: invalid crystal dimension. Must be a number between 0 and 3.&quot;</span>
-            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; --&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; (&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">+</span><span class="s2">&quot;)--&quot;</span>
             <span class="c1">#TODO: implement H-M symbol</span>
             <span class="c1">#s += symbol_from_number(self.number, dim=self.dim)</span>
             <span class="k">for</span> <span class="n">wp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wyckoff_positions</span><span class="p">:</span>
@@ -1510,15 +1742,33 @@
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">number</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">number</span>
+        <span class="c1">#TODO: get symbol from number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">group</span>
+            <span class="n">number</span> <span class="o">=</span> <span class="n">group</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="c1">#TODO: add symbol interpretation</span>
+            <span class="k">if</span> <span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cannot currently interpret symbols for Rod, layer, and space groups.&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please use an integer.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">symbol</span> <span class="o">=</span> <span class="n">group</span>
+                <span class="k">if</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">pglist</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="n">symbol</span>
+                    <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">group</span> <span class="o">=</span> <span class="n">pglist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1">#TODO: Allow init using H-M symbol, store value</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: sg must be an integer for the international group number.&quot;</span><span class="p">)</span>
-            <span class="k">pass</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Please input a symbol (str) or integer (int) for the group.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
         <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">231</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="k">return</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
@@ -1532,7 +1782,22 @@
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=False)&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_wyckoff_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;triclinic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">15</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;monoclinic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">74</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;orthorhombic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">142</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;tetragonal&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">194</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;hexagonal&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">230</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cubic&quot;</span>
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">81</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="k">return</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
@@ -1546,7 +1811,20 @@
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=False)&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_layer_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;triclinic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">18</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;monoclinic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">48</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;orthorhombic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">64</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;tetragonal&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">80</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;hexagonal&quot;</span>
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">76</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="k">return</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_rod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
@@ -1560,15 +1838,283 @@
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=False)&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_rod_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;triclinic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">12</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;monoclinic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">22</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;orthorhombic&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">41</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;tetragonal&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">75</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;hexagonal&quot;</span>
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="c1">#TODO: implement Clusters</span>
+            <span class="c1">#0-D clusters. Except for group &quot;I&quot; and &quot;Ih&quot;, z axis is the high-symmetry axis</span>
+            <span class="c1">#https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c1">#Check if string is for crystallographic point group</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">pglist</span><span class="p">:</span>
+                    <span class="n">group</span> <span class="o">=</span> <span class="n">pglist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="c1">#Get crystallographic point group</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">float</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">33</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                    <span class="k">return</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_point_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="sd">&quot;&quot;&quot;A list of site symmetry operations for the Wyckoff positions, obtained</span>
+<span class="sd">                    from get_wyckoff_symmetry (molecular=False)&quot;&quot;&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span> <span class="o">=</span> <span class="n">get_point_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="sd">&quot;&quot;&quot;A list of site symmetry operations for the Wyckoff positions, obtained</span>
+<span class="sd">                    from get_wyckoff_symmetry (molecular=True)&quot;&quot;&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">get_point_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=False)&quot;&quot;&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_point_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">15</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">27</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">&lt;=</span> <span class="mi">32</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;spherical&quot;</span>
+            <span class="c1">#Get other point groups</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1">#Remove whitespace</span>
+                <span class="n">symbol</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">isspace</span><span class="p">())</span>
+                <span class="c1">#Find rotation order from symbol</span>
+                <span class="n">num_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">isalpha</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">num_str</span> <span class="o">==</span> <span class="s2">&quot;*&quot;</span><span class="p">:</span>
+                    <span class="n">num</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1">#infinite rotation order</span>
+                <span class="k">elif</span> <span class="n">num_str</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="n">num</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1">#No rotation order</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_str</span><span class="p">)</span> <span class="c1">#rotation order</span>
+                        <span class="mi">1</span> <span class="o">/</span> <span class="n">num</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid rotation order for point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="k">return</span>
+                <span class="n">gens</span> <span class="o">=</span> <span class="p">[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)]</span> <span class="c1"># List of generator SymmOps</span>
+                <span class="n">generate</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="c1">#interpret symbol</span>
+                <span class="k">if</span> <span class="n">symbol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;I&quot;</span><span class="p">:</span>
+                    <span class="c1">#Icosohedral</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;spherical&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="kc">None</span>
+
+                    <span class="c1">#Add 2, 3, and 5-fold rotations</span>
+                    <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,-y,z&#39;</span><span class="p">))</span>
+                    <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;z,x,y&#39;</span><span class="p">))</span>
+                    <span class="n">tau</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="n">aa2matrix</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span>
+                    <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
+
+                    <span class="c1">#Add Wyckoff generating operations</span>
+                    <span class="n">op_c</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,0,0&#39;</span><span class="p">)</span>
+                    <span class="n">op_b</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,x,x&#39;</span><span class="p">)</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="n">tau</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span>
+                    <span class="n">op_a</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+                    <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_c</span><span class="p">,</span> <span class="n">op_b</span><span class="p">,</span> <span class="n">op_a</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
+
+                    <span class="k">if</span> <span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;Ih&quot;</span><span class="p">:</span>
+                        <span class="c1">#Add horizontal mirror plane</span>
+                        <span class="n">mirror</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,-z&#39;</span><span class="p">)</span> <span class="c1">#m x,y,0</span>
+                        <span class="n">gen_pos</span> <span class="o">=</span> <span class="n">generate_full_symmops</span><span class="p">([</span><span class="n">R2</span><span class="p">,</span> <span class="n">R3</span><span class="p">,</span> <span class="n">R5</span><span class="p">,</span> <span class="n">mirror</span><span class="p">],</span> <span class="o">.</span><span class="mi">03</span><span class="p">)</span>
+                        <span class="n">op_d</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,y,z&#39;</span><span class="p">)</span>
+                        <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_d</span><span class="p">,</span> <span class="n">op_c</span><span class="p">,</span> <span class="n">op_b</span><span class="p">,</span> <span class="n">op_a</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">symbol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span> <span class="ow">and</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;i&quot;</span><span class="p">:</span>
+                    <span class="c1">#n-fold rotation</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
+                    <span class="k">if</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="k">return</span>
+                    <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c1">#infinite-order rotation</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="s2">&quot;C*&quot;</span>
+                        <span class="n">generate</span><span class="o">=</span><span class="kc">False</span>
+                        <span class="k">pass</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#Add rotation</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="s2">&quot;C&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+                        <span class="n">m</span> <span class="o">=</span> <span class="n">aa2matrix</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">num</span><span class="p">)</span>
+                        <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]))</span>
+                        <span class="n">op_c</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,-x,z&#39;</span><span class="p">)</span>
+                        <span class="n">op_b</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,0,z&#39;</span><span class="p">)</span>
+                        <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_z</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;v&quot;</span><span class="p">:</span>
+                        <span class="c1">#Add vertical mirror plane</span>
+                        <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,y,z&#39;</span><span class="p">))</span> <span class="c1">#m 0,y,z</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">+=</span> <span class="s2">&quot;v&quot;</span>
+                        <span class="k">if</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_c</span><span class="p">,</span> <span class="n">op_z</span><span class="p">]</span>
+                        <span class="k">elif</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_c</span><span class="p">,</span> <span class="n">op_b</span><span class="p">,</span> <span class="n">op_z</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span>
+                        <span class="c1">#Add horizontal mirror plane</span>
+                        <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,-z&#39;</span><span class="p">))</span> <span class="c1">#m x,y,0</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">+=</span> <span class="s2">&quot;h&quot;</span>
+                        <span class="n">op_xy</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,0&#39;</span><span class="p">)</span>
+                        <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_xy</span><span class="p">,</span> <span class="n">op_z</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">symbol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span> <span class="ow">and</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;i&quot;</span><span class="p">:</span>
+                    <span class="c1">#n-fold rotinversion, usually just Ci</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
+                    <span class="k">if</span> <span class="s2">&quot;d&quot;</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="ow">or</span> <span class="s2">&quot;h&quot;</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="ow">or</span> <span class="s2">&quot;v&quot;</span> <span class="ow">in</span> <span class="n">symbol</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="k">return</span>
+                    <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c1">#infinite-order rotation</span>
+                        <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;-x,-y,-z&#39;</span><span class="p">))</span>
+                        <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,-z&#39;</span><span class="p">))</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="s2">&quot;C*i&quot;</span>
+                        <span class="n">generate</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#Add rotoinversion</span>
+                        <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">aa2matrix</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">num</span><span class="p">),</span> <span class="p">[[</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">]])</span>
+                        <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]))</span>
+                        <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="s2">&quot;Ci&quot;</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="s2">&quot;C&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;i&quot;</span>
+                        <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_z</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">symbol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="c1">#n-fold rotation and n 2-fold perpendicular rotations</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
+                    <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c1">#infinite-order rotation</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="s2">&quot;D*&quot;</span>
+                        <span class="n">generate</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#Add rotation</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="s2">&quot;D&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+                        <span class="c1">#Rotation angle</span>
+                        <span class="n">angle</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">num</span>
+                        <span class="n">m</span> <span class="o">=</span> <span class="n">aa2matrix</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">],</span> <span class="n">angle</span><span class="p">)</span>
+                        <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]))</span>
+                        <span class="c1">#Different group orders have different multiplicities for &quot;D&quot; point groups</span>
+                        <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="c1">#Add (x,0,0)</span>
+                            <span class="n">gen_ops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op_x</span><span class="p">)</span>
+                            <span class="n">num2</span> <span class="o">=</span> <span class="n">num</span> <span class="o">//</span> <span class="mi">2</span>
+                            <span class="k">if</span> <span class="n">num2</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="c1">#Add num-fold symmetry axis</span>
+                                <span class="n">axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                            <span class="k">elif</span> <span class="n">num2</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                                <span class="c1">#Add num2-fold symmetry axis</span>
+                                <span class="n">m</span> <span class="o">=</span> <span class="n">aa2matrix</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">],</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">angle</span><span class="p">)</span>
+                                <span class="n">axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="k">elif</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="c1">#Add num-fold symmetry axis</span>
+                            <span class="n">axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>
+                            <span class="c1">#Add half-angle reflection operation</span>
+                            <span class="n">m_ref</span> <span class="o">=</span> <span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span><span class="mi">0</span><span class="p">],[</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]]</span>
+                            <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m_ref</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]))</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">+=</span> <span class="s2">&quot;d&quot;</span>
+                            <span class="c1">#Add (x,0,z)</span>
+                            <span class="n">gen_ops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,0,z&#39;</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="c1">#Add symmetry element + z</span>
+                                <span class="n">m0</span> <span class="o">=</span> <span class="n">symmetry_element_from_axis</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span><span class="o">.</span><span class="n">affine_matrix</span>
+                                <span class="n">m0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+                                <span class="n">new_op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="p">(</span><span class="n">m0</span><span class="p">)</span>
+                                <span class="n">gen_ops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_op</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span>
+                            <span class="c1">#Add horizontal mirror plane</span>
+                            <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,-z&#39;</span><span class="p">))</span> <span class="c1">#m x,y,0</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">+=</span> <span class="s2">&quot;h&quot;</span>
+                            <span class="n">gen_ops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,0&#39;</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="c1">#Add (x,0,z)</span>
+                                <span class="n">gen_ops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,0,z&#39;</span><span class="p">))</span>
+                            <span class="c1">#Add symmetry axis + z</span>
+                            <span class="n">m0</span> <span class="o">=</span> <span class="n">symmetry_element_from_axis</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span><span class="o">.</span><span class="n">affine_matrix</span>
+                            <span class="n">m0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">new_op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="p">(</span><span class="n">m0</span><span class="p">)</span>
+                            <span class="n">gen_ops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_op</span><span class="p">)</span>
+                        <span class="c1">#Add generator op for axis, as well as z-axis and origin</span>
+                        <span class="n">gen_ops</span> <span class="o">+=</span> <span class="p">[</span><span class="n">op_z</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;D*&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;v&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;i&quot;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="k">return</span>
+                <span class="k">elif</span> <span class="n">symbol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="c1">#2n-fold rotation-reflection axis</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
+                    <span class="c1">#Equivalent to Cnh for odd n</span>
+                    <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;v&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;i&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;h&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;d&quot;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="k">return</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">aa2matrix</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">num</span><span class="p">),</span> <span class="p">[[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">]])</span>
+                    <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]))</span>
+                    <span class="k">if</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">op_xy</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,0&#39;</span><span class="p">)</span>
+                        <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_xy</span><span class="p">,</span> <span class="n">op_z</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
+                    <span class="k">elif</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_z</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="c1">#Generate full set of SymmOps</span>
+                <span class="k">if</span> <span class="n">generate</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">gen_pos</span> <span class="o">=</span> <span class="n">generate_full_symmops</span><span class="p">(</span><span class="n">gens</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="p">:</span>
+                    <span class="c1">#Calculate Wyckoff positions</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">gen_ops</span><span class="p">:</span>
+                        <span class="n">wp</span> <span class="o">=</span> <span class="n">Wyckoff_position</span><span class="o">.</span><span class="n">wyckoff_from_generating_op</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">gen_pos</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">wp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">op</span><span class="p">:</span>
+                            <span class="n">index</span> <span class="o">=</span> <span class="n">wp</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                            <span class="n">op2</span> <span class="o">=</span> <span class="n">wp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">wp</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">op2</span>
+                            <span class="n">wp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">op</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span>
+                    <span class="c1">#Calculate site symmetry and generators</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">wp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Wyckoff_position</span><span class="o">.</span><span class="n">symmetry_from_wyckoff</span><span class="p">(</span><span class="n">wp</span><span class="p">,</span> <span class="n">gen_pos</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="p">:</span>
+                    <span class="c1">#infinite rotational groups</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;C*&quot;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,z&#39;</span><span class="p">)]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)]]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;C*h&quot;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">op_z</span><span class="p">,</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,-z&#39;</span><span class="p">)],[</span><span class="n">op_o</span><span class="p">]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)]],[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,-z&#39;</span><span class="p">)]]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;C*v&quot;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,z&#39;</span><span class="p">)]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)]]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;D*h&quot;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">op_z</span><span class="p">,</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,-z&#39;</span><span class="p">)],[</span><span class="n">op_o</span><span class="p">]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)]],[[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;0,0,-z&#39;</span><span class="p">)]]]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="kc">None</span>
+            
         <span class="c1">#TODO: Add self.symbol to dictionary</span>
         <span class="n">wpdicts</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;letter&quot;</span><span class="p">:</span> <span class="n">letter_from_index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">),</span> <span class="s2">&quot;ops&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
             <span class="s2">&quot;multiplicity&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="s2">&quot;symmetry&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s2">&quot;symmetry_m&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
             <span class="s2">&quot;generators&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s2">&quot;generators_m&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
-            <span class="s2">&quot;PBC&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="s2">&quot;dim&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">))]</span>
+            <span class="s2">&quot;PBC&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="s2">&quot;dim&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="s2">&quot;symbol&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">))]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Wyckoff_positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">Wyckoff_position</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">wpdict</span><span class="p">)</span> <span class="k">for</span> <span class="n">wpdict</span> <span class="ow">in</span> <span class="n">wpdicts</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;A list of Wyckoff_position objects, sorted by descending multiplicity&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs_organized</span> <span class="o">=</span> <span class="n">organized_wyckoffs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -1626,17 +2172,23 @@
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Rod &quot;</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="c1">#TODO: implement Clusters</span>
-                <span class="k">return</span> <span class="s2">&quot;Error: 0D clusters are not yet implemented. Check back soon.&quot;</span>
-            <span class="c1">#TODO: implement ss_string_from_ops</span>
-            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; --&quot;</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;-- Point group &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">+</span> <span class="s2">&quot; --&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;group # &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; --&quot;</span>
             <span class="k">for</span> <span class="n">wp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wyckoff_positions</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="n">wp</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">site symm: &quot;</span>
-                <span class="n">s</span> <span class="o">+=</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="n">wp</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot; site symm: &quot;</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wp</span><span class="o">.</span><span class="n">ops</span><span class="p">:</span>
-                    <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">op</span><span class="o">.</span><span class="n">as_xyz_string</span><span class="p">()</span>
+                    <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span> <span class="o">+</span> <span class="n">op</span><span class="o">.</span><span class="n">as_xyz_string</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">string_long</span> <span class="o">=</span> <span class="n">s</span>
-            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">string_long</span><span class="p">)</span></div></div>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">string_long</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Group.gen_pos"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group.gen_pos">[docs]</a>    <span class="k">def</span> <span class="nf">gen_pos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the general Wyckoff position</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wyckoff_positions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div></div>
+
 </pre></div>
 
           </div>

@@ -489,7 +489,7 @@ molecular centers and orientations.</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal</code><span class="sig-paren">(</span><em>sg</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing and generating molecular crystals based on symmetry
 constraints. Based on the crystal.random_crystal class for atomic crystals.
@@ -501,7 +501,8 @@ constraints. This crystal is stored as a pymatgen struct via self.struct</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>sg</strong> – The international spacegroup number</li>
+<li><strong>group</strong> – The international spacegroup number
+OR, a pyxtal.symmetry.Group object</li>
 <li><strong>molecules</strong> – a list of pymatgen.core.structure.Molecule objects for
 each type of molecule. Alternatively, you may supply a file path,
 or give a string to convert (in which case fmt must be defined)</li>
@@ -592,7 +593,7 @@ self.group.wyckoffs_organized[j][k]</p>
 
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.molecular_crystal.init_common">
-<code class="descname">init_common</code><span class="sig-paren">(</span><em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion</em>, <em>orientations</em>, <em>check_atomic_distances</em>, <em>number</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.init_common" title="Permalink to this definition">¶</a></dt>
+<code class="descname">init_common</code><span class="sig-paren">(</span><em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion</em>, <em>orientations</em>, <em>check_atomic_distances</em>, <em>group</em>, <em>lattice</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.init_common" title="Permalink to this definition">¶</a></dt>
 <dd><p>init functionality which is shared by 3D, 2D, and 1D crystals</p>
 </dd></dl>
 
@@ -602,11 +603,34 @@ self.group.wyckoffs_organized[j][k]</p>
 <dd><p>The international spacegroup number of the crystal.</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="pyxtal.molecular_crystal.molecular_crystal.to_file">
+<code class="descname">to_file</code><span class="sig-paren">(</span><em>fmt=None</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a file with the given filename and file type to store the structure.
+By default, creates cif files for crystals and xyz files for clusters.
+By default, the filename is based on the stoichiometry.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fmt</strong> – the file type (‘cif’, ‘xyz’, etc.)</li>
+<li><strong>filename</strong> – the file path</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Nothing. Creates a file at the specified path</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_1D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>area</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>area</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.molecular_crystal.molecular_crystal" title="pyxtal.molecular_crystal.molecular_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.molecular_crystal.molecular_crystal</span></code></a></p>
 <p>A 1d counterpart to molecular_crystal. Given a Rod group, list of
 molecule objects, molecular stoichiometry, volume factor, and area,
@@ -617,8 +641,9 @@ The crystal is stored as a pymatgen struct via self.struct</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>number</strong> – the Rod group number between 1 and 80. NOT equal to the
-international space group number, which is between 1 and 230</li>
+<li><strong>group</strong> – the Rod group number between 1 and 80. NOT equal to the
+international space group number, which is between 1 and 230
+OR, a pyxtal.symmetry.Group object</li>
 <li><strong>molecules</strong> – a list of pymatgen.core.structure.Molecule objects for
 each type of molecule. Alternatively, you may supply a file path,
 or give a string to convert (in which case fmt must be defined)</li>
@@ -670,12 +695,6 @@ unit cell.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="pyxtal.molecular_crystal.molecular_crystal_1D.number">
-<code class="descname">number</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D.number" title="Permalink to this definition">¶</a></dt>
-<dd><p>The number (between 1 and 80) for the crystal’s Rod group.</p>
-</dd></dl>
-
-<dl class="attribute">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_1D.sg">
 <code class="descname">sg</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D.sg" title="Permalink to this definition">¶</a></dt>
 <dd><p>The international space group number (there is not a 1-1 correspondence
@@ -686,7 +705,7 @@ with Rod groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_2D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>number</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.molecular_crystal.molecular_crystal" title="pyxtal.molecular_crystal.molecular_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.molecular_crystal.molecular_crystal</span></code></a></p>
 <p>A 2d counterpart to molecular_crystal. Given a layer group, list of
 molecule objects, molecular stoichiometry, and
@@ -697,8 +716,9 @@ constraints. This crystal is stored as a pymatgen struct via self.struct</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>number</strong> – the layer group number between 1 and 80. NOT equal to the
-international space group number, which is between 1 and 230</li>
+<li><strong>group</strong> – the layer group number between 1 and 80. NOT equal to the
+international space group number, which is between 1 and 230
+OR, a pyxtal.symmetry.Group object</li>
 <li><strong>molecules</strong> – a list of pymatgen.core.structure.Molecule objects for
 each type of molecule. Alternatively, you may supply a file path,
 or give a string to convert (in which case fmt must be defined)</li>
@@ -753,12 +773,6 @@ when molecule values are strings</li>
 <dt id="pyxtal.molecular_crystal.molecular_crystal_2D.numattempts">
 <code class="descname">numattempts</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D.numattempts" title="Permalink to this definition">¶</a></dt>
 <dd><p>The number of attempts needed to generate the crystal.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyxtal.molecular_crystal.molecular_crystal_2D.number">
-<code class="descname">number</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D.number" title="Permalink to this definition">¶</a></dt>
-<dd><p>The layer group number of the crystal.</p>
 </dd></dl>
 
 <dl class="attribute">

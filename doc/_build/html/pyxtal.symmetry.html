@@ -38,13 +38,19 @@
 <span id="pyxtal-symmetry-module"></span><h1>pyxtal.symmetry module<a class="headerlink" href="#module-pyxtal.symmetry" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="pyxtal.symmetry.Group">
-<em class="property">class </em><code class="descclassname">pyxtal.symmetry.</code><code class="descname">Group</code><span class="sig-paren">(</span><em>number</em>, <em>dim=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#Group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.Group" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.symmetry.</code><code class="descname">Group</code><span class="sig-paren">(</span><em>group</em>, <em>dim=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#Group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.Group" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing a set of Wyckoff positions for a symmetry group</p>
 <dl class="attribute">
 <dt id="pyxtal.symmetry.Group.Wyckoff_positions">
 <code class="descname">Wyckoff_positions</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.symmetry.Group.Wyckoff_positions" title="Permalink to this definition">¶</a></dt>
 <dd><p>A list of Wyckoff_position objects, sorted by descending multiplicity</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.symmetry.Group.gen_pos">
+<code class="descname">gen_pos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#Group.gen_pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.Group.gen_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the general Wyckoff position</p>
 </dd></dl>
 
 <dl class="method">
@@ -135,6 +141,38 @@ Wyckoff class for constructing a list of Wyckoff_position objects at once</p>
 with lower multiplicity. Alternatively, index can be the Wyckoff letter
 (“4a6” or “f”)</li>
 </ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.symmetry.Wyckoff_position.get_site_symmetry">
+<code class="descname">get_site_symmetry</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#Wyckoff_position.get_site_symmetry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.Wyckoff_position.get_site_symmetry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.symmetry.Wyckoff_position.symmetry_from_wyckoff">
+<code class="descname">symmetry_from_wyckoff</code><span class="sig-paren">(</span><em>gen_pos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#Wyckoff_position.symmetry_from_wyckoff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.Wyckoff_position.symmetry_from_wyckoff" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.symmetry.Wyckoff_position.wyckoff_from_generating_op">
+<code class="descname">wyckoff_from_generating_op</code><span class="sig-paren">(</span><em>gen_pos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#Wyckoff_position.wyckoff_from_generating_op"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.Wyckoff_position.wyckoff_from_generating_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a general position and generating operation (ex: “x,0,0”), returns a
+Wyckoff_position object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>gen_op</strong> – a SymmOp into which the generating coordinate will be plugged</li>
+<li><strong>gen_pos</strong> – a list of SymmOps representing the general position</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list of SymmOps</p>
 </td>
 </tr>
 </tbody>
@@ -477,6 +515,88 @@ operations. If True, cuts off translational part of operation, and
 converts non-orthogonal operations (3-fold and 6-fold rotations)
 to (orthogonal) pure rotations. Should be used when dealing with
 molecular crystals</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 3d list of SymmOp objects representing the site symmetry of each
+point in each Wyckoff position</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.symmetry.get_point">
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_point</code><span class="sig-paren">(</span><em>num</em>, <em>organized=False</em>, <em>molecular=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of Wyckoff positions for a given crystallographic point group.
+Has option to organize the list based on multiplicity.</p>
+<p>1st index: index of WP in layer group (0 is the WP with largest multiplicity)</p>
+<p>2nd index: a SymmOp object in the WP</p>
+<p>For point groups except T, Th, O, Td, and Oh, unique axis z is used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>num</strong> – the point group number (see bottom of source code for a list)</li>
+<li><strong>organized</strong> – whether or not to organize the list based on multiplicity</li>
+<li><strong>molecular</strong> – whether or not to convert to Euclidean reference frame
+(for hexagonal lattices: point groups 16-27)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list of Wyckoff positions, each of which is a list of SymmOp’s</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.symmetry.get_point_generators">
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_point_generators</code><span class="sig-paren">(</span><em>num</em>, <em>molecular=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_point_generators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_point_generators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of Wyckoff generators for a given point group.
+1st index: index of WP in group (0 is the WP with largest multiplicity)
+2nd index: a generator for the WP
+This function is useful for rotating molecules based on Wyckoff position,
+since special Wyckoff positions only encode positional information, but not
+information about the orientation. The generators for each Wyckoff position
+form a subset of the group’s general Wyckoff position.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>num</strong> – the Rod group number</li>
+<li><strong>molecular</strong> – whether or not to convert to Euclidean reference frame
+(for hexagonal lattices: point groups 16-27)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
+single fractional (x,y,z) coordinate</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.symmetry.get_point_symmetry">
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_point_symmetry</code><span class="sig-paren">(</span><em>num</em>, <em>molecular=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_point_symmetry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_point_symmetry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of Wyckoff position site symmetry for a given point group.
+1st index: index of WP in group (0 is the WP with largest multiplicity)
+2nd index: a point within the WP
+3rd index: a site symmetry SymmOp of the point</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>num</strong> – the point group number</li>
+<li><strong>molecular</strong> – whether or not to convert to Euclidean reference frame
+(for hexagonal lattices: point groups 16-27)</li>
 </ul>
 </td>
 </tr>
@@ -930,6 +1050,23 @@ are present. If False, we generate the rest</li>
 <dt id="pyxtal.symmetry.symbol_from_number">
 <code class="descclassname">pyxtal.symmetry.</code><code class="descname">symbol_from_number</code><span class="sig-paren">(</span><em>number</em>, <em>symbol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#symbol_from_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.symbol_from_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the H-M symbol for a given international group number</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.symmetry.symmetry_element_from_axis">
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">symmetry_element_from_axis</code><span class="sig-paren">(</span><em>axis</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#symmetry_element_from_axis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.symmetry_element_from_axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an axis, returns a SymmOp representing a symmetry element on the axis.
+For example, the symmetry element for the vector (0,0,2) would be (0,0,z).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>axis</strong> – a 3-vector representing the symmetry element</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a SymmOp object of form (ax, bx, cx), (ay, by, cy), or (az, bz, cz)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>
