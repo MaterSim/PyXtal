@@ -1183,7 +1183,6 @@ class Lattice():
                         point[a-1] -= 0.5
         return point
 
-<<<<<<< HEAD
 class tolerance_matrix():
     """
     Class for variable distance tolerance checking. Used within random_crystal and
@@ -1211,7 +1210,7 @@ class tolerance_matrix():
             for j, tup2 in enumerate(H.elements_list):
                 m[-1].append( f * (tup1[attrindex] + tup2[attrindex]) )
         self.matrix = np.array(m)
-=======
+
     def from_para(a, b, c, alpha, beta, gamma, ltype="triclinic", radians=False, PBC=[1,2,3], **kwargs):
         """
         Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
@@ -1321,7 +1320,6 @@ class tolerance_matrix():
 
     def __repr__(self):
         return str(self)
->>>>>>> a2bd7d058cc73da23df15be211eec6be83af1e07
 
 class random_crystal():
     """
