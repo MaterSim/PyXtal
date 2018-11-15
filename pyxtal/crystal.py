@@ -1293,33 +1293,118 @@ class Lattice():
     def __repr__(self):
         return str(self)
 
-class tolerance_matrix():
+class tol_matrix():
     """
     Class for variable distance tolerance checking. Used within random_crystal and
     molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-
-    atom pair tolerances.
+    atom pair tolerances. Note that the matrix's indices correspond to atomic numbers,
+    with the 0th entries being 0 (there is no atomic number 0).
 
     Args:
-        string: a string representing the type of radii to use
+        prototype: a string representing the type of radii to use
             ("atomic", "molecular")
         factor: a float to scale the distances by. A smaller value means a smaller
             tolerance for distance checking
+        tuples: a list or tuple of tuples, which define custom tolerance values. Each tuple
+            should be of the form (specie1, specie2, value), where value is the tolerance
+            in Angstroms, and specie1 and specie2 can be strings, integers, Element objects,
+            or pymatgen Specie objects. Custom values may also be set using set_tol
     """
-    def __init__(self, string="atomic", factor=1.0):
+    def __init__(self, prototype="atomic", factor=1.0, *tuples):
         f = factor
-        if string == "atomic":
+        if prototype == "atomic":
             f *= 0.5
             attrindex = 5
-        elif string == "molecular":
+            self.radius_type = "covalent"
+        elif prototype == "molecular":
             attrindex = 5
-        H = Element('H')
-        #m = np.eyes((len(H.elements_list)+1,len(H.element_list)+1))
-        m = [[0.]*(len(H.elements_list)+1)]
-        for i, tup1 in enumerate(H.elements_list):
-            m.append([0.])
-            for j, tup2 in enumerate(H.elements_list):
-                m[-1].append( f * (tup1[attrindex] + tup2[attrindex]) )
+            self.radius_type = "covalent"
+        if prototype != "empty":
+            H = Element('H')
+            self.elements_list = H.elements_list
+            m = [[0.]*(len(H.elements_list)+1)]
+            for i, tup1 in enumerate(H.elements_list):
+                m.append([0.])
+                for j, tup2 in enumerate(H.elements_list):
+                    if tup1[attrindex] is not None and tup2[attrindex] is not None:
+                        m[-1].append( f * (tup1[attrindex] + tup2[attrindex]) )
+                    else:
+                        m[-1].append(None)
         self.matrix = np.array(m)
+        """A symmetric numpy matrix storing the tolerance between specie pairs."""
+        self.custom_values = []
+        """A list of tuples storing which species pair tolerances have custom values."""
+        try:
+            for tup in tuples:
+                self.set_tol(*tup)
+        except:
+            print("Error: Could not set custom tolerance value(s).")
+            print("    All custom entries should be entered using the following form:")
+            print("    (specie1, specie2, value), where value is the tolerance in Angstroms.")
+
+    def get_tol(self, specie1, specie2):
+        """
+        Returns the tolerance between two species.
+        
+        Args:
+            specie1, specie2: the atomic number (int or float), name (str), symbol (str),
+                an Element object, or a pymatgen Specie object
+        """
+        index1 = Element.number_from_specie(specie1)
+        index2 = Element.number_from_specie(specie2)
+        if index1 is not None and index2 is not None:
+            return self.matrix[index1][index2]
+        else:
+            return None
+
+    def set_tol(self, specie1, specie2, value):
+        """
+        Returns the tolerance between two species.
+        
+        Args:
+            specie1, specie2: the atomic number (int or float), name (str), symbol (str),
+                an Element object, or a pymatgen Specie object
+        """
+        index1 = Element.number_from_specie(specie1)
+        index2 = Element.number_from_specie(specie2)
+        if index1 is None or index2 is None:
+            return
+        self.matrix[index1][index2] = float(value)
+        if index != index2:
+            self.matrix[index2][index1] = float(value)
+        if (index1, index2) not in self.custom_values and (index2, index1) not in self.custom_values:
+            larger = max(index1, index2)
+            smaller = min(index1, index2)
+            self.custom_values.append((smaller, larger))
+
+    def from_radii(radius_list, prototype="atomic", factor=1.0):
+        """
+        Given a list of atomic radii, returns a tol_matrix object. For atom-atom pairs, uses
+        the average radii of the two species as the tolerance value. For atoms with atomic
+        numbers not in the radius list, the default value (specified by prototype) will be
+        used, up to element 96.
+
+        Args:
+            radius_list: a list of atomic radii (in Angstroms), beginning with Hydrogen
+            prototype: a string representing the type of radii to use
+                ("atomic", "molecular")
+            factor: a float to scale the distances by. A smaller value means a smaller
+                tolerance for distance checking
+
+        Returns:
+            a tol_matrix object
+        """
+        tups = []
+        f = factor * 0.5
+        for i, r1 in enumerate(radius_list):
+            for j, r2 in enumerate(radius_list):
+                if j > i: continue
+                tups.append( (i+1, j+1, f*(r1+r2)) )
+        return tol_matrix(prototype=prototype, factor=factor, *tups)
+
+    def __getitem__(self, index):
+        new_index = Element.number_from_specie(index)
+        return self.matrix[index]
 
 class random_crystal():
     """
