@@ -324,3 +324,32 @@ class Element:
         return self.get_all(6)
     def get_sf(self):
         return self.get_sf()
+
+    def number_from_specie(specie):
+        if type(specie) == int or type(specie) == float:
+            if specie <= 96 and specie >= 1:
+                index = int(specie)
+            else:
+                print("Error: Atomic number must be between 1 and 96.")
+                return
+        elif type(specie) == str:
+            try:
+                el = Element(specie)
+                index = el.z
+            except:
+                print("Error: Invalid atomic symbol, name, or number.")
+                return
+        elif type(specie) == Element:
+            try:
+                index = specie.z
+            except:
+                print("Error: Element object has no atomic number 'z'.")
+                return
+        else:
+            try:
+                el = Element(specie.number)
+                index = el.z
+            except:
+                print("Error: Invalid atomic symbol, name, or number.")
+                return
+        return index
