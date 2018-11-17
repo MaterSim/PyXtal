@@ -49,11 +49,11 @@ if __name__ == "__main__":
         strings = molecule.split(',')
         system = []
         for mol in strings:
-            system.append(ob_mol_from_string(mol))
+            system.append(mol_from_collection(mol))
         for x in number.split(','):
             numMols.append(int(x))
     else:
-        system = [ob_mol_from_string(molecule)]
+        system = [mol_from_collection(molecule)]
         numMols = [int(number)]
     orientations = None
 
