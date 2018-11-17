@@ -589,7 +589,7 @@ class mol_site():
             print("Error: parameter absolute must be True or False")
             return
 
-    def check_distances(self, factor=1.0, atomic=True, tm=Tol_matrix(prototype="molecular")):
+    def check_distances(self, factor=1.0, atomic=True):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
@@ -618,13 +618,26 @@ class mol_site():
             list1 = x[0]
             list2 = x[1]
             m_length = len(self.mol)
-            #Ignore intramolecular distances
+            #Check intermolecular distances, ignore intramolecular
             for i, j in zip(list1, list2):
                 mol_num1 = int(i) // int(m_length)
                 mol_num2 = int(j) // int(m_length)
                 #if abs(i-j) >= m_length:
                 if mol_num1 != mol_num2:
                     return False
+            
+            '''#Check periodic images
+            matrix = create_matrix(PBC=self.PBC)
+            for v in matrix:
+                if v[0] == 0 and v[1] == 0 and v[2] == 0: continue
+                m1 = np.array(coords) + np.array(v)
+                d2 = check_distance(coords, m1, species, species, self.lattice, PBC=[],
+                    tm=self.tol_matrix, d_factor=factor)
+                if d2 is False:
+                    return False'''
+
+            return check_images(coords, species, self.lattice, PBC=self.PBC, tm=self.tol_matrix, d_factor=factor)            
+
             return True
         elif atomic is False:
             #Check molecular ellipsoid overlap

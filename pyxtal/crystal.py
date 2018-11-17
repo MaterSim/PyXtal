@@ -378,6 +378,21 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,2,3], tm=
     else:
         return True
 
+def check_images(coords, species, lattice, PBC=[1,2,3], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
+    """
+    Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.
+    """
+    coords = np.array(coords)
+    m = create_matrix(PBC=PBC)
+    new_coords = []
+    new_species = []
+    for v in m:
+        if v[0] == 0 and v[1] == 0 and v[2] == 0: continue
+        for v2 in coords+v:
+            new_coords.append(v2)
+        new_species += species
+    return check_distance(coords, np.array(new_coords), species, new_species, lattice, PBC=[], tm=tm, d_factor=d_factor)
+
 def get_center(xyzs, lattice, PBC=[1,2,3]):
     """
     Finds the geometric centers of the clusters under periodic boundary
