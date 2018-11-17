@@ -117,13 +117,17 @@
 <span class="n">tol_m_3</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="o">.</span><span class="n">from_matrix</span><span class="p">(</span><span class="n">some_custom_2D_tolerance_matrix</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>From here, you can alter the tolerance between certain inter-atomic pairs:</p>
+<p>From here, you can alter the tolerance between certain inter-atomic pairs. Additionally, you can save and reload custom Tol_matrix objects for later use:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">tol_m_1</span><span class="o">.</span><span class="n">set_tol</span><span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="mf">2.1</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">tol_m_1</span><span class="o">.</span><span class="n">set_tol</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">4.6</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">tol_m_1</span><span class="o">.</span><span class="n">print_all</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">tol_m_1</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="s2">&quot;custom_matrix_file&quot;</span><span class="p">)</span>
+<span class="s1">&#39;Output file to custom_matrix_file.npy&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">reloaded_tol_matrix</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;custom_matrix_file.npy&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">reloaded_tol_matrix</span><span class="o">.</span><span class="n">print_all</span><span class="p">()</span>
 <span class="o">--</span><span class="n">Tol_matrix</span> <span class="k">class</span> <span class="nc">object</span><span class="o">--</span>
   <span class="n">Prototype</span><span class="p">:</span> <span class="n">molecular</span>
   <span class="n">Atomic</span> <span class="n">radius</span> <span class="nb">type</span><span class="p">:</span> <span class="n">covalent</span>
+  <span class="n">Radius</span> <span class="n">scaling</span> <span class="n">factor</span><span class="p">:</span> <span class="mf">2.4</span>
   <span class="n">Custom</span> <span class="n">tolerance</span> <span class="n">values</span><span class="p">:</span>
     <span class="n">C</span><span class="p">,</span> <span class="n">N</span><span class="p">:</span> <span class="mf">2.1</span>
     <span class="n">H</span><span class="p">,</span> <span class="n">Li</span><span class="p">:</span> <span class="mf">4.6</span>

@@ -129,6 +129,7 @@ class Tol_matrix():
             f *= 0.5
         else:
             self.radius_type = "N/A"
+        self.f = f
         H = Element('H')
         m = [[0.]*(len(H.elements_list)+1)]
         for i, tup1 in enumerate(H.elements_list):
@@ -296,6 +297,7 @@ class Tol_matrix():
         print("--Tol_matrix class object--")
         print("  Prototype: "+str(self.prototype))
         print("  Atomic radius type: "+str(self.radius_type))
+        print("  Radius scaling factor: "+str(self.f))
         if self.prototype == "single value":
             print("  Custom tolerance value: "+str(self.matrix([0][0])))
         else:
@@ -305,6 +307,56 @@ class Tol_matrix():
                 print("  Custom tolerance values:")
                 for tup in self.custom_values:
                     print("    "+str(Element(tup[0]).short_name)+", "+str(Element(tup[1]).short_name)+": "+str(self.get_tol(tup[0],tup[1])))
+
+    def to_file(self, filename=None):
+        """
+        Creates a file with the given filename and file type to store the structure.
+        By default, creates cif files for crystals and xyz files for clusters.
+        By default, the filename is based on the stoichiometry.
+
+        Args:
+            fmt: the file type ('cif', 'xyz', etc.)
+            filename: the file path
+
+        Returns:
+            Nothing. Creates a file at the specified path
+        """
+        if filename == None:
+            given = False
+        else:
+            given = True
+        if filename == None:
+            filename = "custom_tol_matrix"
+        #Check if filename already exists
+        #If it does, add a new number to end of filename
+        if exists(filename):
+            i = 1
+            while True:
+                outdir = filename + "_" + str(i)
+                if not exists(outdir):
+                    break
+                i += 1
+                if i > 10000:
+                    return "Could not create file: too many files already created."
+        else:
+            outdir = filename
+        try:
+            np.save(filename, [self])
+            return "Output file to " + outdir + ".npy"
+        except:
+            return "Error: Could not save Tol_matrix to file."
+
+    def from_file(filename):
+        try:
+            tm = np.load(filename)[0]
+            if type(tm) == Tol_matrix:
+                return tm
+            else:
+                print("Error: invalid file for Tol_matrix.")
+                return
+        except:
+            print("Error: Could not load Tol_matrix from file.")
+            return
 
 def gaussian(min, max, sigma=3.0):
     """
@@ -1709,7 +1761,7 @@ class random_crystal():
             else:
                 self.struct.to(fmt=fmt, filename=outdir)
             return "Output file to " + outdir
-        elif self.valid:
+        elif self.valid is False:
             print("Cannot create file: structure did not generate.")
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):

@@ -126,16 +126,20 @@ When generating random crystals, PyXtal performs inter-atomic distances checks t
   tol_m_2 = Tol_matrix.from_radii(some_custom_list_of_atomic_radii)
   tol_m_3 = Tol_matrix.from_matrix(some_custom_2D_tolerance_matrix)
 
-From here, you can alter the tolerance between certain inter-atomic pairs:
+From here, you can alter the tolerance between certain inter-atomic pairs. Additionally, you can save and reload custom Tol_matrix objects for later use:
 
 .. code-block:: Python
 
   >>> tol_m_1.set_tol('C', 'N', 2.1)
   >>> tol_m_1.set_tol(1, 3, 4.6)
-  >>> tol_m_1.print_all()
+  >>> tol_m_1.to_file("custom_matrix_file")
+  'Output file to custom_matrix_file.npy'
+  >>> reloaded_tol_matrix = Tol_matrix.from_file("custom_matrix_file.npy")
+  >>> reloaded_tol_matrix.print_all()
   --Tol_matrix class object--
     Prototype: molecular
     Atomic radius type: covalent
+    Radius scaling factor: 2.4
     Custom tolerance values:
       C, N: 2.1
       H, Li: 4.6
