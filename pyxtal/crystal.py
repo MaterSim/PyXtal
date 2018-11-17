@@ -95,7 +95,7 @@ Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 
 #Define functions
 #------------------------------
-class tol_matrix():
+class Tol_matrix():
     """
     Class for variable distance tolerance checking. Used within random_crystal and
     molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-
@@ -196,7 +196,7 @@ class tol_matrix():
 
     def from_radii(radius_list, prototype="atomic", factor=1.0):
         """
-        Given a list of atomic radii, returns a tol_matrix object. For atom-atom pairs, uses
+        Given a list of atomic radii, returns a Tol_matrix object. For atom-atom pairs, uses
         the average radii of the two species as the tolerance value. For atoms with atomic
         numbers not in the radius list, the default value (specified by prototype) will be
         used, up to element 96.
@@ -209,7 +209,7 @@ class tol_matrix():
                 tolerance for distance checking
 
         Returns:
-            a tol_matrix object
+            a Tol_matrix object
         """
         tups = []
         f = factor * 0.5
@@ -217,7 +217,7 @@ class tol_matrix():
             for j, r2 in enumerate(radius_list):
                 if j > i: continue
                 tups.append( (i+1, j+1, f*(r1+r2)) )
-        tm = tol_matrix(prototype=prototype, factor=factor, *tups)
+        tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
         '''tm.custom_values = []
         for i, x in enumerate(radius_list):
             tm.custom_values.append((i, i))'''
@@ -225,16 +225,16 @@ class tol_matrix():
 
     def from_single_value(value):
         """
-        Creates a tol_matrix which only has a single tolerance value. Using get_tol will
+        Creates a Tol_matrix which only has a single tolerance value. Using get_tol will
         always return the same value.
 
         Args:
             value: the tolerance value to use
 
         Returns:
-            as tol_matrix object whose methods are overridden to use a single tolerance value
+            as Tol_matrix object whose methods are overridden to use a single tolerance value
         """
-        tm = tol_matrix()
+        tm = Tol_matrix()
         tm.prototype = "single value"
         tm.matrix = np.array([[value]])
         tm.custom_values = [(1,1)]
@@ -246,7 +246,7 @@ class tol_matrix():
         return self.matrix[index]
 
     def print_all(self):
-        print("--tol_matrix class object--")
+        print("--Tol_matrix class object--")
         print("  Prototype: "+str(self.prototype))
         print("  Atomic radius type: "+str(self.radius_type))
         if self.prototype == "single value":
@@ -308,7 +308,7 @@ Returns:
     A 1D numpy array of distances in Angstroms
 """
 
-def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,2,3], tm=tol_matrix(prototype="atomic"), d_factor=1.0):
+def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,2,3], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
     """
     Check the distances between two set of atoms. Distances between coordinates
     within the first set are not checked, and distances between coordinates within
@@ -325,7 +325,7 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,2,3], tm=
         lattice: matrix describing the unit cell vectors
         PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
             to x, y, and z respectively.
-        tm: a tol_matrix object, or a string representing the type of tol_matrix
+        tm: a Tol_matrix object, or a string representing the type of Tol_matrix
             to use
         d_factor: the tolerance is multiplied by this amount. Larger values
             mean atoms must be farther apart
@@ -1461,7 +1461,7 @@ class random_crystal():
         species: a list of atomic symbols for each ion type
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell)
-        tm: the tol_matrix object used to generate
+        tm: the Tol_matrix object used to generate
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
@@ -1520,21 +1520,21 @@ class random_crystal():
             """The volume of the generated unit cell."""
             self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         #Set the tolerance matrix
-        if type(tm) == tol_matrix:
+        if type(tm) == Tol_matrix:
             self.tol_matrix = tm
-            """The tol_matrix object used for checking inter-atomic distances within the structure."""
+            """The Tol_matrix object used for checking inter-atomic distances within the structure."""
         else:
             try:
-                self.tol_matrix = tol_matrix(prototype=tm)
+                self.tol_matrix = Tol_matrix(prototype=tm)
             except:
-                print("Error: tm must either be a tol_matrix object or a prototype string for initializing one.")
+                print("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.")
                 self.valid = False
                 self.struct = None
                 return
         #Generate the crystal
         self.generate_crystal()
 
-    def __init__(self, group, species, numIons, factor, lattice=None, tm=tol_matrix(prototype="atomic")):
+    def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         if type(group) != Group:
@@ -1835,7 +1835,7 @@ class random_crystal_2D(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, group, species, numIons, thickness, factor, lattice=None, tm=tol_matrix(prototype="atomic")):
+    def __init__(self, group, species, numIons, thickness, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.PBC = [1,2]
@@ -1871,7 +1871,7 @@ class random_crystal_1D(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, group, species, numIons, area, factor, lattice=None, tm=tol_matrix(prototype="atomic")):
+    def __init__(self, group, species, numIons, area, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         self.PBC = [3]
@@ -1903,7 +1903,7 @@ class random_cluster(random_crystal):
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
     """
-    def __init__(self, group, species, numIons, factor, lattice=None, tm=tol_matrix(prototype="atomic")):
+    def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 0
         """The number of periodic dimensions of the crystal"""
         self.PBC = []

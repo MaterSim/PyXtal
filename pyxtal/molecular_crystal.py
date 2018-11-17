@@ -108,7 +108,7 @@ def check_intersection(ellipsoid1, ellipsoid2):
     else:
         return True
 
-def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=tol_matrix(prototype="molecular")):
+def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype="molecular")):
     """
     Checks whether or not the molecules of two mol sites overlap. Uses
     ellipsoid overlapping approximation to check. Takes PBC and lattice
@@ -456,7 +456,7 @@ class mol_site():
     the molecular_crystal class. Each mol_site object represenents an
     entire Wyckoff position, not necessarily a single molecule.
     """
-    def __init__(self, mol, position, orientation, wyckoff_position, lattice, ellipsoid=None, tm=tol_matrix(prototype="molecular")):
+    def __init__(self, mol, position, orientation, wyckoff_position, lattice, ellipsoid=None, tm=Tol_matrix(prototype="molecular")):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = position
@@ -589,7 +589,7 @@ class mol_site():
             print("Error: parameter absolute must be True or False")
             return
 
-    def check_distances(self, factor=1.0, atomic=True, tm=tol_matrix(prototype="molecular")):
+    def check_distances(self, factor=1.0, atomic=True, tm=Tol_matrix(prototype="molecular")):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
@@ -786,20 +786,20 @@ class molecular_crystal():
             """The volume of the generated unit cell."""
             self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         #Set the tolerance matrix
-        if type(tm) == tol_matrix:
+        if type(tm) == Tol_matrix:
             self.tol_matrix = tm
-            """The tol_matrix object used for checking inter-atomic distances within the structure."""
+            """The Tol_matrix object used for checking inter-atomic distances within the structure."""
         else:
             try:
-                self.tol_matrix = tol_matrix(prototype=tm)
+                self.tol_matrix = Tol_matrix(prototype=tm)
             except:
-                print("Error: tm must either be a tol_matrix object or a prototype string for initializing one.")
+                print("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.")
                 self.valid = False
                 self.struct = None
                 return
         self.generate_crystal()
 
-    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         #Necessary input
@@ -1181,7 +1181,7 @@ class molecular_crystal_2D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
@@ -1240,7 +1240,7 @@ class molecular_crystal_1D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         #Necessary input
