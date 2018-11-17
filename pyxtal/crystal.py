@@ -194,7 +194,35 @@ class Tol_matrix():
             smaller = min(index1, index2)
             self.custom_values.append((smaller, larger))
 
-    def from_radii(radius_list, prototype="atomic", factor=1.0):
+    def from_matrix(matrix, prototype="atomic", factor=1.0, begin_with=0):
+        """
+        Given a tolerance matrix, returns a Tol_matrix object. Matrix indices correspond to
+        the atomic number (with 0 pointing to Hydrogen by default). For atoms with atomic
+        numbers not included in the matrix, the default value (specified by prototype) will be
+        used, up to element 96. Note that if the matrix is asymmetric, only the value below the
+        diagonal will be used.
+
+        Args:
+            matrix: a 2D matrix or list of tolerances between atomic species pairs
+            prototype: a string representing the type of radii to use
+                ("atomic", "molecular")
+            factor: a float to scale the distances by. A smaller value means a smaller
+                tolerance for distance checking
+            begin_with: the index which points to Hydrogen within the matrix. Default 0
+
+        Returns:
+            a Tol_matrix object
+        """
+        m = np.array(matrix)
+        tups = []
+        for i, row in enumerate(matrix):
+            for j, value in enumerate(row):
+                if j > i: continue
+                tups.append( (i+1-begin_with, j+1-begin_with, matrix[i][j]) )
+        tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
+        return tm
+
+    def from_radii(radius_list, prototype="atomic", factor=1.0, begin_with=0):
         """
         Given a list of atomic radii, returns a Tol_matrix object. For atom-atom pairs, uses
         the average radii of the two species as the tolerance value. For atoms with atomic
@@ -207,6 +235,7 @@ class Tol_matrix():
                 ("atomic", "molecular")
             factor: a float to scale the distances by. A smaller value means a smaller
                 tolerance for distance checking
+            begin_with: the index which points to Hydrogen within the list. Default 0
 
         Returns:
             a Tol_matrix object
@@ -216,11 +245,8 @@ class Tol_matrix():
         for i, r1 in enumerate(radius_list):
             for j, r2 in enumerate(radius_list):
                 if j > i: continue
-                tups.append( (i+1, j+1, f*(r1+r2)) )
+                tups.append( (i+1-begin_with, j+1-begin_with, f*(r1+r2)) )
         tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
-        '''tm.custom_values = []
-        for i, x in enumerate(radius_list):
-            tm.custom_values.append((i, i))'''
         return tm
 
     def from_single_value(value):
