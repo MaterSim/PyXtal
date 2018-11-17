@@ -144,7 +144,6 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=tol_matrix(prototype=
         c1, s1 = ms1.get_coords_and_species()
         c2, s2 = ms1.get_coords_and_species()
         return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC, tm=tm, d_factor=factor)
-    
 
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
     """
@@ -457,7 +456,7 @@ class mol_site():
     the molecular_crystal class. Each mol_site object represenents an
     entire Wyckoff position, not necessarily a single molecule.
     """
-    def __init__(self, mol, position, orientation, wyckoff_position, lattice, ellipsoid=None):
+    def __init__(self, mol, position, orientation, wyckoff_position, lattice, ellipsoid=None, tm=tol_matrix(prototype="molecular")):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = position
@@ -473,6 +472,18 @@ class mol_site():
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = wyckoff_position.PBC
         """The periodic axes"""
+        self.tol_matrix = tm
+        self.tols_matrix = self.get_tols_matrix()
+
+    def get_tols_matrix(self):
+        species = self.mol.species * self.multiplicity
+        #Create tolerance matrix from subset of tm
+        tm = self.tol_matrix
+        tols = np.zeros((len(species),len(species)))
+        for i1, specie1 in enumerate(species):
+            for i2, specie2 in enumerate(species):
+                tols[i1][i2] = tm.get_tol(specie1, specie2)
+        return tols
 
     def get_ellipsoid(self):
         #TODO: make lazy
@@ -599,17 +610,20 @@ class mol_site():
             coords, species = self._get_coords_and_species()
             #Store the coords and species for a single molecule
             d = distance_matrix(coords, coords, self.lattice, PBC=self.PBC)
-            tols = tols_from_species(species)
-            tols_matrix = factor*2*np.repeat([tols,], len(tols), axis=0)
+
+            tols = self.tols_matrix
 
             #Find pairs which are closer than the tolerance
-            x = np.where(d<tols_matrix)
+            x = np.where(d<tols)
             list1 = x[0]
             list2 = x[1]
             m_length = len(self.mol)
             #Ignore intramolecular distances
             for i, j in zip(list1, list2):
-                if abs(i-j) >= m_length:
+                mol_num1 = int(i) // int(m_length)
+                mol_num2 = int(j) // int(m_length)
+                #if abs(i-j) >= m_length:
+                if mol_num1 != mol_num2:
                     return False
             return True
         elif atomic is False:
@@ -1043,7 +1057,7 @@ class molecular_crystal():
                                         mo = deepcopy(self.molecules[i])
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
                                         ori = choose(self.valid_orientations[i][j][k]).random_orientation()
-                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix)
+                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
                                         #Check distances within the WP
                                         if ms0.check_distances(atomic=self.check_atomic_distances) is False: continue
                                         #Check distances with other WP's

@@ -112,21 +112,19 @@ class tol_matrix():
             in Angstroms, and specie1 and specie2 can be strings, integers, Element objects,
             or pymatgen Specie objects. Custom values may also be set using set_tol
     """
-    def __init__(self, prototype="atomic", factor=1.0, *tuples):
+    def __init__(self, *tuples, prototype="atomic", factor=1.0):
         f = factor
+        self.prototype = prototype
         if prototype == "atomic":
             f *= 0.5
             attrindex = 5
             self.radius_type = "covalent"
-            self.prototype = "atomic"
         elif prototype == "molecular":
             attrindex = 5
             self.radius_type = "covalent"
-            self.prototype = "molecular"
-        elif prototype == "empty":
-            self.prototype = "empty"
+            f *= 1.2
         else:
-            self.prototype = None
+            self.radius_type = "N/A"
         if prototype != "empty":
             H = Element('H')
             m = [[0.]*(len(H.elements_list)+1)]
@@ -141,6 +139,7 @@ class tol_matrix():
         """A symmetric numpy matrix storing the tolerance between specie pairs."""
         self.custom_values = []
         """A list of tuples storing which species pair tolerances have custom values."""
+
         try:
             for tup in tuples:
                 self.set_tol(*tup)
@@ -148,6 +147,12 @@ class tol_matrix():
             print("Error: Could not set custom tolerance value(s).")
             print("    All custom entries should be entered using the following form:")
             print("    (specie1, specie2, value), where value is the tolerance in Angstroms.")
+
+        self.radius_list = []
+        for i in range(len(self.matrix)):
+            if i == 0: continue
+            x = self.get_tol(i, i)
+            self.radius_list.append(x)
 
     def get_tol(self, specie1, specie2):
         """
@@ -182,7 +187,7 @@ class tol_matrix():
         if index1 is None or index2 is None:
             return
         self.matrix[index1][index2] = float(value)
-        if index != index2:
+        if index1 != index2:
             self.matrix[index2][index1] = float(value)
         if (index1, index2) not in self.custom_values and (index2, index1) not in self.custom_values:
             larger = max(index1, index2)
@@ -212,7 +217,11 @@ class tol_matrix():
             for j, r2 in enumerate(radius_list):
                 if j > i: continue
                 tups.append( (i+1, j+1, f*(r1+r2)) )
-        return tol_matrix(prototype=prototype, factor=factor, *tups)
+        tm = tol_matrix(prototype=prototype, factor=factor, *tups)
+        '''tm.custom_values = []
+        for i, x in enumerate(radius_list):
+            tm.custom_values.append((i, i))'''
+        return tm
 
     def from_single_value(value):
         """
@@ -228,13 +237,27 @@ class tol_matrix():
         tm = tol_matrix()
         tm.prototype = "single value"
         tm.matrix = np.array([[value]])
-        tm.custom_values = [(0,0)]
-        tm.radius_type = None
+        tm.custom_values = [(1,1)]
+        tm.radius_type = "N/A"
         return tm
 
     def __getitem__(self, index):
         new_index = Element.number_from_specie(index)
         return self.matrix[index]
+
+    def print_all(self):
+        print("--tol_matrix class object--")
+        print("  Prototype: "+str(self.prototype))
+        print("  Atomic radius type: "+str(self.radius_type))
+        if self.prototype == "single value":
+            print("  Custom tolerance value: "+str(self.matrix([0][0])))
+        else:
+            if self.custom_values == []:
+                print("  Custom tolerance values: None")
+            else:
+                print("  Custom tolerance values:")
+                for tup in self.custom_values:
+                    print("    "+str(Element(tup[0]).short_name)+", "+str(Element(tup[1]).short_name)+": "+str(self.get_tol(tup[0],tup[1])))
 
 def gaussian(min, max, sigma=3.0):
     """

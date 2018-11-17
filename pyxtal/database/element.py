@@ -328,10 +328,11 @@ class Element:
 
     def number_from_specie(specie):
         if type(specie) == int or type(specie) == float:
-            if specie <= 96 and specie >= 1:
+            if specie <= 105 and specie >= 1:
                 index = int(specie)
             else:
-                print("Error: Atomic number must be between 1 and 96.")
+                print(specie)
+                print("Error: Atomic number must be between 1 and 105.")
                 return
         elif type(specie) == str:
             try:
