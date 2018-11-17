@@ -108,7 +108,7 @@ def check_intersection(ellipsoid1, ellipsoid2):
     else:
         return True
 
-def check_mol_sites(ms1, ms2, atomic=False, factor=1.2):
+def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=tol_matrix(prototype="molecular")):
     """
     Checks whether or not the molecules of two mol sites overlap. Uses
     ellipsoid overlapping approximation to check. Takes PBC and lattice
@@ -121,6 +121,7 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.2):
             overlap between molecular ellipsoids
         factor: the distance factor to pass to check_distances. (only for
             inter-atomic distance checking)
+        tm: 
 
     Returns:
         False if the Wyckoff positions overlap. True otherwise
@@ -142,7 +143,7 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.2):
     elif atomic is True:
         c1, s1 = ms1.get_coords_and_species()
         c2, s2 = ms1.get_coords_and_species()
-        return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC, d_factor=factor)
+        return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC, tm=tm, d_factor=factor)
     
 
 def estimate_volume_molecular(numMols, boxes, factor=2.0):
@@ -577,7 +578,7 @@ class mol_site():
             print("Error: parameter absolute must be True or False")
             return
 
-    def check_distances(self, factor=1.2, atomic=False):
+    def check_distances(self, factor=1.0, atomic=True, tm=tol_matrix(prototype="molecular")):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
@@ -593,12 +594,14 @@ class mol_site():
             True if the atoms are not too close together, False otherwise
         """
         if atomic is True:
+            #TODO: Use tm instead of tols lists
             #Check inter-atomic distances
             coords, species = self._get_coords_and_species()
             #Store the coords and species for a single molecule
             d = distance_matrix(coords, coords, self.lattice, PBC=self.PBC)
             tols = tols_from_species(species)
             tols_matrix = factor*2*np.repeat([tols,], len(tols), axis=0)
+
             #Find pairs which are closer than the tolerance
             x = np.where(d<tols_matrix)
             list1 = x[0]
@@ -661,7 +664,7 @@ class molecular_crystal():
             when molecule values are strings
     """
 
-    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice):
+    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm):
         """
         init functionality which is shared by 3D, 2D, and 1D crystals
         """
@@ -768,9 +771,21 @@ class molecular_crystal():
             self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
             """The volume of the generated unit cell."""
             self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
+        #Set the tolerance matrix
+        if type(tm) == tol_matrix:
+            self.tol_matrix = tm
+            """The tol_matrix object used for checking inter-atomic distances within the structure."""
+        else:
+            try:
+                self.tol_matrix = tol_matrix(prototype=tm)
+            except:
+                print("Error: tm must either be a tol_matrix object or a prototype string for initializing one.")
+                self.valid = False
+                self.struct = None
+                return
         self.generate_crystal()
 
-    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None):
+    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=tol_matrix(prototype="molecular")):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         #Necessary input
@@ -780,7 +795,7 @@ class molecular_crystal():
             group = Group(group, self.dim)
         self.sg = group.number
         """The international spacegroup number of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
 
     def Msgs(self):
         self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
@@ -1035,7 +1050,7 @@ class molecular_crystal():
                                         coords_toadd, species_toadd = ms0.get_coords_and_species()
                                         passed = True
                                         for ms1 in mol_generators_tmp:
-                                            if check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances) is False:
+                                            if check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tm=self.tol_matrix) is False:
                                                 passed = False
                                                 break
                                         if passed is False: continue
@@ -1152,7 +1167,7 @@ class molecular_crystal_2D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None):
+    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=tol_matrix(prototype="molecular")):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
@@ -1171,7 +1186,7 @@ class molecular_crystal_2D(molecular_crystal):
         dimension."""
         self.PBC = [1,2]
         """The periodic axes of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
 
 class molecular_crystal_1D(molecular_crystal):
     """
@@ -1211,7 +1226,7 @@ class molecular_crystal_1D(molecular_crystal):
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
     """
-    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None):
+    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=tol_matrix(prototype="molecular")):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         #Necessary input
@@ -1223,7 +1238,7 @@ class molecular_crystal_1D(molecular_crystal):
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence
         with Rod groups)."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice)
+        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
 
 
 if __name__ == "__main__":
