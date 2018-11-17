@@ -104,7 +104,7 @@ class Tol_matrix():
 
     Args:
         prototype: a string representing the type of radii to use
-            ("atomic", "molecular")
+            ("atomic", "molecular", or "metallic")
         factor: a float to scale the distances by. A smaller value means a smaller
             tolerance for distance checking
         tuples: a list or tuple of tuples, which define custom tolerance values. Each tuple

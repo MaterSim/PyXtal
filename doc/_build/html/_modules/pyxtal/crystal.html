@@ -133,6 +133,216 @@
 
 <span class="c1">#Define functions</span>
 <span class="c1">#------------------------------</span>
+<div class="viewcode-block" id="Tol_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Tol_matrix">[docs]</a><span class="k">class</span> <span class="nc">Tol_matrix</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for variable distance tolerance checking. Used within random_crystal and</span>
+<span class="sd">    molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-</span>
+<span class="sd">    atom pair tolerances. Note that the matrix&#39;s indices correspond to atomic numbers,</span>
+<span class="sd">    with the 0th entries being 0 (there is no atomic number 0).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prototype: a string representing the type of radii to use</span>
+<span class="sd">            (&quot;atomic&quot;, &quot;molecular&quot;, or &quot;metallic&quot;)</span>
+<span class="sd">        factor: a float to scale the distances by. A smaller value means a smaller</span>
+<span class="sd">            tolerance for distance checking</span>
+<span class="sd">        tuples: a list or tuple of tuples, which define custom tolerance values. Each tuple</span>
+<span class="sd">            should be of the form (specie1, specie2, value), where value is the tolerance</span>
+<span class="sd">            in Angstroms, and specie1 and specie2 can be strings, integers, Element objects,</span>
+<span class="sd">            or pymatgen Specie objects. Custom values may also be set using set_tol</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">tuples</span><span class="p">,</span> <span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prototype</span> <span class="o">=</span> <span class="n">prototype</span>
+        <span class="k">if</span> <span class="n">prototype</span> <span class="o">==</span> <span class="s2">&quot;atomic&quot;</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">*=</span> <span class="mf">0.5</span>
+            <span class="n">attrindex</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radius_type</span> <span class="o">=</span> <span class="s2">&quot;covalent&quot;</span>
+        <span class="k">elif</span> <span class="n">prototype</span> <span class="o">==</span> <span class="s2">&quot;molecular&quot;</span><span class="p">:</span>
+            <span class="n">attrindex</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radius_type</span> <span class="o">=</span> <span class="s2">&quot;covalent&quot;</span>
+            <span class="n">f</span> <span class="o">*=</span> <span class="mf">1.2</span>
+        <span class="k">elif</span> <span class="n">prototype</span> <span class="o">==</span> <span class="s2">&quot;metallic&quot;</span><span class="p">:</span>
+            <span class="n">attrindex</span> <span class="o">=</span> <span class="mi">7</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radius_type</span> <span class="o">=</span> <span class="s2">&quot;metallic&quot;</span>
+            <span class="n">f</span> <span class="o">*=</span> <span class="mf">0.5</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radius_type</span> <span class="o">=</span> <span class="s2">&quot;N/A&quot;</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">elements_list</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tup1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">elements_list</span><span class="p">):</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="mf">0.</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">tup2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">elements_list</span><span class="p">):</span>
+                <span class="c1">#Get the appropriate atomic radii</span>
+                <span class="k">if</span> <span class="n">tup1</span><span class="p">[</span><span class="n">attrindex</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">tup1</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">val1</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#Use the covalent radius</span>
+                        <span class="n">val1</span> <span class="o">=</span> <span class="n">tup1</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">val1</span> <span class="o">=</span> <span class="n">tup1</span><span class="p">[</span><span class="n">attrindex</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">tup2</span><span class="p">[</span><span class="n">attrindex</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">tup2</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">val2</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#Use the covalent radius</span>
+                        <span class="n">val2</span> <span class="o">=</span> <span class="n">tup1</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">val2</span> <span class="o">=</span> <span class="n">tup2</span><span class="p">[</span><span class="n">attrindex</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">val1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">val2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">m</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">f</span> <span class="o">*</span> <span class="p">(</span><span class="n">val1</span> <span class="o">+</span> <span class="n">val2</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1">#If no radius is found for either atom, set tolerance to None</span>
+                    <span class="n">m</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;A symmetric numpy matrix storing the tolerance between specie pairs.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">custom_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="sd">&quot;&quot;&quot;A list of tuples storing which species pair tolerances have custom values.&quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">tuples</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_tol</span><span class="p">(</span><span class="o">*</span><span class="n">tup</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Could not set custom tolerance value(s).&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    All custom entries should be entered using the following form:&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    (specie1, specie2, value), where value is the tolerance in Angstroms.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tol</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radius_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Tol_matrix.get_tol"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Tol_matrix.get_tol">[docs]</a>    <span class="k">def</span> <span class="nf">get_tol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specie1</span><span class="p">,</span> <span class="n">specie2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the tolerance between two species.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            specie1, specie2: the atomic number (int or float), name (str), symbol (str),</span>
+<span class="sd">                an Element object, or a pymatgen Specie object</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            the tolerance between the provided pair of atomic species</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prototype</span> <span class="o">==</span> <span class="s2">&quot;single_value&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">index1</span> <span class="o">=</span> <span class="n">Element</span><span class="o">.</span><span class="n">number_from_specie</span><span class="p">(</span><span class="n">specie1</span><span class="p">)</span>
+        <span class="n">index2</span> <span class="o">=</span> <span class="n">Element</span><span class="o">.</span><span class="n">number_from_specie</span><span class="p">(</span><span class="n">specie2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">index2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">[</span><span class="n">index1</span><span class="p">][</span><span class="n">index2</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Tol_matrix.set_tol"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Tol_matrix.set_tol">[docs]</a>    <span class="k">def</span> <span class="nf">set_tol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specie1</span><span class="p">,</span> <span class="n">specie2</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the tolerance between two species.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            specie1, specie2: the atomic number (int or float), name (str), symbol (str),</span>
+<span class="sd">                an Element object, or a pymatgen Specie object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">index1</span> <span class="o">=</span> <span class="n">Element</span><span class="o">.</span><span class="n">number_from_specie</span><span class="p">(</span><span class="n">specie1</span><span class="p">)</span>
+        <span class="n">index2</span> <span class="o">=</span> <span class="n">Element</span><span class="o">.</span><span class="n">number_from_specie</span><span class="p">(</span><span class="n">specie2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">index2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">[</span><span class="n">index1</span><span class="p">][</span><span class="n">index2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index1</span> <span class="o">!=</span> <span class="n">index2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">[</span><span class="n">index2</span><span class="p">][</span><span class="n">index1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">index1</span><span class="p">,</span> <span class="n">index2</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_values</span> <span class="ow">and</span> <span class="p">(</span><span class="n">index2</span><span class="p">,</span> <span class="n">index1</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_values</span><span class="p">:</span>
+            <span class="n">larger</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">index1</span><span class="p">,</span> <span class="n">index2</span><span class="p">)</span>
+            <span class="n">smaller</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">index1</span><span class="p">,</span> <span class="n">index2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">custom_values</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">smaller</span><span class="p">,</span> <span class="n">larger</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Tol_matrix.from_matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Tol_matrix.from_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">from_matrix</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">begin_with</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a tolerance matrix, returns a Tol_matrix object. Matrix indices correspond to</span>
+<span class="sd">        the atomic number (with 0 pointing to Hydrogen by default). For atoms with atomic</span>
+<span class="sd">        numbers not included in the matrix, the default value (specified by prototype) will be</span>
+<span class="sd">        used, up to element 96. Note that if the matrix is asymmetric, only the value below the</span>
+<span class="sd">        diagonal will be used.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            matrix: a 2D matrix or list of tolerances between atomic species pairs</span>
+<span class="sd">            prototype: a string representing the type of radii to use</span>
+<span class="sd">                (&quot;atomic&quot;, &quot;molecular&quot;)</span>
+<span class="sd">            factor: a float to scale the distances by. A smaller value means a smaller</span>
+<span class="sd">                tolerance for distance checking</span>
+<span class="sd">            begin_with: the index which points to Hydrogen within the matrix. Default 0</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            a Tol_matrix object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span>
+        <span class="n">tups</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="n">i</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="n">tups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">-</span><span class="n">begin_with</span><span class="p">,</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="o">-</span><span class="n">begin_with</span><span class="p">,</span> <span class="n">matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span> <span class="p">)</span>
+        <span class="n">tm</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="n">prototype</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="o">*</span><span class="n">tups</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tm</span></div>
+
+<div class="viewcode-block" id="Tol_matrix.from_radii"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Tol_matrix.from_radii">[docs]</a>    <span class="k">def</span> <span class="nf">from_radii</span><span class="p">(</span><span class="n">radius_list</span><span class="p">,</span> <span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">begin_with</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a list of atomic radii, returns a Tol_matrix object. For atom-atom pairs, uses</span>
+<span class="sd">        the average radii of the two species as the tolerance value. For atoms with atomic</span>
+<span class="sd">        numbers not in the radius list, the default value (specified by prototype) will be</span>
+<span class="sd">        used, up to element 96.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            radius_list: a list of atomic radii (in Angstroms), beginning with Hydrogen</span>
+<span class="sd">            prototype: a string representing the type of radii to use</span>
+<span class="sd">                (&quot;atomic&quot;, &quot;molecular&quot;)</span>
+<span class="sd">            factor: a float to scale the distances by. A smaller value means a smaller</span>
+<span class="sd">                tolerance for distance checking</span>
+<span class="sd">            begin_with: the index which points to Hydrogen within the list. Default 0</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            a Tol_matrix object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tups</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">factor</span> <span class="o">*</span> <span class="mf">0.5</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radius_list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">r2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radius_list</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="n">i</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="n">tups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">-</span><span class="n">begin_with</span><span class="p">,</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="o">-</span><span class="n">begin_with</span><span class="p">,</span> <span class="n">f</span><span class="o">*</span><span class="p">(</span><span class="n">r1</span><span class="o">+</span><span class="n">r2</span><span class="p">))</span> <span class="p">)</span>
+        <span class="n">tm</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="n">prototype</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="o">*</span><span class="n">tups</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tm</span></div>
+
+<div class="viewcode-block" id="Tol_matrix.from_single_value"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Tol_matrix.from_single_value">[docs]</a>    <span class="k">def</span> <span class="nf">from_single_value</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a Tol_matrix which only has a single tolerance value. Using get_tol will</span>
+<span class="sd">        always return the same value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value: the tolerance value to use</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            as Tol_matrix object whose methods are overridden to use a single tolerance value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tm</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="p">()</span>
+        <span class="n">tm</span><span class="o">.</span><span class="n">prototype</span> <span class="o">=</span> <span class="s2">&quot;single value&quot;</span>
+        <span class="n">tm</span><span class="o">.</span><span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">value</span><span class="p">]])</span>
+        <span class="n">tm</span><span class="o">.</span><span class="n">custom_values</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">tm</span><span class="o">.</span><span class="n">radius_type</span> <span class="o">=</span> <span class="s2">&quot;N/A&quot;</span>
+        <span class="k">return</span> <span class="n">tm</span></div>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="n">new_index</span> <span class="o">=</span> <span class="n">Element</span><span class="o">.</span><span class="n">number_from_specie</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Tol_matrix.print_all"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.Tol_matrix.print_all">[docs]</a>    <span class="k">def</span> <span class="nf">print_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--Tol_matrix class object--&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Prototype: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prototype</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Atomic radius type: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius_type</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prototype</span> <span class="o">==</span> <span class="s2">&quot;single value&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Custom tolerance value: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">([</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_values</span> <span class="o">==</span> <span class="p">[]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Custom tolerance values: None&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Custom tolerance values:&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_values</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">Element</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">short_name</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;, &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">Element</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">short_name</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_tol</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span></div></div>
 
 <div class="viewcode-block" id="gaussian"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.gaussian">[docs]</a><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -183,7 +393,7 @@
 <span class="sd">    A 1D numpy array of distances in Angstroms</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="check_distance"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.check_distance">[docs]</a><span class="k">def</span> <span class="nf">check_distance</span><span class="p">(</span><span class="n">coord1</span><span class="p">,</span> <span class="n">coord2</span><span class="p">,</span> <span class="n">tols1</span><span class="p">,</span> <span class="n">tols2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="check_distance"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.check_distance">[docs]</a><span class="k">def</span> <span class="nf">check_distance</span><span class="p">(</span><span class="n">coord1</span><span class="p">,</span> <span class="n">coord2</span><span class="p">,</span> <span class="n">species1</span><span class="p">,</span> <span class="n">species2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">),</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check the distances between two set of atoms. Distances between coordinates</span>
 <span class="sd">    within the first set are not checked, and distances between coordinates within</span>
@@ -195,11 +405,13 @@
 <span class="sd">            [.3,.8,.2]]</span>
 <span class="sd">        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9],</span>
 <span class="sd">            [.4,.5,.6]]</span>
-<span class="sd">        tols1: a list of distance tolerances (in Angstroms) for coord1</span>
-<span class="sd">        tols2: a list of distance tolerances (in Angstroms) for coord2</span>
+<span class="sd">        species1: a list of atomic species or numbers for coord1</span>
+<span class="sd">        species2: a list of atomic species or numbers for coord2</span>
 <span class="sd">        lattice: matrix describing the unit cell vectors</span>
 <span class="sd">        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond</span>
 <span class="sd">            to x, y, and z respectively.</span>
+<span class="sd">        tm: a Tol_matrix object, or a string representing the type of Tol_matrix</span>
+<span class="sd">            to use</span>
 <span class="sd">        d_factor: the tolerance is multiplied by this amount. Larger values</span>
 <span class="sd">            mean atoms must be farther apart</span>
 
@@ -210,26 +422,35 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coord1</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">coord2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="c1">#Convert atomic symbol strings to tolerances if needed</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">tols1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">tols1</span> <span class="o">=</span> <span class="n">tols_from_species</span><span class="p">(</span><span class="n">tols1</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">tols2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">tols2</span> <span class="o">=</span> <span class="n">tols_from_species</span><span class="p">(</span><span class="n">tols2</span><span class="p">)</span>
+    <span class="c1">#Create tolerance matrix from subset of tm</span>
+    <span class="n">tols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">species1</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">species2</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">i1</span><span class="p">,</span> <span class="n">specie1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">species1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i2</span><span class="p">,</span> <span class="n">specie2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">species2</span><span class="p">):</span>
+            <span class="n">tols</span><span class="p">[</span><span class="n">i1</span><span class="p">][</span><span class="n">i2</span><span class="p">]</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">get_tol</span><span class="p">(</span><span class="n">specie1</span><span class="p">,</span> <span class="n">specie2</span><span class="p">)</span>
 
     <span class="c1">#Calculate the distance between each i, j pair</span>
     <span class="n">d</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">(</span><span class="n">coord1</span><span class="p">,</span> <span class="n">coord2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
-
-    <span class="c1">#Create a tolerance matrix from tols1 and tols2</span>
-    <span class="n">tols1x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="n">tols1</span><span class="p">,],</span> <span class="nb">len</span><span class="p">(</span><span class="n">tols2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
-    <span class="n">tols2x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="n">tols2</span><span class="p">,],</span> <span class="nb">len</span><span class="p">(</span><span class="n">tols1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="n">tols</span> <span class="o">=</span> <span class="n">tols1x</span> <span class="o">+</span> <span class="n">tols2x</span>
 
     <span class="c1">#Check if the distance is ever less than the tolerance</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">d</span> <span class="o">&lt;</span> <span class="n">tols</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="check_images"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.check_images">[docs]</a><span class="k">def</span> <span class="nf">check_images</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">),</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">create_matrix</span><span class="p">(</span><span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+    <span class="n">new_coords</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">new_species</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">m</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">v2</span> <span class="ow">in</span> <span class="n">coords</span><span class="o">+</span><span class="n">v</span><span class="p">:</span>
+            <span class="n">new_coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span>
+        <span class="n">new_species</span> <span class="o">+=</span> <span class="n">species</span>
+    <span class="k">return</span> <span class="n">check_distance</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_coords</span><span class="p">),</span> <span class="n">species</span><span class="p">,</span> <span class="n">new_species</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[],</span> <span class="n">tm</span><span class="o">=</span><span class="n">tm</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="n">d_factor</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="get_center"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.get_center">[docs]</a><span class="k">def</span> <span class="nf">get_center</span><span class="p">(</span><span class="n">xyzs</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -260,10 +481,6 @@
                 <span class="n">matrix_min</span> <span class="o">=</span> <span class="n">matrix0</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dists</span><span class="p">)]</span>
         <span class="n">xyzs</span><span class="p">[</span><span class="n">atom1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">matrix_min</span>
     <span class="n">center</span> <span class="o">=</span> <span class="n">xyzs</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="sd">&#39;&#39;&#39;for a in range(1, 4):</span>
-<span class="sd">        if a not in PBC:</span>
-<span class="sd">            if abs(center[a-1])&lt;1e-4:</span>
-<span class="sd">                center[a-1] = 0.5&#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="n">center</span></div>
 
 <div class="viewcode-block" id="para2matrix"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.para2matrix">[docs]</a><span class="k">def</span> <span class="nf">para2matrix</span><span class="p">(</span><span class="n">cell_para</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">):</span>
@@ -1344,10 +1561,11 @@
 <span class="sd">        species: a list of atomic symbols for each ion type</span>
 <span class="sd">        numIons: a list of the number of each type of atom within the</span>
 <span class="sd">            primitive cell (NOT the conventional cell)</span>
+<span class="sd">        tm: the Tol_matrix object used to generate</span>
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="random_crystal.init_common"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal.init_common">[docs]</a>    <span class="k">def</span> <span class="nf">init_common</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">):</span>
+<div class="viewcode-block" id="random_crystal.init_common"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal.init_common">[docs]</a>    <span class="k">def</span> <span class="nf">init_common</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tm</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Common init functionality for 0-3D cases of random_crystal.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1401,10 +1619,22 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numIons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell.&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">)</span>
+        <span class="c1">#Set the tolerance matrix</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">tm</span><span class="p">)</span> <span class="o">==</span> <span class="n">Tol_matrix</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span> <span class="o">=</span> <span class="n">tm</span>
+            <span class="sd">&quot;&quot;&quot;The Tol_matrix object used for checking inter-atomic distances within the structure.&quot;&quot;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="n">tm</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: tm must either be a Tol_matrix object or a prototype string for initializing one.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">struct</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">return</span>
         <span class="c1">#Generate the crystal</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_crystal</span><span class="p">()</span></div>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Group</span><span class="p">:</span>
@@ -1413,7 +1643,7 @@
         <span class="sd">&quot;&quot;&quot;The international spacegroup number of the crystal.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;The periodic boundary axes of the crystal&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tm</span><span class="p">)</span>
 
 <div class="viewcode-block" id="random_crystal.Msgs"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal.Msgs">[docs]</a>    <span class="k">def</span> <span class="nf">Msgs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1588,7 +1818,7 @@
                                 <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">good_merge</span><span class="p">,</span> <span class="n">point</span> <span class="o">=</span> <span class="n">merge_coordinate</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">tol</span><span class="p">)</span>
                                 <span class="k">if</span> <span class="n">good_merge</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
                                     <span class="n">coords_toadd</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
-                                    <span class="k">if</span> <span class="n">check_distance</span><span class="p">(</span><span class="n">coordinates_tmp</span><span class="p">,</span> <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">sites_tmp</span><span class="p">,</span> <span class="p">[</span><span class="n">specie</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">),</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+                                    <span class="k">if</span> <span class="n">check_distance</span><span class="p">(</span><span class="n">coordinates_tmp</span><span class="p">,</span> <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">sites_tmp</span><span class="p">,</span> <span class="p">[</span><span class="n">specie</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">coords_toadd</span><span class="p">),</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">):</span>
                                         <span class="k">if</span> <span class="n">coordinates_tmp</span> <span class="o">==</span> <span class="p">[]:</span>
                                             <span class="n">coordinates_tmp</span> <span class="o">=</span> <span class="n">coords_toadd</span>
                                         <span class="k">else</span><span class="p">:</span>
@@ -1705,7 +1935,7 @@
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
@@ -1721,7 +1951,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">thickness</span>
         <span class="sd">&quot;&quot;&quot;the thickness, in Angstroms, of the unit cell in the 3rd</span>
 <span class="sd">        dimension.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tm</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="random_crystal_1D"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D">[docs]</a><span class="k">class</span> <span class="nc">random_crystal_1D</span><span class="p">(</span><span class="n">random_crystal</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1741,7 +1971,7 @@
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
@@ -1752,7 +1982,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span>
         <span class="sd">&quot;&quot;&quot;the effective cross-sectional area, in Angstroms squared, of the</span>
 <span class="sd">        unit cell.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tm</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="random_cluster"><a class="viewcode-back" href="../../pyxtal.crystal.html#pyxtal.crystal.random_cluster">[docs]</a><span class="k">class</span> <span class="nc">random_cluster</span><span class="p">(</span><span class="n">random_crystal</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1773,7 +2003,7 @@
 <span class="sd">        factor: a volume factor used to generate a larger or smaller</span>
 <span class="sd">            unit cell. Increasing this gives extra space between atoms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;atomic&quot;</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1781,7 +2011,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sg</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="sd">&quot;&quot;&quot;The international space group number (there is not a 1-1 correspondence</span>
 <span class="sd">        with Point groups).&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">numIons</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tm</span><span class="p">)</span></div>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>

@@ -106,7 +106,38 @@
 </pre></div>
 </div>
 <p>This would generate a random water ice crystal, with space group 36, 4 molecules in the conventional cell (2 in the primitive cell), and using the lattice which we specified above. If you do not specify a lattice, a random one will be generated which is consistent with the chosen space group.</p>
-<p>Note: For monoclinic layer groups, be careful when choosing the unique axis (see the “Group settins” section below).</p>
+<p>Note: For monoclinic layer groups, be careful when choosing the unique axis (see the “Group settings” section below).</p>
+</div>
+<div class="section" id="tolerance-matrices">
+<h3>Tolerance Matrices<a class="headerlink" href="#tolerance-matrices" title="Permalink to this headline">¶</a></h3>
+<p>When generating random crystals, PyXtal performs inter-atomic distances checks to make sure the atoms are not too close together. By default, the covalent radius is used as a basis. However, the user may also define their own criteria using the <a class="reference external" href="pyxtal.crystal.html#pyxtal.crystal.Tol_matrix">Tol_matrix</a> class. To do this, initialize a Tol_matrix object using one of the built-in methods (see the Tol_matrix class documentation linked above for details):</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyxtal.crystal</span> <span class="kn">import</span> <span class="n">Tol_matrix</span>
+<span class="n">tol_m_1</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;molecular&quot;</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">tol_m_2</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="o">.</span><span class="n">from_radii</span><span class="p">(</span><span class="n">some_custom_list_of_atomic_radii</span><span class="p">)</span>
+<span class="n">tol_m_3</span> <span class="o">=</span> <span class="n">Tol_matrix</span><span class="o">.</span><span class="n">from_matrix</span><span class="p">(</span><span class="n">some_custom_2D_tolerance_matrix</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>From here, you can alter the tolerance between certain inter-atomic pairs:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">tol_m_1</span><span class="o">.</span><span class="n">set_tol</span><span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="mf">2.1</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">tol_m_1</span><span class="o">.</span><span class="n">set_tol</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">4.6</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">tol_m_1</span><span class="o">.</span><span class="n">print_all</span><span class="p">()</span>
+<span class="o">--</span><span class="n">Tol_matrix</span> <span class="k">class</span> <span class="nc">object</span><span class="o">--</span>
+  <span class="n">Prototype</span><span class="p">:</span> <span class="n">molecular</span>
+  <span class="n">Atomic</span> <span class="n">radius</span> <span class="nb">type</span><span class="p">:</span> <span class="n">covalent</span>
+  <span class="n">Custom</span> <span class="n">tolerance</span> <span class="n">values</span><span class="p">:</span>
+    <span class="n">C</span><span class="p">,</span> <span class="n">N</span><span class="p">:</span> <span class="mf">2.1</span>
+    <span class="n">H</span><span class="p">,</span> <span class="n">Li</span><span class="p">:</span> <span class="mf">4.6</span>
+</pre></div>
+</div>
+<p>The Tol_matrix can now be passed to a random_crystal object:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">custom_tolerance_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">,</span><span class="s1">&#39;N&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">tol_m_1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Alternatively, you can specify one of the preset tolerance matrices by passing a string to random_crystal or molecular_crystal. Possible values include “atomic”, “molecular”, or “metallic”:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">metallic_crystal</span> <span class="o">=</span> <span class="n">random_crystal</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Cu&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="s2">&quot;metallic&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default, atomic crystals will use the average of the covalent radii between two atoms. Molecular crystals will use 1.2 times the sum of the covalent radii between two atoms. Using “metallic” will use the average of the metallic radius for metals, and the covalent radius for other atom types.</p>
 </div>
 </div>
 <div class="section" id="d-atomic-crystals">
@@ -326,6 +357,7 @@
 <li><a class="reference internal" href="#usage">Usage</a><ul>
 <li><a class="reference internal" href="#understanding-the-parameters">Understanding the Parameters</a><ul>
 <li><a class="reference internal" href="#lattices">Lattices</a></li>
+<li><a class="reference internal" href="#tolerance-matrices">Tolerance Matrices</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#d-atomic-crystals">3D Atomic Crystals</a></li>

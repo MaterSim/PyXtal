@@ -261,6 +261,157 @@ reset_matrix. To alter the matrix, use set_matrix() or set_para</li>
 <dd><p>Permutes a list of coordinates. Not currently implemented.</p>
 </dd></dl>
 
+<dl class="class">
+<dt id="pyxtal.crystal.Tol_matrix">
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">Tol_matrix</code><span class="sig-paren">(</span><em>*tuples</em>, <em>prototype='atomic'</em>, <em>factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for variable distance tolerance checking. Used within random_crystal and
+molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-
+atom pair tolerances. Note that the matrix’s indices correspond to atomic numbers,
+with the 0th entries being 0 (there is no atomic number 0).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>prototype</strong> – a string representing the type of radii to use
+(“atomic”, “molecular”, or “metallic”)</li>
+<li><strong>factor</strong> – a float to scale the distances by. A smaller value means a smaller
+tolerance for distance checking</li>
+<li><strong>tuples</strong> – a list or tuple of tuples, which define custom tolerance values. Each tuple
+should be of the form (specie1, specie2, value), where value is the tolerance
+in Angstroms, and specie1 and specie2 can be strings, integers, Element objects,
+or pymatgen Specie objects. Custom values may also be set using set_tol</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="pyxtal.crystal.Tol_matrix.custom_values">
+<code class="descname">custom_values</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.custom_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of tuples storing which species pair tolerances have custom values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Tol_matrix.from_matrix">
+<code class="descname">from_matrix</code><span class="sig-paren">(</span><em>prototype='atomic'</em>, <em>factor=1.0</em>, <em>begin_with=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix.from_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.from_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a tolerance matrix, returns a Tol_matrix object. Matrix indices correspond to
+the atomic number (with 0 pointing to Hydrogen by default). For atoms with atomic
+numbers not included in the matrix, the default value (specified by prototype) will be
+used, up to element 96. Note that if the matrix is asymmetric, only the value below the
+diagonal will be used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>matrix</strong> – a 2D matrix or list of tolerances between atomic species pairs</li>
+<li><strong>prototype</strong> – a string representing the type of radii to use
+(“atomic”, “molecular”)</li>
+<li><strong>factor</strong> – a float to scale the distances by. A smaller value means a smaller
+tolerance for distance checking</li>
+<li><strong>begin_with</strong> – the index which points to Hydrogen within the matrix. Default 0</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a Tol_matrix object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Tol_matrix.from_radii">
+<code class="descname">from_radii</code><span class="sig-paren">(</span><em>prototype='atomic'</em>, <em>factor=1.0</em>, <em>begin_with=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix.from_radii"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.from_radii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of atomic radii, returns a Tol_matrix object. For atom-atom pairs, uses
+the average radii of the two species as the tolerance value. For atoms with atomic
+numbers not in the radius list, the default value (specified by prototype) will be
+used, up to element 96.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radius_list</strong> – a list of atomic radii (in Angstroms), beginning with Hydrogen</li>
+<li><strong>prototype</strong> – a string representing the type of radii to use
+(“atomic”, “molecular”)</li>
+<li><strong>factor</strong> – a float to scale the distances by. A smaller value means a smaller
+tolerance for distance checking</li>
+<li><strong>begin_with</strong> – the index which points to Hydrogen within the list. Default 0</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a Tol_matrix object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Tol_matrix.from_single_value">
+<code class="descname">from_single_value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix.from_single_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.from_single_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Tol_matrix which only has a single tolerance value. Using get_tol will
+always return the same value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> – the tolerance value to use</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">as Tol_matrix object whose methods are overridden to use a single tolerance value</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Tol_matrix.get_tol">
+<code class="descname">get_tol</code><span class="sig-paren">(</span><em>specie1</em>, <em>specie2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix.get_tol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.get_tol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the tolerance between two species.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>specie2</strong> (<em>specie1</em><em>,</em>) – the atomic number (int or float), name (str), symbol (str),
+an Element object, or a pymatgen Specie object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the tolerance between the provided pair of atomic species</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyxtal.crystal.Tol_matrix.matrix">
+<code class="descname">matrix</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>A symmetric numpy matrix storing the tolerance between specie pairs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Tol_matrix.print_all">
+<code class="descname">print_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix.print_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.print_all" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.Tol_matrix.set_tol">
+<code class="descname">set_tol</code><span class="sig-paren">(</span><em>specie1</em>, <em>specie2</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix.set_tol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.set_tol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the tolerance between two species.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>specie2</strong> (<em>specie1</em><em>,</em>) – the atomic number (int or float), name (str), symbol (str),
+an Element object, or a pymatgen Specie object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="function">
 <dt id="pyxtal.crystal.cellsize">
 <code class="descclassname">pyxtal.crystal.</code><code class="descname">cellsize</code><span class="sig-paren">(</span><em>sg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#cellsize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.cellsize" title="Permalink to this definition">¶</a></dt>
@@ -281,7 +432,7 @@ A, C, I, R, or F)</p>
 
 <dl class="function">
 <dt id="pyxtal.crystal.check_distance">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_distance</code><span class="sig-paren">(</span><em>coord1, coord2, tols1, tols2, lattice, PBC=[1, 2, 3], d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_distance" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_distance</code><span class="sig-paren">(</span><em>coord1, coord2, species1, species2, lattice, PBC=[1, 2, 3], tm=&lt;pyxtal.crystal.Tol_matrix object&gt;, d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_distance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the distances between two set of atoms. Distances between coordinates
 within the first set are not checked, and distances between coordinates within
 the second set are not checked. Only distances between points from different
@@ -295,11 +446,13 @@ sets are checked.</p>
 [.3,.8,.2]]</li>
 <li><strong>coord2</strong> – a list of new fractional coordinates e.g. [[.7,.8,.9],
 [.4,.5,.6]]</li>
-<li><strong>tols1</strong> – a list of distance tolerances (in Angstroms) for coord1</li>
-<li><strong>tols2</strong> – a list of distance tolerances (in Angstroms) for coord2</li>
+<li><strong>species1</strong> – a list of atomic species or numbers for coord1</li>
+<li><strong>species2</strong> – a list of atomic species or numbers for coord2</li>
 <li><strong>lattice</strong> – matrix describing the unit cell vectors</li>
 <li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
 to x, y, and z respectively.</li>
+<li><strong>tm</strong> – a Tol_matrix object, or a string representing the type of Tol_matrix
+to use</li>
 <li><strong>d_factor</strong> – the tolerance is multiplied by this amount. Larger values
 mean atoms must be farther apart</li>
 </ul>
@@ -310,6 +463,12 @@ mean atoms must be farther apart</li>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.crystal.check_images">
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_images</code><span class="sig-paren">(</span><em>coords, species, lattice, PBC=[1, 2, 3], tm=&lt;pyxtal.crystal.Tol_matrix object&gt;, d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_images" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.</p>
 </dd></dl>
 
 <dl class="function">
@@ -764,7 +923,7 @@ case a single float is returned).</td>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_cluster">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_cluster</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_cluster" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_cluster</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_cluster" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 0d counterpart to random_crystal. Generates a random atomic cluster based
 on a 0d Point group instead of a 3d spacegroup. The generated pymatgen
@@ -813,7 +972,7 @@ with Point groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing and generating atomic crystals based on symmetry
 constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
@@ -829,6 +988,7 @@ self.struct</p>
 <li><strong>species</strong> – a list of atomic symbols for each ion type</li>
 <li><strong>numIons</strong> – a list of the number of each type of atom within the
 primitive cell (NOT the conventional cell)</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate</li>
 <li><strong>factor</strong> – a volume factor used to generate a larger or smaller
 unit cell. Increasing this gives extra space between atoms</li>
 </ul>
@@ -894,7 +1054,7 @@ outputs an error message.</p>
 
 <dl class="method">
 <dt id="pyxtal.crystal.random_crystal.init_common">
-<code class="descname">init_common</code><span class="sig-paren">(</span><em>species</em>, <em>numIons</em>, <em>factor</em>, <em>group</em>, <em>lattice</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.init_common" title="Permalink to this definition">¶</a></dt>
+<code class="descname">init_common</code><span class="sig-paren">(</span><em>species</em>, <em>numIons</em>, <em>factor</em>, <em>group</em>, <em>lattice</em>, <em>tm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.init_common" title="Permalink to this definition">¶</a></dt>
 <dd><p>Common init functionality for 0-3D cases of random_crystal.</p>
 </dd></dl>
 
@@ -931,7 +1091,7 @@ By default, the filename is based on the stoichiometry.</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_1D">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>area</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_1D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>area</em>, <em>factor</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_1D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 1d counterpart to random_crystal. Generates a random atomic crystal based
 on a 1d Rod group instead of a 3d spacegroup. The generated pymatgen
@@ -986,7 +1146,7 @@ with Rod groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_2D">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>thickness</em>, <em>factor</em>, <em>lattice=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>thickness</em>, <em>factor</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 2d counterpart to random_crystal. Generates a random atomic crystal based
 on a 2d layer group instead of a 3d spacegroup. Note that each layer group

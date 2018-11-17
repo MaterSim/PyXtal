@@ -112,7 +112,47 @@ Here, both l1 and l2 describe the same lattice. In this case, it is an orthorhom
 
 This would generate a random water ice crystal, with space group 36, 4 molecules in the conventional cell (2 in the primitive cell), and using the lattice which we specified above. If you do not specify a lattice, a random one will be generated which is consistent with the chosen space group.
 
-Note: For monoclinic layer groups, be careful when choosing the unique axis (see the "Group settins" section below).
+Note: For monoclinic layer groups, be careful when choosing the unique axis (see the "Group settings" section below).
+
+Tolerance Matrices
+~~~~~~~~~~~~~~~~~~
+
+When generating random crystals, PyXtal performs inter-atomic distances checks to make sure the atoms are not too close together. By default, the covalent radius is used as a basis. However, the user may also define their own criteria using the `Tol_matrix <pyxtal.crystal.html#pyxtal.crystal.Tol_matrix>`_ class. To do this, initialize a Tol_matrix object using one of the built-in methods (see the Tol_matrix class documentation linked above for details):
+
+.. code-block:: Python
+
+  from pyxtal.crystal import Tol_matrix
+  tol_m_1 = Tol_matrix(prototype="molecular", factor=2.0)
+  tol_m_2 = Tol_matrix.from_radii(some_custom_list_of_atomic_radii)
+  tol_m_3 = Tol_matrix.from_matrix(some_custom_2D_tolerance_matrix)
+
+From here, you can alter the tolerance between certain inter-atomic pairs:
+
+.. code-block:: Python
+
+  >>> tol_m_1.set_tol('C', 'N', 2.1)
+  >>> tol_m_1.set_tol(1, 3, 4.6)
+  >>> tol_m_1.print_all()
+  --Tol_matrix class object--
+    Prototype: molecular
+    Atomic radius type: covalent
+    Custom tolerance values:
+      C, N: 2.1
+      H, Li: 4.6
+
+The Tol_matrix can now be passed to a random_crystal object:
+
+.. code-block:: Python
+
+  custom_tolerance_crystal = random_crystal(12, ['C','N'], [2,4], 1.0, tm=tol_m_1)
+
+Alternatively, you can specify one of the preset tolerance matrices by passing a string to random_crystal or molecular_crystal. Possible values include "atomic", "molecular", or "metallic":
+
+.. code-block:: Python
+
+  metallic_crystal = random_crystal(12, ['Cu', 'Pd'], [2, 4], 1.0, tm="metallic")
+
+By default, atomic crystals will use the average of the covalent radii between two atoms. Molecular crystals will use 1.2 times the sum of the covalent radii between two atoms. Using "metallic" will use the average of the metallic radius for metals, and the covalent radius for other atom types.
 
 3D Atomic Crystals
 ------------------
