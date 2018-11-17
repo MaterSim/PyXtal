@@ -145,7 +145,7 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
         c2, s2 = ms1.get_coords_and_species()
         return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC, tm=tm, d_factor=factor)
 
-def estimate_volume_molecular(numMols, boxes, factor=2.0):
+def estimate_volume_molecular(molecules, numMols, factor=2.0, boxes=None):
     """
     Estimate the volume needed for a molecular crystal conventional unit cell.
 
@@ -158,6 +158,10 @@ def estimate_volume_molecular(numMols, boxes, factor=2.0):
     Returns:
         the estimated volume (in cubic Angstroms) needed for the unit cell
     """
+    if boxes is None:
+        boxes = []
+        for mol in molecules:
+            boxes.append(get_box(reoriented_molecule(mol)[0]))
     volume = 0
     for numMol, box in zip(numMols, boxes):
         volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
@@ -795,7 +799,7 @@ class molecular_crystal():
             else:
                 unique_axis = "c"
             #Generate a Lattice instance
-            self.volume = estimate_volume_molecular(self.numMols, self.boxes, self.factor)
+            self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
             """The volume of the generated unit cell."""
             self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
         #Set the tolerance matrix
