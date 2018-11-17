@@ -123,18 +123,39 @@ class Tol_matrix():
             attrindex = 5
             self.radius_type = "covalent"
             f *= 1.2
+        elif prototype == "metallic":
+            attrindex = 7
+            self.radius_type = "metallic"
+            f *= 0.5
         else:
             self.radius_type = "N/A"
-        if prototype != "empty":
-            H = Element('H')
-            m = [[0.]*(len(H.elements_list)+1)]
-            for i, tup1 in enumerate(H.elements_list):
-                m.append([0.])
-                for j, tup2 in enumerate(H.elements_list):
-                    if tup1[attrindex] is not None and tup2[attrindex] is not None:
-                        m[-1].append( f * (tup1[attrindex] + tup2[attrindex]) )
+        H = Element('H')
+        m = [[0.]*(len(H.elements_list)+1)]
+        for i, tup1 in enumerate(H.elements_list):
+            m.append([0.])
+            for j, tup2 in enumerate(H.elements_list):
+                #Get the appropriate atomic radii
+                if tup1[attrindex] is None:
+                    if tup1[5] is None:
+                        val1 = None
                     else:
-                        m[-1].append(None)
+                        #Use the covalent radius
+                        val1 = tup1[5]
+                else:
+                    val1 = tup1[attrindex]
+                if tup2[attrindex] is None:
+                    if tup2[5] is None:
+                        val2 = None
+                    else:
+                        #Use the covalent radius
+                        val2 = tup1[5]
+                else:
+                    val2 = tup2[attrindex]
+                if val1 is not None and val2 is not None:
+                    m[-1].append( f * (val1 + val2))
+                else:
+                    #If no radius is found for either atom, set tolerance to None
+                    m[-1].append(None)
         self.matrix = np.array(m)
         """A symmetric numpy matrix storing the tolerance between specie pairs."""
         self.custom_values = []
