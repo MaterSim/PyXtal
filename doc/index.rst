@@ -60,7 +60,15 @@ This will install the module. The code can be used within Python via
 .. code-block:: Python
 
   import pyxtal
+  
+More extensive test can be invoked by running
 
+``python $root/pyxtal/test_cases/test_all.py``
+
+Ideally, one should see the completion of all modules in the end.
+
+Version info
+=====
 The current version is 0.1dev. Expect frequent updates.
 
 Usage
