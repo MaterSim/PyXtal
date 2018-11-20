@@ -95,7 +95,7 @@ Defaults to None</dd>
 </div></blockquote>
 <dl class="function">
 <dt id="pyxtal.molecular_crystal.check_distance_molecular">
-<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">check_distance_molecular</code><span class="sig-paren">(</span><em>coord1, coord2, indices1, index2, lattice, radii, d_factor=1.0, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#check_distance_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.check_distance_molecular" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">check_distance_molecular</code><span class="sig-paren">(</span><em>coord1, coord2, indices1, index2, lattice, radii, d_factor=1.0, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#check_distance_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.check_distance_molecular" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the distances between two set of molecules. The first set is generally
 larger than the second. Distances between coordinates within the first set
 are not checked, and distances between coordinates within the second set are
@@ -118,7 +118,8 @@ radii to use</li>
 overlap</li>
 <li><strong>d_factor</strong> – the tolerance is multiplied by this amount. Larger values
 mean molecules must be farther apart</li>
-<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -168,7 +169,7 @@ into consideration.</p>
 overlap between molecular ellipsoids</li>
 <li><strong>factor</strong> – the distance factor to pass to check_distances. (only for
 inter-atomic distance checking)</li>
-<li><strong>tm</strong> – </li>
+<li><strong>tm</strong> – a Tol_matrix object (or prototype string) for distance checking</li>
 </ul>
 </td>
 </tr>
@@ -242,7 +243,7 @@ returns False</p>
 
 <dl class="function">
 <dt id="pyxtal.molecular_crystal.estimate_volume_molecular">
-<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">estimate_volume_molecular</code><span class="sig-paren">(</span><em>numMols</em>, <em>boxes</em>, <em>factor=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#estimate_volume_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.estimate_volume_molecular" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">estimate_volume_molecular</code><span class="sig-paren">(</span><em>molecules</em>, <em>numMols</em>, <em>factor=2.0</em>, <em>boxes=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#estimate_volume_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.estimate_volume_molecular" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimate the volume needed for a molecular crystal conventional unit cell.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -305,7 +306,8 @@ self.group.wyckoffs_organized[i][j]</p>
 <li><strong>sg</strong> – the international spacegroup number</li>
 <li><strong>allow_inversion</strong> – whether or not to allow inversion operations for chiral
 molecules</li>
-<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>

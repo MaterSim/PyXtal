@@ -395,7 +395,7 @@ the generated vectors. This is the inverse of SymmOp.operate_multi.</p>
 
 <dl class="function">
 <dt id="pyxtal.operations.are_equal">
-<code class="descclassname">pyxtal.operations.</code><code class="descname">are_equal</code><span class="sig-paren">(</span><em>op1, op2, PBC=[1, 2, 3], rtol=0.001, atol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#are_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.are_equal" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.operations.</code><code class="descname">are_equal</code><span class="sig-paren">(</span><em>op1, op2, PBC=[1, 1, 1], rtol=0.001, atol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#are_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.are_equal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check whether two SymmOp objects are equal up to some numerical tolerance.
 Allows for optional consideration of periodic boundary conditions. This
 option is useful for handling the periodicity of crystals.</p>
@@ -406,7 +406,8 @@ option is useful for handling the periodicity of crystals.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>op1</strong> – a SymmOp object</li>
 <li><strong>op2</strong> – another SymmOp object</li>
-<li><strong>PBC</strong> – A list of the periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 <li><strong>rtol</strong> – the relative numerical tolerance for equivalence (passed to
 numpy.allclose)</li>
 <li><strong>atol</strong> – the absolute numerical tolerance for equivalence (passed to

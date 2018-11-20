@@ -77,15 +77,15 @@ def symmetry_element_from_axis(axis):
     m[:3,index1] = v
     return SymmOp(m)
 
-def create_matrix(PBC=[1,2,3]):
+def create_matrix(PBC=[1,1,1]):
     """
     Used for calculating distances in lattices with periodic boundary
     conditions. When multiplied with a set of points, generates additional
     points in cells adjacent to and diagonal to the original cell
 
     Args:
-        PBC: The axes with periodic boundary conditions.
-            Ex: PBC=[2,3] cancels periodic boundary conditions along the x axis
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         A numpy array of matrices which can be multiplied by a set of
@@ -95,11 +95,11 @@ def create_matrix(PBC=[1,2,3]):
     i_list = [-1, 0, 1]
     j_list = [-1, 0, 1]
     k_list = [-1, 0, 1]
-    if 1 not in PBC:
+    if not PBC[0]:
         i_list = [0]
-    if 2 not in PBC:
+    if not PBC[1]:
         j_list = [0]
-    if 3 not in PBC:
+    if not PBC[2]:
         k_list = [0]
     for i in i_list:
         for j in j_list:
@@ -107,30 +107,29 @@ def create_matrix(PBC=[1,2,3]):
                 matrix.append([i,j,k])
     return np.array(matrix, dtype=float)
 
-def filtered_coords(coords, PBC=[1, 2, 3]):
+def filtered_coords(coords, PBC=[1,1,1]):
     """
     Given an array of 3d fractional coordinates or a single 3d point, transform
     all coordinates to less than 1 and greater than 0. If one axis is not
     periodic, does not transform the coordinates along that axis. For example,
     for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
-    not the y axis (PBC=[1, 3]), the function would return [0.2, 1.6, 0.6].
+    not the y axis (PBC=[1,0,1]), the function would return [0.2, 1.6, 0.6].
 
     Args:
         coords: an array of real 3d vectors. The shape does not matter
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z repectively
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         an array of filtered coords with the same shape as coords
     """
     def filter_vector(vector):
-        for a in PBC:
-            vector[a-1] -= np.floor(vector[a-1])
-        return vector
+        f = np.floor(vector)
+        return vector - np.multiply(f, PBC)
 
     return np.apply_along_axis(filter_vector, -1, coords)
 
-def filtered_coords_euclidean(coords, PBC=[1,2,3]):
+def filtered_coords_euclidean(coords, PBC=[1,1,1]):
     """
     Given an array of fractional 3-vectors, filters coordinates to between 0 and
     1. Then, values which are greater than 0.5 are converted to 1 minus their
@@ -139,23 +138,23 @@ def filtered_coords_euclidean(coords, PBC=[1,2,3]):
     
     Args:
         coords: an array of real 3d vectors. The shape does not matter
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z repectively
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         an array of filtered coords with the same shape as coords
     """
     def filter_vector_euclidean(vector):
-        for a in PBC:
-            vector[a-1] -= np.floor(vector[a-1])
-            if vector[a-1] > 0.5:
-                vector[a-1] = 1 - vector[a-1]
+        for i, a in enumerate(PBC):
+            if a:
+                vector[i] -= np.floor(vector[i])
+                if vector[i] > 0.5:
+                    vector[i] = 1 - vector[i]
         return vector
-    #c = filtered_coords(coords, PBC=PBC)
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
-def distance(xyz, lattice, PBC=[1,2,3]):
+def distance(xyz, lattice, PBC=[1,1,1]):
     """
     Returns the Euclidean distance from the origin for a fractional
     displacement vector. Takes into account the lattice metric and periodic
@@ -165,8 +164,8 @@ def distance(xyz, lattice, PBC=[1,2,3]):
         xyz: a fractional 3d displacement vector. Can be obtained by
             subtracting one fractional vector from another
         lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z respectively.
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         a scalar for the distance of the point from the origin
@@ -189,7 +188,7 @@ def dsquared(v):
     """
     return v[0]**2 + v[1]**2 + v[2]**2
 
-def distance_matrix(points1, points2, lattice, PBC=[1,2,3], metric='euclidean'):
+def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account the lattice metric and periodic boundary conditions.
@@ -198,8 +197,8 @@ def distance_matrix(points1, points2, lattice, PBC=[1,2,3], metric='euclidean'):
         points1: a list of fractional coordinates
         points2: another list of fractional coordinates
         lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z respectively.
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         metric: the metric to use with cdist. Possible values include 'euclidean',
             'sqeuclidean', 'minkowski', and others
 
@@ -215,7 +214,7 @@ def distance_matrix(points1, points2, lattice, PBC=[1,2,3], metric='euclidean'):
     all_distances = np.array([cdist(l, l2, metric) for l in m1])
     return np.apply_along_axis(np.min, 0, all_distances)
 
-def distance_matrix_euclidean(points1, points2, PBC=[1,2,3], squared=False):
+def distance_matrix_euclidean(points1, points2, PBC=[1,1,1], squared=False):
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account periodic boundary conditions, but assumes a Euclidean matrix.
@@ -223,8 +222,8 @@ def distance_matrix_euclidean(points1, points2, PBC=[1,2,3], squared=False):
     Args:
         points1: a list of fractional coordinates
         points2: another list of fractional coordinates
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z respectively.
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         a 2x2 np array of scalar distances
@@ -239,7 +238,7 @@ def distance_matrix_euclidean(points1, points2, PBC=[1,2,3], squared=False):
     else:
         return np.apply_along_axis(np.linalg.norm, -1, displacements)
 
-def get_wyckoffs(sg, organized=False, PBC=[1,2,3]):
+def get_wyckoffs(sg, organized=False, PBC=[1,1,1]):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
     organize the list based on multiplicity (this is used for
@@ -266,33 +265,32 @@ def get_wyckoffs(sg, organized=False, PBC=[1,2,3]):
     Args:
         sg: the international spacegroup number
         organized: whether or not to organize the list based on multiplicity
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
     
     Returns: 
         a list of Wyckoff positions, each of which is a list of SymmOp's
     """
-    if PBC != [1,2,3]:
-        for a in range(1, 4):
-            if a not in PBC:
-                coor = [0,0,0]
-                coor[a-1] = 0.5
+    if PBC != [1,1,1]:
+        coor = [0,0,0]
+        for i, a in enumerate(PBC):
+            if not a:
+                coor[i] = 0.5
         coor = np.array(coor)
 
     wyckoff_strings = eval(wyckoff_df["0"][sg])
     wyckoffs = []
     for x in wyckoff_strings:
-        if PBC != [1,2,3]:
+        if PBC != [1,1,1]:
             op = SymmOp.from_xyz_string(x[0])
             coor1 = op.operate(coor)
             invalid = False
-            for a in range(1, 4):
-                if a not in PBC:
-                    if abs(coor1[a-1]-0.5) < 1e-2:
-                        pass
-                    else:
+            for i, a in enumerate(PBC):
+                if not a:
+                    if not abs(coor1[i]-0.5) < 1e-2:
                         #invalid wyckoffs for layer group
                         invalid = True
-            if invalid == False:
+            if invalid is False:
                 wyckoffs.append([])
                 for y in x:
                     wyckoffs[-1].append(SymmOp.from_xyz_string(y))
@@ -473,7 +471,7 @@ def get_point(num, organized=False, molecular=True):
     else:
         return wyckoffs
 
-def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
+def get_wyckoff_symmetry(sg, PBC=[1,1,1], molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -482,7 +480,8 @@ def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
 
     Args:
         sg: the international spacegroup number
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         molecular: whether or not to return the Euclidean point symmetry
             operations. If True, cuts off translational part of operation, and
             converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -493,11 +492,11 @@ def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
         a 3d list of SymmOp objects representing the site symmetry of each
         point in each Wyckoff position
     """
-    if PBC != [1,2,3]:
+    if PBC != [1,1,1]:
         coor = [0,0,0]
-        for a in range(1,4):
-            if a not in PBC:
-                coor[a-1] = 0.5
+        for i, a in enumerate(PBC):
+            if not a:
+                coor[i] = 0.5
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
@@ -510,15 +509,13 @@ def get_wyckoff_symmetry(sg, PBC=[1,2,3], molecular=False):
             convert = True
     #Loop over Wyckoff positions
     for x, w in zip(symmetry_strings, wyckoffs):
-        if PBC != [1,2,3]:
+        if PBC != [1,1,1]:
             op = w[0]
             coor1 = op.operate(coor)
             invalid = False
-            for a in range(1,4):
-                if a not in PBC:
-                    if abs(coor1[a-1]-0.5) < 1e-2:
-                        pass
-                    else:
+            for i, a in enumerate(PBC):
+                if not a:
+                    if not abs(coor1[i]-0.5) < 1e-2:
                         invalid = True
             if invalid == False:
                 symmetry.append([])
@@ -688,7 +685,7 @@ def get_point_symmetry(num, molecular=True):
                     symmetry[-1][-1].append(op)
     return symmetry
 
-def get_wyckoff_generators(sg, PBC=[1,2,3], molecular=False):
+def get_wyckoff_generators(sg, PBC=[1,1,1], molecular=False):
     """
     Returns a list of Wyckoff generators for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -700,7 +697,8 @@ def get_wyckoff_generators(sg, PBC=[1,2,3], molecular=False):
     
     Args:
         sg: the international spacegroup number
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         molecular: whether or not to return the Euclidean point symmetry
             operations. If True, cuts off translational part of operation, and
             converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -711,11 +709,11 @@ def get_wyckoff_generators(sg, PBC=[1,2,3], molecular=False):
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-    if PBC != [1,2,3]:
+    if PBC != [1,1,1]:
         coor = [0,0,0]
-        for a in range(1,4):
-            if a not in PBC:
-                coor[a-1] = 0.5
+        for i, a in enumerate(PBC):
+            if not a:
+                coor[i] = 0.5
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
@@ -728,15 +726,13 @@ def get_wyckoff_generators(sg, PBC=[1,2,3], molecular=False):
             convert = True
     #Loop over Wyckoff positions
     for x, w in zip(generator_strings, wyckoffs):
-        if PBC != [1,2,3]:
+        if PBC != [1,1,1]:
             op = w[0]
             coor1 = op.operate(coor)
             invalid = False
-            for a in range(1,4):
-                if a not in PBC:
-                    if abs(coor1[a-1]-0.5) < 1e-2:
-                        pass
-                    else:
+            for i, a in enumerate(PBC):
+                if not a:
+                    if not abs(coor1[i]-0.5) < 1e-2:
                         invalid = True
             if invalid == False:
                 generators.append([])
@@ -934,7 +930,9 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
             orientations.
         lattice:
             a 3x3 matrix representing the lattice vectors of the unit cell
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis.
+            Need not be defined here if gen_pos is a Wyckoff_position object.
 
     Returns:
         a list of SymmOp objects which leave the given point invariant
@@ -943,7 +941,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
         if type(gen_pos) == Wyckoff_position:
             PBC = gen_pos.PBC
         else:
-            PBC=[1,2,3]
+            PBC=[1,1,1]
     #Convert point into a SymmOp
     if type(point) != SymmOp:
         point = SymmOp.from_rotation_and_translation([[0,0,0],[0,0,0],[0,0,0]], np.array(point))
@@ -1545,7 +1543,7 @@ class Wyckoff_position():
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                 return
             if PBC == None:
-                wp.PBC = [1,2,3]
+                wp.PBC = [1,1,1]
             else:
                 wp.PBC = PBC
             ops_all = get_wyckoffs(wp.number)
@@ -1576,7 +1574,7 @@ class Wyckoff_position():
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                 return
             if PBC == None:
-                wp.PBC = [1,2]
+                wp.PBC = [1,1,0]
             else:
                 wp.PBC = PBC
             ops_all = get_layer(wp.number)
@@ -1607,7 +1605,7 @@ class Wyckoff_position():
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                 return
             if PBC == None:
-                wp.PBC = [1,2]
+                wp.PBC = [0,0,1]
             else:
                 wp.PBC = PBC
             ops_all = get_rod(wp.number)
@@ -1731,7 +1729,7 @@ class Group():
             if number not in range(1, 231):
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                 return
-            self.PBC = [1,2,3]
+            self.PBC = [1,1,1]
             self.wyckoffs = get_wyckoffs(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
             self.w_symm = get_wyckoff_symmetry(self.number)
@@ -1760,7 +1758,7 @@ class Group():
             if number not in range(1, 81):
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                 return
-            self.PBC = [1,2]
+            self.PBC = [1,1,0]
             self.wyckoffs = get_layer(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
             self.w_symm = get_layer_symmetry(self.number)
@@ -1787,7 +1785,7 @@ class Group():
             if number not in range(1, 76):
                 print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                 return
-            self.PBC = [3]
+            self.PBC = [0,0,1]
             self.wyckoffs = get_rod(self.number)
             """The Wyckoff positions for the crystal's spacegroup."""
             self.w_symm = get_rod_symmetry(self.number)
@@ -1814,7 +1812,7 @@ class Group():
             #0-D clusters. Except for group "I" and "Ih", z axis is the high-symmetry axis
             #https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups
             self.dim = 0
-            self.PBC = []
+            self.PBC = [0,0,0]
             #Check if string is for crystallographic point group
             if type(group) == str:
                 if group in pglist:
@@ -1824,7 +1822,7 @@ class Group():
                 if number not in range(1, 33):
                     print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                     return
-                self.PBC = []
+                self.PBC = [0,0,0]
                 self.wyckoffs = get_point(self.number)
                 """The Wyckoff positions for the crystal's spacegroup."""
                 self.w_symm = get_point_symmetry(self.number)

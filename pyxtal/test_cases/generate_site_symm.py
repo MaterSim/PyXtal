@@ -8,7 +8,7 @@ Generate the site symmetry csv files
 
 #EDIT
 path = "point_symmetry_new.csv"
-PBC = []
+PBC = [0,0,0]
 #Change 231 to 81 for 2D, 76 for 1D
 maxn = 33
 

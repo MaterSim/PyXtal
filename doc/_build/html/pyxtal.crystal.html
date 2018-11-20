@@ -81,7 +81,7 @@ as the cross-sectional area of the crystal. Defaults to None</dd>
 </div></blockquote>
 <dl class="function">
 <dt id="pyxtal.crystal.Add_vacuum">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">Add_vacuum</code><span class="sig-paren">(</span><em>lattice, coor, vacuum=10, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Add_vacuum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Add_vacuum" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">Add_vacuum</code><span class="sig-paren">(</span><em>lattice, coor, vacuum=10, PBC=[0, 0, 0]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Add_vacuum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Add_vacuum" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds space above and below a 2D or 1D crystal. This allows for treating the
 structure as a 3D crystal during energy optimization</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -92,7 +92,8 @@ structure as a 3D crystal during energy optimization</p>
 <li><strong>lattice</strong> – the lattice matrix of the crystal</li>
 <li><strong>coor</strong> – the relative coordinates of the crystal</li>
 <li><strong>vacuum</strong> – the amount of space, in Angstroms, to add above and below</li>
-<li><strong>PBC</strong> – the periodic axes of the crystal</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -113,7 +114,7 @@ structure as a 3D crystal during energy optimization</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.Lattice">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">Lattice</code><span class="sig-paren">(</span><em>ltype, volume, PBC=[1, 2, 3], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">Lattice</code><span class="sig-paren">(</span><em>ltype, volume, PBC=[1, 1, 1], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing and generating crystal lattices. Allows for specification
 of constraint values. Lattice types include triclinic, monoclinic, orthorhombic,
@@ -136,7 +137,7 @@ will be generated.</li>
 </table>
 <dl class="method">
 <dt id="pyxtal.crystal.Lattice.from_matrix">
-<code class="descname">from_matrix</code><span class="sig-paren">(</span><em>ltype='triclinic', PBC=[1, 2, 3], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.from_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.from_matrix" title="Permalink to this definition">¶</a></dt>
+<code class="descname">from_matrix</code><span class="sig-paren">(</span><em>ltype='triclinic', PBC=[1, 1, 1], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.from_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.from_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
 are available. Unless specified by the keyword random=True, does not create a
 new matrix upon calling reset_matrix. This allows for generation of random
@@ -150,7 +151,8 @@ crystals with a specific choice of unit cell.</p>
 <li><strong>ltype</strong> – the lattice type (“cubic, tetragonal, etc.”). Also available are “spherical”,
 which confines generated points to lie within a sphere, and “cylindrical”, which
 confines generated points to lie within a cylinder (oriented about the z axis)</li>
-<li><strong>PBC</strong> – The periodic boundary conditions</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 <li><strong>area</strong> – The cross-sectional area (in Angstroms squared). Only used to generate 1D
 crystals</li>
 <li><strong>thickness</strong> – The unit cell’s non-periodic thickness (in Angstroms). Only used to
@@ -172,7 +174,7 @@ reset_matrix. To alter the matrix, use set_matrix() or set_para</li>
 
 <dl class="method">
 <dt id="pyxtal.crystal.Lattice.from_para">
-<code class="descname">from_para</code><span class="sig-paren">(</span><em>b, c, alpha, beta, gamma, ltype='triclinic', radians=False, PBC=[1, 2, 3], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.from_para"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.from_para" title="Permalink to this definition">¶</a></dt>
+<code class="descname">from_para</code><span class="sig-paren">(</span><em>b, c, alpha, beta, gamma, ltype='triclinic', radians=False, PBC=[1, 1, 1], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Lattice.from_para"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Lattice.from_para" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
 are available. Unless specified by the keyword random=True, does not create a
 new matrix upon calling reset_matrix. This allows for generation of random
@@ -190,7 +192,8 @@ crystals with a specific choice of unit cell.</p>
 which confines generated points to lie within a sphere, and “cylindrical”, which
 confines generated points to lie within a cylinder (oriented about the z axis)</li>
 <li><strong>radians</strong> – whether or not to use radians (instead of degrees) for the lattice angles</li>
-<li><strong>PBC</strong> – The periodic boundary conditions</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 <li><strong>area</strong> – The cross-sectional area (in Angstroms squared). Only used to generate 1D
 crystals</li>
 <li><strong>thickness</strong> – The unit cell’s non-periodic thickness (in Angstroms). Only used to
@@ -460,7 +463,7 @@ A, C, I, R, or F)</p>
 
 <dl class="function">
 <dt id="pyxtal.crystal.check_distance">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_distance</code><span class="sig-paren">(</span><em>coord1, coord2, species1, species2, lattice, PBC=[1, 2, 3], tm=&lt;pyxtal.crystal.Tol_matrix object&gt;, d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_distance" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_distance</code><span class="sig-paren">(</span><em>coord1, coord2, species1, species2, lattice, PBC=[1, 1, 1], tm=&lt;pyxtal.crystal.Tol_matrix object&gt;, d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_distance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the distances between two set of atoms. Distances between coordinates
 within the first set are not checked, and distances between coordinates within
 the second set are not checked. Only distances between points from different
@@ -477,8 +480,8 @@ sets are checked.</p>
 <li><strong>species1</strong> – a list of atomic species or numbers for coord1</li>
 <li><strong>species2</strong> – a list of atomic species or numbers for coord2</li>
 <li><strong>lattice</strong> – matrix describing the unit cell vectors</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z respectively.</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 <li><strong>tm</strong> – a Tol_matrix object, or a string representing the type of Tol_matrix
 to use</li>
 <li><strong>d_factor</strong> – the tolerance is multiplied by this amount. Larger values
@@ -495,7 +498,7 @@ mean atoms must be farther apart</li>
 
 <dl class="function">
 <dt id="pyxtal.crystal.check_images">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_images</code><span class="sig-paren">(</span><em>coords, species, lattice, PBC=[1, 2, 3], tm=&lt;pyxtal.crystal.Tol_matrix object&gt;, d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_images" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">check_images</code><span class="sig-paren">(</span><em>coords, species, lattice, PBC=[1, 1, 1], tm=&lt;pyxtal.crystal.Tol_matrix object&gt;, d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_images" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.</p>
 </dd></dl>
 
@@ -581,7 +584,7 @@ allow more space between atoms</li>
 
 <dl class="function">
 <dt id="pyxtal.crystal.find_short_dist">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">find_short_dist</code><span class="sig-paren">(</span><em>coor, lattice, tol, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#find_short_dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.find_short_dist" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">find_short_dist</code><span class="sig-paren">(</span><em>coor, lattice, tol, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#find_short_dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.find_short_dist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a list of fractional coordinates, finds pairs which are closer
 together than tol, and builds the connectivity map</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -592,8 +595,8 @@ together than tol, and builds the connectivity map</p>
 <li><strong>coor</strong> – a list of fractional 3-dimensional coordinates</li>
 <li><strong>lattice</strong> – a matrix representing the crystal unit cell</li>
 <li><strong>tol</strong> – the distance tolerance for pairing coordinates</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z respectively.</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -778,7 +781,7 @@ generation fails, outputs a warning message and returns empty</p>
 
 <dl class="function">
 <dt id="pyxtal.crystal.get_center">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">get_center</code><span class="sig-paren">(</span><em>xyzs, lattice, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#get_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.get_center" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">get_center</code><span class="sig-paren">(</span><em>xyzs, lattice, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#get_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.get_center" title="Permalink to this definition">¶</a></dt>
 <dd><p>Finds the geometric centers of the clusters under periodic boundary
 conditions.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -788,8 +791,8 @@ conditions.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>xyzs</strong> – a list of fractional coordinates</li>
 <li><strong>lattice</strong> – a matrix describing the unit cell</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z respectively.</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -1252,7 +1255,7 @@ covalent radii</p>
 
 <dl class="function">
 <dt id="pyxtal.crystal.verify_distances">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">verify_distances</code><span class="sig-paren">(</span><em>coordinates, species, lattice, factor=1.0, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#verify_distances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.verify_distances" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">verify_distances</code><span class="sig-paren">(</span><em>coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#verify_distances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.verify_distances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks the inter-atomic distance between all pairs of atoms in a crystal.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1264,7 +1267,8 @@ covalent radii</p>
 <li><strong>lattice</strong> – a 3x3 matrix representing the lattice vectors of the unit cell</li>
 <li><strong>factor</strong> – a tolerance factor for checking distances. A larger value means
 atoms must be farther apart</li>
-<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>

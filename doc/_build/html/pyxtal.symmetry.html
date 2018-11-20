@@ -215,7 +215,7 @@ position, it will generate all the other points.</p>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.create_matrix">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">create_matrix</code><span class="sig-paren">(</span><em>PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#create_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.create_matrix" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">create_matrix</code><span class="sig-paren">(</span><em>PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#create_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.create_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Used for calculating distances in lattices with periodic boundary
 conditions. When multiplied with a set of points, generates additional
 points in cells adjacent to and diagonal to the original cell</p>
@@ -223,8 +223,8 @@ points in cells adjacent to and diagonal to the original cell</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>PBC</strong> – The axes with periodic boundary conditions.
-Ex: PBC=[2,3] cancels periodic boundary conditions along the x axis</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A numpy array of matrices which can be multiplied by a set of
 coordinates</td>
@@ -235,7 +235,7 @@ coordinates</td>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.distance">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">distance</code><span class="sig-paren">(</span><em>xyz, lattice, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.distance" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">distance</code><span class="sig-paren">(</span><em>xyz, lattice, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.distance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the Euclidean distance from the origin for a fractional
 displacement vector. Takes into account the lattice metric and periodic
 boundary conditions, including up to one non-periodic axis.</p>
@@ -247,8 +247,8 @@ boundary conditions, including up to one non-periodic axis.</p>
 <li><strong>xyz</strong> – a fractional 3d displacement vector. Can be obtained by
 subtracting one fractional vector from another</li>
 <li><strong>lattice</strong> – a 3x3 matrix describing a unit cell’s lattice vectors</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z respectively.</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -261,7 +261,7 @@ to x, y, and z respectively.</li>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.distance_matrix">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>points1, points2, lattice, PBC=[1, 2, 3], metric='euclidean'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.distance_matrix" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>points1, points2, lattice, PBC=[1, 1, 1], metric='euclidean'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.distance_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the distances between two sets of fractional coordinates.
 Takes into account the lattice metric and periodic boundary conditions.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -272,8 +272,8 @@ Takes into account the lattice metric and periodic boundary conditions.</p>
 <li><strong>points1</strong> – a list of fractional coordinates</li>
 <li><strong>points2</strong> – another list of fractional coordinates</li>
 <li><strong>lattice</strong> – a 3x3 matrix describing a unit cell’s lattice vectors</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z respectively.</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 <li><strong>metric</strong> – the metric to use with cdist. Possible values include ‘euclidean’,
 ‘sqeuclidean’, ‘minkowski’, and others</li>
 </ul>
@@ -288,7 +288,7 @@ to x, y, and z respectively.</li>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.distance_matrix_euclidean">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">distance_matrix_euclidean</code><span class="sig-paren">(</span><em>points1, points2, PBC=[1, 2, 3], squared=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#distance_matrix_euclidean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.distance_matrix_euclidean" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">distance_matrix_euclidean</code><span class="sig-paren">(</span><em>points1, points2, PBC=[1, 1, 1], squared=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#distance_matrix_euclidean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.distance_matrix_euclidean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the distances between two sets of fractional coordinates.
 Takes into account periodic boundary conditions, but assumes a Euclidean matrix.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -298,8 +298,8 @@ Takes into account periodic boundary conditions, but assumes a Euclidean matrix.
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>points1</strong> – a list of fractional coordinates</li>
 <li><strong>points2</strong> – another list of fractional coordinates</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z respectively.</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -328,20 +328,20 @@ to x, y, and z respectively.</li>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.filtered_coords">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">filtered_coords</code><span class="sig-paren">(</span><em>coords, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#filtered_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.filtered_coords" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">filtered_coords</code><span class="sig-paren">(</span><em>coords, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#filtered_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.filtered_coords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given an array of 3d fractional coordinates or a single 3d point, transform
 all coordinates to less than 1 and greater than 0. If one axis is not
 periodic, does not transform the coordinates along that axis. For example,
 for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
-not the y axis (PBC=[1, 3]), the function would return [0.2, 1.6, 0.6].</p>
+not the y axis (PBC=[1,0,1]), the function would return [0.2, 1.6, 0.6].</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>coords</strong> – an array of real 3d vectors. The shape does not matter</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z repectively</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -354,7 +354,7 @@ to x, y, and z repectively</li>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.filtered_coords_euclidean">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">filtered_coords_euclidean</code><span class="sig-paren">(</span><em>coords, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#filtered_coords_euclidean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.filtered_coords_euclidean" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">filtered_coords_euclidean</code><span class="sig-paren">(</span><em>coords, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#filtered_coords_euclidean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.filtered_coords_euclidean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given an array of fractional 3-vectors, filters coordinates to between 0 and
 1. Then, values which are greater than 0.5 are converted to 1 minus their
 value. This is used for converting displacement vectors with a Euclidean
@@ -365,8 +365,8 @@ lattice.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>coords</strong> – an array of real 3d vectors. The shape does not matter</li>
-<li><strong>PBC</strong> – the axes, if any, which are periodic. 1, 2, and 3 correspond
-to x, y, and z repectively</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -709,7 +709,7 @@ point in each Wyckoff position</p>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.get_wyckoff_generators">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_wyckoff_generators</code><span class="sig-paren">(</span><em>sg, PBC=[1, 2, 3], molecular=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_wyckoff_generators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_wyckoff_generators" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_wyckoff_generators</code><span class="sig-paren">(</span><em>sg, PBC=[1, 1, 1], molecular=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_wyckoff_generators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_wyckoff_generators" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of Wyckoff generators for a given space group.
 1st index: index of WP in sg (0 is the WP with largest multiplicity)
 2nd index: a generator for the WP
@@ -723,7 +723,8 @@ form a subset of the spacegroup’s general Wyckoff position.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>sg</strong> – the international spacegroup number</li>
-<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 <li><strong>molecular</strong> – whether or not to return the Euclidean point symmetry
 operations. If True, cuts off translational part of operation, and
 converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -742,7 +743,7 @@ single fractional (x,y,z) coordinate</p>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.get_wyckoff_symmetry">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_wyckoff_symmetry</code><span class="sig-paren">(</span><em>sg, PBC=[1, 2, 3], molecular=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_wyckoff_symmetry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_wyckoff_symmetry" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_wyckoff_symmetry</code><span class="sig-paren">(</span><em>sg, PBC=[1, 1, 1], molecular=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_wyckoff_symmetry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_wyckoff_symmetry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of Wyckoff position site symmetry for a given space group.
 1st index: index of WP in sg (0 is the WP with largest multiplicity)
 2nd index: a point within the WP
@@ -753,7 +754,8 @@ single fractional (x,y,z) coordinate</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>sg</strong> – the international spacegroup number</li>
-<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 <li><strong>molecular</strong> – whether or not to return the Euclidean point symmetry
 operations. If True, cuts off translational part of operation, and
 converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -772,7 +774,7 @@ point in each Wyckoff position</p>
 
 <dl class="function">
 <dt id="pyxtal.symmetry.get_wyckoffs">
-<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_wyckoffs</code><span class="sig-paren">(</span><em>sg, organized=False, PBC=[1, 2, 3]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_wyckoffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_wyckoffs" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">get_wyckoffs</code><span class="sig-paren">(</span><em>sg, organized=False, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#get_wyckoffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.get_wyckoffs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of Wyckoff positions for a given space group. Has option to
 organize the list based on multiplicity (this is used for
 random_crystal.wyckoffs) For an unorganized list:</p>
@@ -796,7 +798,8 @@ list.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>sg</strong> – the international spacegroup number</li>
 <li><strong>organized</strong> – whether or not to organize the list based on multiplicity</li>
-<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -1002,7 +1005,9 @@ Can be obtained using general_position()</li>
 <li><strong>tol</strong> – the numberical tolerance for determining equivalent positions and
 orientations.</li>
 <li><strong>lattice</strong> – a 3x3 matrix representing the lattice vectors of the unit cell</li>
-<li><strong>PBC</strong> – a list of periodic axes (1,2,3)-&gt;(x,y,z)</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis.
+Need not be defined here if gen_pos is a Wyckoff_position object.</li>
 </ul>
 </td>
 </tr>

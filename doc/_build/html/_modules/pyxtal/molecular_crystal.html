@@ -159,7 +159,7 @@
 <span class="sd">            overlap between molecular ellipsoids</span>
 <span class="sd">        factor: the distance factor to pass to check_distances. (only for</span>
 <span class="sd">            inter-atomic distance checking)</span>
-<span class="sd">        tm: </span>
+<span class="sd">        tm: a Tol_matrix object (or prototype string) for distance checking</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        False if the Wyckoff positions overlap. True otherwise</span>
@@ -183,7 +183,7 @@
         <span class="n">c2</span><span class="p">,</span> <span class="n">s2</span> <span class="o">=</span> <span class="n">ms1</span><span class="o">.</span><span class="n">get_coords_and_species</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">check_distance</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">ms1</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">ms1</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">tm</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="estimate_volume_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.estimate_volume_molecular">[docs]</a><span class="k">def</span> <span class="nf">estimate_volume_molecular</span><span class="p">(</span><span class="n">numMols</span><span class="p">,</span> <span class="n">boxes</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="estimate_volume_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.estimate_volume_molecular">[docs]</a><span class="k">def</span> <span class="nf">estimate_volume_molecular</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">boxes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Estimate the volume needed for a molecular crystal conventional unit cell.</span>
 
@@ -196,6 +196,10 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        the estimated volume (in cubic Angstroms) needed for the unit cell</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">boxes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">boxes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">mol</span> <span class="ow">in</span> <span class="n">molecules</span><span class="p">:</span>
+            <span class="n">boxes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_box</span><span class="p">(</span><span class="n">reoriented_molecule</span><span class="p">(</span><span class="n">mol</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
     <span class="n">volume</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">numMol</span><span class="p">,</span> <span class="n">box</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">numMols</span><span class="p">,</span> <span class="n">boxes</span><span class="p">):</span>
         <span class="n">volume</span> <span class="o">+=</span> <span class="n">numMol</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
@@ -221,7 +225,8 @@
 <span class="sd">        sg: the international spacegroup number</span>
 <span class="sd">        allow_inversion: whether or not to allow inversion operations for chiral</span>
 <span class="sd">            molecules</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a list of operations orientation objects for each Wyckoff position. 1st</span>
@@ -269,7 +274,7 @@
         <span class="k">if</span> <span class="n">z</span><span class="o">+</span><span class="n">r</span> <span class="o">&gt;</span> <span class="n">maxz</span><span class="p">:</span> <span class="n">maxz</span> <span class="o">=</span> <span class="n">z</span><span class="o">+</span><span class="n">r</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">minx</span><span class="p">,</span><span class="n">maxx</span><span class="p">,</span><span class="n">miny</span><span class="p">,</span><span class="n">maxy</span><span class="p">,</span><span class="n">minz</span><span class="p">,</span><span class="n">maxz</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="check_distance_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_distance_molecular">[docs]</a><span class="k">def</span> <span class="nf">check_distance_molecular</span><span class="p">(</span><span class="n">coord1</span><span class="p">,</span> <span class="n">coord2</span><span class="p">,</span> <span class="n">indices1</span><span class="p">,</span> <span class="n">index2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">radii</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="check_distance_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_distance_molecular">[docs]</a><span class="k">def</span> <span class="nf">check_distance_molecular</span><span class="p">(</span><span class="n">coord1</span><span class="p">,</span> <span class="n">coord2</span><span class="p">,</span> <span class="n">indices1</span><span class="p">,</span> <span class="n">index2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">radii</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check the distances between two set of molecules. The first set is generally</span>
 <span class="sd">    larger than the second. Distances between coordinates within the first set</span>
@@ -290,7 +295,8 @@
 <span class="sd">            overlap</span>
 <span class="sd">        d_factor: the tolerance is multiplied by this amount. Larger values</span>
 <span class="sd">            mean molecules must be farther apart</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a bool for whether or not the atoms are sufficiently far enough apart</span>
@@ -663,16 +669,6 @@
                 <span class="c1">#if abs(i-j) &gt;= m_length:</span>
                 <span class="k">if</span> <span class="n">mol_num1</span> <span class="o">!=</span> <span class="n">mol_num2</span><span class="p">:</span>
                     <span class="k">return</span> <span class="kc">False</span>
-            
-            <span class="sd">&#39;&#39;&#39;#Check periodic images</span>
-<span class="sd">            matrix = create_matrix(PBC=self.PBC)</span>
-<span class="sd">            for v in matrix:</span>
-<span class="sd">                if v[0] == 0 and v[1] == 0 and v[2] == 0: continue</span>
-<span class="sd">                m1 = np.array(coords) + np.array(v)</span>
-<span class="sd">                d2 = check_distance(coords, m1, species, species, self.lattice, PBC=[],</span>
-<span class="sd">                    tm=self.tol_matrix, d_factor=factor)</span>
-<span class="sd">                if d2 is False:</span>
-<span class="sd">                    return False&#39;&#39;&#39;</span>
 
             <span class="k">return</span> <span class="n">check_images</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>            
 
@@ -833,7 +829,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">unique_axis</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span>
             <span class="c1">#Generate a Lattice instance</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">,</span> <span class="n">boxes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell.&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">)</span>
         <span class="c1">#Set the tolerance matrix</span>
@@ -854,7 +850,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="c1">#Necessary input</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;The periodic axes of the crystal&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Group</span><span class="p">:</span>
             <span class="n">group</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
@@ -1082,17 +1078,6 @@
                                 <span class="k">if</span> <span class="n">wp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
                 	    	        <span class="c1">#Generate a list of coords from the wyckoff position</span>
                                     <span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">generate_point</span><span class="p">()</span>
-                                    <span class="sd">&#39;&#39;&#39;if self.dim == 2:</span>
-<span class="sd">                                        for a in range(1, 4):</span>
-<span class="sd">                                            if a not in self.PBC:</span>
-<span class="sd">                                                point[a-1] -= 0.5</span>
-<span class="sd">                                    elif self.dim == 1:</span>
-<span class="sd">                                        for a in range(1, 4):</span>
-<span class="sd">                                            if a not in self.PBC:</span>
-<span class="sd">                                                if self.number &lt; 46:</span>
-<span class="sd">                                                    point[a-1] -= 0.5</span>
-<span class="sd">                                                elif self.number &gt;= 46:</span>
-<span class="sd">                                                    point[a-1] *= 1./math.sqrt(3.)&#39;&#39;&#39;</span>
                                     <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wp</span><span class="p">])</span>
                                     <span class="c1">#merge coordinates if the atoms are close</span>
                                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
@@ -1249,7 +1234,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">thickness</span>
         <span class="sd">&quot;&quot;&quot;the thickness, in Angstroms, of the unit cell in the 3rd</span>
 <span class="sd">        dimension.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;The periodic axes of the crystal.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">init_common</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tm</span><span class="p">)</span></div>
 
@@ -1298,7 +1283,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span>
         <span class="sd">&quot;&quot;&quot;the effective cross-sectional area, in Angstroms squared, of the</span>
 <span class="sd">        unit cell.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;The periodic axes of the crystal (1,2,3)-&gt;(x,y,z).&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sg</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="sd">&quot;&quot;&quot;The international space group number (there is not a 1-1 correspondence</span>

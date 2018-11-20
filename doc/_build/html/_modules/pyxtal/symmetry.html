@@ -115,15 +115,15 @@
     <span class="n">m</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span><span class="n">index1</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
     <span class="k">return</span> <span class="n">SymmOp</span><span class="p">(</span><span class="n">m</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="create_matrix"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.create_matrix">[docs]</a><span class="k">def</span> <span class="nf">create_matrix</span><span class="p">(</span><span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="create_matrix"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.create_matrix">[docs]</a><span class="k">def</span> <span class="nf">create_matrix</span><span class="p">(</span><span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Used for calculating distances in lattices with periodic boundary</span>
 <span class="sd">    conditions. When multiplied with a set of points, generates additional</span>
 <span class="sd">    points in cells adjacent to and diagonal to the original cell</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        PBC: The axes with periodic boundary conditions.</span>
-<span class="sd">            Ex: PBC=[2,3] cancels periodic boundary conditions along the x axis</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A numpy array of matrices which can be multiplied by a set of</span>
@@ -133,11 +133,11 @@
     <span class="n">i_list</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
     <span class="n">j_list</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
     <span class="n">k_list</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="k">if</span> <span class="mi">1</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">PBC</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
         <span class="n">i_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="mi">2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">PBC</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
         <span class="n">j_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="mi">3</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">PBC</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
         <span class="n">k_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">i_list</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">j_list</span><span class="p">:</span>
@@ -145,30 +145,29 @@
                 <span class="n">matrix</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="filtered_coords"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.filtered_coords">[docs]</a><span class="k">def</span> <span class="nf">filtered_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="filtered_coords"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.filtered_coords">[docs]</a><span class="k">def</span> <span class="nf">filtered_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given an array of 3d fractional coordinates or a single 3d point, transform</span>
 <span class="sd">    all coordinates to less than 1 and greater than 0. If one axis is not</span>
 <span class="sd">    periodic, does not transform the coordinates along that axis. For example,</span>
 <span class="sd">    for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but</span>
-<span class="sd">    not the y axis (PBC=[1, 3]), the function would return [0.2, 1.6, 0.6].</span>
+<span class="sd">    not the y axis (PBC=[1,0,1]), the function would return [0.2, 1.6, 0.6].</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        coords: an array of real 3d vectors. The shape does not matter</span>
-<span class="sd">        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond</span>
-<span class="sd">            to x, y, and z repectively</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        an array of filtered coords with the same shape as coords</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">filter_vector</span><span class="p">(</span><span class="n">vector</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-            <span class="n">vector</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">vector</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">vector</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">vector</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vector</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">PBC</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">filter_vector</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">coords</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="filtered_coords_euclidean"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.filtered_coords_euclidean">[docs]</a><span class="k">def</span> <span class="nf">filtered_coords_euclidean</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="filtered_coords_euclidean"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.filtered_coords_euclidean">[docs]</a><span class="k">def</span> <span class="nf">filtered_coords_euclidean</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given an array of fractional 3-vectors, filters coordinates to between 0 and</span>
 <span class="sd">    1. Then, values which are greater than 0.5 are converted to 1 minus their</span>
@@ -177,23 +176,23 @@
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        coords: an array of real 3d vectors. The shape does not matter</span>
-<span class="sd">        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond</span>
-<span class="sd">            to x, y, and z repectively</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        an array of filtered coords with the same shape as coords</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">filter_vector_euclidean</span><span class="p">(</span><span class="n">vector</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-            <span class="n">vector</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">vector</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">vector</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
-                <span class="n">vector</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">vector</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PBC</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">a</span><span class="p">:</span>
+                <span class="n">vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">vector</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+                    <span class="n">vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">vector</span>
-    <span class="c1">#c = filtered_coords(coords, PBC=PBC)</span>
 
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">filter_vector_euclidean</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">coords</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="distance"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.distance">[docs]</a><span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="distance"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.distance">[docs]</a><span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns the Euclidean distance from the origin for a fractional</span>
 <span class="sd">    displacement vector. Takes into account the lattice metric and periodic</span>
@@ -203,8 +202,8 @@
 <span class="sd">        xyz: a fractional 3d displacement vector. Can be obtained by</span>
 <span class="sd">            subtracting one fractional vector from another</span>
 <span class="sd">        lattice: a 3x3 matrix describing a unit cell&#39;s lattice vectors</span>
-<span class="sd">        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond</span>
-<span class="sd">            to x, y, and z respectively.</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a scalar for the distance of the point from the origin</span>
@@ -227,7 +226,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span></div>
 
-<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">points2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">points2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns the distances between two sets of fractional coordinates.</span>
 <span class="sd">    Takes into account the lattice metric and periodic boundary conditions.</span>
@@ -236,8 +235,8 @@
 <span class="sd">        points1: a list of fractional coordinates</span>
 <span class="sd">        points2: another list of fractional coordinates</span>
 <span class="sd">        lattice: a 3x3 matrix describing a unit cell&#39;s lattice vectors</span>
-<span class="sd">        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond</span>
-<span class="sd">            to x, y, and z respectively.</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 <span class="sd">        metric: the metric to use with cdist. Possible values include &#39;euclidean&#39;,</span>
 <span class="sd">            &#39;sqeuclidean&#39;, &#39;minkowski&#39;, and others</span>
 
@@ -253,7 +252,7 @@
     <span class="n">all_distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cdist</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m1</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">all_distances</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="distance_matrix_euclidean"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.distance_matrix_euclidean">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix_euclidean</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">points2</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">squared</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="distance_matrix_euclidean"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.distance_matrix_euclidean">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix_euclidean</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">points2</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">squared</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns the distances between two sets of fractional coordinates.</span>
 <span class="sd">    Takes into account periodic boundary conditions, but assumes a Euclidean matrix.</span>
@@ -261,8 +260,8 @@
 <span class="sd">    Args:</span>
 <span class="sd">        points1: a list of fractional coordinates</span>
 <span class="sd">        points2: another list of fractional coordinates</span>
-<span class="sd">        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond</span>
-<span class="sd">            to x, y, and z respectively.</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a 2x2 np array of scalar distances</span>
@@ -277,7 +276,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">displacements</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="get_wyckoffs"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_wyckoffs">[docs]</a><span class="k">def</span> <span class="nf">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">organized</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]):</span>
+<div class="viewcode-block" id="get_wyckoffs"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_wyckoffs">[docs]</a><span class="k">def</span> <span class="nf">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">organized</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a list of Wyckoff positions for a given space group. Has option to</span>
 <span class="sd">    organize the list based on multiplicity (this is used for</span>
@@ -304,33 +303,32 @@
 <span class="sd">    Args:</span>
 <span class="sd">        sg: the international spacegroup number</span>
 <span class="sd">        organized: whether or not to organize the list based on multiplicity</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 <span class="sd">    </span>
 <span class="sd">    Returns: </span>
 <span class="sd">        a list of Wyckoff positions, each of which is a list of SymmOp&#39;s</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
-        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-                <span class="n">coor</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">coor</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">coor</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PBC</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="p">:</span>
+                <span class="n">coor</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
         <span class="n">coor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
 
     <span class="n">wyckoff_strings</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">wyckoff_df</span><span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">][</span><span class="n">sg</span><span class="p">])</span>
     <span class="n">wyckoffs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wyckoff_strings</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
             <span class="n">op</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">coor1</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
             <span class="n">invalid</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">coor1</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">:</span>
-                        <span class="k">pass</span>
-                    <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PBC</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">abs</span><span class="p">(</span><span class="n">coor1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">:</span>
                         <span class="c1">#invalid wyckoffs for layer group</span>
                         <span class="n">invalid</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="n">invalid</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">invalid</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
                 <span class="n">wyckoffs</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
                 <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
                     <span class="n">wyckoffs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
@@ -511,7 +509,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">wyckoffs</span></div>
 
-<div class="viewcode-block" id="get_wyckoff_symmetry"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_wyckoff_symmetry">[docs]</a><span class="k">def</span> <span class="nf">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="get_wyckoff_symmetry"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_wyckoff_symmetry">[docs]</a><span class="k">def</span> <span class="nf">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a list of Wyckoff position site symmetry for a given space group.</span>
 <span class="sd">    1st index: index of WP in sg (0 is the WP with largest multiplicity)</span>
@@ -520,7 +518,8 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        sg: the international spacegroup number</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 <span class="sd">        molecular: whether or not to return the Euclidean point symmetry</span>
 <span class="sd">            operations. If True, cuts off translational part of operation, and</span>
 <span class="sd">            converts non-orthogonal operations (3-fold and 6-fold rotations)</span>
@@ -531,11 +530,11 @@
 <span class="sd">        a 3d list of SymmOp objects representing the site symmetry of each</span>
 <span class="sd">        point in each Wyckoff position</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
         <span class="n">coor</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-                <span class="n">coor</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PBC</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="p">:</span>
+                <span class="n">coor</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
         <span class="n">coor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
     <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
 
@@ -548,15 +547,13 @@
             <span class="n">convert</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="c1">#Loop over Wyckoff positions</span>
     <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">symmetry_strings</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
             <span class="n">op</span> <span class="o">=</span> <span class="n">w</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">coor1</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
             <span class="n">invalid</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">coor1</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">:</span>
-                        <span class="k">pass</span>
-                    <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PBC</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">abs</span><span class="p">(</span><span class="n">coor1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">:</span>
                         <span class="n">invalid</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">if</span> <span class="n">invalid</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
                 <span class="n">symmetry</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
@@ -726,7 +723,7 @@
                     <span class="n">symmetry</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">symmetry</span></div>
 
-<div class="viewcode-block" id="get_wyckoff_generators"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_wyckoff_generators">[docs]</a><span class="k">def</span> <span class="nf">get_wyckoff_generators</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="get_wyckoff_generators"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.get_wyckoff_generators">[docs]</a><span class="k">def</span> <span class="nf">get_wyckoff_generators</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a list of Wyckoff generators for a given space group.</span>
 <span class="sd">    1st index: index of WP in sg (0 is the WP with largest multiplicity)</span>
@@ -738,7 +735,8 @@
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        sg: the international spacegroup number</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 <span class="sd">        molecular: whether or not to return the Euclidean point symmetry</span>
 <span class="sd">            operations. If True, cuts off translational part of operation, and</span>
 <span class="sd">            converts non-orthogonal operations (3-fold and 6-fold rotations)</span>
@@ -749,11 +747,11 @@
 <span class="sd">        a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a</span>
 <span class="sd">        single fractional (x,y,z) coordinate</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
         <span class="n">coor</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-                <span class="n">coor</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PBC</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="p">:</span>
+                <span class="n">coor</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
         <span class="n">coor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
     <span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
 
@@ -766,15 +764,13 @@
             <span class="n">convert</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="c1">#Loop over Wyckoff positions</span>
     <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">generator_strings</span><span class="p">,</span> <span class="n">wyckoffs</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
             <span class="n">op</span> <span class="o">=</span> <span class="n">w</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">coor1</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
             <span class="n">invalid</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PBC</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">coor1</span><span class="p">[</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">:</span>
-                        <span class="k">pass</span>
-                    <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PBC</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">abs</span><span class="p">(</span><span class="n">coor1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">:</span>
                         <span class="n">invalid</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">if</span> <span class="n">invalid</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
                 <span class="n">generators</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
@@ -972,7 +968,9 @@
 <span class="sd">            orientations.</span>
 <span class="sd">        lattice:</span>
 <span class="sd">            a 3x3 matrix representing the lattice vectors of the unit cell</span>
-<span class="sd">        PBC: a list of periodic axes (1,2,3)-&gt;(x,y,z)</span>
+<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
+<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis.</span>
+<span class="sd">            Need not be defined here if gen_pos is a Wyckoff_position object.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a list of SymmOp objects which leave the given point invariant</span>
@@ -981,7 +979,7 @@
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">gen_pos</span><span class="p">)</span> <span class="o">==</span> <span class="n">Wyckoff_position</span><span class="p">:</span>
             <span class="n">PBC</span> <span class="o">=</span> <span class="n">gen_pos</span><span class="o">.</span><span class="n">PBC</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
     <span class="c1">#Convert point into a SymmOp</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="o">!=</span> <span class="n">SymmOp</span><span class="p">:</span>
         <span class="n">point</span> <span class="o">=</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">point</span><span class="p">))</span>
@@ -1583,7 +1581,7 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                 <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+                <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="n">PBC</span>
             <span class="n">ops_all</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1614,7 +1612,7 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                 <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="n">PBC</span>
             <span class="n">ops_all</span> <span class="o">=</span> <span class="n">get_layer</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1645,7 +1643,7 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                 <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="n">PBC</span>
             <span class="n">ops_all</span> <span class="o">=</span> <span class="n">get_rod</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1769,7 +1767,7 @@
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">231</span><span class="p">):</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                 <span class="k">return</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1798,7 +1796,7 @@
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">81</span><span class="p">):</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                 <span class="k">return</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_layer_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1825,7 +1823,7 @@
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">76</span><span class="p">):</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                 <span class="k">return</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_rod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_rod_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1852,7 +1850,7 @@
             <span class="c1">#0-D clusters. Except for group &quot;I&quot; and &quot;Ih&quot;, z axis is the high-symmetry axis</span>
             <span class="c1">#https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
             <span class="c1">#Check if string is for crystallographic point group</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">pglist</span><span class="p">:</span>
@@ -1862,7 +1860,7 @@
                 <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">33</span><span class="p">):</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                     <span class="k">return</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
                 <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_point_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>

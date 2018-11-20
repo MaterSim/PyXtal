@@ -407,7 +407,7 @@ Returns:
     A 1D numpy array of distances in Angstroms
 """
 
-def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,2,3], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
+def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
     """
     Check the distances between two set of atoms. Distances between coordinates
     within the first set are not checked, and distances between coordinates within
@@ -422,8 +422,8 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,2,3], tm=
         species1: a list of atomic species or numbers for coord1
         species2: a list of atomic species or numbers for coord2
         lattice: matrix describing the unit cell vectors
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z respectively.
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         tm: a Tol_matrix object, or a string representing the type of Tol_matrix
             to use
         d_factor: the tolerance is multiplied by this amount. Larger values
@@ -451,7 +451,7 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,2,3], tm=
     else:
         return True
 
-def check_images(coords, species, lattice, PBC=[1,2,3], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
+def check_images(coords, species, lattice, PBC=[1,1,1], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
     """
     Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.
     """
@@ -464,9 +464,9 @@ def check_images(coords, species, lattice, PBC=[1,2,3], tm=Tol_matrix(prototype=
         for v2 in coords+v:
             new_coords.append(v2)
         new_species += species
-    return check_distance(coords, np.array(new_coords), species, new_species, lattice, PBC=[], tm=tm, d_factor=d_factor)
+    return check_distance(coords, np.array(new_coords), species, new_species, lattice, PBC=[0,0,0], tm=tm, d_factor=d_factor)
 
-def get_center(xyzs, lattice, PBC=[1,2,3]):
+def get_center(xyzs, lattice, PBC=[1,1,1]):
     """
     Finds the geometric centers of the clusters under periodic boundary
     conditions.
@@ -474,8 +474,8 @@ def get_center(xyzs, lattice, PBC=[1,2,3]):
     Args:
         xyzs: a list of fractional coordinates
         lattice: a matrix describing the unit cell
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z respectively.
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         x,y,z coordinates for the center of the input coordinate list
@@ -560,7 +560,7 @@ def para2matrix(cell_para, radians=True, format='lower'):
         pass
     return matrix
 
-def Add_vacuum(lattice, coor, vacuum=10, PBC=[1,2,3]):
+def Add_vacuum(lattice, coor, vacuum=10, PBC=[0,0,0]):
     """
     Adds space above and below a 2D or 1D crystal. This allows for treating the
     structure as a 3D crystal during energy optimization
@@ -569,16 +569,17 @@ def Add_vacuum(lattice, coor, vacuum=10, PBC=[1,2,3]):
         lattice: the lattice matrix of the crystal
         coor: the relative coordinates of the crystal
         vacuum: the amount of space, in Angstroms, to add above and below
-        PBC: the periodic axes of the crystal
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         lattice, coor: The transformed lattice and coordinates after the
             vacuum space is added
     """
     absolute_coords = np.dot(coor, lattice)
-    for a in range(1, 4):
-        if a not in PBC:
-            lattice[a-1] += (lattice[a-1]/np.linalg.norm(lattice[a-1])) * vacuum
+    for i, a in enumerate(PBC):
+        if not a:
+            lattice[i] += (lattice[i]/np.linalg.norm(lattice[i])) * vacuum
     new_coor = np.dot(absolute_coords, np.linalg.inv(lattice))
     return lattice, new_coor
 
@@ -662,7 +663,7 @@ def cellsize(sg):
     	return 4
     else: return "Error: Could not determine lattice type"
 
-def find_short_dist(coor, lattice, tol, PBC=[1,2,3]):
+def find_short_dist(coor, lattice, tol, PBC=[1,1,1]):
     """
     Given a list of fractional coordinates, finds pairs which are closer
     together than tol, and builds the connectivity map
@@ -671,8 +672,8 @@ def find_short_dist(coor, lattice, tol, PBC=[1,2,3]):
         coor: a list of fractional 3-dimensional coordinates
         lattice: a matrix representing the crystal unit cell
         tol: the distance tolerance for pairing coordinates
-        PBC: the axes, if any, which are periodic. 1, 2, and 3 correspond
-            to x, y, and z respectively.
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
     
     Returns:
         pairs, graph: (pairs) is a list whose entries have the form [index1,
@@ -1293,7 +1294,7 @@ def choose_wyckoff(group, number):
         else:
             return False
 
-def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
+def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,1,1]):
     """
     Checks the inter-atomic distance between all pairs of atoms in a crystal.
 
@@ -1303,7 +1304,8 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,2,3]):
         lattice: a 3x3 matrix representing the lattice vectors of the unit cell
         factor: a tolerance factor for checking distances. A larger value means
             atoms must be farther apart
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
     
     Returns:
         True if no atoms are too close together, False if any pair is too close
@@ -1334,7 +1336,7 @@ class Lattice():
         kwargs: various values which may be defined. If none are defined, random ones
             will be generated.
     """
-    def __init__(self, ltype, volume, PBC=[1,2,3], **kwargs):
+    def __init__(self, ltype, volume, PBC=[1,1,1], **kwargs):
         #Set required parameters
         if ltype in ["triclinic", "monoclinic", "orthorhombic", "tetragonal",
                 "trigonal", "hexagonal", "cubic", "spherical", "cylindrical"]:
@@ -1346,7 +1348,7 @@ class Lattice():
             return
         self.volume = float(volume)
         self.PBC = PBC
-        self.dim = len(PBC)
+        self.dim = sum(PBC)
         self.kwargs = {}
         self.random = True
         #Set optional values
@@ -1370,8 +1372,13 @@ class Lattice():
         """
         Generates a 3x3 matrix for the lattice based on the lattice type and volume
         """
-        para = self.generate_para()
-        return para2matrix(para)
+        #Try multiple times in case of failure
+        for i in range(10):
+            para = self.generate_para()
+            if para is not None:
+                return para2matrix(para)
+        print("Error: Could not generate lattice matrix.")
+        return
 
     def get_matrix(self):
         """
@@ -1444,15 +1451,15 @@ class Lattice():
                 if rand_u(0,1) < 0.5:
                     point[index] *= -1
         else:
-            for a in range(1,4):
-                if a not in self.PBC:
+            for i, a in enumerate(self.PBC):
+                if not a:
                     if self.ltype == "hexagonal":
-                        point[a-1] *= 1./sqrt(3.)
+                        point[i] *= 1./sqrt(3.)
                     else:
-                        point[a-1] -= 0.5
+                        point[i] -= 0.5
         return point
 
-    def from_para(a, b, c, alpha, beta, gamma, ltype="triclinic", radians=False, PBC=[1,2,3], **kwargs):
+    def from_para(a, b, c, alpha, beta, gamma, ltype="triclinic", radians=False, PBC=[1,1,1], **kwargs):
         """
         Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
         are available. Unless specified by the keyword random=True, does not create a
@@ -1468,7 +1475,8 @@ class Lattice():
                 which confines generated points to lie within a sphere, and "cylindrical", which
                 confines generated points to lie within a cylinder (oriented about the z axis)
             radians: whether or not to use radians (instead of degrees) for the lattice angles
-            PBC: The periodic boundary conditions
+            PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
             area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
                 crystals
             thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
@@ -1502,7 +1510,7 @@ class Lattice():
         l.random = False
         return l
 
-    def from_matrix(matrix, ltype="triclinic", PBC=[1,2,3], **kwargs):
+    def from_matrix(matrix, ltype="triclinic", PBC=[1,1,1], **kwargs):
         """
         Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
         are available. Unless specified by the keyword random=True, does not create a
@@ -1514,7 +1522,8 @@ class Lattice():
             ltype: the lattice type ("cubic, tetragonal, etc."). Also available are "spherical",
                 which confines generated points to lie within a sphere, and "cylindrical", which
                 confines generated points to lie within a cylinder (oriented about the z axis)
-            PBC: The periodic boundary conditions
+            PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
             area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
                 crystals
             thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
@@ -1655,7 +1664,7 @@ class random_crystal():
             group = Group(group, self.dim)
         self.sg = group.number
         """The international spacegroup number of the crystal."""
-        self.PBC = [1,2,3]
+        self.PBC = [1,1,1]
         """The periodic boundary axes of the crystal"""
         self.init_common(species, numIons, factor, group, lattice, tm)
 
@@ -1793,11 +1802,7 @@ class random_crystal():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                self.lattice.reset_matrix()
-                '''cell_para = self.lattice.get_para()
-                if cell_para is None:
-                    break
-                else:'''
+                self.lattice.reset_matrix()           
                 cell_matrix = self.lattice.get_matrix()
                 #Check that the correct volume was generated
                 if self.lattice.random is True:
@@ -1952,7 +1957,7 @@ class random_crystal_2D(random_crystal):
     def __init__(self, group, species, numIons, thickness, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
-        self.PBC = [1,2]
+        self.PBC = [1,1,0]
         """The periodic boundary axes of the crystal"""
         if type(group) != Group:
             group = Group(group, self.dim)
@@ -1988,7 +1993,7 @@ class random_crystal_1D(random_crystal):
     def __init__(self, group, species, numIons, area, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
-        self.PBC = [3]
+        self.PBC = [0,0,1]
         """The periodic axis of the crystal."""
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence
@@ -2020,7 +2025,7 @@ class random_cluster(random_crystal):
     def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 0
         """The number of periodic dimensions of the crystal"""
-        self.PBC = []
+        self.PBC = [0,0,0]
         """The periodic axis of the crystal."""
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence

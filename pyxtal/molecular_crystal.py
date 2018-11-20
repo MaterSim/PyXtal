@@ -121,7 +121,7 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
             overlap between molecular ellipsoids
         factor: the distance factor to pass to check_distances. (only for
             inter-atomic distance checking)
-        tm: 
+        tm: a Tol_matrix object (or prototype string) for distance checking
 
     Returns:
         False if the Wyckoff positions overlap. True otherwise
@@ -187,7 +187,8 @@ def get_group_orientations(mol, group, allow_inversion=False):
         sg: the international spacegroup number
         allow_inversion: whether or not to allow inversion operations for chiral
             molecules
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         a list of operations orientation objects for each Wyckoff position. 1st
@@ -235,7 +236,7 @@ def get_box(mol):
         if z+r > maxz: maxz = z+r
     return [minx,maxx,miny,maxy,minz,maxz]
 
-def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, d_factor=1.0, PBC=[1,2,3]):
+def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, d_factor=1.0, PBC=[1,1,1]):
     """
     Check the distances between two set of molecules. The first set is generally
     larger than the second. Distances between coordinates within the first set
@@ -256,7 +257,8 @@ def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, d
             overlap
         d_factor: the tolerance is multiplied by this amount. Larger values
             mean molecules must be farther apart
-        PBC: a list of periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
@@ -629,16 +631,6 @@ class mol_site():
                 #if abs(i-j) >= m_length:
                 if mol_num1 != mol_num2:
                     return False
-            
-            '''#Check periodic images
-            matrix = create_matrix(PBC=self.PBC)
-            for v in matrix:
-                if v[0] == 0 and v[1] == 0 and v[2] == 0: continue
-                m1 = np.array(coords) + np.array(v)
-                d2 = check_distance(coords, m1, species, species, self.lattice, PBC=[],
-                    tm=self.tol_matrix, d_factor=factor)
-                if d2 is False:
-                    return False'''
 
             return check_images(coords, species, self.lattice, PBC=self.PBC, tm=self.tol_matrix, d_factor=factor)            
 
@@ -820,7 +812,7 @@ class molecular_crystal():
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         #Necessary input
-        self.PBC = [1,2,3]
+        self.PBC = [1,1,1]
         """The periodic axes of the crystal"""
         if type(group) != Group:
             group = Group(group, self.dim)
@@ -1048,17 +1040,6 @@ class molecular_crystal():
                                 if wp is not False:
                 	    	        #Generate a list of coords from the wyckoff position
                                     point = self.lattice.generate_point()
-                                    '''if self.dim == 2:
-                                        for a in range(1, 4):
-                                            if a not in self.PBC:
-                                                point[a-1] -= 0.5
-                                    elif self.dim == 1:
-                                        for a in range(1, 4):
-                                            if a not in self.PBC:
-                                                if self.number < 46:
-                                                    point[a-1] -= 0.5
-                                                elif self.number >= 46:
-                                                    point[a-1] *= 1./math.sqrt(3.)'''
                                     coords = np.array([op.operate(point) for op in wp])
                                     #merge coordinates if the atoms are close
                                     if self.check_atomic_distances is False:
@@ -1215,7 +1196,7 @@ class molecular_crystal_2D(molecular_crystal):
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""
-        self.PBC = [1,2]
+        self.PBC = [1,1,0]
         """The periodic axes of the crystal."""
         self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
 
@@ -1264,7 +1245,7 @@ class molecular_crystal_1D(molecular_crystal):
         self.area = area
         """the effective cross-sectional area, in Angstroms squared, of the
         unit cell."""
-        self.PBC = [3]
+        self.PBC = [0,0,1]
         """The periodic axes of the crystal (1,2,3)->(x,y,z)."""
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence

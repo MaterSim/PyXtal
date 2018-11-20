@@ -276,7 +276,7 @@ def rotate_vector(v1, v2):
     v3 = np.cross(v1, v2)
     return aa2matrix(v3, theta)
         
-def are_equal(op1, op2, PBC=[1,2,3], rtol=1e-3, atol=1e-3):
+def are_equal(op1, op2, PBC=[1,1,1], rtol=1e-3, atol=1e-3):
     """
     Check whether two SymmOp objects are equal up to some numerical tolerance.
     Allows for optional consideration of periodic boundary conditions. This
@@ -285,7 +285,8 @@ def are_equal(op1, op2, PBC=[1,2,3], rtol=1e-3, atol=1e-3):
     Args:
         op1: a SymmOp object
         op2: another SymmOp object
-        PBC: A list of the periodic axes (1,2,3)->(x,y,z)
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         rtol: the relative numerical tolerance for equivalence (passed to
             numpy.allclose)
         atol: the absolute numerical tolerance for equivalence (passed to
@@ -306,8 +307,9 @@ def are_equal(op1, op2, PBC=[1,2,3], rtol=1e-3, atol=1e-3):
 
     difference = v2 - v1
     
-    for a in PBC:
-        difference[a-1] -= np.floor(difference[a-1])
+    for i, a in enumerate(PBC):
+        if a:
+            difference[i] -= np.floor(difference[i])
 
     d = np.linalg.norm(difference)
 

@@ -85,7 +85,7 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
     from pyxtal.symmetry import filtered_coords
     from copy import deepcopy
     lattice = struct.lattice.matrix
-    PBC = [1,2,3]
+    PBC = [1,1,1]
 
     #Obtain the generators for the group
     if dim == 3:
@@ -95,15 +95,15 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
     elif dim == 2:
         from pyxtal.symmetry import get_layer
         generators = get_layer(group)[0]
-        PBC = [1,2]
+        PBC = [1,1,0]
     elif dim == 1:
         from pyxtal.symmetry import get_rod
         generators = get_rod(group)[0]
-        PBC = [3]
+        PBC = [0,0,1]
     elif dim == 0:
         from pyxtal.symmetry import get_point
         generators = get_point(group)[0]
-        PBC = []
+        PBC = [0,0,0]
 
     #TODO: Add check for lattice symmetry
 
@@ -1065,8 +1065,8 @@ def test_modules():
         try:
             op1 = SymmOp.from_xyz_string('x,y,z')
             op2 = SymmOp.from_xyz_string('x,y,z+1')
-            a = are_equal(op1, op2, PBC=[3])
-            b = are_equal(op1, op2, PBC=[1])
+            a = are_equal(op1, op2, PBC=[0,0,1])
+            b = are_equal(op1, op2, PBC=[1,0,0])
             if a is True and b is False:
                 pass
             else:
