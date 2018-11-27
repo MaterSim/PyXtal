@@ -164,7 +164,7 @@ def estimate_volume_molecular(molecules, numMols, factor=2.0, boxes=None):
             boxes.append(get_box(reoriented_molecule(mol)[0]))
     volume = 0
     for numMol, box in zip(numMols, boxes):
-        volume += numMol*(box[1]-box[0])*(box[3]-box[2])*(box[5]-box[4])
+        volume += numMol*box.volume
     return abs(factor*volume)
 
 def get_group_orientations(mol, group, allow_inversion=False):
@@ -209,6 +209,27 @@ def get_group_orientations(mol, group, allow_inversion=False):
                 valid_orientations[-1].append([])
     return valid_orientations
 
+class Box():
+    """
+    Class for storing the binding box for a molecule
+    """
+    def __init__(self, minx, maxx, miny, maxy, minz, maxz):
+        self.minx = float(minx)
+        self.maxx = float(maxx)
+        self.miny = float(miny)
+        self.maxy = float(maxy)
+        self.minz = float(minz)
+        self.maxz = float(maxz)
+
+        self.width = float(abs(maxx - minx))
+        self.length = float(abs(maxy - miny))
+        self.height = float(abs(maxz - minz))
+
+        self.minl = min(self.width, self.length, self.height)
+        self.maxl = max(self.width, self.length, self.height)
+
+        self.volume = float(self.width * self.length * self.height)
+
 def get_box(mol):
     """
     Given a molecule, find a minimum orthorhombic box containing it.
@@ -216,7 +237,7 @@ def get_box(mol):
     For best results, call oriented_molecule first.
     
     Args:
-        mol: a pymatgen Molecule object
+        mol: a pymatgen Molecule object. Should be oriented along its principle axes.
 
     Returns:
         a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
@@ -234,7 +255,7 @@ def get_box(mol):
         if x+r > maxx: maxx = x+r
         if y+r > maxy: maxy = y+r
         if z+r > maxz: maxz = z+r
-    return [minx,maxx,miny,maxy,minz,maxz]
+    return Box(minx,maxx,miny,maxy,minz,maxz)
 
 def check_distance_molecular(coord1, coord2, indices1, index2, lattice, radii, d_factor=1.0, PBC=[1,1,1]):
     """
@@ -982,10 +1003,7 @@ class molecular_crystal():
             #minvector = max(radius*2 for radius in self.radii)
             all_lengths = []
             for box in self.boxes:
-                lengths = []
-                for a, b in [[0,1],[2,3],[4,5]]:
-                    lengths.append(abs(box[b]-box[a]))
-                all_lengths.append(min(lengths))
+                all_lengths.append(box.minl)
             minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
