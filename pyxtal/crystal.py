@@ -913,10 +913,16 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
         #Define limits on cell dimensions
         if 'min_l' not in kwargs:
             min_l = minvec
+        else:
+            min_l = kwargs['min_l']
         if 'mid_l' not in kwargs:
             mid_l = min_l
+        else:
+            mid_l = kwargs['mid_l']
         if 'max_l' not in kwargs:
             max_l = mid_l
+        else:
+            max_l = kwargs['max_l']
         l_min = min(a, b, c)
         l_max = max(a, b, c)
         for x in (a, b, c):
@@ -967,6 +973,8 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
     """
     if 'unique_axis' not in kwargs:
         unique_axis = "c"
+    else:
+        unique_axis = kwargs['unique_axis']
     #Store the non-periodic axis
     NPA = 3
     #Set the unique axis for monoclinic cells
@@ -1077,10 +1085,16 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
         #Define limits on cell dimensions
         if 'min_l' not in kwargs:
             min_l = minvec
+        else:
+            min_l = kwargs['min_l']
         if 'mid_l' not in kwargs:
             mid_l = min_l
+        else:
+            mid_l = kwargs['mid_l']
         if 'max_l' not in kwargs:
             max_l = mid_l
+        else:
+            max_l = kwargs['max_l']
         l_min = min(a, b, c)
         l_max = max(a, b, c)
         for x in (a, b, c):
@@ -1243,10 +1257,16 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
         #Define limits on cell dimensions
         if 'min_l' not in kwargs:
             min_l = minvec
+        else:
+            min_l = kwargs['min_l']
         if 'mid_l' not in kwargs:
             mid_l = min_l
+        else:
+            mid_l = kwargs['mid_l']
         if 'max_l' not in kwargs:
             max_l = mid_l
+        else:
+            max_l = kwargs['max_l']
         l_min = min(a, b, c)
         l_max = max(a, b, c)
         for x in (a, b, c):
