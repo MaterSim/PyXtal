@@ -227,6 +227,9 @@ class Box():
 
         self.minl = min(self.width, self.length, self.height)
         self.maxl = max(self.width, self.length, self.height)
+        for x in (self.width, self.length, self.height):
+            if x <= self.maxl and x >= self.minl:
+                self.midl = x
 
         self.volume = float(self.width * self.length * self.height)
 
@@ -797,7 +800,7 @@ class molecular_crystal():
             #Use the provided lattice
             self.lattice = lattice
             self.volume = lattice.volume
-        elif lattice == None:
+        elif lattice is None:
             #Determine the unique axis
             if self.dim == 2:
                 if self.number in range(3, 8):
@@ -814,7 +817,19 @@ class molecular_crystal():
             #Generate a Lattice instance
             self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
             """The volume of the generated unit cell."""
-            self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
+
+            #Calculate the minimum, middle, and maximum box lengths for the unit cell.
+            #Used to make sure at least one non-overlapping orientation exists for each molecule
+            minls = []
+            midls = []
+            maxls = []
+            for box in self.boxes:
+                minls.append(box.minl)
+                midls.append(box.midl)
+                maxls.append(box.maxl)
+
+            self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls))
+            """The Lattice object used to generate lattice matrices for the structure."""
         #Set the tolerance matrix
         if type(tm) == Tol_matrix:
             self.tol_matrix = tm

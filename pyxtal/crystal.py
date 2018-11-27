@@ -909,6 +909,22 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
             a, b, c = s, s, s
         #Check that lattice meets requirements
         maxvec = (a*b*c)/(minvec**2)
+
+        #Define limits on cell dimensions
+        if 'min_l' not in kwargs:
+            min_l = minvec
+        if 'mid_l' not in kwargs:
+            mid_l = min_l
+        if 'max_l' not in kwargs:
+            max_l = mid_l
+        l_min = min(a, b, c)
+        l_max = max(a, b, c)
+        for x in (a, b, c):
+            if x <= l_max and x >= l_min:
+                l_mid = x
+        if not (l_min >= min_l and l_mid >= mid_l and l_max >= max_l):
+            continue
+
         if minvec < maxvec:
             #Check minimum Euclidean distances
             smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
@@ -949,9 +965,7 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
-    try:
-        unique_axis = kwargs['unique_axis']
-    except:
+    if 'unique_axis' not in kwargs:
         unique_axis = "c"
     #Store the non-periodic axis
     NPA = 3
@@ -1059,6 +1073,22 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
 
         a, b, c = abc[0], abc[1], abc[2]
         maxvec = (a*b*c)/(minvec**2)
+
+        #Define limits on cell dimensions
+        if 'min_l' not in kwargs:
+            min_l = minvec
+        if 'mid_l' not in kwargs:
+            mid_l = min_l
+        if 'max_l' not in kwargs:
+            max_l = mid_l
+        l_min = min(a, b, c)
+        l_max = max(a, b, c)
+        for x in (a, b, c):
+            if x <= l_max and x >= l_min:
+                l_mid = x
+        if not (l_min >= min_l and l_mid >= mid_l and l_max >= max_l):
+            continue
+
         if minvec < maxvec:
             smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
             if(a>minvec and b>minvec and c>minvec
@@ -1209,6 +1239,22 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
 
         a, b, c = abc[0], abc[1], abc[2]
         maxvec = (a*b*c)/(minvec**2)
+
+        #Define limits on cell dimensions
+        if 'min_l' not in kwargs:
+            min_l = minvec
+        if 'mid_l' not in kwargs:
+            mid_l = min_l
+        if 'max_l' not in kwargs:
+            max_l = mid_l
+        l_min = min(a, b, c)
+        l_max = max(a, b, c)
+        for x in (a, b, c):
+            if x <= l_max and x >= l_min:
+                l_mid = x
+        if not (l_min >= min_l and l_mid >= mid_l and l_max >= max_l):
+            continue
+
         if minvec < maxvec:
             smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
             if(a>minvec and b>minvec and c>minvec
