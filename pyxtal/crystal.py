@@ -1419,7 +1419,7 @@ class Lattice():
         self.random = True
         #Set optional values
         for key, value in kwargs.items():
-            if key in ["area", "thickness", "unique_axis", "random"]:
+            if key in ["area", "thickness", "unique_axis", "random", "min_l", "mid_l", "max_l"]:
                 setattr(self, key, value)
                 self.kwargs[key] = value
         self.reset_matrix()

@@ -1022,12 +1022,6 @@ class molecular_crystal():
             minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
-                '''if self.dim == 3:
-                    cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)
-                elif self.dim == 2:
-                    cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)
-                elif self.dim == 1:
-                    cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)'''
                 self.lattice.reset_matrix()
                 cell_matrix = self.lattice.matrix
                 cell_para = self.lattice.get_para()
