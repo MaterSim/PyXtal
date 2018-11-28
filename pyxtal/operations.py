@@ -23,6 +23,28 @@ from copy import deepcopy
 rad = pi/180.
 deg = 180./pi
 
+def euler_from_matrix(m, radians=True):
+    """
+    Given a 3x3 rotation matrix, determines the Euler angles
+    
+    Args:
+        m: a 3x3 rotation matrix
+        radians: whether or not to output angles in radians (degrees if False)
+    
+    Returns:
+        (phi, theta, psi): psi is the azimuthal angle, theta is the polar angle,
+            and psi is the angle about the z axis. All angles are in radians
+            unless radians is False
+    """
+    phi = np.arctan2(m[2][0], m[2][1])
+    theta = np.arccos(m[2][2])
+    psi = - np.arctan2(m[0][2], m[1][2])
+    if radians is False:
+        phi *= deg
+        theta *= deg
+        psi *= deg
+    return (phi, theta, psi)
+
 def apply_ops(coord, ops):
     """
     Apply a list of SymmOps to a single 3-vector and return an array of

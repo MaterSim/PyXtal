@@ -1375,11 +1375,11 @@ class Wyckoff_site():
         else:
             print("Error: wp must be a Wyckoff_position object.")
             return
-        self.coordinate = np.array(coordinate)
+        self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
 
     def __str__(self):
-        return self.specie+": "+str(self.coordinate)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+        return self.specie+": "+str(self.position)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
 
     def __repr__(self):
         return str(self)
@@ -1874,7 +1874,6 @@ class random_crystal():
                 print("  "+str(x))
             print("Pymatgen Structure:")
             print(self.struct)
-            
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """

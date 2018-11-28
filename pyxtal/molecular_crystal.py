@@ -505,6 +505,14 @@ class mol_site():
         self.tol_matrix = tm
         self.tols_matrix = self.get_tols_matrix()
 
+    def __str__(self):
+        s = str(self.mol.formula)+": "+str(self.position)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+        phi, theta, psi = euler_from_matrix(self.orientation.matrix, radians=False)
+        s += "\n    phi: "+str(phi)
+        s += "\n    theta: "+str(theta)
+        s += "\n    psi: "+str(psi)
+        return s
+
     def get_tols_matrix(self):
         species = self.mol.species * self.multiplicity
         #Create tolerance matrix from subset of tm
@@ -989,6 +997,18 @@ class molecular_crystal():
             return "Output file to " + outdir
         elif self.valid:
             print("Cannot create file: structure did not generate.")
+
+    def print_all(self):
+        print("--Molecular Crystal--")
+        print("Dimension: "+str(self.dim))
+        print("Group: "+self.group.symbol)
+        print("Volume factor: "+str(self.factor))
+        if self.valid:
+            print("Wyckoff sites:")
+            for x in self.mol_generators:
+                print("  "+str(x))
+            print("Pymatgen Structure:")
+            print(self.struct)
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """
