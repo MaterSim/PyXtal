@@ -1360,6 +1360,30 @@ def choose_wyckoff(group, number):
         else:
             return False
 
+class Wyckoff_site():
+    """
+    Class for storing atomic Wyckoff positions with a single coordinate
+    
+    Args:
+        wp: a Wyckoff_position object
+        coordinate: a fractional 3-vector for the generating atom's coordinate
+        specie: an Element, element name or symbol, or atomic number of the atom
+    """
+    def __init__(self, wp, coordinate, specie):
+        if type(wp) == Wyckoff_position:
+            self.wp = wp
+        else:
+            print("Error: wp must be a Wyckoff_position object.")
+            return
+        self.coordinate = np.array(coordinate)
+        self.specie = Element(specie).short_name
+
+    def __str__(self):
+        return self.specie+": "+str(self.coordinate)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+
+    def __repr__(self):
+        return str(self)
+
 def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,1,1]):
     """
     Checks the inter-atomic distance between all pairs of atoms in a crystal.
@@ -1839,6 +1863,19 @@ class random_crystal():
         elif self.valid is False:
             print("Cannot create file: structure did not generate.")
 
+    def print_all(self):
+        print("--Random Crystal--")
+        print("Dimension: "+str(self.dim))
+        print("Group: "+self.group.symbol)
+        print("Volume factor: "+str(self.factor))
+        if self.valid:
+            print("Wyckoff sites:")
+            for x in self.wyckoff_sites:
+                print("  "+str(x))
+            print("Pymatgen Structure:")
+            print(self.struct)
+            
+
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """
         The main code to generate a random atomic crystal. If successful,
@@ -1879,11 +1916,13 @@ class random_crystal():
 
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
+                wyckoff_sites_total = []
                 good_structure = False
 
                 for cycle2 in range(max2):
                     coordinates_tmp = deepcopy(coordinates_total)
                     sites_tmp = deepcopy(sites_total)
+                    wyckoff_sites_tmp = deepcopy(wyckoff_sites_total)
                     
         	        #Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
@@ -1909,6 +1948,7 @@ class random_crystal():
                                         else:
                                             coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
                                         sites_tmp += [specie]*len(coords_toadd)
+                                        wyckoff_sites_tmp.append(Wyckoff_site(ops, point, specie))
                                         numIon_added += len(coords_toadd)
                                     else:
                                         cycle3 += 1
@@ -1916,6 +1956,7 @@ class random_crystal():
                                     if numIon_added == numIon:
                                         coordinates_total = deepcopy(coordinates_tmp)
                                         sites_total = deepcopy(sites_tmp)
+                                        wyckoff_sites_total = deepcopy(wyckoff_sites_tmp)
                                         break
                                 else:
                                     cycle3 += 1
@@ -1963,6 +2004,9 @@ class random_crystal():
                         """A list of information describing the generated
                         crystal, which may be used by spglib for symmetry
                         analysis."""
+                        self.wyckoff_sites = wyckoff_sites_total
+                        """A list of Wyckoff_site objects describing the Wyckoff positions in
+                        the structure."""
                         self.valid = True
                         return
                     elif self.dim == 0:
@@ -1993,6 +2037,9 @@ class random_crystal():
                             self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
                             """A pymatgen.core.structure.Structure object for the
                             final generated object."""
+                            self.wyckoff_sites = wyckoff_sites_total
+                            """A list of Wyckoff_site objects describing the Wyckoff positions in
+                            the structure."""
                             self.valid = True
                             """Whether or not a valid crystal was generated."""
                             return
