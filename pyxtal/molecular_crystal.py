@@ -586,14 +586,14 @@ class mol_site():
             for site in mo2:
                 #Place molecular coordinates in relative coordinates
                 relative_coords = np.dot(site.coords, np.linalg.inv(self.lattice))
-                relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
+                #Do not filter: interferes with periodic image check
+                #relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
                 current_atomic_sites.append(site.specie.name)
                 current_atomic_coords.append(relative_coords)
             for s in current_atomic_sites:
                 wp_atomic_sites.append(s)
             for c in current_atomic_coords:
                 wp_atomic_coords.append(c)
-        #print(np.array(wp_atomic_coords), wp_atomic_sites)
         return np.array(wp_atomic_coords), wp_atomic_sites
 
     def get_coords_and_species(self, absolute=False):
@@ -664,9 +664,13 @@ class mol_site():
                 if mol_num1 != mol_num2:
                     return False
 
-            return check_images(coords, species, self.lattice, PBC=self.PBC, tm=self.tol_matrix, d_factor=factor)            
-
+            for i in range(self.multiplicity):
+                c = coords[i*m_length:(i+1)*m_length]
+                s = species[i*m_length:(i+1)*m_length]
+                if not check_images(c, s, self.lattice, PBC=self.PBC, tm=self.tol_matrix, d_factor=factor):
+                    return False
             return True
+
         elif atomic is False:
             #Check molecular ellipsoid overlap
             if self.multiplicity == 1:
