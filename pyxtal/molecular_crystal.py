@@ -75,6 +75,7 @@ molecule_collection = Collection('molecules')
 max1 = 30 #Attempts for generating lattices
 max2 = 30 #Attempts for a given lattice
 max3 = 30 #Attempts for a given Wyckoff position
+max4 = 10 #Attempts for a given mol_site (changning orientation)
 
 tol_m = 1.0 #minimum distance between atoms for distance check
 
@@ -627,6 +628,18 @@ class mol_site():
             print("Error: parameter absolute must be True or False")
             return
 
+    def get_centers(self):
+        """
+        Returns the fractional coordinates for the center of mass for each molecule in
+        the Wyckoff position
+
+        Returns:
+            A numpy array of fractional 3-vectors
+        """
+        centers0 = apply_ops(self.position, self.wp.generators)
+        centers1 = filtered_coords(centers0, self.PBC)
+        return np.array(centers1)
+
     def check_distances(self, factor=1.0, atomic=True):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
@@ -1108,7 +1121,32 @@ class molecular_crystal():
                                         ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                         ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
                                         #Check distances within the WP
-                                        if ms0.check_distances(atomic=self.check_atomic_distances) is False: continue
+                                        if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
+                                            #Check distance between centers
+                                            d = distance_matrix(ms0.get_centers(), ms0.get_centers(), ms0.lattice, PBC=ms0.PBC)
+                                            min_box_l = self.boxes[i].minl
+                                            xys = np.where(d < min_box_l)
+                                            passed_center = True
+                                            for i_y, x in enumerate(xys[0]):
+                                                y = xys[1][i_y]
+                                                val = d[x][y]
+                                                #Ignore self-distances
+                                                if x == y:
+                                                    continue
+                                                else:
+                                                    passed_center = False
+                                            if not passed_center: continue
+                                            #If centers are farther apart than min box length, allow multiple orientation attempts
+                                            passed_ori = False
+                                            for cycle4 in range(max4):
+                                                ori = choose(self.valid_orientations[i][j][k]).random_orientation()
+                                                ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
+                                                if ms0.check_distances(atomic=self.check_atomic_distances):
+                                                    passed_ori = True
+                                                    break
+                                        else:
+                                            passed_ori = True
+                                        if passed_ori is False: continue
                                         #Check distances with other WP's
                                         coords_toadd, species_toadd = ms0.get_coords_and_species()
                                         passed = True
