@@ -69,6 +69,7 @@ def angle(v1, v2, radians=True):
     Args:
         v1: a 1x3 vector
         v2: a 1x3 vector
+        radians: whether to return angle in radians (default) or degrees
 
     Returns:
         the angle in radians between the two vectors
