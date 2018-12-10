@@ -148,13 +148,15 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
 
 def estimate_volume_molecular(molecules, numMols, factor=2.0, boxes=None):
     """
-    Estimate the volume needed for a molecular crystal conventional unit cell.
+    Given the molecular stoichiometry, estimate the volume needed for a unit cell.
 
     Args:
-        numMols: A list with the number of each type of molecule
-        boxes: A list of bounding boxes for each molecule. Obtained from get_box
+        molecules: a list of Pymatgen Molecule objects
+        numMols: a list with the number of each type of molecule
         factor: a factor to multiply the final result by. Used to increase space
         between molecules
+        boxes: a list of Box objects for each molecule. Obtained from get_box
+            if None, boxes are calculated automatically.
 
     Returns:
         the estimated volume (in cubic Angstroms) needed for the unit cell
@@ -185,11 +187,9 @@ def get_group_orientations(mol, group, allow_inversion=False):
 
     Args:
         mol: a pymatgen Molecule object.
-        sg: the international spacegroup number
+        group: a Group object
         allow_inversion: whether or not to allow inversion operations for chiral
             molecules
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         a list of operations orientation objects for each Wyckoff position. 1st
@@ -212,7 +212,16 @@ def get_group_orientations(mol, group, allow_inversion=False):
 
 class Box():
     """
-    Class for storing the binding box for a molecule
+    Class for storing the binding box for a molecule. Box is oriented along the x, y, and
+    z axes.
+
+    Args:
+        minx: the minimum x value
+        maxx: the maximum x value
+        miny: the minimum y value
+        maxy: the maximum y value
+        minz: the minimum z value
+        maxz: the maximum z value
     """
     def __init__(self, minx, maxx, miny, maxy, minz, maxz):
         self.minx = float(minx)
@@ -244,9 +253,7 @@ def get_box(mol):
         mol: a pymatgen Molecule object. Should be oriented along its principle axes.
 
     Returns:
-        a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
-        the negative x direction, x2 is the displacement in the positive x
-        direction, and so on
+        a Box object
     """
     minx, miny, minz, maxx, maxy, maxz = 0.,0.,0.,0.,0.,0.
     #for p in mol:
@@ -318,6 +325,9 @@ def check_wyckoff_position_molecular(points, group, orientations, tol=1e-3):
     Args:
         points: a list of 3d fractional coordinates or SymmOps to check
         group: a pyxtal.symmetry.Group object
+        orientations: the valid orientations for a given molecule. Obtained
+            from get_sg_orientations, which is called within molecular_crystal
+        tol: the Euclidean distance tolerance for compatibility
 
     Returns:
         index, point: index is a single index corresponding to the detected
@@ -395,8 +405,8 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
         lattice: a 3x3 matrix representing the unit cell
         group: a pyxtal.symmetry.Group object
         tol: the cutoff distance for merging coordinates
-        orientations: a list of valid molecular orientations within the
-            space group
+        orientations: the valid orientations for a given molecule. Obtained
+            from get_sg_orientations, which is called within molecular_crystal
 
     Returns:
         coor, index, point: (coor) is the new list of fractional coordinates after
@@ -485,7 +495,17 @@ class mol_site():
     """
     Class for storing molecular Wyckoff positions and orientations within
     the molecular_crystal class. Each mol_site object represenents an
-    entire Wyckoff position, not necessarily a single molecule.
+    entire Wyckoff position, not necessarily a single molecule. This is the
+    molecular version of Wyckoff_site
+
+    Args:
+        mol: a Pymatgen Molecule object
+        position: the fractional 3-vector representing the generating molecule's position
+        orientation: an Orientation object for the generating molecule
+        wyckoff_position: a Wyckoff_position object
+        lattice: a Lattice object for the crystal
+        ellipsoid: an optional binding Ellipsoid object for checking distances.
+        tm: a Tol_matrix object for distance checking
     """
     def __init__(self, mol, position, orientation, wyckoff_position, lattice, ellipsoid=None, tm=Tol_matrix(prototype="molecular")):
         self.mol = mol
@@ -515,6 +535,9 @@ class mol_site():
         return s
 
     def get_tols_matrix(self):
+        """
+        Returns: a 2D matrix which is used internally for distance checking.
+        """
         species = self.mol.species * self.multiplicity
         #Create tolerance matrix from subset of tm
         tm = self.tol_matrix
@@ -525,7 +548,6 @@ class mol_site():
         return tols
 
     def get_ellipsoid(self):
-        #TODO: make lazy
         """
         Returns the bounding ellipsoid for the molecule. Applies the orientation
         transformation first.
@@ -541,7 +563,6 @@ class mol_site():
         return SymmOp.from_rotation_and_translation(m, e.translation_vector)
 
     def get_ellipsoids(self):
-        #TODO: make lazy
         """
         Returns the bounding ellipsoids for the molecules in the WP. Includes the correct
         molecular centers and orientations.
@@ -565,6 +586,14 @@ class mol_site():
     def _get_coords_and_species(self, absolute=False):
         """
         Used to generate coords and species for get_coords_and_species
+
+        Args:
+            absolute: whether or not to return absolute (Euclidean)
+                coordinates. If false, return relative coordinates instead
+        
+        Returns:
+            atomic coords: a numpy array of fractional coordinates for the atoms in the site
+            species: a list of atomic species for the atomic coords
         """
         mo = deepcopy(self.mol)
         mo.apply_operation(self.orientation.get_op(angle=0))
@@ -734,6 +763,8 @@ class molecular_crystal():
             turned off
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
+        lattice: an optional Lattice object to use for the unit cell
+        tm: the Tol_matrix object used to generate the crystal
     """
 
     def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm):
@@ -1027,7 +1058,7 @@ class molecular_crystal():
             print("Pymatgen Structure:")
             print(self.struct)
 
-    def generate_crystal(self, max1=max1, max2=max2, max3=max3):
+    def generate_crystal(self, max1=max1, max2=max2, max3=max3, max4=max4):
         """
         The main code to generate a random molecular crystal. If successful,
         stores a pymatgen.core.structure object in self.struct and sets
@@ -1038,6 +1069,7 @@ class molecular_crystal():
             max1: the number of attempts for generating a lattice
             max2: the number of attempts for a given lattice
             max3: the number of attempts for a given Wyckoff position
+            max4: the number of attempts for changing the molecular orientation
         """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
@@ -1051,6 +1083,7 @@ class molecular_crystal():
                 max1 = 10
                 max2 = 10
                 max3 = 10
+                max4 = 5
             #Calculate a minimum vector length for generating a lattice
             #minvector = max(radius*2 for radius in self.radii)
             all_lengths = []
@@ -1267,6 +1300,8 @@ class molecular_crystal_2D(molecular_crystal):
             turned off
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
+        lattice: an optional Lattice object to use for the unit cell
+        tm: the Tol_matrix object used to generate the crystal
     """
     def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 2
@@ -1326,6 +1361,8 @@ class molecular_crystal_1D(molecular_crystal):
             turned off
         fmt: Optional value for the input molecule string format. Used only
             when molecule values are strings
+        lattice: an optional Lattice object to use for the unit cell
+        tm: the Tol_matrix object used to generate the crystal
     """
     def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 1
