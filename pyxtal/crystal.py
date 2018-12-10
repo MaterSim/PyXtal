@@ -198,11 +198,13 @@ class Tol_matrix():
 
     def set_tol(self, specie1, specie2, value):
         """
-        Returns the tolerance between two species.
+        Sets the distance tolerance between two species.
         
         Args:
             specie1, specie2: the atomic number (int or float), name (str), symbol (str),
                 an Element object, or a pymatgen Specie object
+            value:
+                the tolerance (in Angstroms) to set to
         """
         index1 = Element.number_from_specie(specie1)
         index2 = Element.number_from_specie(specie2)
@@ -225,7 +227,8 @@ class Tol_matrix():
         diagonal will be used.
 
         Args:
-            matrix: a 2D matrix or list of tolerances between atomic species pairs
+            matrix: a 2D matrix or list of tolerances between atomic species pairs. The
+                indices correspond to atomic species (see begin_with variable description)
             prototype: a string representing the type of radii to use
                 ("atomic", "molecular")
             factor: a float to scale the distances by. A smaller value means a smaller
@@ -280,7 +283,7 @@ class Tol_matrix():
             value: the tolerance value to use
 
         Returns:
-            as Tol_matrix object whose methods are overridden to use a single tolerance value
+            a Tol_matrix object whose methods are overridden to use a single tolerance value
         """
         tm = Tol_matrix()
         tm.prototype = "single value"
@@ -454,6 +457,18 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1], tm=
 def check_images(coords, species, lattice, PBC=[1,1,1], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
     """
     Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.
+    
+    Args:
+        coords: a list of fractional coordinates
+        species: the atomic species of each coordinate
+        lattice: a 3x3 lattice matrix
+        PBC: the periodic boundary conditions
+        tm: a Tol_matrix object
+        d_factor: the tolerance is multiplied by this amount. Larger values
+            mean atoms must be farther apart
+
+    Returns:
+        False if distances are too close. True if distances are not too close
     """
     coords = np.array(coords)
     m = create_matrix(PBC=PBC)
@@ -634,34 +649,46 @@ def matrix2para(matrix, radians=True):
         cell_para[5] *= deg
     return cell_para
 
-#TODO: replace sg with number, dim
-def cellsize(sg):
+def cellsize(group, dim=3):
     """
     Returns the number of duplicate atoms in the conventional lattice (in
     contrast to the primitive cell). Based on the type of cell centering (P,
     A, C, I, R, or F)
 
     Args:
-        sg: the international spacegroup number
-
+        group: a Group object, or the space group number of the group
+        dim: the dimension of the group (3 for space group, 2 for layer group,
+            1 for Rod group, or 0 for 3D point group). If group is a Group
+            object, dim will be overridden by group's value for dim
+    
     Returns:
-        a number between 1 and 4
+        an integer between 1 and 4, telling how many atoms are in the conventional cell
     """
-    #For 1D crystals
-    if sg == None:
+    #Get the group dimension and number
+    if type(group) == Group:
+        num = group.number
+        dim = group.dim
+    elif type(int(group)) == int:
+        num = group
+    if dim == 0 or dim == 1:
+        #Rod and point groups
         return 1
-    #Get the H-M symbol
-    symbol = sg_symbol_from_int_number(sg)
-    letter = symbol[0]
-    if letter == 'P':
-    	return 1
-    if letter in ['A', 'C', 'I']:
-    	return 2
-    elif letter in ['R']:
-    	return 3
-    elif letter in ['F']:
-    	return 4
-    else: return "Error: Could not determine lattice type"
+    elif dim == 2:
+        #Layer groups
+        if num in [10, 13, 18, 22, 26, 35, 36, 47, 48]:
+            return 2
+        else:
+            return 1
+    elif dim == 3:
+        #space groups
+        if num in [22, 42, 43, 69, 70, 196, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228]:
+            return 4 #F
+        elif num in [146, 148, 155, 160, 161, 166, 167]:
+            return 3 #R
+        elif num in [5, 8, 9, 12, 15, 20, 21, 23, 24, 35, 36, 37,  38, 39, 40, 41,  44, 45, 46, 63, 64, 65, 66, 67, 68, 71, 72, 73, 74, 79, 80, 82, 87, 88, 97, 98, 107, 108, 109, 110, 119, 120, 121, 122, 139, 140, 141, 142, 197, 199, 204, 206, 211, 214, 217, 220, 229, 230]:
+            return 2 #A, C, I
+        else:
+            return 1 #P
 
 def find_short_dist(coor, lattice, tol, PBC=[1,1,1]):
     """
@@ -842,6 +869,15 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
+        kwargs: a dictionary of optional values. These include:
+            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
+                equivalent to the other two
+            'min_l': the smallest allowed cell vector. The smallest vector must be larger
+                than this.
+            'mid_l': the second smallest allowed cell vector. The second smallest vector
+                must be larger than this.
+            'max_l': the third smallest allowed cell vector. The largest cell vector must
+                be larger than this.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -966,6 +1002,15 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
+        kwargs: a dictionary of optional values. These include:
+            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
+                equivalent to the other two
+            'min_l': the smallest allowed cell vector. The smallest vector must be larger
+                than this.
+            'mid_l': the second smallest allowed cell vector. The second smallest vector
+                must be larger than this.
+            'max_l': the third smallest allowed cell vector. The largest cell vector must
+                be larger than this.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1138,6 +1183,15 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
+        kwargs: a dictionary of optional values. These include:
+            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
+                equivalent to the other two
+            'min_l': the smallest allowed cell vector. The smallest vector must be larger
+                than this.
+            'mid_l': the second smallest allowed cell vector. The second smallest vector
+                must be larger than this.
+            'max_l': the third smallest allowed cell vector. The largest cell vector must
+                be larger than this.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1309,6 +1363,16 @@ def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=20.0, 
         minvec: minimum allowed lattice vector length (among a, b, and c)
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
+        kwargs: a dictionary of optional values. Only used for cylindrical
+            lattices, which pass the value to generate_lattice. Possible values include:
+            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
+                equivalent to the other two
+            'min_l': the smallest allowed cell vector. The smallest vector must be larger
+                than this.
+            'mid_l': the second smallest allowed cell vector. The second smallest vector
+                must be larger than this.
+            'max_l': the third smallest allowed cell vector. The largest cell vector must
+                be larger than this.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1362,7 +1426,7 @@ def choose_wyckoff(group, number):
 
 class Wyckoff_site():
     """
-    Class for storing atomic Wyckoff positions with a single coordinate
+    Class for storing atomic Wyckoff positions with a single coordinate.
     
     Args:
         wp: a Wyckoff_position object
@@ -1423,8 +1487,27 @@ class Lattice():
     Args:
         ltype: a string representing the type of lattice (from the above list)
         volume: the volume, in Angstroms cubed, of the lattice
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         kwargs: various values which may be defined. If none are defined, random ones
-            will be generated.
+            will be generated. Values will be passed to generate_lattice. Options include:
+            area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
+                crystals
+            thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
+                generate 2D crystals
+            unique_axis: The unique axis for certain symmetry (and especially layer) groups.
+                Because the symmetry operations are not also transformed, you should use the
+                default values for random crystal generation
+            random: If False, keeps the stored values for the lattice geometry even upon applying
+                reset_matrix. To alter the matrix, use set_matrix() or set_para
+            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
+                equivalent to the other two
+            'min_l': the smallest allowed cell vector. The smallest vector must be larger
+                than this.
+            'mid_l': the second smallest allowed cell vector. The second smallest vector
+                must be larger than this.
+            'max_l': the third smallest allowed cell vector. The largest cell vector must
+                be larger than this.
     """
     def __init__(self, ltype, volume, PBC=[1,1,1], **kwargs):
         #Set required parameters
@@ -1567,15 +1650,25 @@ class Lattice():
             radians: whether or not to use radians (instead of degrees) for the lattice angles
             PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
                 Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-            area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
-                crystals
-            thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
-                generate 2D crystals
-            unique_axis: The unique axis for certain symmetry (and especially layer) groups.
-                Because the symmetry operations are not also transformed, you should use the
-                default values for random crystal generation
-            random: If False, keeps the stored values for the lattice geometry even upon applying
-                reset_matrix. To alter the matrix, use set_matrix() or set_para
+            kwargs: various values which may be defined. If none are defined, random ones
+                will be generated. Values will be passed to generate_lattice. Options include:
+                area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
+                    crystals
+                thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
+                    generate 2D crystals
+                unique_axis: The unique axis for certain symmetry (and especially layer) groups.
+                    Because the symmetry operations are not also transformed, you should use the
+                    default values for random crystal generation
+                random: If False, keeps the stored values for the lattice geometry even upon applying
+                    reset_matrix. To alter the matrix, use set_matrix() or set_para
+                'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
+                    equivalent to the other two
+                'min_l': the smallest allowed cell vector. The smallest vector must be larger
+                    than this.
+                'mid_l': the second smallest allowed cell vector. The second smallest vector
+                    must be larger than this.
+                'max_l': the third smallest allowed cell vector. The largest cell vector must
+                    be larger than this.
 
         Returns:
             a Lattice object with the specified parameters
@@ -1614,15 +1707,25 @@ class Lattice():
                 confines generated points to lie within a cylinder (oriented about the z axis)
             PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
                 Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-            area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
-                crystals
-            thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
-                generate 2D crystals
-            unique_axis: The unique axis for certain symmetry (and especially layer) groups.
-                Because the symmetry operations are not also transformed, you should use the
-                default values for random crystal generation
-            random: If False, keeps the stored values for the lattice geometry even upon applying
-                reset_matrix. To alter the matrix, use set_matrix() or set_para
+            kwargs: various values which may be defined. If none are defined, random ones
+                will be generated. Values will be passed to generate_lattice. Options include:
+                area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
+                    crystals
+                thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
+                    generate 2D crystals
+                unique_axis: The unique axis for certain symmetry (and especially layer) groups.
+                    Because the symmetry operations are not also transformed, you should use the
+                    default values for random crystal generation
+                random: If False, keeps the stored values for the lattice geometry even upon applying
+                    reset_matrix. To alter the matrix, use set_matrix() or set_para
+                'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
+                    equivalent to the other two
+                'min_l': the smallest allowed cell vector. The smallest vector must be larger
+                    than this.
+                'mid_l': the second smallest allowed cell vector. The second smallest vector
+                    must be larger than this.
+                'max_l': the third smallest allowed cell vector. The largest cell vector must
+                    be larger than this.
 
         Returns:
             a Lattice object with the specified parameters
@@ -1670,17 +1773,18 @@ class random_crystal():
     self.struct
     
     Args:
-        sg: the international spacegroup number
+        group: the international spacegroup number, or a Group object
         species: a list of atomic symbols for each ion type
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell)
-        tm: the Tol_matrix object used to generate
+        tm: the Tol_matrix object used to generate the crystal
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
+        lattice: an optional Lattice object to use for the unit cell
     """
     def init_common(self, species, numIons, factor, group, lattice, tm):
         """
-        Common init functionality for 0-3D cases of random_crystal.
+        Common init functionality for 0D-3D cases of random_crystal.
         """
         if type(group) == Group:
             self.group = group
@@ -1704,7 +1808,7 @@ class random_crystal():
         """The supplied volume factor for the unit cell."""
         self.numIons0 = numIons
         """The number of each type of atom in the PRIMITIVE cell."""
-        self.numIons = self.numIons0 * cellsize(self.sg)
+        self.numIons = self.numIons0 * cellsize(self.group)
         """The number of each type of atom in the CONVENTIONAL cell."""
         self.species = species
         """A list of atomic symbols for the types of atoms in the crystal."""
@@ -1864,16 +1968,21 @@ class random_crystal():
             print("Cannot create file: structure did not generate.")
 
     def print_all(self):
+        """
+        Prints useful information about the generated crystal.
+        """
         print("--Random Crystal--")
         print("Dimension: "+str(self.dim))
         print("Group: "+self.group.symbol)
         print("Volume factor: "+str(self.factor))
-        if self.valid:
+        if self.valid is True:
             print("Wyckoff sites:")
             for x in self.wyckoff_sites:
                 print("  "+str(x))
             print("Pymatgen Structure:")
             print(self.struct)
+        elif self.valid is False:
+            print("Structure not generated.")
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3):
         """
@@ -2065,6 +2174,8 @@ class random_crystal_2D(random_crystal):
             dimension (the direction which is not repeated periodically)
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
+        lattice: an optional Lattice object to use for the unit cell
+        tm: the Tol_matrix object used to generate the crystal
     """
     def __init__(self, group, species, numIons, thickness, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 2
@@ -2101,6 +2212,8 @@ class random_crystal_1D(random_crystal):
             unit cell
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
+        lattice: an optional Lattice object to use for the unit cell
+        tm: the Tol_matrix object used to generate the crystal
     """
     def __init__(self, group, species, numIons, area, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 1
@@ -2133,6 +2246,8 @@ class random_cluster(random_crystal):
             primitive cell (NOT the conventional cell)
         factor: a volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between atoms
+        lattice: an optional Lattice object to use for the unit cell
+        tm: the Tol_matrix object used to generate the crystal
     """
     def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 0

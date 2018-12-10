@@ -763,7 +763,7 @@ class molecular_crystal():
         numMols = np.array(numMols) #must convert it to np.array
         self.numMols0 = numMols
         """The number of each type of molecule in the PRIMITIVE cell"""
-        self.numMols = self.numMols0 * cellsize(self.sg)
+        self.numMols = self.numMols0 * cellsize(self.group)
         """The number of each type of molecule in the CONVENTIONAL cell"""
         oriented_molecules = []
         #Allow support for generating molecules from text via openbable
