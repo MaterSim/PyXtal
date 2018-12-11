@@ -224,6 +224,7 @@ def distance_matrix_euclidean(points1, points2, PBC=[1,1,1], squared=False):
         points2: another list of fractional coordinates
         PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        squared: whether to return the squared distance (True) or the Euclidean distance (False)
 
     Returns:
         a 2x2 np array of scalar distances
@@ -1087,6 +1088,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
             return i, p
     return False, None
 
+#TODO: Use Group object instead of organized array
 def letter_from_index(index, arr):
     """
     Given a Wyckoff position's index within a spacegroup, return its number
@@ -1095,7 +1097,7 @@ def letter_from_index(index, arr):
     Args:
         index: a single integer describing the WP's index within the
             spacegroup (0 is the general position)
-        sg: the international spacegroup number
+        arr: an unorganized Wyckoff position array
    
     Returns:
         the Wyckoff letter corresponding to the Wyckoff position (for example,
@@ -1111,7 +1113,7 @@ def index_from_letter(letter, arr):
 
     Args:
         letter: The wyckoff letter
-        sg: the internationl spacegroup number
+        arr: an unorganized Wyckoff position array
 
     Returns:
         a single index specifying the location of the Wyckoff position within
@@ -1517,6 +1519,8 @@ class Wyckoff_position():
                 0 is always the general position, and larger indeces represent positions
                 with lower multiplicity. Alternatively, index can be the Wyckoff letter
                 ("4a6" or "f")
+            dim: the periodic dimension of the crystal
+            PBC: the periodic boundary conditions
         """
         wp = Wyckoff_position()
         wp.dim = dim
@@ -1671,7 +1675,12 @@ class Wyckoff_position():
 
 class Group():
     """
-    Class for storing a set of Wyckoff positions for a symmetry group
+    Class for storing a set of Wyckoff positions for a symmetry group. See the documentation
+    for details about settings.
+
+    Args:
+        group: the group symbol or international number
+        dim: the periodic dimension of the group
     """
     def __str__(self):
         try:
@@ -1823,15 +1832,15 @@ class Group():
                     print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
                     return
                 self.PBC = [0,0,0]
-                self.wyckoffs = get_point(self.number)
+                self.wyckoffs = get_point(self.number, molecular=False)
                 """The Wyckoff positions for the crystal's spacegroup."""
-                self.w_symm = get_point_symmetry(self.number)
+                self.w_symm = get_point_symmetry(self.number, molecular=False)
                 """A list of site symmetry operations for the Wyckoff positions, obtained
                     from get_wyckoff_symmetry (molecular=False)"""
                 self.w_symm_m = get_point_symmetry(self.number)
                 """A list of site symmetry operations for the Wyckoff positions, obtained
                     from get_wyckoff_symmetry (molecular=True)"""
-                self.wyckoff_generators = get_point_generators(self.number)
+                self.wyckoff_generators = get_point_generators(self.number, molecular=False)
                 """A list of Wyckoff generators (molecular=False)"""
                 self.wyckoff_generators_m = get_point_generators(self.number)
                 """A list of Wyckoff generators (molecular=True)"""
@@ -2082,6 +2091,15 @@ class Group():
         multiplicity."""
     
     def get_wyckoff_position(self, index):
+        """
+        Returns a single Wyckoff_position object
+        
+        Args:
+            index: the index of the Wyckoff position within the group
+                The largest position is always 0
+
+        Returns: a Wyckoff_position object
+        """
         if type(index) == int:
             pass
         elif type(index) == str:
@@ -2094,6 +2112,16 @@ class Group():
         return self.Wyckoff_positions[index]
 
     def get_wyckoff_symmetry(self, index, molecular=False):
+        """
+        Returns the site symmetry symbol for the Wyckoff position
+
+        Args:
+            index: the index of the Wyckoff position within the group
+                The largest position is always 0
+            molecular: whether to use the Euclidean operations or not (for hexagonal groups)
+
+        Returns: a Hermann-Mauguin style string for the site symmetry
+        """
         if type(index) == int:
             pass
         elif type(index) == str:
@@ -2110,6 +2138,15 @@ class Group():
         return ss_string_from_ops(ops, self.number, dim=self.dim)
 
     def get_wyckoff_symmetry_m(self, index):
+        """
+        Returns the site symmetry symbol for the Wyckoff position (with molecular=True)
+
+        Args:
+            index: the index of the Wyckoff position within the group
+                The largest position is always 0
+
+        Returns: a Hermann-Mauguin style string for the site symmetry
+        """
         return self.get_wyckoff_symmetry(index, molecular=True)
 
     def __iter__(self):
@@ -2122,6 +2159,9 @@ class Group():
         return self.multiplicity
 
     def print_all(self):
+        """
+        Prints useful information about the Group.
+        """
         try:
             print(self.string_long)
         except:
