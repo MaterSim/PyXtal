@@ -1835,7 +1835,12 @@ class random_crystal():
             #Generate a Lattice instance
             self.volume = estimate_volume(self.numIons, self.species, self.factor)
             """The volume of the generated unit cell."""
-            self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
+            if self.dim == 3 or self.dim == 0:
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis)
+            elif self.dim == 2:
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, thickness=self.thickness)
+            elif self.dim == 1:
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, area=self.area)
         #Set the tolerance matrix
         if type(tm) == Tol_matrix:
             self.tol_matrix = tm
@@ -2032,7 +2037,7 @@ class random_crystal():
                     sites_tmp = deepcopy(sites_total)
                     wyckoff_sites_tmp = deepcopy(wyckoff_sites_total)
                     
-        	        #Add specie by specie
+                    #Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
                         tol = max(0.5*Element(specie).covalent_radius, tol_m)
@@ -2043,7 +2048,7 @@ class random_crystal():
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                             ops = choose_wyckoff(self.group, numIon-numIon_added) 
                             if ops is not False:
-        	        	    #Generate a list of coords from ops
+                            #Generate a list of coords from ops
                                 point = self.lattice.generate_point()
                                 coords = np.array([op.operate(point) for op in ops])
                                 #Merge coordinates if the atoms are close
@@ -2177,7 +2182,7 @@ class random_crystal_2D(random_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, species, numIons, thickness, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
+    def __init__(self, group, species, numIons, factor, thickness=None, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.PBC = [1,1,0]
@@ -2215,7 +2220,7 @@ class random_crystal_1D(random_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, species, numIons, area, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
+    def __init__(self, group, species, numIons, factor, area=None, lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         self.PBC = [0,0,1]

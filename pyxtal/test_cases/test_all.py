@@ -386,7 +386,7 @@ def test_atomic_2D():
             sg = Layergroup(num).sgnumber
             multiplicity = len(get_layer(num)[0]) / cellsize(sg) #multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_2D(num, ['H'], [multiplicity], None, 4.0)
+            rand_crystal = random_crystal_2D(num, ['H'], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -471,7 +471,7 @@ def test_molecular_2D():
             sg = Layergroup(num).sgnumber
             multiplicity = len(get_layer(num)[0]) / cellsize(sg) #multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_2D(num, ['H2O'], [multiplicity], None, 4.0)
+            rand_crystal = molecular_crystal_2D(num, ['H2O'], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -553,7 +553,7 @@ def test_atomic_1D():
         if num not in skip:
             multiplicity = len(get_rod(num)[0]) #multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_1D(num, ['H'], [multiplicity], None, 4.0)
+            rand_crystal = random_crystal_1D(num, ['H'], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -626,7 +626,7 @@ def test_molecular_1D():
         if num not in skip:
             multiplicity = len(get_rod(num)[0]) #multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_1D(num, ['H2O'], [multiplicity], None, 4.0)
+            rand_crystal = molecular_crystal_1D(num, ['H2O'], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -1323,7 +1323,7 @@ def test_modules():
 
     if passed():
         try:
-            c = random_crystal_2D(1, ['H'], [1], 1.0, 10.0)
+            c = random_crystal_2D(1, ['H'], [1], 10.0)
             if c.valid is True:
                 pass
             else:
@@ -1454,7 +1454,7 @@ def test_modules():
 
     if passed():
         try:
-            c = molecular_crystal_2D(1, ['H2O'], [1], 1.0, 10.0)
+            c = molecular_crystal_2D(1, ['H2O'], [1], 10.0)
             if c.valid is True:
                 pass
             else:

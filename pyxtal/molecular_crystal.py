@@ -884,7 +884,12 @@ class molecular_crystal():
                 midls.append(box.midl)
                 maxls.append(box.maxl)
 
-            self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls))
+            if self.dim == 3 or self.dim == 0:
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls))
+            elif self.dim == 2:
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls), thickness=self.thickness)
+            elif self.dim == 1:
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls), area=self.area)
             """The Lattice object used to generate lattice matrices for the structure."""
         #Set the tolerance matrix
         if type(tm) == Tol_matrix:
@@ -1123,7 +1128,7 @@ class molecular_crystal():
                         points_tmp = deepcopy(points_total)
                         mol_generators_tmp = []
                         
-                	    #Add molecules specie by specie
+                        #Add molecules specie by specie
                         for numMol, mol in zip(self.numMols, self.molecules):
                             i = self.molecules.index(mol)
                             numMol_added = 0
@@ -1135,7 +1140,7 @@ class molecular_crystal():
                                 #NOTE: The molecular version return wyckoff indices, not ops
                                 wp = choose_wyckoff_molecular(self.group, numMol-numMol_added, self.valid_orientations[i])
                                 if wp is not False:
-                	    	        #Generate a list of coords from the wyckoff position
+                                    #Generate a list of coords from the wyckoff position
                                     point = self.lattice.generate_point()
                                     coords = np.array([op.operate(point) for op in wp])
                                     #merge coordinates if the atoms are close
@@ -1303,7 +1308,7 @@ class molecular_crystal_2D(molecular_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, molecules, numMols, thickness, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', thickness=None, lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
@@ -1364,7 +1369,7 @@ class molecular_crystal_1D(molecular_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, molecules, numMols, area, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', lattice=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', area=None, lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         #Necessary input
