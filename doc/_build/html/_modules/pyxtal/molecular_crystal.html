@@ -9,10 +9,13 @@
     <title>pyxtal.molecular_crystal &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
@@ -113,6 +116,7 @@
 <span class="n">max1</span> <span class="o">=</span> <span class="mi">30</span> <span class="c1">#Attempts for generating lattices</span>
 <span class="n">max2</span> <span class="o">=</span> <span class="mi">30</span> <span class="c1">#Attempts for a given lattice</span>
 <span class="n">max3</span> <span class="o">=</span> <span class="mi">30</span> <span class="c1">#Attempts for a given Wyckoff position</span>
+<span class="n">max4</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1">#Attempts for a given mol_site (changning orientation)</span>
 
 <span class="n">tol_m</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="c1">#minimum distance between atoms for distance check</span>
 
@@ -185,13 +189,15 @@
 
 <div class="viewcode-block" id="estimate_volume_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.estimate_volume_molecular">[docs]</a><span class="k">def</span> <span class="nf">estimate_volume_molecular</span><span class="p">(</span><span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">boxes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Estimate the volume needed for a molecular crystal conventional unit cell.</span>
+<span class="sd">    Given the molecular stoichiometry, estimate the volume needed for a unit cell.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        numMols: A list with the number of each type of molecule</span>
-<span class="sd">        boxes: A list of bounding boxes for each molecule. Obtained from get_box</span>
+<span class="sd">        molecules: a list of Pymatgen Molecule objects</span>
+<span class="sd">        numMols: a list with the number of each type of molecule</span>
 <span class="sd">        factor: a factor to multiply the final result by. Used to increase space</span>
 <span class="sd">        between molecules</span>
+<span class="sd">        boxes: a list of Box objects for each molecule. Obtained from get_box</span>
+<span class="sd">            if None, boxes are calculated automatically.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        the estimated volume (in cubic Angstroms) needed for the unit cell</span>
@@ -202,7 +208,7 @@
             <span class="n">boxes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_box</span><span class="p">(</span><span class="n">reoriented_molecule</span><span class="p">(</span><span class="n">mol</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
     <span class="n">volume</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">numMol</span><span class="p">,</span> <span class="n">box</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">numMols</span><span class="p">,</span> <span class="n">boxes</span><span class="p">):</span>
-        <span class="n">volume</span> <span class="o">+=</span> <span class="n">numMol</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">volume</span> <span class="o">+=</span> <span class="n">numMol</span><span class="o">*</span><span class="n">box</span><span class="o">.</span><span class="n">volume</span>
     <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">factor</span><span class="o">*</span><span class="n">volume</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="get_group_orientations"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.get_group_orientations">[docs]</a><span class="k">def</span> <span class="nf">get_group_orientations</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -222,11 +228,9 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        mol: a pymatgen Molecule object.</span>
-<span class="sd">        sg: the international spacegroup number</span>
+<span class="sd">        group: a Group object</span>
 <span class="sd">        allow_inversion: whether or not to allow inversion operations for chiral</span>
 <span class="sd">            molecules</span>
-<span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
-<span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a list of operations orientation objects for each Wyckoff position. 1st</span>
@@ -247,6 +251,39 @@
                 <span class="n">valid_orientations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
     <span class="k">return</span> <span class="n">valid_orientations</span></div>
 
+<div class="viewcode-block" id="Box"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.Box">[docs]</a><span class="k">class</span> <span class="nc">Box</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for storing the binding box for a molecule. Box is oriented along the x, y, and</span>
+<span class="sd">    z axes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        minx: the minimum x value</span>
+<span class="sd">        maxx: the maximum x value</span>
+<span class="sd">        miny: the minimum y value</span>
+<span class="sd">        maxy: the maximum y value</span>
+<span class="sd">        minz: the minimum z value</span>
+<span class="sd">        maxz: the maximum z value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minx</span><span class="p">,</span> <span class="n">maxx</span><span class="p">,</span> <span class="n">miny</span><span class="p">,</span> <span class="n">maxy</span><span class="p">,</span> <span class="n">minz</span><span class="p">,</span> <span class="n">maxz</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">minx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">maxx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">miny</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">miny</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxy</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">maxy</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">minz</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">maxz</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">maxx</span> <span class="o">-</span> <span class="n">minx</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">maxy</span> <span class="o">-</span> <span class="n">miny</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">maxz</span> <span class="o">-</span> <span class="n">minz</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">minl</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxl</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxl</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">minl</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">midl</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="get_box"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.get_box">[docs]</a><span class="k">def</span> <span class="nf">get_box</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given a molecule, find a minimum orthorhombic box containing it.</span>
@@ -254,12 +291,10 @@
 <span class="sd">    For best results, call oriented_molecule first.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        mol: a pymatgen Molecule object</span>
+<span class="sd">        mol: a pymatgen Molecule object. Should be oriented along its principle axes.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in</span>
-<span class="sd">        the negative x direction, x2 is the displacement in the positive x</span>
-<span class="sd">        direction, and so on</span>
+<span class="sd">        a Box object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">minx</span><span class="p">,</span> <span class="n">miny</span><span class="p">,</span> <span class="n">minz</span><span class="p">,</span> <span class="n">maxx</span><span class="p">,</span> <span class="n">maxy</span><span class="p">,</span> <span class="n">maxz</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span>
     <span class="c1">#for p in mol:</span>
@@ -272,7 +307,7 @@
         <span class="k">if</span> <span class="n">x</span><span class="o">+</span><span class="n">r</span> <span class="o">&gt;</span> <span class="n">maxx</span><span class="p">:</span> <span class="n">maxx</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="n">r</span>
         <span class="k">if</span> <span class="n">y</span><span class="o">+</span><span class="n">r</span> <span class="o">&gt;</span> <span class="n">maxy</span><span class="p">:</span> <span class="n">maxy</span> <span class="o">=</span> <span class="n">y</span><span class="o">+</span><span class="n">r</span>
         <span class="k">if</span> <span class="n">z</span><span class="o">+</span><span class="n">r</span> <span class="o">&gt;</span> <span class="n">maxz</span><span class="p">:</span> <span class="n">maxz</span> <span class="o">=</span> <span class="n">z</span><span class="o">+</span><span class="n">r</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">minx</span><span class="p">,</span><span class="n">maxx</span><span class="p">,</span><span class="n">miny</span><span class="p">,</span><span class="n">maxy</span><span class="p">,</span><span class="n">minz</span><span class="p">,</span><span class="n">maxz</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">Box</span><span class="p">(</span><span class="n">minx</span><span class="p">,</span><span class="n">maxx</span><span class="p">,</span><span class="n">miny</span><span class="p">,</span><span class="n">maxy</span><span class="p">,</span><span class="n">minz</span><span class="p">,</span><span class="n">maxz</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="check_distance_molecular"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.check_distance_molecular">[docs]</a><span class="k">def</span> <span class="nf">check_distance_molecular</span><span class="p">(</span><span class="n">coord1</span><span class="p">,</span> <span class="n">coord2</span><span class="p">,</span> <span class="n">indices1</span><span class="p">,</span> <span class="n">index2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">radii</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -331,6 +366,9 @@
 <span class="sd">    Args:</span>
 <span class="sd">        points: a list of 3d fractional coordinates or SymmOps to check</span>
 <span class="sd">        group: a pyxtal.symmetry.Group object</span>
+<span class="sd">        orientations: the valid orientations for a given molecule. Obtained</span>
+<span class="sd">            from get_sg_orientations, which is called within molecular_crystal</span>
+<span class="sd">        tol: the Euclidean distance tolerance for compatibility</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        index, point: index is a single index corresponding to the detected</span>
@@ -408,8 +446,8 @@
 <span class="sd">        lattice: a 3x3 matrix representing the unit cell</span>
 <span class="sd">        group: a pyxtal.symmetry.Group object</span>
 <span class="sd">        tol: the cutoff distance for merging coordinates</span>
-<span class="sd">        orientations: a list of valid molecular orientations within the</span>
-<span class="sd">            space group</span>
+<span class="sd">        orientations: the valid orientations for a given molecule. Obtained</span>
+<span class="sd">            from get_sg_orientations, which is called within molecular_crystal</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        coor, index, point: (coor) is the new list of fractional coordinates after</span>
@@ -498,7 +536,17 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class for storing molecular Wyckoff positions and orientations within</span>
 <span class="sd">    the molecular_crystal class. Each mol_site object represenents an</span>
-<span class="sd">    entire Wyckoff position, not necessarily a single molecule.</span>
+<span class="sd">    entire Wyckoff position, not necessarily a single molecule. This is the</span>
+<span class="sd">    molecular version of Wyckoff_site</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mol: a Pymatgen Molecule object</span>
+<span class="sd">        position: the fractional 3-vector representing the generating molecule&#39;s position</span>
+<span class="sd">        orientation: an Orientation object for the generating molecule</span>
+<span class="sd">        wyckoff_position: a Wyckoff_position object</span>
+<span class="sd">        lattice: a Lattice object for the crystal</span>
+<span class="sd">        ellipsoid: an optional binding Ellipsoid object for checking distances.</span>
+<span class="sd">        tm: a Tol_matrix object for distance checking</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">wyckoff_position</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">ellipsoid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;molecular&quot;</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span> <span class="o">=</span> <span class="n">mol</span>
@@ -519,7 +567,18 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span> <span class="o">=</span> <span class="n">tm</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tols_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tols_matrix</span><span class="p">()</span>
 
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">formula</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">letter</span><span class="o">+</span><span class="s2">&quot;, site symmetry &quot;</span><span class="o">+</span><span class="n">ss_string_from_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">symmetry_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">phi</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">psi</span> <span class="o">=</span> <span class="n">euler_from_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">matrix</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    phi: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    theta: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    psi: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">psi</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span>
+
 <div class="viewcode-block" id="mol_site.get_tols_matrix"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_tols_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_tols_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns: a 2D matrix which is used internally for distance checking.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">species</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">species</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span>
         <span class="c1">#Create tolerance matrix from subset of tm</span>
         <span class="n">tm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span>
@@ -530,7 +589,6 @@
         <span class="k">return</span> <span class="n">tols</span></div>
 
 <div class="viewcode-block" id="mol_site.get_ellipsoid"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_ellipsoid">[docs]</a>    <span class="k">def</span> <span class="nf">get_ellipsoid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1">#TODO: make lazy</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the bounding ellipsoid for the molecule. Applies the orientation</span>
 <span class="sd">        transformation first.</span>
@@ -546,7 +604,6 @@
         <span class="k">return</span> <span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">translation_vector</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="mol_site.get_ellipsoids"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_ellipsoids">[docs]</a>    <span class="k">def</span> <span class="nf">get_ellipsoids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1">#TODO: make lazy</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the bounding ellipsoids for the molecules in the WP. Includes the correct</span>
 <span class="sd">        molecular centers and orientations.</span>
@@ -570,6 +627,14 @@
     <span class="k">def</span> <span class="nf">_get_coords_and_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">absolute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Used to generate coords and species for get_coords_and_species</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            absolute: whether or not to return absolute (Euclidean)</span>
+<span class="sd">                coordinates. If false, return relative coordinates instead</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            atomic coords: a numpy array of fractional coordinates for the atoms in the site</span>
+<span class="sd">            species: a list of atomic species for the atomic coords</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mo</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">)</span>
         <span class="n">mo</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
@@ -592,14 +657,14 @@
             <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">mo2</span><span class="p">:</span>
                 <span class="c1">#Place molecular coordinates in relative coordinates</span>
                 <span class="n">relative_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">))</span>
-                <span class="n">relative_coords</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">relative_coords</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+                <span class="c1">#Do not filter: interferes with periodic image check</span>
+                <span class="c1">#relative_coords = filtered_coords(relative_coords, PBC=self.PBC)</span>
                 <span class="n">current_atomic_sites</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">specie</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
                 <span class="n">current_atomic_coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">relative_coords</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">current_atomic_sites</span><span class="p">:</span>
                 <span class="n">wp_atomic_sites</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">current_atomic_coords</span><span class="p">:</span>
                 <span class="n">wp_atomic_coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
-        <span class="c1">#print(np.array(wp_atomic_coords), wp_atomic_sites)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">wp_atomic_coords</span><span class="p">),</span> <span class="n">wp_atomic_sites</span>
 
 <div class="viewcode-block" id="mol_site.get_coords_and_species"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_coords_and_species">[docs]</a>    <span class="k">def</span> <span class="nf">get_coords_and_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">absolute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -632,6 +697,18 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: parameter absolute must be True or False&quot;</span><span class="p">)</span>
             <span class="k">return</span></div>
+
+<div class="viewcode-block" id="mol_site.get_centers"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.get_centers">[docs]</a>    <span class="k">def</span> <span class="nf">get_centers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the fractional coordinates for the center of mass for each molecule in</span>
+<span class="sd">        the Wyckoff position</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A numpy array of fractional 3-vectors</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">centers0</span> <span class="o">=</span> <span class="n">apply_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wp</span><span class="o">.</span><span class="n">generators</span><span class="p">)</span>
+        <span class="n">centers1</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">centers0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">centers1</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="mol_site.check_distances"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site.check_distances">[docs]</a>    <span class="k">def</span> <span class="nf">check_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">atomic</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -670,9 +747,13 @@
                 <span class="k">if</span> <span class="n">mol_num1</span> <span class="o">!=</span> <span class="n">mol_num2</span><span class="p">:</span>
                     <span class="k">return</span> <span class="kc">False</span>
 
-            <span class="k">return</span> <span class="n">check_images</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>            
-
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span><span class="p">):</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">m_length</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">m_length</span><span class="p">]</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">species</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">m_length</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">m_length</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">check_images</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span><span class="p">,</span> <span class="n">d_factor</span><span class="o">=</span><span class="n">factor</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">False</span>
             <span class="k">return</span> <span class="kc">True</span>
+
         <span class="k">elif</span> <span class="n">atomic</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="c1">#Check molecular ellipsoid overlap</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -723,6 +804,8 @@
 <span class="sd">            turned off</span>
 <span class="sd">        fmt: Optional value for the input molecule string format. Used only</span>
 <span class="sd">            when molecule values are strings</span>
+<span class="sd">        lattice: an optional Lattice object to use for the unit cell</span>
+<span class="sd">        tm: the Tol_matrix object used to generate the crystal</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="molecular_crystal.init_common"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.init_common">[docs]</a>    <span class="k">def</span> <span class="nf">init_common</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="p">,</span> <span class="n">orientations</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">tm</span><span class="p">):</span>
@@ -752,7 +835,7 @@
         <span class="n">numMols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numMols</span><span class="p">)</span> <span class="c1">#must convert it to np.array</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span> <span class="o">=</span> <span class="n">numMols</span>
         <span class="sd">&quot;&quot;&quot;The number of each type of molecule in the PRIMITIVE cell&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span> <span class="o">*</span> <span class="n">cellsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols0</span> <span class="o">*</span> <span class="n">cellsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">)</span>
         <span class="sd">&quot;&quot;&quot;The number of each type of molecule in the CONVENTIONAL cell&quot;&quot;&quot;</span>
         <span class="n">oriented_molecules</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1">#Allow support for generating molecules from text via openbable</span>
@@ -814,7 +897,7 @@
             <span class="c1">#Use the provided lattice</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">lattice</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">lattice</span><span class="o">.</span><span class="n">volume</span>
-        <span class="k">elif</span> <span class="n">lattice</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">lattice</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1">#Determine the unique axis</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
@@ -831,7 +914,24 @@
             <span class="c1">#Generate a Lattice instance</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">estimate_volume_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">,</span> <span class="n">boxes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">)</span>
             <span class="sd">&quot;&quot;&quot;The volume of the generated unit cell.&quot;&quot;&quot;</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">)</span>
+
+            <span class="c1">#Calculate the minimum, middle, and maximum box lengths for the unit cell.</span>
+            <span class="c1">#Used to make sure at least one non-overlapping orientation exists for each molecule</span>
+            <span class="n">minls</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">midls</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">maxls</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">box</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">:</span>
+                <span class="n">minls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">minl</span><span class="p">)</span>
+                <span class="n">midls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">midl</span><span class="p">)</span>
+                <span class="n">maxls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">maxl</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">,</span> <span class="n">min_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">minls</span><span class="p">),</span> <span class="n">mid_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">midls</span><span class="p">),</span> <span class="n">max_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">maxls</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">,</span> <span class="n">min_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">minls</span><span class="p">),</span> <span class="n">mid_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">midls</span><span class="p">),</span> <span class="n">max_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">maxls</span><span class="p">),</span> <span class="n">thickness</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">lattice_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PBC</span><span class="p">,</span> <span class="n">unique_axis</span><span class="o">=</span><span class="n">unique_axis</span><span class="p">,</span> <span class="n">min_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">minls</span><span class="p">),</span> <span class="n">mid_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">midls</span><span class="p">),</span> <span class="n">max_l</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">maxls</span><span class="p">),</span> <span class="n">area</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+            <span class="sd">&quot;&quot;&quot;The Lattice object used to generate lattice matrices for the structure.&quot;&quot;&quot;</span>
         <span class="c1">#Set the tolerance matrix</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">tm</span><span class="p">)</span> <span class="o">==</span> <span class="n">Tol_matrix</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span> <span class="o">=</span> <span class="n">tm</span>
@@ -992,7 +1092,19 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cannot create file: structure did not generate.&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="molecular_crystal.generate_crystal"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.generate_crystal">[docs]</a>    <span class="k">def</span> <span class="nf">generate_crystal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max1</span><span class="o">=</span><span class="n">max1</span><span class="p">,</span> <span class="n">max2</span><span class="o">=</span><span class="n">max2</span><span class="p">,</span> <span class="n">max3</span><span class="o">=</span><span class="n">max3</span><span class="p">):</span>
+<div class="viewcode-block" id="molecular_crystal.print_all"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.print_all">[docs]</a>    <span class="k">def</span> <span class="nf">print_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--Molecular Crystal--&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dimension: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Group: &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">symbol</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Volume factor: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factor</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wyckoff sites:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mol_generators</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pymatgen Structure:&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="molecular_crystal.generate_crystal"><a class="viewcode-back" href="../../pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal.generate_crystal">[docs]</a>    <span class="k">def</span> <span class="nf">generate_crystal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max1</span><span class="o">=</span><span class="n">max1</span><span class="p">,</span> <span class="n">max2</span><span class="o">=</span><span class="n">max2</span><span class="p">,</span> <span class="n">max3</span><span class="o">=</span><span class="n">max3</span><span class="p">,</span> <span class="n">max4</span><span class="o">=</span><span class="n">max4</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The main code to generate a random molecular crystal. If successful,</span>
 <span class="sd">        stores a pymatgen.core.structure object in self.struct and sets</span>
@@ -1003,6 +1115,7 @@
 <span class="sd">            max1: the number of attempts for generating a lattice</span>
 <span class="sd">            max2: the number of attempts for a given lattice</span>
 <span class="sd">            max3: the number of attempts for a given Wyckoff position</span>
+<span class="sd">            max4: the number of attempts for changing the molecular orientation</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1">#Check the minimum number of degrees of freedom within the Wyckoff positions</span>
         <span class="n">degrees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_compatible</span><span class="p">()</span>
@@ -1016,23 +1129,15 @@
                 <span class="n">max1</span> <span class="o">=</span> <span class="mi">10</span>
                 <span class="n">max2</span> <span class="o">=</span> <span class="mi">10</span>
                 <span class="n">max3</span> <span class="o">=</span> <span class="mi">10</span>
+                <span class="n">max4</span> <span class="o">=</span> <span class="mi">5</span>
             <span class="c1">#Calculate a minimum vector length for generating a lattice</span>
             <span class="c1">#minvector = max(radius*2 for radius in self.radii)</span>
             <span class="n">all_lengths</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">box</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">:</span>
-                <span class="n">lengths</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">]]:</span>
-                    <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">-</span><span class="n">box</span><span class="p">[</span><span class="n">a</span><span class="p">]))</span>
-                <span class="n">all_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">lengths</span><span class="p">))</span>
+                <span class="n">all_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">minl</span><span class="p">)</span>
             <span class="n">minvector</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">all_lengths</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">cycle1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max1</span><span class="p">):</span>
                 <span class="c1">#1, Generate a lattice</span>
-                <span class="sd">&#39;&#39;&#39;if self.dim == 3:</span>
-<span class="sd">                    cell_para = generate_lattice(self.sg, self.volume, minvec=minvector)</span>
-<span class="sd">                elif self.dim == 2:</span>
-<span class="sd">                    cell_para = generate_lattice_2D(self.number, self.volume, thickness=self.thickness, minvec=minvector)</span>
-<span class="sd">                elif self.dim == 1:</span>
-<span class="sd">                    cell_para = generate_lattice_1D(self.number, self.volume, area=self.area, minvec=minvector)&#39;&#39;&#39;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">reset_matrix</span><span class="p">()</span>
                 <span class="n">cell_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">matrix</span>
                 <span class="n">cell_para</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">get_para</span><span class="p">()</span>
@@ -1064,7 +1169,7 @@
                         <span class="n">points_tmp</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">points_total</span><span class="p">)</span>
                         <span class="n">mol_generators_tmp</span> <span class="o">=</span> <span class="p">[]</span>
                         
-                	    <span class="c1">#Add molecules specie by specie</span>
+                        <span class="c1">#Add molecules specie by specie</span>
                         <span class="k">for</span> <span class="n">numMol</span><span class="p">,</span> <span class="n">mol</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numMols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">):</span>
                             <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
                             <span class="n">numMol_added</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1076,7 +1181,7 @@
                                 <span class="c1">#NOTE: The molecular version return wyckoff indices, not ops</span>
                                 <span class="n">wp</span> <span class="o">=</span> <span class="n">choose_wyckoff_molecular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">numMol</span><span class="o">-</span><span class="n">numMol_added</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                                 <span class="k">if</span> <span class="n">wp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
-                	    	        <span class="c1">#Generate a list of coords from the wyckoff position</span>
+                                    <span class="c1">#Generate a list of coords from the wyckoff position</span>
                                     <span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">generate_point</span><span class="p">()</span>
                                     <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">op</span><span class="o">.</span><span class="n">operate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wp</span><span class="p">])</span>
                                     <span class="c1">#merge coordinates if the atoms are close</span>
@@ -1095,7 +1200,32 @@
                                         <span class="n">ori</span> <span class="o">=</span> <span class="n">choose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">random_orientation</span><span class="p">()</span>
                                         <span class="n">ms0</span> <span class="o">=</span> <span class="n">mol_site</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">ori</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">[</span><span class="n">wp_index</span><span class="p">],</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span><span class="p">)</span>
                                         <span class="c1">#Check distances within the WP</span>
-                                        <span class="k">if</span> <span class="n">ms0</span><span class="o">.</span><span class="n">check_distances</span><span class="p">(</span><span class="n">atomic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span> <span class="k">continue</span>
+                                        <span class="k">if</span> <span class="n">ms0</span><span class="o">.</span><span class="n">check_distances</span><span class="p">(</span><span class="n">atomic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span> <span class="c1">#continue</span>
+                                            <span class="c1">#Check distance between centers</span>
+                                            <span class="n">d</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">(</span><span class="n">ms0</span><span class="o">.</span><span class="n">get_centers</span><span class="p">(),</span> <span class="n">ms0</span><span class="o">.</span><span class="n">get_centers</span><span class="p">(),</span> <span class="n">ms0</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">ms0</span><span class="o">.</span><span class="n">PBC</span><span class="p">)</span>
+                                            <span class="n">min_box_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">minl</span>
+                                            <span class="n">xys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">d</span> <span class="o">&lt;</span> <span class="n">min_box_l</span><span class="p">)</span>
+                                            <span class="n">passed_center</span> <span class="o">=</span> <span class="kc">True</span>
+                                            <span class="k">for</span> <span class="n">i_y</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">xys</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                                                <span class="n">y</span> <span class="o">=</span> <span class="n">xys</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i_y</span><span class="p">]</span>
+                                                <span class="n">val</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="n">y</span><span class="p">]</span>
+                                                <span class="c1">#Ignore self-distances</span>
+                                                <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">y</span><span class="p">:</span>
+                                                    <span class="k">continue</span>
+                                                <span class="k">else</span><span class="p">:</span>
+                                                    <span class="n">passed_center</span> <span class="o">=</span> <span class="kc">False</span>
+                                            <span class="k">if</span> <span class="ow">not</span> <span class="n">passed_center</span><span class="p">:</span> <span class="k">continue</span>
+                                            <span class="c1">#If centers are farther apart than min box length, allow multiple orientation attempts</span>
+                                            <span class="n">passed_ori</span> <span class="o">=</span> <span class="kc">False</span>
+                                            <span class="k">for</span> <span class="n">cycle4</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max4</span><span class="p">):</span>
+                                                <span class="n">ori</span> <span class="o">=</span> <span class="n">choose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">random_orientation</span><span class="p">()</span>
+                                                <span class="n">ms0</span> <span class="o">=</span> <span class="n">mol_site</span><span class="p">(</span><span class="n">mo</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">ori</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">[</span><span class="n">wp_index</span><span class="p">],</span> <span class="n">cell_matrix</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol_matrix</span><span class="p">)</span>
+                                                <span class="k">if</span> <span class="n">ms0</span><span class="o">.</span><span class="n">check_distances</span><span class="p">(</span><span class="n">atomic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_atomic_distances</span><span class="p">):</span>
+                                                    <span class="n">passed_ori</span> <span class="o">=</span> <span class="kc">True</span>
+                                                    <span class="k">break</span>
+                                        <span class="k">else</span><span class="p">:</span>
+                                            <span class="n">passed_ori</span> <span class="o">=</span> <span class="kc">True</span>
+                                        <span class="k">if</span> <span class="n">passed_ori</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span> <span class="k">continue</span>
                                         <span class="c1">#Check distances with other WP&#39;s</span>
                                         <span class="n">coords_toadd</span><span class="p">,</span> <span class="n">species_toadd</span> <span class="o">=</span> <span class="n">ms0</span><span class="o">.</span><span class="n">get_coords_and_species</span><span class="p">()</span>
                                         <span class="n">passed</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1216,8 +1346,10 @@
 <span class="sd">            turned off</span>
 <span class="sd">        fmt: Optional value for the input molecule string format. Used only</span>
 <span class="sd">            when molecule values are strings</span>
+<span class="sd">        lattice: an optional Lattice object to use for the unit cell</span>
+<span class="sd">        tm: the Tol_matrix object used to generate the crystal</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;molecular&quot;</span><span class="p">)):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;molecular&quot;</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">numattempts</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1275,8 +1407,10 @@
 <span class="sd">            turned off</span>
 <span class="sd">        fmt: Optional value for the input molecule string format. Used only</span>
 <span class="sd">            when molecule values are strings</span>
+<span class="sd">        lattice: an optional Lattice object to use for the unit cell</span>
+<span class="sd">        tm: the Tol_matrix object used to generate the crystal</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;molecular&quot;</span><span class="p">)):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">molecules</span><span class="p">,</span> <span class="n">numMols</span><span class="p">,</span> <span class="n">volume_factor</span><span class="p">,</span> <span class="n">allow_inversion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_atomic_distances</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="n">area</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lattice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tm</span><span class="o">=</span><span class="n">Tol_matrix</span><span class="p">(</span><span class="n">prototype</span><span class="o">=</span><span class="s2">&quot;molecular&quot;</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="sd">&quot;&quot;&quot;The number of periodic dimensions of the crystal&quot;&quot;&quot;</span>
         <span class="c1">#Necessary input</span>
@@ -1440,7 +1574,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

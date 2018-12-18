@@ -9,10 +9,13 @@
     <title>pyxtal.operations &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
@@ -61,6 +64,28 @@
 <span class="n">rad</span> <span class="o">=</span> <span class="n">pi</span><span class="o">/</span><span class="mf">180.</span>
 <span class="n">deg</span> <span class="o">=</span> <span class="mf">180.</span><span class="o">/</span><span class="n">pi</span>
 
+<div class="viewcode-block" id="euler_from_matrix"><a class="viewcode-back" href="../../pyxtal.operations.html#pyxtal.operations.euler_from_matrix">[docs]</a><span class="k">def</span> <span class="nf">euler_from_matrix</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a 3x3 rotation matrix, determines the Euler angles</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        m: a 3x3 rotation matrix</span>
+<span class="sd">        radians: whether or not to output angles in radians (degrees if False)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (phi, theta, psi): psi is the azimuthal angle, theta is the polar angle,</span>
+<span class="sd">            and psi is the angle about the z axis. All angles are in radians</span>
+<span class="sd">            unless radians is False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">psi</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">radians</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">phi</span> <span class="o">*=</span> <span class="n">deg</span>
+        <span class="n">theta</span> <span class="o">*=</span> <span class="n">deg</span>
+        <span class="n">psi</span> <span class="o">*=</span> <span class="n">deg</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">psi</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="apply_ops"><a class="viewcode-back" href="../../pyxtal.operations.html#pyxtal.operations.apply_ops">[docs]</a><span class="k">def</span> <span class="nf">apply_ops</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Apply a list of SymmOps to a single 3-vector and return an array of</span>
@@ -85,6 +110,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        v1: a 1x3 vector</span>
 <span class="sd">        v2: a 1x3 vector</span>
+<span class="sd">        radians: whether to return angle in radians (default) or degrees</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        the angle in radians between the two vectors</span>
@@ -727,7 +753,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

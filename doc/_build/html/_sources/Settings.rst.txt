@@ -1,0 +1,31 @@
+Group Settings
+==============
+
+For the output 3D structures, PyXtal uses the conventional standard cell (the same as `Bilbao
+<http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_). This means unique axis b for monoclinic cells, the obverse triple hexagonal cell for rhombohedral groups, and origin choice 2 (0,0,0) when two origin choices are available.
+
+For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and unique axis a for layer groups 8-18. When two origin choices are available, we use origin choice 1. We always choose c as the non-periodic axis.
+
+For 1D structures, we use unique axis a for monoclinic Rod groups 3-7, and unique axis c for Rod groups 8-12. When two settings are available for a group, we use the 1st setting. We always choose c as the periodic axis.
+
+For point group structures, we use unique axis c for all groups except the polyhedral groups T, Th, O, Td, Oh, I, and Ih. For all of these groups, we place the 2-fold rotation about the z axis and a 3-fold rotation about the (x,x,x) axis. For I and Ih, we use a 5-fold rotation about the axis (1,tau,0), where tau is the golden ratio ( tau = 0.5(sqrt(5)+1) ~ 1.618 ).
+
+Crystallographic point groups, listed by number:
+
++------------+------------+-----------+-----------+
+| 1: C1      | 2: Ci      | 3: C2     | 4: Cs     |
++------------+------------+-----------+-----------+
+| 5: C2h     | 6: D2      | 7: C2v    | 8: D2h    |
++------------+------------+-----------+-----------+
+| 9: C4      | 10: S4     | 11: C4h   | 12: D4    |
++------------+------------+-----------+-----------+
+| 13: C4v    | 14: D2d    | 15: D4h   | 16: C3    |
++------------+------------+-----------+-----------+
+| 17: C3i    | 18: D3     | 19: C3v   | 20: D3d   |
++------------+------------+-----------+-----------+
+| 21: C6     | 22: C3h    | 23: C6h   | 24: D6    |
++------------+------------+-----------+-----------+
+| 25: C6v    | 26: D3h    | 27: D6h   | 28: T     |
++------------+------------+-----------+-----------+
+| 29: Th     | 30: O      | 31: Td    | 32: Oh    |
++------------+------------+-----------+-----------+

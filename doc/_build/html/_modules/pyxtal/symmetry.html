@@ -9,10 +9,13 @@
     <title>pyxtal.symmetry &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
@@ -262,6 +265,7 @@
 <span class="sd">        points2: another list of fractional coordinates</span>
 <span class="sd">        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.</span>
 <span class="sd">            Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</span>
+<span class="sd">        squared: whether to return the squared distance (True) or the Euclidean distance (False)</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a 2x2 np array of scalar distances</span>
@@ -1125,6 +1129,7 @@
             <span class="k">return</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span>
     <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span></div>
 
+<span class="c1">#TODO: Use Group object instead of organized array</span>
 <div class="viewcode-block" id="letter_from_index"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.letter_from_index">[docs]</a><span class="k">def</span> <span class="nf">letter_from_index</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">arr</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given a Wyckoff position&#39;s index within a spacegroup, return its number</span>
@@ -1133,7 +1138,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        index: a single integer describing the WP&#39;s index within the</span>
 <span class="sd">            spacegroup (0 is the general position)</span>
-<span class="sd">        sg: the international spacegroup number</span>
+<span class="sd">        arr: an unorganized Wyckoff position array</span>
 <span class="sd">   </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        the Wyckoff letter corresponding to the Wyckoff position (for example,</span>
@@ -1149,7 +1154,7 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        letter: The wyckoff letter</span>
-<span class="sd">        sg: the internationl spacegroup number</span>
+<span class="sd">        arr: an unorganized Wyckoff position array</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a single index specifying the location of the Wyckoff position within</span>
@@ -1555,6 +1560,8 @@
 <span class="sd">                0 is always the general position, and larger indeces represent positions</span>
 <span class="sd">                with lower multiplicity. Alternatively, index can be the Wyckoff letter</span>
 <span class="sd">                (&quot;4a6&quot; or &quot;f&quot;)</span>
+<span class="sd">            dim: the periodic dimension of the crystal</span>
+<span class="sd">            PBC: the periodic boundary conditions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">wp</span> <span class="o">=</span> <span class="n">Wyckoff_position</span><span class="p">()</span>
         <span class="n">wp</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
@@ -1709,7 +1716,12 @@
 
 <div class="viewcode-block" id="Group"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group">[docs]</a><span class="k">class</span> <span class="nc">Group</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Class for storing a set of Wyckoff positions for a symmetry group</span>
+<span class="sd">    Class for storing a set of Wyckoff positions for a symmetry group. See the documentation</span>
+<span class="sd">    for details about settings.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        group: the group symbol or international number</span>
+<span class="sd">        dim: the periodic dimension of the group</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -1861,15 +1873,15 @@
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
                     <span class="k">return</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
                 <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_point_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">w_symm</span> <span class="o">=</span> <span class="n">get_point_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
                 <span class="sd">&quot;&quot;&quot;A list of site symmetry operations for the Wyckoff positions, obtained</span>
 <span class="sd">                    from get_wyckoff_symmetry (molecular=False)&quot;&quot;&quot;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">w_symm_m</span> <span class="o">=</span> <span class="n">get_point_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
                 <span class="sd">&quot;&quot;&quot;A list of site symmetry operations for the Wyckoff positions, obtained</span>
 <span class="sd">                    from get_wyckoff_symmetry (molecular=True)&quot;&quot;&quot;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">get_point_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">get_point_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
                 <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=False)&quot;&quot;&quot;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">get_point_generators</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
                 <span class="sd">&quot;&quot;&quot;A list of Wyckoff generators (molecular=True)&quot;&quot;&quot;</span>
@@ -2120,6 +2132,15 @@
 <span class="sd">        multiplicity.&quot;&quot;&quot;</span>
     
 <div class="viewcode-block" id="Group.get_wyckoff_position"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group.get_wyckoff_position">[docs]</a>    <span class="k">def</span> <span class="nf">get_wyckoff_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a single Wyckoff_position object</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            index: the index of the Wyckoff position within the group</span>
+<span class="sd">                The largest position is always 0</span>
+
+<span class="sd">        Returns: a Wyckoff_position object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
@@ -2132,6 +2153,16 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wyckoff_positions</span><span class="p">[</span><span class="n">index</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Group.get_wyckoff_symmetry"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group.get_wyckoff_symmetry">[docs]</a>    <span class="k">def</span> <span class="nf">get_wyckoff_symmetry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the site symmetry symbol for the Wyckoff position</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            index: the index of the Wyckoff position within the group</span>
+<span class="sd">                The largest position is always 0</span>
+<span class="sd">            molecular: whether to use the Euclidean operations or not (for hexagonal groups)</span>
+
+<span class="sd">        Returns: a Hermann-Mauguin style string for the site symmetry</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
@@ -2148,6 +2179,15 @@
         <span class="k">return</span> <span class="n">ss_string_from_ops</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Group.get_wyckoff_symmetry_m"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group.get_wyckoff_symmetry_m">[docs]</a>    <span class="k">def</span> <span class="nf">get_wyckoff_symmetry_m</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the site symmetry symbol for the Wyckoff position (with molecular=True)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            index: the index of the Wyckoff position within the group</span>
+<span class="sd">                The largest position is always 0</span>
+
+<span class="sd">        Returns: a Hermann-Mauguin style string for the site symmetry</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wyckoff_symmetry</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2160,6 +2200,9 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplicity</span>
 
 <div class="viewcode-block" id="Group.print_all"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.Group.print_all">[docs]</a>    <span class="k">def</span> <span class="nf">print_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prints useful information about the Group.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">string_long</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
@@ -2225,7 +2268,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

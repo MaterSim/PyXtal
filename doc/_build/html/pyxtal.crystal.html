@@ -9,10 +9,12 @@
     <title>pyxtal.crystal module &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
   </head><body>
@@ -128,8 +130,31 @@ a parallelepiped lattice.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>ltype</strong> – a string representing the type of lattice (from the above list)</li>
 <li><strong>volume</strong> – the volume, in Angstroms cubed, of the lattice</li>
-<li><strong>kwargs</strong> – various values which may be defined. If none are defined, random ones
-will be generated.</li>
+<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
+<li><strong>kwargs</strong> – <p>various values which may be defined. If none are defined, random ones
+will be generated. Values will be passed to generate_lattice. Options include:
+area: The cross-sectional area (in Angstroms squared). Only used to generate 1D</p>
+<blockquote>
+<div>crystals</div></blockquote>
+<dl class="docutils">
+<dt>thickness: The unit cell’s non-periodic thickness (in Angstroms). Only used to</dt>
+<dd>generate 2D crystals</dd>
+<dt>unique_axis: The unique axis for certain symmetry (and especially layer) groups.</dt>
+<dd>Because the symmetry operations are not also transformed, you should use the
+default values for random crystal generation</dd>
+<dt>random: If False, keeps the stored values for the lattice geometry even upon applying</dt>
+<dd>reset_matrix. To alter the matrix, use set_matrix() or set_para</dd>
+<dt>’unique_axis’: the axis (‘a’, ‘b’, or ‘c’) which is not symmetrically</dt>
+<dd>equivalent to the other two</dd>
+<dt>’min_l’: the smallest allowed cell vector. The smallest vector must be larger</dt>
+<dd>than this.</dd>
+<dt>’mid_l’: the second smallest allowed cell vector. The second smallest vector</dt>
+<dd>must be larger than this.</dd>
+<dt>’max_l’: the third smallest allowed cell vector. The largest cell vector must</dt>
+<dd>be larger than this.</dd>
+</dl>
+</li>
 </ul>
 </td>
 </tr>
@@ -153,15 +178,29 @@ which confines generated points to lie within a sphere, and “cylindrical”, w
 confines generated points to lie within a cylinder (oriented about the z axis)</li>
 <li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
 Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
-<li><strong>area</strong> – The cross-sectional area (in Angstroms squared). Only used to generate 1D
-crystals</li>
-<li><strong>thickness</strong> – The unit cell’s non-periodic thickness (in Angstroms). Only used to
-generate 2D crystals</li>
-<li><strong>unique_axis</strong> – The unique axis for certain symmetry (and especially layer) groups.
-Because the symmetry operations are not also transformed, you should use the
-default values for random crystal generation</li>
-<li><strong>random</strong> – If False, keeps the stored values for the lattice geometry even upon applying
-reset_matrix. To alter the matrix, use set_matrix() or set_para</li>
+<li><strong>kwargs</strong> – <p>various values which may be defined. If none are defined, random ones
+will be generated. Values will be passed to generate_lattice. Options include:
+area: The cross-sectional area (in Angstroms squared). Only used to generate 1D</p>
+<blockquote>
+<div>crystals</div></blockquote>
+<dl class="docutils">
+<dt>thickness: The unit cell’s non-periodic thickness (in Angstroms). Only used to</dt>
+<dd>generate 2D crystals</dd>
+<dt>unique_axis: The unique axis for certain symmetry (and especially layer) groups.</dt>
+<dd>Because the symmetry operations are not also transformed, you should use the
+default values for random crystal generation</dd>
+<dt>random: If False, keeps the stored values for the lattice geometry even upon applying</dt>
+<dd>reset_matrix. To alter the matrix, use set_matrix() or set_para</dd>
+<dt>’unique_axis’: the axis (‘a’, ‘b’, or ‘c’) which is not symmetrically</dt>
+<dd>equivalent to the other two</dd>
+<dt>’min_l’: the smallest allowed cell vector. The smallest vector must be larger</dt>
+<dd>than this.</dd>
+<dt>’mid_l’: the second smallest allowed cell vector. The second smallest vector</dt>
+<dd>must be larger than this.</dd>
+<dt>’max_l’: the third smallest allowed cell vector. The largest cell vector must</dt>
+<dd>be larger than this.</dd>
+</dl>
+</li>
 </ul>
 </td>
 </tr>
@@ -194,15 +233,29 @@ confines generated points to lie within a cylinder (oriented about the z axis)</
 <li><strong>radians</strong> – whether or not to use radians (instead of degrees) for the lattice angles</li>
 <li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
 Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
-<li><strong>area</strong> – The cross-sectional area (in Angstroms squared). Only used to generate 1D
-crystals</li>
-<li><strong>thickness</strong> – The unit cell’s non-periodic thickness (in Angstroms). Only used to
-generate 2D crystals</li>
-<li><strong>unique_axis</strong> – The unique axis for certain symmetry (and especially layer) groups.
-Because the symmetry operations are not also transformed, you should use the
-default values for random crystal generation</li>
-<li><strong>random</strong> – If False, keeps the stored values for the lattice geometry even upon applying
-reset_matrix. To alter the matrix, use set_matrix() or set_para</li>
+<li><strong>kwargs</strong> – <p>various values which may be defined. If none are defined, random ones
+will be generated. Values will be passed to generate_lattice. Options include:
+area: The cross-sectional area (in Angstroms squared). Only used to generate 1D</p>
+<blockquote>
+<div>crystals</div></blockquote>
+<dl class="docutils">
+<dt>thickness: The unit cell’s non-periodic thickness (in Angstroms). Only used to</dt>
+<dd>generate 2D crystals</dd>
+<dt>unique_axis: The unique axis for certain symmetry (and especially layer) groups.</dt>
+<dd>Because the symmetry operations are not also transformed, you should use the
+default values for random crystal generation</dd>
+<dt>random: If False, keeps the stored values for the lattice geometry even upon applying</dt>
+<dd>reset_matrix. To alter the matrix, use set_matrix() or set_para</dd>
+<dt>’unique_axis’: the axis (‘a’, ‘b’, or ‘c’) which is not symmetrically</dt>
+<dd>equivalent to the other two</dd>
+<dt>’min_l’: the smallest allowed cell vector. The smallest vector must be larger</dt>
+<dd>than this.</dd>
+<dt>’mid_l’: the second smallest allowed cell vector. The second smallest vector</dt>
+<dd>must be larger than this.</dd>
+<dt>’max_l’: the third smallest allowed cell vector. The largest cell vector must</dt>
+<dd>be larger than this.</dd>
+</dl>
+</li>
 </ul>
 </td>
 </tr>
@@ -314,7 +367,8 @@ diagonal will be used.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>matrix</strong> – a 2D matrix or list of tolerances between atomic species pairs</li>
+<li><strong>matrix</strong> – a 2D matrix or list of tolerances between atomic species pairs. The
+indices correspond to atomic species (see begin_with variable description)</li>
 <li><strong>prototype</strong> – a string representing the type of radii to use
 (“atomic”, “molecular”)</li>
 <li><strong>factor</strong> – a float to scale the distances by. A smaller value means a smaller
@@ -369,7 +423,7 @@ always return the same value.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> – the tolerance value to use</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">as Tol_matrix object whose methods are overridden to use a single tolerance value</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a Tol_matrix object whose methods are overridden to use a single tolerance value</td>
 </tr>
 </tbody>
 </table>
@@ -406,13 +460,17 @@ an Element object, or a pymatgen Specie object</td>
 <dl class="method">
 <dt id="pyxtal.crystal.Tol_matrix.set_tol">
 <code class="descname">set_tol</code><span class="sig-paren">(</span><em>specie1</em>, <em>specie2</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Tol_matrix.set_tol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Tol_matrix.set_tol" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the tolerance between two species.</p>
+<dd><p>Sets the distance tolerance between two species.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>specie2</strong> (<em>specie1</em><em>,</em>) – the atomic number (int or float), name (str), symbol (str),
-an Element object, or a pymatgen Specie object</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>specie2</strong> (<em>specie1</em><em>,</em>) – the atomic number (int or float), name (str), symbol (str),
+an Element object, or a pymatgen Specie object</li>
+<li><strong>value</strong> – the tolerance (in Angstroms) to set to</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -443,9 +501,29 @@ By default, the filename is based on the stoichiometry.</p>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="pyxtal.crystal.Wyckoff_site">
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">Wyckoff_site</code><span class="sig-paren">(</span><em>wp</em>, <em>coordinate</em>, <em>specie</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#Wyckoff_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.Wyckoff_site" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for storing atomic Wyckoff positions with a single coordinate.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>wp</strong> – a Wyckoff_position object</li>
+<li><strong>coordinate</strong> – a fractional 3-vector for the generating atom’s coordinate</li>
+<li><strong>specie</strong> – an Element, element name or symbol, or atomic number of the atom</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="function">
 <dt id="pyxtal.crystal.cellsize">
-<code class="descclassname">pyxtal.crystal.</code><code class="descname">cellsize</code><span class="sig-paren">(</span><em>sg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#cellsize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.cellsize" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyxtal.crystal.</code><code class="descname">cellsize</code><span class="sig-paren">(</span><em>group</em>, <em>dim=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#cellsize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.cellsize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of duplicate atoms in the conventional lattice (in
 contrast to the primitive cell). Based on the type of cell centering (P,
 A, C, I, R, or F)</p>
@@ -453,9 +531,16 @@ A, C, I, R, or F)</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sg</strong> – the international spacegroup number</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>group</strong> – a Group object, or the space group number of the group</li>
+<li><strong>dim</strong> – the dimension of the group (3 for space group, 2 for layer group,
+1 for Rod group, or 0 for 3D point group). If group is a Group
+object, dim will be overridden by group’s value for dim</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a number between 1 and 4</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an integer between 1 and 4, telling how many atoms are in the conventional cell</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -500,6 +585,26 @@ mean atoms must be farther apart</li>
 <dt id="pyxtal.crystal.check_images">
 <code class="descclassname">pyxtal.crystal.</code><code class="descname">check_images</code><span class="sig-paren">(</span><em>coords, species, lattice, PBC=[1, 1, 1], tm=&lt;pyxtal.crystal.Tol_matrix object&gt;, d_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#check_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.check_images" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>coords</strong> – a list of fractional coordinates</li>
+<li><strong>species</strong> – the atomic species of each coordinate</li>
+<li><strong>lattice</strong> – a 3x3 lattice matrix</li>
+<li><strong>PBC</strong> – the periodic boundary conditions</li>
+<li><strong>tm</strong> – a Tol_matrix object</li>
+<li><strong>d_factor</strong> – the tolerance is multiplied by this amount. Larger values
+mean atoms must be farther apart</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">False if distances are too close. True if distances are not too close</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -661,6 +766,19 @@ maxattempts times.</p>
 <li><strong>minangle</strong> – minimum allowed lattice angle (among alpha, beta, and gamma)</li>
 <li><strong>max_ratio</strong> – largest allowed ratio of two lattice vector lengths</li>
 <li><strong>maxattempts</strong> – the maximum number of attempts for generating a lattice</li>
+<li><strong>kwargs</strong> – <p>a dictionary of optional values. These include:
+‘unique_axis’: the axis (‘a’, ‘b’, or ‘c’) which is not symmetrically</p>
+<blockquote>
+<div>equivalent to the other two</div></blockquote>
+<dl class="docutils">
+<dt>’min_l’: the smallest allowed cell vector. The smallest vector must be larger</dt>
+<dd>than this.</dd>
+<dt>’mid_l’: the second smallest allowed cell vector. The second smallest vector</dt>
+<dd>must be larger than this.</dd>
+<dt>’max_l’: the third smallest allowed cell vector. The largest cell vector must</dt>
+<dd>be larger than this.</dd>
+</dl>
+</li>
 </ul>
 </td>
 </tr>
@@ -696,6 +814,20 @@ set to None, a value is chosen automatically</li>
 <li><strong>minvec</strong> – minimum allowed lattice vector length (among a, b, and c)</li>
 <li><strong>max_ratio</strong> – largest allowed ratio of two lattice vector lengths</li>
 <li><strong>maxattempts</strong> – the maximum number of attempts for generating a lattice</li>
+<li><strong>kwargs</strong> – <p>a dictionary of optional values. Only used for cylindrical
+lattices, which pass the value to generate_lattice. Possible values include:
+‘unique_axis’: the axis (‘a’, ‘b’, or ‘c’) which is not symmetrically</p>
+<blockquote>
+<div>equivalent to the other two</div></blockquote>
+<dl class="docutils">
+<dt>’min_l’: the smallest allowed cell vector. The smallest vector must be larger</dt>
+<dd>than this.</dd>
+<dt>’mid_l’: the second smallest allowed cell vector. The second smallest vector</dt>
+<dd>must be larger than this.</dd>
+<dt>’max_l’: the third smallest allowed cell vector. The largest cell vector must</dt>
+<dd>be larger than this.</dd>
+</dl>
+</li>
 </ul>
 </td>
 </tr>
@@ -732,6 +864,19 @@ set to None, a value is chosen automatically</li>
 <li><strong>minangle</strong> – minimum allowed lattice angle (among alpha, beta, and gamma)</li>
 <li><strong>max_ratio</strong> – largest allowed ratio of two lattice vector lengths</li>
 <li><strong>maxattempts</strong> – the maximum number of attempts for generating a lattice</li>
+<li><strong>kwargs</strong> – <p>a dictionary of optional values. These include:
+‘unique_axis’: the axis (‘a’, ‘b’, or ‘c’) which is not symmetrically</p>
+<blockquote>
+<div>equivalent to the other two</div></blockquote>
+<dl class="docutils">
+<dt>’min_l’: the smallest allowed cell vector. The smallest vector must be larger</dt>
+<dd>than this.</dd>
+<dt>’mid_l’: the second smallest allowed cell vector. The second smallest vector</dt>
+<dd>must be larger than this.</dd>
+<dt>’max_l’: the third smallest allowed cell vector. The largest cell vector must</dt>
+<dd>be larger than this.</dd>
+</dl>
+</li>
 </ul>
 </td>
 </tr>
@@ -768,6 +913,19 @@ a thickness is chosen automatically</li>
 <li><strong>minangle</strong> – minimum allowed lattice angle (among alpha, beta, and gamma)</li>
 <li><strong>max_ratio</strong> – largest allowed ratio of two lattice vector lengths</li>
 <li><strong>maxattempts</strong> – the maximum number of attempts for generating a lattice</li>
+<li><strong>kwargs</strong> – <p>a dictionary of optional values. These include:
+‘unique_axis’: the axis (‘a’, ‘b’, or ‘c’) which is not symmetrically</p>
+<blockquote>
+<div>equivalent to the other two</div></blockquote>
+<dl class="docutils">
+<dt>’min_l’: the smallest allowed cell vector. The smallest vector must be larger</dt>
+<dd>than this.</dd>
+<dt>’mid_l’: the second smallest allowed cell vector. The second smallest vector</dt>
+<dd>must be larger than this.</dd>
+<dt>’max_l’: the third smallest allowed cell vector. The largest cell vector must</dt>
+<dd>be larger than this.</dd>
+</dl>
+</li>
 </ul>
 </td>
 </tr>
@@ -914,7 +1072,7 @@ y-z plane</p>
 <dd><p>random_sample(size=None)</p>
 <p>Return random floats in the half-open interval [0.0, 1.0).</p>
 <p>Results are from the “continuous uniform” distribution over the
-stated interval.  To sample  multiply
+stated interval.  To sample <span class="math notranslate nohighlight">\(Unif[a, b), b &gt; a\)</span> multiply
 the output of <cite>random_sample</cite> by <cite>(b-a)</cite> and add <cite>a</cite>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">random_sample</span><span class="p">()</span> <span class="o">+</span> <span class="n">a</span>
 </pre></div>
@@ -975,6 +1133,8 @@ for more information</li>
 primitive cell (NOT the conventional cell)</li>
 <li><strong>factor</strong> – a volume factor used to generate a larger or smaller
 unit cell. Increasing this gives extra space between atoms</li>
+<li><strong>lattice</strong> – an optional Lattice object to use for the unit cell</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate the crystal</li>
 </ul>
 </td>
 </tr>
@@ -1015,13 +1175,14 @@ self.struct</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>sg</strong> – the international spacegroup number</li>
+<li><strong>group</strong> – the international spacegroup number, or a Group object</li>
 <li><strong>species</strong> – a list of atomic symbols for each ion type</li>
 <li><strong>numIons</strong> – a list of the number of each type of atom within the
 primitive cell (NOT the conventional cell)</li>
-<li><strong>tm</strong> – the Tol_matrix object used to generate</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate the crystal</li>
 <li><strong>factor</strong> – a volume factor used to generate a larger or smaller
 unit cell. Increasing this gives extra space between atoms</li>
+<li><strong>lattice</strong> – an optional Lattice object to use for the unit cell</li>
 </ul>
 </td>
 </tr>
@@ -1086,7 +1247,13 @@ outputs an error message.</p>
 <dl class="method">
 <dt id="pyxtal.crystal.random_crystal.init_common">
 <code class="descname">init_common</code><span class="sig-paren">(</span><em>species</em>, <em>numIons</em>, <em>factor</em>, <em>group</em>, <em>lattice</em>, <em>tm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.init_common" title="Permalink to this definition">¶</a></dt>
-<dd><p>Common init functionality for 0-3D cases of random_crystal.</p>
+<dd><p>Common init functionality for 0D-3D cases of random_crystal.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.crystal.random_crystal.print_all">
+<code class="descname">print_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal.print_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal.print_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints useful information about the generated crystal.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -1122,7 +1289,7 @@ By default, the filename is based on the stoichiometry.</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_1D">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>area</em>, <em>factor</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_1D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>area=None</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_1D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 1d counterpart to random_crystal. Generates a random atomic crystal based
 on a 1d Rod group instead of a 3d spacegroup. The generated pymatgen
@@ -1142,6 +1309,8 @@ primitive cell (NOT the conventional cell)</li>
 unit cell</li>
 <li><strong>factor</strong> – a volume factor used to generate a larger or smaller
 unit cell. Increasing this gives extra space between atoms</li>
+<li><strong>lattice</strong> – an optional Lattice object to use for the unit cell</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate the crystal</li>
 </ul>
 </td>
 </tr>
@@ -1177,7 +1346,7 @@ with Rod groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.crystal.random_crystal_2D">
-<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>thickness</em>, <em>factor</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.crystal.</code><code class="descname">random_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>species</em>, <em>numIons</em>, <em>factor</em>, <em>thickness=None</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/crystal.html#random_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.crystal.random_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.crystal.random_crystal" title="pyxtal.crystal.random_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.crystal.random_crystal</span></code></a></p>
 <p>A 2d counterpart to random_crystal. Generates a random atomic crystal based
 on a 2d layer group instead of a 3d spacegroup. Note that each layer group
@@ -1198,6 +1367,8 @@ primitive cell (NOT the conventional cell)</li>
 dimension (the direction which is not repeated periodically)</li>
 <li><strong>factor</strong> – a volume factor used to generate a larger or smaller
 unit cell. Increasing this gives extra space between atoms</li>
+<li><strong>lattice</strong> – an optional Lattice object to use for the unit cell</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate the crystal</li>
 </ul>
 </td>
 </tr>
@@ -1287,13 +1458,6 @@ Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axi
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/pyxtal.crystal.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
@@ -1324,7 +1488,7 @@ Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axi
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

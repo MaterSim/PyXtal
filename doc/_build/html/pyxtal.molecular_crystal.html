@@ -9,10 +9,12 @@
     <title>pyxtal.molecular_crystal module &#8212; PyXtal 0.1dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
   </head><body>
@@ -93,6 +95,30 @@ cross-sectional area. If set to None, chooses a value automatically.
 Defaults to None</dd>
 </dl>
 </div></blockquote>
+<dl class="class">
+<dt id="pyxtal.molecular_crystal.Box">
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">Box</code><span class="sig-paren">(</span><em>minx</em>, <em>maxx</em>, <em>miny</em>, <em>maxy</em>, <em>minz</em>, <em>maxz</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#Box"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.Box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for storing the binding box for a molecule. Box is oriented along the x, y, and
+z axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>minx</strong> – the minimum x value</li>
+<li><strong>maxx</strong> – the maximum x value</li>
+<li><strong>miny</strong> – the minimum y value</li>
+<li><strong>maxy</strong> – the maximum y value</li>
+<li><strong>minz</strong> – the minimum z value</li>
+<li><strong>maxz</strong> – the maximum z value</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="function">
 <dt id="pyxtal.molecular_crystal.check_distance_molecular">
 <code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">check_distance_molecular</code><span class="sig-paren">(</span><em>coord1, coord2, indices1, index2, lattice, radii, d_factor=1.0, PBC=[1, 1, 1]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#check_distance_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.check_distance_molecular" title="Permalink to this definition">¶</a></dt>
@@ -192,6 +218,9 @@ the spacegroup.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>points</strong> – a list of 3d fractional coordinates or SymmOps to check</li>
 <li><strong>group</strong> – a pyxtal.symmetry.Group object</li>
+<li><strong>orientations</strong> – the valid orientations for a given molecule. Obtained
+from get_sg_orientations, which is called within molecular_crystal</li>
+<li><strong>tol</strong> – the Euclidean distance tolerance for compatibility</li>
 </ul>
 </td>
 </tr>
@@ -244,16 +273,18 @@ returns False</p>
 <dl class="function">
 <dt id="pyxtal.molecular_crystal.estimate_volume_molecular">
 <code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">estimate_volume_molecular</code><span class="sig-paren">(</span><em>molecules</em>, <em>numMols</em>, <em>factor=2.0</em>, <em>boxes=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#estimate_volume_molecular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.estimate_volume_molecular" title="Permalink to this definition">¶</a></dt>
-<dd><p>Estimate the volume needed for a molecular crystal conventional unit cell.</p>
+<dd><p>Given the molecular stoichiometry, estimate the volume needed for a unit cell.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>numMols</strong> – A list with the number of each type of molecule</li>
-<li><strong>boxes</strong> – A list of bounding boxes for each molecule. Obtained from get_box</li>
+<li><strong>molecules</strong> (<em>between</em>) – a list of Pymatgen Molecule objects</li>
+<li><strong>numMols</strong> – a list with the number of each type of molecule</li>
 <li><strong>factor</strong> – a factor to multiply the final result by. Used to increase space</li>
-<li><strong>molecules</strong> (<em>between</em>) – </li>
+<li><strong>molecules</strong> – </li>
+<li><strong>boxes</strong> – a list of Box objects for each molecule. Obtained from get_box
+if None, boxes are calculated automatically.</li>
 </ul>
 </td>
 </tr>
@@ -274,11 +305,9 @@ For best results, call oriented_molecule first.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mol</strong> – a pymatgen Molecule object</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mol</strong> – a pymatgen Molecule object. Should be oriented along its principle axes.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list [x1,x2,y1,y2,z1,z2] where x1 is the relative displacement in
-the negative x direction, x2 is the displacement in the positive x
-direction, and so on</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a Box object</td>
 </tr>
 </tbody>
 </table>
@@ -303,11 +332,9 @@ self.group.wyckoffs_organized[i][j]</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>mol</strong> – a pymatgen Molecule object.</li>
-<li><strong>sg</strong> – the international spacegroup number</li>
+<li><strong>group</strong> – a Group object</li>
 <li><strong>allow_inversion</strong> – whether or not to allow inversion operations for chiral
 molecules</li>
-<li><strong>PBC</strong> – A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-Ex: [1,1,1] -&gt; full 3d periodicity, [0,0,1] -&gt; periodicity along the z axis</li>
 </ul>
 </td>
 </tr>
@@ -339,8 +366,8 @@ positions within the random_crystal (and its derivative) classes.</p>
 <li><strong>lattice</strong> – a 3x3 matrix representing the unit cell</li>
 <li><strong>group</strong> – a pyxtal.symmetry.Group object</li>
 <li><strong>tol</strong> – the cutoff distance for merging coordinates</li>
-<li><strong>orientations</strong> – a list of valid molecular orientations within the
-space group</li>
+<li><strong>orientations</strong> – the valid orientations for a given molecule. Obtained
+from get_sg_orientations, which is called within molecular_crystal</li>
 </ul>
 </td>
 </tr>
@@ -364,7 +391,25 @@ be plugged into the Wyckoff position to generate the rest of the points</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for storing molecular Wyckoff positions and orientations within
 the molecular_crystal class. Each mol_site object represenents an
-entire Wyckoff position, not necessarily a single molecule.</p>
+entire Wyckoff position, not necessarily a single molecule. This is the
+molecular version of Wyckoff_site</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>mol</strong> – a Pymatgen Molecule object</li>
+<li><strong>position</strong> – the fractional 3-vector representing the generating molecule’s position</li>
+<li><strong>orientation</strong> – an Orientation object for the generating molecule</li>
+<li><strong>wyckoff_position</strong> – a Wyckoff_position object</li>
+<li><strong>lattice</strong> – a Lattice object for the crystal</li>
+<li><strong>ellipsoid</strong> – an optional binding Ellipsoid object for checking distances.</li>
+<li><strong>tm</strong> – a Tol_matrix object for distance checking</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="pyxtal.molecular_crystal.mol_site.PBC">
 <code class="descname">PBC</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.PBC" title="Permalink to this definition">¶</a></dt>
@@ -400,6 +445,21 @@ overlap between molecules instead</li>
 <dt id="pyxtal.molecular_crystal.mol_site.ellipsoid">
 <code class="descname">ellipsoid</code><em class="property"> = None</em><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.ellipsoid" title="Permalink to this definition">¶</a></dt>
 <dd><p>A SymmOp representing the minimal ellipsoid for the molecule</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.molecular_crystal.mol_site.get_centers">
+<code class="descname">get_centers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_centers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_centers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the fractional coordinates for the center of mass for each molecule in
+the Wyckoff position</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A numpy array of fractional 3-vectors</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -461,7 +521,8 @@ molecular centers and orientations.</p>
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.mol_site.get_tols_matrix">
 <code class="descname">get_tols_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_tols_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_tols_matrix" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns: a 2D matrix which is used internally for distance checking.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="pyxtal.molecular_crystal.mol_site.lattice">
@@ -533,6 +594,8 @@ molecules, or for large inter-molecular distances, this may be
 turned off</li>
 <li><strong>fmt</strong> – Optional value for the input molecule string format. Used only
 when molecule values are strings</li>
+<li><strong>lattice</strong> – an optional Lattice object to use for the unit cell</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate the crystal</li>
 </ul>
 </td>
 </tr>
@@ -565,7 +628,7 @@ position, and makes sure at least one valid combination of WP’s exists.</p>
 
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.molecular_crystal.generate_crystal">
-<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=30</em>, <em>max2=30</em>, <em>max3=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.generate_crystal" title="Permalink to this definition">¶</a></dt>
+<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=30</em>, <em>max2=30</em>, <em>max3=30</em>, <em>max4=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.generate_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>The main code to generate a random molecular crystal. If successful,
 stores a pymatgen.core.structure object in self.struct and sets
 self.valid to True. If unsuccessful, sets self.valid to False and
@@ -578,6 +641,7 @@ outputs an error message.</p>
 <li><strong>max1</strong> – the number of attempts for generating a lattice</li>
 <li><strong>max2</strong> – the number of attempts for a given lattice</li>
 <li><strong>max3</strong> – the number of attempts for a given Wyckoff position</li>
+<li><strong>max4</strong> – the number of attempts for changing the molecular orientation</li>
 </ul>
 </td>
 </tr>
@@ -604,6 +668,11 @@ self.group.wyckoffs_organized[j][k]</p>
 <code class="descname">init_common</code><span class="sig-paren">(</span><em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion</em>, <em>orientations</em>, <em>check_atomic_distances</em>, <em>group</em>, <em>lattice</em>, <em>tm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.init_common"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.init_common" title="Permalink to this definition">¶</a></dt>
 <dd><p>init functionality which is shared by 3D, 2D, and 1D crystals</p>
 </dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.molecular_crystal.molecular_crystal.print_all">
+<code class="descname">print_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.print_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.print_all" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="attribute">
 <dt id="pyxtal.molecular_crystal.molecular_crystal.sg">
@@ -638,7 +707,7 @@ By default, the filename is based on the stoichiometry.</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_1D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>area</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_1D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>area=None</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_1D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.molecular_crystal.molecular_crystal" title="pyxtal.molecular_crystal.molecular_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.molecular_crystal.molecular_crystal</span></code></a></p>
 <p>A 1d counterpart to molecular_crystal. Given a Rod group, list of
 molecule objects, molecular stoichiometry, volume factor, and area,
@@ -678,6 +747,8 @@ molecules, or for large inter-molecular distances, this may be
 turned off</li>
 <li><strong>fmt</strong> – Optional value for the input molecule string format. Used only
 when molecule values are strings</li>
+<li><strong>lattice</strong> – an optional Lattice object to use for the unit cell</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate the crystal</li>
 </ul>
 </td>
 </tr>
@@ -713,7 +784,7 @@ with Rod groups).</p>
 
 <dl class="class">
 <dt id="pyxtal.molecular_crystal.molecular_crystal_2D">
-<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>thickness</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyxtal.molecular_crystal.</code><code class="descname">molecular_crystal_2D</code><span class="sig-paren">(</span><em>group</em>, <em>molecules</em>, <em>numMols</em>, <em>volume_factor</em>, <em>allow_inversion=False</em>, <em>orientations=None</em>, <em>check_atomic_distances=True</em>, <em>fmt='xyz'</em>, <em>thickness=None</em>, <em>lattice=None</em>, <em>tm=&lt;pyxtal.crystal.Tol_matrix object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal_2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyxtal.molecular_crystal.molecular_crystal" title="pyxtal.molecular_crystal.molecular_crystal"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxtal.molecular_crystal.molecular_crystal</span></code></a></p>
 <p>A 2d counterpart to molecular_crystal. Given a layer group, list of
 molecule objects, molecular stoichiometry, and
@@ -754,6 +825,8 @@ molecules, or for large inter-molecular distances, this may be
 turned off</li>
 <li><strong>fmt</strong> – Optional value for the input molecule string format. Used only
 when molecule values are strings</li>
+<li><strong>lattice</strong> – an optional Lattice object to use for the unit cell</li>
+<li><strong>tm</strong> – the Tol_matrix object used to generate the crystal</li>
 </ul>
 </td>
 </tr>
@@ -804,7 +877,7 @@ dimension.</p>
 <dd><p>random_sample(size=None)</p>
 <p>Return random floats in the half-open interval [0.0, 1.0).</p>
 <p>Results are from the “continuous uniform” distribution over the
-stated interval.  To sample  multiply
+stated interval.  To sample <span class="math notranslate nohighlight">\(Unif[a, b), b &gt; a\)</span> multiply
 the output of <cite>random_sample</cite> by <cite>(b-a)</cite> and add <cite>a</cite>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">random_sample</span><span class="p">()</span> <span class="o">+</span> <span class="n">a</span>
 </pre></div>
@@ -855,13 +928,6 @@ case a single float is returned).</td>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/pyxtal.molecular_crystal.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
@@ -892,7 +958,7 @@ case a single float is returned).</td>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Qiang Zhu, Scott Fredericks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>
