@@ -25,5 +25,7 @@ Additional Documentation
 .. toctree::
    Installation
    Usage
+   Background
+   Algorithm
    Settings
    :maxdepth: 2
