@@ -1129,8 +1129,8 @@ class molecular_crystal():
                         mol_generators_tmp = []
                         
                         #Add molecules specie by specie
-                        for numMol, mol in zip(self.numMols, self.molecules):
-                            i = self.molecules.index(mol)
+                        for i, numMol in enumerate(self.numMols):
+                            mol = self.molecules[i]
                             numMol_added = 0
 
                             #Now we start to add the specie to the wyckoff position
