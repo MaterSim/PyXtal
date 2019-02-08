@@ -538,7 +538,7 @@ class mol_site():
         """
         Returns: a 2D matrix which is used internally for distance checking.
         """
-        species = self.mol.species * self.multiplicity
+        species = self.mol.species
         #Create tolerance matrix from subset of tm
         tm = self.tol_matrix
         tols = np.zeros((len(species),len(species)))
@@ -583,13 +583,15 @@ class mol_site():
             es_final.append(e*c)
         return np.array(es_final)
 
-    def _get_coords_and_species(self, absolute=False):
+    def _get_coords_and_species(self, absolute=False, add_PBC=False):
         """
         Used to generate coords and species for get_coords_and_species
 
         Args:
             absolute: whether or not to return absolute (Euclidean)
                 coordinates. If false, return relative coordinates instead
+            add_PBC: whether or not to add coordinates in neighboring unit cells, used for
+                distance checking
         
         Returns:
             atomic coords: a numpy array of fractional coordinates for the atoms in the site
@@ -624,9 +626,24 @@ class mol_site():
                 wp_atomic_sites.append(s)
             for c in current_atomic_coords:
                 wp_atomic_coords.append(c)
+
+        if add_PBC is True:
+            #Filter PBC of wp_atomic_coords
+            wp_atomic_coords = filtered_coords(wp_atomic_coords, PBC=self.PBC)
+            #Add PBC copies of coords
+            m = create_matrix(PBC=self.PBC)
+            #Move [0,0,0] PBC vector to first position in array
+            m2 = [[0,0,0]]
+            v0 = np.array([0.,0.,0.])
+            for v in m:
+                if not (v==v0).all():
+                    m2.append(v)
+            new_coords = np.vstack([wp_atomic_coords + v for v in m2])
+            wp_atomic_coords = new_coords
+
         return np.array(wp_atomic_coords), wp_atomic_sites
 
-    def get_coords_and_species(self, absolute=False):
+    def get_coords_and_species(self, absolute=False, add_PBC=False):
         """
         Lazily generates and returns the atomic coordinate and species for the
         Wyckoff position. Plugs the molecule into the provided orientation
@@ -635,6 +652,8 @@ class mol_site():
         Args:
             absolute: whether or not to return absolute (Euclidean)
                 coordinates. If false, return relative coordinates instead
+            add_PBC: whether or not to add coordinates in neighboring unit cells, used for
+                distance checking
         
         Returns:
             coords, species: coords is an np array of 3-vectors. species is
@@ -645,13 +664,13 @@ class mol_site():
             try:
                 return self.absolute_coords, self.species
             except:
-                self.absolute_coords, self.species = self._get_coords_and_species(absolute=absolute)
+                self.absolute_coords, self.species = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
             return self.absolute_coords, self.species
         elif absolute is False:
             try:
                 return self.relative_coords, self.species
             except:
-                self.relative_coords, self.species = self._get_coords_and_species(absolute=absolute)
+                self.relative_coords, self.species = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
             return self.relative_coords, self.species
         else:
             print("Error: parameter absolute must be True or False")
@@ -685,32 +704,37 @@ class mol_site():
             True if the atoms are not too close together, False otherwise
         """
         if atomic is True:
+            m_length = len(self.mol.species)
             #TODO: Use tm instead of tols lists
-            #Check inter-atomic distances
+            #Get coords of WP with PBC
             coords, species = self._get_coords_and_species()
-            #Store the coords and species for a single molecule
-            d = distance_matrix(coords, coords, self.lattice, PBC=self.PBC)
 
-            tols = self.tols_matrix
+            #Get coords of the generating molecule
+            coords_mol = coords[:m_length]
+            #Remove generating molecule's coords from large array
+            coords = coords[m_length:]
 
-            #Find pairs which are closer than the tolerance
-            x = np.where(d<tols)
-            list1 = x[0]
-            list2 = x[1]
-            m_length = len(self.mol)
-            #Check intermolecular distances, ignore intramolecular
-            for i, j in zip(list1, list2):
-                mol_num1 = int(i) // int(m_length)
-                mol_num2 = int(j) // int(m_length)
-                #if abs(i-j) >= m_length:
-                if mol_num1 != mol_num2:
+            #Check periodic images
+            m = create_matrix(PBC=self.PBC)
+            #Remove original coordinates
+            m2 = []
+            v0 = np.array([0.,0.,0.])
+            for v in m:
+                if not (v==v0).all():
+                    m2.append(v)
+            coords_PBC = np.vstack([coords_mol + v for v in m2])
+            d = distance_matrix(coords_mol, coords_PBC, self.lattice, PBC=[0,0,0])
+            tols = np.repeat(self.tols_matrix, len(m2), axis=1)
+            if (d<tols).any():
+                return False
+
+            if self.multiplicity > 1:
+                #Check inter-atomic distances
+                d = distance_matrix(coords_mol, coords, self.lattice, PBC=self.PBC)
+                tols = np.repeat(self.tols_matrix, self.multiplicity-1, axis=1)
+                if (d<tols).any():
                     return False
 
-            for i in range(self.multiplicity):
-                c = coords[i*m_length:(i+1)*m_length]
-                s = species[i*m_length:(i+1)*m_length]
-                if not check_images(c, s, self.lattice, PBC=self.PBC, tm=self.tol_matrix, d_factor=factor):
-                    return False
             return True
 
         elif atomic is False:
