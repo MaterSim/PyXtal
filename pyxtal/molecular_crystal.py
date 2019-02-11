@@ -142,9 +142,52 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
             return True
 
     elif atomic is True:
+        #Get coordinates for both mol_sites
         c1, s1 = ms1.get_coords_and_species()
-        c2, s2 = ms1.get_coords_and_species()
-        return check_distance(c1, c2, s1, s2, ms1.lattice, PBC=ms1.PBC, tm=tm, d_factor=factor)
+        c2, s2 = ms2.get_coords_and_species()
+
+        #Calculate which distance matrix is smaller/faster
+        m_length1 = len(ms1.mol.species)
+        m_length2 = len(ms2.mol.species)
+        wp_length1 = len(c1)
+        wp_length2 = len(c2)
+        size1 = m_length1 * wp_length2
+        size2 = m_length2 * wp_length1
+
+        '''print("---------")
+        print(m_length1)
+        print(m_length2)
+        print(ms1.multiplicity)
+        print(ms2.multiplicity)
+        print(ms1)
+        print(ms2)'''
+
+        #Case 1
+        if size1 <= size2:
+            coords_mol = c1[:m_length1]
+            #Calculate tol matrix for species pairs
+            tols = np.zeros((m_length1,m_length2))
+            for i1, specie1 in enumerate(s1[:m_length1]):
+                for i2, specie2 in enumerate(s2[:m_length2]):
+                    tols[i1][i2] = tm.get_tol(specie1, specie2)
+            tols = np.repeat(tols, ms2.multiplicity, axis=1)
+            d = distance_matrix(coords_mol, c2, ms1.lattice, PBC=ms1.PBC)
+
+        #Case 2
+        elif size1 > size2:
+            coords_mol = c2[:m_length2]
+            #Calculate tol matrix for species pairs
+            tols = np.zeros((m_length2,m_length1))
+            for i1, specie1 in enumerate(s2[:m_length2]):
+                for i2, specie2 in enumerate(s1[:m_length1]):
+                    tols[i1][i2] = tm.get_tol(specie1, specie2)
+            tols = np.repeat(tols, ms1.multiplicity, axis=1)
+            d = distance_matrix(coords_mol, c1, ms1.lattice, PBC=ms1.PBC)
+
+        #Check if distances are smaller than tolerances
+        if (d<tols).any():
+            return False
+        return True
 
 def estimate_volume_molecular(molecules, numMols, factor=2.0, boxes=None):
     """
