@@ -72,10 +72,10 @@ from pyxtal.database.collection import Collection
 from time import time
 
 molecule_collection = Collection('molecules')
-max1 = 30 #Attempts for generating lattices
-max2 = 30 #Attempts for a given lattice
-max3 = 30 #Attempts for a given Wyckoff position
-max4 = 10 #Attempts for a given mol_site (changning orientation)
+max1 = 40 #Attempts for generating lattices
+max2 = 10 #Attempts for a given lattice
+max3 = 10 #Attempts for a given Wyckoff position
+max4 = 3 #Attempts for a given mol_site (changning orientation)
 
 tol_m = 1.0 #minimum distance between atoms for distance check
 
@@ -1152,16 +1152,15 @@ class molecular_crystal():
             return
         else:
             if degrees == 0:
-                max1 = 10
-                max2 = 10
-                max3 = 10
-                max4 = 5
+                max1 = 20
+                max2 = 3
+                max3 = 1
+                max4 = 1
             #Calculate a minimum vector length for generating a lattice
-            #minvector = max(radius*2 for radius in self.radii)
             all_lengths = []
             for box in self.boxes:
                 all_lengths.append(box.minl)
-            minvector = max(all_lengths)
+            minvector = max(all_lengths) * 1.2 #Require slightly larger min vector for lattices
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
                 #1, Generate a lattice

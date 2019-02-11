@@ -85,9 +85,9 @@ from pyxtal.symmetry import *
 #Define variables
 #------------------------------
 tol_m = 1.0 #seperation tolerance in Angstroms
-max1 = 30 #Attempts for generating lattices
-max2 = 30 #Attempts for a given lattice
-max3 = 30 #Attempts for a given Wyckoff position
+max1 = 40 #Attempts for generating lattices
+max2 = 10 #Attempts for a given lattice
+max3 = 20 #Attempts for a given Wyckoff position
 minvec = 2.0 #minimum vector length
 #Matrix for a Euclidean metric
 Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
