@@ -1163,11 +1163,15 @@ class molecular_crystal():
                 all_lengths.append(box.minl)
             minvector = max(all_lengths)
             for cycle1 in range(max1):
+                self.cycle1 = cycle1
                 #1, Generate a lattice
                 self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
                 self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
-                cell_matrix = self.lattice.matrix
+                try:
+                    cell_matrix = self.lattice.get_matrix
+                except:
+                    continue
                 cell_para = self.lattice.get_para()
 
                 if cell_para is None:
@@ -1189,6 +1193,7 @@ class molecular_crystal():
                     good_structure = False
 
                     for cycle2 in range(max2):
+                        self.cycle2 = cycle2
                         molecular_coordinates_tmp = deepcopy(molecular_coordinates_total)
                         molecular_sites_tmp = deepcopy(molecular_sites_total)
                         coordinates_tmp = deepcopy(coordinates_total)
@@ -1204,6 +1209,8 @@ class molecular_crystal():
 
                             #Now we start to add the specie to the wyckoff position
                             for cycle3 in range(max3):
+                                self.cycle3 = cycle3
+                                self.cycle4 = 0
                                 self.numattempts += 1
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                                 #NOTE: The molecular version return wyckoff indices, not ops
@@ -1246,6 +1253,7 @@ class molecular_crystal():
                                             #If centers are farther apart than min box length, allow multiple orientation attempts
                                             passed_ori = False
                                             for cycle4 in range(max4):
+                                                self.cycle4 = cycle4
                                                 ori = choose(self.valid_orientations[i][j][k]).random_orientation()
                                                 ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
                                                 if ms0.check_distances(atomic=self.check_atomic_distances):

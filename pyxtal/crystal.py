@@ -2017,11 +2017,15 @@ class random_crystal():
             #Calculate a minimum vector length for generating a lattice
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
+                self.cycle1 = cycle1
                 #1, Generate a lattice
                 self.volume = estimate_volume(self.numIons, self.species, self.factor)
                 self.lattice.volume = self.volume
-                self.lattice.reset_matrix()           
-                cell_matrix = self.lattice.get_matrix()
+                self.lattice.reset_matrix()
+                try:
+                    cell_matrix = self.lattice.get_matrix()
+                except:
+                    continue
                 #Check that the correct volume was generated
                 if self.lattice.random is True:
                     if self.dim != 0 and abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
@@ -2035,6 +2039,7 @@ class random_crystal():
                 good_structure = False
 
                 for cycle2 in range(max2):
+                    self.cycle2 = cycle2
                     coordinates_tmp = deepcopy(coordinates_total)
                     sites_tmp = deepcopy(sites_total)
                     wyckoff_sites_tmp = deepcopy(wyckoff_sites_total)
@@ -2047,6 +2052,7 @@ class random_crystal():
                         #Now we start to add the specie to the wyckoff position
                         cycle3 = 0
                         while cycle3 < max3:
+                            self.cycle3 = cycle3
                             #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                             ops = choose_wyckoff(self.group, numIon-numIon_added) 
                             if ops is not False:
