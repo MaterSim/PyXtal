@@ -2018,6 +2018,8 @@ class random_crystal():
             minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 #1, Generate a lattice
+                self.volume = estimate_volume(self.numIons, self.species, self.factor)
+                self.lattice.volume = self.volume
                 self.lattice.reset_matrix()           
                 cell_matrix = self.lattice.get_matrix()
                 #Check that the correct volume was generated

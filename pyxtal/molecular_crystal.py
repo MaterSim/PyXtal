@@ -1164,6 +1164,8 @@ class molecular_crystal():
             minvector = max(all_lengths)
             for cycle1 in range(max1):
                 #1, Generate a lattice
+                self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
+                self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
                 cell_matrix = self.lattice.matrix
                 cell_para = self.lattice.get_para()
