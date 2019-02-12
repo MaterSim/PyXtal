@@ -305,7 +305,7 @@ def get_box(mol):
         r = Element(p.species_string).vdw_radius
         if x-r < minx: minx = x-r
         if y-r < miny: miny = y-r
-        if z-r < minz: minx = z-r
+        if z-r < minz: minz = z-r
         if x+r > maxx: maxx = x+r
         if y+r > maxy: maxy = y+r
         if z+r > maxz: maxz = z+r
