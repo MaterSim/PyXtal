@@ -1593,14 +1593,18 @@ class Lattice():
 
     def reset_matrix(self):
         if self.random is True:
-            self.matrix = self.generate_matrix()
-            [a, b, c, alpha, beta, gamma] = matrix2para(self.matrix)
-            self.a = a
-            self.b = b
-            self.c = c
-            self.alpha = alpha
-            self.beta = beta
-            self.gamma = gamma
+            for i in range(3):
+                m = self.generate_matrix()
+                if m is not None:
+                    self.matrix = m
+                    [a, b, c, alpha, beta, gamma] = matrix2para(self.matrix)
+                    self.a = a
+                    self.b = b
+                    self.c = c
+                    self.alpha = alpha
+                    self.beta = beta
+                    self.gamma = gamma
+                    break
 
     def generate_point(self):
         point = np.random.random(3)
