@@ -13,13 +13,13 @@ for mol in mols:
     for i in range(10):
         run = True
         while run:
-            sg = 19 #randint(4, 191)
+            sg = randint(4, 191)
             start = time()
-            rand_crystal = molecular_crystal(sg, [mol], [4], 1.6)
+            rand_crystal = molecular_crystal(sg, [mol], [4], 1.0)
             if rand_crystal.valid:
                 run = False
-                print('Mol: {0:10s}  SG: {1:d} Time: {2:.3f} seconds, N_attempts: {3:4d}'.format(
-                    mol, sg, time()-start, rand_crystal.numattempts))
+                print('Mol:{0:10s}  SG:{1:3d} Time:{2:4.2f} seconds, N_attempts:{3:4d} Vol: {4:6.2f}'.format(
+                    mol, sg, time()-start, rand_crystal.numattempts, rand_crystal.volume))
                 content = str(CifWriter(rand_crystal.struct, symprec=0.1))
                 with open(filename, 'a+') as f:
                     f.writelines(content)
