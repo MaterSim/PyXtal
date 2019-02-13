@@ -7,7 +7,9 @@ from pymatgen import Molecule
 from pyxtal.database.collection import Collection
 from time import time
 import numpy as np
+import matplotlib.pyplot as plt
 import warnings
+plt.style.use("bmh")
 warnings.filterwarnings("ignore")
 
 """
@@ -105,7 +107,7 @@ class LJ_prediction():
                 run = False
         return cluster.coordinates
  
-    def predict(self, dim=3, maxN=100, ncpu=2):
+    def predict(self, dim=3, maxN=100, ncpu=2, plot=True):
 
         print('\nPerforming random search at {0:d}D space\n'.format(dim))
         cycle = range(maxN)
@@ -129,6 +131,7 @@ class LJ_prediction():
                 N_success +=1
         print('\nHit the ground state {0:4d} times out of {1:4d} attempts\n'.\
                 format(N_success, maxN))
+        return res
 
     def relaxation(self, dim, ind):
         pos = self.generate_cluster()
@@ -168,15 +171,31 @@ class LJ_prediction():
         elif ind%10 == 0:
             print('ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f}'.\
                    format(ind, pg1, pg2, energy))
- 
         return res
 
 if __name__ == "__main__":
 
     lj_run = LJ_prediction(13)
+    eng_min = lj_run.reference['energy']
     t0 = time()
-    lj_run.predict(dim=4, maxN=10, ncpu=2)
+    results1 = lj_run.predict(dim=3, maxN=100, ncpu=2)
     print('time: {0:6.2f} seconds'.format(time()-t0))
-    lj_run.predict(dim=4, maxN=10, ncpu=2)
+    results2 = lj_run.predict(dim=3, maxN=100, ncpu=2)
     print('time: {0:6.2f} seconds'.format(time()-t0))
     #lj_run.predict(4, 10)
+    eng1 = []
+    eng2 = []
+    for dct in results1:
+        eng1.append(dct['energy']) 
+    for dct in results2:
+        eng2.append(dct['energy']) 
+    eng1 = np.array(eng1)
+    eng2 = np.array(eng2)
+    bins = np.linspace(eng_min-0.1, eng_min+10, 100)
+    plt.hist(eng1, bins, alpha=0.5, label='run1')
+    plt.hist(eng2, bins, alpha=0.5, label='run2')
+    plt.xlabel('Energy (eV)')
+    plt.ylabel('Counts')
+    plt.legend(loc=1)
+    plt.savefig('dist.png')
+    plt.close()
