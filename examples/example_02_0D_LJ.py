@@ -3,31 +3,19 @@ from random import randint
 from time import time
 from scipy.optimize import minimize
 from scipy.spatial.distance import cdist
+from pyxtal.molecule import PointGroupAnalyzer
+from pymatgen import Molecule
+from pyxtal.database.collection import Collection
 import numpy as np
-import requests
+import warnings
+warnings.filterwarnings("ignore")
+
+
 """
 This is a script to 
 1, generate random clusters
 2, perform optimization
 """
-def get_pos_from_url(N=7, address='http://doye.chem.ox.ac.uk/jon/structures/LJ/points/'):
-    url_address = address + str(N)
-    data_str = requests.get(url_address).text
-    return parse_url_text(data_str)
-
-def parse_url_text(data_str):
-    x_array = []
-    text = data_str.split('\n')
-    for line in text:
-        [x_array.append(float(i)) for i in line.split()]
-    return np.array(x_array)
-
-def reference(N=7):
-    pos = get_pos_from_url(N)
-    energy = LJ(pos)
-    pos = np.reshape(pos, (N, 3))
-    return energy, pos
-
 def LJ(pos):
     """
     Calculate the total energy
@@ -53,12 +41,19 @@ def single_optimize(pos):
     energy = res.fun
     return energy, pos
 
+def parse_symmetry(pos):
+    mol = Molecule(['C']*len(pos), pos)
+    try:
+        symbol = PointGroupAnalyzer(mol).sch_symbol
+    except:
+        symbol = 'N/A'
+    return symbol
 
 N_attempts = 100
-numIons = 13 
+numIons = 12
 factor = 1.1
-ref, pos = reference(numIons)
-print('The reference energy for LJ {0:3d} is {1:12.3f}'.format(numIons, ref))
+ref = Collection('clusters')[str(numIons)]
+print('The reference energy for LJ {0:3d} is {1:12.3f}, pointgroup: {2:4s}'.format(numIons, ref['energy'], ref['pointgroup']))
 
 N_success = 0
 t0 = time()
@@ -70,11 +65,14 @@ for i in range(N_attempts):
         if cluster.valid:
             run = False
 
+    pg1 = parse_symmetry(cluster.coordinates)
     pos = cluster.coordinates.flatten()
     [energy, pos] = single_optimize(pos)
-    print('PG requested: {0:3d} Energy: {1:12.3f} Time: {2:6.1f} mins'.\
-            format(pg, energy, (time()- t0)/60.0))
-    if abs(energy-ref) <1e-3:
+    pg2 = parse_symmetry(pos)
+    if abs(energy-ref['energy']) <1e-3:
         N_success += 1
+        print('PG requested: {0:4s} relaxed: {1:4s} Energy: {2:12.3f} Time: {3:6.1f} mins ++++++'.format(pg1, pg2, energy, (time()- t0)/60.0))
+    else:
+        print('PG requested: {0:4s} relaxed: {1:4s} Energy: {2:12.3f} Time: {3:6.1f} mins'.format(pg1, pg2, energy, (time()- t0)/60.0))
 
 print('Hit the ground state {0:4d} times out of {1:4d} attempts'.format(N_success, N_attempts))

@@ -55,11 +55,19 @@ class Collection:
             yield dct['name']
 
     def _read(self, name):
-        """read the data by name and convert it to pymatgen format"""
-
+        if self.name == 'molecules':
+            """
+            read the data by name and convert it to pymatgen format
+            """
+            for dct in self.content:
+                if dct['name'].lower() == name.lower():
+                    pos = dct['xyz']
+                    symbols = dct['elements']
+                    self._data = Molecule(symbols, pos)
+        elif self.name == 'clusters':
+            for dct in self.content:
+                if dct['name'] == int(name):
+                    self._data = dct
+    def show_names(self):
         for dct in self.content:
-            if dct['name'].lower() == name.lower():
-                pos = dct['xyz']
-                symbols = dct['elements']
-                self._data = Molecule(symbols, pos)
-                
+            print(dct['name'])
