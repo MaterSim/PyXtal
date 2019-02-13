@@ -1,10 +1,8 @@
 from ase.io import read
 from ase import Atoms
 from ase.calculators.vasp import Vasp
-from pyxtal.interface.util import symmetrize_cell, good_lattice
+from pyxtal.interface.util import symmetrize_cell, good_lattice, pymatgen2ase
 import os, time
-import warnings
-warnings.filterwarnings("ignore")
 
 """
 A script to perform multistages vasp calculation
@@ -26,7 +24,7 @@ def set_vasp(level=0, pstress=0.0000, setup=None):
                 'kspacing': 0.4,
                 'isif': 4,
                 'ediff': 1e-2,
-                'nsw': 50,
+                'nsw': 10,
                 'potim': 0.02,
                 }
     elif level==1:
@@ -35,7 +33,7 @@ def set_vasp(level=0, pstress=0.0000, setup=None):
                 'kspacing': 0.3,
                 'isif': 3,
                 'ediff': 1e-3,
-                'nsw': 75,
+                'nsw': 25,
                 'potim': 0.05,
                 }
     elif level==2:
@@ -43,7 +41,7 @@ def set_vasp(level=0, pstress=0.0000, setup=None):
                 'kspacing': 0.2,
                 'isif': 3,
                 'ediff': 1e-3,
-                'nsw': 75,
+                'nsw': 50,
                 'potim': 0.1,
                 }
     elif level==3:
@@ -82,13 +80,15 @@ def single_optimize(struc, level, pstress, mode, setup):
     """single optmization"""
     struc = symmetrize_cell(struc, mode)
     struc.set_calculator(set_vasp(level, pstress, setup))
-    time, ncore = read_OUTCAR()
     energy = struc.get_potential_energy()
+    print(energy)
+    time, ncore = read_OUTCAR()
     struc = read('CONTCAR',format='vasp')
     return struc, energy, time
 
-def optimize(struc, dir0, pstress=0, modes=['C','C','C','P','P'], setup=None, delete=False):
+def optimize(struc, dir0, modes=['C','C','C','P','P'], pstress=0, setup=None):
     """multi optimization"""
+    struc = pymatgen2ase(struc)
     os.mkdir(dir0)
     os.chdir(dir0)
     time0 = []
@@ -101,9 +101,6 @@ def optimize(struc, dir0, pstress=0, modes=['C','C','C','P','P'], setup=None, de
         energy0.append(energy)
         if not good_lattice(struc):
             break
-    if delete:
-        shutil.rmtree(path)
-
     return struc0, energy0, time0
 
 
