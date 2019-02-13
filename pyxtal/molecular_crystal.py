@@ -553,7 +553,7 @@ class mol_site():
     def __init__(self, mol, position, orientation, wyckoff_position, lattice, ellipsoid=None, tm=Tol_matrix(prototype="molecular")):
         self.mol = mol
         """A Pymatgen molecule object"""
-        self.position = position
+        self.position = wyckoff_position[0].operate(position)
         """Relative coordinates of the molecule's center within the unit cell"""
         self.orientation = orientation
         """The orientation object of the Mol in the first point in the WP"""
@@ -703,23 +703,20 @@ class mol_site():
                 a list of atomic species names, for example
                 ['H', 'H', 'O', 'H', 'H', 'O']
         """
-        if absolute is True:
-            try:
-                return self.absolute_coords, self.species
-            except:
-                self.absolute_coords, self.species = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
-            return self.absolute_coords, self.species
-        elif absolute is False:
+        if absolute is False:
             try:
                 return self.relative_coords, self.species
             except:
                 self.relative_coords, self.species = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
             return self.relative_coords, self.species
         else:
-            print("Error: parameter absolute must be True or False")
-            return
+            try:
+                return self.absolute_coords, self.species
+            except:
+                self.absolute_coords, self.species = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
+            return self.absolute_coords, self.species
 
-    def get_centers(self):
+    def get_centers(self, absolute=False):
         """
         Returns the fractional coordinates for the center of mass for each molecule in
         the Wyckoff position
@@ -729,7 +726,22 @@ class mol_site():
         """
         centers0 = apply_ops(self.position, self.wp.generators)
         centers1 = filtered_coords(centers0, self.PBC)
-        return np.array(centers1)
+        if absolute is False:
+            return centers1
+        else:
+            return np.dot(centers1, self.lattice)
+
+    def get_radius(self):
+        try:
+            return self.radius
+        except:
+            r_max = 0
+            for site in self.mol:
+                radius = math.sqrt(site.x**2 + site.y**2 + site.z**2) + get_tol(site.species,site.species)*0.5
+                if radius > r_max:
+                    r_max = radius
+            self.radius = r_max
+            return self.radius
 
     def check_distances(self, factor=1.0, atomic=True):
         """
@@ -779,6 +791,17 @@ class mol_site():
                     return False
 
             return True
+
+            #New method - only checks some atoms/molecules
+            #Generate centers of all molecules
+            centers = self.get_centers(absolute=True)
+            #Add PBC vectors
+            m = create_matrix(PBC=self.PBC)
+            ml = np.dot(m, self.lattice)
+            all_centers = np.repeat(cl, len(ml), axis=0) + np.tile(ml,(len(cl),1))
+            #Calculate distances between centers
+            distances = np.linalg.norm(all_centers, axis=-1)
+            
 
         elif atomic is False:
             #Check molecular ellipsoid overlap
