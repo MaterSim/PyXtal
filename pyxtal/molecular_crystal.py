@@ -1175,9 +1175,9 @@ class molecular_crystal():
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is False:
-            self.struct = Msg1
+            self.struct = self.Msg1
             self.valid = False
-            return Msg1
+            return self.Msg1
         else:
             if degrees == 0:
                 max1 = 20
