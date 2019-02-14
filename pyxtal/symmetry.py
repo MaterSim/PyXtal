@@ -205,14 +205,31 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
     Returns:
         a 2x2 np array of scalar distances
     """
-    l1 = filtered_coords(points1, PBC=PBC)
-    l2 = filtered_coords(points2, PBC=PBC)
-    l2 = np.dot(l2, lattice)
-    matrix = create_matrix(PBC=PBC)
-    m1 = np.array([(l1 + v) for v in matrix])
-    m1 = np.dot(m1, lattice)
-    all_distances = np.array([cdist(l, l2, metric) for l in m1])
-    return np.apply_along_axis(np.min, 0, all_distances)
+    if lattice is not None:
+        if PBC != [0,0,0]:
+            l1 = filtered_coords(points1, PBC=PBC)
+            l2 = filtered_coords(points2, PBC=PBC)
+            l2 = np.dot(l2, lattice)
+            matrix = create_matrix(PBC=PBC)
+            m1 = np.array([(l1 + v) for v in matrix])
+            m1 = np.dot(m1, lattice)
+            all_distances = np.array([cdist(l, l2, metric) for l in m1])
+            return np.apply_along_axis(np.min, 0, all_distances)
+
+        else:
+            l1 = np.dot(points1, lattice)
+            l2 = np.dot(points2, lattice)
+            return cdist(l1, l2, metric)
+    elif lattice is None:
+        if PBC != [0,0,0]:
+            l1 = filtered_coords(points1, PBC=PBC)
+            l2 = filtered_coords(points2, PBC=PBC)
+            matrix = create_matrix(PBC=PBC)
+            m1 = np.array([(l1 + v) for v in matrix])
+            all_distances = np.array([cdist(l, l2, metric) for l in m1])
+            return np.apply_along_axis(np.min, 0, all_distances)
+        else:
+            return cdist(points1, points2, metric)
 
 def distance_matrix_euclidean(points1, points2, PBC=[1,1,1], squared=False):
     """
