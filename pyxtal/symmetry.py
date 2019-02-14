@@ -53,7 +53,7 @@ def list_point_groups():
     """
     Prints out the numbers and symbols of the crystallographic point groups 
     """
-    print("---Point group numbers and symbols---")
+    print("-- Point group numbers and symbols --")
     for i, sym in enumerate(pglist):
         print("  " + str(i+1) + ": " + sym)
 
