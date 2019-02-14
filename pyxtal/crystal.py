@@ -1525,10 +1525,14 @@ class Lattice():
         self.kwargs = {}
         self.random = True
         #Set optional values
+        self.allow_volume_reset = True
         for key, value in kwargs.items():
             if key in ["area", "thickness", "unique_axis", "random", "min_l", "mid_l", "max_l"]:
                 setattr(self, key, value)
                 self.kwargs[key] = value
+                if key == "allow_volume_reset":
+                    if value == False:
+                        self.allow_volume_reset = False
         self.reset_matrix()
         
     def generate_para(self):
@@ -1605,6 +1609,10 @@ class Lattice():
                     self.beta = beta
                     self.gamma = gamma
                     break
+
+    def set_volume(volume):
+        if self.allow_volume_reset is True:
+            self.volume = volume
 
     def generate_point(self):
         point = np.random.random(3)
@@ -1695,6 +1703,7 @@ class Lattice():
         l.ltype = ltype
         l.volume = volume
         l.random = False
+        self.allow_volume_reset = False
         return l
 
     def from_matrix(matrix, ltype="triclinic", PBC=[1,1,1], **kwargs):
@@ -1753,6 +1762,7 @@ class Lattice():
         l.ltype = ltype
         l.volume = volume
         l.random = False
+        self.allow_volume_reset = False
         return l
 
     def __str__(self):
@@ -2023,8 +2033,9 @@ class random_crystal():
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
                 #1, Generate a lattice
-                self.volume = estimate_volume(self.numIons, self.species, self.factor)
-                self.lattice.volume = self.volume
+                if self.lattice.allow_volume_reset is True:
+                    self.volume = estimate_volume(self.numIons, self.species, self.factor)
+                    self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
                 try:
                     cell_matrix = self.lattice.get_matrix()

@@ -792,17 +792,18 @@ class mol_site():
 
             return True
 
-            #New method - only checks some atoms/molecules
+
+            """New method - only checks some atoms/molecules"""
             #Generate centers of all molecules
             centers = self.get_centers(absolute=True)
             #Add PBC vectors
             m = create_matrix(PBC=self.PBC)
             ml = np.dot(m, self.lattice)
-            all_centers = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - self.position
+            vectors = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - self.position
             #Find the index of the (0,0,0) vector
             mid_index = len(ml) // 2
             #Calculate distances between centers
-            distances = np.linalg.norm(all_centers, axis=-1)
+            distances = np.linalg.norm(vectors, axis=-1)
             #Find which molecules need to be checked
             indices_mol = np.where(distances < self.get_radius()*2)[0]
             #Get index of Wyckoff position and PBC vector
@@ -814,6 +815,7 @@ class mol_site():
                 if not (i_wp == 0 and i_pbc == mid_index):
                     indices_wp.append(i_wp)
                     indices_pbc.append(i_pbc)
+            
             
 
         elif atomic is False:
@@ -1200,8 +1202,9 @@ class molecular_crystal():
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
                 #1, Generate a lattice
-                self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
-                self.lattice.volume = self.volume
+                if self.lattice.allow_volume_reset is True:
+                    self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
+                    self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
                 try:
                     cell_matrix = self.lattice.get_matrix
