@@ -45,6 +45,12 @@ pglist = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
     'C3i','D3','C3v','D3d','C6','C3h','C6h','D6',
     'C6v','D3h','D6h','T','Th','O','Td','Oh']
 
+pgdict = {}
+"""Dict of crystallographic point group symbols and their corresponding numbers
+(the number for initializing a Group object)"""
+for i, symbol in enumerate(pglist):
+    pgdict[i+1] = symbol
+
 #TODO: Add space, layer, and Rod group symbol lists
 
 #Define functions
@@ -213,6 +219,10 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
     Returns:
         a 2x2 np array of scalar distances
     """
+    if lattice is not None:
+        if (np.array(lattice) == Euclidean_lattice).all():
+            lattice = None
+
     if lattice is not None:
         if PBC != [0,0,0]:
             l1 = filtered_coords(points1, PBC=PBC)
