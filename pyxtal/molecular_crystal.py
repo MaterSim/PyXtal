@@ -783,20 +783,42 @@ class mol_site():
             return True
 
 
+
             """New method - only checks some atoms/molecules"""
-            #Generate centers of all molecules
-            centers = self.get_centers(absolute=True)
-            #Add PBC vectors
+            coords, species = self._get_coords_and_species(absolute=True)
+            coords_mol = coords[:m_length]
+            #Store length of molecule
+            m_length = len(self.mol)
+            #Create PBC vectors
             m = create_matrix(PBC=self.PBC)
             ml = np.dot(m, self.lattice)
-            vectors = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - self.position
-            #Find the index of the (0,0,0) vector
+            #Store the index of the (0,0,0) vector within ml
             mid_index = len(ml) // 2
+
+            if self.multiplicity == 1:
+                #Only check periodic images
+                #Remove original coordinates
+                m2 = []
+                v0 = np.array([0.,0.,0.])
+                for v in ml:
+                    if not (v==v0).all():
+                        m2.append(v)
+                coords_PBC = np.vstack([coords_mol + v for v in m2])
+                d = distance_matrix(coords_mol, coords_PBC, None, PBC=[0,0,0])
+                tols = np.repeat(self.tols_matrix, len(m2), axis=1)
+                if (d<tols).any():
+                    return False
+                else:
+                    return True
+
+            #Generate centers of all molecules
+            centers = self.get_centers(absolute=True)
+            vectors = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - self.position
             #Calculate distances between centers
             distances = np.linalg.norm(vectors, axis=-1)
             #Find which molecules need to be checked
             indices_mol = np.where(distances < self.get_radius()*2)[0]
-            #Get index of Wyckoff position and PBC vector
+            #Get indices of Wyckoff positions and PBC vectors
             indices_wp = []
             indices_pbc = []
             for index in indices_mol:
@@ -805,8 +827,24 @@ class mol_site():
                 if not (i_wp == 0 and i_pbc == mid_index):
                     indices_wp.append(i_wp)
                     indices_pbc.append(i_pbc)
+            #Get atomic positions of molecules with small separation vectors
             
+            if m_length <= max_fast_mol_size:
+                #Check all atomic pairs
+                for index_wp, index_pbc in zip(indices_wp, indices_pbc):
+                    pass
             
+            elif m_length > max_fast_mol_size:
+                #Only check certain atomic pairs
+                atom_positions = coords_mol - centers[0]
+                #Dot separation vectors with atomic positions
+                repeated_vectors = np.repeat()
+
+            #To get dot product of diagonal elements between two vector arrays:
+            #np.einsum('...j,...j', vectors1, vectors2)
+            #vectors1 must be same dimension as vectors2
+            
+
 
         elif atomic is False:
             #Check molecular ellipsoid overlap
