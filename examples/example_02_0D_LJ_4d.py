@@ -1,7 +1,8 @@
 from pyxtal.crystal import random_cluster
-from random import randint
+from optparse import OptionParser
+from random import randint, choice
 from scipy.optimize import minimize
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import pdist
 from pyxtal.molecule import PointGroupAnalyzer
 from pymatgen import Molecule
 from pyxtal.database.collection import Collection
@@ -11,8 +12,6 @@ import matplotlib.pyplot as plt
 import warnings
 plt.style.use("bmh")
 warnings.filterwarnings("ignore")
-
-pyxtal_verbosity = 0
 
 """
 This is a script to 
@@ -31,13 +30,11 @@ def LJ(pos, dim, mu=0.1):
     N_atom = int(len(pos)/dim)
     pos = np.reshape(pos, (N_atom, dim))
     
-    distance = cdist(pos, pos, 'euclidean')
-    ids = np.triu_indices(N_atom)
-    distance = distance[ids]
-    distance = distance[distance > 0]
+    distance = pdist(pos) 
     r6 = np.power(distance, 6)
     r12 = np.multiply(r6, r6)
     Eng = np.sum(4*(1/r12 - 1/r6))
+
     if dim > 3:
         pos0 = pos
         norm = 0
@@ -99,17 +96,18 @@ class LJ_prediction():
         print('\nReference for LJ {0:3d} is {1:12.3f} eV, PG: {2:4s}'.\
                 format(numIons, ref['energy'], ref['pointgroup']))
         self.reference = ref
+        self.time0 = time()
 
-    def generate_cluster(self):
+    def generate_cluster(self, pgs = range(2, 33)):
         run = True
         while run:
-            pg = randint(2, 32)
+            pg = choice(pgs)
             cluster = random_cluster(pg, ['Mo'], [self.numIons], 1.0)
             if cluster.valid:
                 run = False
         return cluster.coordinates
  
-    def predict(self, dim=3, maxN=100, ncpu=2, plot=True):
+    def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33)):
 
         print('\nPerforming random search at {0:d}D space\n'.format(dim))
         cycle = range(maxN)
@@ -118,14 +116,14 @@ class LJ_prediction():
             from functools import partial
 
             with Pool(ncpu) as p:
-                func = partial(self.relaxation, dim)
+                func = partial(self.relaxation, dim, pgs)
                 res = p.map(func, cycle)
                 p.close()
                 p.join()
         else:
             res=[]
             for i in cycle:
-                res.append(self.relaxation(dim, i))
+                res.append(self.relaxation(dim, pgs, i))
         
         N_success = 0
         for dct in res:
@@ -135,8 +133,8 @@ class LJ_prediction():
                 format(N_success, maxN))
         return res
 
-    def relaxation(self, dim, ind):
-        pos = self.generate_cluster()
+    def relaxation(self, dim, pgs, ind):
+        pos = self.generate_cluster(pgs)
         pg1 = parse_symmetry(pos)
         if dim == 3:
             [energy, pos] = single_optimize(pos, 3)
@@ -168,36 +166,59 @@ class LJ_prediction():
                'id': ind,
                }
         if ground:
-            print('ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f} ++++++'.\
-                   format(ind, pg1, pg2, energy))
+            print('ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f} Time: {4:6.1f} ++++++'.\
+                   format(ind, pg1, pg2, energy, (time()-self.time0)/60))
         elif ind%10 == 0:
-            print('ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f}'.\
-                   format(ind, pg1, pg2, energy))
+            print('ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f} Time: {4:6.1f} '.\
+                   format(ind, pg1, pg2, energy, (time()-self.time0)/60))
         return res
 
 if __name__ == "__main__":
+    #-------------------------------- Options -------------------------
+    parser = OptionParser()
+    parser.add_option("-d", "--dimension", dest="dim", metavar='dim', default=3, type=int,
+            help="dimension, 3 or higher")
+    parser.add_option("-n", "--numIons", dest="numIons", default=16, type=int,
+            help="desired numbers of atoms: 16")
+    parser.add_option("-m", "--max", dest="max", default=100, type=int,
+            help="maximum number of attempts")
+    parser.add_option("-p", "--proc", dest="proc", default=1, type=int,
+            help="maximum number of attempts")
 
-    lj_run = LJ_prediction(13)
+    (options, args) = parser.parse_args()
+
+    N = options.numIons #38
+    maxN = options.max #1000
+    dim = options.dim #4
+    ncpu = options.proc
+
+    lj_run = LJ_prediction(N)
     eng_min = lj_run.reference['energy']
     t0 = time()
-    results1 = lj_run.predict(dim=3, maxN=100, ncpu=2)
+    results1 = lj_run.predict(dim=dim, maxN=maxN, ncpu=ncpu, pgs=[1])
     print('time: {0:6.2f} seconds'.format(time()-t0))
-    results2 = lj_run.predict(dim=3, maxN=100, ncpu=2)
+    results2 = lj_run.predict(dim=dim, maxN=maxN, ncpu=ncpu, pgs=range(2, 33))
     print('time: {0:6.2f} seconds'.format(time()-t0))
-    #lj_run.predict(4, 10)
     eng1 = []
     eng2 = []
+    ground1 = 0
+    ground2 = 0
     for dct in results1:
+        if dct['ground']:
+            ground1 += 1
         eng1.append(dct['energy']) 
     for dct in results2:
+        if dct['ground']:
+            ground2 += 1
         eng2.append(dct['energy']) 
     eng1 = np.array(eng1)
     eng2 = np.array(eng2)
-    bins = np.linspace(eng_min-0.1, eng_min+10, 100)
-    plt.hist(eng1, bins, alpha=0.5, label='run1')
-    plt.hist(eng2, bins, alpha=0.5, label='run2')
+    bins = np.linspace(eng_min-0.1, eng_min+20, 100)
+    plt.hist(eng1, bins, alpha=0.5, label='no-sym: ' + str(ground1) + '/' + str(len(eng1)))
+    plt.hist(eng2, bins, alpha=0.5, label='sym: ' + str(ground2) + '/' + str(len(eng2)))
     plt.xlabel('Energy (eV)')
     plt.ylabel('Counts')
     plt.legend(loc=1)
-    plt.savefig('dist.png')
+    plt.title('LJ cluster: ' + str(N) + ' Ground state: ' + str(eng_min))
+    plt.savefig(str(N)+'-'+str(maxN)+'-'+str(dim)+'.png')
     plt.close()
