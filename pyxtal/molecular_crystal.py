@@ -737,7 +737,7 @@ class mol_site():
         except:
             r_max = 0
             for site in self.mol:
-                radius = math.sqrt(site.x**2 + site.y**2 + site.z**2) + get_tol(site.species,site.species)*0.5
+                radius = math.sqrt(site.x**2 + site.y**2 + site.z**2) + get_tol(site.specie,site.specie)*0.5
                 if radius > r_max:
                     r_max = radius
             self.radius = r_max
@@ -798,9 +798,22 @@ class mol_site():
             #Add PBC vectors
             m = create_matrix(PBC=self.PBC)
             ml = np.dot(m, self.lattice)
-            all_centers = np.repeat(cl, len(ml), axis=0) + np.tile(ml,(len(cl),1))
+            all_centers = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - self.position
+            #Find the index of the (0,0,0) vector
+            mid_index = len(ml) // 2
             #Calculate distances between centers
             distances = np.linalg.norm(all_centers, axis=-1)
+            #Find which molecules need to be checked
+            indices_mol = np.where(distances < self.get_radius()*2)[0]
+            #Get index of Wyckoff position and PBC vector
+            indices_wp = []
+            indices_pbc = []
+            for index in indices_mol:
+                i_wp, i_pbc = divmod(index, len(ml))
+                #Omit original center molecule
+                if not (i_wp == 0 and i_pbc == mid_index):
+                    indices_wp.append(i_wp)
+                    indices_pbc.append(i_pbc)
             
 
         elif atomic is False:
