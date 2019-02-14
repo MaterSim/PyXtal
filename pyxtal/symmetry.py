@@ -49,6 +49,14 @@ pglist = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
 
 #Define functions
 #------------------------------
+def list_point_groups():
+    """
+    Prints out the numbers and symbols of the crystallographic point groups 
+    """
+    print("---Point group numbers and symbols---")
+    for i, sym in enumerate(pglist):
+        print("  " + str(i+1) + ": " + sym)
+
 def symmetry_element_from_axis(axis):
     """
     Given an axis, returns a SymmOp representing a symmetry element on the axis.
@@ -1699,6 +1707,8 @@ class Group():
         group: the group symbol or international number
         dim: the periodic dimension of the group
     """
+            
+
     def __str__(self):
         try:
             return self.string
