@@ -12,6 +12,8 @@ import warnings
 plt.style.use("bmh")
 warnings.filterwarnings("ignore")
 
+pyxtal_verbosity = 0
+
 """
 This is a script to 
 1, generate random clusters

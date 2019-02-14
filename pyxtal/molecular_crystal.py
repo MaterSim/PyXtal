@@ -64,10 +64,8 @@ command-line usage of the module:
         cross-sectional area. If set to None, chooses a value automatically.
         Defaults to None  
 """
-from pyxtal.symmetry import *
 from pyxtal.crystal import *
 from pyxtal.molecule import *
-from pyxtal.operations import *
 from pyxtal.database.collection import Collection
 from time import time
 
@@ -153,14 +151,6 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
         wp_length2 = len(c2)
         size1 = m_length1 * wp_length2
         size2 = m_length2 * wp_length1
-
-        '''print("---------")
-        print(m_length1)
-        print(m_length2)
-        print(ms1.multiplicity)
-        print(ms2.multiplicity)
-        print(ms1)
-        print(ms2)'''
 
         #Case 1
         if size1 <= size2:
@@ -737,7 +727,7 @@ class mol_site():
         except:
             r_max = 0
             for site in self.mol:
-                radius = math.sqrt(site.x**2 + site.y**2 + site.z**2) + get_tol(site.species,site.species)*0.5
+                radius = math.sqrt(site.x**2 + site.y**2 + site.z**2) + get_tol(site.specie,site.specie)*0.5
                 if radius > r_max:
                     r_max = radius
             self.radius = r_max
@@ -792,16 +782,69 @@ class mol_site():
 
             return True
 
-            #New method - only checks some atoms/molecules
-            #Generate centers of all molecules
-            centers = self.get_centers(absolute=True)
-            #Add PBC vectors
+
+
+            """New method - only checks some atoms/molecules"""
+            coords, species = self._get_coords_and_species(absolute=True)
+            coords_mol = coords[:m_length]
+            #Store length of molecule
+            m_length = len(self.mol)
+            #Create PBC vectors
             m = create_matrix(PBC=self.PBC)
             ml = np.dot(m, self.lattice)
-            all_centers = np.repeat(cl, len(ml), axis=0) + np.tile(ml,(len(cl),1))
+            #Store the index of the (0,0,0) vector within ml
+            mid_index = len(ml) // 2
+
+            if self.multiplicity == 1:
+                #Only check periodic images
+                #Remove original coordinates
+                m2 = []
+                v0 = np.array([0.,0.,0.])
+                for v in ml:
+                    if not (v==v0).all():
+                        m2.append(v)
+                coords_PBC = np.vstack([coords_mol + v for v in m2])
+                d = distance_matrix(coords_mol, coords_PBC, None, PBC=[0,0,0])
+                tols = np.repeat(self.tols_matrix, len(m2), axis=1)
+                if (d<tols).any():
+                    return False
+                else:
+                    return True
+
+            #Generate centers of all molecules
+            centers = self.get_centers(absolute=True)
+            vectors = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - self.position
             #Calculate distances between centers
-            distances = np.linalg.norm(all_centers, axis=-1)
+            distances = np.linalg.norm(vectors, axis=-1)
+            #Find which molecules need to be checked
+            indices_mol = np.where(distances < self.get_radius()*2)[0]
+            #Get indices of Wyckoff positions and PBC vectors
+            indices_wp = []
+            indices_pbc = []
+            for index in indices_mol:
+                i_wp, i_pbc = divmod(index, len(ml))
+                #Omit original center molecule
+                if not (i_wp == 0 and i_pbc == mid_index):
+                    indices_wp.append(i_wp)
+                    indices_pbc.append(i_pbc)
+            #Get atomic positions of molecules with small separation vectors
             
+            if m_length <= max_fast_mol_size:
+                #Check all atomic pairs
+                for index_wp, index_pbc in zip(indices_wp, indices_pbc):
+                    pass
+            
+            elif m_length > max_fast_mol_size:
+                #Only check certain atomic pairs
+                atom_positions = coords_mol - centers[0]
+                #Dot separation vectors with atomic positions
+                repeated_vectors = np.repeat()
+
+            #To get dot product of diagonal elements between two vector arrays:
+            #np.einsum('...j,...j', vectors1, vectors2)
+            #vectors1 must be same dimension as vectors2
+            
+
 
         elif atomic is False:
             #Check molecular ellipsoid overlap
@@ -902,11 +945,11 @@ class molecular_crystal():
                 if mo is not None:
                     molecules[i] = mo
                 else:
-                    print("Error: Could not create molecules from given parameters.")
-                    print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
-                    print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
-                    print('Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)')
-                    print("Installing the OpenBabel Python bindings allows more file formats.")
+                    printx("Error: Could not create molecules from given parameters.\n"
+                        +"Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY\n"
+                        +"Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).\n"
+                        +'Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)\n'
+                        +"Installing the OpenBabel Python bindings allows more file formats.", priority=1)
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
@@ -989,10 +1032,10 @@ class molecular_crystal():
             try:
                 self.tol_matrix = Tol_matrix(prototype=tm)
             except:
-                print("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.")
+                printx("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.", priority=1)
                 self.valid = False
-                self.struct = None
-                return
+                self.struct = self.Msg7
+                return self.Msg7
         self.generate_crystal()
 
     def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=Tol_matrix(prototype="molecular")):
@@ -1014,6 +1057,7 @@ class molecular_crystal():
         self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
         self.Msg5 = 'Finishing: added the specie'
         self.Msg6 = 'Finishing: added the whole structure'
+        self.Msg7 = 'Error: invalid paramaters for initialization'
 
     def get_orientations(self):
         """
@@ -1139,7 +1183,7 @@ class molecular_crystal():
             self.struct.to(fmt=fmt, filename=outdir)
             return "Output file to " + outdir
         elif self.valid:
-            print("Cannot create file: structure did not generate.")
+            printx("Cannot create file: structure did not generate.", priority=1)
 
     def print_all(self):
         print("--Molecular Crystal--")
@@ -1169,10 +1213,9 @@ class molecular_crystal():
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is False:
-            print(self.Msg1)
-            self.struct = None
+            self.struct = self.Msg1
             self.valid = False
-            return
+            return self.Msg1
         else:
             if degrees == 0:
                 max1 = 20
@@ -1187,8 +1230,9 @@ class molecular_crystal():
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
                 #1, Generate a lattice
-                self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
-                self.lattice.volume = self.volume
+                if self.lattice.allow_volume_reset is True:
+                    self.volume = estimate_volume_molecular(self.molecules, self.numMols, self.factor, boxes=self.boxes)
+                    self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
                 try:
                     cell_matrix = self.lattice.get_matrix
@@ -1201,8 +1245,8 @@ class molecular_crystal():
                 else:
                     cell_matrix = para2matrix(cell_para)
                     if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                        print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
-                        print('cell_para:  ', cell_para)
+                        printx('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix), priority=0)
+                        printx('cell_para:  ', cell_para, priority=0)
                         sys.exit(0)
 
                     molecular_coordinates_total = [] #to store the added molecular coordinates
@@ -1312,7 +1356,7 @@ class molecular_crystal():
                                 break  #need to repeat from the 1st species
 
                         if numMol_added == numMol:
-                            #print(self.Msg6)
+                            printx(self.Msg6, priority=3)
                             good_structure = True
                             break
                         else: #reset the coordinates and sites
@@ -1358,10 +1402,10 @@ class molecular_crystal():
                         self.valid = True
                         """Whether or not a valid crystal was generated."""
                         return
-                        #else: print("Failed final distance check.")
-        print("Couldn't generate crystal after max attempts.")
+                    else: printx("Failed final distance check.", priority=3)
+        printx("Couldn't generate crystal after max attempts.", priority=1)
         if degrees == 0:
-            print("Note: Wyckoff positions have no degrees of freedom.")
+            printx("Note: Wyckoff positions have no degrees of freedom.", priority=2)
         self.struct = self.Msg2
         self.valid = False
         return self.Msg2

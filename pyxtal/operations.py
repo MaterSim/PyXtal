@@ -23,6 +23,33 @@ from copy import deepcopy
 rad = pi/180.
 deg = 180./pi
 
+pyxtal_verbosity = 1
+"""
+Stores how much should be printed:
+0: prints critical messages only
+1: prints warnings
+2: prints useful information
+3: prints debug information
+"""
+
+def printx(text, priority=1):
+    """
+    Custom printing function based on verbosity.
+
+    Args:
+        text: string to be passed to print
+        priority: the importance of printing the message
+            0: Critical; must be printed
+            1: Warning; unexpected event occured, but program functioning
+            2: Info; useful information not necessary to be printed
+            3: Debug; detailed information mainly used for debugging
+
+    Returns:
+        Nothing
+    """
+    if priority <= pyxtal_verbosity:
+        print(text)
+
 def euler_from_matrix(m, radians=True):
     """
     Given a 3x3 rotation matrix, determines the Euler angles
@@ -221,12 +248,12 @@ def matrix2aa(m, radians=True):
     if allclose(m, np.identity(3)):
         return None, 0.
     if not is_orthogonal(m):
-        print("Error: matrix is not orthogonal.")
+        printx("Error: matrix is not orthogonal.", priority=1)
         return
     #Check that m has posititve determinant
     if not isclose(det(m), 1, rtol=.001):
-        print("Error: invalid rotation matrix, determinant is not 1.")
-        print("Divide matrix by inversion operation beore calling matrix2aa.")
+        printx("Error: invalid rotation matrix. Determinant is not 1.\n"
+            +"Divide matrix by inversion operation beore calling matrix2aa.", priority=1)
         return
     #Determine the eigenvector(s) of m
     e = np.linalg.eig(m)
@@ -261,13 +288,13 @@ def matrix2aa(m, radians=True):
         return v, theta
     #If no eigenvectors are found
     elif len(eigenvectors) == 0:
-        print("Error: matrix2aa did not find any eigenvectors.")
+        printx("Error: matrix2aa did not find any eigenvectors.", priority=1)
         return
     #If multiple eigenvectors are found
     elif len(eigenvectors) > 1:
-        print("Warning: multiple eigenvectors found.")
-        print("Found eigenvectors:")
-        print(v)
+        printx("Warning: multiple eigenvectors found.\n"
+            +"Found eigenvectors:\n"
+            +str(eigenvectors), priority=1)
         return None, 0.
 
 def rotate_vector(v1, v2):
@@ -402,7 +429,7 @@ class OperationAnalyzer(SymmOp):
                 self.m = self.op.rotation_matrix
                 self.det = det(op)
         else:
-            print("Error: OperationAnalyzer requires a SymmOp or 3x3 array.")
+            printx("Error: OperationAnalyzer requires a SymmOp or 3x3 array.", priority=1)
         #If rotation matrix is not orthogonal
         if not is_orthogonal(self.m):
             self.type = "general"
@@ -544,10 +571,10 @@ class Orientation():
 
     def __init__(self, matrix, degrees=0, axis=None):
         if (not is_orthogonal(matrix)):
-            print("Error: Supplied orientation matrix is not orthogonal")
+            printx("Error: Supplied orientation matrix is not orthogonal", priority=1)
             return
         if (degrees == 1) and (axis is None):
-            print("Error: Constraint vector required for orientation")
+            printx("Error: Constraint vector required for orientation", priority=1)
         self.matrix = np.array(matrix)
         """The supplied orientation (and/or inversion) matrix, converted to a
         numpy array."""
@@ -639,7 +666,7 @@ class Orientation():
         phi = angle(c1, c2)
         phi2 = angle(c1, (np.dot(T, v2)))
         if not isclose(phi, phi2, rtol=.01):
-            print("Error: constraints and vectors do not match.")
+            printx("Error: constraints and vectors do not match.", priority=1)
             return
         r = np.sin(phi)
         c = np.linalg.norm(np.dot(T, v2) - c2)
@@ -651,7 +678,7 @@ class Orientation():
             T2 = np.dot(np.linalg.inv(R), T)
         a = angle(np.dot(T2, v2), c2)
         if not np.isclose(a, 0, rtol=.01):
-            print("Error: Generated incorrect rotation: "+str(theta))
+            printx("Error: Generated incorrect rotation: "+str(theta), priority=1)
         return Orientation(T2, degrees=0)
 
     def random_orientation(self):
