@@ -64,10 +64,8 @@ command-line usage of the module:
         cross-sectional area. If set to None, chooses a value automatically.
         Defaults to None  
 """
-from pyxtal.symmetry import *
 from pyxtal.crystal import *
 from pyxtal.molecule import *
-from pyxtal.operations import *
 from pyxtal.database.collection import Collection
 from time import time
 
@@ -153,14 +151,6 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
         wp_length2 = len(c2)
         size1 = m_length1 * wp_length2
         size2 = m_length2 * wp_length1
-
-        '''print("---------")
-        print(m_length1)
-        print(m_length2)
-        print(ms1.multiplicity)
-        print(ms2.multiplicity)
-        print(ms1)
-        print(ms2)'''
 
         #Case 1
         if size1 <= size2:
@@ -917,11 +907,11 @@ class molecular_crystal():
                 if mo is not None:
                     molecules[i] = mo
                 else:
-                    print("Error: Could not create molecules from given parameters.")
-                    print("Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY")
-                    print("Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).")
-                    print('Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)')
-                    print("Installing the OpenBabel Python bindings allows more file formats.")
+                    printx("Error: Could not create molecules from given parameters.\n"
+                        +"Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY\n"
+                        +"Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).\n"
+                        +'Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)\n'
+                        +"Installing the OpenBabel Python bindings allows more file formats.", priority=1)
         for mol in molecules:
             pga = PointGroupAnalyzer(mol)
             mo = pga.symmetrize_molecule()['sym_mol']
@@ -1004,10 +994,10 @@ class molecular_crystal():
             try:
                 self.tol_matrix = Tol_matrix(prototype=tm)
             except:
-                print("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.")
+                printx("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.", priority=1)
                 self.valid = False
-                self.struct = None
-                return
+                self.struct = self.Msg7
+                return self.Msg7
         self.generate_crystal()
 
     def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=Tol_matrix(prototype="molecular")):
@@ -1029,6 +1019,7 @@ class molecular_crystal():
         self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
         self.Msg5 = 'Finishing: added the specie'
         self.Msg6 = 'Finishing: added the whole structure'
+        self.Msg7 = 'Error: invalid paramaters for initialization'
 
     def get_orientations(self):
         """
@@ -1154,7 +1145,7 @@ class molecular_crystal():
             self.struct.to(fmt=fmt, filename=outdir)
             return "Output file to " + outdir
         elif self.valid:
-            print("Cannot create file: structure did not generate.")
+            printx("Cannot create file: structure did not generate.", priority=1)
 
     def print_all(self):
         print("--Molecular Crystal--")
@@ -1184,10 +1175,9 @@ class molecular_crystal():
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is False:
-            print(self.Msg1)
-            self.struct = None
+            self.struct = Msg1
             self.valid = False
-            return
+            return Msg1
         else:
             if degrees == 0:
                 max1 = 20
@@ -1217,8 +1207,8 @@ class molecular_crystal():
                 else:
                     cell_matrix = para2matrix(cell_para)
                     if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                        print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
-                        print('cell_para:  ', cell_para)
+                        printx('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix), priority=0)
+                        printx('cell_para:  ', cell_para, priority=0)
                         sys.exit(0)
 
                     molecular_coordinates_total = [] #to store the added molecular coordinates
@@ -1328,7 +1318,7 @@ class molecular_crystal():
                                 break  #need to repeat from the 1st species
 
                         if numMol_added == numMol:
-                            #print(self.Msg6)
+                            printx(self.Msg6, priority=3)
                             good_structure = True
                             break
                         else: #reset the coordinates and sites
@@ -1374,10 +1364,10 @@ class molecular_crystal():
                         self.valid = True
                         """Whether or not a valid crystal was generated."""
                         return
-                        #else: print("Failed final distance check.")
-        print("Couldn't generate crystal after max attempts.")
+                    else: printx("Failed final distance check.", priority=3)
+        printx("Couldn't generate crystal after max attempts.", priority=1)
         if degrees == 0:
-            print("Note: Wyckoff positions have no degrees of freedom.")
+            printx("Note: Wyckoff positions have no degrees of freedom.", priority=2)
         self.struct = self.Msg2
         self.valid = False
         return self.Msg2

@@ -26,7 +26,7 @@ inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
 
 #TODO: implement minimal enclosing ellipsoid algorithm
 def find_ellipsoid(mol):
-    print("Error: bounding ellipsoid calculator not yet implemented.")
+    printx("Error: bounding ellipsoid calculator not yet implemented.", priority=0)
     pass
 
 def mol_from_file(fname):
@@ -43,9 +43,9 @@ def mol_from_file(fname):
     try:
         return Molecule.from_file(fname)
     except:
-        print("Error: could not import file "+str(fname)+" to Molecule.")
-        print("Default supported formats are xyz, gaussian and pymatgen JSON molecules.")
-        print("Installing openbabel allows for more extensions.")
+        printx("Error: could not import file "+str(fname)+" to Molecule.\n"
+            +"Default supported formats are xyz, gaussian and pymatgen JSON molecules.\n"
+            +"Installing openbabel allows for more extensions.", priority=1)
         return
 
 def mol_from_string(string, fmt):
@@ -62,9 +62,9 @@ def mol_from_string(string, fmt):
     try:
         return Molecule.from_str(string, fmt)
     except:
-        print("Error: could not convert string '"+str(fmt)+"' to Molecule.")
-        print("Default supported formats are xyz, gaussian and pymatgen JSON molecules.")
-        print("Installing openbabel allows for more extensions.")
+        printx("Error: could not convert string '"+str(fmt)+"' to Molecule.\n"
+            +"Default supported formats are xyz, gaussian and pymatgen JSON molecules.\n"
+            +"Installing openbabel allows for more extensions.", priority=1)
         return
 
 def mol_from_collection(mname):
@@ -80,7 +80,7 @@ def mol_from_collection(mname):
     try:
         return Collection('molecules')[mname]
     except:
-        print("Could not find molecule '"+str(mname)+"' in pyxtal.database.")
+        printx("Could not find molecule '"+str(mname)+"' in pyxtal.database.", priority=1)
         return
 
 def get_inertia_tensor(mol):
@@ -156,7 +156,8 @@ def reoriented_molecule(mol, nested=False):
         new_mol.apply_operation(P)
         #Our molecule should never be inverted during reorientation.
         if det(P.rotation_matrix) < 0:
-            print("Error: inverted reorientation applied.")
+            printx("Error: inverted reorientation applied.\n"
+            +"(Within reoriented_molecule)", priority=0)
         return new_mol, P
     #If needed, recursively apply reorientation (due to numerical errors)
     iterations = 1
@@ -184,9 +185,9 @@ def reoriented_molecule(mol, nested=False):
         elif okay is True:
             break
     if iterations == max_iterations:
-        print("Error: Could not reorient molecule after "+str(max_iterations)+" attempts")
-        print(new_mol)
-        print(get_inertia_tensor(new_mol))
+        printx("Error: Could not reorient molecule after "+str(max_iterations)+" attempts\n"
+            +str(new_mol)+"\n"
+            +str(get_inertia_tensor(new_mol)), priority=0)
         return False
     return new_mol, P
 
@@ -320,7 +321,7 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
         if allow_inversion is False:
             for op in wyckoffs:
                 if np.linalg.det(op.rotation_matrix) < 0:
-                    print("Warning: cannot place chiral molecule in spagegroup")
+                    printx("Warning: cannot place chiral molecule in spagegroup", priority=2)
                     return False
     #Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
     opa_w = []
@@ -435,7 +436,8 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
                     T2 = np.dot(np.linalg.inv(R), T)
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
                 if not np.isclose(a, 0, rtol=.01):
-                    print("Error: Generated incorrect rotation: "+str(theta))
+                    printx("Error: Generated incorrect rotation: "+str(theta)+"\n"
+                    +"(Within orientation_in_wyckoff_position)", priority=0)
                 o = Orientation(T2, degrees=0)
                 orientations.append(o)
         #If there is only one constraint

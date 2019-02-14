@@ -12,6 +12,7 @@ from tabulate import tabulate
 import warnings
 warnings.filterwarnings("ignore")
 
+pyxtal_verbosity = 0
 
 """
 This is a script to 

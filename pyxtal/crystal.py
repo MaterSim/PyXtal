@@ -70,11 +70,7 @@ from copy import deepcopy
 from pyxtal.database.element import Element
 import pyxtal.database.hall as hall
 from pyxtal.database.layergroup import Layergroup
-from pyxtal.operations import OperationAnalyzer
-from pyxtal.operations import angle
-from pyxtal.operations import random_vector
-from pyxtal.operations import are_equal
-from pyxtal.operations import random_shear_matrix
+
 from pyxtal.symmetry import *
 
 #some optional libs
@@ -166,9 +162,9 @@ class Tol_matrix():
             for tup in tuples:
                 self.set_tol(*tup)
         except:
-            print("Error: Could not set custom tolerance value(s).")
-            print("    All custom entries should be entered using the following form:")
-            print("    (specie1, specie2, value), where value is the tolerance in Angstroms.")
+            printx("Error: Could not set custom tolerance value(s).\n"
+                +"All custom entries should be entered using the following form:\n"
+                +"(specie1, specie2, value), where value is the tolerance in Angstroms.", priority=1)
 
         self.radius_list = []
         for i in range(len(self.matrix)):
@@ -355,10 +351,10 @@ class Tol_matrix():
             if type(tm) == Tol_matrix:
                 return tm
             else:
-                print("Error: invalid file for Tol_matrix.")
+                printx("Error: invalid file for Tol_matrix.", priority=0)
                 return
         except:
-            print("Error: Could not load Tol_matrix from file.")
+            printx("Error: Could not load Tol_matrix from file.", priority=0)
             return
 
 def gaussian(min, max, sigma=3.0):
@@ -979,7 +975,7 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
             and b/a<max_ratio and c/a<max_ratio and c/b<max_ratio):
                 return np.array([a, b, c, alpha, beta, gamma])
     #If maxattempts tries have been made without success
-    print("Error: Could not generate lattice after "+str(n+1)+" attempts for volume ", volume)
+    printx("Could not generate lattice after "+str(n+1)+" attempts for volume "+str(volume), priority=2)
     return
 
 def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100, **kwargs):
@@ -1160,7 +1156,7 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
                 return para
 
     #If maxattempts tries have been made without success
-    print("Error: Could not generate lattice after "+str(n+1)+" attempts")
+    printx("Could not generate lattice after "+str(n+1)+" attempts for volume "+str(volume), priority=2)
     return
 
 def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, max_ratio=10.0, maxattempts = 100, **kwargs):
@@ -1341,7 +1337,7 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
                 return para
 
     #If maxattempts tries have been made without success
-    print("Error: Could not generate lattice after "+str(n+1)+" attempts")
+    printx("Could not generate lattice after "+str(n+1)+" attempts for volume "+str(volume), priority=2)
     return
 
 def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=20.0, maxattempts = 100, **kwargs):
@@ -1383,7 +1379,7 @@ def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=20.0, 
         a = b = c = np.cbrt((3 * volume)/(4 * pi))
         alpha = beta = gamma = 0.5 * pi
         if a < minvec:
-            print("Error: Could not generate spherical lattice; volume too small compared to minvec")
+            printx("Could not generate spherical lattice; volume too small compared to minvec", priority=2)
             return
         return np.array([a, b, c, alpha, beta, gamma])
     if ltype == "cylindrical":
@@ -1437,7 +1433,7 @@ class Wyckoff_site():
         if type(wp) == Wyckoff_position:
             self.wp = wp
         else:
-            print("Error: wp must be a Wyckoff_position object.")
+            printx("Error: wp must be a Wyckoff_position object.", priority=1)
             return
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
@@ -1519,7 +1515,7 @@ class Lattice():
         elif ltype == None:
             self.ltype = "triclinic"
         else:
-            print("Error: Invalid lattice type.")
+            printx("Error: Invalid lattice type.", priority=1)
             return
         self.volume = float(volume)
         self.PBC = PBC
@@ -1556,7 +1552,7 @@ class Lattice():
             para = self.generate_para()
             if para is not None:
                 return para2matrix(para)
-        print("Error: Could not generate lattice matrix.")
+        printx("Error: Could not generate lattice matrix.", priority=1)
         return
 
     def get_matrix(self):
@@ -1566,7 +1562,7 @@ class Lattice():
         try:
             return self.matrix
         except:
-            print("Error: Lattice matrix undefined.")
+            printx("Error: Lattice matrix undefined.", priority=1)
             return
 
     def get_para(self):
@@ -1581,7 +1577,7 @@ class Lattice():
             if np.shape(m) == (3,3):
                 self.matrix = m
             else:
-                print("Error: matrix must be a 3x3 numpy array or list")
+                printx("Error: matrix must be a 3x3 numpy array or list", priority=1)
         elif matrix == None:
             self.reset_matrix()
         para = matrix2para(self.matrix)
@@ -1690,7 +1686,7 @@ class Lattice():
         try:
             cell_matrix = para2matrix((a,b,c,alpha,beta,gamma), radians=radians)
         except:
-            print("Error: invalid cell parameters for lattice.")
+            printx("Error: invalid cell parameters for lattice.", priority=1)
             return
         volume = np.linalg.det(cell_matrix)
         #Initialize a Lattice instance
@@ -1748,7 +1744,7 @@ class Lattice():
         pass
         m = np.array(matrix)
         if np.shape(m) != (3,3):
-            print("Error: Lattice matrix must be 3x3")
+            printx("Error: Lattice matrix must be 3x3", priority=1)
             return
         [a, b, c, alpha, beta, gamma] = matrix2para(m)
         volume = np.linalg.det(m)
@@ -1865,10 +1861,10 @@ class random_crystal():
             try:
                 self.tol_matrix = Tol_matrix(prototype=tm)
             except:
-                print("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.")
+                printx("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.", priority=1)
                 self.valid = False
-                self.struct = None
-                return
+                self.struct = self.Msg7
+                return self.Msg7
         #Generate the crystal
         self.generate_crystal()
 
@@ -1896,6 +1892,7 @@ class random_crystal():
         self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
         self.Msg5 = 'Finishing: added the specie'
         self.Msg6 = 'Finishing: added the whole structure'
+        self.Msg7 = 'Error: invalid paramaters for initialization'
 
     def check_compatible(self):
         """
@@ -1986,7 +1983,7 @@ class random_crystal():
                 self.struct.to(fmt=fmt, filename=outdir)
             return "Output file to " + outdir
         elif self.valid is False:
-            print("Cannot create file: structure did not generate.")
+            printx("Cannot create file: structure did not generate.", priority=1)
 
     def print_all(self):
         """
@@ -2021,8 +2018,8 @@ class random_crystal():
         self.numattempts = 1
         degrees = self.check_compatible()
         if degrees is False:
-            print(self.Msg1)
-            self.struct = None
+            printx(self.Msg1, priority=1)
+            self.struct = self.Msg1
             self.valid = False
             return
         else:
@@ -2046,9 +2043,12 @@ class random_crystal():
                 #Check that the correct volume was generated
                 if self.lattice.random is True:
                     if self.dim != 0 and abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                        print('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix))
-                        print('cell_para:  ', matrix2para(cell_matrix))
-                        sys.exit(0)
+                        printx("Error, volume is not equal to the estimated value: "+str(self.volume)
+                            +" -> "+str(np.linalg.det(cell_matrix))
+                            +"cell_para:  "+str(matrix2para(cell_matrix)), priority=0)
+                        self.valid = False
+                        self.struct = None
+                        return
 
                 coordinates_total = [] #to store the added coordinates
                 sites_total = []      #to store the corresponding specie
@@ -2181,7 +2181,7 @@ class random_crystal():
                             self.valid = True
                             """Whether or not a valid crystal was generated."""
                             return
-        if degrees == 0: print("Wyckoff positions have no degrees of freedom.")
+        if degrees == 0: printx("Wyckoff positions have no degrees of freedom.", priority=2)
         self.struct = self.Msg2
         self.valid = False
         return self.Msg2

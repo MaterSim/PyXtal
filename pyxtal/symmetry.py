@@ -1028,9 +1028,9 @@ def find_generating_point(coords, wyckoff_position):
         index_list1 = list(range(len(tmp_c)))
         index_list2 = list(range(len(generated)))
         if len(generated) != len(tmp_c):
-            print("Warning: coordinate and generator lists have unequal length.")
-            print("In check_wyckoff_position.find_generating_point:")
-            print("len(coords): "+str(len(coords))+", len(generators): "+str(len(generators)))
+            printx("Warning: coordinate and generator lists have unequal length.\n"
+                +"In check_wyckoff_position.find_generating_point:\n"
+                +"len(coords): "+str(len(coords))+", len(generators): "+str(len(generators)), priority=1)
             return None
         for index1, c1 in enumerate(tmp_c):
             for index2, c2 in enumerate(generated):
@@ -1170,7 +1170,7 @@ def jk_from_i(i, olist):
             num += 1
             if num == i:
                 return [j, k]
-    print("Error: Incorrect Wyckoff position list or index passed to jk_from_i")
+    printx("Error: Incorrect Wyckoff position list or index passed to jk_from_i", priority=1)
     return None
 
 def i_from_jk(j, k, olist):
@@ -1192,7 +1192,7 @@ def i_from_jk(j, k, olist):
             num += 1
             if x == j and y == k:
                 return num
-    print("Error: Incorrect Wyckoff position list or index passed to jk_from_i")
+    printx("Error: Incorrect Wyckoff position list or index passed to jk_from_i", priority=1)
     return None
 
 def ss_string_from_ops(ops, number, dim=3, complete=True):
@@ -1348,7 +1348,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
             symbol += highest
             new_symbols.remove(highest)
         if symbol == "":
-            print("Error: could not combine site symmetry axes.")
+            printx("Error: could not combine site symmetry axes.", priority=1)
             return
         else:
             return symbol
@@ -1458,7 +1458,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
             else:
                 return "1"
     else:
-        print("Error: invalid spacegroup number")
+        printx("Error: invalid spacegroup number", priority=1)
         return
 
 def symbol_from_number(number, symbol):
@@ -1554,7 +1554,7 @@ class Wyckoff_position():
             number = group
         else:
             #TODO: add symbol interpretation
-            print("Error: must use an integer group number.")
+            printx("Error: must use an integer group number.", priority=1)
             return
         use_letter = False
         if type(index) == int:
@@ -1569,7 +1569,7 @@ class Wyckoff_position():
 
         if dim == 3:
             if number not in range(1, 231):
-                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             if PBC == None:
                 wp.PBC = [1,1,1]
@@ -1582,7 +1582,7 @@ class Wyckoff_position():
             else:
                 wp.letter = letter_from_index(wp.index, ops_all)
             if wp.index >= len(ops_all) or wp.index < 0:
-                print("Error while generating Wyckoff_position: index out of range for specified group")
+                printx("Error while generating Wyckoff_position: index out of range for specified group", priority=1)
                 return
             wp.ops = ops_all[wp.index]
             """The Wyckoff positions for the crystal's spacegroup."""
@@ -1600,7 +1600,7 @@ class Wyckoff_position():
 
         elif dim == 2:
             if number not in range(1, 81):
-                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             if PBC == None:
                 wp.PBC = [1,1,0]
@@ -1613,7 +1613,7 @@ class Wyckoff_position():
             else:
                 wp.letter = letter_from_index(wp.index, ops_all)
             if wp.index >= len(ops_all) or wp.index < 0:
-                print("Error while generating Wyckoff_position: index out of range for specified group")
+                printx("Error while generating Wyckoff_position: index out of range for specified group", priority=1)
                 return
             wp.ops = ops_all[wp.index]
             """The Wyckoff positions for the crystal's spacegroup."""
@@ -1631,7 +1631,7 @@ class Wyckoff_position():
 
         elif dim == 1:
             if number not in range(1, 76):
-                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             if PBC == None:
                 wp.PBC = [0,0,1]
@@ -1644,7 +1644,7 @@ class Wyckoff_position():
             else:
                 wp.letter = letter_from_index(wp.index, ops_all)
             if wp.index >= len(ops_all) or wp.index < 0:
-                print("Error while generating Wyckoff_position: index out of range for specified group")
+                printx("Error while generating Wyckoff_position: index out of range for specified group", priority=1)
                 return
             wp.ops = ops_all[wp.index]
             """The Wyckoff positions for the crystal's spacegroup."""
@@ -1748,8 +1748,8 @@ class Group():
         elif type(group) == str:
             #TODO: add symbol interpretation
             if dim != 0:
-                print("Cannot currently interpret symbols for Rod, layer, and space groups.")
-                print("Please use an integer.")
+                printx("Cannot currently interpret symbols for Rod, layer, and space groups.\n"
+                    +"Please use an integer.", priority=1)
                 return
             elif dim == 0:
                 symbol = group
@@ -1759,11 +1759,11 @@ class Group():
                 else:
                     number = self.number = None
         else:
-            print("Error: Please input a symbol (str) or integer (int) for the group.")
+            printx("Error: Please input a symbol (str) or integer (int) for the group.", priority=1)
             return
         if dim == 3:
             if number not in range(1, 231):
-                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             self.PBC = [1,1,1]
             self.wyckoffs = get_wyckoffs(self.number)
@@ -1792,7 +1792,7 @@ class Group():
                 self.lattice_type = "cubic"
         elif dim == 2:
             if number not in range(1, 81):
-                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             self.PBC = [1,1,0]
             self.wyckoffs = get_layer(self.number)
@@ -1819,7 +1819,7 @@ class Group():
                 self.lattice_type = "hexagonal"
         elif dim == 1:
             if number not in range(1, 76):
-                print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             self.PBC = [0,0,1]
             self.wyckoffs = get_rod(self.number)
@@ -1856,7 +1856,7 @@ class Group():
             #Get crystallographic point group
             if type(group) == int or type(group) == float:
                 if number not in range(1, 33):
-                    print("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim))
+                    printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                     return
                 self.PBC = [0,0,0]
                 self.wyckoffs = get_point(self.number, molecular=False)
@@ -1892,7 +1892,7 @@ class Group():
                         num = int(num_str) #rotation order
                         1 / num
                     except:
-                        print("Error: invalid rotation order for point group symbol.")
+                        printx("Error: invalid rotation order for point group symbol.", priority=1)
                         return
                 gens = [SymmOp.from_xyz_string('x,y,z')] # List of generator SymmOps
                 generate = True
@@ -1926,7 +1926,7 @@ class Group():
                     #n-fold rotation
                     self.lattice_type = "cylindrical"
                     if symbol[-1] == "d":
-                        print("Error: Invalid point group symbol.")
+                        printx("Error: Invalid point group symbol.", priority=1)
                         return
                     if num == 0:
                         #infinite-order rotation
@@ -1959,7 +1959,7 @@ class Group():
                     #n-fold rotinversion, usually just Ci
                     self.lattice_type = "cylindrical"
                     if "d" in symbol or "h" in symbol or "v" in symbol:
-                        print("Error: Invalid point group symbol.")
+                        printx("Error: Invalid point group symbol.", priority=1)
                         return
                     if num == 0:
                         #infinite-order rotation
@@ -2036,14 +2036,14 @@ class Group():
                         gen_ops += [op_z, op_o]
 
                     if self.symbol == "D*" or symbol[-1]=="v" or symbol[-1]=="i":
-                        print("Error: invalid point group symbol.")
+                        printx("Error: invalid point group symbol.", priority=1)
                         return
                 elif symbol[0] == "S":
                     #2n-fold rotation-reflection axis
                     self.lattice_type = "cylindrical"
                     #Equivalent to Cnh for odd n
                     if num == 0 or symbol[-1]=="v" or symbol[-1]=="i" or symbol[-1]=="h" or symbol[-1]=="d":
-                        print("Error: invalid point group symbol.")
+                        printx("Error: invalid point group symbol.", priority=1)
                         return
                     m = np.dot(aa2matrix([0.,0.,1.], 2*pi/num), [[1.,0.,0.],[0.,1.,0.],[0.,0.,-1.]])
                     gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
@@ -2053,7 +2053,7 @@ class Group():
                     elif num % 2 == 0:
                         gen_ops = [Identity, op_z, op_o]
                 else:
-                    print("Error: Invalid point group symbol.")
+                    printx("Error: Invalid point group symbol.", priority=1)
                     return
                 #Generate full set of SymmOps
                 if generate is True:
@@ -2103,7 +2103,7 @@ class Group():
                         self.wyckoff_generators = deepcopy(self.wyckoffs)
                         self.wyckoff_generators_m = deepcopy(self.wyckoffs)
                     else:
-                        print("Error: Invalid point group symbol.")
+                        printx("Error: Invalid point group symbol.", priority=1)
                 self.number = None
             
         #TODO: Add self.symbol to dictionary
