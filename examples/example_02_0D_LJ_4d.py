@@ -1,8 +1,9 @@
 from pyxtal.crystal import random_cluster
+from copy import deepcopy
 from optparse import OptionParser
 from random import randint, choice
 from scipy.optimize import minimize
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, cdist
 from pyxtal.molecule import PointGroupAnalyzer
 from pymatgen import Molecule
 from pyxtal.database.collection import Collection
@@ -43,7 +44,23 @@ def LJ(pos, dim, mu=0.1):
             norm += np.linalg.norm(diff)
         Eng += mu*norm
     return Eng
-            
+
+def LJ_force(pos, dim, mu=0.1):
+    N_atom = int(len(pos)/3)
+    pos = np.reshape(pos,[N_atom,3])
+    force = np.zeros([N_atom,3])
+    for i, pos0 in enumerate(pos):
+        pos1 = deepcopy(pos)
+        pos1 = np.delete(pos1, i, 0)
+        #print(pos0, pos)
+        distance = cdist([pos0], pos1)
+        r = pos1 - pos0
+        r2 = np.power(distance, 2)
+        r6 = np.power(r2, 3)
+        r12 = np.power(r6, 2)
+        force[i] = np.dot((48/r12-24/r6)/r2, r)
+    return force.flatten()
+
 def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
     """
     perform optimization for a given cluster
@@ -66,7 +83,7 @@ def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
         pos = pos[:, :dim]
 
     pos = pos.flatten()
-    res = minimize(LJ, pos, args=(dim, mu), method='CG', tol=1e-4)
+    res = minimize(LJ, pos, args=(dim, mu), jac=LJ_force, method='CG', tol=1e-4)
     pos = np.reshape(res.x, (N_atom, dim))
     energy = res.fun
     return energy, pos
