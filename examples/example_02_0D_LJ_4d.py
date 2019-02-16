@@ -37,28 +37,32 @@ def LJ(pos, dim, mu=0.1):
     Eng = np.sum(4*(1/r12 - 1/r6))
 
     if dim > 3:
-        pos0 = pos
         norm = 0
         for i in range(3,dim):
-            diff = pos[:, i] - np.mean(pos[:, i])
-            norm += np.linalg.norm(diff)
-        Eng += mu*norm
+            #diff = pos[:, i] - np.mean(pos[:, i])
+            diff = pos[:, i] 
+            norm += np.sum(np.multiply(diff, diff))
+        Eng += 0.5*mu*norm
     return Eng
 
 def LJ_force(pos, dim, mu=0.1):
-    N_atom = int(len(pos)/3)
-    pos = np.reshape(pos,[N_atom,3])
-    force = np.zeros([N_atom,3])
+    N_atom = int(len(pos)/dim)
+    pos = np.reshape(pos,[N_atom, dim])
+    force = np.zeros([N_atom, dim])
     for i, pos0 in enumerate(pos):
         pos1 = deepcopy(pos)
         pos1 = np.delete(pos1, i, 0)
-        #print(pos0, pos)
         distance = cdist([pos0], pos1)
         r = pos1 - pos0
         r2 = np.power(distance, 2)
         r6 = np.power(r2, 3)
         r12 = np.power(r6, 2)
         force[i] = np.dot((48/r12-24/r6)/r2, r)
+        # force from the punish function mu*sum([x-mean(x)]^2)
+        if dim > 3:
+            for j in range(3,dim):
+                #force[i, j] += mu*(pos[i, j] - np.mean(pos[:, j]))
+                force[i, j] += mu*pos[i, j] #- np.mean(pos[:, j]))
     return force.flatten()
 
 def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
@@ -83,7 +87,7 @@ def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
         pos = pos[:, :dim]
 
     pos = pos.flatten()
-    res = minimize(LJ, pos, args=(dim, mu), jac=LJ_force, method='CG', tol=1e-4)
+    res = minimize(LJ, pos, args=(dim, mu), jac=LJ_force, method='CG', tol=1e-3)
     pos = np.reshape(res.x, (N_atom, dim))
     energy = res.fun
     return energy, pos
@@ -92,7 +96,7 @@ def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
 def parse_symmetry(pos):
     mol = Molecule(['C']*len(pos), pos)
     try:
-        symbol = PointGroupAnalyzer(mol).sch_symbol
+        symbol = PointGroupAnalyzer(mol, tolerance=0.1).sch_symbol
     except:
         symbol = 'N/A'
     return symbol
@@ -200,7 +204,7 @@ if __name__ == "__main__":
     parser.add_option("-m", "--max", dest="max", default=100, type=int,
             help="maximum number of attempts")
     parser.add_option("-p", "--proc", dest="proc", default=1, type=int,
-            help="maximum number of attempts")
+            help="number of processors, default 1")
 
     (options, args) = parser.parse_args()
 
