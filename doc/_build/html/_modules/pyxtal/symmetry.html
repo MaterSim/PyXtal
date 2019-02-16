@@ -14,6 +14,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -85,10 +86,24 @@
     <span class="s1">&#39;C3i&#39;</span><span class="p">,</span><span class="s1">&#39;D3&#39;</span><span class="p">,</span><span class="s1">&#39;C3v&#39;</span><span class="p">,</span><span class="s1">&#39;D3d&#39;</span><span class="p">,</span><span class="s1">&#39;C6&#39;</span><span class="p">,</span><span class="s1">&#39;C3h&#39;</span><span class="p">,</span><span class="s1">&#39;C6h&#39;</span><span class="p">,</span><span class="s1">&#39;D6&#39;</span><span class="p">,</span>
     <span class="s1">&#39;C6v&#39;</span><span class="p">,</span><span class="s1">&#39;D3h&#39;</span><span class="p">,</span><span class="s1">&#39;D6h&#39;</span><span class="p">,</span><span class="s1">&#39;T&#39;</span><span class="p">,</span><span class="s1">&#39;Th&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">,</span><span class="s1">&#39;Td&#39;</span><span class="p">,</span><span class="s1">&#39;Oh&#39;</span><span class="p">]</span>
 
+<span class="n">pgdict</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="sd">&quot;&quot;&quot;Dict of crystallographic point group symbols and their corresponding numbers</span>
+<span class="sd">(the number for initializing a Group object)&quot;&quot;&quot;</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pglist</span><span class="p">):</span>
+    <span class="n">pgdict</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">symbol</span>
+
 <span class="c1">#TODO: Add space, layer, and Rod group symbol lists</span>
 
 <span class="c1">#Define functions</span>
 <span class="c1">#------------------------------</span>
+<div class="viewcode-block" id="list_point_groups"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.list_point_groups">[docs]</a><span class="k">def</span> <span class="nf">list_point_groups</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prints out the numbers and symbols of the crystallographic point groups </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- Point group numbers and symbols --&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sym</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pglist</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="n">sym</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="symmetry_element_from_axis"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.symmetry_element_from_axis">[docs]</a><span class="k">def</span> <span class="nf">symmetry_element_from_axis</span><span class="p">(</span><span class="n">axis</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given an axis, returns a SymmOp representing a symmetry element on the axis.</span>
@@ -245,14 +260,35 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        a 2x2 np array of scalar distances</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">l1</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
-    <span class="n">l2</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">points2</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
-    <span class="n">l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
-    <span class="n">matrix</span> <span class="o">=</span> <span class="n">create_matrix</span><span class="p">(</span><span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
-    <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">l1</span> <span class="o">+</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">matrix</span><span class="p">])</span>
-    <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
-    <span class="n">all_distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cdist</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m1</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">all_distances</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">lattice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lattice</span><span class="p">)</span> <span class="o">==</span> <span class="n">Euclidean_lattice</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="n">lattice</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">lattice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">l1</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+            <span class="n">l2</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">points2</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+            <span class="n">l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
+            <span class="n">matrix</span> <span class="o">=</span> <span class="n">create_matrix</span><span class="p">(</span><span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+            <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">l1</span> <span class="o">+</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">matrix</span><span class="p">])</span>
+            <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
+            <span class="n">all_distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cdist</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m1</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">all_distances</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">l1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
+            <span class="n">l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">points2</span><span class="p">,</span> <span class="n">lattice</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">cdist</span><span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">lattice</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">PBC</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">l1</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+            <span class="n">l2</span> <span class="o">=</span> <span class="n">filtered_coords</span><span class="p">(</span><span class="n">points2</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+            <span class="n">matrix</span> <span class="o">=</span> <span class="n">create_matrix</span><span class="p">(</span><span class="n">PBC</span><span class="o">=</span><span class="n">PBC</span><span class="p">)</span>
+            <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">l1</span> <span class="o">+</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">matrix</span><span class="p">])</span>
+            <span class="n">all_distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cdist</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m1</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">all_distances</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cdist</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">points2</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="distance_matrix_euclidean"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.distance_matrix_euclidean">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix_euclidean</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">points2</span><span class="p">,</span> <span class="n">PBC</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">squared</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1043,9 +1079,9 @@
         <span class="n">index_list1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tmp_c</span><span class="p">)))</span>
         <span class="n">index_list2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)))</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmp_c</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: coordinate and generator lists have unequal length.&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;In check_wyckoff_position.find_generating_point:&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;len(coords): &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">))</span><span class="o">+</span><span class="s2">&quot;, len(generators): &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">generators</span><span class="p">)))</span>
+            <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Warning: coordinate and generator lists have unequal length.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="o">+</span><span class="s2">&quot;In check_wyckoff_position.find_generating_point:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="o">+</span><span class="s2">&quot;len(coords): &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">))</span><span class="o">+</span><span class="s2">&quot;, len(generators): &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">generators</span><span class="p">)),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">index1</span><span class="p">,</span> <span class="n">c1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tmp_c</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">index2</span><span class="p">,</span> <span class="n">c2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">generated</span><span class="p">):</span>
@@ -1185,7 +1221,7 @@
             <span class="n">num</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
                 <span class="k">return</span> <span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Incorrect Wyckoff position list or index passed to jk_from_i&quot;</span><span class="p">)</span>
+    <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Incorrect Wyckoff position list or index passed to jk_from_i&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="i_from_jk"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.i_from_jk">[docs]</a><span class="k">def</span> <span class="nf">i_from_jk</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">olist</span><span class="p">):</span>
@@ -1207,7 +1243,7 @@
             <span class="n">num</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">j</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">==</span> <span class="n">k</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">num</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Incorrect Wyckoff position list or index passed to jk_from_i&quot;</span><span class="p">)</span>
+    <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Incorrect Wyckoff position list or index passed to jk_from_i&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="ss_string_from_ops"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.ss_string_from_ops">[docs]</a><span class="k">def</span> <span class="nf">ss_string_from_ops</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -1363,7 +1399,7 @@
             <span class="n">symbol</span> <span class="o">+=</span> <span class="n">highest</span>
             <span class="n">new_symbols</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">highest</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: could not combine site symmetry axes.&quot;</span><span class="p">)</span>
+            <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: could not combine site symmetry axes.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">return</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">symbol</span>
@@ -1473,7 +1509,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="s2">&quot;1&quot;</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid spacegroup number&quot;</span><span class="p">)</span>
+        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid spacegroup number&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="symbol_from_number"><a class="viewcode-back" href="../../pyxtal.symmetry.html#pyxtal.symmetry.symbol_from_number">[docs]</a><span class="k">def</span> <span class="nf">symbol_from_number</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">symbol</span><span class="p">):</span>
@@ -1569,7 +1605,7 @@
             <span class="n">number</span> <span class="o">=</span> <span class="n">group</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1">#TODO: add symbol interpretation</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: must use an integer group number.&quot;</span><span class="p">)</span>
+            <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: must use an integer group number.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">return</span>
         <span class="n">use_letter</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
@@ -1584,7 +1620,7 @@
 
         <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">231</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
@@ -1597,7 +1633,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">letter</span> <span class="o">=</span> <span class="n">letter_from_index</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ops_all</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">wp</span><span class="o">.</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ops_all</span><span class="p">)</span> <span class="ow">or</span> <span class="n">wp</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error while generating Wyckoff_position: index out of range for specified group&quot;</span><span class="p">)</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error while generating Wyckoff_position: index out of range for specified group&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="n">wp</span><span class="o">.</span><span class="n">ops</span> <span class="o">=</span> <span class="n">ops_all</span><span class="p">[</span><span class="n">wp</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
@@ -1615,7 +1651,7 @@
 
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">81</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
@@ -1628,7 +1664,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">letter</span> <span class="o">=</span> <span class="n">letter_from_index</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ops_all</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">wp</span><span class="o">.</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ops_all</span><span class="p">)</span> <span class="ow">or</span> <span class="n">wp</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error while generating Wyckoff_position: index out of range for specified group&quot;</span><span class="p">)</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error while generating Wyckoff_position: index out of range for specified group&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="n">wp</span><span class="o">.</span><span class="n">ops</span> <span class="o">=</span> <span class="n">ops_all</span><span class="p">[</span><span class="n">wp</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
@@ -1646,7 +1682,7 @@
 
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">76</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="k">if</span> <span class="n">PBC</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
@@ -1659,7 +1695,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">wp</span><span class="o">.</span><span class="n">letter</span> <span class="o">=</span> <span class="n">letter_from_index</span><span class="p">(</span><span class="n">wp</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ops_all</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">wp</span><span class="o">.</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ops_all</span><span class="p">)</span> <span class="ow">or</span> <span class="n">wp</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error while generating Wyckoff_position: index out of range for specified group&quot;</span><span class="p">)</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error while generating Wyckoff_position: index out of range for specified group&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="n">wp</span><span class="o">.</span><span class="n">ops</span> <span class="o">=</span> <span class="n">ops_all</span><span class="p">[</span><span class="n">wp</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
             <span class="sd">&quot;&quot;&quot;The Wyckoff positions for the crystal&#39;s spacegroup.&quot;&quot;&quot;</span>
@@ -1722,6 +1758,8 @@
 <span class="sd">        group: the group symbol or international number</span>
 <span class="sd">        dim: the periodic dimension of the group</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+            
+
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span>
@@ -1761,8 +1799,8 @@
         <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
             <span class="c1">#TODO: add symbol interpretation</span>
             <span class="k">if</span> <span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cannot currently interpret symbols for Rod, layer, and space groups.&quot;</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please use an integer.&quot;</span><span class="p">)</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Cannot currently interpret symbols for Rod, layer, and space groups.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="o">+</span><span class="s2">&quot;Please use an integer.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">symbol</span> <span class="o">=</span> <span class="n">group</span>
@@ -1772,11 +1810,11 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Please input a symbol (str) or integer (int) for the group.&quot;</span><span class="p">)</span>
+            <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Please input a symbol (str) or integer (int) for the group.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">return</span>
         <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">231</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_wyckoffs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1805,7 +1843,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cubic&quot;</span>
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">81</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1832,7 +1870,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;hexagonal&quot;</span>
         <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">76</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_rod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
@@ -1869,7 +1907,7 @@
             <span class="c1">#Get crystallographic point group</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="nb">float</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">33</span><span class="p">):</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+                    <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid symmetry group &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; for dimension &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                     <span class="k">return</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">PBC</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span> <span class="o">=</span> <span class="n">get_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">molecular</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -1905,7 +1943,7 @@
                         <span class="n">num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_str</span><span class="p">)</span> <span class="c1">#rotation order</span>
                         <span class="mi">1</span> <span class="o">/</span> <span class="n">num</span>
                     <span class="k">except</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid rotation order for point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid rotation order for point group symbol.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                         <span class="k">return</span>
                 <span class="n">gens</span> <span class="o">=</span> <span class="p">[</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_xyz_string</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)]</span> <span class="c1"># List of generator SymmOps</span>
                 <span class="n">generate</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1939,7 +1977,7 @@
                     <span class="c1">#n-fold rotation</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
                     <span class="k">if</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                         <span class="k">return</span>
                     <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="c1">#infinite-order rotation</span>
@@ -1972,7 +2010,7 @@
                     <span class="c1">#n-fold rotinversion, usually just Ci</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
                     <span class="k">if</span> <span class="s2">&quot;d&quot;</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="ow">or</span> <span class="s2">&quot;h&quot;</span> <span class="ow">in</span> <span class="n">symbol</span> <span class="ow">or</span> <span class="s2">&quot;v&quot;</span> <span class="ow">in</span> <span class="n">symbol</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                         <span class="k">return</span>
                     <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="c1">#infinite-order rotation</span>
@@ -2049,14 +2087,14 @@
                         <span class="n">gen_ops</span> <span class="o">+=</span> <span class="p">[</span><span class="n">op_z</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
 
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;D*&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;v&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;i&quot;</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid point group symbol.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                         <span class="k">return</span>
                 <span class="k">elif</span> <span class="n">symbol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
                     <span class="c1">#2n-fold rotation-reflection axis</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">lattice_type</span> <span class="o">=</span> <span class="s2">&quot;cylindrical&quot;</span>
                     <span class="c1">#Equivalent to Cnh for odd n</span>
                     <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;v&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;i&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;h&quot;</span> <span class="ow">or</span> <span class="n">symbol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s2">&quot;d&quot;</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: invalid point group symbol.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                         <span class="k">return</span>
                     <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">aa2matrix</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">num</span><span class="p">),</span> <span class="p">[[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">]])</span>
                     <span class="n">gens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SymmOp</span><span class="o">.</span><span class="n">from_rotation_and_translation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]))</span>
@@ -2066,7 +2104,7 @@
                     <span class="k">elif</span> <span class="n">num</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">gen_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">Identity</span><span class="p">,</span> <span class="n">op_z</span><span class="p">,</span> <span class="n">op_o</span><span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                    <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                     <span class="k">return</span>
                 <span class="c1">#Generate full set of SymmOps</span>
                 <span class="k">if</span> <span class="n">generate</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
@@ -2116,7 +2154,7 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">wyckoff_generators_m</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wyckoffs</span><span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">)</span>
+                        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Invalid point group symbol.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="kc">None</span>
             
         <span class="c1">#TODO: Add self.symbol to dictionary</span>

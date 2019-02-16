@@ -14,6 +14,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -66,7 +67,7 @@
 
 <span class="c1">#TODO: implement minimal enclosing ellipsoid algorithm</span>
 <div class="viewcode-block" id="find_ellipsoid"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.find_ellipsoid">[docs]</a><span class="k">def</span> <span class="nf">find_ellipsoid</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: bounding ellipsoid calculator not yet implemented.&quot;</span><span class="p">)</span>
+    <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: bounding ellipsoid calculator not yet implemented.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="mol_from_file"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.mol_from_file">[docs]</a><span class="k">def</span> <span class="nf">mol_from_file</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
@@ -83,9 +84,9 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Molecule</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: could not import file &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; to Molecule.&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Default supported formats are xyz, gaussian and pymatgen JSON molecules.&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Installing openbabel allows for more extensions.&quot;</span><span class="p">)</span>
+        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: could not import file &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; to Molecule.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="o">+</span><span class="s2">&quot;Default supported formats are xyz, gaussian and pymatgen JSON molecules.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="o">+</span><span class="s2">&quot;Installing openbabel allows for more extensions.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="mol_from_string"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.mol_from_string">[docs]</a><span class="k">def</span> <span class="nf">mol_from_string</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
@@ -102,9 +103,9 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Molecule</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: could not convert string &#39;&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&#39; to Molecule.&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Default supported formats are xyz, gaussian and pymatgen JSON molecules.&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Installing openbabel allows for more extensions.&quot;</span><span class="p">)</span>
+        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: could not convert string &#39;&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&#39; to Molecule.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="o">+</span><span class="s2">&quot;Default supported formats are xyz, gaussian and pymatgen JSON molecules.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="o">+</span><span class="s2">&quot;Installing openbabel allows for more extensions.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="mol_from_collection"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.mol_from_collection">[docs]</a><span class="k">def</span> <span class="nf">mol_from_collection</span><span class="p">(</span><span class="n">mname</span><span class="p">):</span>
@@ -120,7 +121,7 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Collection</span><span class="p">(</span><span class="s1">&#39;molecules&#39;</span><span class="p">)[</span><span class="n">mname</span><span class="p">]</span>
     <span class="k">except</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Could not find molecule &#39;&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">mname</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&#39; in pyxtal.database.&quot;</span><span class="p">)</span>
+        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Could not find molecule &#39;&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">mname</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&#39; in pyxtal.database.&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="get_inertia_tensor"><a class="viewcode-back" href="../../pyxtal.molecule.html#pyxtal.molecule.get_inertia_tensor">[docs]</a><span class="k">def</span> <span class="nf">get_inertia_tensor</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
@@ -196,7 +197,8 @@
         <span class="n">new_mol</span><span class="o">.</span><span class="n">apply_operation</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
         <span class="c1">#Our molecule should never be inverted during reorientation.</span>
         <span class="k">if</span> <span class="n">det</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: inverted reorientation applied.&quot;</span><span class="p">)</span>
+            <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: inverted reorientation applied.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="o">+</span><span class="s2">&quot;(Within reoriented_molecule)&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_mol</span><span class="p">,</span> <span class="n">P</span>
     <span class="c1">#If needed, recursively apply reorientation (due to numerical errors)</span>
     <span class="n">iterations</span> <span class="o">=</span> <span class="mi">1</span>
@@ -224,9 +226,9 @@
         <span class="k">elif</span> <span class="n">okay</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">break</span>
     <span class="k">if</span> <span class="n">iterations</span> <span class="o">==</span> <span class="n">max_iterations</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Could not reorient molecule after &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">max_iterations</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; attempts&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">new_mol</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">get_inertia_tensor</span><span class="p">(</span><span class="n">new_mol</span><span class="p">))</span>
+        <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Could not reorient molecule after &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">max_iterations</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; attempts</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">new_mol</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">get_inertia_tensor</span><span class="p">(</span><span class="n">new_mol</span><span class="p">)),</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">return</span> <span class="n">new_mol</span><span class="p">,</span> <span class="n">P</span></div>
 
@@ -360,7 +362,7 @@
         <span class="k">if</span> <span class="n">allow_inversion</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">wyckoffs</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: cannot place chiral molecule in spagegroup&quot;</span><span class="p">)</span>
+                    <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Warning: cannot place chiral molecule in spagegroup&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
                     <span class="k">return</span> <span class="kc">False</span>
     <span class="c1">#Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp</span>
     <span class="n">opa_w</span> <span class="o">=</span> <span class="p">[]</span>
@@ -475,7 +477,8 @@
                     <span class="n">T2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">R</span><span class="p">),</span> <span class="n">T</span><span class="p">)</span>
                 <span class="n">a</span> <span class="o">=</span> <span class="n">angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">T2</span><span class="p">,</span> <span class="n">opa</span><span class="o">.</span><span class="n">axis</span><span class="p">),</span> <span class="n">constraint2</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=.</span><span class="mi">01</span><span class="p">):</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Generated incorrect rotation: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+                    <span class="n">printx</span><span class="p">(</span><span class="s2">&quot;Error: Generated incorrect rotation: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="o">+</span><span class="s2">&quot;(Within orientation_in_wyckoff_position)&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
                 <span class="n">o</span> <span class="o">=</span> <span class="n">Orientation</span><span class="p">(</span><span class="n">T2</span><span class="p">,</span> <span class="n">degrees</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
                 <span class="n">orientations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
         <span class="c1">#If there is only one constraint</span>

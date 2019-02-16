@@ -14,6 +14,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -449,7 +450,7 @@ overlap between molecules instead</li>
 
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.mol_site.get_centers">
-<code class="descname">get_centers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_centers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_centers" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_centers</code><span class="sig-paren">(</span><em>absolute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_centers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_centers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the fractional coordinates for the center of mass for each molecule in
 the Wyckoff position</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -464,7 +465,7 @@ the Wyckoff position</p>
 
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.mol_site.get_coords_and_species">
-<code class="descname">get_coords_and_species</code><span class="sig-paren">(</span><em>absolute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_coords_and_species"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_coords_and_species" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_coords_and_species</code><span class="sig-paren">(</span><em>absolute=False</em>, <em>add_PBC=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_coords_and_species"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_coords_and_species" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lazily generates and returns the atomic coordinate and species for the
 Wyckoff position. Plugs the molecule into the provided orientation
 (with angle=0), and calculates the new positions.</p>
@@ -472,17 +473,25 @@ Wyckoff position. Plugs the molecule into the provided orientation
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>absolute</strong> – whether or not to return absolute (Euclidean)
-coordinates. If false, return relative coordinates instead</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
-<dt>coords is an np array of 3-vectors. species is</dt>
-<dd>a list of atomic species names, for example
-[‘H’, ‘H’, ‘O’, ‘H’, ‘H’, ‘O’]</dd>
-</dl>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>absolute</strong> – whether or not to return absolute (Euclidean)
+coordinates. If false, return relative coordinates instead</li>
+<li><strong>add_PBC</strong> – whether or not to add coordinates in neighboring unit cells, used for
+distance checking</li>
+</ul>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">coords, species</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>coords is an np array of 3-vectors. species is</dt>
+<dd><p class="first last">a list of atomic species names, for example
+[‘H’, ‘H’, ‘O’, ‘H’, ‘H’, ‘O’]</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">coords, species</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -517,6 +526,11 @@ molecular centers and orientations.</p>
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="method">
+<dt id="pyxtal.molecular_crystal.mol_site.get_radius">
+<code class="descname">get_radius</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#mol_site.get_radius"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.mol_site.get_radius" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.mol_site.get_tols_matrix">
@@ -628,7 +642,7 @@ position, and makes sure at least one valid combination of WP’s exists.</p>
 
 <dl class="method">
 <dt id="pyxtal.molecular_crystal.molecular_crystal.generate_crystal">
-<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=30</em>, <em>max2=30</em>, <em>max3=30</em>, <em>max4=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.generate_crystal" title="Permalink to this definition">¶</a></dt>
+<code class="descname">generate_crystal</code><span class="sig-paren">(</span><em>max1=40</em>, <em>max2=10</em>, <em>max3=10</em>, <em>max4=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/molecular_crystal.html#molecular_crystal.generate_crystal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.molecular_crystal.molecular_crystal.generate_crystal" title="Permalink to this definition">¶</a></dt>
 <dd><p>The main code to generate a random molecular crystal. If successful,
 stores a pymatgen.core.structure object in self.struct and sets
 self.valid to True. If unsuccessful, sets self.valid to False and

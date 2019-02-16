@@ -14,6 +14,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -501,6 +502,50 @@ or in degrees (False)</li>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">[axis, angle]</p>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyxtal.operations.printx">
+<code class="descclassname">pyxtal.operations.</code><code class="descname">printx</code><span class="sig-paren">(</span><em>text</em>, <em>priority=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/operations.html#printx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.operations.printx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Custom printing function based on verbosity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>text</strong> – string to be passed to print</li>
+<li><strong>priority</strong> – the importance of printing the message
+0: Critical; must be printed
+1: Warning; unexpected event occured, but program functioning
+2: Info; useful information not necessary to be printed
+3: Debug; detailed information mainly used for debugging</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Nothing</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="data">
+<dt id="pyxtal.operations.pyxtal_verbosity">
+<code class="descclassname">pyxtal.operations.</code><code class="descname">pyxtal_verbosity</code><em class="property"> = 1</em><a class="headerlink" href="#pyxtal.operations.pyxtal_verbosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>prints critical messages only
+1: prints warnings
+2: prints useful information
+3: prints debug information</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">Stores how much should be printed</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body">0</td>
 </tr>
 </tbody>
 </table>

@@ -14,6 +14,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -977,6 +978,12 @@ for position 4a, the function would return ‘a’)</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="pyxtal.symmetry.list_point_groups">
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">list_point_groups</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#list_point_groups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.list_point_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints out the numbers and symbols of the crystallographic point groups</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="pyxtal.symmetry.organized_wyckoffs">
 <code class="descclassname">pyxtal.symmetry.</code><code class="descname">organized_wyckoffs</code><span class="sig-paren">(</span><em>group</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyxtal/symmetry.html#organized_wyckoffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyxtal.symmetry.organized_wyckoffs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes a Group object or unorganized list of Wyckoff positions and returns
@@ -992,6 +999,13 @@ a 3D list of SymmOp objects if group is a 2D list of SymmOps</td>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="data">
+<dt id="pyxtal.symmetry.pgdict">
+<code class="descclassname">pyxtal.symmetry.</code><code class="descname">pgdict</code><em class="property"> = {1: 'C1', 2: 'Ci', 3: 'C2', 4: 'Cs', 5: 'C2h', 6: 'D2', 7: 'C2v', 8: 'D2h', 9: 'C4', 10: 'S4', 11: 'C4h', 12: 'D4', 13: 'C4v', 14: 'D2d', 15: 'D4h', 16: 'C3', 17: 'C3i', 18: 'D3', 19: 'C3v', 20: 'D3d', 21: 'C6', 22: 'C3h', 23: 'C6h', 24: 'D6', 25: 'C6v', 26: 'D3h', 27: 'D6h', 28: 'T', 29: 'Th', 30: 'O', 31: 'Td', 32: 'Oh'}</em><a class="headerlink" href="#pyxtal.symmetry.pgdict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dict of crystallographic point group symbols and their corresponding numbers
+(the number for initializing a Group object)</p>
 </dd></dl>
 
 <dl class="function">

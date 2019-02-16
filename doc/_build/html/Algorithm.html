@@ -14,6 +14,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -48,9 +49,8 @@
 <div class="section" id="how-pyxtal-works">
 <h1>How PyXtal Works<a class="headerlink" href="#how-pyxtal-works" title="Permalink to this headline">¶</a></h1>
 <p>PyXtal is a free, open source Python package intended to aid with crystal structure prediction. It is our aim to make our tools and theory freely available, in order to expand the knowledge and utilization of crystallographic symmetry. To this end, we outline the basic algorithms used by PyXtal. For more general information about crystallography, see the <a class="reference external" href="Background.html">Background and Theory</a> page.</p>
-</div>
 <div class="section" id="overview">
-<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>In order to generate random symmetrical crystals, PyXtal uses space groups and their Wyckoff positions as templates, then inserts atoms (or molecules) one Wyckoff position at a time, until the desired stoichiometry is reached. This ensures that the correct symmetry will be obtained, without the need to adjust atomic positions. Along the way, it checks that the atoms are sufficiently far apart. To generate a single random crystal, PyXtal performs roughly seven steps:</p>
 <ol class="arabic simple">
 <li>Get the input parameters from the user. This includes the crystal’s stoichiometry, space group, and volume factor. Optionally, the desired lattice and allowed inter-atomic distances can also be defined (which is useful for testing at higher pressures). Otherwise, these parameters will be chosen automatically.</li>
@@ -65,28 +65,29 @@
 <p>Next, we explain the steps listed above in greater detail.</p>
 </div>
 <div class="section" id="user-input">
-<h1>User Input<a class="headerlink" href="#user-input" title="Permalink to this headline">¶</a></h1>
+<h2>User Input<a class="headerlink" href="#user-input" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="checking-compatibility">
-<h1>Checking Compatibility<a class="headerlink" href="#checking-compatibility" title="Permalink to this headline">¶</a></h1>
+<h2>Checking Compatibility<a class="headerlink" href="#checking-compatibility" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="lattice-generation">
-<h1>Lattice Generation<a class="headerlink" href="#lattice-generation" title="Permalink to this headline">¶</a></h1>
+<h2>Lattice Generation<a class="headerlink" href="#lattice-generation" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="generation-of-wyckoff-positions">
-<h1>Generation of Wyckoff Positions<a class="headerlink" href="#generation-of-wyckoff-positions" title="Permalink to this headline">¶</a></h1>
+<h2>Generation of Wyckoff Positions<a class="headerlink" href="#generation-of-wyckoff-positions" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="checking-inter-atomic-distances">
-<h1>Checking Inter-atomic Distances<a class="headerlink" href="#checking-inter-atomic-distances" title="Permalink to this headline">¶</a></h1>
+<h2>Checking Inter-atomic Distances<a class="headerlink" href="#checking-inter-atomic-distances" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="merging-and-checking-wyckoff-positions">
-<h1>Merging and Checking Wyckoff Positions<a class="headerlink" href="#merging-and-checking-wyckoff-positions" title="Permalink to this headline">¶</a></h1>
+<h2>Merging and Checking Wyckoff Positions<a class="headerlink" href="#merging-and-checking-wyckoff-positions" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="checking-wyckoff-site-symmetry">
-<h1>Checking Wyckoff Site Symmetry<a class="headerlink" href="#checking-wyckoff-site-symmetry" title="Permalink to this headline">¶</a></h1>
+<h2>Checking Wyckoff Site Symmetry<a class="headerlink" href="#checking-wyckoff-site-symmetry" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="finding-valid-molecular-orientations">
-<h1>Finding Valid Molecular Orientations<a class="headerlink" href="#finding-valid-molecular-orientations" title="Permalink to this headline">¶</a></h1>
+<h2>Finding Valid Molecular Orientations<a class="headerlink" href="#finding-valid-molecular-orientations" title="Permalink to this headline">¶</a></h2>
+</div>
 </div>
 
 
@@ -97,7 +98,7 @@
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">How PyXtal Works</a></li>
+<li><a class="reference internal" href="#">How PyXtal Works</a><ul>
 <li><a class="reference internal" href="#overview">Overview</a></li>
 <li><a class="reference internal" href="#user-input">User Input</a></li>
 <li><a class="reference internal" href="#checking-compatibility">Checking Compatibility</a></li>
@@ -107,6 +108,8 @@
 <li><a class="reference internal" href="#merging-and-checking-wyckoff-positions">Merging and Checking Wyckoff Positions</a></li>
 <li><a class="reference internal" href="#checking-wyckoff-site-symmetry">Checking Wyckoff Site Symmetry</a></li>
 <li><a class="reference internal" href="#finding-valid-molecular-orientations">Finding Valid Molecular Orientations</a></li>
+</ul>
+</li>
 </ul>
 
   <h4>Previous topic</h4>
