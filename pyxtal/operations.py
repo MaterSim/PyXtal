@@ -20,6 +20,7 @@ from math import pi, acos
 from math import fabs
 from pymatgen.core.operations import SymmOp
 from copy import deepcopy
+from warnings import warn
 rad = pi/180.
 deg = 180./pi
 
@@ -47,8 +48,13 @@ def printx(text, priority=1):
     Returns:
         Nothing
     """
-    if priority <= pyxtal_verbosity:
-        print(text)
+    if priority <= 1:
+        warn(text)
+        return
+
+    else:
+        if priority <= pyxtal_verbosity:
+            print(text)
 
 def euler_from_matrix(m, radians=True):
     """

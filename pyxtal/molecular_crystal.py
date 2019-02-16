@@ -751,7 +751,7 @@ class mol_site():
             True if the atoms are not too close together, False otherwise
         """
         if atomic is True:
-            """m_length = len(self.mol.species)
+            m_length = len(self.mol.species)
             #TODO: Use tm instead of tols lists
             #Get coords of WP with PBC
             coords, species = self._get_coords_and_species()
@@ -782,7 +782,7 @@ class mol_site():
                 if (d<tols).any():
                     return False
 
-            return True"""
+            return True
 
 
 
@@ -1110,8 +1110,8 @@ class molecular_crystal():
             except:
                 printx("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.", priority=1)
                 self.valid = False
-                self.struct = self.Msg7
-                return self.Msg7
+                self.struct = None
+                return
         self.generate_crystal()
 
     def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=Tol_matrix(prototype="molecular")):
@@ -1289,9 +1289,9 @@ class molecular_crystal():
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible()
         if degrees is False:
-            self.struct = self.Msg1
+            self.struct = None
             self.valid = False
-            return self.Msg1
+            return
         else:
             if degrees == 0:
                 max1 = 20
@@ -1482,9 +1482,9 @@ class molecular_crystal():
         printx("Couldn't generate crystal after max attempts.", priority=1)
         if degrees == 0:
             printx("Note: Wyckoff positions have no degrees of freedom.", priority=2)
-        self.struct = self.Msg2
+        self.struct = None
         self.valid = False
-        return self.Msg2
+        return
 
 class molecular_crystal_2D(molecular_crystal):
     """

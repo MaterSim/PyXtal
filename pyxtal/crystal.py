@@ -1863,8 +1863,8 @@ class random_crystal():
             except:
                 printx("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.", priority=1)
                 self.valid = False
-                self.struct = self.Msg7
-                return self.Msg7
+                self.struct = None
+                return
         #Generate the crystal
         self.generate_crystal()
 
@@ -1886,7 +1886,7 @@ class random_crystal():
         Returns:
             nothing
         """
-        self.Msg1 = 'Error: the number is incompatible with the wyckoff sites choice'
+        self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
         self.Msg2 = 'Error: failed in the cycle of generating structures'
         self.Msg3 = 'Warning: failed in the cycle of adding species'
         self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
@@ -2019,7 +2019,7 @@ class random_crystal():
         degrees = self.check_compatible()
         if degrees is False:
             printx(self.Msg1, priority=1)
-            self.struct = self.Msg1
+            self.struct = None
             self.valid = False
             return
         else:
@@ -2182,9 +2182,9 @@ class random_crystal():
                             """Whether or not a valid crystal was generated."""
                             return
         if degrees == 0: printx("Wyckoff positions have no degrees of freedom.", priority=2)
-        self.struct = self.Msg2
+        self.struct = None
         self.valid = False
-        return self.Msg2
+        return
 
 class random_crystal_2D(random_crystal):
     """
