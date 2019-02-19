@@ -19,21 +19,157 @@ At different pressures and temperatures, a material may go through a solid phase
 Periodicity, Lattices, and Unit Cells
 -------------------------------------
 
-Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensions. This means that when we translate the structure by a certain amount (in any one of 3 directions unique to the crystal), the crystal will look the same. This can be pictured in a few simple steps: 1) Define a small parallelepiped-shaped box. 2) Put atoms into the box (You can put as few or as many atoms as you like). 3) Make a copy of the box and place it adjacent to the original box. 4) Make a copy of the copy, and place that adjacent to the previous one, but along a different axis. 5) Repeat step 4 until you have filled all of space.
+Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensions. This means that when we translate the structure by a certain amount (in any one of 3 directions unique to the crystal), the crystal will look the same. This can be pictured in a few simple steps: 1) Define a small parallelepiped-shaped box. 2) Put atoms into the box (You can put as few or as many atoms as you like). 
 
-(TODO: Add image)
+.. image:: ../images/unit_cell1.png
+   :height: 444 px
+   :width: 576 px
+   :scale: 35 %
+   :alt: single unit cell
+   :align: center
+
+3) Make a copy of the box and place it adjacent to the original box.
+
+.. image:: ../images/unit_cell2.png
+   :height: 763 px
+   :width: 995 px
+   :scale: 35 %
+   :alt: repeated unit cell
+   :align: center
+
+4) Make a copy of the copy, and place that adjacent to the previous one, but along a different axis.
+
+.. image:: ../images/unit_cell3.png
+   :height: 763 px
+   :width: 983 px
+   :scale: 35 %
+   :alt: repeated unit cell
+   :align: center
+
+5) Repeat step 4 until you have filled all of space.
+
+.. image:: ../images/unit_cell4.png
+   :height: 763 px
+   :width: 1095 px
+   :scale: 35 %
+   :alt: full crystal
+   :align: center
 
 We say that the resulting object has translational symmetry, or that it is periodic. We can be more specific by defining the vectors of translational symmetry. For a given crystal, there are 3 such linearly independent vectors. These 3 vectors, placed into a matrix, define what is called the unit cell. Alternatively, we can define the unit cell using the lengths of each side of the box (usually called a, b, c), along with the angles between them (usually called alpha, beta, gamma). These 6 values are called the cell parameters. The unit cell is any parallepiped-shaped part of the crystal which can be used to generate the rest of the crystal through translations alone. Any unit cell which has the smallest possible volume is called a primitive cell.
 
 Note: a given crystal can have multiple ways to define a primitive cell, and there is not always a clearly preferred choice. Consider a 2-dimensional square lattice. You could just as well define the lattice using parallelograms which run along the diagonal lines:
 
-(TODO: Add image)
+.. image:: ../images/equivalent_lattices.png
+   :height: 488 px
+   :width: 1604 px
+   :scale: 35 %
+   :alt: equivalent lattices
+   :align: center
 
 To avoid this confusion, there is a set of standards (defined in the `International Tables of Crystallography <https://it.iucr.org/>`_) which is typically used. A cell based on these standards is called the conventional cell. In many cases, the conventional cell is not actually a primitive cell. Instead, the conventional cell may have extra atoms which exist in specific locations within the cell. So, the cell type is determined both by the cell parameters, and by any additional atomic sites within the cell.
 
 Different cell parameters lead to different rotational symmetries of the unit cell (we will discuss this more below). Based on these symmetries, unit cells can be divided into seven different "crystal classes". Each crystal class has a different range of allowable cell parameters; triclinic is the general class, requiring no symmetry. Combining these restrictions with possible extra lattice positions, we get 14 possible types of lattices, called the Bravais lattices. We list these here:
 
-(TODO: Add image)
+Triclinic:
+
+.. image:: ../images/triclinic.png
+   :height: 92 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: triclinic cell
+
+Monoclinic (Primitive, C-centered):
+
+.. image:: ../images/monoclinic_P.png
+   :height: 125 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: primitive monoclinic cell
+
+.. image:: ../images/monoclinic_C.png
+   :height: 125 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: C-centered monoclinic cell
+
+Orthorhombic (Primitive, C-centered, Body-centered, Face-centered):
+
+.. image:: ../images/orthorhombic_P.png
+   :height: 116 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: primitive orthorhombic cell
+
+.. image:: ../images/orthorhombic_C.png
+   :height: 116 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: C-centered orthorhombic cell
+
+
+.. image:: ../images/orthorhombic_I.png
+   :height: 116 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: body-centered orthorhombic cell
+
+.. image:: ../images/orthorhombic_F.png
+   :height: 116 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: Face-centered orthorhombic cell
+
+Tetragonal (Primitive, Body-centered):
+
+.. image:: ../images/tetragonal_P.png
+   :height: 133 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: primitive tetragonal cell
+
+.. image:: ../images/tetragonal_I.png
+   :height: 133 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: body-centered tetragonal cell
+
+Hexagonal:
+
+.. image:: ../images/hexagonal.png
+   :height: 103 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: hexagonal cell
+
+Rhombohedral:
+
+.. image:: ../images/rhombohedral.png
+   :height: 96 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: rhombohedral cell
+
+Cubic (Primitive, Body-centered, Face-centered):
+
+.. image:: ../images/cubic_P.png
+   :height: 93 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: primitive cubic cell
+
+.. image:: ../images/cubic_I.png
+   :height: 93 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: body-centered cubic cell
+
+.. image:: ../images/cubic_F.png
+   :height: 93 px
+   :width: 80 px
+   :scale: 100 %
+   :alt: face-centered cubic cell
+
+[#]_
 
 Much like squares can be considered a special case of rectangles, all unit cells can be thought of as special cases of triclinic cells. Cubic cells are a subset of tetragonal cells, tetragonal cells are a subset of orthorhombic cells, and so on.
 
@@ -45,7 +181,11 @@ Whenever possible, PyXtal uses the same choices of unit cell as the Bilbao Cryst
 
 Typically, to describe coordinates within a crystal, we use what are called fractional coordinates. Fractional coordinates use the lattice vectors as the basis, as opposed to absolute coordinates, which use Euclidean space as the basis. This makes it easier to describe two similar structures that differ only in their lattice values. Unless otherwise specified, any listed coordinates are fractional coordinates.
 
-(TODO: Insert fractional/absolute coordinate picture)
+.. image:: ../images/fractional.png
+   :height: 351 px
+   :width: 481 px
+   :scale: 100 %
+   :alt: fractional vs absolute coordinates
 
 It is important to note that when periodicity is present, multiple coordinates can actually correspond to the same point, at least in notation. It is common practice to convert all coordintaes to lie within the range [0.1) for periodic axes. So, for example, if we have a point at (1.4,-0.3,0.6), it will usually be written as (0.4,0.7,0.6). This is because it is assumed that each unit cell is the same. In other words, an atom located at (1.4,-0.3,0.6) implies that another atom is located at (0.4,0.7,0.6). So, it is more convenient to only consider the unit cell which lies between (0,0,0) and (1,1,1).
 
@@ -70,17 +210,23 @@ where * denotes standard matrix multiplication. From this definition, we see tha
 
 Alternatively, the matrix-column pair can be "combined" into a single 4x4 matrix. We simply place the vector to the right of the rotation matrix, place 0's on the bottom row, and place a 1 in the lower right-hand corner:
 
-(TODO: insert matrix image)
+.. image:: ../images/matrix4x4.png
+   :height: 343 px
+   :width: 828 px
+   :scale: 50%
+   :alt: fractional vs absolute coordinates
 
 This 4x4 matrix is called an affine transformation matrix. With it, we can apply operations using a single matrix multiplication operation. Although this may seem like just a mathematical trick, the affine matrix notation highlights the group structure of the transformations, as it allows translations and rotations to be placed on equal footing. Furthermore, we can use the additional dimension to represent time: the '1' value can be thought of as a single step forward in time, and thus we can define both rotational and translational reference frames (and equivalently, torques and forces) with a single 4x4 matrix. Objects which are (periodically) symmetric in time are called time crystals. Such objects have only recently been synthesized in the lab, and there is likely more research to be done. However, for most applications in crystallography, time is not a factor, and we consider only spatial symmetries.
 
 Sometimes crystallographers express an affine transformation as a list of letters and numbers, separated by commas (for example, "x,y,z"). In this notation, the first, second, and third positions denote what happens to the 
 unit x, y, and z axes, respectively. So if we want to perform an inversion, we replace each axis with its opposite. Then, "x,y,z" becomes "-x,-y,-z". So, you can use "-x,-y,-z" to represent an inversion. Similarly, "y,-x,z" would represent a 90 degree rotation about the z axis (using the right hand rule). You can also map to a linear combination of axes, or add a constant value. So, you might see something like "x-y,x,z+1/2". Here, we just follow the same procedure: x, which is the vector (1,0,0) is mapped onto x-y, which is the vector (1,-1,0). y (0,1,0) is mapped onto x (1,0,0), and z (0,0,1) is mapped onto z+1/2 (0,0,1), or in the 4x4 notation, (0,0,1,.5). To express the addition of a constant (in this case 1/2 for the z-axis), the right-hand side of the 4x4 matrix is used. So, we would write "x-y,x,z+1/2" as:
 
-|  1  -1   0   0|
-|  1   0   0   0|
-|  0   0   1  .5| 
-|  0   0   0   1|
+.. image:: ../images/affine_matrix.png
+   :height: 126 px
+   :width: 174 px
+   :scale: 100%
+   :alt: [[1,-1,0,0],[1,0,0,0],[0,0,1,0.5],[0,0,0,1]]
+
 
 Note that the mapped vectors are written as rows, NOT columns. So, "x-y" is written on the first row as (1,-1,0,0). Again, the bottom row is always (0,0,0,1), so that matrix multiplication is preserved.
 
@@ -130,8 +276,6 @@ Sometimes, it is inconvenient to list every member of a group. Instead, it is of
 
 Thus, we say that (2) and (3) are generators of the group. Typically, there is not a single "best" choice of generators for a group. We could just as easily have chosen (2) and (6), or (4) and (3), or some other subset as our generators.
 
-(TODO: Add more example images of groups)
-
 Symmetry Groups
 ---------------
 
@@ -141,21 +285,26 @@ When we want to define the symmetry of an object, we specify the object's symmet
 
 The simplest 3D symmetry group is the trival group (called "1"). This group has only the identity transformation I, which means that it corresponds to a completely asymmetrical object. For such an object, there is no transformation (besides the identity) which brings the object back to its original state. Most molecules have at least some rotational symmetry, and crystals always have at least translational symmetry, so we will not encounter this group very often.
 
-(TODO: add image of asymmetrical object)
-
 On the other hand, we can consider empty 3D space, which is perfectly symmetrical (note: this does not apply to actual empty space, which contain gravitational and quantum fields). The symmetry group of empty space includes not only rotations and translations, but also scaling and shearing, since "nothing" will always be mapped back onto "nothing".
 
 
 Note that only empty space, or other idealized objects (including some fractals) can have scaling symmetry. For atomic structures, we will never encounter this. However, shear symmetry is possible for lattices. As an example, consider the different choices for the primitive cell shown in the section above. These different primitive cells can be mapped onto each other using shear transformations. It is important to note that in general only simple lattices have this shearing symmetry; if there are atoms inside of the lattice, they may not map onto other atoms in the crystal.
 
-
 We can also define symmetry groups for objects of arbitrary dimension. A simple example is the equilateral triangle, which has a 3-fold rotational symmetry, as well as 3 reflectional symmetries.
 
-(TODO: add triangle image)
+.. image:: ../images/triangle.png
+   :height: 266 px
+   :width: 310 px
+   :scale: 75% %
+   :alt: triangular symmetry
 
 A slightly more complex example is the regular hexagon, which has all of the symmetries of the triangle, but also 6-fold and 2-fold rotational symmetry, and additional reflectional symmetries. Combining rotation and reflection, the hexagon also has inversional symmetry:
 
-(TODO: Add hexagon image)
+.. image:: ../images/hexagon.png
+   :height: 477 px
+   :width: 499 px
+   :scale: 75% %
+   :alt: hexagonal symmetry
 
 It takes practice to develop an intuition for finding symmetries, but the results can be very rewarding. Often, a symmetry can be utilized to lessen the work needed to solve a problem, sometimes even reducing the problem to a trivial identity. This is a core concept in mathematics and physics, and deserves reflection.
 
@@ -166,7 +315,29 @@ In order for an object to be translationally symmetric, it must be periodic alon
 
 A point group can contain rotations, reflections, and possibly inversion. There are several conventions for naming point groups, but PyXtal uses the Schoenflies notation. Here, point groups have one or two letters to describe the type(s) of transformations present, and a number to describe the order. For detailed information, see the Wikipedia page. Below are a few examples of point groups found in crystallography and chemistry.
 
-(TODO: insert images of point group symmetries)
+H2O: point group C2v (2-fold rotation axis, and two mirror planes) [#]_
+
+.. image:: ../images/water_symmetry_1.gif
+   :height: 291 px
+   :width: 360 px
+   :scale: 75%
+   :alt: H2O molecule symmetry
+
+Hypothetical Pmmm crystal: point group mmm (3 mirror planes)
+
+.. image:: ../images/Pmmm.png
+   :height: 754 px
+   :width: 619 px
+   :scale: 35%
+   :alt: Buckminsterfullerene molecule
+
+Buckminsterfullerene: point group Ih (Full icosohedral symmetry) [#]_
+
+.. image:: ../images/Bucky.png
+   :height: 1067 px
+   :width: 1024 px
+   :scale: 25%
+   :alt: Buckminsterfullerene molecule
 
 Space Groups
 ------------
@@ -184,7 +355,11 @@ Wyckoff Positions
 
 Because symmetry operations can be thought of as making "copies" of parts of an object, we can usually only describe part of a structure, and let symmetry generate the rest. This small part of the structure used to generate the rest is called the asymmetric unit. However, not all points in the asymmetric unit are generated the same. If an atom lies within certain regions - planes, lines, or points - then the atom may not be "copied" as many times as other atoms within the asymmetric unit. A familiar example is in the creation of a paper snowflake. We start with a hexagon, then fold it into a single triangle 6 sheets thick. Then, if we cut out a mark somewhere in the middle of the triangle, the mark is copied 6-fold. However, if we instead cut out a mark alonng the triangle's edge, or at the tip, the marks will only have 3 or 1 copies:
 
-(TODO: Add image of paper snowflake)
+.. image:: ../images/PaperSnowflake.png
+   :height: 256 px
+   :width: 256 px
+   :scale: 100%
+   :alt: Paper snowflake
 
 These different regions are called Wyckoff positions, and the number of copies is called the multiplicity of the Wyckoff position. So, if an atom lies in a Wyckoff position with multiplicity greater than 1, then that Wyckoff position actually corresponds to multiple atoms. However, thanks to symmetry, we can refer to all of the copies (for that particular atom) as a single Wyckoff position. This makes describing a crystal much easier, since we no longer need to specify the exact location of most of the atoms. Instead, we need only list the space group, the lattice, and the location and type of one atom from each Wyckoff position. This is exactly how the cif file format encodes crystal data (more info below). Just keep in mind that in this format, a single atomic entry may correspond to multiple atoms in the unit cell.
 
@@ -215,11 +390,7 @@ Molecular Wyckoff Positions
 
 In most cases, it is assumed that the objects occupying Wyckoff positions will be atoms. Because atoms are spherically symmetrical, they will always possess the site symmetry associated with a given Wyckoff position. However, this is not always the case for molecules, which have their own point group symmetry. Because of this, a given molecule may or may not fit into a given Wyckoff position, depending on its symmetry and orientation.
 
-In order for a molecule to fit within a Wyckoff position, its point group must be a supergroup of the position's site symmetry. In other words, the molecule must be at least as symmetrical as the region of the Wyckoff position itself (with reference to the operations of the space group as a whole). Furthermore, the molecule must be oriented in such a way that its symmetry axes line up with the symmetry axes of the Wyckoff position. As an example, consider a Wyckoff position with site symmetry 2. This is an axis with 2-fold symmetry. Now consider a water molecule lying on this axis. In order to truly occupy the Wyckoff position, the water molecule's 2-fold axis must line up with the Wyckoff position's.
-
-(TODO: Insert image of water symmetry)
-
-(TODO: Insert images of water aligned/misaligned with 2-fold axis)
+In order for a molecule to fit within a Wyckoff position, its point group must be a supergroup of the position's site symmetry. In other words, the molecule must be at least as symmetrical as the region of the Wyckoff position itself (with reference to the operations of the space group as a whole). Furthermore, the molecule must be oriented in such a way that its symmetry axes line up with the symmetry axes of the Wyckoff position. As an example, consider a Wyckoff position with site symmetry 2. This is an axis with 2-fold symmetry. Now consider a water molecule lying on this axis. In order to truly occupy the Wyckoff position, the water molecule's 2-fold axis must line up with the Wyckoff position's (See the water molecule image above).
 
 For larger site symmetry groups, it is more complicated to check if a molecule will fit or not. The algorithm used by PyXtal for doing this is detailed in the `How PyXtal Works <Algorithm.html>`_ page.
 
@@ -267,3 +438,9 @@ Cif uses the space group symmetry to compress the data. The core information con
 In contrast, a POSCAR file does not provide the symmetry information, but instead specifies the type and location of every atom in the unit cell, including those which are symmetrical copies of each other. This results in a larger file, but one that is easier to read, since no symmetry operations need to be applied. The downside is that if one wishes to know the space group, it must either be calculated, or given by some external source.
 
 Each format has advantages and disadvantages. A computational crystallographer should be familiar with both, and understand the differences. If you provide a POSCAR file for a structure, you should also provide the symmetry group. Likewise, if you provide a cif file, you should be certain that the symmetry information is correct, and that you are using the correct space group setting.
+
+.. [#] Images from https://en.wikipedia.org/wiki/Crystal_structure
+
+.. [#] Image from "Molecular Orbitals for Water (H2O)"http://www1.lsbu.ac.uk/php-cgiwrap/water/pfp.php3?page=http://www1.lsbu.ac.uk/water/h2o_orbitals.html)
+
+.. [#] Image from https://en.wikipedia.org/wiki/Buckminsterfullerene#/media/File:Buckminsterfullerene-perspective-3D-balls.png

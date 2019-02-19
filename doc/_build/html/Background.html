@@ -58,20 +58,53 @@
 </div>
 <div class="section" id="periodicity-lattices-and-unit-cells">
 <h2>Periodicity, Lattices, and Unit Cells<a class="headerlink" href="#periodicity-lattices-and-unit-cells" title="Permalink to this headline">¶</a></h2>
-<p>Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensions. This means that when we translate the structure by a certain amount (in any one of 3 directions unique to the crystal), the crystal will look the same. This can be pictured in a few simple steps: 1) Define a small parallelepiped-shaped box. 2) Put atoms into the box (You can put as few or as many atoms as you like). 3) Make a copy of the box and place it adjacent to the original box. 4) Make a copy of the copy, and place that adjacent to the previous one, but along a different axis. 5) Repeat step 4 until you have filled all of space.</p>
-<p>(TODO: Add image)</p>
+<p>Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensions. This means that when we translate the structure by a certain amount (in any one of 3 directions unique to the crystal), the crystal will look the same. This can be pictured in a few simple steps: 1) Define a small parallelepiped-shaped box. 2) Put atoms into the box (You can put as few or as many atoms as you like).</p>
+<a class="reference internal image-reference" href="_images/unit_cell1.png"><img alt="single unit cell" class="align-center" src="_images/unit_cell1.png" style="width: 201.6px; height: 155.39999999999998px;" /></a>
+<ol class="arabic simple" start="3">
+<li>Make a copy of the box and place it adjacent to the original box.</li>
+</ol>
+<a class="reference internal image-reference" href="_images/unit_cell2.png"><img alt="repeated unit cell" class="align-center" src="_images/unit_cell2.png" style="width: 348.25px; height: 267.05px;" /></a>
+<ol class="arabic simple" start="4">
+<li>Make a copy of the copy, and place that adjacent to the previous one, but along a different axis.</li>
+</ol>
+<a class="reference internal image-reference" href="_images/unit_cell3.png"><img alt="repeated unit cell" class="align-center" src="_images/unit_cell3.png" style="width: 344.04999999999995px; height: 267.05px;" /></a>
+<ol class="arabic simple" start="5">
+<li>Repeat step 4 until you have filled all of space.</li>
+</ol>
+<a class="reference internal image-reference" href="_images/unit_cell4.png"><img alt="full crystal" class="align-center" src="_images/unit_cell4.png" style="width: 383.25px; height: 267.05px;" /></a>
 <p>We say that the resulting object has translational symmetry, or that it is periodic. We can be more specific by defining the vectors of translational symmetry. For a given crystal, there are 3 such linearly independent vectors. These 3 vectors, placed into a matrix, define what is called the unit cell. Alternatively, we can define the unit cell using the lengths of each side of the box (usually called a, b, c), along with the angles between them (usually called alpha, beta, gamma). These 6 values are called the cell parameters. The unit cell is any parallepiped-shaped part of the crystal which can be used to generate the rest of the crystal through translations alone. Any unit cell which has the smallest possible volume is called a primitive cell.</p>
 <p>Note: a given crystal can have multiple ways to define a primitive cell, and there is not always a clearly preferred choice. Consider a 2-dimensional square lattice. You could just as well define the lattice using parallelograms which run along the diagonal lines:</p>
-<p>(TODO: Add image)</p>
+<a class="reference internal image-reference" href="_images/equivalent_lattices.png"><img alt="equivalent lattices" class="align-center" src="_images/equivalent_lattices.png" style="width: 561.4px; height: 170.79999999999998px;" /></a>
 <p>To avoid this confusion, there is a set of standards (defined in the <a class="reference external" href="https://it.iucr.org/">International Tables of Crystallography</a>) which is typically used. A cell based on these standards is called the conventional cell. In many cases, the conventional cell is not actually a primitive cell. Instead, the conventional cell may have extra atoms which exist in specific locations within the cell. So, the cell type is determined both by the cell parameters, and by any additional atomic sites within the cell.</p>
 <p>Different cell parameters lead to different rotational symmetries of the unit cell (we will discuss this more below). Based on these symmetries, unit cells can be divided into seven different “crystal classes”. Each crystal class has a different range of allowable cell parameters; triclinic is the general class, requiring no symmetry. Combining these restrictions with possible extra lattice positions, we get 14 possible types of lattices, called the Bravais lattices. We list these here:</p>
-<p>(TODO: Add image)</p>
+<p>Triclinic:</p>
+<a class="reference internal image-reference" href="_images/triclinic.png"><img alt="triclinic cell" src="_images/triclinic.png" style="width: 80.0px; height: 92.0px;" /></a>
+<p>Monoclinic (Primitive, C-centered):</p>
+<a class="reference internal image-reference" href="_images/monoclinic_P.png"><img alt="primitive monoclinic cell" src="_images/monoclinic_P.png" style="width: 80.0px; height: 125.0px;" /></a>
+<a class="reference internal image-reference" href="_images/monoclinic_C.png"><img alt="C-centered monoclinic cell" src="_images/monoclinic_C.png" style="width: 80.0px; height: 125.0px;" /></a>
+<p>Orthorhombic (Primitive, C-centered, Body-centered, Face-centered):</p>
+<a class="reference internal image-reference" href="_images/orthorhombic_P.png"><img alt="primitive orthorhombic cell" src="_images/orthorhombic_P.png" style="width: 80.0px; height: 116.0px;" /></a>
+<a class="reference internal image-reference" href="_images/orthorhombic_C.png"><img alt="C-centered orthorhombic cell" src="_images/orthorhombic_C.png" style="width: 80.0px; height: 116.0px;" /></a>
+<a class="reference internal image-reference" href="_images/orthorhombic_I.png"><img alt="body-centered orthorhombic cell" src="_images/orthorhombic_I.png" style="width: 80.0px; height: 116.0px;" /></a>
+<a class="reference internal image-reference" href="_images/orthorhombic_F.png"><img alt="Face-centered orthorhombic cell" src="_images/orthorhombic_F.png" style="width: 80.0px; height: 116.0px;" /></a>
+<p>Tetragonal (Primitive, Body-centered):</p>
+<a class="reference internal image-reference" href="_images/tetragonal_P.png"><img alt="primitive tetragonal cell" src="_images/tetragonal_P.png" style="width: 80.0px; height: 133.0px;" /></a>
+<a class="reference internal image-reference" href="_images/tetragonal_I.png"><img alt="body-centered tetragonal cell" src="_images/tetragonal_I.png" style="width: 80.0px; height: 133.0px;" /></a>
+<p>Hexagonal:</p>
+<a class="reference internal image-reference" href="_images/hexagonal.png"><img alt="hexagonal cell" src="_images/hexagonal.png" style="width: 80.0px; height: 103.0px;" /></a>
+<p>Rhombohedral:</p>
+<a class="reference internal image-reference" href="_images/rhombohedral.png"><img alt="rhombohedral cell" src="_images/rhombohedral.png" style="width: 80.0px; height: 96.0px;" /></a>
+<p>Cubic (Primitive, Body-centered, Face-centered):</p>
+<a class="reference internal image-reference" href="_images/cubic_P.png"><img alt="primitive cubic cell" src="_images/cubic_P.png" style="width: 80.0px; height: 93.0px;" /></a>
+<a class="reference internal image-reference" href="_images/cubic_I.png"><img alt="body-centered cubic cell" src="_images/cubic_I.png" style="width: 80.0px; height: 93.0px;" /></a>
+<a class="reference internal image-reference" href="_images/cubic_F.png"><img alt="face-centered cubic cell" src="_images/cubic_F.png" style="width: 80.0px; height: 93.0px;" /></a>
+<p><a class="footnote-reference" href="#id10" id="id1">[1]</a></p>
 <p>Much like squares can be considered a special case of rectangles, all unit cells can be thought of as special cases of triclinic cells. Cubic cells are a subset of tetragonal cells, tetragonal cells are a subset of orthorhombic cells, and so on.</p>
 <p>The hexagonal and trigonal lattices are somewhat special cases. They can be generated using either trigonal/hexagonal prisms, or using the standard parallelepiped shape. For consistency, the parallelepiped is always used. Note that despite using a parallelepiped, this is still called a hexagonal cell choice.</p>
 <p>Some lattices can be generated using a rhombohedral unit cell. Such space groups begin with an “R”, and always have trigonal symmetry. For these cases, we again use the hexagonal cell.</p>
 <p>Whenever possible, PyXtal uses the same choices of unit cell as the Bilbao Crystallographic Server, which in turn uses the standard conventional cell. Their default choices are listed <a class="reference external" href="http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice">here.</a> For a complete list of the cell choices used by PyXtal, see the <a class="reference external" href="http://www.physics.unlv.edu/~qzhu/PyXtal/html/Settings.html">Group Settings</a> page.</p>
 <p>Typically, to describe coordinates within a crystal, we use what are called fractional coordinates. Fractional coordinates use the lattice vectors as the basis, as opposed to absolute coordinates, which use Euclidean space as the basis. This makes it easier to describe two similar structures that differ only in their lattice values. Unless otherwise specified, any listed coordinates are fractional coordinates.</p>
-<p>(TODO: Insert fractional/absolute coordinate picture)</p>
+<a class="reference internal image-reference" href="_images/fractional.png"><img alt="fractional vs absolute coordinates" src="_images/fractional.png" style="width: 481.0px; height: 351.0px;" /></a>
 <p>It is important to note that when periodicity is present, multiple coordinates can actually correspond to the same point, at least in notation. It is common practice to convert all coordintaes to lie within the range [0.1) for periodic axes. So, for example, if we have a point at (1.4,-0.3,0.6), it will usually be written as (0.4,0.7,0.6). This is because it is assumed that each unit cell is the same. In other words, an atom located at (1.4,-0.3,0.6) implies that another atom is located at (0.4,0.7,0.6). So, it is more convenient to only consider the unit cell which lies between (0,0,0) and (1,1,1).</p>
 </div>
 <div class="section" id="symmetry-operations">
@@ -85,23 +118,18 @@
 <p>r = Q*p + q</p>
 <p>where * denotes standard matrix multiplication. From this definition, we see that the rotation is always applied first, followed by the translation. This rule applies for multiple operations as well; with 3 operations (R,r)(Q,q)(P,p), we first apply (P,p), then (Q,q), then (R,r).</p>
 <p>Alternatively, the matrix-column pair can be “combined” into a single 4x4 matrix. We simply place the vector to the right of the rotation matrix, place 0’s on the bottom row, and place a 1 in the lower right-hand corner:</p>
-<p>(TODO: insert matrix image)</p>
+<a class="reference internal image-reference" href="_images/matrix4x4.png"><img alt="fractional vs absolute coordinates" src="_images/matrix4x4.png" style="width: 414.0px; height: 171.5px;" /></a>
 <p>This 4x4 matrix is called an affine transformation matrix. With it, we can apply operations using a single matrix multiplication operation. Although this may seem like just a mathematical trick, the affine matrix notation highlights the group structure of the transformations, as it allows translations and rotations to be placed on equal footing. Furthermore, we can use the additional dimension to represent time: the ‘1’ value can be thought of as a single step forward in time, and thus we can define both rotational and translational reference frames (and equivalently, torques and forces) with a single 4x4 matrix. Objects which are (periodically) symmetric in time are called time crystals. Such objects have only recently been synthesized in the lab, and there is likely more research to be done. However, for most applications in crystallography, time is not a factor, and we consider only spatial symmetries.</p>
 <p>Sometimes crystallographers express an affine transformation as a list of letters and numbers, separated by commas (for example, “x,y,z”). In this notation, the first, second, and third positions denote what happens to the
 unit x, y, and z axes, respectively. So if we want to perform an inversion, we replace each axis with its opposite. Then, “x,y,z” becomes “-x,-y,-z”. So, you can use “-x,-y,-z” to represent an inversion. Similarly, “y,-x,z” would represent a 90 degree rotation about the z axis (using the right hand rule). You can also map to a linear combination of axes, or add a constant value. So, you might see something like “x-y,x,z+1/2”. Here, we just follow the same procedure: x, which is the vector (1,0,0) is mapped onto x-y, which is the vector (1,-1,0). y (0,1,0) is mapped onto x (1,0,0), and z (0,0,1) is mapped onto z+1/2 (0,0,1), or in the 4x4 notation, (0,0,1,.5). To express the addition of a constant (in this case 1/2 for the z-axis), the right-hand side of the 4x4 matrix is used. So, we would write “x-y,x,z+1/2” as:</p>
-<div class="line-block">
-<div class="line">1  -1   0   0|</div>
-<div class="line">1   0   0   0|</div>
-<div class="line">0   0   1  .5|</div>
-<div class="line">0   0   0   1|</div>
-</div>
+<a class="reference internal image-reference" href="_images/affine_matrix.png"><img alt="[[1,-1,0,0],[1,0,0,0],[0,0,1,0.5],[0,0,0,1]]" src="_images/affine_matrix.png" style="width: 174.0px; height: 126.0px;" /></a>
 <p>Note that the mapped vectors are written as rows, NOT columns. So, “x-y” is written on the first row as (1,-1,0,0). Again, the bottom row is always (0,0,0,1), so that matrix multiplication is preserved.</p>
 </div>
 <div class="section" id="groups">
 <h2>Groups<a class="headerlink" href="#groups" title="Permalink to this headline">¶</a></h2>
 <p>Symmetry operations have several nice properties, and this allows certain sets of them to be classified as a mathematical object called a group. There are several simple and intuitive examples of groups, which we will discuss below. Formally, a group G is a set of mathematical objects (called elements) with 4 properties:</p>
 <ol class="arabic simple">
-<li>There is a binary operation (often denoted by <a href="#id1"><span class="problematic" id="id2">*</span></a>) which maps any two elements in the set onto a third element which is also in the set: A*B = C. The operation must be defined for every possible pair on the set, and must map onto an element which is inside of the set.</li>
+<li>There is a binary operation (often denoted by <a href="#id2"><span class="problematic" id="id3">*</span></a>) which maps any two elements in the set onto a third element which is also in the set: A*B = C. The operation must be defined for every possible pair on the set, and must map onto an element which is inside of the set.</li>
 <li>There must be exactly one identity element I which maps every element of the set onto itself: A*I = I*A = A for every A in G.</li>
 <li>Every element A must have an inverse A^-1, such that multiplication by the inverse gives the identity: A*A^-1 = A^-1*A = I.</li>
 <li>The operation * must be associative. That is, (A*B)*C = A*(B*C).</li>
@@ -125,27 +153,30 @@ unit x, y, and z axes, respectively. So if we want to perform an inversion, we r
 <p>3 * 4 = 6 : (b,a,c) * (b,c,a) = (c,b,a)</p>
 <p>6 * 2 = 5 : (c,b,a) * (a,c,b) = (c,a,b)</p>
 <p>Thus, we say that (2) and (3) are generators of the group. Typically, there is not a single “best” choice of generators for a group. We could just as easily have chosen (2) and (6), or (4) and (3), or some other subset as our generators.</p>
-<p>(TODO: Add more example images of groups)</p>
 </div>
 <div class="section" id="symmetry-groups">
 <h2>Symmetry Groups<a class="headerlink" href="#symmetry-groups" title="Permalink to this headline">¶</a></h2>
 <p>One can verify that the four properties of groups listed above also hold for our 4x4 transormation matrices. Thus the set of all 3D transformations (with 4x4 matrix multiplication as our operation) forms a group. Because of this, the tools of group theory become available.</p>
 <p>When we want to define the symmetry of an object, we specify the object’s symmetry group. A symmetry group is just the set of all of the object’s symmetry operations (described above). It turns out, the set of all symmetry operations for an object always forms a group. The group properties (2-4) hold because we are using 4x4 transformation matrices, which are already a group. Property (1) holds because a symmetry group is always a closed set. This is because performing any symmetry operations always brings us back to our original state, and therefore combining multiple symmetry operations also brings us back to the original state. Thus, combiniations of symmetry operations are themselves symmetry operations, and are therefore elements of the object’s symmetry group.</p>
 <p>The simplest 3D symmetry group is the trival group (called “1”). This group has only the identity transformation I, which means that it corresponds to a completely asymmetrical object. For such an object, there is no transformation (besides the identity) which brings the object back to its original state. Most molecules have at least some rotational symmetry, and crystals always have at least translational symmetry, so we will not encounter this group very often.</p>
-<p>(TODO: add image of asymmetrical object)</p>
 <p>On the other hand, we can consider empty 3D space, which is perfectly symmetrical (note: this does not apply to actual empty space, which contain gravitational and quantum fields). The symmetry group of empty space includes not only rotations and translations, but also scaling and shearing, since “nothing” will always be mapped back onto “nothing”.</p>
 <p>Note that only empty space, or other idealized objects (including some fractals) can have scaling symmetry. For atomic structures, we will never encounter this. However, shear symmetry is possible for lattices. As an example, consider the different choices for the primitive cell shown in the section above. These different primitive cells can be mapped onto each other using shear transformations. It is important to note that in general only simple lattices have this shearing symmetry; if there are atoms inside of the lattice, they may not map onto other atoms in the crystal.</p>
 <p>We can also define symmetry groups for objects of arbitrary dimension. A simple example is the equilateral triangle, which has a 3-fold rotational symmetry, as well as 3 reflectional symmetries.</p>
-<p>(TODO: add triangle image)</p>
+<a class="reference internal image-reference" href="_images/triangle.png"><img alt="triangular symmetry" src="_images/triangle.png" style="width: 232.5px; height: 199.5px;" /></a>
 <p>A slightly more complex example is the regular hexagon, which has all of the symmetries of the triangle, but also 6-fold and 2-fold rotational symmetry, and additional reflectional symmetries. Combining rotation and reflection, the hexagon also has inversional symmetry:</p>
-<p>(TODO: Add hexagon image)</p>
+<a class="reference internal image-reference" href="_images/hexagon.png"><img alt="hexagonal symmetry" src="_images/hexagon.png" style="width: 374.25px; height: 357.75px;" /></a>
 <p>It takes practice to develop an intuition for finding symmetries, but the results can be very rewarding. Often, a symmetry can be utilized to lessen the work needed to solve a problem, sometimes even reducing the problem to a trivial identity. This is a core concept in mathematics and physics, and deserves reflection.</p>
 </div>
 <div class="section" id="point-groups">
 <h2>Point Groups<a class="headerlink" href="#point-groups" title="Permalink to this headline">¶</a></h2>
 <p>In order for an object to be translationally symmetric, it must be periodic along one or more axes. This means that most objects (excluding crystals and certain idealized chain molecules) can only have rotational/inversional symmetry. A 3D symmetry group without translational symmetry is called a point group. This is because the transformations leave at least one point of space unmoved. This includes rotations, reflections, inversions, and combinations of the three. Note that we can either use rotations and reflections, or rotations and inversions, to generate the remaining point transformations. In PyXtal and the documentation, we use rotations and inversions as the basic transformations, meaning reflections are treated as rotoinversions.</p>
 <p>A point group can contain rotations, reflections, and possibly inversion. There are several conventions for naming point groups, but PyXtal uses the Schoenflies notation. Here, point groups have one or two letters to describe the type(s) of transformations present, and a number to describe the order. For detailed information, see the Wikipedia page. Below are a few examples of point groups found in crystallography and chemistry.</p>
-<p>(TODO: insert images of point group symmetries)</p>
+<p>H2O: point group C2v (2-fold rotation axis, and two mirror planes) <a class="footnote-reference" href="#id11" id="id4">[2]</a></p>
+<a class="reference internal image-reference" href="_images/water_symmetry_1.gif"><img alt="H2O molecule symmetry" src="_images/water_symmetry_1.gif" style="width: 270.0px; height: 218.25px;" /></a>
+<p>Hypothetical Pmmm crystal: point group mmm (3 mirror planes)</p>
+<a class="reference internal image-reference" href="_images/Pmmm.png"><img alt="Buckminsterfullerene molecule" src="_images/Pmmm.png" style="width: 216.64999999999998px; height: 263.9px;" /></a>
+<p>Buckminsterfullerene: point group Ih (Full icosohedral symmetry) <a class="footnote-reference" href="#id12" id="id5">[3]</a></p>
+<a class="reference internal image-reference" href="_images/Bucky.png"><img alt="Buckminsterfullerene molecule" src="_images/Bucky.png" style="width: 256.0px; height: 266.75px;" /></a>
 </div>
 <div class="section" id="space-groups">
 <h2>Space Groups<a class="headerlink" href="#space-groups" title="Permalink to this headline">¶</a></h2>
@@ -157,7 +188,7 @@ unit x, y, and z axes, respectively. So if we want to perform an inversion, we r
 <div class="section" id="wyckoff-positions">
 <h2>Wyckoff Positions<a class="headerlink" href="#wyckoff-positions" title="Permalink to this headline">¶</a></h2>
 <p>Because symmetry operations can be thought of as making “copies” of parts of an object, we can usually only describe part of a structure, and let symmetry generate the rest. This small part of the structure used to generate the rest is called the asymmetric unit. However, not all points in the asymmetric unit are generated the same. If an atom lies within certain regions - planes, lines, or points - then the atom may not be “copied” as many times as other atoms within the asymmetric unit. A familiar example is in the creation of a paper snowflake. We start with a hexagon, then fold it into a single triangle 6 sheets thick. Then, if we cut out a mark somewhere in the middle of the triangle, the mark is copied 6-fold. However, if we instead cut out a mark alonng the triangle’s edge, or at the tip, the marks will only have 3 or 1 copies:</p>
-<p>(TODO: Add image of paper snowflake)</p>
+<a class="reference internal image-reference" href="_images/PaperSnowflake.png"><img alt="Paper snowflake" src="_images/PaperSnowflake.png" style="width: 256.0px; height: 256.0px;" /></a>
 <p>These different regions are called Wyckoff positions, and the number of copies is called the multiplicity of the Wyckoff position. So, if an atom lies in a Wyckoff position with multiplicity greater than 1, then that Wyckoff position actually corresponds to multiple atoms. However, thanks to symmetry, we can refer to all of the copies (for that particular atom) as a single Wyckoff position. This makes describing a crystal much easier, since we no longer need to specify the exact location of most of the atoms. Instead, we need only list the space group, the lattice, and the location and type of one atom from each Wyckoff position. This is exactly how the cif file format encodes crystal data (more info below). Just keep in mind that in this format, a single atomic entry may correspond to multiple atoms in the unit cell.</p>
 <p>The largest Wyckoff position, which makes a copy for every symmetry operation, is called the general Wyckoff position, or just the general position. In the snowflake example, this was the large inner region of the triangle. In general, the general position will consist of every location which does not lie along some special symmetry axis, plane, or point. For this reason, the other Wyckoff positions are called the special Wyckoff positions.</p>
 <p>The number and type of Wyckoff positions are different for every space group; a list of them can be found using the <a class="reference external" href="http://www.cryst.ehu.es/cryst/get_wp.html">Bilbao utility WYCKPOS</a>. In the utility, Wyckoff positions are described using the “x,y,z” notation, where each operation shows how the original (x,y,z) point is transformed/copied. In other words, if we choose a single set of coordinates, then plugging these coordinates into the Wyckoff position will generate the remaining coordinates. As an example, consider the general position of space group P 2 2 2 (#16), which consists of the points (x,y,z), (-x,-y,z), (-x,y,-z), and (x,-y,-z). If we choose a random point, say (0.321,0.457,0.892), we can determine the remaining points:</p>
@@ -174,9 +205,7 @@ unit x, y, and z axes, respectively. So if we want to perform an inversion, we r
 <div class="section" id="molecular-wyckoff-positions">
 <h2>Molecular Wyckoff Positions<a class="headerlink" href="#molecular-wyckoff-positions" title="Permalink to this headline">¶</a></h2>
 <p>In most cases, it is assumed that the objects occupying Wyckoff positions will be atoms. Because atoms are spherically symmetrical, they will always possess the site symmetry associated with a given Wyckoff position. However, this is not always the case for molecules, which have their own point group symmetry. Because of this, a given molecule may or may not fit into a given Wyckoff position, depending on its symmetry and orientation.</p>
-<p>In order for a molecule to fit within a Wyckoff position, its point group must be a supergroup of the position’s site symmetry. In other words, the molecule must be at least as symmetrical as the region of the Wyckoff position itself (with reference to the operations of the space group as a whole). Furthermore, the molecule must be oriented in such a way that its symmetry axes line up with the symmetry axes of the Wyckoff position. As an example, consider a Wyckoff position with site symmetry 2. This is an axis with 2-fold symmetry. Now consider a water molecule lying on this axis. In order to truly occupy the Wyckoff position, the water molecule’s 2-fold axis must line up with the Wyckoff position’s.</p>
-<p>(TODO: Insert image of water symmetry)</p>
-<p>(TODO: Insert images of water aligned/misaligned with 2-fold axis)</p>
+<p>In order for a molecule to fit within a Wyckoff position, its point group must be a supergroup of the position’s site symmetry. In other words, the molecule must be at least as symmetrical as the region of the Wyckoff position itself (with reference to the operations of the space group as a whole). Furthermore, the molecule must be oriented in such a way that its symmetry axes line up with the symmetry axes of the Wyckoff position. As an example, consider a Wyckoff position with site symmetry 2. This is an axis with 2-fold symmetry. Now consider a water molecule lying on this axis. In order to truly occupy the Wyckoff position, the water molecule’s 2-fold axis must line up with the Wyckoff position’s (See the water molecule image above).</p>
 <p>For larger site symmetry groups, it is more complicated to check if a molecule will fit or not. The algorithm used by PyXtal for doing this is detailed in the <a class="reference external" href="Algorithm.html">How PyXtal Works</a> page.</p>
 </div>
 <div class="section" id="molecular-crystals">
@@ -207,6 +236,24 @@ unit x, y, and z axes, respectively. So if we want to perform an inversion, we r
 <p>Cif uses the space group symmetry to compress the data. The core information consists of the space group, the lattice, and the location and type of a single atom from each Wyckoff position. So, for high symmetry space groups, a cif file can be much smaller than a POSCAR file. As with any type of compression, the cif file has the downside that the program using it must be able to work with symmetry operations. Specifically, each Wyckoff position’s generating atom must be copied using the symmetry operations, so that the entire unit cell can be known.</p>
 <p>In contrast, a POSCAR file does not provide the symmetry information, but instead specifies the type and location of every atom in the unit cell, including those which are symmetrical copies of each other. This results in a larger file, but one that is easier to read, since no symmetry operations need to be applied. The downside is that if one wishes to know the space group, it must either be calculated, or given by some external source.</p>
 <p>Each format has advantages and disadvantages. A computational crystallographer should be familiar with both, and understand the differences. If you provide a POSCAR file for a structure, you should also provide the symmetry group. Likewise, if you provide a cif file, you should be certain that the symmetry information is correct, and that you are using the correct space group setting.</p>
+<table class="docutils footnote" frame="void" id="id10" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Images from <a class="reference external" href="https://en.wikipedia.org/wiki/Crystal_structure">https://en.wikipedia.org/wiki/Crystal_structure</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id11" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[2]</a></td><td>Image from “Molecular Orbitals for Water (H2O)”<a class="reference external" href="http://www1.lsbu.ac.uk/php-cgiwrap/water/pfp.php3?page=http://www1.lsbu.ac.uk/water/h2o_orbitals.html">http://www1.lsbu.ac.uk/php-cgiwrap/water/pfp.php3?page=http://www1.lsbu.ac.uk/water/h2o_orbitals.html</a>)</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id12" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[3]</a></td><td>Image from <a class="reference external" href="https://en.wikipedia.org/wiki/Buckminsterfullerene#/media/File:Buckminsterfullerene-perspective-3D-balls.png">https://en.wikipedia.org/wiki/Buckminsterfullerene#/media/File:Buckminsterfullerene-perspective-3D-balls.png</a></td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
