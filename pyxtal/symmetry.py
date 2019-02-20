@@ -1717,7 +1717,19 @@ class Group():
         group: the group symbol or international number
         dim: the periodic dimension of the group
     """
-            
+    
+    pglist = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
+        'C4','S4','C4h','D4','C4v','D2d','D4h','C3',
+        'C3i','D3','C3v','D3d','C6','C3h','C6h','D6',
+        'C6v','D3h','D6h','T','Th','O','Td','Oh']
+    """List of crystallographic point groups"""
+
+    pgdict = {}
+    """Dict of crystallographic point group symbols and their corresponding numbers
+    (the number for initializing a Group object)"""
+    for i, symbol in enumerate(pglist):
+        pgdict[i+1] = symbol
+    """Dict of crystallographic point groups, with the numbers used by PyXtal"""
 
     def __str__(self):
         try:
