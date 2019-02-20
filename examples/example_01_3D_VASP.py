@@ -1,6 +1,6 @@
 from pyxtal.crystal import random_crystal
-#from pyxtal.interface.vasp import optimize
-from vasp import optimize
+from pyxtal.interface.vasp import optimize
+#from vasp import optimize
 import json
 from monty.serialization import MontyEncoder, MontyDecoder, loadfn
 import os
