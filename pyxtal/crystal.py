@@ -2028,7 +2028,7 @@ class random_crystal():
                 max2 = 5
                 max3 = 5
             #Calculate a minimum vector length for generating a lattice
-            minvector = max(max(2.0*Element(specie).covalent_radius for specie in self.species), tol_m)
+            minvector = max(max(2.0*self.tol_matrix.get_tol(specie,specie) for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
                 #1, Generate a lattice
@@ -2064,7 +2064,7 @@ class random_crystal():
                     #Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
-                        tol = max(0.5*Element(specie).covalent_radius, tol_m)
+                        tol = max(0.5*self.tol_matrix.get_tol(specie,specie), tol_m)
 
                         #Now we start to add the specie to the wyckoff position
                         cycle3 = 0
@@ -2148,39 +2148,38 @@ class random_crystal():
                         self.valid = True
                         return
                     elif self.dim == 0:
-                        if verify_distances(final_coor, final_site, cell_matrix, PBC=self.PBC):
-                            self.lattice_matrix = final_lattice   
-                            """A 3x3 matrix representing the lattice of the unit
-                            cell."""        
-                            self.coordinates = final_coor
-                            """The absolute coordinates for each atom in the
-                            final structure"""
-                            self.sites = final_site
-                            """A list of atomic symbols corresponding to the type
-                            of atom for each site in self.coordinates"""
-                            self.species = final_site
-                            """A list of atomic symbols corresponding to the type
-                            of atom for each site in self.coordinates"""
-                            absolute_coords = np.dot(self.coordinates, cell_matrix)
-                            self.molecule = Molecule(self.species, absolute_coords)
-                            """A pymatgen.core.structure.Molecule object for the
-                            final generated cluster."""
-                            #Calculate binding box
-                            maxx = max(absolute_coords[:,0])
-                            minx = min(absolute_coords[:,0])
-                            maxy = max(absolute_coords[:,1])
-                            miny = min(absolute_coords[:,1])
-                            maxz = max(absolute_coords[:,2])
-                            minz = min(absolute_coords[:,2])
-                            self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
-                            """A pymatgen.core.structure.Structure object for the
-                            final generated object."""
-                            self.wyckoff_sites = wyckoff_sites_total
-                            """A list of Wyckoff_site objects describing the Wyckoff positions in
-                            the structure."""
-                            self.valid = True
-                            """Whether or not a valid crystal was generated."""
-                            return
+                        self.lattice_matrix = final_lattice   
+                        """A 3x3 matrix representing the lattice of the unit
+                        cell."""        
+                        self.coordinates = final_coor
+                        """The absolute coordinates for each atom in the
+                        final structure"""
+                        self.sites = final_site
+                        """A list of atomic symbols corresponding to the type
+                        of atom for each site in self.coordinates"""
+                        self.species = final_site
+                        """A list of atomic symbols corresponding to the type
+                        of atom for each site in self.coordinates"""
+                        absolute_coords = np.dot(self.coordinates, cell_matrix)
+                        self.molecule = Molecule(self.species, absolute_coords)
+                        """A pymatgen.core.structure.Molecule object for the
+                        final generated cluster."""
+                        #Calculate binding box
+                        maxx = max(absolute_coords[:,0])
+                        minx = min(absolute_coords[:,0])
+                        maxy = max(absolute_coords[:,1])
+                        miny = min(absolute_coords[:,1])
+                        maxz = max(absolute_coords[:,2])
+                        minz = min(absolute_coords[:,2])
+                        self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
+                        """A pymatgen.core.structure.Structure object for the
+                        final generated object."""
+                        self.wyckoff_sites = wyckoff_sites_total
+                        """A list of Wyckoff_site objects describing the Wyckoff positions in
+                        the structure."""
+                        self.valid = True
+                        """Whether or not a valid crystal was generated."""
+                        return
         if degrees == 0: printx("Wyckoff positions have no degrees of freedom.", priority=2)
         self.struct = None
         self.valid = False
@@ -2279,7 +2278,7 @@ class random_cluster(random_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic")):
+    def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic", factor=1.0)):
         self.dim = 0
         """The number of periodic dimensions of the crystal"""
         self.PBC = [0,0,0]
