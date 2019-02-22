@@ -1172,50 +1172,87 @@ class molecular_crystal():
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
         """
-        N_site = [len(x[0]) for x in self.group.wyckoffs_organized]
-        has_freedom = False
-        #remove WP's with no freedom once they are filled
-        removed_wyckoffs = []
-        for i, numMol in enumerate(self.numMols):
-            #Check that the number of molecules is a multiple of the smallest Wyckoff position
-            if numMol % N_site[-1] > 0:
-                return False
-            else:
-                #Check if smallest WP has at least one degree of freedom
-                op = self.group.wyckoffs_organized[-1][-1][0]
-                if op.rotation_matrix.all() != 0.0:
-                    if self.valid_orientations[i][-1][-1] != []:
-                        has_freedom = True
-                else:
-                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
-                    remaining = numMol
-                    for j, x in enumerate(self.group.wyckoffs_organized):
-                        for k, wp in enumerate(x):
-                            while remaining >= len(wp) and wp not in removed_wyckoffs:
-                                if self.valid_orientations[i][j][k] != []:
-                                    #Check if WP has at least one degree of freedom
-                                    op = wp[0]
-                                    remaining -= len(wp)
-                                    if np.allclose(op.rotation_matrix, np.zeros([3,3])):
-                                        if (len(self.valid_orientations[i][j][k]) > 1 or
-                                            self.valid_orientations[i][j][k][0].degrees > 0):
-                                            #NOTE: degrees of freedom may be inaccurate for linear molecules
-                                            has_freedom = True
-                                        else:
-                                            removed_wyckoffs.append(wp)
-                                    else:
-                                        has_freedom = True
-                                else:
-                                    removed_wyckoffs.append(wp)
-                    if remaining != 0:
-                        return False
-        if has_freedom:
+        #Loop over species
+        has_freedom = False #Store whether or not at least one degree of freedom exists
+        for i_mol, numIon in enumerate(self.numMols):
+            #Get lists of multiplicity, maxn and freedom
+            l_mult0 = []
+            l_maxn0 = []
+            l_free0 = []
+            for i_wp, wp in enumerate(self.group):
+                #Check that at least one valid orientation exists
+                j, k = jk_from_i(i_wp, self.group.wyckoffs_organized)
+                if len(self.valid_orientations[i_mol][j][k]) > 0:
+                    l_mult0.append(wp.multiplicity)
+                    l_maxn0.append(numIon // len(wp))
+                    if np.allclose(wp[0].rotation_matrix, np.zeros([3,3])):
+                        l_free0.append(False)
+                    else:
+                        l_free0.append(True)
+            #Remove redundant multiplicities:
+            l_mult = []
+            l_maxn = []
+            l_free = []
+            for mult, maxn, free in zip(l_mult0, l_maxn0, l_free0):
+                if free is True:
+                    if mult not in l_mult:
+                        l_mult.append(mult)
+                        l_maxn.append(maxn)
+                        l_free.append(True)
+                elif free is False:
+                    l_mult.append(mult)
+                    l_maxn.append(1)
+                    l_free.append(False)
+            #Loop over possible combinations
+            #Create pointer variable to move through lists
+            p = 0
+            #Store the number of each WP, used across possible WP combinations
+            n0 = [0]*len(l_mult)
+            n = deepcopy(n0)
+            for i, mult in enumerate(l_mult):
+                if l_maxn[i] != 0:
+                    p = i
+                    n[i] = l_maxn[i]
+                    break
+            while True:
+                num = np.dot(n, l_mult)
+                #The combination works: move to next species
+                if num == numIon:
+                    #Check if at least one degree of freedom exists
+                    for i, val in enumerate(n):
+                        if val > 0:
+                            if l_free[i] is True:
+                                has_freedom = True
+                    break
+                #All combinations failed: return False
+                if n == n0:
+                    return False
+                #Too few atoms
+                if num < numIon:
+                    #Forwards routine
+                    #Move p to the right and max out
+                    if p < len(l_mult) - 1:
+                        p += 1
+                        n[p] = min((numIon - num) // l_mult[p], l_maxn[p])
+                    else:
+                        #p is already at last position: trigger backwards routine
+                        num = numIon + 1
+                #Too many atoms
+                if num > numIon:
+                    #Backwards routine
+                    #Set n[p] to 0, move p backwards to non-zero, and decrease by 1
+                    n[p] = 0
+                    while p > 0:
+                        p -= 1
+                        if n[p] != 0:
+                            n[p] -= 1
+                            break
+        #All species passed: return True
+        if has_freedom is True:
             return True
-        else:
-            #Wyckoff Positions have no degrees of freedom
+        #All species passed, but no degrees of freedom: return 0
+        elif has_freedom is False:
             return 0
-
-        return True
 
     def to_file(self, fmt=None, filename=None):
         """

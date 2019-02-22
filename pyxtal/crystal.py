@@ -1798,6 +1798,11 @@ class random_crystal():
         """
         Common init functionality for 0D-3D cases of random_crystal.
         """
+        #Check that numIons are integers greater than 0
+        for num in numIons:
+            if int(num) != num or num < 1:
+                printx("Error: stoichiometry must consist of integers greater than 0.", priority=1)
+                return False
         if type(group) == Group:
             self.group = group
             """A pyxtal.symmetry.Group object storing information about the space/layer
@@ -1900,40 +1905,83 @@ class random_crystal():
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
         """
-        N_site = [len(x[0]) for x in self.group.wyckoffs_organized]
-        has_freedom = False
-        #remove WP's with no freedom once they are filled
-        removed_wyckoffs = []
+        #Loop over species
+        has_freedom = False #Store whether or not at least one degree of freedom exists
         for numIon in self.numIons:
-            #Check that the number of ions is a multiple of the smallest Wyckoff position
-            if numIon % N_site[-1] > 0:
-                return False
-            else:
-                #Check if smallest WP has at least one degree of freedom
-                op = self.group.wyckoffs_organized[-1][-1][0]
-                if op.rotation_matrix.all() != 0.0:
-                    has_freedom = True
+            #Get lists of multiplicity, maxn and freedom
+            l_mult0 = []
+            l_maxn0 = []
+            l_free0 = []
+            for wp in self.group:
+                l_mult0.append(wp.multiplicity)
+                l_maxn0.append(numIon // len(wp))
+                if np.allclose(wp[0].rotation_matrix, np.zeros([3,3])):
+                    l_free0.append(False)
                 else:
-                    #Subtract from the number of ions beginning with the smallest Wyckoff positions
-                    remaining = numIon
-                    for x in self.group.wyckoffs_organized:
-                        for wp in x:
-                            removed = False
-                            while remaining >= len(wp) and wp not in removed_wyckoffs:
-                                #Check if WP has at least one degree of freedom
-                                op = wp[0]
-                                remaining -= len(wp)
-                                if np.allclose(op.rotation_matrix, np.zeros([3,3])):
-                                    removed_wyckoffs.append(wp)
-                                    removed = True
-                                else:
-                                    has_freedom = True
-                    if remaining != 0:
-                        return False
-        if has_freedom:
+                    l_free0.append(True)
+            #Remove redundant multiplicities:
+            l_mult = []
+            l_maxn = []
+            l_free = []
+            for mult, maxn, free in zip(l_mult0, l_maxn0, l_free0):
+                if free is True:
+                    if mult not in l_mult:
+                        l_mult.append(mult)
+                        l_maxn.append(maxn)
+                        l_free.append(True)
+                elif free is False:
+                    l_mult.append(mult)
+                    l_maxn.append(1)
+                    l_free.append(False)
+            #Loop over possible combinations
+            #Create pointer variable to move through lists
+            p = 0
+            #Store the number of each WP, used across possible WP combinations
+            n0 = [0]*len(l_mult)
+            n = deepcopy(n0)
+            for i, mult in enumerate(l_mult):
+                if l_maxn[i] != 0:
+                    p = i
+                    n[i] = l_maxn[i]
+                    break
+            while True:
+                num = np.dot(n, l_mult)
+                #The combination works: move to next species
+                if num == numIon:
+                    #Check if at least one degree of freedom exists
+                    for i, val in enumerate(n):
+                        if val > 0:
+                            if l_free[i] is True:
+                                has_freedom = True
+                    break
+                #All combinations failed: return False
+                if n == n0:
+                    return False
+                #Too few atoms
+                if num < numIon:
+                    #Forwards routine
+                    #Move p to the right and max out
+                    if p < len(l_mult) - 1:
+                        p += 1
+                        n[p] = min((numIon - num) // l_mult[p], l_maxn[p])
+                    else:
+                        #p is already at last position: trigger backwards routine
+                        num = numIon + 1
+                #Too many atoms
+                if num > numIon:
+                    #Backwards routine
+                    #Set n[p] to 0, move p backwards to non-zero, and decrease by 1
+                    n[p] = 0
+                    while p > 0:
+                        p -= 1
+                        if n[p] != 0:
+                            n[p] -= 1
+                            break
+        #All species passed: return True
+        if has_freedom is True:
             return True
-        else:
-            #Wyckoff Positions have no degrees of freedom
+        #All species passed, but no degrees of freedom: return 0
+        elif has_freedom is False:
             return 0
 
     def to_file(self, fmt="cif", filename=None):
