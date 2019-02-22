@@ -12,7 +12,7 @@ setup(
     long_description=long_description,
     #long_description_content_type="text/markdown",
     url="https://github.com/qzhu2017/PyXtal",
-    packages=['pyxtal', 'pyxtal.database', 'pyxtal.interface'],
+    packages=['pyxtal', 'pyxtal.database', 'pyxtal.interface', 'pyxtal.optimize'],
     package_data={'pyxtal.database': ['*.csv', '*.json']},
     classifiers=[
         "Programming Language :: Python :: 3",
