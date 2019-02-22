@@ -77,9 +77,10 @@ def compare_wyckoffs(num1, num2, dim=3):
             return False
     return True
 
-def check_struct_group(struct, group, dim=3, tol=1e-2):
+def check_struct_group(crystal, group, dim=3, tol=1e-2):
     """Given a pymatgen structure, group number, and dimension, return
     whether or not the structure matches the group number."""
+    struct = crystal.struct
 
     from pyxtal.symmetry import distance
     from pyxtal.symmetry import filtered_coords
@@ -101,17 +102,21 @@ def check_struct_group(struct, group, dim=3, tol=1e-2):
         generators = get_rod(group)[0]
         PBC = [0,0,1]
     elif dim == 0:
-        from pyxtal.symmetry import get_point
-        generators = get_point(group)[0]
-        PBC = [0,0,0]
+        from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+        from pyxtal.symmetry import Group
+        PGA = PointGroupAnalyzer(crystal.molecule)
+        g = Group(group, dim=0)
+        for op in g[0]:
+            if (op.rotation_matrix != [[1,0,0],[0,1,0],[0,0,1]]).any():
+                if not PGA.is_valid_op(op):
+                    return False
+        return True
 
     #TODO: Add check for lattice symmetry
 
     #Apply SymmOps to generate new points
     #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
     old_coords = deepcopy(struct.frac_coords)
-    if dim == 0:
-        old_coords = old_coords - 0.5
     old_species = deepcopy(struct.atomic_numbers)
 
     new_coords = []
@@ -263,7 +268,7 @@ def test_atomic():
 
                 #output cif files for incorrect space groups
                 if check is True:
-                    if check_struct_group(rand_crystal.struct, sg, dim=3):
+                    if check_struct_group(rand_crystal, sg, dim=3):
                         pass
                     else:
                         t += " xxxxx"
@@ -347,7 +352,7 @@ def test_molecular():
 
                 #output cif files for incorrect space groups
                 if check is True:
-                    if check_struct_group(rand_crystal.struct, sg, dim=3):
+                    if check_struct_group(rand_crystal, sg, dim=3):
                         pass
                     else:
                         t += " xxxxx"
@@ -432,7 +437,7 @@ def test_atomic_2D():
 
                 #output cif files for incorrect space groups
                 if check is True:
-                    if check_struct_group(rand_crystal.struct, num, dim=2):
+                    if check_struct_group(rand_crystal, num, dim=2):
                         pass
                     else:
                         t += " xxxxx"
@@ -517,7 +522,7 @@ def test_molecular_2D():
 
                 #output cif files for incorrect space groups
                 if check is True:
-                    if check_struct_group(rand_crystal.struct, num, dim=2):
+                    if check_struct_group(rand_crystal, num, dim=2):
                         pass
                     else:
                         t += " xxxxx"
@@ -590,7 +595,7 @@ def test_atomic_1D():
 
                 #output cif files for incorrect space groups
                 if check is True:
-                    if check_struct_group(rand_crystal.struct, num, dim=1):
+                    if check_struct_group(rand_crystal, num, dim=1):
                         pass
                     else:
                         t += " xxxxx"
@@ -663,7 +668,7 @@ def test_molecular_1D():
 
                 #output cif files for incorrect space groups
                 if check is True:
-                    if check_struct_group(rand_crystal.struct, num, dim=1):
+                    if check_struct_group(rand_crystal, num, dim=1):
                         pass
                     else:
                         t += " xxxxx"
@@ -716,7 +721,7 @@ def test_cluster():
                 t += "~"
                 slow.append(sg)
             if rand_crystal.valid:
-                if check_struct_group(rand_crystal.struct, sg, dim=0):
+                if check_struct_group(rand_crystal, sg, dim=0):
                     pass
                 else:
                     t += " xxxxx"
