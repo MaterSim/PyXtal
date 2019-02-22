@@ -432,7 +432,7 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1], tm=
         a bool for whether or not the atoms are sufficiently far enough apart
     """
     #Check that there are points to compare
-    if len(coord1) <= 1 or len(coord2) <= 1:
+    if len(coord1) < 1 or len(coord2) < 1:
         return True
 
     #Create tolerance matrix from subset of tm
@@ -2076,7 +2076,7 @@ class random_crystal():
                 max2 = 5
                 max3 = 5
             #Calculate a minimum vector length for generating a lattice
-            minvector = max(max(2.0*self.tol_matrix.get_tol(specie,specie) for specie in self.species), tol_m)
+            minvector = max(max(1.0*self.tol_matrix.get_tol(specie,specie) for specie in self.species), tol_m)
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
                 #1, Generate a lattice
@@ -2112,7 +2112,7 @@ class random_crystal():
                     #Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
-                        tol = max(0.5*self.tol_matrix.get_tol(specie,specie), tol_m)
+                        tol = max(self.tol_matrix.get_tol(specie,specie), tol_m)
 
                         #Now we start to add the specie to the wyckoff position
                         cycle3 = 0
@@ -2326,7 +2326,8 @@ class random_cluster(random_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic", factor=1.0)):
+    def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic", factor=0.7)):
+        tol_m = 0.3
         self.dim = 0
         """The number of periodic dimensions of the crystal"""
         self.PBC = [0,0,0]
