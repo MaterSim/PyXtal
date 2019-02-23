@@ -102,22 +102,21 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
         generators = get_rod(group)[0]
         PBC = [0,0,1]
     elif dim == 0:
-        from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+        from pyxtal.symmetry import get_point
         from pyxtal.symmetry import Group
-        PGA = PointGroupAnalyzer(crystal.molecule)
-        g = Group(group, dim=0)
-        for op in g[0]:
-            if (op.rotation_matrix != [[1,0,0],[0,1,0],[0,0,1]]).any():
-                if not PGA.is_valid_op(op):
-                    return False
-        return True
+        generators = Group(group, dim=0)[0]
+        PBC = [0,0,0]
 
     #TODO: Add check for lattice symmetry
 
     #Apply SymmOps to generate new points
     #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
-    old_coords = deepcopy(struct.frac_coords)
-    old_species = deepcopy(struct.atomic_numbers)
+    if dim != 0:
+        old_coords = deepcopy(struct.frac_coords)
+        old_species = deepcopy(struct.atomic_numbers)
+    elif dim == 0:
+        old_coords = deepcopy(crystal.molecule.cart_coords)
+        old_species = deepcopy(crystal.molecule.species)
 
     new_coords = []
     new_species = []
@@ -693,16 +692,16 @@ def test_cluster():
     print("=== Testing generation of point group clusters. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import get_point
+    from pyxtal.symmetry import Group
     from pyxtal.crystal import random_cluster
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     failed = []
-    print("  Point group #  |  Time Elapsed")
+    print("  Point group # |     Symbol    |  Time Elapsed")
     skip = []
-    for sg in range(1, 33):
+    for sg in range(1, 57):
         if sg not in skip:
-            multiplicity = len(get_point(sg)[0])#multiplicity of the general position
+            multiplicity = len(Group(sg, dim=0)[0])#multiplicity of the general position
             start = time()
             rand_crystal = random_cluster(sg, ['C'], [multiplicity], 1.0)
             end = time()
@@ -727,7 +726,8 @@ def test_cluster():
                     t += " xxxxx"
                     outstructs.append(rand_crystal.struct)
                     outstrings.append(str("Cluster_"+str(sg)+".vasp"))
-                print("\t"+str(sg)+"\t|\t"+t)
+                pgsymbol = Group(sg, dim=0).symbol
+                print("\t"+str(sg)+"\t|\t"+pgsymbol+"\t|\t"+t)
             else:
                 print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
                 failed.append(sg)
