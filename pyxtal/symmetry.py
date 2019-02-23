@@ -43,13 +43,16 @@ op_z = SymmOp.from_xyz_string('0,0,z')
 pglist = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
     'C4','S4','C4h','D4','C4v','D2d','D4h','C3',
     'C3i','D3','C3v','D3d','C6','C3h','C6h','D6',
-    'C6v','D3h','D6h','T','Th','O','Td','Oh']
-
-pgdict = {}
-"""Dict of crystallographic point group symbols and their corresponding numbers
-(the number for initializing a Group object)"""
-for i, symbol in enumerate(pglist):
-    pgdict[i+1] = symbol
+    'C6v','D3h','D6h','T','Th','O','Td','Oh',
+    'C5', 'C7', 'C8',
+    'D5', 'D7', 'D8',
+    'C5v', 'C7v', 'C8v',
+    'C5h',
+    'D5h', 'D7h', 'D8h',
+    'D4d', 'D5d', 'D6d', 'D7d', 'D8d',
+    'S6', 'S8', 'S10', 'S12',
+    'I', 'Ih',
+    'C*', 'C*h']
 
 #TODO: Add space, layer, and Rod group symbol lists
 
@@ -1718,11 +1721,27 @@ class Group():
         dim: the periodic dimension of the group
     """
     
-    pglist = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
+    pglist_crystallographic = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
         'C4','S4','C4h','D4','C4v','D2d','D4h','C3',
         'C3i','D3','C3v','D3d','C6','C3h','C6h','D6',
         'C6v','D3h','D6h','T','Th','O','Td','Oh']
     """List of crystallographic point groups"""
+    
+    pglist = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
+        'C4','S4','C4h','D4','C4v','D2d','D4h','C3',
+        'C3i','D3','C3v','D3d','C6','C3h','C6h','D6',
+        'C6v','D3h','D6h','T','Th','O','Td','Oh',
+        'C5', 'C7', 'C8',
+        'D5', 'D7', 'D8',
+        'C5v', 'C7v', 'C8v',
+        'C5h',
+        'D5h', 'D7h', 'D8h',
+        'D4d', 'D5d', 'D6d', 'D7d', 'D8d',
+        'S6', 'S8', 'S10', 'S12',
+        'I', 'Ih',
+        'C*', 'C*h']
+    """List of chemically important point groups, based on:
+    http://symmetry.jacobs-university.de/ """
 
     pgdict = {}
     """Dict of crystallographic point group symbols and their corresponding numbers
@@ -1877,30 +1896,45 @@ class Group():
                     group = pglist.index(group) + 1
             #Get crystallographic point group
             if type(group) == int or type(group) == float:
-                if number not in range(1, 33):
+                if number == 25:
+                    #database positions for C6v use hexagonal lattice
+                    self.symbol = "C6v"
+                    symbol = "C6v"
+                    group = "C6v"
+                elif number in range(1, 33):
+                    self.symbol = pglist[number-1]
+                    symbol = self.symbol
+                    self.wyckoffs = get_point(self.number, molecular=False)
+                    """The Wyckoff positions for the crystal's spacegroup."""
+                    self.w_symm = get_point_symmetry(self.number, molecular=False)
+                    """A list of site symmetry operations for the Wyckoff positions, obtained
+                        from get_wyckoff_symmetry (molecular=False)"""
+                    self.w_symm_m = get_point_symmetry(self.number)
+                    """A list of site symmetry operations for the Wyckoff positions, obtained
+                        from get_wyckoff_symmetry (molecular=True)"""
+                    self.wyckoff_generators = get_point_generators(self.number, molecular=False)
+                    """A list of Wyckoff generators (molecular=False)"""
+                    self.wyckoff_generators_m = get_point_generators(self.number)
+                    """A list of Wyckoff generators (molecular=True)"""
+                    if self.number <= 15:
+                        self.lattice_type = "cylindrical"
+                    elif self.number <= 27:
+                        self.lattice_type = "cylindrical"
+                    elif self.number <= 32:
+                        self.lattice_type = "spherical"
+                elif number in range(33, 57):
+                    self.symbol = pglist[number-1]
+                    symbol = self.symbol
+                    group = self.symbol
+                    if self.symbol in ['I','Ih']:
+                        self.lattice_type = "spherical"                        
+                    else:
+                        self.lattice_type = "cylindrical"
+                else:
                     printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                     return
-                self.PBC = [0,0,0]
-                self.wyckoffs = get_point(self.number, molecular=False)
-                """The Wyckoff positions for the crystal's spacegroup."""
-                self.w_symm = get_point_symmetry(self.number, molecular=False)
-                """A list of site symmetry operations for the Wyckoff positions, obtained
-                    from get_wyckoff_symmetry (molecular=False)"""
-                self.w_symm_m = get_point_symmetry(self.number)
-                """A list of site symmetry operations for the Wyckoff positions, obtained
-                    from get_wyckoff_symmetry (molecular=True)"""
-                self.wyckoff_generators = get_point_generators(self.number, molecular=False)
-                """A list of Wyckoff generators (molecular=False)"""
-                self.wyckoff_generators_m = get_point_generators(self.number)
-                """A list of Wyckoff generators (molecular=True)"""
-                if self.number <= 15:
-                    self.lattice_type = "cylindrical"
-                elif self.number <= 27:
-                    self.lattice_type = "cylindrical"
-                elif self.number <= 32:
-                    self.lattice_type = "spherical"
             #Get other point groups
-            else:
+            if type(group) == str:
                 #Remove whitespace
                 symbol = ''.join(c for c in symbol if not c.isspace())
                 #Find rotation order from symbol
@@ -1947,6 +1981,8 @@ class Group():
                 elif symbol[0] == "C" and symbol[-1] != "i":
                     #n-fold rotation
                     self.lattice_type = "cylindrical"
+                    op_c = SymmOp.from_xyz_string('x,-x,z')
+                    op_b = SymmOp.from_xyz_string('x,0,z')
                     if symbol[-1] == "d":
                         printx("Error: Invalid point group symbol.", priority=1)
                         return
@@ -1960,8 +1996,6 @@ class Group():
                         self.symbol = "C" + str(num)
                         m = aa2matrix([0.,0.,1.], 2*pi/num)
                         gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
-                        op_c = SymmOp.from_xyz_string('x,-x,z')
-                        op_b = SymmOp.from_xyz_string('x,0,z')
                         gen_ops = [Identity, op_z]
                     if symbol[-1] == "v":
                         #Add vertical mirror plane
@@ -2100,27 +2134,26 @@ class Group():
                     self.wyckoff_generators_m = deepcopy(self.wyckoffs)
                 elif "*" in self.symbol:
                     #infinite rotational groups
-                    if self.symbol == "C*":
+                    """C* and C*h are the prototypes; the rest are redundant for molecules:
+                    C*v = C*
+                    S* = C*h
+                    D* = C*h
+                    D*h = C*h"""
+                    if self.symbol in ['C*', 'C*v']:
+                        self.symbol = 'C*'
+                        self.number = pglist.index(self.symbol) + 1
+                        #Linear, no reflection
                         self.wyckoffs = [[SymmOp.from_xyz_string('0,0,z')]]
                         self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]]]
                         self.w_symm_m = deepcopy(self.w_symm)
                         self.wyckoff_generators = deepcopy(self.wyckoffs)
                         self.wyckoff_generators_m = deepcopy(self.wyckoffs)
-                    elif self.symbol == "C*h":
+                    elif self.symbol in ['C*h', 'S*', 'D*', 'D*h']:
+                        self.symbol = 'C*h'
+                        self.number = pglist.index(self.symbol) + 1
+                        #Linear, with reflection
                         self.wyckoffs = [[op_z, SymmOp.from_xyz_string('0,0,-z')],[op_o]]
-                        self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]],[[SymmOp.from_xyz_string('0,0,-z')]]]
-                        self.w_symm_m = deepcopy(self.w_symm)
-                        self.wyckoff_generators = deepcopy(self.wyckoffs)
-                        self.wyckoff_generators_m = deepcopy(self.wyckoffs)
-                    elif self.symbol == "C*v":
-                        self.wyckoffs = [[SymmOp.from_xyz_string('0,0,z')]]
-                        self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]]]
-                        self.w_symm_m = deepcopy(self.w_symm)
-                        self.wyckoff_generators = deepcopy(self.wyckoffs)
-                        self.wyckoff_generators_m = deepcopy(self.wyckoffs)
-                    elif self.symbol == "D*h":
-                        self.wyckoffs = [[op_z, SymmOp.from_xyz_string('0,0,-z')],[op_o]]
-                        self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]],[[SymmOp.from_xyz_string('0,0,-z')]]]
+                        self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]],[[Identity, SymmOp.from_xyz_string('0,0,-z')]]]
                         self.w_symm_m = deepcopy(self.w_symm)
                         self.wyckoff_generators = deepcopy(self.wyckoffs)
                         self.wyckoff_generators_m = deepcopy(self.wyckoffs)
