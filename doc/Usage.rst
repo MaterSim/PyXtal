@@ -114,13 +114,22 @@ The point group may be specified either by a number (only for the crystallograph
 | 29: Th     | 30: O      | 31: Td    | 32: Oh    |
 +------------+------------+-----------+-----------+
 
+One can conveniently access the list of crystallographic point groups via the `Group<pyxtal.symmetry.html#yxtal.symmetry.Group>` class.
+.. code-block:: Python
+
+>>> from pyxtal.symmetry import Group
+>>> Group.pglist
+['C1', 'Ci', 'C2', 'Cs', 'C2h', 'D2', 'C2v', 'D2h', 'C4', 'S4', 'C4h', 'D4', 'C4v', 'D2d', 'D4h', 'C3', 'C3i', 'D3', 'C3v', 'D3d', 'C6', 'C3h', 'C6h', 'D6', 'C6v', 'D3h', 'D6h', 'T', 'Th', 'O', 'Td', 'Oh']
+>>> Group.pgdict
+{1: 'C1', 2: 'Ci', 3: 'C2', 4: 'Cs', 5: 'C2h', 6: 'D2', 7: 'C2v', 8: 'D2h', 9: 'C4', 10: 'S4', 11: 'C4h', 12: 'D4', 13: 'C4v', 14: 'D2d', 15: 'D4h', 16: 'C3', 17: 'C3i', 18: 'D3', 19: 'C3v', 20: 'D3d', 21: 'C6', 22: 'C3h', 23: 'C6h', 24: 'D6', 25: 'C6v', 26: 'D3h', 27: 'D6h', 28: 'T', 29: 'Th', 30: 'O', 31: 'Td', 32: 'Oh'}
+
 For a list of Wyckoff positions, see the `Bilbao 3D WYCKPOS utility <http://www.cryst.ehu.es/cryst/point_wp.html>`_. The following finite noncrystallographic point groups are also available:
 
 I, Ih, Cn, Cnh, Cnv, Sn, Cni, Dn, Dnh, Dnd.
 
 where n should be replaced by an integer. I and Ih, which are the icosohedral and full icosohedral groups, are particularly useful (Buckminsterfullerene, for example has point group symmetry Ih). Finally, the infinite rotational and dihedral point groups are also available:
 
-C*, C*v, C*h, C*v, D*h
+C*, C*v, C*h, D*, D*h
 
 However, only C* and C*h are needed, as the atomic positions will all lie along the z axis. These groups can thus be used for generating linear structures. C*h will have mirror symmetry, while C* will not.
 
