@@ -1941,7 +1941,7 @@ class Group():
                     if symbol == "Ih":
                         #Add horizontal mirror plane
                         mirror = SymmOp.from_xyz_string('x,y,-z') #m x,y,0
-                        gen_pos = generate_full_symmops([R2, R3, R5, mirror], .03)
+                        gens.append(mirror)
                         op_d = SymmOp.from_xyz_string('0,y,z')
                         gen_ops = [Identity, op_d, op_c, op_b, op_a, op_o]
                 elif symbol[0] == "C" and symbol[-1] != "i":
