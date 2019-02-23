@@ -444,8 +444,7 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1], tm=
     #Calculate the distance between each i, j pair
     d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
 
-    #Check if the distance is ever less than the tolerance
-    if (d < tols).sum() > 0:
+    if (np.array(d) < np.array(tols)).any():
         return False
     else:
         return True
@@ -803,6 +802,8 @@ def merge_coordinate(coor, lattice, group, tol):
         when plugged into the Wyckoff position, it will generate all the other
         points.
     """
+    #TODO: Remove redundant atom checking (one atom against all others)
+    #Remove pair calculation, replace with shortest merge to Wyckoff
     wyckoffs = group.wyckoffs
     PBC = group.PBC
     while True:
@@ -2112,7 +2113,7 @@ class random_crystal():
                     #Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
-                        tol = max(self.tol_matrix.get_tol(specie,specie), tol_m)
+                        tol = self.tol_matrix.get_tol(specie,specie)
 
                         #Now we start to add the specie to the wyckoff position
                         cycle3 = 0
