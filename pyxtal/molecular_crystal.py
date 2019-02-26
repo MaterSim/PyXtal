@@ -450,35 +450,45 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
         returns the original coordinates and False. point is a 3-vector which can
         be plugged into the Wyckoff position to generate the rest of the points
     """
-    wyckoffs = group.wyckoffs
-    w_symm_all = group.w_symm
+    #Get index of current Wyckoff position. If not one, return False
+    index, point = check_wyckoff_position(coor, group)
+    if index is None:
+        return coor, False, None
     PBC = group.PBC
-
+    #Main loop for merging multiple times
     while True:
-        pairs, graph = find_short_dist(coor, lattice, tol, PBC=PBC)
-        index = None
-        valid = True
-        if len(pairs)>0 and valid is True:
-            if len(coor) > len(wyckoffs[-1]):
-                merged = []
-                components = connected_components(graph)
-                for c in components:
-                    merged.append(get_center(coor[c], lattice, PBC=PBC))
-                merged = np.array(merged)
-                index, point = check_wyckoff_position_molecular(merged, group, orientations)
-                if index is False:
-                    return coor, False, None
-                elif index is None:
-                    valid = False
-                else:
-                    #Check each possible merged Wyckoff position for orientaitons
-                    coor = merged
-
-            else:#no way to merge
+        #Check distances of current WP. If too small, merge
+        dm = distance_matrix(coor, coor, lattice, PBC=PBC)
+        if ((dm > 0)*(dm < tol)).any():
+            mult1 = group[index].multiplicity
+            #Find possible wp's to merge into
+            possible = []
+            for i, wp in enumerate(group):
+                mult2 = wp.multiplicity
+                #Check that a valid orientation exists
+                j, k = jk_from_i(i, orientations)
+                if orientations[j][k] == []: continue
+                #Only allow smaller WP's that are an integer factor of the current one
+                if (mult2 < mult1) and (mult1 % mult2 == 0):
+                    possible.append(i)
+            if possible == []:
                 return coor, False, None
+            #Calculate minimum separation for each WP
+            distances = []
+            for i in possible:
+                wp = group[i]
+                new_coor = apply_ops(point, wp)
+                d = distance_matrix([point], new_coor, lattice, PBC=PBC)
+                distances.append(np.min(d))
+            #Choose wp with shortest translation for generating point
+            tmpindex = np.argmin(distances)
+            index = possible[tmpindex]
+            newwp = group[index]
+            coor = apply_ops(point, newwp)
+            point = coor[0]
+            index = newwp.index
+        #Distances were not too small; return True
         else:
-            if index is None:
-                index, point = check_wyckoff_position_molecular(coor, group, orientations)
             return coor, index, point
 
 def choose_wyckoff_molecular(group, number, orientations):

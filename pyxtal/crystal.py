@@ -804,29 +804,43 @@ def merge_coordinate(coor, lattice, group, tol):
     """
     #TODO: Remove redundant atom checking (one atom against all others)
     #Remove pair calculation, replace with shortest merge to Wyckoff
-    wyckoffs = group.wyckoffs
+    
+    #Get index of current Wyckoff position. If not one, return False
+    index, point = check_wyckoff_position(coor, group)
+    if index is None:
+        return coor, False, None
     PBC = group.PBC
+    #Main loop for merging multiple times
     while True:
-        pairs, graph = find_short_dist(coor, lattice, tol, PBC=PBC)
-        index = None
-        if len(pairs)>0:
-            if len(coor) > len(wyckoffs[-1]):
-                merged = []
-                components = connected_components(graph)
-                for c in components:
-                    merged.append(get_center(coor[c], lattice, PBC=PBC))
-                merged = np.array(merged)
-                index, point = check_wyckoff_position(merged, group)
-                if index is False:
-                    return coor, False, None
-                else:
-                    coor = merged
-
-            else:#no way to merge
+        #Check distances of current WP. If too small, merge
+        dm = distance_matrix(coor, coor, lattice, PBC=PBC)
+        if ((dm > 0)*(dm < tol)).any():
+            mult1 = group[index].multiplicity
+            #Find possible wp's to merge into
+            possible = []
+            for i, wp in enumerate(group):
+                mult2 = wp.multiplicity
+                #factor = mult2 / mult1
+                if (mult2 < mult1) and (mult1 % mult2 == 0):
+                    possible.append(i)
+            if possible == []:
                 return coor, False, None
+            #Calculate minimum separation for each WP
+            distances = []
+            for i in possible:
+                wp = group[i]
+                new_coor = apply_ops(point, wp)
+                d = distance_matrix([point], new_coor, lattice, PBC=PBC)
+                distances.append(np.min(d))
+            #Choose wp with shortest translation for generating point
+            tmpindex = np.argmin(distances)
+            index = possible[tmpindex]
+            newwp = group[index]
+            coor = apply_ops(point, newwp)
+            point = coor[0]
+            index = newwp.index
+        #Distances were not too small; return True
         else:
-            if index is None:
-                index, point = check_wyckoff_position(coor, group)
             return coor, index, point
 
 def estimate_volume(numIons, species, factor=1.0):
@@ -2127,7 +2141,17 @@ class random_crystal():
                                 coords = np.array([op.operate(point) for op in ops])
                                 #Merge coordinates if the atoms are close
                                 coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
+                                dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
+
+                                #Debug to check that distance checking in merge_coordinate works
                                 if good_merge is not False:
+                                    for x in dm:
+                                        for y in x:
+                                            if y > 0 and y < tol:
+                                                printx("Error: small distance went undetected by merge_coordinate", priority=0)
+
+                                if good_merge is not False:
+                                    dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
                                     coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, tm=self.tol_matrix, PBC=self.PBC):
                                         if coordinates_tmp == []:
