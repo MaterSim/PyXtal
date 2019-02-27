@@ -102,7 +102,6 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
         generators = get_rod(group)[0]
         PBC = [0,0,1]
     elif dim == 0:
-        from pyxtal.symmetry import get_point
         from pyxtal.symmetry import Group
         generators = Group(group, dim=0)[0]
         PBC = [0,0,0]
@@ -115,8 +114,8 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
         old_coords = deepcopy(struct.frac_coords)
         old_species = deepcopy(struct.atomic_numbers)
     elif dim == 0:
-        old_coords = deepcopy(crystal.molecule.cart_coords)
-        old_species = deepcopy(crystal.molecule.species)
+        old_coords = deepcopy(crystal.cart_coords)
+        old_species = deepcopy(crystal.species)
 
     new_coords = []
     new_species = []
