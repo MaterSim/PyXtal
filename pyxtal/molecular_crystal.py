@@ -452,7 +452,9 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
     """
     #Get index of current Wyckoff position. If not one, return False
     index, point = check_wyckoff_position(coor, group)
-    if index is None:
+    if index is False:
+        return coor, False, None
+    if point is None:
         return coor, False, None
     PBC = group.PBC
     #Main loop for merging multiple times
