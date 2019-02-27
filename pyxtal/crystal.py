@@ -802,12 +802,19 @@ def merge_coordinate(coor, lattice, group, tol):
         when plugged into the Wyckoff position, it will generate all the other
         points.
     """
-    #TODO: Remove redundant atom checking (one atom against all others)
-    #Remove pair calculation, replace with shortest merge to Wyckoff
-    
+    coor = np.array(coor)  
     #Get index of current Wyckoff position. If not one, return False
     index, point = check_wyckoff_position(coor, group)
-    if index is None:
+    if index is False:
+        return coor, False, None
+    if point is None:
+        printx("Error: Could not find generating point.", priority=1)
+        printx("coordinates:")
+        printx(str(coor))
+        printx("Lattice: ")
+        printx(str(lattice))
+        printx("group: ")
+        group.print_all()
         return coor, False, None
     PBC = group.PBC
     #Main loop for merging multiple times
@@ -2140,8 +2147,17 @@ class random_crystal():
                                 point = self.lattice.generate_point()
                                 coords = np.array([op.operate(point) for op in ops])
                                 #Merge coordinates if the atoms are close
+                                #Use absolute coordinates for clusters
+                                if self.dim == 0:
+                                    coords = np.dot(coords, cell_matrix)
+                                    old_matrix = deepcopy(cell_matrix)
+                                    cell_matrix = Euclidean_lattice
                                 coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
                                 dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
+                                #Convert back to fractional coordinates for clusters
+                                if self.dim == 0:
+                                    cell_matrix = old_matrix
+                                    coords_toadd = np.dot(coords_toadd, np.linalg.inv(cell_matrix))
 
                                 #Debug to check that distance checking in merge_coordinate works
                                 if good_merge is not False:
