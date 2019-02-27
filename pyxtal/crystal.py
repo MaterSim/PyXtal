@@ -2202,8 +2202,11 @@ class random_crystal():
                         self.lattice_matrix = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
                         cell."""                 
-                        self.coordinates = np.array(final_coor)
+                        self.frac_coords = np.array(final_coor)
                         """The fractional coordinates for each atom in the
+                        final structure"""
+                        self.cart_coords = np.dot(final_coor, final_lattice)
+                        """The absolute coordinates for each atom in the
                         final structure"""
                         self.sites = final_site
                         """A list of atomic symbols corresponding to the type
@@ -2223,27 +2226,29 @@ class random_crystal():
                     elif self.dim == 0:
                         self.lattice_matrix = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
-                        cell."""        
-                        self.coordinates = final_coor
+                        cell."""
+                        self.frac_coords = np.array(final_coor)
+                        """The relative coordinates for each atom in the
+                        final structure""" 
+                        self.cart_coords = np.dot(final_coor, final_lattice)
                         """The absolute coordinates for each atom in the
-                        final structure"""
+                        final structure"""                  
                         self.sites = final_site
                         """A list of atomic symbols corresponding to the type
                         of atom for each site in self.coordinates"""
                         self.species = final_site
                         """A list of atomic symbols corresponding to the type
                         of atom for each site in self.coordinates"""
-                        absolute_coords = np.dot(self.coordinates, cell_matrix)
-                        self.molecule = Molecule(self.species, absolute_coords)
+                        self.molecule = Molecule(self.species, self.cart_coords)
                         """A pymatgen.core.structure.Molecule object for the
                         final generated cluster."""
                         #Calculate binding box
-                        maxx = max(absolute_coords[:,0])
-                        minx = min(absolute_coords[:,0])
-                        maxy = max(absolute_coords[:,1])
-                        miny = min(absolute_coords[:,1])
-                        maxz = max(absolute_coords[:,2])
-                        minz = min(absolute_coords[:,2])
+                        maxx = max(self.cart_coords[:,0])
+                        minx = min(self.cart_coords[:,0])
+                        maxy = max(self.cart_coords[:,1])
+                        miny = min(self.cart_coords[:,1])
+                        maxz = max(self.cart_coords[:,2])
+                        minz = min(self.cart_coords[:,2])
                         self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
                         """A pymatgen.core.structure.Structure object for the
                         final generated object."""

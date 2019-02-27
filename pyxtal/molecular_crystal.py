@@ -1508,17 +1508,20 @@ class molecular_crystal():
                         self.lattice = final_lattice
                         """A 3x3 matrix representing the lattice of the
                         unit cell."""  
-                        self.coordinates = final_coor
+                        self.frac_coords = np.array(final_coor)
                         """The fractional coordinates for each molecule
+                        in the final structure"""
+                        self.cart_coords = np.dot(final_coor, final_lattice)
+                        """The absolute coordinates for each molecule
                         in the final structure"""
                         self.sites = final_site
                         """The indices within self.molecules corresponding
                         to the type of molecule for each site in
-                        self.coordinates."""              
-                        self.struct = Structure(final_lattice, self.sites, self.coordinates)
+                        self.cart_coords."""              
+                        self.struct = Structure(final_lattice, self.sites, self.frac_coords)
                         """A pymatgen.core.structure.Structure object for
                         the final generated crystal."""
-                        self.spg_struct = (final_lattice, self.coordinates, final_number)
+                        self.spg_struct = (final_lattice, self.frac_coords, final_number)
                         """A list of information describing the generated
                         crystal, which may be used by spglib for symmetry
                         analysis."""
