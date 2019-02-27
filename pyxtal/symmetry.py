@@ -1011,52 +1011,6 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
             symmetry.append(el)
     return symmetry
 
-def find_generating_point(coords, wyckoff_position):
-    """
-    Given a set of coordinates and Wyckoff generators, return the coord which
-    can be used to generate the others. This is useful for molecular Wyckoff
-    positions, for which the orientation, and not just the position, is
-    needed for each point in the Wyckoff position. Thus, we need to know which
-    coordinates to use for x, y, and z, so that rotations can be applied
-    correctly using the Wyckoff geneators
-
-    Args:
-        coords: a list of fractional coordinates corresponding to a Wyckoff
-            position
-        wyckoff_position: a Wyckoff_position object
-    
-    Returns:
-        a fractional coordinate [x, y, z] corresponding to the first listed
-        point in the Wyckoff position
-     """
-    generators = wyckoff_position.generators
-    PBC = wyckoff_position.PBC
-    for coord in coords:
-        if not np.allclose(coord, generators[0].operate(coord)):
-            continue
-        tmp_c = deepcopy(coords)
-        tmp_c = filtered_coords(tmp_c, PBC=PBC)
-        generated = list(gen.operate(coord) for gen in generators)
-        generated = filtered_coords(generated, PBC=PBC)
-        index_list1 = list(range(len(tmp_c)))
-        index_list2 = list(range(len(generated)))
-        if len(generated) != len(tmp_c):
-            printx("Warning: coordinate and generator lists have unequal length.\n"
-                +"In check_wyckoff_position.find_generating_point:\n"
-                +"len(coords): "+str(len(coords))+", len(generators): "+str(len(generators)), priority=1)
-            return None
-        for index1, c1 in enumerate(tmp_c):
-            for index2, c2 in enumerate(generated):
-                if np.allclose(c1, c2, atol=.001, rtol=.001):
-                    if index1 in index_list1 and index2 in index_list2:
-                        index_list1.remove(index1)
-                        index_list2.remove(index2)
-                        break
-        if index_list2 == []:
-            return coord
-    #If no valid coordinate is found
-    return None
-
 def check_wyckoff_position(points, group, tol=1e-3):
     """
     Given a list of points, returns a single index of a matching Wyckoff
@@ -1064,18 +1018,17 @@ def check_wyckoff_position(points, group, tol=1e-3):
     point against the site symmetry for each point in the Wyckoff position.
     Also returns a point which can be used to generate the rest using the
     Wyckoff position operators
-
     Args:
         points: a list of 3d coordinates or SymmOps to check
         group: a Group object
         tol: the max distance between equivalent points
-
     Returns:
         index, p: index is a single index for the Wyckoff position within
         the sg. If no matching WP is found, returns False. point is a
         coordinate taken from the list points. When plugged into the Wyckoff
         position, it will generate all the other points.
     """
+    points = np.array(points)
     wyckoffs = group.wyckoffs
     w_symm_all = group.w_symm
     PBC = group.PBC
@@ -1690,9 +1643,83 @@ class Wyckoff_position():
         Returns:
             a list of SymmOps
         """
-        new_ops = [op*gen_op for op in gen_pos]
-        return list(set(new_ops))
-    
+        def is_valid_generator(op):
+            m = op.affine_matrix
+            #Check for x,y+ax,z+bx+cy format
+            #Make sure y, z are not referred to before second and third slots, respectively
+            if (np.array([m[0][1], m[0][2], m[1][2]]) != 0.0).any():
+                if (np.array([m[2][0], m[2][1], m[1][0]]) != 0.0).any():
+                    return False
+            for i in range(0, 3):
+                #Check for translation
+                if m[i][i] != 0 and m[i][3] != 0:
+                    return False
+                #Check that x, y, z are present in desired spot and positive
+                if np.linalg.norm(m[:,i]) > 0:
+                    if m[i][i] == 0:
+                        return False
+            return True
+
+        def filter_zeroes(op):
+            m = op.affine_matrix
+            m2 = m
+            for i, x in enumerate(m):
+                for j, y in enumerate(x):
+                    if np.isclose(y, 0, atol=1e-3):
+                        m2[i][j] = 0
+            return SymmOp(m2)
+        new_ops = [filter_zeroes(op*gen_op) for op in gen_pos]
+        op_list = list(set(new_ops))
+
+        #Check for identity op
+        if Identity in op_list:
+            index = op_list.index(Identity)
+            op2 = op_list[0]
+            op_list[index] = op2
+            op_list[0] = Identity
+            return op_list
+
+        #Check for generating op
+        found = False
+        for op in op_list:
+            if is_valid_generator(op):
+                #Place generating op at beginning of list
+                index = op_list.index(op)
+                op2 = op_list[0]
+                op_list[index] = op2
+                op_list[0] = op
+                found = True
+                break
+        if found is False:
+            printx("Error: Could not find generating op.", priority=0)
+            print("gen_op: ")
+            print(str(gen_op))
+            print("gen_pos: ")
+            print(str(gen_pos))
+            return op_list
+
+        #Make sure first op is normalized
+        m = op_list[0].affine_matrix
+        x_factor = 1
+        y_factor = 1
+        z_factor = 1
+        if m[0][0] != 0:
+            if m[0][0] != 1: x_factor = m[0][0]
+        if m[1][1] != 0:
+            if m[1][1] != 1: y_factor = m[1][1]
+        if m[2][2] != 0:
+            if m[2][2] != 1: z_factor = m[2][2]
+        new_list = []
+        for op in op_list:
+            m = op.affine_matrix
+            m2 = m
+            m2[:,0] = m2[:,0] / x_factor
+            m2[:,1] = m2[:,1] / y_factor
+            m2[:,2] = m2[:,2] / z_factor
+            new_list.append(SymmOp(m2))
+
+        return new_list
+
     def symmetry_from_wyckoff(wp, gen_pos):
         symm = []
         for op in wp:
@@ -2119,11 +2146,6 @@ class Group():
                     self.wyckoffs = []
                     for op in gen_ops:
                         wp = Wyckoff_position.wyckoff_from_generating_op(op, gen_pos)
-                        if wp[0] != op:
-                            index = wp.index(op)
-                            op2 = wp[0]
-                            wp[index] = op2
-                            wp[0] = op
                         self.wyckoffs.append(wp)
                     #Calculate site symmetry and generators
                     self.w_symm = []
