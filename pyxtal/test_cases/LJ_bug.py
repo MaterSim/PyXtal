@@ -188,19 +188,20 @@ class LJ_prediction():
         pg1 = parse_symmetry(pos)
         print('initial geometry:')
         print(pos)
+        print('initial energy: ', LJ(pos.flatten(), 3))
         if dim == 3:
             [energy, pos] = single_optimize(pos, 3)
             energy = [energy]
         else:
             [energy1, pos1] = single_optimize(pos, 3)
-            #[energy2, pos2] = hyper_optimize(pos1, 3)
+            [energy2, pos2] = hyper_optimize(pos1, 3)
             #[energy2, pos2] = hyper_optimize(pos1, dim, method=1, mu=0.1)
             #[energy3, pos3] = hyper_optimize(pos1, dim, method=1, mu=0.2)
             #[energy4, pos4] = hyper_optimize(pos1, dim, method=2, mu=0.1)
             #[energy5, pos5] = hyper_optimize(pos1, dim, method=2, mu=0.2)
             #[energy6, pos6] = hyper_optimize(pos1, 3)
-            energy = [energy1] #, energy2] #, energy3, energy4, energy5, energy6]
-            pos = [pos1] #, pos2] #, pos3, pos4, pos5, pos6]
+            energy = [energy1, energy2] #, energy3, energy4, energy5, energy6]
+            pos = [pos1, pos2] #, pos3, pos4, pos5, pos6]
         if min(energy)-self.reference['energy'] <1e-3:
             ground = True
         elif min(energy) > -10:
@@ -265,19 +266,3 @@ if __name__ == "__main__":
         eng_tmp = engs[:, i]
         grounds.append(len(eng_tmp[eng_tmp < (eng_min + 1e-3)]))
     
-    bins = np.linspace(eng_min-0.1, eng_min+15, 100)
-    for i in range(len(engs[0])):
-        plt.hist(engs[:, i], bins, alpha=0.3, label='set' +  str(i) + ": " + str(grounds[i]) + '/' + str(maxN))
-    #plt.hist(engs[:, 1], bins, alpha=0.5, label='4d mu1, m1: ' + str(grounds[1]) + '/' + str(maxN))
-    #plt.hist(engs[:, 2], bins, alpha=0.5, label='4d mu2, m2: ' + str(grounds[2]) + '/' + str(maxN))
-    #plt.hist(engs[:, 3], bins, alpha=0.5, label='4d mu3, m3: ' + str(grounds[2]) + '/' + str(maxN))
-    #plt.hist(engs[:, 4], bins, alpha=0.5, label='4d mu4, m4: ' + str(grounds[2]) + '/' + str(maxN))
-    #plt.hist(engs[:, 4], bins, alpha=0.5, label='4d mu4, m4: ' + str(grounds[2]) + '/' + str(maxN))
-    plt.xlabel('Energy (eV)')
-    plt.ylabel('Counts')
-    plt.legend()
-    eng_min_str = '{0:.2f}'.format(eng_min)
-    plt.title('LJ' + str(N) + ' Ground state: ' + eng_min_str)
-    plt.savefig(str(N)+'-'+str(maxN)+'-mix.png')
-    plt.close()
-    np.savetxt(str(N)+'-'+str(maxN)+'.txt', engs)
