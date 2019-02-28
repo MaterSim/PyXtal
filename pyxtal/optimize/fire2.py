@@ -60,8 +60,11 @@ class FIRE():
                            "time": [],
                           }
         self.time0 = time()
-        self.xstruct = crystal
-        self.pos = crystal.cart_coords
+        try:
+            self.xstruct = crystal
+            self.pos = crystal.cart_coords
+        except:
+            self.pos = crystal
         self.get_energy = E
         self.get_force = F
         self.initialize()
@@ -106,6 +109,10 @@ class FIRE():
             self.a = self.astart
             self.dt *= self.fdec
             self.Nsteps = 0
+
+        #Symmetrize the force
+        f = self.symmetrized_coords(f)
+
         self.v += self.dt * f
         dr = self.dt * self.v  #needs to impose constraints
         normdr = np.sqrt(np.vdot(dr, dr))
@@ -157,6 +164,7 @@ from pyxtal.database.collection import Collection
 np.random.seed(10)
 pos = np.array(Collection('clusters')['20']['position']['data'])
 
+#Find farthest atom's distance from center
 maxr = 0
 for p in pos:
     r = np.linalg.norm(p)
@@ -164,23 +172,37 @@ for p in pos:
         maxr = r
 print("maxr: "+str(maxr))
 
+#Generate a random cluster with random point group
 from pyxtal.crystal import *
 pg = choose(range(1,57))
-c = random_cluster(pg, ['C'], [20], 1.0)
-pos = c.cart_coords
+c = random_cluster(pg, ['C'], [20], 0.01)
+if c.valid:
+    pos = c.cart_coords
 
-maxr = 0
-for p in pos:
-    r = np.linalg.norm(p)
-    if r > maxr:
-        maxr = r
-print("maxr: "+str(maxr))
+    #Find farthest atom's distance from center
+    maxr = 0
+    for p in pos:
+        r = np.linalg.norm(p)
+        if r > maxr:
+            maxr = r
+    print("maxr: "+str(maxr))
 
-print("Point group "+c.group.symbol)
-print("Initial energy: "+str(LJ(pos)))
-print(LJ(pos))
-pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
-np.savetxt('1.txt', pos)
-dyn = FIRE(c, LJ, LJ_force)
-dyn.run(1000)
+    #Check for distances smaller than C-C tolerance (times 0.7)
+    dm = distance_matrix(pos, pos, None, PBC=c.PBC)
+    for i, x in enumerate(dm):
+        for j, y in enumerate(x):
+            if i != j and y < 0.48999999:
+                print("Found short distance: "+str(y))
+                exit()
 
+    print("Point group "+c.group.symbol)
+    print("Initial energy: "+str(LJ(pos)))
+    print(LJ(pos))
+    #pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
+    np.savetxt('1.txt', pos)
+
+    dyn = FIRE(c, LJ, LJ_force)
+
+    dyn.run(1000)
+else:
+    print("Failed to generate random cluster")
