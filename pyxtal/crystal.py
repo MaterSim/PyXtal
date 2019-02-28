@@ -1362,7 +1362,7 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
     printx("Could not generate lattice after "+str(n+1)+" attempts for volume "+str(volume), priority=2)
     return
 
-def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=20.0, maxattempts = 100, **kwargs):
+def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=10.0, maxattempts = 100, **kwargs):
     """
     Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
     number of atoms. If the spacegroup has centering, we will transform to
@@ -1406,7 +1406,7 @@ def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=20.0, 
         return np.array([a, b, c, alpha, beta, gamma])
     if ltype == "cylindrical":
         #Use a tetragonal lattice with altered volume
-        return generate_lattice("tetragonal", volume*4/pi, minvec=minvec, max_ratio=max_ratio, maxattempts=maxattempts, **kwargs)
+        return generate_lattice("tetragonal", volume*4/pi, minvec=0.1, max_ratio=max_ratio, maxattempts=maxattempts, **kwargs)
 
 def choose_wyckoff(group, number):
     """
@@ -2110,6 +2110,8 @@ class random_crystal():
                 self.lattice.reset_matrix()
                 try:
                     cell_matrix = self.lattice.get_matrix()
+                    if cell_matrix is None:
+                        continue
                 except:
                     continue
                 #Check that the correct volume was generated
@@ -2155,25 +2157,37 @@ class random_crystal():
                                     old_matrix = deepcopy(cell_matrix)
                                     cell_matrix = Euclidean_lattice
                                 coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
-                                dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
                                 #Convert back to fractional coordinates for clusters
                                 if self.dim == 0:
                                     cell_matrix = old_matrix
                                     coords_toadd = np.dot(coords_toadd, np.linalg.inv(cell_matrix))
+                                    if point is not None:
+                                        point = np.dot(point, np.linalg.inv(cell_matrix))
+                                dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
 
                                 #Debug to check that distance checking in merge_coordinate works
+                                failed_dm = False
                                 if good_merge is not False:
-                                    for x in dm:
-                                        for y in x:
-                                            if y > 0 and y < tol:
+                                    for i, x in enumerate(dm):
+                                        for j, y in enumerate(x):
+                                            if i != j and y < tol:
+                                                failed_dm = True
                                                 printx("Error: small distance went undetected by merge_coordinate", priority=0)
+                                if failed_dm == True:
+                                    exit()
 
                                 if good_merge is not False:
                                     wp_index = good_merge
-                                    dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
                                     #Regenerate ops using point and WP operations
                                     coords_toadd = filtered_coords(apply_ops(point, self.group[wp_index]), PBC=self.PBC)
-                                    if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, tm=self.tol_matrix, PBC=self.PBC):
+
+                                    passed_wp_check = True
+                                    for ws in wyckoff_sites_tmp:
+                                        dm = distance_matrix(coords_toadd, filtered_coords(apply_ops(ws.position, ws.wp)), cell_matrix, PBC=self.PBC)
+                                        if (dm < self.tol_matrix.get_tol(specie, ws.specie)).any():
+                                            passed_wp_check = False
+                                    #if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, tm=self.tol_matrix, PBC=self.PBC):
+                                    if passed_wp_check is True:
                                         if coordinates_tmp == []:
                                             coordinates_tmp = coords_toadd
                                         else:
