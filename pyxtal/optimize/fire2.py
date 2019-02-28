@@ -32,7 +32,7 @@ def LJ_force(pos):
 
 
 class FIRE():
-    def __init__(self, crystal, E, F, dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=10, finc=1.1, fdec=0.5,
+    def __init__(self, crystal, E, F, symmetrize=False, e_tol=1e-5, f_tol=1e-2, dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=10, finc=1.1, fdec=0.5,
                  astart=0.1, fa=0.99, a=0.1):
         """Parameters:
         An optimization engine based on the fire algorithm
@@ -42,6 +42,9 @@ class FIRE():
 
         self.dt = dt
         self.maxmove = maxmove
+        self.symmetrize = symmetrize
+        self.f_tol = f_tol
+        self.e_tol = e_tol
         self.dtmax = dtmax
         self.Nmin = Nmin
         self.finc = finc
@@ -82,7 +85,7 @@ class FIRE():
         self.trajectory['v'].append(self.v)
         self.trajectory['time'].append(time()-self.time0)
 
-    def update(self):
+    def update(self, freq=30):
         self.energy = self.get_energy(self.pos)
         self.force = self.get_force(self.pos)
         self.trajectory['position'].append(self.pos)
@@ -91,7 +94,8 @@ class FIRE():
         self.trajectory['force'].append(self.force)
         self.trajectory['time'].append(time()-self.time0)
         fmax = np.max(np.abs(self.force.flatten()))
-        print('Step {0:4d} Eng: {1:12.4f} Fmax: {2:12.4f} Time: {3:6.2f} seconds'.
+        if (self.nsteps % freq == 0) or (self.nsteps +1 == self.max_steps):
+            print('Step {0:4d} Eng: {1:12.4f} Fmax: {2:12.4f} Time: {3:6.2f} seconds'.
                 format(self.nsteps, self.energy, fmax, time()-self.time0))
 
     def step(self):
@@ -125,19 +129,28 @@ class FIRE():
         self.pos = self.pos - dr
 
         #Symmetrize positions
-        #self.pos = self.symmetrized_coords(self.pos)
+        if self.symmetrize:
+            self.pos = self.symmetrized_coords(self.pos)
 
         self.update()
 
     def run(self, max_steps=1000):
+        self.max_steps = max_steps
         while self.nsteps < max_steps:
             if self.check_convergence():
                 break
             self.step()
             self.nsteps += 1
+
     def check_convergence(self):
+        """
+        There should be two options to terminate the optimization before it reaches the maximum number of cycles
+        1, by energy difference compared to the previous step: self.e_tol
+        2, by the residual force: self.f_tol
+        Will implement both options later.
+        """
         converged = False
-        if np.max(self.force.flatten()) < 1e-3:
+        if np.max(self.force.flatten()) < self.f_tol:
             if self.nsteps > 0:
                 if self.trajectory['energy'][-1] - self.trajectory['energy'][-2] <1e-3:
                     converged = True
@@ -175,6 +188,7 @@ print("maxr: "+str(maxr))
 #Generate a random cluster with random point group
 from pyxtal.crystal import *
 pg = choose(range(1,57))
+<<<<<<< HEAD
 c = random_cluster(pg, ['C'], [20], 0.01)
 if c.valid:
     pos = c.cart_coords
@@ -206,3 +220,25 @@ if c.valid:
     dyn.run(1000)
 else:
     print("Failed to generate random cluster")
+=======
+c = random_cluster(pg, ['C'], [20], 1.0)
+pos = c.cart_coords
+
+maxr = 0
+for p in pos:
+    r = np.linalg.norm(p)
+    if r > maxr:
+        maxr = r
+print("maxr: "+str(maxr))
+
+print("Point group "+c.group.symbol)
+print("Initial energy: "+str(LJ(pos)))
+print(LJ(pos))
+pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
+np.savetxt('1.txt', pos)
+dyn1 = FIRE(c, LJ, LJ_force, f_tol=1e-2)
+dyn1.run(1000)
+dyn2 = FIRE(c, LJ, LJ_force, symmetrize=True, f_tol=1e-2)
+dyn2.run(1000)
+
+>>>>>>> 598093e476855a9a4861af9b52b44e293873f347
