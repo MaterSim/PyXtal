@@ -195,14 +195,11 @@ class FIRE():
         return converged
 
     def symmetrized_coords(self, coords):
-        gen_coords = []
-        gen_ops = []
         start_index = 0
         new_coords = []
         for ws in self.xstruct.wyckoff_sites:
             gen_coord = coords[start_index]
-            gen_coord = ws.wp[0].operate(gen_coord)
-            wp_coords = apply_ops(gen_coord, ws.wp.generators_m)
+            wp_coords = apply_ops(gen_coord, ws.wp)
             if len(new_coords) == 0:
                 new_coords = wp_coords
             else:
