@@ -32,7 +32,7 @@ def LJ_force(pos):
 
 
 class FIRE():
-    def __init__(self, xstruct, E, F, dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=10, finc=1.1, fdec=0.5,
+    def __init__(self, crystal, E, F, dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=10, finc=1.1, fdec=0.5,
                  astart=0.1, fa=0.99, a=0.1):
         """Parameters:
         An optimization engine based on the fire algorithm
@@ -60,8 +60,8 @@ class FIRE():
                            "time": [],
                           }
         self.time0 = time()
-        self.xstruct = xstruct
-        self.pos = xstruct.cart_coords
+        self.xstruct = crystal
+        self.pos = crystal.cart_coords
         self.get_energy = E
         self.get_force = F
         self.initialize()
@@ -117,7 +117,7 @@ class FIRE():
         #print(dr)
         self.pos = self.pos - dr
 
-        #Apply symmetrization after dr is subtracted
+        #Symmetrize positions
         #self.pos = self.symmetrized_coords(self.pos)
 
         self.update()
@@ -152,23 +152,35 @@ class FIRE():
             start_index += ws.multiplicity
         return new_coords
 
-
 #from pyxtal.interface.LJ import LJ, LJ_force
 from pyxtal.database.collection import Collection
 np.random.seed(10)
+pos = np.array(Collection('clusters')['20']['position']['data'])
 
-#pos = np.array(Collection('clusters')['20']['position']['data'])
+maxr = 0
+for p in pos:
+    r = np.linalg.norm(p)
+    if r > maxr:
+        maxr = r
+print("maxr: "+str(maxr))
+
 from pyxtal.crystal import *
 pg = choose(range(1,57))
 c = random_cluster(pg, ['C'], [20], 1.0)
 pos = c.cart_coords
 
+maxr = 0
+for p in pos:
+    r = np.linalg.norm(p)
+    if r > maxr:
+        maxr = r
+print("maxr: "+str(maxr))
+
 print("Point group "+c.group.symbol)
 print("Initial energy: "+str(LJ(pos)))
-print("Initial coords:")
-print(pos)
-
+print(LJ(pos))
 pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
 np.savetxt('1.txt', pos)
 dyn = FIRE(c, LJ, LJ_force)
 dyn.run(1000)
+
