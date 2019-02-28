@@ -88,8 +88,11 @@ class FIRE():
                            "time": [],
                           }
         self.time0 = time()
-        self.xstruct = crystal
-        self.pos = crystal.cart_coords
+        try:
+            self.xstruct = crystal
+            self.pos = crystal.cart_coords
+        except:
+            self.pos = crystal
         self.get_energy = E
         self.get_force = F
         self.initialize()
@@ -136,6 +139,10 @@ class FIRE():
             self.a = self.astart
             self.dt *= self.fdec
             self.Nsteps = 0
+
+        #Symmetrize the force
+        f = self.symmetrized_coords(f)
+
         self.v += self.dt * f
         dr = self.dt * self.v  #needs to impose constraints
         normdr = np.sqrt(np.vdot(dr, dr))
@@ -200,6 +207,7 @@ from pyxtal.database.collection import Collection
 np.random.seed(10)
 pos = np.array(Collection('clusters')['20']['position']['data'])
 
+#Find farthest atom's distance from center
 maxr = 0
 for p in pos:
     r = np.linalg.norm(p)
@@ -207,6 +215,7 @@ for p in pos:
         maxr = r
 print("maxr: "+str(maxr))
 
+#Generate a random cluster with random point group
 from pyxtal.crystal import *
 from copy import deepcopy
 
@@ -226,6 +235,7 @@ print("Initial energy: "+str(LJ(pos)))
 print(LJ(pos))
 pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
 np.savetxt('1.txt', pos)
+<<<<<<< HEAD
 
 print('\n optmization without symmetry constraints')
 c0 = deepcopy(c)
@@ -251,3 +261,9 @@ print('\n optmization with scipy BFGS')
 pos = pos.flatten()
 res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='BFGS', tol=1e-3)
 print(res.fun)
+=======
+dyn1 = FIRE(c, LJ, LJ_force, f_tol=1e-2)
+dyn1.run(1000)
+dyn2 = FIRE(c, LJ, LJ_force, symmetrize=True, f_tol=1e-2)
+dyn2.run(1000)
+>>>>>>> 956182a18c51f121bae4c12b89d2bba21a345b00
