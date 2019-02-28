@@ -1459,6 +1459,8 @@ class Wyckoff_site():
             return
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
+        self.multiplicity = wp.multiplicity
+        self.PBC = wp.PBC
 
     def __str__(self):
         return self.specie+": "+str(self.position)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
@@ -2167,15 +2169,17 @@ class random_crystal():
                                                 printx("Error: small distance went undetected by merge_coordinate", priority=0)
 
                                 if good_merge is not False:
+                                    wp_index = good_merge
                                     dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
-                                    coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
+                                    #Regenerate ops using point and WP operations
+                                    coords_toadd = filtered_coords(apply_ops(point, self.group[wp_index]), PBC=self.PBC)
                                     if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, tm=self.tol_matrix, PBC=self.PBC):
                                         if coordinates_tmp == []:
                                             coordinates_tmp = coords_toadd
                                         else:
                                             coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
                                         sites_tmp += [specie]*len(coords_toadd)
-                                        wyckoff_sites_tmp.append(Wyckoff_site(ops, point, specie))
+                                        wyckoff_sites_tmp.append(Wyckoff_site(self.group[wp_index], point, specie))
                                         numIon_added += len(coords_toadd)
                                     else:
                                         cycle3 += 1
