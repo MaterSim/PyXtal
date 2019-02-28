@@ -235,7 +235,6 @@ print("Initial energy: "+str(LJ(pos)))
 print(LJ(pos))
 pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
 np.savetxt('1.txt', pos)
-<<<<<<< HEAD
 
 print('\n optmization without symmetry constraints')
 c0 = deepcopy(c)
@@ -261,9 +260,4 @@ print('\n optmization with scipy BFGS')
 pos = pos.flatten()
 res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='BFGS', tol=1e-3)
 print(res.fun)
-=======
-dyn1 = FIRE(c, LJ, LJ_force, f_tol=1e-2)
-dyn1.run(1000)
-dyn2 = FIRE(c, LJ, LJ_force, symmetrize=True, f_tol=1e-2)
-dyn2.run(1000)
->>>>>>> 956182a18c51f121bae4c12b89d2bba21a345b00
+
