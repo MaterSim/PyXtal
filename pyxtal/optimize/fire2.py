@@ -6,6 +6,84 @@ from pyxtal.molecule import PointGroupAnalyzer
 """
 Scripts to compute LJ energy and force
 """
+def check_struct_group(crystal, group, dim=3, tol=1e-2):
+    #Supress pymatgen/numpy complex casting warnings
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        """Given a pymatgen structure, group number, and dimension, return
+        whether or not the structure matches the group number."""
+        if type(crystal) == random_crystal:
+            lattice = struct.lattice.matrix
+            if dim != 0:
+                old_coords = deepcopy(crystal.struct.frac_coords)
+                old_species = deepcopy(crystal.struct.atomic_numbers)
+            elif dim == 0:
+                old_coords = deepcopy(crystal.cart_coords)
+                old_species = deepcopy(crystal.species)
+        else:
+            lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
+            old_coords = np.array(crystal)
+            old_species = ['C']*len(old_coords)
+
+        from pyxtal.symmetry import distance
+        from pyxtal.symmetry import filtered_coords
+        from copy import deepcopy
+        PBC = [1,1,1]
+
+        #Obtain the generators for the group
+        if dim == 3:
+            from pyxtal.symmetry import get_wyckoffs
+            generators = get_wyckoffs(group)[0]
+
+        elif dim == 2:
+            from pyxtal.symmetry import get_layer
+            generators = get_layer(group)[0]
+            PBC = [1,1,0]
+        elif dim == 1:
+            from pyxtal.symmetry import get_rod
+            generators = get_rod(group)[0]
+            PBC = [0,0,1]
+        elif dim == 0:
+            from pyxtal.symmetry import Group
+            generators = Group(group, dim=0)[0]
+            PBC = [0,0,0]
+
+        #TODO: Add check for lattice symmetry
+
+        #Apply SymmOps to generate new points
+        #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
+
+        new_coords = []
+        new_species = []
+        for i, point in enumerate(old_coords):
+            for j, op in enumerate(generators):
+                if j != 0:
+                    new_coords.append(op.operate(point))
+                    new_species.append(old_species[i])
+        #new_coords = filtered_coords(new_coords,PBC=PBC)
+
+        #Check that all points in new list are still in old
+        failed = False
+        i_list = list(range(len(new_coords)))
+        for i, point1 in enumerate(new_coords):
+            found = False
+            for j, point2 in enumerate(old_coords):
+                if new_species[i] == old_species[j]:
+                    difference = filtered_coords(point2 - point1, PBC=PBC)
+                    if distance(difference, lattice, PBC=PBC) <= tol:
+                        found = True
+                        break
+            if found is False:
+                failed = True
+                break
+
+        if failed is False:
+            return True
+        else:
+            return False
+
 def parse_symmetry(pos):
     mol = Molecule(['C']*len(pos), pos)
     try:
@@ -207,6 +285,9 @@ class FIRE():
             start_index += ws.multiplicity
         return new_coords
 
+#Set global variables
+dim = 0
+
 #from pyxtal.interface.LJ import LJ, LJ_force
 from pyxtal.database.collection import Collection
 np.random.seed(10)
@@ -238,12 +319,14 @@ c0 = deepcopy(c)
 dyn1 = FIRE(c0, LJ, LJ_force, f_tol=1e-2, dt=0.2, maxmove=2.0)
 dyn1.run(2000)
 print('symmetry after optimization: ', parse_symmetry(dyn1.pos))
+print('Initial point group preserved: ', check_struct_group(dyn1.pos, pg, dim=dim))
 
 print('\n optmization under symmetry constraints')
 c1 = deepcopy(c)
 dyn2 = FIRE(c1, LJ, LJ_force, symmetrize=True, f_tol=1e-2, dt=0.2, maxmove=2.0)
 dyn2.run(2000)
 print('symmetry after optimization: ', parse_symmetry(dyn2.pos))
+print('Initial point group preserved: ', check_struct_group(dyn2.pos, pg, dim=dim))
 
 from scipy.optimize import minimize
 print('\n optmization with scipy CG')
@@ -254,6 +337,7 @@ res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='CG', tol=1e-3)
 print(res.fun)
 pos = res.x
 print('symmetry after optimization: ', parse_symmetry(np.reshape(pos, (int(len(pos)/3), 3))))
+print('Initial point group preserved: ', check_struct_group(np.reshape(pos, (int(len(pos)/3), 3)), pg, dim=dim))
 
 c1 = deepcopy(c)
 pos = c1.cart_coords.flatten()
@@ -264,3 +348,4 @@ res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='BFGS', tol=1e-3)
 print(res.fun)
 pos = res.x
 print('symmetry after optimization: ', parse_symmetry(np.reshape(pos, (int(len(pos)/3), 3))))
+print('Initial point group preserved: ', check_struct_group(np.reshape(pos, (int(len(pos)/3), 3)), pg, dim=dim))
