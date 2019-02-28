@@ -821,7 +821,15 @@ def merge_coordinate(coor, lattice, group, tol):
     while True:
         #Check distances of current WP. If too small, merge
         dm = distance_matrix(coor, coor, lattice, PBC=PBC)
-        if ((dm > 0)*(dm < tol)).any():
+        passed_distance_check = True
+        for i, x in enumerate(dm):
+            for j, y in enumerate(x):
+                if i != j and y < tol:
+                    passed_distance_check = False
+                    break
+                if passed_distance_check is False:
+                    break
+        if passed_distance_check is False:
             mult1 = group[index].multiplicity
             #Find possible wp's to merge into
             possible = []
@@ -2153,6 +2161,7 @@ class random_crystal():
                                 #Merge coordinates if the atoms are close
                                 #Use absolute coordinates for clusters
                                 if self.dim == 0:
+                                    point = np.dot(point, cell_matrix)
                                     coords = np.dot(coords, cell_matrix)
                                     old_matrix = deepcopy(cell_matrix)
                                     cell_matrix = Euclidean_lattice
@@ -2166,26 +2175,44 @@ class random_crystal():
                                 dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
 
                                 #Debug to check that distance checking in merge_coordinate works
-                                failed_dm = False
-                                if good_merge is not False:
-                                    for i, x in enumerate(dm):
-                                        for j, y in enumerate(x):
-                                            if i != j and y < tol:
-                                                failed_dm = True
-                                                printx("Error: small distance went undetected by merge_coordinate", priority=0)
-                                if failed_dm == True:
-                                    exit()
+                                passed_distance_check = True
+                                for i, x in enumerate(dm):
+                                    for j, y in enumerate(x):
+                                        if i != j and y < tol:
+                                            passed_distance_check = False
+                                            print("Error: merge_coordinate missed small distance: "+str(y))
+                                            exit()
 
                                 if good_merge is not False:
                                     wp_index = good_merge
                                     #Regenerate ops using point and WP operations
                                     coords_toadd = filtered_coords(apply_ops(point, self.group[wp_index]), PBC=self.PBC)
 
+                                    #Debug to check that distance checking in merge_coordinate works
+                                    passed_distance_check = True
+                                    dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
+                                    for i, x in enumerate(dm):
+                                        for j, y in enumerate(x):
+                                            if i != j and y < tol:
+                                                passed_distance_check = False
+                                                print("Error: merge_coordinate missed small distance (after applying WP ops): "+str(y))
+                                                exit()
+
                                     passed_wp_check = True
                                     for ws in wyckoff_sites_tmp:
-                                        dm = distance_matrix(coords_toadd, filtered_coords(apply_ops(ws.position, ws.wp)), cell_matrix, PBC=self.PBC)
+                                        dm = distance_matrix(coords_toadd, filtered_coords(apply_ops(ws.position, ws.wp), PBC=self.PBC), cell_matrix, PBC=self.PBC)
                                         if (dm < self.tol_matrix.get_tol(specie, ws.specie)).any():
                                             passed_wp_check = False
+
+                                        if passed_wp_check is True:
+                                            for i, x in enumerate(dm):
+                                                for j, y in enumerate(x):
+                                                    if i != j and y < tol:
+                                                        passed_distance_check = False
+                                                        print("Error: merge_coordinate missed small distance (inter-wp): "+str(y))
+                                                        print((dm < self.tol_matrix.get_tol(specie, ws.specie)).any())
+                                                        exit()
+
                                     #if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, tm=self.tol_matrix, PBC=self.PBC):
                                     if passed_wp_check is True:
                                         if coordinates_tmp == []:
