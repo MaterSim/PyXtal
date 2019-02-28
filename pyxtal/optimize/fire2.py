@@ -6,6 +6,31 @@ from copy import deepcopy
 """
 Scripts to compute LJ energy and force
 """
+def LJ_1d(pos, dim=3):
+    N_atom = int(len(pos)/dim)
+    pos = np.reshape(pos, (N_atom, dim))
+    distance = pdist(pos) 
+    r6 = np.power(distance, 6)
+    r12 = np.multiply(r6, r6)
+    Eng = np.sum(4*(1/r12 - 1/r6))
+    return Eng
+
+def LJ_force_1d(pos, dim=3):
+    N_atom = int(len(pos)/dim)
+    pos = np.reshape(pos,[N_atom, dim])
+    force = np.zeros([N_atom, dim])
+    for i, pos0 in enumerate(pos):
+        pos1 = deepcopy(pos)
+        pos1 = np.delete(pos1, i, 0)
+        distance = cdist([pos0], pos1)
+        r = pos1 - pos0
+        r2 = np.power(distance, 2)
+        r6 = np.power(r2, 3)
+        r12 = np.power(r6, 2)
+        force[i] = np.dot((48/r12-24/r6)/r2, r)
+    return force.flatten()
+
+
 def LJ(pos):
     """
     Calculate the total energy
@@ -85,7 +110,7 @@ class FIRE():
         self.trajectory['v'].append(self.v)
         self.trajectory['time'].append(time()-self.time0)
 
-    def update(self, freq=30):
+    def update(self, freq=50):
         self.energy = self.get_energy(self.pos)
         self.force = self.get_force(self.pos)
         self.trajectory['position'].append(self.pos)
@@ -94,7 +119,8 @@ class FIRE():
         self.trajectory['force'].append(self.force)
         self.trajectory['time'].append(time()-self.time0)
         fmax = np.max(np.abs(self.force.flatten()))
-        if (self.nsteps % freq == 0) or (self.nsteps +1 == self.max_steps):
+
+        if (self.nsteps % freq == 0):
             print('Step {0:4d} Eng: {1:12.4f} Fmax: {2:12.4f} Time: {3:6.2f} seconds'.
                 format(self.nsteps, self.energy, fmax, time()-self.time0))
 
@@ -142,6 +168,10 @@ class FIRE():
             self.step()
             self.nsteps += 1
 
+        fmax = np.max(np.abs(self.force.flatten()))
+        print('Finish at Step {0:4d} Eng: {1:12.4f} Fmax: {2:12.4f} Time: {3:6.2f} seconds'.
+                format(self.nsteps, self.energy, fmax, time()-self.time0))
+
     def check_convergence(self):
         """
         There should be two options to terminate the optimization before it reaches the maximum number of cycles
@@ -165,7 +195,7 @@ class FIRE():
             gen_coord = coords[start_index]
             gen_coord = ws.wp[0].operate(gen_coord)
             wp_coords = apply_ops(gen_coord, ws.wp.generators_m)
-            if new_coords == []:
+            if len(new_coords) == 0:
                 new_coords = wp_coords
             else:
                 new_coords = np.vstack([new_coords, wp_coords])
@@ -187,8 +217,10 @@ print("maxr: "+str(maxr))
 
 #Generate a random cluster with random point group
 from pyxtal.crystal import *
+from copy import deepcopy
+
 pg = choose(range(1,57))
-c = random_cluster(pg, ['C'], [20], 1.0)
+c = random_cluster(pg, ['C'], [20], 0.5)
 pos = c.cart_coords
 
 maxr = 0
@@ -203,7 +235,29 @@ print("Initial energy: "+str(LJ(pos)))
 print(LJ(pos))
 pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
 np.savetxt('1.txt', pos)
-dyn1 = FIRE(c, LJ, LJ_force, f_tol=1e-2)
-dyn1.run(1000)
-dyn2 = FIRE(c, LJ, LJ_force, symmetrize=True, f_tol=1e-2)
-dyn2.run(1000)
+
+print('\n optmization without symmetry constraints')
+c0 = deepcopy(c)
+dyn1 = FIRE(c0, LJ, LJ_force, f_tol=1e-2, maxmove=2.0)
+dyn1.run(2000)
+
+print('\n optmization under symmetry constraints')
+c1 = deepcopy(c)
+dyn2 = FIRE(c1, LJ, LJ_force, symmetrize=True, f_tol=1e-2, maxmove=2.0)
+dyn2.run(2000)
+
+from scipy.optimize import minimize
+print('\n optmization with scipy CG')
+
+c1 = deepcopy(c)
+pos = c1.cart_coords.flatten()
+res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='CG', tol=1e-3)
+print(res.fun)
+
+c1 = deepcopy(c)
+pos = c1.cart_coords.flatten()
+print('\n optmization with scipy BFGS')
+pos = pos.flatten()
+res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='BFGS', tol=1e-3)
+print(res.fun)
+
