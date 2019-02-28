@@ -1573,7 +1573,8 @@ class Lattice():
         elif self.dim == 1:
             return generate_lattice_1D(self.ltype, self.volume, **self.kwargs)
         elif self.dim == 0:
-            return generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
+            self.para_internal = generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
+            return [1,1,1,pi/2,pi/2,pi/2]
 
     def generate_matrix(self):
         """
@@ -1582,8 +1583,15 @@ class Lattice():
         #Try multiple times in case of failure
         for i in range(10):
             para = self.generate_para()
-            if para is not None:
-                return para2matrix(para)
+            if self.ltype in ["spherical", "cylindrical"]:
+                try:
+                    self.matrix_internal = para2matrix(self.para_internal)
+                    return Euclidean_lattice
+                except:
+                    pass
+            else:
+                if para is not None:
+                    return para2matrix(para)
         printx("Error: Could not generate lattice matrix.", priority=1)
         return
 
@@ -1655,6 +1663,7 @@ class Lattice():
                 #Scale the point by the max radius
                 if rand_u(0,1) < 0.5:
                     point[index] *= -1
+            point = np.dot(point, self.matrix_internal)
 
         elif self.ltype == "cylindrical":
             #Choose a point within an octant of the unit sphere
@@ -1665,6 +1674,7 @@ class Lattice():
                 #Scale the point by the max radius
                 if rand_u(0,1) < 0.5:
                     point[index] *= -1
+            point = np.dot(point, self.matrix_internal)
         else:
             for i, a in enumerate(self.PBC):
                 if not a:
@@ -2159,19 +2169,7 @@ class random_crystal():
                                 point = self.lattice.generate_point()
                                 coords = np.array([op.operate(point) for op in ops])
                                 #Merge coordinates if the atoms are close
-                                #Use absolute coordinates for clusters
-                                if self.dim == 0:
-                                    point = np.dot(point, cell_matrix)
-                                    coords = np.dot(coords, cell_matrix)
-                                    old_matrix = deepcopy(cell_matrix)
-                                    cell_matrix = Euclidean_lattice
                                 coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
-                                #Convert back to fractional coordinates for clusters
-                                if self.dim == 0:
-                                    cell_matrix = old_matrix
-                                    coords_toadd = np.dot(coords_toadd, np.linalg.inv(cell_matrix))
-                                    if point is not None:
-                                        point = np.dot(point, np.linalg.inv(cell_matrix))
                                 dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
 
                                 #Debug to check that distance checking in merge_coordinate works
