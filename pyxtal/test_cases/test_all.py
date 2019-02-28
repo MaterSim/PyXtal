@@ -78,73 +78,82 @@ def compare_wyckoffs(num1, num2, dim=3):
     return True
 
 def check_struct_group(crystal, group, dim=3, tol=1e-2):
-    """Given a pymatgen structure, group number, and dimension, return
-    whether or not the structure matches the group number."""
-    struct = crystal.struct
+    #Supress pymatgen/numpy complex casting warnings
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
 
-    from pyxtal.symmetry import distance
-    from pyxtal.symmetry import filtered_coords
-    from copy import deepcopy
-    lattice = struct.lattice.matrix
-    PBC = [1,1,1]
+        """Given a pymatgen structure, group number, and dimension, return
+        whether or not the structure matches the group number."""
+        if type(crystal) == random_crystal:
+            lattice = struct.lattice.matrix
+            if dim != 0:
+                old_coords = deepcopy(crystal.struct.frac_coords)
+                old_species = deepcopy(crystal.struct.atomic_numbers)
+            elif dim == 0:
+                old_coords = deepcopy(crystal.cart_coords)
+                old_species = deepcopy(crystal.species)
+        else:
+            lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
+            old_coords = np.array(crystal)
+            old_species = ['C']*len(old_coords)
 
-    #Obtain the generators for the group
-    if dim == 3:
-        from pyxtal.symmetry import get_wyckoffs
-        generators = get_wyckoffs(group)[0]
+        from pyxtal.symmetry import distance
+        from pyxtal.symmetry import filtered_coords
+        from copy import deepcopy
+        PBC = [1,1,1]
 
-    elif dim == 2:
-        from pyxtal.symmetry import get_layer
-        generators = get_layer(group)[0]
-        PBC = [1,1,0]
-    elif dim == 1:
-        from pyxtal.symmetry import get_rod
-        generators = get_rod(group)[0]
-        PBC = [0,0,1]
-    elif dim == 0:
-        from pyxtal.symmetry import Group
-        generators = Group(group, dim=0)[0]
-        PBC = [0,0,0]
+        #Obtain the generators for the group
+        if dim == 3:
+            from pyxtal.symmetry import get_wyckoffs
+            generators = get_wyckoffs(group)[0]
 
-    #TODO: Add check for lattice symmetry
+        elif dim == 2:
+            from pyxtal.symmetry import get_layer
+            generators = get_layer(group)[0]
+            PBC = [1,1,0]
+        elif dim == 1:
+            from pyxtal.symmetry import get_rod
+            generators = get_rod(group)[0]
+            PBC = [0,0,1]
+        elif dim == 0:
+            from pyxtal.symmetry import Group
+            generators = Group(group, dim=0)[0]
+            PBC = [0,0,0]
 
-    #Apply SymmOps to generate new points
-    #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
-    if dim != 0:
-        old_coords = deepcopy(struct.frac_coords)
-        old_species = deepcopy(struct.atomic_numbers)
-    elif dim == 0:
-        old_coords = deepcopy(crystal.cart_coords)
-        old_species = deepcopy(crystal.species)
+        #TODO: Add check for lattice symmetry
 
-    new_coords = []
-    new_species = []
-    for i, point in enumerate(old_coords):
-        for j, op in enumerate(generators):
-            if j != 0:
-                new_coords.append(op.operate(point))
-                new_species.append(old_species[i])
-    #new_coords = filtered_coords(new_coords,PBC=PBC)
+        #Apply SymmOps to generate new points
+        #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
 
-    #Check that all points in new list are still in old
-    failed = False
-    i_list = list(range(len(new_coords)))
-    for i, point1 in enumerate(new_coords):
-        found = False
-        for j, point2 in enumerate(old_coords):
-            if new_species[i] == old_species[j]:
-                difference = filtered_coords(point2 - point1, PBC=PBC)
-                if distance(difference, lattice, PBC=PBC) <= tol:
-                    found = True
-                    break
-        if found is False:
-            failed = True
-            break
+        new_coords = []
+        new_species = []
+        for i, point in enumerate(old_coords):
+            for j, op in enumerate(generators):
+                if j != 0:
+                    new_coords.append(op.operate(point))
+                    new_species.append(old_species[i])
+        #new_coords = filtered_coords(new_coords,PBC=PBC)
 
-    if failed is False:
-        return True
-    else:
-        return False
+        #Check that all points in new list are still in old
+        failed = False
+        i_list = list(range(len(new_coords)))
+        for i, point1 in enumerate(new_coords):
+            found = False
+            for j, point2 in enumerate(old_coords):
+                if new_species[i] == old_species[j]:
+                    difference = filtered_coords(point2 - point1, PBC=PBC)
+                    if distance(difference, lattice, PBC=PBC) <= tol:
+                        found = True
+                        break
+            if found is False:
+                failed = True
+                break
+
+        if failed is False:
+            return True
+        else:
+            return False
 
 #Check if module and classes work correctly
 def passed():
