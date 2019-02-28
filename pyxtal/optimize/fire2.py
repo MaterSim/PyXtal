@@ -2,10 +2,18 @@ import numpy as np
 from time import time
 from scipy.spatial.distance import pdist, cdist
 from copy import deepcopy
-
+from pyxtal.molecule import PointGroupAnalyzer
 """
 Scripts to compute LJ energy and force
 """
+def parse_symmetry(pos):
+    mol = Molecule(['C']*len(pos), pos)
+    try:
+        symbol = PointGroupAnalyzer(mol, tolerance=0.1).sch_symbol
+    except:
+        symbol = 'N/A'
+    return symbol
+
 def LJ_1d(pos, dim=3):
     N_atom = int(len(pos)/dim)
     pos = np.reshape(pos, (N_atom, dim))
@@ -93,8 +101,6 @@ class FIRE():
             self.pos = crystal.cart_coords
         except:
             self.pos = crystal
-        self.get_energy = E
-        self.get_force = F
         self.initialize()
 
     def initialize(self):
@@ -109,8 +115,9 @@ class FIRE():
         self.trajectory['force'].append(self.force)
         self.trajectory['v'].append(self.v)
         self.trajectory['time'].append(time()-self.time0)
+        print('Initial Energy: {:12.4f}'.format(self.energy))
 
-    def update(self, freq=50):
+    def update(self, freq=500):
         self.energy = self.get_energy(self.pos)
         self.force = self.get_force(self.pos)
         self.trajectory['position'].append(self.pos)
@@ -141,7 +148,8 @@ class FIRE():
             self.Nsteps = 0
 
         #Symmetrize the force
-        f = self.symmetrized_coords(f)
+        if self.symmetrize:
+            f = self.symmetrized_coords(f)
 
         self.v += self.dt * f
         dr = self.dt * self.v  #needs to impose constraints
@@ -155,8 +163,8 @@ class FIRE():
         self.pos = self.pos - dr
 
         #Symmetrize positions
-        if self.symmetrize:
-            self.pos = self.symmetrized_coords(self.pos)
+        #if self.symmetrize:
+        #    self.pos = self.symmetrized_coords(self.pos)
 
         self.update()
 
@@ -207,44 +215,38 @@ from pyxtal.database.collection import Collection
 np.random.seed(10)
 pos = np.array(Collection('clusters')['20']['position']['data'])
 
-#Find farthest atom's distance from center
-maxr = 0
-for p in pos:
-    r = np.linalg.norm(p)
-    if r > maxr:
-        maxr = r
-print("maxr: "+str(maxr))
-
 #Generate a random cluster with random point group
 from pyxtal.crystal import *
 from copy import deepcopy
 
 pg = choose(range(1,57))
-c = random_cluster(pg, ['C'], [20], 0.5)
+c = random_cluster(pg, ['C'], [20], 0.7)
 pos = c.cart_coords
 
-maxr = 0
-for p in pos:
-    r = np.linalg.norm(p)
-    if r > maxr:
-        maxr = r
-print("maxr: "+str(maxr))
+#maxr = 0
+#for p in pos:
+#    r = np.linalg.norm(p)
+#    if r > maxr:
+#        maxr = r
+#print("maxr: "+str(maxr))
 
-print("Point group "+c.group.symbol)
+print("Point group: ", c.group.symbol, parse_symmetry(pos))
 print("Initial energy: "+str(LJ(pos)))
-print(LJ(pos))
-pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
-np.savetxt('1.txt', pos)
+#print(LJ(pos))
+#pos += 0.5*np.random.uniform(-1, 1, (len(pos), 3))
+#np.savetxt('1.txt', pos)
 
 print('\n optmization without symmetry constraints')
 c0 = deepcopy(c)
-dyn1 = FIRE(c0, LJ, LJ_force, f_tol=1e-2, maxmove=2.0)
+dyn1 = FIRE(c0, LJ, LJ_force, f_tol=1e-2, dt=0.2, maxmove=2.0)
 dyn1.run(2000)
+print('symmetry after optimization: ', parse_symmetry(dyn1.pos))
 
 print('\n optmization under symmetry constraints')
 c1 = deepcopy(c)
-dyn2 = FIRE(c1, LJ, LJ_force, symmetrize=True, f_tol=1e-2, maxmove=2.0)
+dyn2 = FIRE(c1, LJ, LJ_force, symmetrize=True, f_tol=1e-2, dt=0.2, maxmove=2.0)
 dyn2.run(2000)
+print('symmetry after optimization: ', parse_symmetry(dyn2.pos))
 
 from scipy.optimize import minimize
 print('\n optmization with scipy CG')
@@ -253,11 +255,15 @@ c1 = deepcopy(c)
 pos = c1.cart_coords.flatten()
 res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='CG', tol=1e-3)
 print(res.fun)
+pos = res.x
+print('symmetry after optimization: ', parse_symmetry(np.reshape(pos, (int(len(pos)/3), 3))))
 
 c1 = deepcopy(c)
 pos = c1.cart_coords.flatten()
 print('\n optmization with scipy BFGS')
 pos = pos.flatten()
+
 res = minimize(LJ_1d, pos, jac=LJ_force_1d, method='BFGS', tol=1e-3)
 print(res.fun)
-
+pos = res.x
+print('symmetry after optimization: ', parse_symmetry(np.reshape(pos, (int(len(pos)/3), 3))))
