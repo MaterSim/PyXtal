@@ -85,7 +85,7 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
 
         """Given a pymatgen structure, group number, and dimension, return
         whether or not the structure matches the group number."""
-        if type(crystal) == random_crystal:
+        if isinstance(crystal, (random_crystal, molecular_crystal)):
             lattice = struct.lattice.matrix
             if dim != 0:
                 old_coords = deepcopy(crystal.struct.frac_coords)
