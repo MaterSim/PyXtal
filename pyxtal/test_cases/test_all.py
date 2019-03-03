@@ -79,6 +79,9 @@ def compare_wyckoffs(num1, num2, dim=3):
 
 def check_struct_group(crystal, group, dim=3, tol=1e-2):
     #Supress pymatgen/numpy complex casting warnings
+    from pyxtal.crystal import random_crystal
+    from pyxtal.molecular_crystal import molecular_crystal
+    from copy import deepcopy
     import warnings
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -86,7 +89,7 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
         """Given a pymatgen structure, group number, and dimension, return
         whether or not the structure matches the group number."""
         if isinstance(crystal, (random_crystal, molecular_crystal)):
-            lattice = struct.lattice.matrix
+            lattice = crystal.struct.lattice.matrix
             if dim != 0:
                 old_coords = deepcopy(crystal.struct.frac_coords)
                 old_species = deepcopy(crystal.struct.atomic_numbers)
