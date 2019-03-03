@@ -2,7 +2,9 @@ import numpy as np
 from time import time
 from pymatgen.core.lattice import Lattice
 
-unit=6.242   #unit from GPa*m^3 to eV
+eV2GPa = 160.217
+GPa2eV = 1.0/eV2GPa
+
 """
 Scripts to compute LJ energy and force
 """
@@ -24,7 +26,7 @@ def get_neighbors(struc, i, rcut):
 
 class LJ():
 
-    def __init__(self, struc, press=1e-4, epsilon=1.0, sigma=1.0, rcut=3.0):
+    def __init__(self, struc, press=1e-4, epsilon=0.01, sigma=3.4, rcut=8.0):
         self.struc = struc
         self.press = press
         self.epsilon = epsilon
@@ -40,24 +42,23 @@ class LJ():
         energy = 0
         force = np.zeros([len(pos), 3])
         stress = np.zeros([3, 3])
+        sigma6 = sigma**6
+        sigma12 = sigma6*sigma6
 
         # calculating the energy/force, needs to update sigma/epsilons
         for i, pos0 in enumerate(pos):
             [r2, r] = get_neighbors(struc, i, rcut)
             r6 = np.power(r2, 3)     
             r12 = np.power(r6, 2)
-            energy += np.sum(4*epsilon*(sigma**12/r12 - sigma**6/r6))
-            f = (24*epsilon*(2*sigma**12/r12-sigma**6/r6)/r2)[:, np.newaxis] * r
+            energy += np.sum(4.0*epsilon*(sigma12/r12 - sigma6/r6))
+            f = (24*epsilon*(2.0*sigma12/r12-sigma6/r6)/r2)[:, np.newaxis] * r
             force[i] = f.sum(axis=0)
             stress += np.dot(f.T, r)
-            ids = np.argsort(r2)
-            #print(r[ids])
-            #print(len(r), np.linalg.norm(np.dot( (24*(2/r12-1/r6)/r2), r)))
 
         self.energy = 0.5*energy    
-        self.enthalpy = self.energy + press*volume*unit
+        self.enthalpy = self.energy + press*volume*GPa2eV
         self.force = force
-        self.stress = -0.5*stress
+        self.stress = -0.5*stress/volume*eV2GPa
 
 class FIRE():
     def __init__(self, crystal, symmetrize=False, e_tol=1e-5, f_tol=1e-2, dt=0.1, maxmove=0.1, dtmax=1.0, Nmin=10, finc=1.1, fdec=0.5,
@@ -99,12 +100,10 @@ class FIRE():
         self.energy = LJ(self.crystal).energy
         self.force = LJ(self.crystal).force
         self.stress = LJ(self.crystal).stress
+        self.fmax = np.max(np.abs(np.vstack((self.stress, self.force)).flatten()))
         self.v = np.zeros((len(self.force)+3, 3))
-        self.trajectory['energy'].append(self.energy)
-        self.trajectory['force'].append(self.force)
-        self.trajectory['v'].append(self.v)
-        self.trajectory['time'].append(time()-self.time0)
         print('Initial Energy: {:12.4f}'.format(self.energy))
+        print('Initial stress: {:12.4f}'.format(self.stress[0,0]))
 
     def update(self, freq=10):
         if (self.nsteps % freq == 0):
@@ -141,7 +140,6 @@ class FIRE():
 
         #print(self.force)
         #print(self.v)
-        #print(dr)
         pos = pos - dr
         self.crystal.lattice_matrix = pos[:3, :]
         self.crystal.cart_coords = pos[3:, :]
@@ -176,9 +174,8 @@ class FIRE():
         Will implement both options later.
         """
         converged = False
-        if np.max(self.force.flatten()) < self.f_tol and np.max(self.stress.flatten()) < self.f_tol :
+        if self.fmax < self.f_tol:
             if self.nsteps > 0:
-                #if self.trajectory['energy'][-1] - self.trajectory['energy'][-2] <1e-3:
                 converged = True
         return converged
 
@@ -200,19 +197,21 @@ class FIRE():
 
 
 from pyxtal.crystal import random_crystal
-crystal = random_crystal(225, ['C'], [4], 1.0)
+crystal = random_crystal(19, ['C'], [4], 1.0)
+crystal.lattice_matrix = 4.641*np.eye(3)
+crystal.frac_coords = np.array([[0,0,0],[0.5,0.5,0],[0.5,0,0.5],[0,0.5,0.5]])
+crystal.cart_coords = np.dot(crystal.frac_coords, crystal.lattice_matrix)
 if crystal.valid:
-    test = LJ(crystal)
-    print('Energy', test.energy)
-    print('Enthalpy', test.enthalpy)
-    print('Force', test.force)
-    print('Stress', test.stress)
-    print(np.linalg.det(crystal.lattice_matrix))
-    #print(crystal.struct)
+    test = LJ(crystal, epsilon=0.01, sigma=3.40, rcut=8.0)
+    print('energy:', test.energy)
+    print('enthalpy:', test.enthalpy)
+    print('stress:', np.diag(test.stress))
+
     dyn1 = FIRE(crystal, f_tol=1e-3, dt=0.2, maxmove=2.0)
     dyn1.run(500)
-    print(LJ(crystal).force)
-    print(LJ(crystal).stress)
-    print(LJ(crystal).energy)
-    print(LJ(crystal).enthalpy)
-    print(crystal.lattice_matrix)
+    print('energy: ', LJ(crystal, epsilon=0.01, sigma=3.40).energy)
+    print('enthalpy: ', LJ(crystal, epsilon=0.01, sigma=3.40).enthalpy)
+    print('stress', np.diag(LJ(crystal, epsilon=0.01, sigma=3.40).stress))
+    print('lattice:', np.diag(crystal.lattice_matrix))
+    #d2, d = get_neighbors(crystal, 0, 3.0)
+    #print(np.sqrt(d2))
