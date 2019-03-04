@@ -78,6 +78,37 @@ def euler_from_matrix(m, radians=True):
         psi *= deg
     return (phi, theta, psi)
 
+
+def get_inverse(op):
+    """
+    Given a SymmOp object, returns its inverse.
+
+    Args:
+        op: a Symmop object
+
+    Returns:
+        the inverse
+    """
+    return SymmOp(np.linalg.inv(op.affine_matrix))
+
+def get_inverse_ops(ops):
+    """
+    Given a (possibly nested) list of SymmOp objects, returns a list of the inverses.
+
+    Args:
+        ops: a list of Symmop's
+
+    Returns:
+        a list of equal shape to ops, with the inverse operations
+    """
+    inverses = []
+    for op in ops:
+        if type(op) == SymmOp:
+            inverses.append(op.inverse)
+        else:
+            inverses.append(get_inverse_ops(op))
+    return inverses
+    
 def apply_ops(coord, ops):
     """
     Apply a list of SymmOps to a single 3-vector and return an array of
@@ -94,6 +125,22 @@ def apply_ops(coord, ops):
     affine_point = np.concatenate([coord, np.ones(coord.shape[:-1] + (1,))], axis=-1)
     matrices = np.array([op.affine_matrix for op in ops])
     return np.inner(affine_point, matrices)[..., :-1]
+
+def apply_ops_diagonal(coords, ops):
+    """
+    Given a list of coordinates and SymmOps, apply the ith op to the ith coord
+    and return the list of transformed coordinates
+
+    Args:
+        coords: a list or array of 3-vectors
+
+    Returns:
+        a transformed numpy array of 3-vectors
+    """
+    coords = np.array(coords)
+    affine_points = np.concatenate([coords, np.ones(coords.shape[:-1] + (1,))], axis=-1)
+    matrices = np.array([op.affine_matrix for op in ops])
+    return np.einsum('...ij,...j', matrices, affine_points)[:,:3]
 
 def angle(v1, v2, radians=True):
     """
