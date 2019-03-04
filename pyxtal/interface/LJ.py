@@ -138,7 +138,7 @@ class FIRE():
         if self.symmetrize:
             # f[:3, :] is the gradient for force, need to symmetrize it as well
             # f[:3, :] = 
-            f[3:, :] = self.symmetrized_coords(f[3:, :])
+            f[3:, :] = self.symmetrized_force(f[3:, :])
         #f[0,1:] = 0
         #f[1,0] = 0
         #f[1,2] = 0
@@ -189,14 +189,63 @@ class FIRE():
         return converged
 
     def symmetrized_coords(self, coords):
-        gen_coords = []
-        gen_ops = []
         start_index = 0
         new_coords = []
         for ws in self.xstruct.wyckoff_sites:
+            #Get coordinates associated with WP
+            original_coords = coords[start_index:start_index+ws.multiplicity]
+            #Re-generate the points from the first generating point
             gen_coord = coords[start_index]
-            gen_coord = ws.wp[0].operate(gen_coord)
-            wp_coords = apply_ops(gen_coord, ws.wp.generators_m)
+            wp_coords0 = apply_ops(gen_coord, ws.wp.generators_m)
+            #Calculate the PBC translation applied to each point
+            translations = original_coords - wp_coords0
+            frac_translations = np.dot(translations, np.linalg.inv(self.struc.lattice_matrix))
+            frac_translations = np.round(frac_translations)
+            cart_translations = np.dot(frac_translations, self.struc.lattice_matrix)
+            #Subtract translations from original coords
+            translated_coords = original_coords - cart_translations
+            #Apply inverse WP operations to get generating_points
+            inverse_ops = ws.wp.inverse_generators_m
+            generating_points = apply_ops_diagonal(translated_coords, inverse_ops)
+            #Find the average of the generating points
+            average_point = np.sum(generating_points, axis=0) / ws.multiplicity
+            #Convert to fractional coordinates
+            average_point = np.dot(average_point, np.linalg.inv(self.struc.lattice_matrix))
+            #Apply the WP operations to the averaged generating point
+            wp_coords = apply_ops(average_point, ws.wp)
+            #Convert back to Cartesian coordintes
+            wp_coords = np.dot(wp_coords, self.struc.lattice_matrix)
+            #Re-apply the cartesian translations
+            wp_coords = wp_coords + cart_translations
+            if len(new_coords) == 0:
+                new_coords = wp_coords
+            else:
+                new_coords = np.vstack([new_coords, wp_coords])
+            start_index += ws.multiplicity
+        return new_coords
+
+    def symmetrized_force(self, coords):
+        start_index = 0
+        new_coords = []
+        for ws in self.xstruct.wyckoff_sites:
+            #Get coordinates associated with WP
+            original_coords = coords[start_index:start_index+ws.multiplicity]
+            #Re-generate the points from the first generating point
+            gen_coord = coords[start_index]
+            wp_coords0 = apply_ops(gen_coord, ws.wp.generators_m)
+            #Apply inverse WP operations to get generating_points
+            inverse_ops = ws.wp.inverse_generators_m
+            generating_points = apply_ops_diagonal(wp_coords0, inverse_ops)
+            #Find the average of the generating points
+            average_point = np.sum(generating_points, axis=0) / ws.multiplicity
+            #Convert to fractional coordinates
+            average_point = np.dot(average_point, np.linalg.inv(self.struc.lattice_matrix))
+            #For forces, we do not apply translational WP operations, so we truncate the ops
+            matrices = np.array([op.affine_matrix[:3][:3] for op in ws.wp])
+            #Apply the truncated WP operations to the averaged generating point
+            wp_coords = apply_ops(average_point, matrices)
+            #Convert back to Cartesian coordintes
+            wp_coords = np.dot(wp_coords, self.struc.lattice_matrix)
             if len(new_coords) == 0:
                 new_coords = wp_coords
             else:
