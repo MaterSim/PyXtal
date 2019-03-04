@@ -191,7 +191,7 @@ class FIRE():
     def symmetrized_coords(self, coords):
         start_index = 0
         new_coords = []
-        for ws in self.xstruct.wyckoff_sites:
+        for ws in self.struc.wyckoff_sites:
             #Get coordinates associated with WP
             original_coords = coords[start_index:start_index+ws.multiplicity]
             #Re-generate the points from the first generating point
@@ -227,7 +227,7 @@ class FIRE():
     def symmetrized_force(self, coords):
         start_index = 0
         new_coords = []
-        for ws in self.xstruct.wyckoff_sites:
+        for ws in self.struc.wyckoff_sites:
             #Get coordinates associated with WP
             original_coords = coords[start_index:start_index+ws.multiplicity]
             #Re-generate the points from the first generating point
@@ -253,6 +253,25 @@ class FIRE():
             start_index += ws.multiplicity
         return new_coords
 
+    def symmetrized_stress(self, stress):
+        snm = self.struc.lattice.stress_normalization_matrix
+        m2 = np.multiply(stress, snm)
+        indices = self.struc.lattice.stress_indices
+        if len(indices == 2):
+            total = 0
+            for index in indices:
+                total += stress[index]        
+            value = np.sqrt(total)
+            for index in inices:
+                m2[index] = value
+        elif len(indices == 3):
+            total = 0
+            for index in indices:
+                total += stress[index]        
+            value = np.cbrt(total)
+            for index in inices:
+                m2[index] = value
+        return m2
 
 from pyxtal.crystal import random_crystal
 from spglib import get_symmetry_dataset
