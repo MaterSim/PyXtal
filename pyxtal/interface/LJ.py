@@ -25,48 +25,60 @@ def get_neighbors(struc, i, rcut):
     return dists[ids]**2, r
 
 class LJ():
+    """
+    LJ model for 3D crystals, maybe extended to 0D, 1D, 2D later
+    """
+    def __init__(self, epsilon=1.0, sigma=1.0, rcut=8.0):
+        """
+        passing the parameter to LJ model
+        - epsilon
+        - sigma
+        - rcut
+        """
 
-    def __init__(self, struc, press=1e-4, epsilon=0.01, sigma=3.4, rcut=8.0):
-        self.struc = struc
-        self.press = press
         self.epsilon = epsilon
         self.sigma = sigma
         self.rcut = rcut
+
+    def calc(self, struc, press=1e-4):
         pos = struc.cart_coords
         lat = struc.lattice_matrix
         volume = np.linalg.det(lat)
-        #print('PV term', press*volume)
-
 
         # initiate the energy, force, stress
         energy = 0
         force = np.zeros([len(pos), 3])
         stress = np.zeros([3, 3])
-        sigma6 = sigma**6
+        sigma6 = self.sigma**6
         sigma12 = sigma6*sigma6
 
         # calculating the energy/force, needs to update sigma/epsilons
         for i, pos0 in enumerate(pos):
-            [r2, r] = get_neighbors(struc, i, rcut)
+            [r2, r] = get_neighbors(struc, i, self.rcut)
             r6 = np.power(r2, 3)     
             r12 = np.power(r6, 2)
-            energy += np.sum(4.0*epsilon*(sigma12/r12 - sigma6/r6))
-            f = (24*epsilon*(2.0*sigma12/r12-sigma6/r6)/r2)[:, np.newaxis] * r
+            energy += np.sum(4.0*self.epsilon*(sigma12/r12 - sigma6/r6))
+            f = (24*self.epsilon*(2.0*sigma12/r12-sigma6/r6)/r2)[:, np.newaxis] * r
             force[i] = f.sum(axis=0)
             stress += np.dot(f.T, r)
 
-        self.energy = 0.5*energy    
-        self.enthalpy = self.energy + press*volume*GPa2eV
-        self.force = force
-        self.stress = -0.5*stress/volume*eV2GPa
+        energy = 0.5*energy    
+        enthalpy = energy + press*volume*GPa2eV
+        force = force
+        stress = -0.5*stress/volume*eV2GPa
+
+        return energy, enthalpy, force, stress
+
 
 class FIRE():
-    def __init__(self, crystal, symmetrize=False, e_tol=1e-5, f_tol=1e-2, dt=0.1, maxmove=0.1, dtmax=1.0, Nmin=10, finc=1.1, fdec=0.5,
+    """
+    FIRE algorithm for structure optimization
+    """
+    def __init__(self, struc, model, symmetrize=False, e_tol=1e-5, f_tol=1e-2, 
+                 dt=0.1, maxmove=0.1, dtmax=1.0, Nmin=10, finc=1.1, fdec=0.5,
                  astart=0.1, fa=0.99, a=0.1):
-        """Parameters:
-        An optimization engine based on the fire algorithm
-        1, impose the symmetry operation
-        2, enable the box condition
+        """
+        Parameters for FIRE:
         """
 
         self.dt = dt
@@ -83,36 +95,30 @@ class FIRE():
         self.a = a
         self.nsteps = 0
         self.Nsteps = 0
-        self.trajectory = {"position": [],
-                           "energy": [],
-                           "force": [],
-                           "v": [],
-                           "time": [],
-                          }
         self.time0 = time()
+        self.model = model
+        self.struc = struc
         self.initialize()
 
     def initialize(self):
         """
-        initilaize the positions, energy, force and veolcity for the 1st step
+        initilaize the positions, energy, force for the 1st step
         """
-        self.crystal = crystal
-        self.energy = LJ(self.crystal).energy
-        self.force = LJ(self.crystal).force
-        self.stress = LJ(self.crystal).stress
+        self.energy, self.enthalpy, self.force, self.stress = self.model.calc(self.struc)
         self.fmax = np.max(np.abs(np.vstack((self.stress, self.force)).flatten()))
         self.v = np.zeros((len(self.force)+3, 3))
-        print('Initial Energy: {:12.4f}'.format(self.energy))
-        print('Initial stress: {:12.4f}'.format(self.stress[0,0]))
+        #print('Initial Energy: {:12.4f}'.format(self.energy))
 
-    def update(self, freq=10):
+    def update(self, freq=50):
+        self.energy, self.enthalpy, self.force, self.stress = self.model.calc(self.struc)
+        self.fmax = np.max(np.abs(np.vstack((self.stress, self.force)).flatten()))
         if (self.nsteps % freq == 0):
-            print('Step {0:4d} Eng: {1:12.4f} Fmax: {2:12.4f} Vol: {3:6.2f}'.
-                format(self.nsteps, self.energy, self.fmax, self.volume))
+            print('Step {0:4d} Enthalpy: {1:12.4f} Fmax: {2:12.4f} Vol: {3:6.2f}'.
+                format(self.nsteps, self.enthalpy, self.fmax, self.volume))
 
     def step(self):
         f = np.vstack((self.stress, self.force))
-        pos = np.vstack((self.crystal.lattice_matrix, self.crystal.cart_coords))
+        pos = np.vstack((self.struc.lattice_matrix, self.struc.cart_coords))
 
         vf = np.vdot(f, self.v)
         if vf > 0.0:
@@ -131,6 +137,10 @@ class FIRE():
         #Symmetrize the force
         if self.symmetrize:
             f = self.symmetrized_coords(f)
+        #f[0,1:] = 0
+        #f[1,0] = 0
+        #f[1,2] = 0
+        #f[2,:2] = 0
 
         self.v += self.dt * f
         dr = self.dt * self.v  #needs to impose constraints
@@ -141,13 +151,9 @@ class FIRE():
         #print(self.force)
         #print(self.v)
         pos = pos - dr
-        self.crystal.lattice_matrix = pos[:3, :]
-        self.crystal.cart_coords = pos[3:, :]
-        self.crystal.frac_coords = np.dot(pos[3:, :], np.linalg.inv(pos[:3, :]))
-        self.energy = LJ(self.crystal).energy
-        self.force = LJ(self.crystal).force
-        self.stress = LJ(self.crystal).stress
-        self.fmax = np.max(np.abs(np.vstack((self.stress, self.force)).flatten()))
+        self.struc.lattice_matrix = pos[:3, :]
+        self.struc.cart_coords = pos[3:, :]
+        self.struc.frac_coords = np.dot(pos[3:, :], np.linalg.inv(pos[:3, :]))
         self.volume = np.linalg.det(pos[:3, :])
         #Symmetrize positions
         #if self.symmetrize:
@@ -163,12 +169,13 @@ class FIRE():
             self.step()
             self.nsteps += 1
 
-        print('Finish at Step {0:4d} Eng: {1:12.4f} Fmax: {2:12.4f} Time: {3:6.2f} seconds'.
-                format(self.nsteps, self.energy, self.fmax, time()-self.time0))
+        print('Finish at Step {0:4d} Enthalpy: {1:12.4f} Fmax: {2:12.4f} Time: {3:6.2f} seconds'.
+                format(self.nsteps, self.enthalpy, self.fmax, time()-self.time0))
 
     def check_convergence(self):
         """
-        There should be two options to terminate the optimization before it reaches the maximum number of cycles
+        There should be two options to terminate the optimization 
+        before it reaches the maximum number of cycles
         1, by energy difference compared to the previous step: self.e_tol
         2, by the residual force: self.f_tol
         Will implement both options later.
@@ -197,21 +204,22 @@ class FIRE():
 
 
 from pyxtal.crystal import random_crystal
-crystal = random_crystal(19, ['C'], [4], 1.0)
-crystal.lattice_matrix = 4.641*np.eye(3)
-crystal.frac_coords = np.array([[0,0,0],[0.5,0.5,0],[0.5,0,0.5],[0,0.5,0.5]])
-crystal.cart_coords = np.dot(crystal.frac_coords, crystal.lattice_matrix)
-if crystal.valid:
-    test = LJ(crystal, epsilon=0.01, sigma=3.40, rcut=8.0)
-    print('energy:', test.energy)
-    print('enthalpy:', test.enthalpy)
-    print('stress:', np.diag(test.stress))
+from spglib import get_symmetry_dataset
 
-    dyn1 = FIRE(crystal, f_tol=1e-3, dt=0.2, maxmove=2.0)
-    dyn1.run(500)
-    print('energy: ', LJ(crystal, epsilon=0.01, sigma=3.40).energy)
-    print('enthalpy: ', LJ(crystal, epsilon=0.01, sigma=3.40).enthalpy)
-    print('stress', np.diag(LJ(crystal, epsilon=0.01, sigma=3.40).stress))
-    print('lattice:', np.diag(crystal.lattice_matrix))
-    #d2, d = get_neighbors(crystal, 0, 3.0)
-    #print(np.sqrt(d2))
+for i in range(10):
+    crystal = random_crystal(19, ['C'], [4], 1.0)
+    if crystal.valid:
+        test = LJ(epsilon=0.01, sigma=3.40, rcut=8.0)
+        struc = (crystal.lattice_matrix, crystal.frac_coords, [6]*4)
+        eng, enth, force, stress = test.calc(crystal)
+        sg =  get_symmetry_dataset(struc)['number']
+        print('\nBefore relaxation Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}\n'.format(sg, eng, enth))
+    
+        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
+        dyn1.run(500)
+        eng, enth, force, stress = test.calc(crystal)
+        struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
+        sg =  get_symmetry_dataset(struc, symprec=0.1)['number']
+        print('\nAfter relaxation  Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}'.format(sg, eng, enth))
+        # right now, it seems structures goes to either HCP of FCC after relaxation, which is expected for 3D LJ system
+        # need to compare with other code to see if the energy is correct
