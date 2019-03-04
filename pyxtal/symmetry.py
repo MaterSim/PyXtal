@@ -1460,6 +1460,26 @@ def organized_wyckoffs(group):
         wyckoffs_organized[-1].append(wp)
     return wyckoffs_organized
 
+def calculate_generators(gen_pos, site_symm):
+    """
+    Calculate the generating operations for a WP given the general position
+    and the site symmetry ops for the WP
+    
+    Args:
+        gen_pos: a list of SymmOp objects for the general position
+        site_symm: a 
+    """
+    gens = [Identity]
+    for op in gen_pos:
+        found = False
+        for point in site_symm:
+            for op2 in point:
+                if op2 in gen_pos:
+                    found = True
+        if found is False:
+            gens.append(op)
+    return gens
+
 class Wyckoff_position():
     """
     Class for a single Wyckoff position within a symmetry group
@@ -1563,6 +1583,10 @@ class Wyckoff_position():
             """A list of Wyckoff generators (molecular=False)"""
             wp.generators_m = get_wyckoff_generators(wp.number, molecular=True)[wp.index]
             """A list of Wyckoff generators (molecular=True)"""
+            wp.inverse_generators = get_inverse_ops(wp.generators)
+            """A list of inverses of the generators (molecular=False)"""
+            wp.inverse_generators_m = get_inverse_ops(wp.generators_m)
+            """A list of inverses of the generators (molecular=True)"""
 
         elif dim == 2:
             if number not in range(1, 81):
@@ -1594,6 +1618,10 @@ class Wyckoff_position():
             """A list of Wyckoff generators (molecular=False)"""
             wp.generators_m = get_layer_generators(wp.number, molecular=True)[wp.index]
             """A list of Wyckoff generators (molecular=True)"""
+            wp.inverse_generators = get_inverse_ops(wp.generators)
+            """A list of inverses of the generators (molecular=False)"""
+            wp.inverse_generators_m = get_inverse_ops(wp.generators_m)
+            """A list of inverses of the generators (molecular=True)"""
 
         elif dim == 1:
             if number not in range(1, 76):
@@ -1625,11 +1653,16 @@ class Wyckoff_position():
             """A list of Wyckoff generators (molecular=False)"""
             wp.generators_m = get_rod_generators(wp.number, molecular=True)[wp.index]
             """A list of Wyckoff generators (molecular=True)"""
+            wp.inverse_generators = get_inverse_ops(wp.generators)
+            """A list of inverses of the generators (molecular=False)"""
+            wp.inverse_generators_m = get_inverse_ops(wp.generators_m)
+            """A list of inverses of the generators (molecular=True)"""
 
         elif dim == 0:
             #TODO: implement Clusters
             return Wyckoff_position.from_dict({"dim": 0})
         return wp
+
 
     def wyckoff_from_generating_op(gen_op, gen_pos):
         """
@@ -1846,6 +1879,10 @@ class Group():
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
+            self.inverse_generators = get_inverse_ops(self.wyckoff_generators)
+            """A list of inverses of the generators (molecular=False)"""
+            self.inverse_generators_m = get_inverse_ops(self.wyckoff_generators_m)
+            """A list of inverses of the generators (molecular=True)"""
             if self.number <= 2:
                 self.lattice_type = "triclinic"
             elif self.number <= 15:
@@ -1875,6 +1912,10 @@ class Group():
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_layer_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
+            self.inverse_generators = get_inverse_ops(self.wyckoff_generators)
+            """A list of inverses of the generators (molecular=False)"""
+            self.inverse_generators_m = get_inverse_ops(self.wyckoff_generators_m)
+            """A list of inverses of the generators (molecular=True)"""
             if self.number <= 2:
                 self.lattice_type = "triclinic"
             elif self.number <= 18:
@@ -1902,6 +1943,10 @@ class Group():
             """A list of Wyckoff generators (molecular=False)"""
             self.wyckoff_generators_m = get_rod_generators(self.number, molecular=True)
             """A list of Wyckoff generators (molecular=True)"""
+            self.inverse_generators = get_inverse_ops(self.wyckoff_generators)
+            """A list of inverses of the generators (molecular=False)"""
+            self.inverse_generators_m = get_inverse_ops(self.wyckoff_generators_m)
+            """A list of inverses of the generators (molecular=True)"""
             if self.number <= 2:
                 self.lattice_type = "triclinic"
             elif self.number <= 12:
@@ -1943,6 +1988,10 @@ class Group():
                     """A list of Wyckoff generators (molecular=False)"""
                     self.wyckoff_generators_m = get_point_generators(self.number)
                     """A list of Wyckoff generators (molecular=True)"""
+                    self.inverse_generators = get_inverse_ops(self.wyckoff_generators)
+                    """A list of inverses of the generators (molecular=False)"""
+                    self.inverse_generators_m = get_inverse_ops(self.wyckoff_generators_m)
+                    """A list of inverses of the generators (molecular=True)"""
                     if self.number <= 15:
                         self.lattice_type = "cylindrical"
                     elif self.number <= 27:
@@ -2152,8 +2201,10 @@ class Group():
                     for wp in self.wyckoffs:
                         self.w_symm.append(Wyckoff_position.symmetry_from_wyckoff(wp, gen_pos))
                     self.w_symm_m = deepcopy(self.w_symm)
-                    self.wyckoff_generators = deepcopy(self.wyckoffs)
-                    self.wyckoff_generators_m = deepcopy(self.wyckoffs)
+                    self.wyckoff_generators = [calculate_generators(self.wyckoffs[0], ss) for ss in self.w_symm]
+                    self.wyckoff_generators_m = deepcopy(self.wyckoff_generators)
+                    self.inverse_generators = get_inverse_ops(self.wyckoff_generators)
+                    self.inverse_generators_m = get_inverse_ops(self.wyckoff_generators_m)
                 elif "*" in self.symbol:
                     #infinite rotational groups
                     """C* and C*h are the prototypes; the rest are redundant for molecules:
@@ -2166,10 +2217,12 @@ class Group():
                         self.number = pglist.index(self.symbol) + 1
                         #Linear, no reflection
                         self.wyckoffs = [[SymmOp.from_xyz_string('0,0,z')]]
-                        self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]]]
+                        self.w_symm = [[[Identity]]]
                         self.w_symm_m = deepcopy(self.w_symm)
-                        self.wyckoff_generators = deepcopy(self.wyckoffs)
-                        self.wyckoff_generators_m = deepcopy(self.wyckoffs)
+                        self.wyckoff_generators = [[Identity]]
+                        self.wyckoff_generators_m = [[Identity]]
+                        self.inverse_generators = [[Identity]]
+                        self.inverse_generators_m = [[Identity]]
                     elif self.symbol in ['C*h', 'S*', 'D*', 'D*h']:
                         self.symbol = 'C*h'
                         self.number = pglist.index(self.symbol) + 1
@@ -2177,8 +2230,10 @@ class Group():
                         self.wyckoffs = [[op_z, SymmOp.from_xyz_string('0,0,-z')],[op_o]]
                         self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]],[[Identity, SymmOp.from_xyz_string('0,0,-z')]]]
                         self.w_symm_m = deepcopy(self.w_symm)
-                        self.wyckoff_generators = deepcopy(self.wyckoffs)
-                        self.wyckoff_generators_m = deepcopy(self.wyckoffs)
+                        self.wyckoff_generators = [[Identity, SymmOp.from_xyz_string('x,y,-z')],[Identity]]
+                        self.wyckoff_generators_m = [[Identity, SymmOp.from_xyz_string('x,y,-z')],[Identity]]
+                        self.inverse_generators = [[Identity, SymmOp.from_xyz_string('x,y,-z')],[Identity]]
+                        self.inverse_generators_m = [[Identity, SymmOp.from_xyz_string('x,y,-z')],[Identity]]
                     else:
                         printx("Error: Invalid point group symbol.", priority=1)
                 self.number = None
