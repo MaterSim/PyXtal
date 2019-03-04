@@ -957,7 +957,7 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
             a = b = sqrt((volume/x)/c)
         #Trigonal/Rhombohedral/Hexagonal
         #elif sg <= 194:
-        elif ltype == "hexagonal":
+        elif ltype in ["hexagonal", "trigonal", "rhombohedral"]:
             alpha, beta, gamma = pi/2, pi/2, pi/3*2
             x = sqrt(3.)/2.
             vec = random_vector()
@@ -1134,9 +1134,9 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
                 abc[1] = abc[0]
                 abc[2] = volume/(abc[NPA-1]**2)
 
-        #Trigonal/Rhombohedral/Hexagonal
+        #Trigonal/Hexagonal
         #elif num <= 80:
-        elif ltype == "hexagonal":
+        elif ltype in ["hexagonal", "trigonal"]:
             gamma = pi/3*2
             x = sqrt(3.)/2.
             if NPA == 3:
@@ -1317,7 +1317,7 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
 
         #Trigonal/Rhombohedral/Hexagonal
         #elif num <= 75:
-        elif ltype == "hexagonal":
+        elif ltype in ["hexagonal", "trigonal"]:
             gamma = pi/3*2
             x = sqrt(3.)/2.
             if PA == 3:
@@ -1563,8 +1563,36 @@ class Lattice():
                 if key == "allow_volume_reset":
                     if value == False:
                         self.allow_volume_reset = False
+        try:
+            self.unique_axis
+        except:
+            self.unique_axis = "c"
         self.reset_matrix()
-        
+        #Set stress normalization info
+        if self.ltype == "triclinic":
+            self.stress_normalization_matrix = np.array([[1,1,1],[1,1,1],[1,1,1]])
+        elif self.ltype == "monoclinic":
+            if self.PBC == [1,1,1]:
+                self.stress_normalization_matrix = np.array([[1,0,0],[0,1,0],[1,0,1]])
+            else:
+                if self.unique_axis == "a":
+                    self.stress_normalization_matrix = np.array([[1,0,0],[0,1,0],[0,1,1]])
+                elif self.unique_axis == "b":
+                    self.stress_normalization_matrix = np.array([[1,0,0],[0,1,0],[1,0,1]])
+                elif self.unique_axis == "c":
+                    self.stress_normalization_matrix = np.array([[1,0,0],[1,1,0],[0,0,1]])
+        elif self.ltype in ["orthorhombic", "tetragonal", "trigonal", "hexagonal", "cubic"]:
+            self.stress_normalization_matrix = np.array([[1,0,0],[0,1,0],[0,0,1]])
+        elif self.ltype in ["spherical", "cylindrical"]:
+            self.stress_normalization_matrix = np.array([[0,0,0],[0,0,0],[0,0,0]])
+        #Set info for on-diagonal stress symmetrization
+        if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral"]:
+            self.stress_indices = [(0,0),(1,1)]
+        elif self.ltype == "cubic":
+            self.stress_indices = [(0,0),(1,1),(2,2)]
+        else:
+            self.stress_indices = []
+
     def generate_para(self):
         if self.dim == 3:
             return generate_lattice(self.ltype, self.volume, **self.kwargs)
@@ -1678,7 +1706,7 @@ class Lattice():
         else:
             for i, a in enumerate(self.PBC):
                 if not a:
-                    if self.ltype == "hexagonal":
+                    if self.ltype in ["hexagonal", "trigonal", "rhombohedral"]:
                         point[i] *= 1./sqrt(3.)
                     else:
                         point[i] -= 0.5
