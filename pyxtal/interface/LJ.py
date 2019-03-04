@@ -136,7 +136,9 @@ class FIRE():
 
         #Symmetrize the force
         if self.symmetrize:
-            f = self.symmetrized_coords(f)
+            # f[:3, :] is the gradient for force, need to symmetrize it as well
+            # f[:3, :] = 
+            f[3:, :] = self.symmetrized_coords(f[3:, :])
         #f[0,1:] = 0
         #f[1,0] = 0
         #f[1,2] = 0
