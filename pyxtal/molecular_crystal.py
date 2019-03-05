@@ -460,8 +460,18 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
     #Main loop for merging multiple times
     while True:
         #Check distances of current WP. If too small, merge
-        dm = distance_matrix(coor, coor, lattice, PBC=PBC)
-        if ((dm > 0)*(dm < tol)).any():
+        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
+        passed_distance_check = True
+        for i, x in enumerate(dm):
+            for j, y in enumerate(x):
+                if i != j and y < tol:
+                    passed_distance_check = False
+                    break
+            if passed_distance_check is False:
+                break
+        if check_images([coor[0]], ['C'], lattice, PBC=PBC, tol=tol) is False:
+            passed_distance_check = False
+        if passed_distance_check is False:
             mult1 = group[index].multiplicity
             #Find possible wp's to merge into
             possible = []

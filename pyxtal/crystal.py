@@ -449,7 +449,7 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1], tm=
     else:
         return True
 
-def check_images(coords, species, lattice, PBC=[1,1,1], tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
+def check_images(coords, species, lattice, PBC=[1,1,1], tm=Tol_matrix(prototype="atomic"), tol=None, d_factor=1.0):
     """
     Given a set of (unfiltered) fractional coordinates, checks if the periodic images are too close.
     
@@ -459,22 +459,48 @@ def check_images(coords, species, lattice, PBC=[1,1,1], tm=Tol_matrix(prototype=
         lattice: a 3x3 lattice matrix
         PBC: the periodic boundary conditions
         tm: a Tol_matrix object
+        tol: a single override value for the distance tolerances
         d_factor: the tolerance is multiplied by this amount. Larger values
             mean atoms must be farther apart
 
     Returns:
         False if distances are too close. True if distances are not too close
     """
+    #If no PBC, there are no images to check
+    if PBC == [0,0,0]:
+        return True
+    #Create image coords from given coords and PBC
     coords = np.array(coords)
     m = create_matrix(PBC=PBC)
     new_coords = []
     new_species = []
     for v in m:
-        if v[0] == 0 and v[1] == 0 and v[2] == 0: continue
+        #Omit the [0,0,0] vector
+        if (v == [0,0,0]).all(): continue
         for v2 in coords+v:
             new_coords.append(v2)
-        new_species += species
-    return check_distance(coords, np.array(new_coords), species, new_species, lattice, PBC=[0,0,0], tm=tm, d_factor=d_factor)
+    new_coords = np.array(new_coords)
+    #Create a distance matrix
+    dm = distance_matrix(coords, new_coords, lattice, PBC=[0,0,0])
+    #Define tolerances
+    if tol is None:
+        tols = np.zeros((len(species), len(species)))
+        for i, s1 in enumerate(species):
+            for j, s2 in enumerate(species):
+                if i <= j:
+                    tols[i][j] = tm.get_tol(s1, s2)
+                    tols[j][i] = tm.get_tol(s1, s2)
+        tols2 = np.tile(tols, int(len(new_coords) / len(coords)))
+        if (dm < tols2).any():
+            return False
+        else:
+            return True
+    elif tol is not None:
+        if (dm < tol).any():
+            return False
+        else:
+            return True
+    return True
 
 def get_center(xyzs, lattice, PBC=[1,1,1]):
     """
@@ -820,7 +846,7 @@ def merge_coordinate(coor, lattice, group, tol):
     #Main loop for merging multiple times
     while True:
         #Check distances of current WP. If too small, merge
-        dm = distance_matrix(coor, coor, lattice, PBC=PBC)
+        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
         passed_distance_check = True
         for i, x in enumerate(dm):
             for j, y in enumerate(x):
@@ -829,6 +855,8 @@ def merge_coordinate(coor, lattice, group, tol):
                     break
             if passed_distance_check is False:
                 break
+        if check_images([coor[0]], ['C'], lattice, PBC=PBC, tol=tol) is False:
+            passed_distance_check = False
         if passed_distance_check is False:
             mult1 = group[index].multiplicity
             #Find possible wp's to merge into
