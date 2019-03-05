@@ -1659,8 +1659,15 @@ class Wyckoff_position():
             """A list of inverses of the generators (molecular=True)"""
 
         elif dim == 0:
-            #TODO: implement Clusters
-            return Wyckoff_position.from_dict({"dim": 0})
+            if number not in range(1, 57):
+                printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
+                return
+            #Generate a Group and retrieve Wyckoff position from it
+            g = Group(group, dim=0)
+            try:
+                wp = g[index]
+            except:
+                printx("Error while generating Wyckoff_position: index out of range for specified group", priority=1)
         return wp
 
 
