@@ -1,6 +1,7 @@
 import numpy as np
 from time import time
 from pymatgen.core.lattice import Lattice
+from pyxtal.operations import *
 
 eV2GPa = 160.217
 GPa2eV = 1.0/eV2GPa
@@ -276,7 +277,7 @@ class FIRE():
 from pyxtal.crystal import random_crystal
 from spglib import get_symmetry_dataset
 
-for i in range(10):
+for i in range(100):
     crystal = random_crystal(19, ['C'], [4], 1.0)
     if crystal.valid:
         test = LJ(epsilon=0.01, sigma=3.40, rcut=8.0)
@@ -285,7 +286,7 @@ for i in range(10):
         sg =  get_symmetry_dataset(struc)['number']
         print('\nBefore relaxation Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}\n'.format(sg, eng, enth))
     
-        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
+        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2, symmetrize=True)
         dyn1.run(500)
         eng, enth, force, stress = test.calc(crystal)
         struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
