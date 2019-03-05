@@ -1567,7 +1567,6 @@ class Lattice():
             self.unique_axis
         except:
             self.unique_axis = "c"
-        self.reset_matrix()
         #Set stress normalization info
         if self.ltype == "triclinic":
             self.stress_normalization_matrix = np.array([[1,1,1],[1,1,1],[1,1,1]])
@@ -1592,6 +1591,8 @@ class Lattice():
             self.stress_indices = [(0,0),(1,1),(2,2)]
         else:
             self.stress_indices = []
+        #Set values for the matrix
+        self.reset_matrix()
 
     def generate_para(self):
         if self.dim == 3:
