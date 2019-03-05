@@ -1497,6 +1497,7 @@ class Wyckoff_site():
         self.specie = Element(specie).short_name
         self.multiplicity = wp.multiplicity
         self.PBC = wp.PBC
+        self.coords = apply_ops(self.position, self.wp)
 
     def __str__(self):
         return self.specie+": "+str(self.position)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
