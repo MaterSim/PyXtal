@@ -254,8 +254,14 @@ class FIRE():
         return new_coords
 
     def symmetrized_stress(self, stress):
+        #Make the matrix lower-diagonal
+        for (i,j) in [(1,0),(2,1),(2,2)]:
+            stress[i][j] = stress[i][j] + stress[j][i]
+            stress[j][i] = 0
+        #Normalize the matrix
         snm = self.struc.lattice.stress_normalization_matrix
         m2 = np.multiply(stress, snm)
+        #Normalize the on-diagonal elements
         indices = self.struc.lattice.stress_indices
         if len(indices == 2):
             total = 0
