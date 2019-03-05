@@ -1517,7 +1517,7 @@ class molecular_crystal():
                         final_coor = filtered_coords(final_coor, PBC=self.PBC)
                         final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
                         #if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC):
-                        self.lattice = final_lattice
+                        self.lattice_matrix = final_lattice
                         """A 3x3 matrix representing the lattice of the
                         unit cell."""  
                         self.frac_coords = np.array(final_coor)
