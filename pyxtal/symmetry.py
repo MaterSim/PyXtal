@@ -2242,6 +2242,7 @@ class Group():
         wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs), "ops": self.wyckoffs[i],
             "multiplicity": len(self.wyckoffs[i]), "symmetry": self.w_symm[i], "symmetry_m": self.w_symm_m[i],
             "generators": self.wyckoff_generators[i], "generators_m": self.wyckoff_generators_m[i],
+            "inverse_generators": self.inverse_generators[i], "inverse_generators_m": self.inverse_generators_m[i],
             "PBC": self.PBC, "dim": self.dim, "number": self.number, "symbol": self.symbol} for i in range(len(self.wyckoffs))]
         self.Wyckoff_positions = [Wyckoff_position.from_dict(wpdict) for wpdict in wpdicts]
         """A list of Wyckoff_position objects, sorted by descending multiplicity"""
