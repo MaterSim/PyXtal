@@ -1,7 +1,7 @@
 import numpy as np
 from time import time
 from pymatgen.core.lattice import Lattice
-from pyxtal.operations import apply_ops, apply_ops_diagonal
+from pyxtal.operations import *
 
 eV2GPa = 160.217
 GPa2eV = 1.0/eV2GPa
@@ -138,7 +138,7 @@ class FIRE():
         #Symmetrize the force
         if self.symmetrize:
             # f[:3, :] is the gradient for force, need to symmetrize it as well
-            f[:3, :] = self.symmetrized_stress(f[:3, :])
+            # f[:3, :] = 
             f[3:, :] = self.symmetrized_force(f[3:, :])
         #f[0,1:] = 0
         #f[1,0] = 0
@@ -159,8 +159,8 @@ class FIRE():
         self.struc.frac_coords = np.dot(pos[3:, :], np.linalg.inv(pos[:3, :]))
         self.volume = np.linalg.det(pos[:3, :])
         #Symmetrize positions
-        if self.symmetrize:
-            self.pos = self.symmetrized_coords(self.pos)
+        #if self.symmetrize:
+        #    self.pos = self.symmetrized_coords(self.pos)
     
         self.update()
 
@@ -242,9 +242,9 @@ class FIRE():
             #Convert to fractional coordinates
             average_point = np.dot(average_point, np.linalg.inv(self.struc.lattice_matrix))
             #For forces, we do not apply translational WP operations, so we truncate the ops
-            matrices = np.array([op.affine_matrix[:3,:3] for op in ws.wp])
+            matrices = np.array([op.affine_matrix[:3][:3] for op in ws.wp])
             #Apply the truncated WP operations to the averaged generating point
-            wp_coords = np.dot(average_point, matrices)
+            wp_coords = apply_ops(average_point, matrices)
             #Convert back to Cartesian coordintes
             wp_coords = np.dot(wp_coords, self.struc.lattice_matrix)
             if len(new_coords) == 0:
@@ -264,14 +264,14 @@ class FIRE():
         m2 = np.multiply(stress, snm)
         #Normalize the on-diagonal elements
         indices = self.struc.lattice.stress_indices
-        if len(indices) == 2:
+        if len(indices == 2):
             total = 0
             for index in indices:
                 total += stress[index]        
             value = np.sqrt(total)
             for index in inices:
                 m2[index] = value
-        elif len(indices) == 3:
+        elif len(indices == 3):
             total = 0
             for index in indices:
                 total += stress[index]        
@@ -292,7 +292,7 @@ for i in range(10):
         sg =  get_symmetry_dataset(struc)['number']
         print('\nBefore relaxation Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}\n'.format(sg, eng, enth))
     
-        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
+        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2, symmetrize=True)
         dyn1.run(500)
         eng, enth, force, stress = test.calc(crystal)
         struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
