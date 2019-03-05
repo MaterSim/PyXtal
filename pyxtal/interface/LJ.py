@@ -283,7 +283,7 @@ class FIRE():
 from pyxtal.crystal import random_crystal
 from spglib import get_symmetry_dataset
 
-for i in range(100):
+for i in range(10):
     crystal = random_crystal(19, ['C'], [4], 1.0)
     if crystal.valid:
         test = LJ(epsilon=0.01, sigma=3.40, rcut=8.0)
@@ -292,7 +292,7 @@ for i in range(100):
         sg =  get_symmetry_dataset(struc)['number']
         print('\nBefore relaxation Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}\n'.format(sg, eng, enth))
     
-        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2) #, symmetrize=True)
+        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2, symmetrize=True)
         dyn1.run(500)
         eng, enth, force, stress = test.calc(crystal)
         struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
