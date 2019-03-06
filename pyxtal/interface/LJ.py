@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from time import time
 from pymatgen.core.lattice import Lattice
 from pyxtal.operations import *
@@ -137,33 +138,43 @@ class FIRE():
             self.dt *= self.fdec
             self.Nsteps = 0
 
-        #Symmetrize the force
-        if self.symmetrize:
-            # f[:3, :] is the gradient for force, need to symmetrize it as well
-            f[:3, :] = self.symmetrized_stress(f[:3, :])
-            f[3:, :] = self.symmetrized_force(f[3:, :])
-        #f[0,1:] = 0
-        #f[1,0] = 0
-        #f[1,2] = 0
-        #f[2,:2] = 0
-
         self.v += self.dt * f
         dr = self.dt * self.v  #needs to impose constraints
         normdr = np.sqrt(np.vdot(dr, dr))
         if normdr > self.maxmove:
             dr = self.maxmove * dr / normdr
+        #print('frac0', np.dot(pos[3:,:], np.linalg.inv(pos[:3,:])))
+
+        #Symmetrize the force
+        if self.symmetrize:
+            # f[:3, :] is the gradient for force, need to symmetrize it as well
+            dr[:3, :] = self.symmetrized_stress(dr[:3, :])
+            dr[3:, :] = np.dot(self.struc.frac_coords, dr[:3, :]) 
+            f_frac = np.dot(dr[3:,:], np.linalg.inv(pos[:3,:] - dr[:3, :]))
+            f_frac = self.symmetrized_force(f_frac)
+            dr[3:,:] += np.dot(f_frac, pos[:3,:] - dr[:3, :])
+
+        #pos = pos - dr
+        #Symmetrize positions
+        #if self.symmetrize:
+        #    pos = self.symmetrized_coords(pos)
 
         #print(self.force)
         #print(self.v)
-        pos = pos - dr
-        self.struc.lattice_matrix = pos[:3, :]
-        self.struc.cart_coords = pos[3:, :]
-        self.struc.frac_coords = np.dot(pos[3:, :], np.linalg.inv(pos[:3, :]))
-        self.volume = np.linalg.det(pos[:3, :])
-        #Symmetrize positions
-        #if self.symmetrize:
-        #    self.pos = self.symmetrized_coords(self.pos)
-    
+        self.struc.lattice_matrix = pos[:3, :] - dr[:3, :]
+        self.struc.cart_coords = pos[3:, :] - dr[3:, :]
+        self.struc.frac_coords = np.dot(self.struc.cart_coords, np.linalg.inv(self.struc.lattice_matrix))
+        self.volume = np.linalg.det(self.struc.lattice_matrix)
+   
+        #sg = get_symmetry_dataset((pos[:3, :], self.struc.frac_coords, [6]*4), symprec=0.1)['number']
+        #print(sg)
+        #if self.symmetrize and sg <19:
+        #    print(sg)
+        #    print('dr\n', dr)
+        #    print('pos\n', pos)
+        #    print('frac\n', self.struc.frac_coords)
+        #    print('force\n', f_frac)
+        #    sys.exit()
         self.update()
 
     def run(self, max_steps=1000):
@@ -254,6 +265,11 @@ class FIRE():
             else:
                 new_coords = np.vstack([new_coords, wp_coords])
             start_index += ws.multiplicity
+        #if np.sum(np.abs(coords-new_coords))>1e-1:
+        #    print(coords)
+        #    print(new_coords)
+        #    print(coords-new_coords)
+        #    sys.exit()
         return new_coords
 
     def symmetrized_stress(self, stress):
@@ -286,7 +302,7 @@ from pyxtal.crystal import random_crystal
 from spglib import get_symmetry_dataset
 
 for i in range(10):
-    crystal = random_crystal(19, ['C'], [4], 1.0)
+    crystal = random_crystal(11, ['C'], [4], 1.0)
     if crystal.valid:
         crystal1 = deepcopy(crystal)
         test = LJ(epsilon=0.01, sigma=3.40, rcut=8.0)
@@ -306,7 +322,13 @@ for i in range(10):
         dyn1.run(500)
         eng, enth, force, stress = test.calc(crystal)
         struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
-        sg =  get_symmetry_dataset(struc, symprec=0.1)['number']
+        sg =  get_symmetry_dataset(struc, symprec=0.02)['number']
+        if sg is None:
+            sg = 0
         print('After relaxation with symm Space group:    {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}'.format(sg, eng, enth))
+        #dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
+        #struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
+        #sg =  get_symmetry_dataset(struc, symprec=0.02)['number']
+        #print('After relaxation without symm Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}'.format(sg, eng, enth))
         # right now, it seems structures goes to either HCP of FCC after relaxation, which is expected for 3D LJ system
         # need to compare with other code to see if the energy is correct
