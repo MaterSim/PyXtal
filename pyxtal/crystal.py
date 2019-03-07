@@ -1898,6 +1898,7 @@ class random_crystal():
         """
         Common init functionality for 0D-3D cases of random_crystal.
         """
+        self.valid = False
         #Check that numIons are integers greater than 0
         for num in numIons:
             if int(num) != num or num < 1:
