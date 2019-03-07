@@ -1801,7 +1801,7 @@ class Lattice():
         l.ltype = ltype
         l.volume = volume
         l.random = False
-        self.allow_volume_reset = False
+        l.allow_volume_reset = False
         return l
 
     def from_matrix(matrix, ltype="triclinic", PBC=[1,1,1], **kwargs):
