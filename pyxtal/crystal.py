@@ -2286,7 +2286,7 @@ class random_crystal():
                                     self.numattempts += 1
                             else:
                                 cycle3 += 1
-                                self.numattempts ++ 1
+                                self.numattempts += 1
 
                         if numIon_added != numIon:
                             break  #need to repeat from the 1st species
