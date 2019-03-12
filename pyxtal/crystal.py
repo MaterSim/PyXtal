@@ -2068,6 +2068,8 @@ class random_crystal():
                     if p < len(l_mult) - 1:
                         p += 1
                         n[p] = min((numIon - num) // l_mult[p], l_maxn[p])
+                    elif p == len(l_mult) - 1:
+                        return False
                     else:
                         #p is already at last position: trigger backwards routine
                         num = numIon + 1
