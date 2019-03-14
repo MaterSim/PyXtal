@@ -1742,7 +1742,8 @@ class Lattice():
                         point[i] -= 0.5
         return point
 
-    def from_para(a, b, c, alpha, beta, gamma, ltype="triclinic", radians=False, PBC=[1,1,1], **kwargs):
+    @classmethod
+    def from_para(self, a, b, c, alpha, beta, gamma, ltype="triclinic", radians=False, PBC=[1,1,1], **kwargs):
         """
         Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
         are available. Unless specified by the keyword random=True, does not create a
@@ -1804,7 +1805,8 @@ class Lattice():
         l.allow_volume_reset = False
         return l
 
-    def from_matrix(matrix, ltype="triclinic", PBC=[1,1,1], **kwargs):
+    @classmethod
+    def from_matrix(self, matrix, ltype="triclinic", PBC=[1,1,1], **kwargs):
         """
         Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
         are available. Unless specified by the keyword random=True, does not create a
@@ -1841,7 +1843,6 @@ class Lattice():
         Returns:
             a Lattice object with the specified parameters
         """
-        pass
         m = np.array(matrix)
         if np.shape(m) != (3,3):
             printx("Error: Lattice matrix must be 3x3", priority=1)
@@ -1860,7 +1861,7 @@ class Lattice():
         l.ltype = ltype
         l.volume = volume
         l.random = False
-        self.allow_volume_reset = False
+        l.allow_volume_reset = False
         return l
 
     def __str__(self):
