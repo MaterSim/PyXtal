@@ -214,7 +214,8 @@ class Tol_matrix():
             smaller = min(index1, index2)
             self.custom_values.append((smaller, larger))
 
-    def from_matrix(matrix, prototype="atomic", factor=1.0, begin_with=0):
+    @classmethod
+    def from_matrix(self, matrix, prototype="atomic", factor=1.0, begin_with=0):
         """
         Given a tolerance matrix, returns a Tol_matrix object. Matrix indices correspond to
         the atomic number (with 0 pointing to Hydrogen by default). For atoms with atomic
@@ -243,7 +244,8 @@ class Tol_matrix():
         tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
         return tm
 
-    def from_radii(radius_list, prototype="atomic", factor=1.0, begin_with=0):
+    @classmethod
+    def from_radii(self, radius_list, prototype="atomic", factor=1.0, begin_with=0):
         """
         Given a list of atomic radii, returns a Tol_matrix object. For atom-atom pairs, uses
         the average radii of the two species as the tolerance value. For atoms with atomic
@@ -270,7 +272,8 @@ class Tol_matrix():
         tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
         return tm
 
-    def from_single_value(value):
+    @classmethod
+    def from_single_value(self, value):
         """
         Creates a Tol_matrix which only has a single tolerance value. Using get_tol will
         always return the same value.
@@ -345,7 +348,8 @@ class Tol_matrix():
         except:
             return "Error: Could not save Tol_matrix to file."
 
-    def from_file(filename):
+    @classmethod
+    def from_file(self, filename):
         try:
             tm = np.load(filename)[0]
             if type(tm) == Tol_matrix:
@@ -1706,7 +1710,7 @@ class Lattice():
                     self.gamma = gamma
                     break
 
-    def set_volume(volume):
+    def set_volume(self, volume):
         if self.allow_volume_reset is True:
             self.volume = volume
 

@@ -1484,7 +1484,8 @@ class Wyckoff_position():
     """
     Class for a single Wyckoff position within a symmetry group
     """
-    def from_dict(dictionary):
+    @classmethod
+    def from_dict(self, dictionary):
         """
         Constructs a Wyckoff_position object using a dictionary. Used mainly by the
         Wyckoff class for constructing a list of Wyckoff_position objects at once
@@ -1520,7 +1521,8 @@ class Wyckoff_position():
     def __repr__(self):
         return str(self)
 
-    def from_group_and_index(group, index, dim=3, PBC=None):
+    @classmethod
+    def from_group_and_index(self, group, index, dim=3, PBC=None):
         """
         Creates a Wyckoff_position using the space group number and index
         

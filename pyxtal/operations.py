@@ -685,7 +685,8 @@ class Orientation():
         m = self.get_matrix(angle=angle)
         return SymmOp.from_rotation_and_translation(m,[0,0,0])
 
-    def from_constraint(v1, c1):
+    @classmethod
+    def from_constraint(self, v1, c1):
         """
         Geneate an orientation object given a constraint axis c1, and a
         corresponding vector v1. v1 will be rotated onto c1, and the resulting
@@ -702,7 +703,8 @@ class Orientation():
         m = rotate_vector(v1, c1)
         return Orientation(m, degrees=1, axis=c1)
 
-    def from_constraints(v1, c1, v2, c2):
+    @classmethod
+    def from_constraints(self, v1, c1, v2, c2):
         """
         Geneate an orientation object given two constraint vectors
 

@@ -21,7 +21,8 @@ class Xstruct(Structure):
         coords = np.array(coords)
         Structure.__init__(self, lattice.matrix, species, coords)
 
-    def from_random_crystal(rc):
+    @classmethod
+    def from_random_crystal(self, rc):
         """
         Initialize from a random_crystal object
         """
@@ -137,7 +138,8 @@ class Mstruct(Structure):
         coords = np.array(coords)
         Structure.__init__(self, lattice.matrix, species, coords)
 
-    def from_molecular_crystal(mc):
+    @classmethod
+    def from_molecular_crystal(self, mc):
         """
         Initialize from a molecular_crystal object
         """
