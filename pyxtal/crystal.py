@@ -2067,7 +2067,7 @@ class random_crystal():
                 if n == n0:
                     return False
                 #Too few atoms
-                elif num < numIon:
+                if num < numIon:
                     #Forwards routine
                     #Move p to the right and max out
                     if p < len(l_mult) - 1:
@@ -2079,7 +2079,7 @@ class random_crystal():
                         #p is already at last position: trigger backwards routine
                         num = numIon + 1
                 #Too many atoms
-                elif num > numIon:
+                if num > numIon:
                     #Backwards routine
                     #Set n[p] to 0, move p backwards to non-zero, and decrease by 1
                     n[p] = 0
