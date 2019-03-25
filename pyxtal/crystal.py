@@ -2253,7 +2253,9 @@ class random_crystal():
                                             if i != j and y < tol:
                                                 passed_distance_check = False
                                                 print("Error: merge_coordinate missed small distance (after applying WP ops): "+str(y))
-                                                exit()
+                                                self.struct = None
+                                                self.valid = False
+                                                return
 
                                     passed_wp_check = True
                                     for ws in wyckoff_sites_tmp:
@@ -2269,8 +2271,9 @@ class random_crystal():
                                                         passed_distance_check = False
                                                         print("Error: merge_coordinate missed small distance (inter-wp): "+str(y))
                                                         print((dm < self.tol_matrix.get_tol(specie, ws.specie)).any())
-                                                        exit()
-
+                                                        self.struct = None
+                                                        self.valid = False
+                                                        return
                                     #if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, tm=self.tol_matrix, PBC=self.PBC):
                                     if passed_wp_check is True:
                                         if coordinates_tmp == []:
