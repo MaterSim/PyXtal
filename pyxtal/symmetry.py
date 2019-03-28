@@ -456,7 +456,7 @@ def get_rod(num, organized=False):
     else:
         return wyckoffs
 
-def get_point(num, organized=False, molecular=True):
+def get_point(num, organized=False):
     """
     Returns a list of Wyckoff positions for a given crystallographic point group.
     Has option to organize the list based on multiplicity.
@@ -476,27 +476,13 @@ def get_point(num, organized=False, molecular=True):
     Returns: 
         a list of Wyckoff positions, each of which is a list of SymmOp's
     """
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
-    convert = False
-    if molecular is True:
-        if num in range(16,28):
-            convert = True
     wyckoff_strings = eval(point_df["0"][num])
     wyckoffs = []
     for x in wyckoff_strings:
         wyckoffs.append([])
         for y in x:
-
-            op = SymmOp.from_xyz_string(y)
-            if convert is True:
-                #Convert non-orthogonal trigonal/hexagonal operations
-                op = P*op*P.inverse
-            if molecular is False:
-                wyckoffs[-1].append(op)
-            elif molecular is True:
-                op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                wyckoffs[-1].append(op)
-
+            op = SymmOp(y)
+            wyckoffs[-1].append(op)
     if organized:
         wyckoffs_organized = [[]] #2D Array of WP's organized by multiplicity
         old = len(wyckoffs[0])
@@ -682,7 +668,7 @@ def get_rod_symmetry(num, molecular=False):
                     symmetry[-1][-1].append(op)
     return symmetry
 
-def get_point_symmetry(num, molecular=True):
+def get_point_symmetry(num):
     """
     Returns a list of Wyckoff position site symmetry for a given point group.
     1st index: index of WP in group (0 is the WP with largest multiplicity)
@@ -698,30 +684,18 @@ def get_point_symmetry(num, molecular=True):
         a 3d list of SymmOp objects representing the site symmetry of each
         point in each Wyckoff position
     """
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(point_symmetry_df["0"][num])
     symmetry = []
-    convert = False
-    if molecular is True:
-        if num in range(16,28):
-            convert = True
     #Loop over Wyckoff positions
-    for x in symmetry_strings:
+    for wp in symmetry_strings:
         symmetry.append([])
         #Loop over points in WP
-        for y in x:
+        for point in wp:
             symmetry[-1].append([])
             #Loop over ops
-            for z in y:
-                op = SymmOp.from_xyz_string(z)
-                if convert is True:
-                    #Convert non-orthogonal trigonal/hexagonal operations
-                    op = P*op*P.inverse
-                if molecular is False:
-                    symmetry[-1][-1].append(op)
-                elif molecular is True:
-                    op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                    symmetry[-1][-1].append(op)
+            for m in point:
+                op = SymmOp(m)
+                symmetry[-1][-1].append(op)
     return symmetry
 
 def get_wyckoff_generators(sg, PBC=[1,1,1], molecular=False):
@@ -892,7 +866,7 @@ def get_rod_generators(num, molecular=False):
                 generators[-1].append(op)
     return generators
 
-def get_point_generators(num, molecular=True):
+def get_point_generators(num):
     """
     Returns a list of Wyckoff generators for a given point group.
     1st index: index of WP in group (0 is the WP with largest multiplicity)
@@ -911,27 +885,15 @@ def get_point_generators(num, molecular=True):
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     generator_strings = eval(point_generators_df["0"][num])
     generators = []
-    convert = False
-    if molecular is True:
-        if num in range(16,28):
-            convert = True
     #Loop over Wyckoff positions
     for x in generator_strings:
         generators.append([])
         #Loop over ops
         for y in x:
-            op = SymmOp.from_xyz_string(y)
-            if convert is True:
-                #Convert non-orthogonal trigonal/hexagonal operations
-                op = P*op*P.inverse
-            if molecular is False:
-                generators[-1].append(op)
-            elif molecular is True:
-                op = SymmOp.from_rotation_and_translation(op.rotation_matrix,[0,0,0])
-                generators[-1].append(op)
+            op = SymmOp(y)
+            generators[-1].append(op)
     return generators
 
 def general_position(number, dim=3):
@@ -1253,6 +1215,8 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
                         i = i1
                     elif i1 % 2 == 1:
                         i = i1 * 2
+                else:
+                    i = i1
             if i > max_index:
                 max_j = j
                 max_index = i
@@ -1460,32 +1424,30 @@ def organized_wyckoffs(group):
         wyckoffs_organized[-1].append(wp)
     return wyckoffs_organized
 
-def calculate_generators(gen_pos, site_symm):
+def calculate_generators(wp, gen_pos, PBC=[1,1,1]):
     """
     Calculate the generating operations for a WP given the general position
     and the site symmetry ops for the WP
     
     Args:
         gen_pos: a list of SymmOp objects for the general position
-        site_symm: a 
+        ss: a list of symmetry operations for each point in the WP
     """
-    gens = [Identity]
-    for op in gen_pos:
-        found = False
-        for point in site_symm:
-            for op2 in point:
-                if op2 in gen_pos:
-                    found = True
-        if found is False:
-            gens.append(op)
+    gens = []
+    for point in wp:
+        for op in gen_pos:
+            if op not in gens:
+                transformed_matrix = np.dot(op.affine_matrix, wp[0].affine_matrix)
+                if np.allclose(transformed_matrix, point.affine_matrix,atol=.01,rtol=.001):
+                    gens.append(op)
+                    break
     return gens
 
 class Wyckoff_position():
     """
     Class for a single Wyckoff position within a symmetry group
     """
-    @classmethod
-    def from_dict(self, dictionary):
+    def from_dict(dictionary):
         """
         Constructs a Wyckoff_position object using a dictionary. Used mainly by the
         Wyckoff class for constructing a list of Wyckoff_position objects at once
@@ -1521,8 +1483,7 @@ class Wyckoff_position():
     def __repr__(self):
         return str(self)
 
-    @classmethod
-    def from_group_and_index(self, group, index, dim=3, PBC=None):
+    def from_group_and_index(group, index, dim=3, PBC=None):
         """
         Creates a Wyckoff_position using the space group number and index
         
@@ -1734,10 +1695,10 @@ class Wyckoff_position():
                 break
         if found is False:
             printx("Error: Could not find generating op.", priority=0)
-            print("gen_op: ")
-            print(str(gen_op))
-            print("gen_pos: ")
-            print(str(gen_pos))
+            printx("gen_op: ")
+            printx(str(gen_op))
+            printx("gen_pos: ")
+            printx(str(gen_pos))
             return op_list
 
         #Make sure first op is normalized
@@ -1977,49 +1938,49 @@ class Group():
                     group = pglist.index(group) + 1
             #Get crystallographic point group
             if type(group) == int or type(group) == float:
-                if number == 25:
-                    #database positions for C6v use hexagonal lattice
-                    self.symbol = "C6v"
-                    symbol = "C6v"
-                    group = "C6v"
-                elif number in range(1, 33):
+                if number in range(1, 57):
+
                     self.symbol = pglist[number-1]
                     symbol = self.symbol
-                    self.wyckoffs = get_point(self.number, molecular=False)
+
+                    #Retrive symmetry info from database
+                    self.wyckoffs = get_point(self.number)
                     """The Wyckoff positions for the crystal's spacegroup."""
-                    self.w_symm = get_point_symmetry(self.number, molecular=False)
+                    self.w_symm = get_point_symmetry(self.number)
                     """A list of site symmetry operations for the Wyckoff positions, obtained
                         from get_wyckoff_symmetry (molecular=False)"""
-                    self.w_symm_m = get_point_symmetry(self.number)
+                    self.w_symm_m = deepcopy(self.w_symm)
                     """A list of site symmetry operations for the Wyckoff positions, obtained
                         from get_wyckoff_symmetry (molecular=True)"""
-                    self.wyckoff_generators = get_point_generators(self.number, molecular=False)
+                    self.wyckoff_generators = get_point_generators(self.number)
                     """A list of Wyckoff generators (molecular=False)"""
-                    self.wyckoff_generators_m = get_point_generators(self.number)
+                    self.wyckoff_generators_m = deepcopy(self.wyckoff_generators)
                     """A list of Wyckoff generators (molecular=True)"""
                     self.inverse_generators = get_inverse_ops(self.wyckoff_generators)
                     """A list of inverses of the generators (molecular=False)"""
-                    self.inverse_generators_m = get_inverse_ops(self.wyckoff_generators_m)
+                    self.inverse_generators_m = deepcopy(self.inverse_generators)
                     """A list of inverses of the generators (molecular=True)"""
+
+                    #Assign lattice type
                     if self.number <= 15:
                         self.lattice_type = "cylindrical"
                     elif self.number <= 27:
                         self.lattice_type = "cylindrical"
                     elif self.number <= 32:
                         self.lattice_type = "spherical"
-                elif number in range(33, 57):
-                    self.symbol = pglist[number-1]
-                    symbol = self.symbol
-                    group = self.symbol
-                    if self.symbol in ['I','Ih']:
-                        self.lattice_type = "spherical"                        
-                    else:
-                        self.lattice_type = "cylindrical"
+                    elif self.number in range(33, 57):
+                        if self.symbol in ['I','Ih']:
+                            self.lattice_type = "spherical"                        
+                        else:
+                            self.lattice_type = "cylindrical"
                 else:
                     printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                     return
             #Get other point groups
+
+            #Should be elif
             if type(group) == str:
+
                 #Remove whitespace
                 symbol = ''.join(c for c in symbol if not c.isspace())
                 #Find rotation order from symbol
@@ -2035,7 +1996,7 @@ class Group():
                     except:
                         printx("Error: invalid rotation order for point group symbol.", priority=1)
                         return
-                gens = [SymmOp.from_xyz_string('x,y,z')] # List of generator SymmOps
+                gens = [Identity] # List of generator SymmOps
                 generate = True
                 #interpret symbol
                 if symbol[0] == "I":
@@ -2081,7 +2042,10 @@ class Group():
                         self.symbol = "C" + str(num)
                         m = aa2matrix([0.,0.,1.], 2*pi/num)
                         gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
-                        gen_ops = [Identity, op_z]
+                        if num != 1:
+                            gen_ops = [Identity, op_z]
+                        elif num == 1:
+                            gen_ops = [Identity]
                     if symbol[-1] == "v":
                         #Add vertical mirror plane
                         gens.append(SymmOp.from_xyz_string('-x,y,z')) #m 0,y,z
@@ -2096,6 +2060,9 @@ class Group():
                         self.symbol += "h"
                         op_xy = SymmOp.from_xyz_string('x,y,0')
                         gen_ops = [Identity, op_xy, op_z, op_o]
+                    if symbol == "Cs":
+                        gens = [Identity, SymmOp.from_xyz_string('x,y,-z')]
+                        gen_ops = [Identity, SymmOp.from_xyz_string('x,y,0')]
                 elif symbol[0] == "C" and symbol[-1] == "i":
                     #n-fold rotinversion, usually just Ci
                     self.lattice_type = "cylindrical"
@@ -2116,7 +2083,10 @@ class Group():
                             self.symbol = "Ci"
                         else:
                             self.symbol = "C" + str(num) + "i"
-                        gen_ops = [Identity, op_z, op_o]
+                        if num != 1:
+                            gen_ops = [Identity, op_z, op_o]
+                        elif num == 1:
+                            gen_ops = [Identity, op_o]
                 elif symbol[0] == "D":
                     #n-fold rotation and n 2-fold perpendicular rotations
                     self.lattice_type = "cylindrical"
@@ -2210,7 +2180,7 @@ class Group():
                     for wp in self.wyckoffs:
                         self.w_symm.append(Wyckoff_position.symmetry_from_wyckoff(wp, gen_pos))
                     self.w_symm_m = deepcopy(self.w_symm)
-                    self.wyckoff_generators = [calculate_generators(self.wyckoffs[0], ss) for ss in self.w_symm]
+                    self.wyckoff_generators = [calculate_generators(wp, self.wyckoffs[0]) for wp in self.wyckoffs]
                     self.wyckoff_generators_m = deepcopy(self.wyckoff_generators)
                     self.inverse_generators = get_inverse_ops(self.wyckoff_generators)
                     self.inverse_generators_m = get_inverse_ops(self.wyckoff_generators_m)
@@ -2237,7 +2207,7 @@ class Group():
                         self.number = pglist.index(self.symbol) + 1
                         #Linear, with reflection
                         self.wyckoffs = [[op_z, SymmOp.from_xyz_string('0,0,-z')],[op_o]]
-                        self.w_symm = [[[SymmOp.from_xyz_string('x,y,z')]],[[Identity, SymmOp.from_xyz_string('0,0,-z')]]]
+                        self.w_symm = [[[Identity],[Identity]],[[Identity, SymmOp.from_xyz_string('0,0,-z')]]]
                         self.w_symm_m = deepcopy(self.w_symm)
                         self.wyckoff_generators = [[Identity, SymmOp.from_xyz_string('x,y,-z')],[Identity]]
                         self.wyckoff_generators_m = [[Identity, SymmOp.from_xyz_string('x,y,-z')],[Identity]]
