@@ -2347,7 +2347,6 @@ class random_crystal():
                         self.lattice_matrix = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
                         cell."""
-                        print("Howdy")
                         self.frac_coords = np.dot(final_coor, np.linalg.inv(self.lattice.matrix_internal))
                         """The relative coordinates for each atom in the
                         final structure""" 
@@ -2611,3 +2610,4 @@ if __name__ == "__main__":
         else: 
             print('something is wrong')
             print('Time spent during generation attempt: ' + str(timespent) + "s")
+
