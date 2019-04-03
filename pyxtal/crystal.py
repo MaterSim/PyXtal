@@ -2347,10 +2347,11 @@ class random_crystal():
                         self.lattice_matrix = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
                         cell."""
-                        self.frac_coords = np.array(final_coor)
+                        print("Howdy")
+                        self.frac_coords = np.dot(final_coor, np.linalg.inv(self.lattice.matrix_internal))
                         """The relative coordinates for each atom in the
                         final structure""" 
-                        self.cart_coords = np.dot(final_coor, final_lattice)
+                        self.cart_coords = np.array(final_coor)
                         """The absolute coordinates for each atom in the
                         final structure"""                  
                         self.sites = final_site
