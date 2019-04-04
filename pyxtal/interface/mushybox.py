@@ -59,10 +59,14 @@ class mushybox(Atoms):
         st[0][0] = stt[0] * vol  
         st[1][1] = stt[1] * vol
         st[2][2] = stt[2] * vol
-        st[2][1] = stt[3] * vol
-        st[2][0] = stt[4] * vol
-        st[1][0] = stt[5] * vol
+        # need to add the proper constraints
+        #st[2][1] = stt[3] * vol
+        #st[2][0] = stt[4] * vol
+        #st[1][0] = stt[5] * vol
         st  -= self.express * (-1)*vol
+        maxst = np.max(st)
+        if maxst > 0.5:
+            st = st/maxst*0.5
         # apply constrain
         st *= self.fixstrain
         #print "original stress (no projecton applied):"
