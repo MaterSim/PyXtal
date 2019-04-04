@@ -130,8 +130,10 @@ class LJ_prediction():
             cluster = random_cluster(pg, ['Mo'], [self.numIons], 1.0)
             if cluster.valid:
                 run = False
-        return cluster.coordinates #cart_coords
-        #return cluster.cart_coords
+        try:
+            return cluster.cart_coords
+        except:
+            return cluster.coordinates
  
     def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33), method='CG'):
 
@@ -245,3 +247,4 @@ if __name__ == "__main__":
     plt.ylim([eng_min-0.1, -20])
     plt.savefig('LJ'+str(N)+'-'+str(maxN)+'samples-scatter.png')
     plt.close()
+
