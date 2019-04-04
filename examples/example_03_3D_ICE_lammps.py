@@ -12,6 +12,7 @@ import logging
 from random import randint
 import pandas as pd
 import os
+import numpy as np
 
 # set up for lammps
 lammps_name=''
@@ -49,7 +50,7 @@ for folder in [calc_folder , out_folder]:
 #para = Lattice.from_para(4.45, 7.70, 7.28, 90, 90, 90)
 
 # Here we generate many random structures and optimize them
-data = {"ID":[],
+data = {#"ID":[],
         "Sym":[],
         "Eng":[],
         "abc":[],
@@ -71,21 +72,22 @@ for i in range(100):
     struc.set_calculator(lammps)
     box = mushybox(struc)
     dyn = FIRE(box)
-    dyn.run(fmax=0.01, steps=50)
+    dyn.run(fmax=0.01, steps=200)
     dyn = BFGS(box)
-    dyn.run(fmax=0.01, steps=50)
+    dyn.run(fmax=0.01, steps=200)
     Eng = struc.get_potential_energy()*96/len(struc)*3
-    Vol = struc.get_volume()
+    Vol = struc.get_volume()/len(struc)*3
+    stress = np.max(struc.get_stress())
     struc=sort(struc)
     try:
         spg = get_symmetry_dataset(struc, symprec=1e-1)['number']
     except:
         spg = 1
     struc.write(out_folder+'/'+str(i)+".vasp", format='vasp', vasp5=True)
-    logging.info('{:d} Spg: {:4d} Eng: {:8.4f} Vol: {:8.4f}'.format(i, spg, Eng, Vol))
+    logging.info('{:4d} Spg: {:4d} Eng: {:8.4f} Vol: {:8.4f} Stress: {:5.2f}'.format(i, spg, Eng, Vol, stress))
     abc = struc.get_cell_lengths_and_angles()
     abc = [int(i*1000)/1000 for i in abc]
-    data['ID'].append(i)
+    #data['ID'].append(i)
     data['Sym'].append(spg)
     data['Eng'].append(Eng)
     data['abc'].append(abc)
