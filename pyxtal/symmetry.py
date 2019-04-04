@@ -1962,7 +1962,9 @@ class Group():
                     """A list of inverses of the generators (molecular=True)"""
 
                     #Assign lattice type
-                    if self.number <= 15:
+                    if self.number == 1:
+                        self.lattice_type = "spherical"
+                    elif self.number <= 15:
                         self.lattice_type = "cylindrical"
                     elif self.number <= 27:
                         self.lattice_type = "cylindrical"
