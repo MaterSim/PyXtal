@@ -19,6 +19,7 @@ logging.basicConfig(format='%(asctime)s :: %(message)s', filename='results.log',
 plt.style.use("bmh")
 
 cluster_factor = 0.7
+volume_factor = 1.0
 
 """
 This is a script to 
@@ -130,7 +131,7 @@ class LJ_prediction():
         run = True
         while run:
             pg = choice(pgs)
-            cluster = random_cluster(pg, ['Mo'], [self.numIons], 1.0, tm=Tol_matrix(prototype="atomic", factor=cluster_factor))
+            cluster = random_cluster(pg, ['Mo'], [self.numIons], volume_factor, tm=Tol_matrix(prototype="atomic", factor=cluster_factor))
             if cluster.valid:
                 run = False
         try:
@@ -207,6 +208,8 @@ if __name__ == "__main__":
             help="number of processors, default 1")
     parser.add_option("-f", "--factor", dest="cluster_factor", default=0.7, type=float,
             help="distance checking factor, default 0.7")
+    parser.add_option("-v", "--volume", dest="volume_factor", default=1.0, type=float,
+            help="volume factor, default 1.0")
 
     (options, args) = parser.parse_args()
 
@@ -215,6 +218,7 @@ if __name__ == "__main__":
     dim = options.dim #4
     ncpu = options.proc
     cluster_factor = options.cluster_factor
+    volume_factor = options.volume_factor
 
     lj_run = LJ_prediction(N)
     eng_min = lj_run.reference['energy']
