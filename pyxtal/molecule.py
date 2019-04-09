@@ -4,27 +4,19 @@ class as a base. Has a function for reorienting molecules
 (reoriented_molecule), and for calculating valid orientations within a Wyckoff
 position based on symmetry (orientation_in_wyckoff_position).
 """
-
+#Imports
+#------------------------------
+#External Libraries
 from pymatgen.core.structure import Molecule
-from pymatgen.core.operations import SymmOp
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pymatgen.symmetry.analyzer import generate_full_symmops
-import numpy as np
-from numpy.linalg import eigh
-from numpy.linalg import det
-from copy import deepcopy
-from math import fabs
-from random import random
-from random import choice as choose
 
+#PyXtal imports
 from pyxtal.operations import *
-
 from pyxtal.database.collection import Collection
 
-identity = np.array([[1,0,0],[0,1,0],[0,0,1]])
-inversion = np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
-
-#TODO: implement minimal enclosing ellipsoid algorithm
+#Define functions
+#------------------------------
 def find_ellipsoid(mol):
     printx("Error: bounding ellipsoid calculator not yet implemented.", priority=0)
     pass
@@ -148,14 +140,14 @@ def reoriented_molecule(mol, nested=False):
         new_mol = mol.get_centered_molecule()
         A = get_inertia_tensor(new_mol)
         #Store the eigenvectors of the inertia tensor
-        P = np.transpose(eigh(A)[1])
-        if det(P) < 0:
+        P = np.transpose(np.linalg.eigh(A)[1])
+        if np.linalg.det(P) < 0:
             P[0] *= -1
         #reorient the molecule
         P = SymmOp.from_rotation_and_translation(P,[0,0,0])
         new_mol.apply_operation(P)
         #Our molecule should never be inverted during reorientation.
-        if det(P.rotation_matrix) < 0:
+        if np.linalg.det(P.rotation_matrix) < 0:
             printx("Error: inverted reorientation applied.\n"
             +"(Within reoriented_molecule)", priority=0)
         return new_mol, P
@@ -167,7 +159,7 @@ def reoriented_molecule(mol, nested=False):
         is_okay = True
         for i in range(3):
             for j in range(3):
-                x = eigh(get_inertia_tensor(new_mol))[1][i][j]
+                x = np.linalg.eigh(get_inertia_tensor(new_mol))[1][i][j]
                 okay = True
                 if i == j:
                     #Check that diagonal elements are 0 or 1
@@ -425,10 +417,10 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
         for opa in c1[1]:
             phi = angle(constraint1.axis, constraint2.axis)
             phi2 = angle(constraint1.axis, np.dot(T, opa.axis))
-            if isclose(phi, phi2, rtol=.01):
-                r = np.sin(phi)
+            if np.isclose(phi, phi2, rtol=.01):
+                r = math.sin(phi)
                 c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
-                theta = np.arccos(1 - (c**2)/(2*(r**2)))
+                theta = math.acos(1 - (c**2)/(2*(r**2)))
                 R = aa2matrix(constraint1.axis, theta)
                 T2 = np.dot(R, T)
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)

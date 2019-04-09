@@ -64,21 +64,24 @@ command-line usage of the module:
         cross-sectional area. If set to None, chooses a value automatically.
         Defaults to None  
 """
+#Imports
+#------------------------------
+#PyXtal imports
 from pyxtal.crystal import *
 from pyxtal.molecule import *
-from pyxtal.database.collection import Collection
-from time import time
 
+#Constants
+#------------------------------
 molecule_collection = Collection('molecules')
 max1 = 40 #Attempts for generating lattices
 max2 = 10 #Attempts for a given lattice
 max3 = 10 #Attempts for a given Wyckoff position
 max4 = 3 #Attempts for a given mol_site (changning orientation)
 
-tol_m = 1.0 #minimum distance between atoms for distance check
-
 max_fast_mol_size = 30 #Max number of atoms per molecule before using fast distance check
 
+#Define functions
+#------------------------------
 def check_intersection(ellipsoid1, ellipsoid2):
     """
     Given SymmOp's for 2 ellipsoids, checks whether or not they overlap
@@ -534,7 +537,7 @@ def choose_wyckoff_molecular(group, number, orientations):
                     if orientations[j][k] != []:
                         good_wyckoff.append(w)
                 if len(good_wyckoff) > 0:
-                    return choose(good_wyckoff)
+                    return random.choice(good_wyckoff)
         return False
     else:
         good_wyckoff = []
@@ -544,7 +547,7 @@ def choose_wyckoff_molecular(group, number, orientations):
                     if orientations[j][k] != []:
                         good_wyckoff.append(w)
         if len(good_wyckoff) > 0:
-            return choose(good_wyckoff)
+            return random.choice(good_wyckoff)
         else:
             return False
 
@@ -1300,7 +1303,7 @@ class molecular_crystal():
                 filename = str(self.struct.formula).replace(" ","") + "." + fmt
             #Check if filename already exists
             #If it does, add a new number to end of filename
-            if exists(filename):
+            if os.path.exists(filename):
                 if given is False:
                     filename = filename[:(-len(fmt)-1)]
                 i = 1
@@ -1308,7 +1311,7 @@ class molecular_crystal():
                     outdir = filename + "_" + str(i)
                     if given is False:
                         outdir += "." + fmt
-                    if not exists(outdir):
+                    if not os.path.exists(outdir):
                         break
                     i += 1
                     if i > 10000:
@@ -1433,7 +1436,7 @@ class molecular_crystal():
                                         #Create a mol_site object
                                         mo = deepcopy(self.molecules[i])
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
-                                        ori = choose(self.valid_orientations[i][j][k]).random_orientation()
+                                        ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
                                         ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
                                         #Check distances within the WP
                                         if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
@@ -1455,7 +1458,7 @@ class molecular_crystal():
                                             passed_ori = False
                                             for cycle4 in range(max4):
                                                 self.cycle4 = cycle4
-                                                ori = choose(self.valid_orientations[i][j][k]).random_orientation()
+                                                ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
                                                 ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
                                                 if ms0.check_distances(atomic=self.check_atomic_distances):
                                                     passed_ori = True
@@ -1668,6 +1671,8 @@ class molecular_crystal_1D(molecular_crystal):
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
     import os
+    from time import time
+    from spglib import get_symmetry_dataset
 
     parser = OptionParser()
     parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,

@@ -6,25 +6,26 @@ identify conjugate operations. The orientation class can be used to identify
 degrees of freedom for molecules in Wyckoff positions with certain symmetry
 constraints.
 """
-
-import numpy as np
-from numpy import matrix
-from numpy import isclose
-from numpy import allclose
-from numpy.random import random as rand
-from numpy.linalg import eig
-from numpy.linalg import eigh
-from numpy.linalg import det
+#Imports
+#------------------------------
+#Standard libraries
 import math
-from math import pi, acos
-from math import fabs
-from pymatgen.core.operations import SymmOp
 from copy import deepcopy
 from warnings import warn
-rad = pi/180.
-deg = 180./pi
 
-pyxtal_verbosity = 1
+#External Libraries
+import numpy as np
+from scipy.spatial.distance import cdist
+from pymatgen.core.operations import SymmOp
+
+#Constants
+#------------------------------
+pi = math.pi    #constant for pi
+rad = pi/180.   #constant for converting degrees to radians
+deg = 180./pi   #constant for converting radians to degrees
+pyxtal_verbosity = 1    #constant for printx function
+#Define identity 3x3 matrix array for distance checking
+Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 """
 Stores how much should be printed:
 0: prints critical messages only
@@ -33,6 +34,8 @@ Stores how much should be printed:
 3: prints debug information
 """
 
+#Define functions
+#------------------------------
 def printx(text, priority=1):
     """
     Custom printing function based on verbosity.
@@ -70,7 +73,7 @@ def euler_from_matrix(m, radians=True):
             unless radians is False
     """
     phi = np.arctan2(m[2][0], m[2][1])
-    theta = np.arccos(m[2][2])
+    theta = math.acos(m[2][2])
     psi = - np.arctan2(m[0][2], m[1][2])
     if radians is False:
         phi *= deg
@@ -157,11 +160,11 @@ def angle(v1, v2, radians=True):
     np.real(v1)
     v2 = np.real(v2)
     dot = np.dot(v1, v2)
-    if isclose(dot, 1.0):
+    if np.isclose(dot, 1.0):
         return 0
-    elif isclose(dot, -1.0):
+    elif np.isclose(dot, -1.0):
         return pi
-    a = acos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
+    a = math.acos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
     if radians is True:
         return a
     else:
@@ -174,7 +177,7 @@ def random_shear_matrix(width=1.0, unitary=False):
 
     Args:
         width: the width of the normal distribution to use when choosing values.
-            Passed to numpy.random.normal
+            Passed to np.random.normal
         unitary: whether or not to normalize the matrix to determinant 1
     
     Returns:
@@ -201,7 +204,7 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
         minvec: the bottom-left-back minimum point which can be chosen
         maxvec: the top-right-front maximum point which can be chosen
         width: the width of the normal distribution to use when choosing values.
-            Passed to numpy.random.normal
+            Passed to np.random.normal
         unit: whether or not to normalize the vector to determinant 1
 
     Returns:
@@ -227,7 +230,7 @@ def is_orthogonal(m, tol=.001):
     """
     m1 = np.dot(m, np.transpose(m))
     m2 = np.dot(np.transpose(m), m)
-    if not allclose(m1, np.identity(3), rtol=tol) or not allclose(m2, np.identity(3), rtol=tol):
+    if not np.allclose(m1, np.identity(3), rtol=tol) or not np.allclose(m2, np.identity(3), rtol=tol):
         return False
     else:
         return True
@@ -254,9 +257,9 @@ def aa2matrix(axis, angle, radians=True, random=False):
         angle *= rad
     #Allow for generation of random rotations
     if random is True:
-        a = rand()
-        axis = [rand(),rand(),rand()]
-        angle = rand()*pi*2
+        a = np.random.random()
+        axis = [np.random.random(),np.random.random(),np.random.random()]
+        angle = np.random.random()*pi*2
     #Ensure axis is a unit vector
     axis = axis / np.linalg.norm(axis)
     #Define quantities which are reused
@@ -298,13 +301,13 @@ def matrix2aa(m, radians=True):
     if type(m) == SymmOp:
         m = m.rotation_matrix
     #Check if m is the identity matrix
-    if allclose(m, np.identity(3)):
+    if np.allclose(m, np.identity(3)):
         return None, 0.
     if not is_orthogonal(m):
         printx("Error: matrix is not orthogonal.", priority=1)
         return
     #Check that m has posititve determinant
-    if not isclose(det(m), 1, rtol=.001):
+    if not np.isclose(np.linalg.det(m), 1, rtol=.001):
         printx("Error: invalid rotation matrix. Determinant is not 1.\n"
             +"Divide matrix by inversion operation beore calling matrix2aa.", priority=1)
         return
@@ -314,7 +317,7 @@ def matrix2aa(m, radians=True):
     possible = np.transpose(e[1])
     eigenvectors = []
     for v in possible:
-        if allclose(v, np.dot(m, v)):
+        if np.allclose(v, np.dot(m, v)):
             eigenvectors.append(v)
     #Determine the angle of rotation
     if len(eigenvectors) == 1:
@@ -328,7 +331,7 @@ def matrix2aa(m, radians=True):
         #Ensure 0<theta<pi
         if theta > pi:
             #Make sure 180 degree rotations are not converted to 0
-            if isclose(theta, pi, atol=1e-2, rtol=1e-3):
+            if np.isclose(theta, pi, atol=1e-2, rtol=1e-3):
                 theta = pi
             else:
                 theta = pi*2 - theta
@@ -372,7 +375,7 @@ def rotate_vector(v1, v2):
     if np.isclose(dot, 1, rtol=.0001):
         return np.identity(3)
     elif np.isclose(dot, -1, rtol=.0001):
-        r = [rand(),rand(),rand()]
+        r = [np.random.random(),np.random.random(),np.random.random()]
         v3 = np.cross(v1, r)
         return aa2matrix(v3, pi)
     theta = angle(v1, v2)
@@ -391,9 +394,9 @@ def are_equal(op1, op2, PBC=[1,1,1], rtol=1e-3, atol=1e-3):
         PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         rtol: the relative numerical tolerance for equivalence (passed to
-            numpy.allclose)
+            np.allclose)
         atol: the absolute numerical tolerance for equivalence (passed to
-            numpy.allclose)
+            np.allclose)
 
     Returns:
         True if op1 and op2 are equivalent, False otherwise
@@ -474,13 +477,13 @@ class OperationAnalyzer(SymmOp):
             self.m = op.rotation_matrix
             """The 3x3 rotation (or rotoinversion) matrix, which ignores the
             translational part of self.op"""
-            self.det = det(self.m)
+            self.det = np.linalg.det(self.m)
             """The determinant of self.m"""
         elif (type(op) == np.ndarray) or (type(op) == np.matrix):
             if op.shape == (3,3):
                 self.op = SymmOp.from_rotation_and_translation(op, [0,0,0])
                 self.m = self.op.rotation_matrix
-                self.det = det(op)
+                self.det = np.linalg.det(op)
         else:
             printx("Error: OperationAnalyzer requires a SymmOp or 3x3 array.", priority=1)
         #If rotation matrix is not orthogonal
@@ -490,10 +493,10 @@ class OperationAnalyzer(SymmOp):
         #If rotation matrix is orthogonal
         else:
             #If determinant is positive
-            if det(self.m) > 0:
+            if np.linalg.det(self.m) > 0:
                 self.inverted = False
                 self.axis, self.angle = matrix2aa(self.m)
-                if isclose(self.angle, 0):
+                if np.isclose(self.angle, 0):
                     self.type = "identity"
                     """The type of operation. Is one of 'identity', 'inversion',
                     'rotation', or 'rotoinversion'."""
@@ -511,11 +514,11 @@ class OperationAnalyzer(SymmOp):
                     self.order = OperationAnalyzer.get_order(self.angle)
                     self.rotation_order = self.order
             #If determinant is negative
-            elif det(self.m)< 0:
+            elif np.linalg.det(self.m)< 0:
                 self.inverted = True
                 mi = self.m * -1
                 self.axis, self.angle = matrix2aa(mi)
-                if isclose(self.angle, 0):
+                if np.isclose(self.angle, 0):
                     self.type = "inversion"
                     self.order = int(2)
                     self.rotation_order = int(1)
@@ -524,7 +527,7 @@ class OperationAnalyzer(SymmOp):
                     self.type = "rotoinversion"
                     self.order = OperationAnalyzer.get_order(self.angle, rotoinversion=True)
                     self.rotation_order = OperationAnalyzer.get_order(self.angle, rotoinversion=False)
-            elif det(self.m) == 0:
+            elif np.linalg.det(self.m) == 0:
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
     def __str__(self):
@@ -537,7 +540,7 @@ class OperationAnalyzer(SymmOp):
         if self.axis is not None:
             if len(self.axis) == 3:
                 for i, x in enumerate(self.axis):
-                    if isclose(x, 0):
+                    if np.isclose(x, 0):
                         self.axis[i] = 0.
         return ("~~ Operation: "+self.op.as_xyz_string()+" ~~"+
             "\nType: "+str(self.type)+
@@ -563,7 +566,7 @@ class OperationAnalyzer(SymmOp):
             if opa2.type == self.type:
                 if self.type == "rotation" or self.type == "rotoinversion":
                     ratio = self.angle / opa2.angle
-                    if isclose(fabs(ratio), 1., atol=1e-2):
+                    if np.isclose(math.fabs(ratio), 1., atol=1e-2):
                         return True
                 elif self.type == "identity" or self.type == "inversion":
                     return True
@@ -573,7 +576,7 @@ class OperationAnalyzer(SymmOp):
             if op2.type == self.type:
                 if self.type == "rotation" or self.type == "rotoinversion":
                     ratio = self.angle / op2.angle
-                    if isclose(ratio, 1., atol=1e-2):
+                    if np.isclose(ratio, 1., atol=1e-2):
                         return True
                 elif self.type == "identity" or self.type == "inversion":
                     return True
@@ -658,7 +661,7 @@ class Orientation():
                 return self.matrix
         elif self.degrees == 1:
             if angle == "random":
-                R = aa2matrix(self.axis, rand()*2*pi)
+                R = aa2matrix(self.axis, np.random.random()*2*pi)
                 return np.dot(R, self.matrix)
             else:
                 R = aa2matrix(self.axis, angle)
@@ -720,12 +723,12 @@ class Orientation():
         T = rotate_vector(v1, c1)
         phi = angle(c1, c2)
         phi2 = angle(c1, (np.dot(T, v2)))
-        if not isclose(phi, phi2, rtol=.01):
+        if not np.isclose(phi, phi2, rtol=.01):
             printx("Error: constraints and vectors do not match.", priority=1)
             return
-        r = np.sin(phi)
+        r = math.sin(phi)
         c = np.linalg.norm(np.dot(T, v2) - c2)
-        theta = np.arccos(1 - (c**2)/(2*(r**2)))
+        theta = math.acos(1 - (c**2)/(2*(r**2)))
         R = aa2matrix(c1, theta)
         T2 = np.dot(R, T)
         a = angle(np.dot(T2, v2), c2)

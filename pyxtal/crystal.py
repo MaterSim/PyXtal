@@ -48,46 +48,31 @@ of the module:
         periodic direction. For 1D crystals, we use this value
         as the cross-sectional area of the crystal. Defaults to None  
 """
-
+#Imports
+#------------------------------
+#Standard Libraries
 import sys
-from time import time
-from os.path import exists
+import os
+import random
 
-from spglib import get_symmetry_dataset
+#External Libraries
 from pymatgen.core.structure import Structure
 from pymatgen.core.structure import Molecule
 from pymatgen.io.cif import CifWriter
 
-from optparse import OptionParser
-from scipy.spatial.distance import cdist
-import numpy as np
-from random import uniform as rand_u
-from random import choice as choose
-from random import randint
-from math import sqrt, pi, sin, cos, acos, fabs
-from copy import deepcopy
-
+#PyXtal imports
+from pyxtal.symmetry import *
 from pyxtal.database.element import Element
 import pyxtal.database.hall as hall
 from pyxtal.database.layergroup import Layergroup
 
-from pyxtal.symmetry import *
-
-#some optional libs
-#from vasp import read_vasp
-#from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-#from os.path import isfile
-
-#Define variables
+#Constants
 #------------------------------
-tol_m = 1.0 #seperation tolerance in Angstroms
+tol_m = 0.3 #seperation tolerance in Angstroms
 max1 = 40 #Attempts for generating lattices
 max2 = 10 #Attempts for a given lattice
 max3 = 20 #Attempts for a given Wyckoff position
 minvec = 2.0 #minimum vector length
-#Matrix for a Euclidean metric
-Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
-
 
 #Define functions
 #------------------------------
@@ -331,11 +316,11 @@ class Tol_matrix():
             filename = "custom_tol_matrix"
         #Check if filename already exists
         #If it does, add a new number to end of filename
-        if exists(filename):
+        if os.path.exists(filename):
             i = 1
             while True:
                 outdir = filename + "_" + str(i)
-                if not exists(outdir):
+                if not os.path.exists(outdir):
                     break
                 i += 1
                 if i > 10000:
@@ -379,7 +364,7 @@ def gaussian(min, max, sigma=3.0):
         a value chosen randomly between min and max
     """
     center = (max+min)*0.5
-    delta = fabs(max-min)*0.5
+    delta = math.fabs(max-min)*0.5
     ratio = delta/sigma
     while True:
         x = np.random.normal(scale=ratio, loc=center)
@@ -568,11 +553,11 @@ def para2matrix(cell_para, radians=True, format='lower'):
         alpha *= rad
         beta *= rad
         gamma *= rad
-    cos_alpha = np.cos(alpha)
-    cos_beta = np.cos(beta)
-    cos_gamma = np.cos(gamma)
-    sin_gamma = np.sin(gamma)
-    sin_alpha = np.sin(alpha)
+    cos_alpha = math.cos(alpha)
+    cos_beta = math.cos(beta)
+    cos_gamma = math.cos(gamma)
+    sin_gamma = math.sin(gamma)
+    sin_alpha = math.sin(alpha)
     matrix = np.zeros([3,3])
     if format == 'lower':
         #Generate a lower-diagonal matrix
@@ -583,7 +568,7 @@ def para2matrix(cell_para, radians=True, format='lower'):
         matrix[1][1] = b * sin_gamma
         matrix[2][0] = c1
         matrix[2][1] = c2
-        matrix[2][2] = sqrt(c**2 - c1**2 - c2**2)
+        matrix[2][2] = math.sqrt(c**2 - c1**2 - c2**2)
     elif format == 'symmetric':
         #TODO: allow generation of symmetric matrices
         pass
@@ -596,7 +581,7 @@ def para2matrix(cell_para, radians=True, format='lower'):
         matrix[1][1] = b * sin_alpha
         matrix[0][2] = a3
         matrix[0][1] = a2
-        matrix[0][0] = sqrt(a**2 - a3**2 - a2**2)
+        matrix[0][0] = math.sqrt(a**2 - a3**2 - a2**2)
         pass
     return matrix
 
@@ -908,7 +893,7 @@ def estimate_volume(numIons, species, factor=1.0):
     """
     volume = 0
     for numIon, specie in zip(numIons, species):
-        r = rand_u(Element(specie).covalent_radius, Element(specie).vdw_radius)
+        r = random.uniform(Element(specie).covalent_radius, Element(specie).vdw_radius)
         volume += numIon*4/3*pi*r**3
     return factor*volume
 
@@ -949,7 +934,7 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
             #Derive lattice constants from a random matrix
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
-            x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
+            x = math.sqrt(1-math.cos(alpha)**2 - math.cos(beta)**2 - math.cos(gamma)**2 + 2*(math.cos(alpha)*math.cos(beta)*math.cos(gamma)))
             vec = random_vector()
             abc = volume/x
             xyz = vec[0]*vec[1]*vec[2]
@@ -961,7 +946,7 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
         elif ltype == "monoclinic":
             alpha, gamma  = pi/2, pi/2
             beta = gaussian(minangle, maxangle)
-            x = sin(beta)
+            x = math.sin(beta)
             vec = random_vector()
             xyz = vec[0]*vec[1]*vec[2]
             abc = volume/x
@@ -986,15 +971,15 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
             x = 1
             vec = random_vector()
             c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
-            a = b = sqrt((volume/x)/c)
+            a = b = math.sqrt((volume/x)/c)
         #Trigonal/Rhombohedral/Hexagonal
         #elif sg <= 194:
         elif ltype in ["hexagonal", "trigonal", "rhombohedral"]:
             alpha, beta, gamma = pi/2, pi/2, pi/3*2
-            x = sqrt(3.)/2.
+            x = math.sqrt(3.)/2.
             vec = random_vector()
             c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
-            a = b = sqrt((volume/x)/c)
+            a = b = math.sqrt((volume/x)/c)
         #Cubic
         #else:
         elif ltype == "cubic":
@@ -1027,7 +1012,7 @@ def generate_lattice(ltype, volume, minvec=tol_m, minangle=pi/6, max_ratio=10.0,
 
         if minvec < maxvec:
             #Check minimum Euclidean distances
-            smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
+            smallvec = min(a*math.cos(max(beta, gamma)), b*math.cos(max(alpha, gamma)), c*math.cos(max(alpha, beta)))
             if(a>minvec and b>minvec and c>minvec
             and a<maxvec and b<maxvec and c<maxvec
             and smallvec < minvec
@@ -1098,19 +1083,19 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
         if ltype == "triclinic":
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
-            x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
+            x = math.sqrt(1-math.cos(alpha)**2 - math.cos(beta)**2 - math.cos(gamma)**2 + 2*(math.cos(alpha)*math.cos(beta)*math.cos(gamma)))
             abc[NPA-1] = abc[NPA-1]/x #scale thickness by outer product of vectors
             ab = volume/(abc[NPA-1]*x)
             ratio = a/b
             if NPA == 3:
-                abc[0] = sqrt(ab*ratio)
-                abc[1] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[1] = math.sqrt(ab/ratio)
             elif NPA == 2:
-                abc[0] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
             elif NPA == 1:
-                abc[1] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[1] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
 
         #Monoclinic
         #elif num <= 18:
@@ -1118,24 +1103,24 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
             a, b, c = random_vector()
             if unique_axis == "a":
                 alpha = gaussian(minangle, maxangle)
-                x = sin(alpha)
+                x = math.sin(alpha)
             elif unique_axis == "b":
                 beta = gaussian(minangle, maxangle)
-                x = sin(beta)
+                x = math.sin(beta)
             elif unique_axis == "c":
                 gamma = gaussian(minangle, maxangle)
-                x = sin(gamma)
+                x = math.sin(gamma)
             ab = volume/(abc[NPA-1]*x)
             ratio = a/b
             if NPA == 3:
-                abc[0] = sqrt(ab*ratio)
-                abc[1] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[1] = math.sqrt(ab/ratio)
             elif NPA == 2:
-                abc[0] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
             elif NPA == 1:
-                abc[1] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[1] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
 
         #Orthorhombic
         #elif num <= 48:
@@ -1143,22 +1128,22 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
             vec = random_vector()
             if NPA == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
-                abc[1] = sqrt(volume/(thickness1*ratio))
+                abc[1] = math.sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[1]* ratio
             elif NPA == 2:
                 ratio = abs(vec[0]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness1*ratio))
+                abc[2] = math.sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[2]* ratio
             elif NPA == 1:
                 ratio = abs(vec[1]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness1*ratio))
+                abc[2] = math.sqrt(volume/(thickness1*ratio))
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
         #elif num <= 64:
         elif ltype == "tetragonal":
             if NPA == 3:
-                abc[0] = abc[1] = sqrt(volume/thickness1)
+                abc[0] = abc[1] = math.sqrt(volume/thickness1)
             elif NPA == 2:
                 abc[0] = abc[1]
                 abc[2] = volume/(abc[NPA-1]**2)
@@ -1170,9 +1155,9 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
         #elif num <= 80:
         elif ltype in ["hexagonal", "trigonal"]:
             gamma = pi/3*2
-            x = sqrt(3.)/2.
+            x = math.sqrt(3.)/2.
             if NPA == 3:
-                abc[0] = abc[1] = sqrt((volume/x)/abc[NPA-1])
+                abc[0] = abc[1] = math.sqrt((volume/x)/abc[NPA-1])
             elif NPA == 2:
                 abc[0] = abc[1]
                 abc[2] = (volume/x)(thickness1**2)
@@ -1207,7 +1192,7 @@ def generate_lattice_2D(ltype, volume, thickness=None, minvec=tol_m, minangle=pi
             continue
 
         if minvec < maxvec:
-            smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
+            smallvec = min(a*math.cos(max(beta, gamma)), b*math.cos(max(alpha, gamma)), c*math.cos(max(alpha, beta)))
             if(a>minvec and b>minvec and c>minvec
             and a<maxvec and b<maxvec and c<maxvec
             and smallvec < minvec
@@ -1279,19 +1264,19 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
         if ltype == "triclinic":
             mat = random_shear_matrix(width=0.2)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
-            x = sqrt(1-cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2*(cos(alpha)*cos(beta)*cos(gamma)))
+            x = math.sqrt(1-math.cos(alpha)**2 - math.cos(beta)**2 - math.cos(gamma)**2 + 2*(math.cos(alpha)*math.cos(beta)*math.cos(gamma)))
             abc[PA-1] = abc[PA-1]/x #scale thickness by outer product of vectors
             ab = volume/(abc[PA-1]*x)
             ratio = a/b
             if PA == 3:
-                abc[0] = sqrt(ab*ratio)
-                abc[1] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[1] = math.sqrt(ab/ratio)
             elif PA == 2:
-                abc[0] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
             elif PA == 1:
-                abc[1] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[1] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
 
         #Monoclinic
         #elif num <= 12:
@@ -1299,24 +1284,24 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
             a, b, c = random_vector()
             if unique_axis == "a":
                 alhpa = gaussian(minangle, maxangle)
-                x = sin(alpha)
+                x = math.sin(alpha)
             elif unique_axis == "b":
                 beta = gaussian(minangle, maxangle)
-                x = sin(beta)
+                x = math.sin(beta)
             elif unique_axis == "c":
                 gamma = gaussian(minangle, maxangle)
-                x = sin(gamma)
+                x = math.sin(gamma)
             ab = volume/(abc[PA-1]*x)
             ratio = a/b
             if PA == 3:
-                abc[0] = sqrt(ab*ratio)
-                abc[1] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[1] = math.sqrt(ab/ratio)
             elif PA == 2:
-                abc[0] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[0] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
             elif PA == 1:
-                abc[1] = sqrt(ab*ratio)
-                abc[2] = sqrt(ab/ratio)
+                abc[1] = math.sqrt(ab*ratio)
+                abc[2] = math.sqrt(ab/ratio)
 
         #Orthorhombic
         #lif num <= 22:
@@ -1324,22 +1309,22 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
             vec = random_vector()
             if PA == 3:
                 ratio = abs(vec[0]/vec[1]) #ratio a/b
-                abc[1] = sqrt(volume/(thickness1*ratio))
+                abc[1] = math.sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[1]* ratio
             elif PA == 2:
                 ratio = abs(vec[0]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness1*ratio))
+                abc[2] = math.sqrt(volume/(thickness1*ratio))
                 abc[0] = abc[2]* ratio
             elif PA == 1:
                 ratio = abs(vec[1]/vec[2]) #ratio a/b
-                abc[2] = sqrt(volume/(thickness1*ratio))
+                abc[2] = math.sqrt(volume/(thickness1*ratio))
                 abc[1] = abc[2]* ratio
 
         #Tetragonal
         #elif num <= 41:
         elif ltype == "tetragonal":
             if PA == 3:
-                abc[0] = abc[1] = sqrt(volume/thickness1)
+                abc[0] = abc[1] = math.sqrt(volume/thickness1)
             elif PA == 2:
                 abc[0] = abc[1]
                 abc[2] = volume/(abc[PA-1]**2)
@@ -1351,9 +1336,9 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
         #elif num <= 75:
         elif ltype in ["hexagonal", "trigonal"]:
             gamma = pi/3*2
-            x = sqrt(3.)/2.
+            x = math.sqrt(3.)/2.
             if PA == 3:
-                abc[0] = abc[1] = sqrt((volume/x)/abc[PA-1])
+                abc[0] = abc[1] = math.sqrt((volume/x)/abc[PA-1])
             elif PA == 2:
                 abc[0] = abc[1]
                 abc[2] = (volume/x)(thickness1**2)
@@ -1388,7 +1373,7 @@ def generate_lattice_1D(ltype, volume, area=None, minvec=tol_m, minangle=pi/6, m
             continue
 
         if minvec < maxvec:
-            smallvec = min(a*cos(max(beta, gamma)), b*cos(max(alpha, gamma)), c*cos(max(alpha, beta)))
+            smallvec = min(a*math.cos(max(beta, gamma)), b*math.cos(max(alpha, gamma)), c*math.cos(max(alpha, beta)))
             if(a>minvec and b>minvec and c>minvec
             and a<maxvec and b<maxvec and c<maxvec
             and smallvec < minvec
@@ -1466,10 +1451,10 @@ def choose_wyckoff(group, number):
     """
     wyckoffs_organized = group.wyckoffs_organized
     
-    if rand_u(0,1)>0.5: #choose from high to low
+    if random.uniform(0,1)>0.5: #choose from high to low
         for wyckoff in wyckoffs_organized:
             if len(wyckoff[0]) <= number:
-                return choose(wyckoff)
+                return random.choice(wyckoff)
         return False
     else:
         good_wyckoff = []
@@ -1478,7 +1463,7 @@ def choose_wyckoff(group, number):
                 for w in wyckoff:
                     good_wyckoff.append(w)
         if len(good_wyckoff) > 0:
-            return choose(good_wyckoff)
+            return random.choice(good_wyckoff)
         else:
             return False
 
@@ -1723,7 +1708,7 @@ class Lattice():
             #Randomly flip some coordinates
             for index, x in enumerate(point):
                 #Scale the point by the max radius
-                if rand_u(0,1) < 0.5:
+                if random.uniform(0,1) < 0.5:
                     point[index] *= -1
             point = np.dot(point, self.matrix_internal)
 
@@ -1734,14 +1719,14 @@ class Lattice():
             #Randomly flip some coordinates
             for index, x in enumerate(point[:-1]):
                 #Scale the point by the max radius
-                if rand_u(0,1) < 0.5:
+                if random.uniform(0,1) < 0.5:
                     point[index] *= -1
             point = np.dot(point, self.matrix_internal)
         else:
             for i, a in enumerate(self.PBC):
                 if not a:
                     if self.ltype in ["hexagonal", "trigonal", "rhombohedral"]:
-                        point[i] *= 1./sqrt(3.)
+                        point[i] *= 1./math.sqrt(3.)
                     else:
                         point[i] -= 0.5
         return point
@@ -2119,7 +2104,7 @@ class random_crystal():
                     filename = str(self.struct.formula).replace(" ","") + "." + fmt
             #Check if filename already exists
             #If it does, add a new number to end of filename
-            if exists(filename):
+            if os.path.exists(filename):
                 if given is False:
                     filename = filename[:(-len(fmt)-1)]
                 i = 1
@@ -2127,7 +2112,7 @@ class random_crystal():
                     outdir = filename + "_" + str(i)
                     if given is False:
                         outdir += "." + fmt
-                    if not exists(outdir):
+                    if not os.path.exists(outdir):
                         break
                     i += 1
                     if i > 10000:
@@ -2477,7 +2462,7 @@ class random_cluster(random_crystal):
         tm: the Tol_matrix object used to generate the crystal
     """
     def __init__(self, group, species, numIons, factor, lattice=None, tm=Tol_matrix(prototype="atomic", factor=0.7)):
-        tol_m = 0.3
+        tol_m = 0.1
         self.dim = 0
         """The number of periodic dimensions of the crystal"""
         self.PBC = [0,0,0]
@@ -2491,6 +2476,10 @@ class random_cluster(random_crystal):
 if __name__ == "__main__":
     #-------------------------------- Options -------------------------
     import os
+    from time import time
+    from optparse import OptionParser
+    from spglib import get_symmetry_dataset
+
     parser = OptionParser()
     parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
             help="desired space group number (1-230) or layer group number (1-80), e.g., 36")

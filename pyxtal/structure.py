@@ -1,5 +1,15 @@
+"""
+Module defining custom classes for symmetric structures. We store the Wyckoff position
+information needed to re-generate a randomly generated crystal, or for optimizing a structure
+without breaking symmetry.
+"""
+#Imports
+#------------------------------
+#External libraries
 from pymatgen.core.structure import Structure
 
+#Define functions
+#------------------------------
 class Xstruct(Structure):
     """
     Class for storing an atomic crystal and its symmetry information.
@@ -110,7 +120,7 @@ class Xstruct(Structure):
             total = 0
             for index in indices:
                 total += stress[index]        
-            value = np.sqrt(total)
+            value = total**0.5
             for index in inices:
                 m2[index] = value
         elif len(indices) == 3:

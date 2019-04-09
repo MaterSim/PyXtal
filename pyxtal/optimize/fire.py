@@ -2,7 +2,7 @@ import numpy as np
 from time import time
 from scipy.spatial.distance import pdist, cdist
 from copy import deepcopy
-
+import random
 """
 Scripts to compute LJ energy and force
 """
@@ -159,7 +159,7 @@ np.random.seed(10)
 
 #pos = np.array(Collection('clusters')['20']['position']['data'])
 from pyxtal.crystal import *
-pg = choose(range(1,57))
+pg = random.choice(range(1,57))
 c = random_cluster(pg, ['C'], [20], 1.0)
 pos = c.cart_coords
 

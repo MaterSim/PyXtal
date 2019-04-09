@@ -1,21 +1,22 @@
+"""
+Module for storing and accessing symmetry group information, including a Group class and
+a Wyckoff_Position class. These classes are used for generation of random structures.
+"""
+#Imports
+#------------------------------
+#Standard Libraries
 from pkg_resources import resource_filename
 
-from math import sqrt
-
-import numpy as np
-from scipy.spatial.distance import cdist
-
+#External Libraries
 from pymatgen.symmetry.groups import sg_symbol_from_int_number
 from pymatgen.symmetry.analyzer import generate_full_symmops
-from pymatgen.core.operations import SymmOp
-
 from pandas import read_csv
 
+#PyXtal imports
 from pyxtal.operations import *
 
-#Define variables
+#Constants
 #------------------------------
-Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
 letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
@@ -30,8 +31,6 @@ rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generator
 point_df = read_csv(resource_filename("pyxtal", "database/point.csv"))
 point_symmetry_df = read_csv(resource_filename("pyxtal", "database/point_symmetry.csv"))
 point_generators_df = read_csv(resource_filename("pyxtal", "database/point_generators.csv"))
-
-pi = np.pi
 
 Identity = SymmOp.from_xyz_string('x,y,z')
 Inversion = SymmOp.from_xyz_string('-x,-y,-z')
@@ -2009,7 +2008,7 @@ class Group():
                     #Add 2, 3, and 5-fold rotations
                     gens.append(SymmOp.from_xyz_string('-x,-y,z'))
                     gens.append(SymmOp.from_xyz_string('z,x,y'))
-                    tau = 0.5*(sqrt(5)+1)
+                    tau = 0.5*(math.sqrt(5)+1)
                     m = aa2matrix([1., tau, 0.], 2*pi/5)
                     gens.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
 
@@ -2121,7 +2120,7 @@ class Group():
                             axis = np.dot(m, [1,0,0])
                         if symbol[-1] == "d":
                             #Add half-angle reflection operation
-                            m_ref = [[np.cos(angle),np.sin(angle),0],[np.sin(angle),-np.cos(angle),0],[0,0,1]]
+                            m_ref = [[math.cos(angle),math.sin(angle),0],[math.sin(angle),-math.cos(angle),0],[0,0,1]]
                             gens.append(SymmOp.from_rotation_and_translation(m_ref, [0.,0.,0.]))
                             self.symbol += "d"
                             #Add (x,0,z)

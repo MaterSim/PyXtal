@@ -3,6 +3,7 @@ from time import time
 from scipy.spatial.distance import pdist, cdist
 from copy import deepcopy
 from pyxtal.molecule import PointGroupAnalyzer
+import random
 """
 Scripts to compute LJ energy and force
 """
@@ -297,7 +298,7 @@ pos = np.array(Collection('clusters')['20']['position']['data'])
 from pyxtal.crystal import *
 from copy import deepcopy
 
-pg = choose(range(1,57))
+pg = random.choice(range(1,57))
 c = random_cluster(pg, ['C'], [20], 0.7)
 pos = c.cart_coords
 
