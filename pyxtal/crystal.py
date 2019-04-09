@@ -72,7 +72,7 @@ tol_m = 0.3 #seperation tolerance in Angstroms
 max1 = 40 #Attempts for generating lattices
 max2 = 10 #Attempts for a given lattice
 max3 = 20 #Attempts for a given Wyckoff position
-minvec = 2.0 #minimum vector length
+minvec = 1.0 #minimum vector length
 
 #Define functions
 #------------------------------
