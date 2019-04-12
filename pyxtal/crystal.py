@@ -64,7 +64,6 @@ from pymatgen.io.cif import CifWriter
 from pyxtal.symmetry import *
 from pyxtal.database.element import Element
 import pyxtal.database.hall as hall
-from pyxtal.database.layergroup import Layergroup
 
 #Constants
 #------------------------------
@@ -607,19 +606,6 @@ def Add_vacuum(lattice, coor, vacuum=10, PBC=[0,0,0]):
             lattice[i] += (lattice[i]/np.linalg.norm(lattice[i])) * vacuum
     new_coor = np.dot(absolute_coords, np.linalg.inv(lattice))
     return lattice, new_coor
-
-def Permutation(lattice, coor, PB):
-    """
-    Permutes a list of coordinates. Not currently implemented.
-    """
-    para = matrix2para(lattice)
-    para1 = deepcopy(para)
-    coor1 = deepcopy(coor)
-    for axis in [0,1,2]:
-        para1[axis] = para[PB[axis]-1]
-        para1[axis+3] = para[PB[axis]+2]
-        coor1[:,axis] = coor[:,PB[axis]-1]
-    return para2matrix(para1), coor1
 
 def matrix2para(matrix, radians=True):
     """
@@ -2398,10 +2384,6 @@ class random_crystal_2D(random_crystal):
             group = Group(group, self.dim)
         number = group.number
         """The layer group number of the crystal."""
-        self.lgp = Layergroup(number)
-        """A Layergroup object for the crystal's layer group."""
-        self.sg = self.lgp.sgnumber
-        """The number (between 1 and 230) for the international spacegroup."""
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""

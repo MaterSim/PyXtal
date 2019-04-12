@@ -1602,10 +1602,6 @@ class molecular_crystal_2D(molecular_crystal):
             group = Group(group, self.dim)
         number = group.number
         """The layer group number of the crystal."""
-        self.lgp = Layergroup(number)
-        """The number (between 1 and 80) for the crystal's layer group."""
-        self.sg = self.lgp.sgnumber
-        """The number (between 1 and 230) for the international spacegroup."""
         self.thickness = thickness
         """the thickness, in Angstroms, of the unit cell in the 3rd
         dimension."""
