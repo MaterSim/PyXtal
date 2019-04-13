@@ -3,7 +3,7 @@ from scipy.spatial.distance import pdist, cdist
 """
 LJ energy and force functions
 """
-def LJ(pos, dim, mu=0.1):
+def LJ(pos, dim, mu=0.1, shift=False):
     """
     Calculate the total energy
     Args:
@@ -23,13 +23,15 @@ def LJ(pos, dim, mu=0.1):
     if dim > 3:
         norm = 0
         for i in range(3,dim):
-            #diff = pos[:, i] - np.mean(pos[:, i])
-            diff = pos[:, i] 
+            if shift:
+                diff = pos[:, i] - np.mean(pos[:, i])
+            else:
+                diff = pos[:, i] 
             norm += np.sum(np.power(diff, 2))
         Eng += 0.5*mu*norm
     return Eng
 
-def LJ_force(pos, dim, mu=0.1):
+def LJ_force(pos, dim, mu=0.1, shift=False):
     N_atom = int(len(pos)/dim)
     pos = np.reshape(pos,[N_atom, dim])
     force = np.zeros([N_atom, dim])
@@ -45,6 +47,8 @@ def LJ_force(pos, dim, mu=0.1):
         # force from the punish function mu*sum([x-mean(x)]^2)
         if dim > 3:
             for j in range(3,dim):
-                #force[i, j] += mu*(pos[i, j] - np.mean(pos[:, j]))
-                force[i, j] += mu*pos[i, j] 
+                if shift:
+                    force[i, j] += mu*(pos[i, j] - np.mean(pos[:, j]))
+                else:
+                    force[i, j] += mu*pos[i, j] 
     return force.flatten()

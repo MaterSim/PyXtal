@@ -1,6 +1,5 @@
 """
 A minimal collection of optimization algorithms adapted from scipy 
-contact: qiang.zhu@unlv.edu
 """
 
 from __future__ import division, print_function, absolute_import
@@ -146,7 +145,7 @@ class OptimizeResult(dict):
     def __dir__(self):
         return list(self.keys())
 
-def _minimize_tpgd(fun, x0, args, jac, gtol=1e-3, norm=Inf, maxiter=None):
+def _minimize_tpgd(fun, x0, args, jac, beta=1.001, gtol=1e-3, norm=Inf, maxiter=None):
     """
     Gradient descent based on Barzilai-Borwein[1] method
     https://en.wikipedia.org/wiki/Gradient_descent
@@ -166,8 +165,8 @@ def _minimize_tpgd(fun, x0, args, jac, gtol=1e-3, norm=Inf, maxiter=None):
     gnorm = vecnorm(gx1, ord=norm)
 
     while (gnorm > gtol) and (k < maxiter):
-        (dim, mu) = args
-        args = (dim, mu*1.001)
+        (dim, mu, shift) = args
+        args = (dim, mu*beta, shift)
         #compute gamma based on the Barzilai-Borwein[1] method 
         #https://en.wikipedia.org/wiki/Gradient_descent
         dg = gx1 - gx0
@@ -187,7 +186,7 @@ def _minimize_tpgd(fun, x0, args, jac, gtol=1e-3, norm=Inf, maxiter=None):
     return result
  
 
-def _minimize_bfgs(fun, x0, args=(), jac=None, callback=None,
+def _minimize_bfgs(fun, x0, args=(), jac=None, beta=1.001, callback=None,
                    gtol=1e-5, norm=Inf, eps=_epsilon, maxiter=None,
                    disp=False, return_all=False,
                    **unknown_options):
@@ -236,9 +235,8 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, callback=None,
     warnflag = 0
     gnorm = vecnorm(gfk, ord=norm)
     while (gnorm > gtol) and (k < maxiter):
-        # QZ: modifying the mu parameters--------------------
-        (dim, mu) = args
-        args = (dim, mu*1.001)
+        (dim, mu, shift) = args
+        args = (dim, mu*beta, shift)
 
         pk = -numpy.dot(Hk, gfk)
         try:
@@ -318,7 +316,7 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, callback=None,
     return result
 
 
-def _minimize_cg(fun, x0, args=(), jac=None, callback=None,
+def _minimize_cg(fun, x0, args=(), jac=None, beta=1.001, callback=None,
                  gtol=1e-5, norm=Inf, eps=_epsilon, maxiter=None,
                  disp=False, return_all=False,
                  **unknown_options):
@@ -367,9 +365,8 @@ def _minimize_cg(fun, x0, args=(), jac=None, callback=None,
     sigma_3 = 0.01
 
     while (gnorm > gtol) and (k < maxiter):
-        # QZ--------------------
-        (dim, mu) = args
-        args = (dim, mu*1.001)
+        (dim, mu, shift) = args
+        args = (dim, mu*beta, shift)
         #print(k, mu)
 
         deltak = numpy.dot(gfk, gfk)
