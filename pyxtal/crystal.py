@@ -1912,6 +1912,10 @@ class random_crystal():
             #Use the provided lattice
             self.lattice = lattice
             self.volume = lattice.volume
+            #Make sure the custom lattice PBC axes are correct.
+            if lattice.PBC != self.PBC:
+                self.lattice.PBC = self.PBC
+                printx("\n  Warning: converting custom lattice PBC to "+str(self.PBC))
         elif lattice == None:
             #Determine the unique axis
             if self.dim == 2:
@@ -2292,7 +2296,7 @@ class random_crystal():
                         final_lattice, final_coor = Add_vacuum(final_lattice, final_coor, PBC=self.PBC)
                         self.lattice_matrix = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
-                        cell."""                 
+                        cell."""
                         self.frac_coords = np.array(final_coor)
                         """The fractional coordinates for each atom in the
                         final structure"""

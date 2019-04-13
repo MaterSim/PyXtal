@@ -1090,6 +1090,10 @@ class molecular_crystal():
             #Use the provided lattice
             self.lattice = lattice
             self.volume = lattice.volume
+            #Make sure the custom lattice PBC axes are correct.
+            if lattice.PBC != self.PBC:
+                self.lattice.PBC = self.PBC
+                printx("\n  Warning: converting custom lattice PBC to "+str(self.PBC))
         elif lattice is None:
             #Determine the unique axis
             if self.dim == 2:
@@ -1522,7 +1526,7 @@ class molecular_crystal():
                         #if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC):
                         self.lattice_matrix = final_lattice
                         """A 3x3 matrix representing the lattice of the
-                        unit cell."""  
+                        unit cell."""
                         self.frac_coords = np.array(final_coor)
                         """The fractional coordinates for each molecule
                         in the final structure"""
