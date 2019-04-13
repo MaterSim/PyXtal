@@ -170,7 +170,7 @@ if __name__ == "__main__":
     x = np.linspace(eng_min, e_max, 10)
 
     ax3.plot(x, x, 'k-', lw=1)
-    ax3.scatter(eng_cg3, eng_bf3, label='CG .v.s BFGS', s=5)
+    ax3.scatter(eng_cg3, eng_bf3, c=iter_cg3-iter_bf3, label='CG .v.s BFGS', s=5)
     ax3.set_xlabel('CG (eV)')
     ax3.set_ylabel('BFGS (eV)')
     ax3.set_xlim([eng_min-0.1, e_max])
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     ax3.legend()
 
     ax4.plot(x, x, 'k-', lw=1)
-    ax4.scatter(eng_cg3, eng_gd3, label='CG .v.s TPGD', s=5)
+    ax4.scatter(eng_cg3, eng_gd3, c=iter_cg3-iter_gd3, label='CG .v.s TPGD', s=5)
     ax4.set_xlabel('CG (eV)')
     ax4.set_ylabel('BFGS (eV)')
     ax4.set_xlim([eng_min-0.1, e_max])
