@@ -386,22 +386,19 @@ def test_atomic_2D():
     global outstrings
     print("=== Testing generation of atomic 2D crystals. This may take some time. ===")
     from time import time
-    from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import get_layer
+    from pyxtal.symmetry import Group
     from pyxtal.crystal import random_crystal_2D
-    from pyxtal.crystal import cellsize
-    from pyxtal.database.layergroup import Layergroup
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     failed = []
-    print("   Layergroup   | sg # Expected |Generated (SPG)|Generated (PMG)|Time Elapsed")
-    skip = []#slow to generate
-    for num in range(1, 81):
-        if num not in skip:
-            sg = Layergroup(num).sgnumber
-            multiplicity = len(get_layer(num)[0]) / cellsize(sg) #multiplicity of the general position
+    print("  Layer group # |     Symbol    |  Time Elapsed")
+    skip = []
+    for sg in range(1, 81):
+        if sg not in skip:
+            g = Group(sg, dim=2)
+            multiplicity = len(g[0])#multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_2D(num, ['H'], [multiplicity], 4.0)
+            rand_crystal = random_crystal_2D(sg, ['C'], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -416,47 +413,19 @@ def test_atomic_2D():
                 t += "~"
             if timespent >= 60.0:
                 t += "~"
-                slow.append(num)
+                slow.append(sg)
             if rand_crystal.valid:
-                check = False
-                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
-                if ans1 is None:
-                    ans1 = "???"
+                if check_struct_group(rand_crystal, sg, dim=2):
+                    pass
                 else:
-                    ans1 = ans1['number']
-                sga = SpacegroupAnalyzer(rand_crystal.struct)
-                ans2 = "???"
-                if sga is not None:
-                    try:
-                        ans2 = sga.get_space_group_number()
-                    except: ans2 = "???"
-                if ans2 is None:
-                    ans2 = "???"
-
-                #Compare expected and detected groups
-                if ans1 == "???" and ans2 == "???":
-                    check = True
-                elif ans1 == "???":
-                    if int(ans2) > sg: pass
-                elif ans2 == "???":
-                    if int(ans1) > sg: pass
-                else:
-                    if ans1 < sg and ans2 < sg:
-                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: check = True
-
-                #output cif files for incorrect space groups
-                if check is True:
-                    if check_struct_group(rand_crystal, num, dim=2):
-                        pass
-                    else:
-                        t += " xxxxx"
-                        outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("2D_Atomic_"+str(num)+".vasp"))
-                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                    t += " xxxxx"
+                    outstructs.append(rand_crystal.struct)
+                    outstrings.append(str("atomic_2D_"+str(sg)+".vasp"))
+                symbol = g.symbol
+                print("\t"+str(sg)+"\t|\t"+symbol+"\t|\t"+t)
             else:
-                print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
-                failed.append(num)
+                print("~~~~ Error: Could not generate layer group "+str(sg)+" after "+t)
+                failed.append(sg)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
@@ -471,22 +440,19 @@ def test_molecular_2D():
     global outstrings
     print("=== Testing generation of molecular 2D crystals. This may take some time. ===")
     from time import time
-    from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import get_layer
-    from pyxtal.crystal import cellsize
+    from pyxtal.symmetry import Group
     from pyxtal.molecular_crystal import molecular_crystal_2D
-    from pyxtal.database.layergroup import Layergroup
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     failed = []
-    print("   Layergroup   | sg # Expected |Generated (SPG)|Generated (PMG)|Time Elapsed")
-    skip = []#12, 64, 65, 80] #slow to generate
-    for num in range(1, 81):
-        if num not in skip:
-            sg = Layergroup(num).sgnumber
-            multiplicity = len(get_layer(num)[0]) / cellsize(sg) #multiplicity of the general position
+    print("  Layer group # |     Symbol    |  Time Elapsed")
+    skip = []
+    for sg in range(1, 81):
+        if sg not in skip:
+            g = Group(sg, dim=2)
+            multiplicity = len(g[0])#multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_2D(num, ['H2O'], [multiplicity], 4.0)
+            rand_crystal = molecular_crystal_2D(sg, ['H2O'], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -501,47 +467,19 @@ def test_molecular_2D():
                 t += "~"
             if timespent >= 60.0:
                 t += "~"
-                slow.append(num)
+                slow.append(sg)
             if rand_crystal.valid:
-                check = False
-                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
-                if ans1 is None:
-                    ans1 = "???"
+                if check_struct_group(rand_crystal, sg, dim=2):
+                    pass
                 else:
-                    ans1 = ans1['number']
-                sga = SpacegroupAnalyzer(rand_crystal.struct)
-                ans2 = "???"
-                if sga is not None:
-                    try:
-                        ans2 = sga.get_space_group_number()
-                    except: ans2 = "???"
-                if ans2 is None:
-                    ans2 = "???"
-
-                #Compare expected and detected groups
-                if ans1 == "???" and ans2 == "???":
-                    check = True
-                elif ans1 == "???":
-                    if int(ans2) > sg: pass
-                elif ans2 == "???":
-                    if int(ans1) > sg: pass
-                else:
-                    if ans1 < sg and ans2 < sg:
-                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: check = True
-
-                #output cif files for incorrect space groups
-                if check is True:
-                    if check_struct_group(rand_crystal, num, dim=2):
-                        pass
-                    else:
-                        t += " xxxxx"
-                        outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("2D_Molecular_"+str(num)+".vasp"))
-                print("\t"+str(num)+"\t|\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                    t += " xxxxx"
+                    outstructs.append(rand_crystal.struct)
+                    outstrings.append(str("molecular_2D_"+str(sg)+".vasp"))
+                symbol = g.symbol
+                print("\t"+str(sg)+"\t|\t"+symbol+"\t|\t"+t)
             else:
-                print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
-                failed.append(num)
+                print("~~~~ Error: Could not generate layer group "+str(sg)+" after "+t)
+                failed.append(sg)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
@@ -562,7 +500,7 @@ def test_atomic_1D():
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
     slow = []
     failed = []
-    print("   Layergroup   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
+    print("    Rod group   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
     skip = []#slow to generate
     for num in range(1, 76):
         if num not in skip:
@@ -914,38 +852,6 @@ def test_modules():
                     molecule_collection = Collection('molecules')
                 except:
                     fail("Could not access hm # "+str(i))
-
-    check()
-
-    #=====database.layergroup=====
-    print("pyxtal.database.layergroup")
-    reset()
-    try:
-        import pyxtal.database.layergroup
-    except Exception as e:
-        fail(e)
-
-    print("  class Layergroup")
-    try:
-        from pyxtal.database.layergroup import Layergroup
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        for i in range(1, 81):
-            if passed():
-                try:
-                    lgp = Layergroup(i)
-                except:
-                    fail("Could not access layer group # "+str(i))
-                try:
-                    lgp.input
-                    lgp.lg
-                    lgp.symbol
-                    lgp.sgnumber
-                    lgp.permutation
-                except:
-                    fail("Could not access attribute for layer group # "+str(i))
 
     check()
 
