@@ -1670,8 +1670,20 @@ class Wyckoff_position():
                     if np.isclose(y, 0, atol=1e-3):
                         m2[i][j] = 0
             return SymmOp(m2)
-        new_ops = [filter_zeroes(op*gen_op) for op in gen_pos]
-        op_list = list(set(new_ops))
+
+        #new_ops = [filter_zeroes(op*gen_op) for op in gen_pos]
+        new_ops = [filter_zeroes(SymmOp(np.dot(op.affine_matrix, gen_op.affine_matrix))) for op in gen_pos]
+
+        #Remove redundant ops
+        op_list = []
+        for op1 in new_ops:
+            passed = True
+            for op2 in op_list:
+                if np.allclose(op1.affine_matrix, op2.affine_matrix):
+                    passed = False
+                    break
+            if passed is True:
+                op_list.append(op1)
 
         #Check for identity op
         if Identity in op_list:
@@ -1814,6 +1826,7 @@ class Group():
         self.symbol = str(group)
         if type(group) == int:
             self.number = group
+
             number = group
         elif type(group) == str:
             #TODO: add symbol interpretation
@@ -1977,6 +1990,7 @@ class Group():
                 else:
                     printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                     return
+
             #Get other point groups
 
             #Should be elif
@@ -2003,33 +2017,31 @@ class Group():
                 if symbol[0] == "I":
                     #Icosohedral
                     self.lattice_type = "spherical"
-                    self.number = None
-
                     #Add 2, 3, and 5-fold rotations
                     gens.append(SymmOp.from_xyz_string('-x,-y,z'))
                     gens.append(SymmOp.from_xyz_string('z,x,y'))
                     tau = 0.5*(math.sqrt(5)+1)
                     m = aa2matrix([1., tau, 0.], 2*pi/5)
                     gens.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
-
                     #Add Wyckoff generating operations
                     op_c = SymmOp.from_xyz_string('x,0,0')
                     op_b = SymmOp.from_xyz_string('x,x,x')
                     m = [[0,0,0,0],[0,1,0,0],[0,tau,0,0],[0,0,0,0]]
                     op_a = SymmOp(m)
                     gen_ops = [Identity, op_c, op_b, op_a, op_o]
-
                     if symbol == "Ih":
                         #Add horizontal mirror plane
                         mirror = SymmOp.from_xyz_string('x,y,-z') #m x,y,0
                         gens.append(mirror)
                         op_d = SymmOp.from_xyz_string('0,y,z')
                         gen_ops = [Identity, op_d, op_c, op_b, op_a, op_o]
+
                 elif symbol[0] == "C" and symbol[-1] != "i":
                     #n-fold rotation
                     self.lattice_type = "cylindrical"
-                    op_c = SymmOp.from_xyz_string('x,-x,z')
-                    op_b = SymmOp.from_xyz_string('x,0,z')
+                    op_b = SymmOp.from_xyz_string('0,y,z')
+                    op_c = SymmOp.from_xyz_string('x,0,z')
+                    op_d = SymmOp.from_xyz_string('x,x,z')
                     if symbol[-1] == "d":
                         printx("Error: Invalid point group symbol.", priority=1)
                         return
@@ -2051,10 +2063,12 @@ class Group():
                         #Add vertical mirror plane
                         gens.append(SymmOp.from_xyz_string('-x,y,z')) #m 0,y,z
                         self.symbol += "v"
-                        if num % 2 == 1:
-                            gen_ops = [Identity, op_c, op_z]
-                        elif num % 2 == 0:
-                            gen_ops = [Identity, op_c, op_b, op_z]
+                        if num == 2:
+                            gen_ops = [Identity, op_b, op_c, op_z]
+                        elif num == 4:
+                            gen_ops = [Identity, op_c, op_d, op_z]
+                        else:
+                            gen_ops = [Identity, op_b, op_z]
                     if symbol[-1] == "h":
                         #Add horizontal mirror plane
                         gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
@@ -2064,6 +2078,7 @@ class Group():
                     if symbol == "Cs":
                         gens = [Identity, SymmOp.from_xyz_string('x,y,-z')]
                         gen_ops = [Identity, SymmOp.from_xyz_string('x,y,0')]
+
                 elif symbol[0] == "C" and symbol[-1] == "i":
                     #n-fold rotinversion, usually just Ci
                     self.lattice_type = "cylindrical"
@@ -2088,7 +2103,8 @@ class Group():
                             gen_ops = [Identity, op_z, op_o]
                         elif num == 1:
                             gen_ops = [Identity, op_o]
-                elif symbol[0] == "D":
+
+                elif (symbol[0] == "D") and ("v" not in symbol) and ("i" not in symbol):
                     #n-fold rotation and n 2-fold perpendicular rotations
                     self.lattice_type = "cylindrical"
                     if num == 0:
@@ -2100,56 +2116,51 @@ class Group():
                         self.symbol = "D" + str(num)
                         #Rotation angle
                         angle = 2*pi/num
+                        #Add n-fold rotation
                         m = aa2matrix([0.,0.,1.], angle)
                         gens.append(SymmOp.from_rotation_and_translation(m, [0.,0.,0.]))
-                        #Different group orders have different multiplicities for "D" point groups
+                        #Add 2-fold rotation
+                        gens.append(SymmOp.from_xyz_string('x,-y,-z'))
+                        #Initialize gen_ops
                         gen_ops = [Identity]
-                        if num % 2 == 0:
-                            #Add (x,0,0)
-                            gen_ops.append(op_x)
-                            num2 = num // 2
-                            if num2 % 2 == 0:
-                                #Add num-fold symmetry axis
-                                axis = np.dot(m, [1,0,0])
-                            elif num2 % 2 == 1:
-                                #Add num2-fold symmetry axis
-                                m = aa2matrix([0.,0.,1.], 0.5*angle)
-                                axis = np.dot(m, [1,0,0])
-                        elif num % 2 == 1:
-                            #Add num-fold symmetry axis
-                            axis = np.dot(m, [1,0,0])
                         if symbol[-1] == "d":
-                            #Add half-angle reflection operation
-                            m_ref = [[math.cos(angle),math.sin(angle),0],[math.sin(angle),-math.cos(angle),0],[0,0,1]]
+                            #Add half-angle plane
+                            m_ref = [[math.cos(0.5*angle),math.sin(0.5*angle),0],[math.sin(0.5*angle),-math.cos(0.5*angle),0],[0,0,1]]
                             gens.append(SymmOp.from_rotation_and_translation(m_ref, [0.,0.,0.]))
                             self.symbol += "d"
-                            #Add (x,0,z)
-                            gen_ops.append(SymmOp.from_xyz_string('x,0,z'))
-                            if num % 2 == 0:
-                                #Add symmetry element + z
-                                m0 = symmetry_element_from_axis(axis).affine_matrix
-                                m0[2] = [0,0,1,0]
-                                new_op = SymmOp(m0)
-                                gen_ops.append(new_op)
+                            #Add quarter-angle plane
+                            m_ref = [[math.cos(0.25*angle),0,0],[math.sin(0.25*angle),0,0],[0,0,1]]
+                            if np.isclose(m_ref[0][0],0,rtol=.001,atol=.001):
+                                m_ref = [[0,0,0],[0,math.sin(0.25*angle),0],[0,0,1]]
+                            gen_ops.append(SymmOp.from_rotation_and_translation(m_ref, [0.,0.,0.]))
                         elif symbol[-1] == "h":
                             #Add horizontal mirror plane
                             gens.append(SymmOp.from_xyz_string('x,y,-z')) #m x,y,0
                             self.symbol += "h"
+                            #Add horizontal plane
                             gen_ops.append(SymmOp.from_xyz_string('x,y,0'))
+                            #Add vertical plane
+                            gen_ops.append(SymmOp.from_xyz_string('x,0,z'))
                             if num % 2 == 0:
-                                #Add (x,0,z)
-                                gen_ops.append(SymmOp.from_xyz_string('x,0,z'))
-                            #Add symmetry axis + z
-                            m0 = symmetry_element_from_axis(axis).affine_matrix
-                            m0[2] = [0,0,1,0]
-                            new_op = SymmOp(m0)
-                            gen_ops.append(new_op)
-                        #Add generator op for axis, as well as z-axis and origin
-                        gen_ops += [op_z, op_o]
+                                #Add extra plane
+                                m_ref = [[math.cos(0.5*angle),0,0],[math.sin(0.5*angle),0,0],[0,0,1]]
+                                if np.isclose(m_ref[0][0],0,rtol=.001,atol=.001):
+                                    m_ref = [[0,0,0],[0,math.sin(0.5*angle),0],[0,0,1]]
+                                gen_ops.append(SymmOp.from_rotation_and_translation(m_ref, [0.,0.,0.]))
+                                #Add extra axis
+                                m = aa2matrix([0.,0.,1.], 0.5*angle)
+                                axis = np.dot(m, [1,0,0])
+                                gen_ops.append(symmetry_element_from_axis(axis))
 
-                    if self.symbol == "D*" or symbol[-1]=="v" or symbol[-1]=="i":
-                        printx("Error: invalid point group symbol.", priority=1)
-                        return
+                        #Add generator op for axis, as well as z-axis and origin
+                        else:
+                            if num % 2 == 0:
+                                m = aa2matrix([0.,0.,1.], 0.5*angle)
+                                axis = np.dot(m, [1,0,0])
+                                gen_ops.append(symmetry_element_from_axis(axis))
+                        #Add common special positions
+                        gen_ops += [op_x, op_z, op_o]
+
                 elif symbol[0] == "S":
                     #2n-fold rotation-reflection axis
                     self.lattice_type = "cylindrical"
@@ -2216,7 +2227,6 @@ class Group():
                         self.inverse_generators_m = [[Identity, SymmOp.from_xyz_string('x,y,-z')],[Identity]]
                     else:
                         printx("Error: Invalid point group symbol.", priority=1)
-                self.number = None
             
         #TODO: Add self.symbol to dictionary
         wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs), "ops": self.wyckoffs[i],
