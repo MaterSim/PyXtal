@@ -823,15 +823,15 @@ def merge_coordinate(coor, lattice, group, tol):
         #Check distances of current WP. If too small, merge
         dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
         passed_distance_check = True
-        for i, x in enumerate(dm):
-            for j, y in enumerate(x):
-                if i != j and y < tol:
-                    passed_distance_check = False
-                    break
-            if passed_distance_check is False:
+        x = np.argwhere(dm < tol)
+        for y in x:
+            #Ignore distance from atom to itself
+            if y[0] == 0 and y[1] == 0:
+                pass
+            else:
+                passed_distance_check = False
                 break
-        if check_images([coor[0]], ['C'], lattice, PBC=PBC, tol=tol) is False:
-            passed_distance_check = False
+
         if passed_distance_check is False:
             mult1 = group[index].multiplicity
             #Find possible wp's to merge into
@@ -1479,6 +1479,54 @@ class Wyckoff_site():
 
     def __repr__(self):
         return str(self)
+
+def check_wyckoff_sites(ws1, ws2, lattice, tm=Tol_matrix(prototype="atomic"), same_group=True):
+    """
+    Given two Wyckoff sites, checks the inter-atomic distances between them.
+
+    Args:
+        ws1: a Wyckoff_site object
+        ws2: a different Wyckoff_site object (will always return False if
+            two identical WS's are provided)
+        lattice: a 3x3 cell matrix
+        same_group: whether or not the two WS's are in the same structure.
+            Default value True reduces the calculation cost
+
+    Returns:
+        True if all distances are greater than the allowed tolerances.
+        False if any distance is smaller than the allowed tolerance
+    """
+    #Ensure the PBC values are valid
+    if ws1.PBC != ws2.PBC:
+        printx("Error: PBC values do not match between Wyckoff sites")
+        return
+    #Get tolerance
+    tol = tm.get_tol(ws1.specie, ws2.specie)
+    #Symmetry shortcut method: check only some atoms
+    if same_group is True:
+        #We can either check one atom in WS1 against all WS2, or vice-versa
+        #Check which option is faster
+        if ws1.multiplicity > ws2.multiplicity:
+            coords1 = [ws1.coords[0]]
+            coords2 = ws2.coords
+        else:
+            coords1 = [ws2.coords[0]]
+            coords2 = ws1.coords
+        #Calculate distances
+        dm = distance_matrix(coords1, coords2, lattice, PBC=ws1.PBC)
+        #Check if any distances are less than the tolerance
+        if (dm < tol).any():
+            return False
+        else:
+            return True
+    #No symmetry method: check all atomic pairs
+    else:
+        dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
+        #Check if any distances are less than the tolerance
+        if (dm < tol).any():
+            return False
+        else:
+            return True
 
 def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,1,1]):
     """
@@ -2209,61 +2257,39 @@ class random_crystal():
                             if ops is not False:
                             #Generate a list of coords from ops
                                 point = self.lattice.generate_point()
-                                coords = np.array([op.operate(point) for op in ops])
+
+                                coords = apply_ops(point, ops)
                                 #Merge coordinates if the atoms are close
-                                coords_toadd, good_merge, point = merge_coordinate(coords, cell_matrix, self.group, tol)
-                                dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
+                                coords_toadd, wp_index, point = merge_coordinate(coords, cell_matrix, self.group, tol)
 
-                                if good_merge is not False:
-                                    wp_index = good_merge
-                                    #Regenerate ops using point and WP operations
-                                    coords_toadd = filtered_coords(apply_ops(point, self.group[wp_index]), PBC=self.PBC)
+                                if wp_index is not False:
+                                    #Use a Wyckoff_site object for the current site
+                                    current_site = Wyckoff_site(self.group[wp_index], point, specie)
 
-                                    #Debug to check that distance checking in merge_coordinate works
-                                    dm = distance_matrix(coords_toadd, coords_toadd, cell_matrix, PBC=self.PBC)
-                                    for i, x in enumerate(dm):
-                                        for j, y in enumerate(x):
-                                            if i != j and y < tol:
-                                                passed_distance_check = False
-                                                print("Error: merge_coordinate missed small distance (after applying WP ops): "+str(y))
-                                                self.struct = None
-                                                self.valid = False
-                                                return
-
+                                    #Check current WP against existing WP's
                                     passed_wp_check = True
                                     for ws in wyckoff_sites_tmp:
-                                        dm = distance_matrix(coords_toadd, filtered_coords(apply_ops(ws.position, ws.wp), PBC=self.PBC), cell_matrix, PBC=self.PBC)
-                                        if (dm < self.tol_matrix.get_tol(specie, ws.specie)).any():
+                                        if check_wyckoff_sites(current_site, ws, cell_matrix, tm=self.tol_matrix) is False:
                                             passed_wp_check = False
 
-                                        #Debug to check that distance checking between wp's works
-                                        if passed_wp_check is True:
-                                            for i, x in enumerate(dm):
-                                                for j, y in enumerate(x):
-                                                    if i != j and y < self.tol_matrix.get_tol(specie, ws.specie):
-                                                        passed_distance_check = False
-                                                        print("Error: merge_coordinate missed small distance (inter-wp): "+str(y))
-                                                        print((dm < self.tol_matrix.get_tol(specie, ws.specie)).any())
-                                                        self.struct = None
-                                                        self.valid = False
-                                                        return
-                                    #if check_distance(coordinates_tmp, coords_toadd, sites_tmp, [specie]*len(coords_toadd), cell_matrix, tm=self.tol_matrix, PBC=self.PBC):
                                     if passed_wp_check is True:
+                                        #The current Wyckoff site passed; store it
                                         if coordinates_tmp == []:
-                                            coordinates_tmp = coords_toadd
+                                            coordinates_tmp = current_site.coords
                                         else:
-                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                            coordinates_tmp = np.vstack([coordinates_tmp, current_site.coords])
                                         sites_tmp += [specie]*len(coords_toadd)
-                                        wyckoff_sites_tmp.append(Wyckoff_site(self.group[wp_index], point, specie))
+                                        wyckoff_sites_tmp.append(current_site)
                                         numIon_added += len(coords_toadd)
+                                        #Check if enough atoms have been added
+                                        if numIon_added == numIon:
+                                            coordinates_total = deepcopy(coordinates_tmp)
+                                            sites_total = deepcopy(sites_tmp)
+                                            wyckoff_sites_total = deepcopy(wyckoff_sites_tmp)
+                                            break
                                     else:
                                         cycle3 += 1
                                         self.numattempts += 1
-                                    if numIon_added == numIon:
-                                        coordinates_total = deepcopy(coordinates_tmp)
-                                        sites_total = deepcopy(sites_tmp)
-                                        wyckoff_sites_total = deepcopy(wyckoff_sites_tmp)
-                                        break
                                 else:
                                     cycle3 += 1
                                     self.numattempts += 1
