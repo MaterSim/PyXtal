@@ -112,6 +112,30 @@ def get_inverse_ops(ops):
             inverses.append(get_inverse_ops(op))
     return inverses
     
+def project_point(point, op):
+    """
+    Given a 3-vector and a Wyckoff position operator, returns the projection of that
+    point onto the axis, plane, or point.
+
+    Args:
+        point: a 3-vector (numeric list, tuple, or array)
+        op: a SymmOp object representing a symmetry element within a symmetry group
+
+    Returns:
+        a transformed 3-vector (numpy array)
+    """
+    #Temporarily move the point in the opposite direction of the translation
+    translation = op.translation_vector
+    point -= translation
+    new_vector = np.array([0.0,0.0,0.0])
+    #Loop over basis vectors of the symmetry element
+    for basis_vector in np.transpose(op.rotation_matrix):
+        b = np.linalg.norm(basis_vector)
+        if not np.isclose(b, 0):
+            new_vector += basis_vector*(np.dot(point, basis_vector)/(b**2))
+    new_vector += translation
+    return new_vector
+
 def apply_ops(coord, ops):
     """
     Apply a list of SymmOps to a single 3-vector and return an array of
