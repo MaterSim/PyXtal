@@ -492,14 +492,16 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
             distances = []
             for i in possible:
                 wp = group[i]
-                new_coor = apply_ops(point, wp)
+                projected_point = project_point(point, wp[0])
+                new_coor = apply_ops(projected_point, wp)
                 d = distance_matrix([point], new_coor, lattice, PBC=PBC)
                 distances.append(np.min(d))
             #Choose wp with shortest translation for generating point
             tmpindex = np.argmin(distances)
             index = possible[tmpindex]
             newwp = group[index]
-            coor = apply_ops(point, newwp)
+            projected_point = project_point(point, newwp[0])
+            coor = apply_ops(projected_point, newwp)
             point = coor[0]
             index = newwp.index
         #Distances were not too small; return True
@@ -1426,7 +1428,8 @@ class molecular_crystal():
                                 if wp is not False:
                                     #Generate a list of coords from the wyckoff position
                                     point = self.lattice.generate_point()
-                                    coords = np.array([op.operate(point) for op in wp])
+                                    projected_point = project_point(point, wp[0])
+                                    coords = apply_ops(projected_point, wp)
                                     #merge coordinates if the atoms are close
                                     if self.check_atomic_distances is False:
                                         mtol = self.radii[i]*2
