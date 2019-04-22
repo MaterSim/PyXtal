@@ -494,7 +494,7 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
                 wp = group[i]
                 projected_point = project_point(point, wp[0], lattice=lattice, PBC=PBC)
                 new_coor = apply_ops(projected_point, wp)
-                d = distance_matrix([point], new_coor, lattice, PBC=PBC)
+                d = distance(point - projected_point, lattice, PBC=PBC)
                 distances.append(np.min(d))
             #Choose wp with shortest translation for generating point
             tmpindex = np.argmin(distances)
