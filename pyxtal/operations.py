@@ -59,6 +59,189 @@ def printx(text, priority=1):
         if priority <= pyxtal_verbosity:
             print(text)
 
+def create_matrix(PBC=[1,1,1]):
+    """
+    Used for calculating distances in lattices with periodic boundary
+    conditions. When multiplied with a set of points, generates additional
+    points in cells adjacent to and diagonal to the original cell
+
+    Args:
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+
+    Returns:
+        A numpy array of matrices which can be multiplied by a set of
+        coordinates
+    """
+    matrix = []
+    i_list = [-1, 0, 1]
+    j_list = [-1, 0, 1]
+    k_list = [-1, 0, 1]
+    if not PBC[0]:
+        i_list = [0]
+    if not PBC[1]:
+        j_list = [0]
+    if not PBC[2]:
+        k_list = [0]
+    for i in i_list:
+        for j in j_list:
+            for k in k_list:
+                matrix.append([i,j,k])
+    return np.array(matrix, dtype=float)
+
+def filtered_coords(coords, PBC=[1,1,1]):
+    """
+    Given an array of 3d fractional coordinates or a single 3d point, transform
+    all coordinates to less than 1 and greater than 0. If one axis is not
+    periodic, does not transform the coordinates along that axis. For example,
+    for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
+    not the y axis (PBC=[1,0,1]), the function would return [0.2, 1.6, 0.6].
+
+    Args:
+        coords: an array of real 3d vectors. The shape does not matter
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+
+    Returns:
+        an array of filtered coords with the same shape as coords
+    """
+    def filter_vector(vector):
+        f = np.floor(vector)
+        return vector - np.multiply(f, PBC)
+
+    return np.apply_along_axis(filter_vector, -1, coords)
+
+def filtered_coords_euclidean(coords, PBC=[1,1,1]):
+    """
+    Given an array of fractional 3-vectors, filters coordinates to between 0 and
+    1. Then, values which are greater than 0.5 are converted to 1 minus their
+    value. This is used for converting displacement vectors with a Euclidean
+    lattice.
+    
+    Args:
+        coords: an array of real 3d vectors. The shape does not matter
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+
+    Returns:
+        an array of filtered coords with the same shape as coords
+    """
+    def filter_vector_euclidean(vector):
+        for i, a in enumerate(PBC):
+            if a:
+                vector[i] -= np.floor(vector[i])
+                if vector[i] > 0.5:
+                    vector[i] = 1 - vector[i]
+        return vector
+
+    return np.apply_along_axis(filter_vector_euclidean, -1, coords)
+
+def distance(xyz, lattice, PBC=[1,1,1]):
+    """
+    Returns the Euclidean distance from the origin for a fractional
+    displacement vector. Takes into account the lattice metric and periodic
+    boundary conditions, including up to one non-periodic axis.
+    
+    Args:
+        xyz: a fractional 3d displacement vector. Can be obtained by
+            subtracting one fractional vector from another
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+
+    Returns:
+        a scalar for the distance of the point from the origin
+    """
+    xyz = filtered_coords(xyz, PBC=PBC)
+    matrix = create_matrix(PBC=PBC)
+    matrix += xyz
+    matrix = np.dot(matrix, lattice)
+    return np.min(cdist(matrix,[[0,0,0]]))     
+
+def dsquared(v):
+    """
+    Returns the squared length of a 3-vector. Does not consider PBC.
+
+    Args:
+        v: a 3-vector
+    
+    Returns:
+        the squared length of the vector
+    """
+    return v[0]**2 + v[1]**2 + v[2]**2
+
+def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
+    """
+    Returns the distances between two sets of fractional coordinates.
+    Takes into account the lattice metric and periodic boundary conditions.
+    
+    Args:
+        points1: a list of fractional coordinates
+        points2: another list of fractional coordinates
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        metric: the metric to use with cdist. Possible values include 'euclidean',
+            'sqeuclidean', 'minkowski', and others
+
+    Returns:
+        a 2x2 np array of scalar distances
+    """
+    if lattice is not None:
+        if (np.array(lattice) == Euclidean_lattice).all():
+            lattice = None
+
+    if lattice is not None:
+        if PBC != [0,0,0]:
+            l1 = filtered_coords(points1, PBC=PBC)
+            l2 = filtered_coords(points2, PBC=PBC)
+            l2 = np.dot(l2, lattice)
+            matrix = create_matrix(PBC=PBC)
+            m1 = np.array([(l1 + v) for v in matrix])
+            m1 = np.dot(m1, lattice)
+            all_distances = np.array([cdist(l, l2, metric) for l in m1])
+            return np.apply_along_axis(np.min, 0, all_distances)
+
+        else:
+            l1 = np.dot(points1, lattice)
+            l2 = np.dot(points2, lattice)
+            return cdist(l1, l2, metric)
+    elif lattice is None:
+        if PBC != [0,0,0]:
+            l1 = filtered_coords(points1, PBC=PBC)
+            l2 = filtered_coords(points2, PBC=PBC)
+            matrix = create_matrix(PBC=PBC)
+            m1 = np.array([(l1 + v) for v in matrix])
+            all_distances = np.array([cdist(l, l2, metric) for l in m1])
+            return np.apply_along_axis(np.min, 0, all_distances)
+        else:
+            return cdist(points1, points2, metric)
+
+def distance_matrix_euclidean(points1, points2, PBC=[1,1,1], squared=False):
+    """
+    Returns the distances between two sets of fractional coordinates.
+    Takes into account periodic boundary conditions, but assumes a Euclidean matrix.
+    
+    Args:
+        points1: a list of fractional coordinates
+        points2: another list of fractional coordinates
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        squared: whether to return the squared distance (True) or the Euclidean distance (False)
+
+    Returns:
+        a 2x2 np array of scalar distances
+    """
+    def subtract(p):
+        return points2 - p
+    #get displacement vectors
+    displacements = filtered_coords_euclidean(np.apply_along_axis(subtract, -1, points1), PBC=PBC)
+    #Calculate norms
+    if squared is True:
+        return np.apply_along_axis(dsquared, -1, displacements)
+    else:
+        return np.apply_along_axis(np.linalg.norm, -1, displacements)
+
 def euler_from_matrix(m, radians=True):
     """
     Given a 3x3 rotation matrix, determines the Euler angles
@@ -112,7 +295,7 @@ def get_inverse_ops(ops):
             inverses.append(get_inverse_ops(op))
     return inverses
     
-def project_point(point, op):
+def project_point(point, op, lattice=Euclidean_lattice, PBC=[1,1,1]):
     """
     Given a 3-vector and a Wyckoff position operator, returns the projection of that
     point onto the axis, plane, or point.
@@ -120,21 +303,42 @@ def project_point(point, op):
     Args:
         point: a 3-vector (numeric list, tuple, or array)
         op: a SymmOp object representing a symmetry element within a symmetry group
+        lattice: 3x3 matrix describing the unit cell vectors
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
         a transformed 3-vector (numpy array)
     """
-    #Temporarily move the point in the opposite direction of the translation
-    translation = op.translation_vector
-    point -= translation
-    new_vector = np.array([0.0,0.0,0.0])
-    #Loop over basis vectors of the symmetry element
-    for basis_vector in np.transpose(op.rotation_matrix):
-        b = np.linalg.norm(basis_vector)
-        if not np.isclose(b, 0):
-            new_vector += basis_vector*(np.dot(point, basis_vector)/(b**2))
-    new_vector += translation
-    return new_vector
+    if PBC == [0,0,0]:
+        #Temporarily move the point in the opposite direction of the translation
+        translation = op.translation_vector
+        point -= translation
+        new_vector = np.array([0.0,0.0,0.0])
+        #Loop over basis vectors of the symmetry element
+        for basis_vector in np.transpose(op.rotation_matrix):
+            b = np.linalg.norm(basis_vector)
+            if not np.isclose(b, 0):
+                new_vector += basis_vector*(np.dot(point, basis_vector)/(b**2))
+        new_vector += translation
+        return new_vector
+    else:
+        #With PBC, the point could be projected onto multiple places on the symmetry element
+        point = filtered_coords(point)
+        #Generate translation vectors for the equivalent symmetry elements
+        m = create_matrix(PBC=PBC)
+        #Create new symmetry elements for each of the PBC vectors
+        new_vectors = []
+        distances = []
+        for v in m:
+            #Get the direct projection onto each of the new symmetry elements
+            new_op = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector + v)
+            new_vector = project_point(point, new_op, lattice=lattice, PBC=[0,0,0])
+            new_vectors.append(new_vector)
+            distances.append(distance(new_vector - point, lattice=lattice, PBC=[0,0,0]))
+        i = np.argmin(distances)
+        return filtered_coords(new_vectors[i], PBC=PBC)
+            
 
 def apply_ops(coord, ops):
     """

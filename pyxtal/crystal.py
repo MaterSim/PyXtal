@@ -847,7 +847,7 @@ def merge_coordinate(coor, lattice, group, tol):
             distances = []
             for i in possible:
                 wp = group[i]
-                projected_point = project_point(point, wp[0])
+                projected_point = project_point(point, wp[0], lattice=lattice, PBC=PBC)
                 new_coor = apply_ops(projected_point, wp)
                 d = distance_matrix([point], new_coor, lattice, PBC=PBC)
                 distances.append(np.min(d))
@@ -855,7 +855,7 @@ def merge_coordinate(coor, lattice, group, tol):
             tmpindex = np.argmin(distances)
             index = possible[tmpindex]
             newwp = group[index]
-            projected_point = project_point(point, newwp[0])
+            projected_point = project_point(point, newwp[0], lattice=lattice, PBC=PBC)
             coor = apply_ops(projected_point, newwp)
             point = coor[0]
             index = newwp.index
@@ -2259,7 +2259,7 @@ class random_crystal():
                             if ops is not False:
                             #Generate a list of coords from ops
                                 point = self.lattice.generate_point()
-                                projected_point = project_point(point, ops[0])
+                                projected_point = project_point(point, ops[0], lattice=cell_matrix, PBC=self.PBC)
                                 coords = apply_ops(projected_point, ops)
                                 #Merge coordinates if the atoms are close
                                 coords_toadd, wp_index, point = merge_coordinate(coords, cell_matrix, self.group, tol)
