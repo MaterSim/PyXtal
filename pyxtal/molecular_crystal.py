@@ -392,8 +392,7 @@ def check_wyckoff_position_molecular(points, group, orientations, tol=1e-3):
         for p in points:
             #Calculate distance between original and generated points
             ps = np.array([op.operate(p) for op in w_symm_all[i][0]])
-            #ds = distance_matrix([p], ps, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
-            ds = distance_matrix_euclidean([p], ps, PBC=PBC)
+            ds = distance_matrix([p], ps, None, PBC=PBC, metric='sqeuclidean')
             #Check whether any generated points are too far away
             num = (ds > tol).sum()
             if num > 0:
@@ -405,12 +404,11 @@ def check_wyckoff_position_molecular(points, group, orientations, tol=1e-3):
         for p in points:
             failed = False
             #Check that point works as x,y,z value for wp
-            xyz = filtered_coords_euclidean(wp[0].operate(p) - p, PBC=PBC)
+            xyz = filtered_coords(wp[0].operate(p) - p, PBC=PBC)
             if dsquared(xyz) > t: continue
             #Calculate distances between original and generated points
             pw = np.array([op.operate(p) for op in wp])
-            #dw = distance_matrix(points, pw, Euclidean_lattice, PBC=PBC, metric='sqeuclidean')
-            dw = distance_matrix_euclidean(points, pw, PBC=PBC)
+            dw = distance_matrix(points, pw, None, PBC=PBC, metric='sqeuclidean')
             
             #Check each row for a zero
             for row in dw:
