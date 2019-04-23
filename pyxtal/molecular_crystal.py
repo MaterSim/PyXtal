@@ -788,19 +788,20 @@ class mol_site():
             #Remove generating molecule's coords from large array
             coords = coords[m_length:]
 
-            #Check periodic images
-            m = create_matrix(PBC=self.PBC)
-            #Remove original coordinates
-            m2 = []
-            v0 = np.array([0.,0.,0.])
-            for v in m:
-                if not (v==v0).all():
-                    m2.append(v)
-            coords_PBC = np.vstack([coords_mol + v for v in m2])
-            d = distance_matrix(coords_mol, coords_PBC, self.lattice, PBC=[0,0,0])
-            tols = np.repeat(self.tols_matrix, len(m2), axis=1)
-            if (d<tols).any():
-                return False
+            if self.PBC != [0,0,0]:
+                #Check periodic images
+                m = create_matrix(PBC=self.PBC)
+                #Remove original coordinates
+                m2 = []
+                v0 = np.array([0.,0.,0.])
+                for v in m:
+                    if not (v==v0).all():
+                        m2.append(v)
+                coords_PBC = np.vstack([coords_mol + v for v in m2])
+                d = distance_matrix(coords_mol, coords_PBC, self.lattice, PBC=[0,0,0])
+                tols = np.repeat(self.tols_matrix, len(m2), axis=1)
+                if (d<tols).any():
+                    return False
 
             if self.multiplicity > 1:
                 #Check inter-atomic distances
