@@ -1038,12 +1038,15 @@ class molecular_crystal():
                 #Read strings into molecules, try collection first,
                 #If string not in collection, use pymatgen format
                 try:
-                    mo = molecule_collection[mol]
+                    mo = Molecule([Element(mol).short_name],[[0.,0.,0.]])
                 except:
                     try:
-                        mo = mol_from_file(mol)
+                        mo = molecule_collection[mol]
                     except:
-                        mo = mol_from_string(mol, fmt)
+                        try:
+                            mo = mol_from_file(mol)
+                        except:
+                            mo = mol_from_string(mol, fmt)
                 if mo is not None:
                     molecules[i] = mo
                 else:
@@ -1053,9 +1056,12 @@ class molecular_crystal():
                         +'Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)\n'
                         +"Installing the OpenBabel Python bindings allows more file formats.", priority=1)
         for mol in molecules:
-            pga = PointGroupAnalyzer(mol)
-            mo = pga.symmetrize_molecule()['sym_mol']
-            oriented_molecules.append(mo)
+            if len(mol) > 1:
+                pga = PointGroupAnalyzer(mol)
+                mo = pga.symmetrize_molecule()['sym_mol']
+                oriented_molecules.append(mo)
+            else:
+                oriented_molecules.append(mol)
         self.molecules = oriented_molecules
         """A list of pymatgen.core.structure.Molecule objects, symmetrized and
         oriented along their symmetry axes."""

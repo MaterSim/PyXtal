@@ -197,6 +197,9 @@ def get_symmetry(mol, already_oriented=False):
     Returns:
         a list of SymmOp objects which leave the molecule unchanged when applied
     """
+    #For single atoms, we cannot represent the point group using a list of operations
+    if len(mol) == 1:
+        return None
     pga = PointGroupAnalyzer(mol)
     #Handle linear molecules
     if '*' in pga.sch_symbol:
@@ -275,6 +278,9 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
         molecule while allowing it to satisfy the symmetry requirements of the
         Wyckoff position. If no orientations are found, returns False.
     """
+    #For single atoms, there are no constraints
+    if len(mol) == 1:
+        return [Orientation([[1,0,0],[0,1,0],[0,0,1]], degrees=2)]
     wyckoffs = wyckoff_position.ops
     w_symm = wyckoff_position.symmetry_m
     index = wyckoff_position.index
