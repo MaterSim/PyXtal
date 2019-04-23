@@ -199,7 +199,7 @@ def get_symmetry(mol, already_oriented=False):
     """
     #For single atoms, we cannot represent the point group using a list of operations
     if len(mol) == 1:
-        return None
+        return []
     pga = PointGroupAnalyzer(mol)
     #Handle linear molecules
     if '*' in pga.sch_symbol:
