@@ -1791,19 +1791,10 @@ class Group():
                     """A list of inverses of the generators (molecular=True)"""
 
                     #Assign lattice type
-                    if self.number == 1:
+                    if self.symbol in ["C1","Ci""D2","D2h","T","Th","O","Td","Oh","I","Ih"]:
                         self.lattice_type = "spherical"
-                    elif self.number <= 15:
-                        self.lattice_type = "cylindrical"
-                    elif self.number <= 27:
-                        self.lattice_type = "cylindrical"
-                    elif self.number <= 32:
-                        self.lattice_type = "spherical"
-                    elif self.number in range(33, 57):
-                        if self.symbol in ['I','Ih']:
-                            self.lattice_type = "spherical"                        
-                        else:
-                            self.lattice_type = "cylindrical"
+                    else:
+                        self.lattice_type = "ellipsoidal"
                 else:
                     printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                     return
@@ -1855,7 +1846,10 @@ class Group():
 
                 elif symbol[0] == "C" and symbol[-1] != "i":
                     #n-fold rotation
-                    self.lattice_type = "cylindrical"
+                    if num == 1:
+                        self.lattice_type = "spherical"
+                    else:
+                        self.lattice_type = "ellipsoidal"
                     op_b = SymmOp.from_xyz_string('0,y,z')
                     op_c = SymmOp.from_xyz_string('x,0,z')
                     op_d = SymmOp.from_xyz_string('x,x,z')
@@ -1898,7 +1892,10 @@ class Group():
 
                 elif symbol[0] == "C" and symbol[-1] == "i":
                     #n-fold rotinversion, usually just Ci
-                    self.lattice_type = "cylindrical"
+                    if num == 1:
+                        self.lattice_type = "spherical"
+                    else:
+                        self.lattice_type = "ellipsoidal"
                     if "d" in symbol or "h" in symbol or "v" in symbol:
                         printx("Error: Invalid point group symbol.", priority=1)
                         return
@@ -1923,7 +1920,10 @@ class Group():
 
                 elif (symbol[0] == "D") and ("v" not in symbol) and ("i" not in symbol):
                     #n-fold rotation and n 2-fold perpendicular rotations
-                    self.lattice_type = "cylindrical"
+                    if num == 2 and symbol[-1] == "h":
+                        self.lattice_type = "spherical"
+                    else:
+                        self.lattice_type = "ellipsoidal"
                     if num == 0:
                         #infinite-order rotation
                         self.symbol = "D*"
@@ -1980,7 +1980,7 @@ class Group():
 
                 elif symbol[0] == "S":
                     #2n-fold rotation-reflection axis
-                    self.lattice_type = "cylindrical"
+                    self.lattice_type = "ellipsoidal"
                     #Equivalent to Cnh for odd n
                     if num == 0 or symbol[-1]=="v" or symbol[-1]=="i" or symbol[-1]=="h" or symbol[-1]=="d":
                         printx("Error: invalid point group symbol.", priority=1)

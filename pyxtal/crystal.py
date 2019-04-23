@@ -1394,7 +1394,7 @@ def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=10.0, 
         minvec: minimum allowed lattice vector length (among a, b, and c)
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
-        kwargs: a dictionary of optional values. Only used for cylindrical
+        kwargs: a dictionary of optional values. Only used for ellipsoidal
             lattices, which pass the value to generate_lattice. Possible values include:
             'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
                 equivalent to the other two
@@ -1417,9 +1417,17 @@ def generate_lattice_0D(ltype, volume, area=None, minvec=tol_m, max_ratio=10.0, 
             printx("Could not generate spherical lattice; volume too small compared to minvec", priority=2)
             return
         return np.array([a, b, c, alpha, beta, gamma])
-    if ltype == "cylindrical":
-        #Use a tetragonal lattice with altered volume
-        return generate_lattice("tetragonal", volume*4/pi, minvec=0.1, max_ratio=max_ratio, maxattempts=maxattempts, **kwargs)
+    if ltype == "ellipsoidal":
+        #Use a matrix with only on-diagonal elements, with a = b
+        alpha, beta, gamma = pi/2, pi/2, pi/2
+        x = (4./3.)*pi
+        for numattempts in range(maxattempts):
+            vec = random_vector()
+            c = vec[2]/(vec[0]*vec[1])*np.cbrt(volume/x)
+            a = b = math.sqrt((volume/x)/c)
+            if (a / c < 10.) and (c / a < 10.):
+                return np.array([a, b, c, alpha, beta, gamma])
+        return
 
 def choose_wyckoff(group, number):
     """
@@ -1562,7 +1570,7 @@ class Lattice():
     """
     Class for storing and generating crystal lattices. Allows for specification
     of constraint values. Lattice types include triclinic, monoclinic, orthorhombic,
-    tetragonal, trigonal, hexagonal, cubic, spherical, and cylindrical. The last
+    tetragonal, trigonal, hexagonal, cubic, spherical, and ellipsoidal. The last
     two are used for generating point group structures, and do not actually represent
     a parallelepiped lattice.
 
@@ -1596,7 +1604,7 @@ class Lattice():
     def __init__(self, ltype, volume, PBC=[1,1,1], **kwargs):
         #Set required parameters
         if ltype in ["triclinic", "monoclinic", "orthorhombic", "tetragonal",
-                "trigonal", "hexagonal", "cubic", "spherical", "cylindrical"]:
+                "trigonal", "hexagonal", "cubic", "spherical", "ellipsoidal"]:
             self.ltype = ltype
         elif ltype == None:
             self.ltype = "triclinic"
@@ -1636,7 +1644,7 @@ class Lattice():
                     self.stress_normalization_matrix = np.array([[1,0,0],[1,1,0],[0,0,1]])
         elif self.ltype in ["orthorhombic", "tetragonal", "trigonal", "hexagonal", "cubic"]:
             self.stress_normalization_matrix = np.array([[1,0,0],[0,1,0],[0,0,1]])
-        elif self.ltype in ["spherical", "cylindrical"]:
+        elif self.ltype in ["spherical", "ellipsoidal"]:
             self.stress_normalization_matrix = np.array([[0,0,0],[0,0,0],[0,0,0]])
         #Set info for on-diagonal stress symmetrization
         if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral"]:
@@ -1656,8 +1664,7 @@ class Lattice():
         elif self.dim == 1:
             return generate_lattice_1D(self.ltype, self.volume, **self.kwargs)
         elif self.dim == 0:
-            self.para_internal = generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
-            return [1,1,1,pi/2,pi/2,pi/2]
+            return generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
 
     def generate_matrix(self):
         """
@@ -1666,15 +1673,8 @@ class Lattice():
         #Try multiple times in case of failure
         for i in range(10):
             para = self.generate_para()
-            if self.ltype in ["spherical", "cylindrical"]:
-                try:
-                    self.matrix_internal = para2matrix(self.para_internal)
-                    return Euclidean_lattice
-                except:
-                    pass
-            else:
-                if para is not None:
-                    return para2matrix(para)
+            if para is not None:
+                return para2matrix(para)
         printx("Error: Could not generate lattice matrix.", priority=1)
         return
 
@@ -1737,7 +1737,7 @@ class Lattice():
 
     def generate_point(self):
         point = np.random.random(3)
-        if self.ltype == "spherical":
+        if self.ltype in ["spherical", "ellipsoidal"]:
             #Choose a point within an octant of the unit sphere
             while dsquared(point) > 1:
                 point = np.random.random(3)
@@ -1746,18 +1746,6 @@ class Lattice():
                 #Scale the point by the max radius
                 if random.uniform(0,1) < 0.5:
                     point[index] *= -1
-            point = np.dot(point, self.matrix_internal)
-
-        elif self.ltype == "cylindrical":
-            #Choose a point within an octant of the unit sphere
-            while dsquared([point[0], point[1], 0]) > 1:
-                point = np.random.random(3)
-            #Randomly flip some coordinates
-            for index, x in enumerate(point[:-1]):
-                #Scale the point by the max radius
-                if random.uniform(0,1) < 0.5:
-                    point[index] *= -1
-            point = np.dot(point, self.matrix_internal)
         else:
             for i, a in enumerate(self.PBC):
                 if not a:
@@ -1781,8 +1769,8 @@ class Lattice():
             beta: the angle (in degrees) between the a and c vectors
             gamma: the angle (in degrees) between the a and b vectors
             ltype: the lattice type ("cubic, tetragonal, etc."). Also available are "spherical",
-                which confines generated points to lie within a sphere, and "cylindrical", which
-                confines generated points to lie within a cylinder (oriented about the z axis)
+                which confines generated points to lie within a sphere, and "ellipsoidal", which
+                confines generated points to lie within an ellipse (oriented about the z axis)
             radians: whether or not to use radians (instead of degrees) for the lattice angles
             PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
                 Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
@@ -1841,8 +1829,8 @@ class Lattice():
         Args:
             matrix: a 3x3 real matrix (numpy array or nested list) describing the cell vectors
             ltype: the lattice type ("cubic, tetragonal, etc."). Also available are "spherical",
-                which confines generated points to lie within a sphere, and "cylindrical", which
-                confines generated points to lie within a cylinder (oriented about the z axis)
+                which confines generated points to lie within a sphere, and "ellipsoidal", which
+                confines generated points to lie within an ellipsoid (oriented about the z axis)
             PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
                 Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
             kwargs: various values which may be defined. If none are defined, random ones
@@ -2350,10 +2338,10 @@ class random_crystal():
                         self.lattice_matrix = final_lattice   
                         """A 3x3 matrix representing the lattice of the unit
                         cell."""
-                        self.frac_coords = np.dot(final_coor, np.linalg.inv(self.lattice.matrix_internal))
+                        self.frac_coords = np.array(final_coor)
                         """The relative coordinates for each atom in the
                         final structure""" 
-                        self.cart_coords = np.array(final_coor)
+                        self.cart_coords = np.dot(final_coor, final_lattice)
                         """The absolute coordinates for each atom in the
                         final structure"""                  
                         self.sites = final_site
