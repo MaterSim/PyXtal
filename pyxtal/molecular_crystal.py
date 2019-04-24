@@ -1202,24 +1202,29 @@ class molecular_crystal():
                     else:
                         self.valid_orientations[-1][-1].append([])
 
-    def check_compatible(self):
+    def check_compatible(group, numMols, valid_orientations):
         """
         Checks if the number of molecules is compatible with the Wyckoff
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
         """
+        #Store whether or not at least one degree of freedom exists
+        has_freedom = False
+        #Store the wp's already used that don't have any freedom
+        used_indices = []
         #Loop over species
-        has_freedom = False #Store whether or not at least one degree of freedom exists
-        for i_mol, numIon in enumerate(self.numMols):
+        for i_mol, numIon in enumerate(numMols):
             #Get lists of multiplicity, maxn and freedom
             l_mult0 = []
             l_maxn0 = []
             l_free0 = []
-            for i_wp, wp in enumerate(self.group):
+            indices0 = []
+            for i_wp, wp in enumerate(group):
                 #Check that at least one valid orientation exists
-                j, k = jk_from_i(i_wp, self.group.wyckoffs_organized)
-                if len(self.valid_orientations[i_mol][j][k]) > 0:
-                    l_mult0.append(wp.multiplicity)
+                j, k = jk_from_i(i_wp, group.wyckoffs_organized)
+                if len(valid_orientations[i_mol][j][k]) > 0:
+                    indices0.append(i_wp)
+                    l_mult0.append(len(wp))
                     l_maxn0.append(numIon // len(wp))
                     if np.allclose(wp[0].rotation_matrix, np.zeros([3,3])):
                         l_free0.append(False)
@@ -1229,16 +1234,19 @@ class molecular_crystal():
             l_mult = []
             l_maxn = []
             l_free = []
-            for mult, maxn, free in zip(l_mult0, l_maxn0, l_free0):
+            indices = []
+            for mult, maxn, free, i_wp in zip(l_mult0, l_maxn0, l_free0, indices0):
                 if free is True:
                     if mult not in l_mult:
                         l_mult.append(mult)
                         l_maxn.append(maxn)
                         l_free.append(True)
-                elif free is False:
+                        indices.append(i_wp)
+                elif free is False and i_wp not in used_indices:
                     l_mult.append(mult)
                     l_maxn.append(1)
                     l_free.append(False)
+                    indices.append(i_wp)
             #Loop over possible combinations
             #Create pointer variable to move through lists
             p = 0
@@ -1250,18 +1258,24 @@ class molecular_crystal():
                     p = i
                     n[i] = l_maxn[i]
                     break
+            p2 = p
+            if n == n0:
+                return False
             while True:
                 num = np.dot(n, l_mult)
+                dobackwards = False
                 #The combination works: move to next species
                 if num == numIon:
                     #Check if at least one degree of freedom exists
-                    for i, val in enumerate(n):
+                    for val, free, i_wp in zip(n, l_free, indices):
                         if val > 0:
-                            if l_free[i] is True:
+                            if free is True:
                                 has_freedom = True
+                            elif free is False:
+                                indices.append(i_wp)
                     break
                 #All combinations failed: return False
-                if n == n0:
+                if n == n0 and p >= len(l_mult) - 1:
                     return False
                 #Too few atoms
                 if num < numIon:
@@ -1272,16 +1286,18 @@ class molecular_crystal():
                         n[p] = min((numIon - num) // l_mult[p], l_maxn[p])
                     else:
                         #p is already at last position: trigger backwards routine
-                        num = numIon + 1
+                        dobackwards = True
                 #Too many atoms
-                if num > numIon:
+                if num > numIon or dobackwards is True:
                     #Backwards routine
                     #Set n[p] to 0, move p backwards to non-zero, and decrease by 1
                     n[p] = 0
-                    while p > 0:
+                    while p > 0 and p > p2:
                         p -= 1
                         if n[p] != 0:
                             n[p] -= 1
+                            if n[p] == 0 and p == p2:
+                                p2 = p + 1
                             break
         #All species passed: return True
         if has_freedom is True:
@@ -1360,7 +1376,7 @@ class molecular_crystal():
             max4: the number of attempts for changing the molecular orientation
         """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
-        degrees = self.check_compatible()
+        degrees = molecular_crystal.check_compatible(self.group, self.numMols, self.valid_orientations)
         if degrees is False:
             self.struct = None
             self.valid = False
