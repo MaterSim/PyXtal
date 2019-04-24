@@ -97,11 +97,11 @@ The parameters are the same as those for `random_crystal
 The point group may be specified either by a number (only for the crystallographic point groups), or by a `Schoenflies symbol <https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups>`_ (ex: 'Ih', 'C*', 'D6h'). The numbers 1-32 correspond to the following crystallograpic point groups: 
 
 +------------+------------+-----------+-----------+
-| 1: C1      | 2: Ci      | 3: C2     | 4: Cs     |
+| 1:  C1     |  2: Ci     |  3: C2    |  4: Cs    |
 +------------+------------+-----------+-----------+
-| 5: C2h     | 6: D2      | 7: C2v    | 8: D2h    |
+| 5:  C2h    |  6: D2     |  7: C2v   |  8: D2h   |
 +------------+------------+-----------+-----------+
-| 9: C4      | 10: S4     | 11: C4h   | 12: D4    |
+| 9:  C4     | 10: S4     | 11: C4h   | 12: D4    |
 +------------+------------+-----------+-----------+
 | 13: C4v    | 14: D2d    | 15: D4h   | 16: C3    |
 +------------+------------+-----------+-----------+
