@@ -858,7 +858,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
     return False, None
 
 #TODO: Use Group object instead of organized array
-def letter_from_index(index, arr):
+def letter_from_index(index, group, dim=3):
     """
     Given a Wyckoff position's index within a spacegroup, return its number
     and letter e.g. '4a'
@@ -866,30 +866,57 @@ def letter_from_index(index, arr):
     Args:
         index: a single integer describing the WP's index within the
             spacegroup (0 is the general position)
-        arr: an unorganized Wyckoff position array
+        group: an unorganized Wyckoff position array or Group object (preferred)
+        dim: the periodicity dimension of the symmetry group. Used for consideration
+            of "o" Wyckoff positions in point groups. Not used if group is a Group
    
     Returns:
         the Wyckoff letter corresponding to the Wyckoff position (for example,
         for position 4a, the function would return 'a')
     """
-    length = len(arr)
-    return letters[length - 1 - index]
+    letters1 = letters
+    #See whether the group has an "o" Wyckoff position
+    checko = False
+    if type(group) == Group and group.dim == 0:
+        checko = True
+    elif dim == 0:
+        checko = True
+    if checko is True:
+        if len(group[-1]) == 1 and group[-1][0] == SymmOp.from_xyz_string('0,0,0'):
+            #o comes before a
+            letters1 = "o" + letters
+    length = len(group)
+    return letters1[length - 1 - index]
 
-def index_from_letter(letter, arr):
+
+def index_from_letter(letter, group, dim=3):
     """
     Given the Wyckoff letter, returns the index of a Wyckoff position within
     the spacegroup
 
     Args:
         letter: The wyckoff letter
-        arr: an unorganized Wyckoff position array
+        group: an unorganized Wyckoff position array or Group object (preferred)
+        dim: the periodicity dimension of the symmetry group. Used for consideration
+            of "o" Wyckoff positions in point groups. Not used if group is a Group
 
     Returns:
         a single index specifying the location of the Wyckoff position within
         the spacegroup (0 is the general position)
     """
-    length = len(arr)
-    return length - 1 - letters.index(letter)
+    letters1 = letters
+    #See whether the group has an "o" Wyckoff position
+    checko = False
+    if type(group) == Group and group.dim == 0:
+        checko = True
+    elif dim == 0:
+        checko = True
+    if checko is True:
+        if len(group[-1]) == 1 and group[-1][0] == SymmOp.from_xyz_string('0,0,0'):
+            #o comes before a
+            letters1 = "o" + letters
+    length = len(group)
+    return length - 1 - letters1.index(letter)
 
 def jk_from_i(i, olist):
     """
@@ -1342,10 +1369,10 @@ class Wyckoff_position():
                 wp.PBC = PBC
             ops_all = get_wyckoffs(wp.number)
             if use_letter is True:
-                wp.index = index_from_letter(index, ops_all)
+                wp.index = index_from_letter(index, ops_all, dim=dim)
                 wp.letter = index
             else:
-                wp.letter = letter_from_index(wp.index, ops_all)
+                wp.letter = letter_from_index(wp.index, ops_all, dim=dim)
             if wp.index >= len(ops_all) or wp.index < 0:
                 printx("Error while generating Wyckoff_position: index out of range for specified group", priority=1)
                 return
@@ -1377,10 +1404,10 @@ class Wyckoff_position():
                 wp.PBC = PBC
             ops_all = get_layer(wp.number)
             if use_letter is True:
-                wp.index = index_from_letter(index, ops_all)
+                wp.index = index_from_letter(index, ops_all, dim=dim)
                 wp.letter = index
             else:
-                wp.letter = letter_from_index(wp.index, ops_all)
+                wp.letter = letter_from_index(wp.index, ops_all, dim=dim)
             if wp.index >= len(ops_all) or wp.index < 0:
                 printx("Error while generating Wyckoff_position: index out of range for specified group", priority=1)
                 return
@@ -1412,10 +1439,10 @@ class Wyckoff_position():
                 wp.PBC = PBC
             ops_all = get_rod(wp.number)
             if use_letter is True:
-                wp.index = index_from_letter(index, ops_all)
+                wp.index = index_from_letter(index, ops_all, dim=dim)
                 wp.letter = index
             else:
-                wp.letter = letter_from_index(wp.index, ops_all)
+                wp.letter = letter_from_index(wp.index, ops_all, dim=dim)
             if wp.index >= len(ops_all) or wp.index < 0:
                 printx("Error while generating Wyckoff_position: index out of range for specified group", priority=1)
                 return
@@ -1626,7 +1653,6 @@ class Group():
             if self.dim != 0:
                 s += "group # "+str(self.number)+" ("+self.symbol+")--"
             #TODO: implement H-M symbol
-            #s += symbol_from_number(self.number, dim=self.dim)
             for wp in self.Wyckoff_positions:
                 s += "\n  "+str(wp.multiplicity)+wp.letter+"\tsite symm: " + ss_string_from_ops(wp.symmetry_m[0], self.number, dim=self.dim)
                 #for op in wp.ops:
@@ -2046,7 +2072,7 @@ class Group():
                         printx("Error: Invalid point group symbol.", priority=1)
             
         #TODO: Add self.symbol to dictionary
-        wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs), "ops": self.wyckoffs[i],
+        wpdicts = [{"index": i, "letter": letter_from_index(i, self.wyckoffs, dim=self.dim), "ops": self.wyckoffs[i],
             "multiplicity": len(self.wyckoffs[i]), "symmetry": self.w_symm[i], "symmetry_m": self.w_symm_m[i],
             "generators": self.wyckoff_generators[i], "generators_m": self.wyckoff_generators_m[i],
             "inverse_generators": self.inverse_generators[i], "inverse_generators_m": self.inverse_generators_m[i],
@@ -2075,7 +2101,7 @@ class Group():
                 if c.isalpha():
                     letter = c
                     break
-            index = index_from_letter(letter, self.wyckoffs)
+            index = index_from_letter(letter, self.wyckoffs, dim=self.dim)
         return self.Wyckoff_positions[index]
 
     def get_wyckoff_symmetry(self, index, molecular=False):
@@ -2097,7 +2123,7 @@ class Group():
                 if c.isalpha():
                     letter = c
                     break
-            index = index_from_letter(letter, self.wyckoffs)
+            index = index_from_letter(letter, self.wyckoffs, dim=self.dim)
         if molecular is False:
             ops = self.w_symm[index][0]
         if molecular is True:
@@ -2123,7 +2149,7 @@ class Group():
         return self.get_wyckoff_position(index)
 
     def __len__(self):
-        return self.multiplicity
+        return len(self.wyckoffs)
 
     def print_all(self):
         """
