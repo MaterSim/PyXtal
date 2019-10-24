@@ -45,3 +45,11 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+Modules
+========================
+
+.. toctree::
+   :maxdepth: 4
+
+   pyxtal
