@@ -2,12 +2,10 @@ Note: This page is currently under development.
 
 Background and Theory
 =====================
-
 This is a pedagical introduction to crystallography and basic group theory. For information about how PyXtal works specifically, see the `Algorithms <Algorithm>`_ page.
 
 Crystals and Structures
 -----------------------
-
 When studying solids, it is often useful to describe a material's structure at the atomic level. From this description one can (in theory) determine the material's physical properties, including mechanical strength, electrical and thermal conductivity, melting point, etc. Due to the near-infinite number of possible materials and atomic geometries, it is necessary to have a consistent mathematical framework for such descriptions. This is the job of crystallographers.
 
 For an atomic structure, we could describe the geometry by specifying the type and position of every atom. This works alright for molecules, and is in fact how computers typically encode molecules. But for an ideal crystal, which is infinitely large, it is impossible to describe where each individual atom lies. Fortunately, because crystals are symmetrical, we can specify one part of the crystal, and then use the symmetry operations to *generate* the rest of the crystal. This creates a perfectly symmetrical structure which is infinitely large in size. Such objects do not exist in nature, but they are nevertheless useful for understanding small parts of real, imperfect crystals. So, we call this infinite and symmetrical object an ideal crystal.

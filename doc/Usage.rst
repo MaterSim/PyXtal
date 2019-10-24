@@ -203,8 +203,8 @@ Here, the parameters correspond to those for `random_crystal_2D <pyxtal.crystal.
 
 Because molecules have a certain thickness of their own, care should be used when choosing a thickness value. Currently, the thickness parameter only determines where the molecular centers of mass can be, so the final crystal may have individual atoms outside of this range.
 
-1D Crystals
-~~~~~~~~~~~
+1D Molecular Crystals
+~~~~~~~~~~~~~~~~~~~~~
 
 PyXtal also supports generation of 1D crystals using Rod groups (between 1 and 75). The corresponding classes are `crystal.random_crystal_1D
 <pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D>`_ and `molecular_crystal_1D
