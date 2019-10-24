@@ -1,7 +1,0 @@
-pyxtal.database.layergroup module
-=================================
-
-.. automodule:: pyxtal.database.layergroup
-    :members:
-    :undoc-members:
-    :show-inheritance:

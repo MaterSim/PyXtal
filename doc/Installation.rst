@@ -43,12 +43,41 @@ Then, inside of the downloaded directory, run
 
 This will install the module. The code can be used within Python via
 
-.. code-block:: Python
+``pyxtal_test``
 
-  import pyxtal
+You expect to see the following output.
+
+::
+
+     ______       _    _          _   
+    (_____ \     \ \  / /        | |   
+     _____) )   _ \ \/ / |_  ____| |  
+    |  ____/ | | | )  (|  _)/ _  | | 
+    | |    | |_| |/ /\ \ |_( ( | | |___
+    |_|     \__  /_/  \_\___)_||_|_(___
+           (____/      
+
+
+------------------------(version 0.0.1 )----------------------
+
+A Python package for random crystal generation
+The source code is available at https://github.com/qzhu2017/pyxtal
+Developed by Zhu's group at University of Nevada Las Vegas
+
+
+====== Testing functionality for pyXtal version 0.1dev ======
+Importing sys...
+Success!
+Importing numpy...
+Success!
+Importing pymatgen...
+Success!
+Importing pandas...
+Success!
+
   
 More extensive test can be invoked by running
 
-``python $root/pyxtal/test_cases/test_all.py``
+``pyxtal_test -m all``
 
 Ideally, one should see the completion of all modules in the end.

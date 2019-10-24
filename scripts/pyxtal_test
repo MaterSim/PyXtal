@@ -1395,13 +1395,12 @@ if __name__ == "__main__":
     from time import time
     from pyxtal import print_logo
     parser = OptionParser()
-    parser.add_option("-m", "--module", dest="module", metavar='module', default='all', type=str,
-        help="modules options: 'all', 'atomic', 'molecular', 'atomic_2D', 'molecular_2D', 'atomic_1D', 'molecular_1D' ")
-    parser.add_option("-s", "--summary", action="store_true", dest="output", default=False,
-        help="output summary.txt file")
+    parser.add_option("-m", "--module", dest="module", metavar='module', \
+                      default='atomic', type=str,
+                      help="modules options: 'all', 'atomic', 'molecular', \
+                               'atomic_2D', 'molecular_2D', 'atomic_1D',\
+                               'molecular_1D', 'cluster' ")
     (options, args) = parser.parse_args()
-
-    output = options.output
 
     print_logo()
 
@@ -1437,39 +1436,7 @@ if __name__ == "__main__":
         eval(modules_lib[module])
 
     masterend = time()
-    mastertime = np.around((masterend-masterstart), decimals=2)
+    mastertime = masterend - masterstart
 
     print("TEST COMPLETE")
-    print("Total time elapsed: "+str(mastertime)+" s")
-
-    if outstructs != []:
-        output = True
-    if output is True:
-        #from pymatgen.io.cif import CifWriter
-        from os import mkdir
-        from os.path import isdir
-        outdir0 = "test_out_"
-        i = 1
-        while True:
-            outdir = outdir0 + str(i)
-            if not isdir(outdir):
-                mkdir(outdir)
-                break
-            i += 1
-            if i > 100:
-                break
-        if outstructs != []:
-            print("Some generated space groups did not match the expected group.")
-            print("POSCAR files for these groups will be output to the directory " + outdir + ":")
-        for struct, string in zip(outstructs, outstrings):
-            fpath = outdir + "/" + string
-            try:
-                struct = struct.get_sorted_structure()
-            except:
-                pass
-            struct.to(filename=fpath, fmt="poscar")
-            #CifWriter(struct, symprec=0.1).write_file(filename = fpath)
-            print("  "+string)
-        #Output summary text file
-        txtfile = open(outdir+"/summary.txt", "w")
-        txtfile.write(_summary_text_)
+    print("\nTotal time elapsed: {:.2f}".format(mastertime))
