@@ -18,13 +18,16 @@ Optional:
 
 Openbabel is not necessary, and only adds additional file format support for importing molecules. You must install the C++ pacakge before installing the Python bindings. For Debian based systems, your distribution may already have installable packages:
 
-``sudo apt-get install openbabel``  
+::
 
-``pip install openbabel``
+    $ sudo apt-get install openbabel
+    $ pip install openbabel
 
 Also note that the openbabel Python bindings require swig to install:
 
-``sudo apt-get install swig``  
+::
+
+    $ sudo apt-get install swig  
 
 Older version of swig (before 2.0) will not work. For other systems, you must compile the openbabel Python bindings yourself. There are tutorials for this on the `openbabel website
 <https://openbabel.org/docs/dev/UseTheLibrary/PythonInstall.html>`_, as well as in the `pymatgen documentation
@@ -33,51 +36,73 @@ Older version of swig (before 2.0) will not work. For other systems, you must co
 Installation
 ------------
 
-To install PyXtal, first install all dependencies, then make a copy of the source code:
+To install PxXtal, one can simply type 
 
-``git clone https://github.com/qzhu2017/pyxtal``
+::
 
-Then, inside of the downloaded directory, run
+    $ pip install pyxtal 
+    
+or make a copy of the source code, and then install it manually.
 
-``python setup.py install``
+::
 
-This will install the module. The code can be used within Python via
+    $ git clone https://github.com/qzhu2017/pyxtal
+    $ cd pyxtal
+    $ python setup.py install
 
-``pyxtal_test``
+This will install the module. You can check the installation of the code by a simple test run as follows,
+
+::
+
+    $ pyxtal_test
 
 You expect to see the following output.
 
 ::
 
-     ______       _    _          _   
-    (_____ \     \ \  / /        | |   
-     _____) )   _ \ \/ / |_  ____| |  
-    |  ____/ | | | )  (|  _)/ _  | | 
-    | |    | |_| |/ /\ \ |_( ( | | |___
-    |_|     \__  /_/  \_\___)_||_|_(___
-           (____/      
+                ______       _    _          _   
+                (_____ \     \ \  / /        | |   
+                 _____) )   _ \ \/ / |_  ____| |  
+                |  ____/ | | | )  (|  _)/ _  | | 
+                | |    | |_| |/ /\ \ |_( ( | | |___
+                |_|     \__  /_/  \_\___)_||_|_(___
+                       (____/      
+            
+    
+    ----------------------(version 0.0.1 )----------------------
+    
+    A Python package for random crystal generation
+    The source code is available at https://github.com/qzhu2017/pyxtal
+    Developed by Zhu's group at University of Nevada Las Vegas
+    
+    
+    ====== Testing functionality for pyXtal version 0.1dev ======
+    Importing sys...
+    Success!
+    Importing numpy...
+    Success!
+    Importing pymatgen...
+    Success!
+    Importing pandas...
+    Success!
+    ...
+    ...
+    	223	|	223	|	223	|	1.12 s ~
+    	224	|	224	|	224	|	0.30 s
+    	225	|	225	|	225	|	0.54 s
+    	226	|	226	|	226	|	0.45 s
+    	227	|	227	|	227	|	0.47 s
+    	228	|	228	|	228	|	1.42 s ~
+    	229	|	229	|	229	|	0.19 s
+    	230	|	230	|	230	|	0.18 s
+    TEST COMPLETE
 
-
-------------------------(version 0.0.1 )----------------------
-
-A Python package for random crystal generation
-The source code is available at https://github.com/qzhu2017/pyxtal
-Developed by Zhu's group at University of Nevada Las Vegas
-
-
-====== Testing functionality for pyXtal version 0.1dev ======
-Importing sys...
-Success!
-Importing numpy...
-Success!
-Importing pymatgen...
-Success!
-Importing pandas...
-Success!
-
+    Total time elapsed: 34.15
   
 More extensive test can be invoked by running
 
-``pyxtal_test -m all``
+::
+
+    $ pyxtal_test -m all
 
 Ideally, one should see the completion of all modules in the end.

@@ -7,15 +7,15 @@ def print_logo():
     """
     
     print("""
-     ______       _    _          _   
-    (_____ \     \ \  / /        | |   
-     _____) )   _ \ \/ / |_  ____| |  
-    |  ____/ | | | )  (|  _)/ _  | | 
-    | |    | |_| |/ /\ \ |_( ( | | |___
-    |_|     \__  /_/  \_\___)_||_|_(___
-           (____/      """)
+             ______       _    _          _   
+            (_____ \     \ \  / /        | |   
+             _____) )   _ \ \/ / |_  ____| |  
+            |  ____/ | | | )  (|  _)/ _  | | 
+            | |    | |_| |/ /\ \ |_( ( | | |___
+            |_|     \__  /_/  \_\___)_||_|_(___
+                   (____/      """)
     print('\n')
-    print('------------------------(version', __version__,')----------------------\n')
+    print('----------------------(version', __version__,')----------------------\n')
     print('A Python package for random crystal generation')
     print('The source code is available at https://github.com/qzhu2017/pyxtal')
     print('Developed by Zhu\'s group at University of Nevada Las Vegas\n\n')
