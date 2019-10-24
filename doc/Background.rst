@@ -73,106 +73,93 @@ To avoid this confusion, there is a set of standards (defined in the `Internatio
 
 Different cell parameters lead to different rotational symmetries of the unit cell (we will discuss this more below). Based on these symmetries, unit cells can be divided into seven different "crystal classes". Each crystal class has a different range of allowable cell parameters; triclinic is the general class, requiring no symmetry. Combining these restrictions with possible extra lattice positions, we get 14 possible types of lattices, called the Bravais lattices. We list these here:
 
-Triclinic:
+.. list-table::
 
-.. image:: ../images/triclinic.png
-   :height: 92 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: triclinic cell
+    * - .. figure:: ../images/triclinic.png
+            :scale: 80% %
+            :figclass: align-center
 
-Monoclinic (Primitive, C-centered):
+            Triclinic
 
-.. image:: ../images/monoclinic_P.png
-   :height: 125 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: primitive monoclinic cell
+      - .. figure:: ../images/monoclinic_P.png
+            :scale: 80% %
+            :figclass: align-center
+            
+            P-monoclinic
 
-.. image:: ../images/monoclinic_C.png
-   :height: 125 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: C-centered monoclinic cell
+      - .. figure:: ../images/monoclinic_C.png
+            :scale: 80 %
+            :figclass: align-center
 
-Orthorhombic (Primitive, C-centered, Body-centered, Face-centered):
+            C-monoclinic
 
-.. image:: ../images/orthorhombic_P.png
-   :height: 116 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: primitive orthorhombic cell
+      - .. figure:: ../images/orthorhombic_P.png
+            :scale: 80 %
+            :figclass: align-center
 
-.. image:: ../images/orthorhombic_C.png
-   :height: 116 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: C-centered orthorhombic cell
+            P-orthorhombic
 
+    * - .. figure:: ../images/orthorhombic_C.png
+            :scale: 80 %
+            :figclass: align-center
 
-.. image:: ../images/orthorhombic_I.png
-   :height: 116 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: body-centered orthorhombic cell
+            C-orthorhombic
 
-.. image:: ../images/orthorhombic_F.png
-   :height: 116 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: Face-centered orthorhombic cell
+      - .. figure:: ../images/orthorhombic_I.png
+            :scale: 80 %
+            :figclass: align-center
+            
+            B-orthorhombic
 
-Tetragonal (Primitive, Body-centered):
+      - .. figure:: ../images/orthorhombic_F.png
+            :scale: 80 %
+            :figclass: align-center
 
-.. image:: ../images/tetragonal_P.png
-   :height: 133 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: primitive tetragonal cell
+            F-orthorhombic 
 
-.. image:: ../images/tetragonal_I.png
-   :height: 133 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: body-centered tetragonal cell
+      - .. figure:: ../images/tetragonal_P.png
+            :scale: 80 %
+            :figclass: align-center
 
-Hexagonal:
+            P-tetragonal 
 
-.. image:: ../images/hexagonal.png
-   :height: 103 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: hexagonal cell
+.. list-table::
 
-Rhombohedral:
+    * - .. figure:: ../images/tetragonal_I.png
+            :scale: 100 %
+            :figclass: align-center
 
-.. image:: ../images/rhombohedral.png
-   :height: 96 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: rhombohedral cell
+            B-tetragonal
 
-Cubic (Primitive, Body-centered, Face-centered):
+      - .. figure:: ../images/hexagonal.png
+            :scale: 100 %
+            :figclass: align-center
 
-.. image:: ../images/cubic_P.png
-   :height: 93 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: primitive cubic cell
+            Hexagonal 
 
-.. image:: ../images/cubic_I.png
-   :height: 93 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: body-centered cubic cell
+      - .. figure:: ../images/rhombohedral.png
+            :scale: 100 %
+            :figclass: align-center
 
-.. image:: ../images/cubic_F.png
-   :height: 93 px
-   :width: 80 px
-   :scale: 100 %
-   :alt: face-centered cubic cell
+            Rhombohedral
 
-[#]_
+    * - .. figure:: ../images/cubic_P.png
+            :scale: 100 %
+            :figclass: align-center
+
+            R-cubic
+        
+      - .. figure:: ../images/cubic_I.png
+            :scale: 100 %
+            :figclass: align-center
+
+            Body-centered cubic
+        
+      - .. figure:: ../images/cubic_F.png
+           :scale: 100 %
+           :figclass: align-center
+
+           Face-centered cubic [#]_
 
 Much like squares can be considered a special case of rectangles, all unit cells can be thought of as special cases of triclinic cells. Cubic cells are a subset of tetragonal cells, tetragonal cells are a subset of orthorhombic cells, and so on.
 
@@ -221,8 +208,8 @@ Alternatively, the matrix-column pair can be "combined" into a single 4x4 matrix
 
 This 4x4 matrix is called an affine transformation matrix. With it, we can apply operations using a single matrix multiplication operation. Although this may seem like just a mathematical trick, the affine matrix notation highlights the group structure of the transformations, as it allows translations and rotations to be placed on equal footing. Furthermore, we can use the additional dimension to represent time: the '1' value can be thought of as a single step forward in time, and thus we can define both rotational and translational reference frames (and equivalently, torques and forces) with a single 4x4 matrix. Objects which are (periodically) symmetric in time are called time crystals. Such objects have only recently been synthesized in the lab, and there is likely more research to be done. However, for most applications in crystallography, time is not a factor, and we consider only spatial symmetries.
 
-Sometimes crystallographers express an affine transformation as a list of letters and numbers, separated by commas (for example, "x,y,z"). In this notation, the first, second, and third positions denote what happens to the 
-unit x, y, and z axes, respectively. So if we want to perform an inversion, we replace each axis with its opposite. Then, "x,y,z" becomes "-x,-y,-z". So, you can use "-x,-y,-z" to represent an inversion. Similarly, "y,-x,z" would represent a 90 degree rotation about the z axis (using the right hand rule). You can also map to a linear combination of axes, or add a constant value. So, you might see something like "x-y,x,z+1/2". Here, we just follow the same procedure: x, which is the vector (1,0,0) is mapped onto x-y, which is the vector (1,-1,0). y (0,1,0) is mapped onto x (1,0,0), and z (0,0,1) is mapped onto z+1/2 (0,0,1), or in the 4x4 notation, (0,0,1,.5). To express the addition of a constant (in this case 1/2 for the z-axis), the right-hand side of the 4x4 matrix is used. So, we would write "x-y,x,z+1/2" as:
+Sometimes crystallographers express an affine transformation as a list of letters and numbers, separated by commas (for example, ``x,y,z``). In this notation, the first, second, and third positions denote what happens to the 
+unit x, y, and z axes, respectively. So if we want to perform an inversion, we replace each axis with its opposite. Then, ``x,y,z`` becomes ``-x,-y,-z``. So, you can use ``-x,-y,-z`` to represent an inversion. Similarly, ``y,-x,z`` would represent a 90 degree rotation about the z axis (using the right hand rule). You can also map to a linear combination of axes, or add a constant value. So, you might see something like ``x-y,x,z+1/2``. Here, we just follow the same procedure: x, which is the vector (1,0,0) is mapped onto x-y, which is the vector (1,-1,0). y (0,1,0) is mapped onto x (1,0,0), and z (0,0,1) is mapped onto z+1/2 (0,0,1), or in the 4x4 notation, (0,0,1,.5). To express the addition of a constant (in this case 1/2 for the z-axis), the right-hand side of the 4x4 matrix is used. So, we would write ``x-y,x,z+1/2`` as:
 
 .. image:: ../images/affine_matrix.png
    :height: 126 px
@@ -296,13 +283,20 @@ Note that only empty space, or other idealized objects (including some fractals)
 
 We can also define symmetry groups for objects of arbitrary dimension. A simple example is the equilateral triangle, which has a 3-fold rotational symmetry, as well as 3 reflectional symmetries. A slightly more complex example is the regular hexagon, which has all of the symmetries of the triangle, but also 6-fold and 2-fold rotational symmetry, and additional reflectional symmetries. Combining rotation and reflection, the hexagon also has inversional symmetry:
 
-|pic1| ``triangular and hexagonal symmetry`` |pic2| 
+.. list-table::
 
-.. |pic1| image:: ../images/triangle.png
-    :width: 35%
+    * - .. figure:: ../images/triangle.png
+            :scale: 75% %
+            :figclass: align-center
 
-.. |pic2| image:: ../images/hexagon.png
-    :scale: 50% %
+            triangular symmetry
+
+      - .. figure:: ../images/hexagon.png
+            :scale: 40% %
+            :figclass: align-center
+            
+            hexagonal symmetry
+
 
 
            
@@ -315,29 +309,37 @@ In order for an object to be translationally symmetric, it must be periodic alon
 
 A point group can contain rotations, reflections, and possibly inversion. There are several conventions for naming point groups, but PyXtal uses the Schoenflies notation. Here, point groups have one or two letters to describe the type(s) of transformations present, and a number to describe the order. For detailed information, see the Wikipedia page. Below are a few examples of point groups found in crystallography and chemistry.
 
-H2O: point group C2v (2-fold rotation axis, and two mirror planes) [#]_
+- H2O: point group C2v (2-fold rotation axis, and two mirror planes) [#]_
+- Hypothetical Pmmm crystal: point group mmm (3 mirror planes)
+- Buckminsterfullerene: point group Ih (Full icosohedral symmetry) [#]_
 
-.. image:: ../images/water_symmetry_1.gif
-   :height: 291 px
-   :width: 360 px
-   :scale: 75%
-   :alt: H2O molecule symmetry
+.. list-table::
 
-Hypothetical Pmmm crystal: point group mmm (3 mirror planes)
+    * - .. figure:: ../images/water_symmetry_1.gif
+            :height: 720 px
+            :width: 1024 px
+            :scale: 25%
+            :figclass: align-center
 
-.. image:: ../images/Pmmm.png
-   :height: 754 px
-   :width: 619 px
-   :scale: 35%
-   :alt: Buckminsterfullerene molecule
+            H2O molecule (``C2v``)
 
-Buckminsterfullerene: point group Ih (Full icosohedral symmetry) [#]_
+      - .. figure:: ../images/Pmmm.png
+            :height: 720 px
+            :width: 1024 px
+            :scale: 25%
+            :figclass: align-center
 
-.. image:: ../images/Bucky.png
-   :height: 1067 px
-   :width: 1024 px
-   :scale: 25%
-   :alt: Buckminsterfullerene molecule
+            Hypothetical crystal with ``mmm``
+
+      - .. figure:: ../images/Bucky.png
+            :height: 720 px
+            :width: 1024 px
+            :scale: 25%
+            :figclass: align-center
+
+            Buckminsterfullerene ``Ih``
+
+
 
 Space Groups
 ------------
