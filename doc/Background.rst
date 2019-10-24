@@ -3,23 +3,26 @@ Note: This page is currently under development.
 Background and Theory
 =====================
 
-This is an informal background to crystallography and basic group theory. For information about how PyXtal works specifically, see the "Algorithms" page.
+This is a pedagical introduction to crystallography and basic group theory. For information about how PyXtal works specifically, see the `Algorithms <Algorithm>`_ page.
 
 Crystals and Structures
 -----------------------
 
 When studying solids, it is often useful to describe a material's structure at the atomic level. From this description one can (in theory) determine the material's physical properties, including mechanical strength, electrical and thermal conductivity, melting point, etc. Due to the near-infinite number of possible materials and atomic geometries, it is necessary to have a consistent mathematical framework for such descriptions. This is the job of crystallographers.
 
-For an atomic structure, we could describe the geometry by specifying the type and position of every atom. This works alright for molecules, and is in fact how computers typically encode molecules. But for an ideal crystal, which is infinitely large, it is impossible to describe where each individual atom lies. Fortunately, because crystals are symmetrical, we can specify one part of the crystal, and then use the symmetry operations to "generate" the rest of the crystal. This creates a perfectly symmetrical structure which is infinitely large in size. Such objects do not exist in nature, but they are nevertheless useful for understanding small parts of real, imperfect crystals. So, we call this infinite and symmetrical object an ideal crystal.
+For an atomic structure, we could describe the geometry by specifying the type and position of every atom. This works alright for molecules, and is in fact how computers typically encode molecules. But for an ideal crystal, which is infinitely large, it is impossible to describe where each individual atom lies. Fortunately, because crystals are symmetrical, we can specify one part of the crystal, and then use the symmetry operations to *generate* the rest of the crystal. This creates a perfectly symmetrical structure which is infinitely large in size. Such objects do not exist in nature, but they are nevertheless useful for understanding small parts of real, imperfect crystals. So, we call this infinite and symmetrical object an ideal crystal.
 
-Most inorganic materials are formed by many small (nearly) ideal crystals called grains. These grains may have different shapes, sizes, and orientations, but each grain has the same crystal structure at the inter-atomic scale. If we can determine this crystal structure, it becomes possible to predict the way that the grains form and interact with each other. From this, we can go on to predict properties at larger and larger scales, and determine how useful a material will behave in different physical situations. For this reason, determining a material's small-scale crystal structure is absolutely essential for modern materials science and engineering.
+Most inorganic materials are formed by many small (nearly) ideal crystals called *grains*. These grains may have different shapes, sizes, and orientations, but each grain has the same crystal structure at the inter-atomic scale. If we can determine this crystal structure, it becomes possible to predict the way that the grains form and interact with each other. From this, we can go on to predict properties at larger and larger scales, and determine how useful a material will behave in different physical situations. For this reason, determining a material's small-scale crystal structure is absolutely essential for modern materials science and engineering.
 
-At different pressures and temperatures, a material may go through a solid phase transition, and take on a different crystal structure. So, one job of crystallographers is to determine how a system will change under different conditions. Often, new structures will form at high pressure, and sometimes these structures have vastly superior properties (think diamond vs graphite). Thus, high pressure physics forms an active branch of physics and chemistry, and is a potential avenue for finding high temperature superconductors.
+At different pressures and temperatures, a material may go through a solid *phase transition*, and take on a different crystal structure. So, one job of crystallographers is to determine how a system will change under different conditions. Often, new structures will form at high pressure, and sometimes these structures have vastly superior properties (think diamond vs graphite). Thus, high pressure physics forms an active branch of physics and chemistry, and is a potential avenue for finding high temperature superconductors.
 
 Periodicity, Lattices, and Unit Cells
 -------------------------------------
 
-Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensions. This means that when we translate the structure by a certain amount (in any one of 3 directions unique to the crystal), the crystal will look the same. This can be pictured in a few simple steps: 1) Define a small parallelepiped-shaped box. 2) Put atoms into the box (You can put as few or as many atoms as you like). 
+Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensions. This means that when we translate the structure by a certain amount (in any one of 3 directions unique to the crystal), the crystal will look the same. This can be pictured in a few simple steps: 
+
+1. Define a small parallelepiped-shaped box. 
+2. Put atoms into the box (You can put as few or as many atoms as you like. 
 
 .. image:: ../images/unit_cell1.png
    :height: 444 px
@@ -28,7 +31,7 @@ Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensio
    :alt: single unit cell
    :align: center
 
-3) Make a copy of the box and place it adjacent to the original box.
+3. Make a copy of the box and place it adjacent to the original box.
 
 .. image:: ../images/unit_cell2.png
    :height: 763 px
@@ -37,7 +40,7 @@ Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensio
    :alt: repeated unit cell
    :align: center
 
-4) Make a copy of the copy, and place that adjacent to the previous one, but along a different axis.
+4. Make a copy of the copy, and place that adjacent to the previous one, but along a different axis.
 
 .. image:: ../images/unit_cell3.png
    :height: 763 px
@@ -46,7 +49,7 @@ Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensio
    :alt: repeated unit cell
    :align: center
 
-5) Repeat step 4 until you have filled all of space.
+5. Repeat step 4 until you have filled all of space.
 
 .. image:: ../images/unit_cell4.png
    :height: 763 px
@@ -235,7 +238,7 @@ Groups
 
 Symmetry operations have several nice properties, and this allows certain sets of them to be classified as a mathematical object called a group. There are several simple and intuitive examples of groups, which we will discuss below. Formally, a group G is a set of mathematical objects (called elements) with 4 properties:
 
-1) There is a binary operation (often denoted by *) which maps any two elements in the set onto a third element which is also in the set: A*B = C. The operation must be defined for every possible pair on the set, and must map onto an element which is inside of the set.
+1) There is a binary operation (often denoted by ) which maps any two elements in the set onto a third element which is also in the set: A*B = C. The operation must be defined for every possible pair on the set, and must map onto an element which is inside of the set.
 
 2) There must be exactly one identity element I which maps every element of the set onto itself: A*I = I*A = A for every A in G.
 
@@ -253,12 +256,14 @@ Interestingly, the  real numbers are a subset of the complex numbers, and yet bo
 
 These are so far all examples of infinite groups, since there are infinitely many points on the number line. However, there also exist finite groups. For example, consider the permutation group of 3 objects (we'll call them 'a', 'b', and 'c'). Our group elements are:
 
-1: (a,b,c)
-2: (a,c,b)
-3: (b,a,c)
-4: (b,c,a)
-5: (c,a,b)
-6: (c,b,a)
+::
+
+    1: (a,b,c)
+    2: (a,c,b)
+    3: (b,a,c)
+    4: (b,c,a)
+    5: (c,a,b)
+    6: (c,b,a)
 
 As you can see, there are only 6 elements in this group. Element (1) is the identity, as it represents keeping a, b, and c in their original order. Element (2) represents swapping b and c, element (3) represents swapping a and b, and so on.
 
@@ -266,13 +271,12 @@ In general, we call the number of elements in a group the order of that group. I
 
 Sometimes, it is inconvenient to list every member of a group. Instead, it is often possible to list only a few elements, which can be used to determine, or "generate" the other elements. These chosen elements are called generators. For example, consider elements (2) and (3) in the permutation group shown above. We can define the remaining elements (1, 4, 5, and 6) starting with only (2) and (3) (with operations acting from the left):
 
-2 * 2 = 1 : (a,c,b) * (a,c,b) = (a,b,c)
+::
 
-2 * 3 = 4 : (a,c,b) * (b,a,c) = (b,c,a)
-
-3 * 4 = 6 : (b,a,c) * (b,c,a) = (c,b,a)
-
-6 * 2 = 5 : (c,b,a) * (a,c,b) = (c,a,b)
+    2 * 2 = 1 : (a,c,b) * (a,c,b) = (a,b,c)
+    2 * 3 = 4 : (a,c,b) * (b,a,c) = (b,c,a)
+    3 * 4 = 6 : (b,a,c) * (b,c,a) = (c,b,a)
+    6 * 2 = 5 : (c,b,a) * (a,c,b) = (c,a,b)
 
 Thus, we say that (2) and (3) are generators of the group. Typically, there is not a single "best" choice of generators for a group. We could just as easily have chosen (2) and (6), or (4) and (3), or some other subset as our generators.
 
@@ -290,22 +294,18 @@ On the other hand, we can consider empty 3D space, which is perfectly symmetrica
 
 Note that only empty space, or other idealized objects (including some fractals) can have scaling symmetry. For atomic structures, we will never encounter this. However, shear symmetry is possible for lattices. As an example, consider the different choices for the primitive cell shown in the section above. These different primitive cells can be mapped onto each other using shear transformations. It is important to note that in general only simple lattices have this shearing symmetry; if there are atoms inside of the lattice, they may not map onto other atoms in the crystal.
 
-We can also define symmetry groups for objects of arbitrary dimension. A simple example is the equilateral triangle, which has a 3-fold rotational symmetry, as well as 3 reflectional symmetries.
+We can also define symmetry groups for objects of arbitrary dimension. A simple example is the equilateral triangle, which has a 3-fold rotational symmetry, as well as 3 reflectional symmetries. A slightly more complex example is the regular hexagon, which has all of the symmetries of the triangle, but also 6-fold and 2-fold rotational symmetry, and additional reflectional symmetries. Combining rotation and reflection, the hexagon also has inversional symmetry:
 
-.. image:: ../images/triangle.png
-   :height: 266 px
-   :width: 310 px
-   :scale: 75% %
-   :alt: triangular symmetry
+|pic1| ``triangular and hexagonal symmetry`` |pic2| 
 
-A slightly more complex example is the regular hexagon, which has all of the symmetries of the triangle, but also 6-fold and 2-fold rotational symmetry, and additional reflectional symmetries. Combining rotation and reflection, the hexagon also has inversional symmetry:
+.. |pic1| image:: ../images/triangle.png
+    :width: 35%
 
-.. image:: ../images/hexagon.png
-   :height: 477 px
-   :width: 499 px
-   :scale: 75% %
-   :alt: hexagonal symmetry
+.. |pic2| image:: ../images/hexagon.png
+    :scale: 50% %
 
+
+           
 It takes practice to develop an intuition for finding symmetries, but the results can be very rewarding. Often, a symmetry can be utilized to lessen the work needed to solve a problem, sometimes even reducing the problem to a trivial identity. This is a core concept in mathematics and physics, and deserves reflection.
 
 Point Groups
@@ -367,13 +367,12 @@ The largest Wyckoff position, which makes a copy for every symmetry operation, i
 
 The number and type of Wyckoff positions are different for every space group; a list of them can be found using the `Bilbao utility WYCKPOS <http://www.cryst.ehu.es/cryst/get_wp.html>`_. In the utility, Wyckoff positions are described using the "x,y,z" notation, where each operation shows how the original (x,y,z) point is transformed/copied. In other words, if we choose a single set of coordinates, then plugging these coordinates into the Wyckoff position will generate the remaining coordinates. As an example, consider the general position of space group P 2 2 2 (#16), which consists of the points (x,y,z), (-x,-y,z), (-x,y,-z), and (x,-y,-z). If we choose a random point, say (0.321,0.457,0.892), we can determine the remaining points:
 
-(x,y,z)->(0.321,0.457,0.892)
+::
 
-(-x,-y,z)->(0.679,0.543,0.892)
-
-(-x,y,-z)->(0.679,0.457,0.108)
-
-(x,-y,-z)->(0.321,0.543,0.108)
+    (x,y,z)->(0.321,0.457,0.892)
+    (-x,-y,z)->(0.679,0.543,0.892)
+    (-x,y,-z)->(0.679,0.457,0.108)
+    (x,-y,-z)->(0.321,0.543,0.108)
 
 keeping in mind that a negative value is equal to 1 minus that value (-0.321 = 1 - 0.321 = 0.679).
 

@@ -10,16 +10,25 @@
    :alt: PyXtal
    :align: center
 
-Introduction
+PyXtal
 ============
 
-    PyXtal (pronounced "pie-crystal") is an open source Python library for the ab-initio generation of random crystal structures. It is available for use under the MIT license. Given a stoichiometry and space group, the user can quickly generate possible geometries, which can be output to .cif or .vasp files. The structure information can then be used in combination with various optimization methods and software, in order to determine the lowest-energy structure for a given compound. Currently, the software allows random generation of 3D, 2D, and 1D crystals, as well as point group clusters. Both atomic and molecular crystals can be generated; PyXtal will automatically check molecules for their symmetry compatibility with special Wyckoff positions. The software also allows access to symmetry information, including Wyckoff positions and site symmetry for a given space group. A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. For more information about the project's development, see the GitHub page: https://github.com/qzhu2017/PyXtal
+PyXtal (pronounced ``pie-crystal``) is an open source Python library for the ab-initio generation of random crystal structures. It has the following features:
 
-Version info
-============
-The current version is 0.1dev. Expect frequent updates.
+- Generation of atomic crystals and clusters for a given symmetry and stoichiometry (0D, 1D, 2D and 3D)
+- Generation of molecular crystals (1-3D), with the automatic determination of special Wyckoff positions. 
+- Support of various structural file formats (e.g., ``cif``, ``POSCAR``) via pymatgen.
+- Easy access to symmetry group information (e.g., Wyckoff, site symmetry, and point group symbols).
+- Geometry optimization from built-in and external optimization methods.
 
-Additional Documentation
+The current version is ``0.0.1`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license.
+
+Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
+
+
+A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. 
+
+Tutorial
 ========================
 
 .. toctree::
@@ -29,3 +38,10 @@ Additional Documentation
    Algorithm
    Settings
    :maxdepth: 2
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

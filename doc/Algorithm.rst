@@ -8,7 +8,16 @@ PyXtal is a free, open source Python package intended to aid with crystal struct
 Overview
 --------
 
-In order to generate random symmetrical crystals, PyXtal uses space groups and their Wyckoff positions as templates, then inserts atoms (or molecules) one Wyckoff position at a time, until the desired stoichiometry is reached. This ensures that the correct symmetry will be obtained, without the need to adjust atomic positions. Along the way, it checks that the atoms are sufficiently far apart. To generate a single random crystal, PyXtal performs roughly seven steps:
+In order to generate random symmetrical crystals, PyXtal uses space groups and their Wyckoff positions as templates, then **inserts atoms (or molecules) one Wyckoff position at a time, until the desired stoichiometry is reached**. This ensures that the correct symmetry will be obtained, without the need to adjust atomic positions. Along the way, it checks that the atoms are sufficiently far apart. To generate a single random crystal, PyXtal performs roughly seven steps:
+
+.. figure:: ../images/Flowchart.png
+   :height: 450 px
+   :width: 300 px
+   :scale: 100 %
+   :align: center
+
+   PyXtal Structure Generation Flowchart. 
+
 
 1) Get the input parameters from the user. This includes the crystal's stoichiometry, space group, and volume factor. Optionally, the desired lattice and allowed inter-atomic distances can also be defined (which is useful for testing at higher pressures). Otherwise, these parameters will be chosen automatically.
 

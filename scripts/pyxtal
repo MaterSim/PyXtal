@@ -1,0 +1,132 @@
+#!/usr/bin/env  python
+# encoding: utf-8
+
+import sys
+import os
+from pyxtal import print_logo
+from pyxtal.crystal import random_crystal, random_crystal_1D, random_crystal_2D, random_cluster
+import os
+from time import time
+from optparse import OptionParser
+from spglib import get_symmetry_dataset
+import numpy as np
+
+if __name__ == "__main__":
+    #-------------------------------- Options -------------------------
+    parser = OptionParser()
+    parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
+            help="desired space group number (1-230) or layer group number (1-80), e.g., 36")
+    parser.add_option("-e", "--element", dest="element", default='Li', 
+            help="desired elements: e.g., Li", metavar="element")
+    parser.add_option("-n", "--numIons", dest="numIons", default=16, 
+            help="desired numbers of atoms: 16", metavar="numIons")
+    parser.add_option("-f", "--factor", dest="factor", default=1.0, type=float, 
+            help="volume factor: default 1.0", metavar="factor")
+    parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, 
+            help="verbosity: default 0; higher values print more information", metavar="verbosity")
+    parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
+            help="number of crystals to generate: default 1", metavar="attempts")
+    parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
+            help="Directory for storing output cif files: default 'out'", metavar="outdir")
+    parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
+            help="desired dimension: (3, 2, or 1 for 3d, 2d, or 1D respectively): default 3")
+    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=None, type=float,
+            help="Thickness, in Angstroms, of a 2D crystal, or area of a 1D crystal, None generates a value automatically: default None")
+
+    print_logo()
+    (options, args) = parser.parse_args()
+    sg = options.sg
+    dimension = options.dimension
+    if dimension == 3:
+        if sg < 1 or sg > 230:
+            print("Invalid space group number. Must be between 1 and 230.")
+            sys.exit(0)
+    elif dimension == 2:
+        if sg < 1 or sg > 80:
+            print("Invalid layer group number. Must be between 1 and 80.")
+            sys.exit(0)
+    elif dimension == 1:
+        if sg < 1 or sg > 75:
+            print("Invalid Rod group number. Must be between 1 and 75.")
+            sys.exit(0)
+    else:
+        print("Invalid dimension. Use dimension 0, 1, 2, or 3.")
+        sys.exit(0)
+
+    element = options.element
+    number = options.numIons
+    numIons = []
+    if element.find(',') > 0:
+        system = element.split(',')
+        for x in number.split(','):
+            numIons.append(int(x))
+    else:
+        system = [element]
+        numIons = [int(number)]
+
+    factor = options.factor
+    if factor < 0:
+        print("Error: Volume factor must be greater than 0.")
+        sys.exit(0)
+
+    verbosity = options.verbosity
+    attempts = options.attempts
+    outdir = options.outdir
+    dimension = options.dimension
+    thickness = options.thickness
+
+    try:
+        os.mkdir(outdir)
+    except: pass
+
+    filecount = 1 #To check whether a file already exists
+    for i in range(attempts):
+        numIons0 = np.array(numIons)
+        sg = options.sg
+        start = time()
+        if dimension == 3:
+            rand_crystal = random_crystal(options.sg, system, numIons0, factor)
+            sg1 = sg
+        elif dimension == 2:
+            rand_crystal = random_crystal_2D(options.sg, system, numIons0, thickness, factor)
+            sg1 = rand_crystal.sg
+        elif dimension == 1:
+            rand_crystal = random_crystal_1D(options.sg, system, numIons0, thickness, factor)
+            sg1 = "?"
+        if dimension == 0:
+            rand_crystal = random_cluster(options.sg, system, numIons0, factor)
+            sg1 = sg
+        end = time()
+        timespent = np.around((end - start), decimals=2)
+
+        if rand_crystal.valid:
+            #Output a cif file
+            written = False
+            comp = str(rand_crystal.struct.composition)
+            comp = comp.replace(" ", "")
+            cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
+            while os.path.isfile(cifpath):
+                filecount += 1
+                cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
+            CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
+            written = True
+            #POSCAR output
+            #rand_crystal.struct.to(fmt="poscar", filename = '1.vasp')
+
+            #spglib style structure called cell
+            ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
+            print('Space group  requested:', sg1, ' generated:', ans)
+            if written is True:
+                print("    Output to "+cifpath)
+            else:
+                print("    Could not write cif file.")
+
+            #Print additional information about the structure
+            if verbosity > 0:
+                print("Time required for generation: " + str(timespent) + "s")
+                print(rand_crystal.struct)
+
+        #If generation fails
+        else: 
+            print('something is wrong')
+            print('Time spent during generation attempt: ' + str(timespent) + "s")
