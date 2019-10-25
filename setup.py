@@ -27,7 +27,7 @@ setup(
               'pyxtal.potentials',
               ],
     package_data={'pyxtal.database': ['*.csv', '*.json'],
-                  'pyxtal.potentials': ['*'],
+                  #'pyxtal.potentials': ['*'],
                  },
 
     scripts=['scripts/pyxtal', 'scripts/pyxtal_test'],

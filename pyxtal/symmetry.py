@@ -8,9 +8,9 @@ a Wyckoff_Position class. These classes are used for generation of random struct
 from pkg_resources import resource_filename
 
 #External Libraries
-from pymatgen.symmetry.groups import sg_symbol_from_int_number
 from pymatgen.symmetry.analyzer import generate_full_symmops
 from pandas import read_csv
+from monty.serialization import loadfn
 
 #PyXtal imports
 from pyxtal.operations import *
@@ -31,6 +31,7 @@ rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generator
 point_df = read_csv(resource_filename("pyxtal", "database/point.csv"))
 point_symmetry_df = read_csv(resource_filename("pyxtal", "database/point_symmetry.csv"))
 point_generators_df = read_csv(resource_filename("pyxtal", "database/point_generators.csv"))
+symbols = loadfn(resource_filename("pyxtal", "database/symbols.json"))
 
 Identity = SymmOp.from_xyz_string('x,y,z')
 Inversion = SymmOp.from_xyz_string('-x,-y,-z')
@@ -1605,6 +1606,7 @@ class Group():
         group: the group symbol or international number
         dim: the periodic dimension of the group
     """
+
     
     pglist_crystallographic = ['C1','Ci','C2','Cs','C2h','D2','C2v','D2h',
         'C4','S4','C4h','D4','C4v','D2d','D4h','C3',
@@ -1634,24 +1636,23 @@ class Group():
     for i, symbol in enumerate(pglist):
         pgdict[i+1] = symbol
     """Dict of crystallographic point groups, with the numbers used by PyXtal"""
-
+    
     def __str__(self):
         try:
             return self.string
         except:
             if self.dim == 0:
                 #TODO: implement point group symbols
-                s = "-- Point group " + self.symbol + " --"
+                s = "-- Point group --"
             elif self.dim == 3:
-                s = "-- Space "
+                s = "-- Space group --"
             elif self.dim == 2:
-                s = "-- Layer "
+                s = "-- Layer group --"
             elif self.dim == 1:
-                s = "-- Rod "
+                s = "-- Rod group --"
             else:
                 return "Error: invalid crystal dimension. Must be a number between 0 and 3."
-            if self.dim != 0:
-                s += "group # "+str(self.number)+" ("+self.symbol+")--"
+            s += "# "+str(self.number)+" ("+self.symbol+")--"
             #TODO: implement H-M symbol
             for wp in self.Wyckoff_positions:
                 s += "\n  "+str(wp.multiplicity)+wp.letter+"\tsite symm: " + ss_string_from_ops(wp.symmetry_m[0], self.number, dim=self.dim)
@@ -1666,29 +1667,10 @@ class Group():
     def __init__(self, group, dim=3):
         self.dim = dim
         #TODO: get symbol from number
-        self.symbol = str(group)
-        if type(group) == int:
-            self.number = group
-
-            number = group
-        elif type(group) == str:
-            #TODO: add symbol interpretation
-            if dim != 0:
-                printx("Cannot currently interpret symbols for Rod, layer, and space groups.\n"
-                    +"Please use an integer.", priority=1)
-                return
-            elif dim == 0:
-                symbol = group
-                if group in pglist:
-                    self.symbol = symbol
-                    number = self.number = group = pglist.index(group) + 1
-                else:
-                    number = self.number = None
-        else:
-            printx("Error: Please input a symbol (str) or integer (int) for the group.", priority=1)
-            return
+        self.symbol, self.number = get_symbol_and_number(group, dim)
+        number = self.number #QZ: needs to clean up
         if dim == 3:
-            if number not in range(1, 231):
+            if self.number not in range(1, 231):
                 printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             self.PBC = [1,1,1]
@@ -1721,7 +1703,7 @@ class Group():
             elif self.number <= 230:
                 self.lattice_type = "cubic"
         elif dim == 2:
-            if number not in range(1, 81):
+            if self.number not in range(1, 81):
                 printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             self.PBC = [1,1,0]
@@ -1752,7 +1734,7 @@ class Group():
             elif self.number <= 80:
                 self.lattice_type = "hexagonal"
         elif dim == 1:
-            if number not in range(1, 76):
+            if self.number not in range(1, 76):
                 printx("Error: invalid symmetry group "+str(group)+" for dimension "+str(self.dim), priority=1)
                 return
             self.PBC = [0,0,1]
@@ -2182,3 +2164,43 @@ class Group():
         """
         return self.Wyckoff_positions[0]
 
+def get_symbol_and_number(group, dim=3):
+    """
+    Class for quick conversion between symbols and numbers
+
+    Args:
+        group: the group symbol or international number
+        dim: the periodic dimension of the group
+    """
+
+    keys = {3: 'space_group',
+            2: 'layer_group',
+            1: 'rod_group',
+            0: 'point_group',
+           }
+
+    found = False
+    lists = symbols[keys[dim]]
+    number = None
+    symbol = None
+    if dim not in [0, 1, 2, 3]:
+        raise ValueError('Dimension ({:d}) should in [0, 1, 2, 3] '.format(dim))
+
+    if type(group) == int:
+        if 0 < group < len(lists) + 1:
+            number = group
+            symbol = lists[number-1]
+        else:
+            raise ValueError('group ({:d}) should between 0 and {:d} for {:s}'.\
+                            format(group, len(lists), keys[dim]))
+    else:
+        for i, _symbol in enumerate(lists):
+            if _symbol == group:
+                number = i + 1
+                symbol = group
+                found = True
+                break
+        if not found:
+             raise ValueError('group ({:s}) not found for any of {:d} {:s}s'.\
+                            format(group, len(lists), keys[dim]))
+    return symbol, number

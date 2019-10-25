@@ -1439,4 +1439,4 @@ if __name__ == "__main__":
     mastertime = masterend - masterstart
 
     print("TEST COMPLETE")
-    print("\nTotal time elapsed: {:.2f}".format(mastertime))
+    print("\nTotal time elapsed: {:.2f}s".format(mastertime))
