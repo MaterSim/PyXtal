@@ -14,5 +14,3 @@ Submodules
    pyxtal.database.collection
    pyxtal.database.element
    pyxtal.database.hall
-   pyxtal.database.layergroup
-

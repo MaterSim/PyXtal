@@ -186,17 +186,17 @@ A symmetry operation is any transformation which leaves the original structure u
 
 We can artificially split a transformation into two parts: the rotational/inversional part (given by a 3x3 matrix), and the translational part (given by a 3D vector, specifically a 3x1 column matrix). Often, we denote this as a matrix-column pair (P,p) or (P|p), where the capital letter P represents the rotation matrix, and the lowercase letter p represents the translation vector.
 
-We can define the 3x3 rotation matrix by using 3 orthogonal unit vectors as the columns. The resulting matrix is orthogonal, meaning the determinant is either +1 or -1. If only a rotation is applied, then the determinant is +1, and if an inversion is applied, the determinant is -1. If an object has no symmetry operations with determinant -1, it is said to be chiral. In this case, the object's mirror image is different from the original, and cannot be rotated to match its twin. This is especially important for molecules with biochemical applications, since the mirror molecule may have a different effect.
+We can define the 3x3 rotation matrix by using 3 orthogonal unit vectors as the columns. The resulting matrix is orthogonal, meaning the determinant is either +1 or -1. If only a rotation is applied, then the determinant is +1, and if an inversion is applied, the determinant is -1. If an object has no symmetry operations with determinant -1, it is said to be **chiral**. In this case, the object's mirror image is different from the original, and cannot be rotated to match its **twin**. This is especially important for molecules with biochemical applications, since the mirror molecule may have a different effect.
 
-Now, we can define how one operation is applied to another. We consider two operations: (P,p) and (Q,q). If we first apply (P,p), followed by (Q,q), then we get a new operation, which we will call (R,r): (Q,q)(P,p) = (R,r). Note that we "apply" operations from the left. Then, the relationships are:
+Now, we can define how one operation is applied to another. We consider two operations: ``(P,p)`` and ``(Q,q)``. If we first apply ``(P,p)``, followed by ``(Q,q)``, then we get a new operation, which we will call ``(R,r): (Q,q)(P,p) = (R,r)``. Note that we apply operations from the left. Then, the relationships are:
 
-R = Q*P
+``R = Q*P``
 
-r = Q*p + q
+``r = Q*p + q``
 
-where * denotes standard matrix multiplication. From this definition, we see that the rotation is always applied first, followed by the translation. This rule applies for multiple operations as well; with 3 operations (R,r)(Q,q)(P,p), we first apply (P,p), then (Q,q), then (R,r).
+where * denotes standard matrix multiplication. From this definition, we see that the rotation is always applied first, followed by the translation. This rule applies for multiple operations as well; with 3 operations ``(R,r)(Q,q)(P,p)``, we first apply ``(P,p)``, then ``(Q,q)``, then ``(R,r)``.
 
-Alternatively, the matrix-column pair can be "combined" into a single 4x4 matrix. We simply place the vector to the right of the rotation matrix, place 0's on the bottom row, and place a 1 in the lower right-hand corner:
+Alternatively, the matrix-column pair can be **combined** into a single 4x4 matrix. We simply place the vector to the right of the rotation matrix, place 0's on the bottom row, and place a 1 in the lower right-hand corner:
 
 .. image:: ../images/matrix4x4.png
    :height: 343 px
@@ -207,7 +207,7 @@ Alternatively, the matrix-column pair can be "combined" into a single 4x4 matrix
 This 4x4 matrix is called an affine transformation matrix. With it, we can apply operations using a single matrix multiplication operation. Although this may seem like just a mathematical trick, the affine matrix notation highlights the group structure of the transformations, as it allows translations and rotations to be placed on equal footing. Furthermore, we can use the additional dimension to represent time: the '1' value can be thought of as a single step forward in time, and thus we can define both rotational and translational reference frames (and equivalently, torques and forces) with a single 4x4 matrix. Objects which are (periodically) symmetric in time are called time crystals. Such objects have only recently been synthesized in the lab, and there is likely more research to be done. However, for most applications in crystallography, time is not a factor, and we consider only spatial symmetries.
 
 Sometimes crystallographers express an affine transformation as a list of letters and numbers, separated by commas (for example, ``x,y,z``). In this notation, the first, second, and third positions denote what happens to the 
-unit x, y, and z axes, respectively. So if we want to perform an inversion, we replace each axis with its opposite. Then, ``x,y,z`` becomes ``-x,-y,-z``. So, you can use ``-x,-y,-z`` to represent an inversion. Similarly, ``y,-x,z`` would represent a 90 degree rotation about the z axis (using the right hand rule). You can also map to a linear combination of axes, or add a constant value. So, you might see something like ``x-y,x,z+1/2``. Here, we just follow the same procedure: x, which is the vector (1,0,0) is mapped onto x-y, which is the vector (1,-1,0). y (0,1,0) is mapped onto x (1,0,0), and z (0,0,1) is mapped onto z+1/2 (0,0,1), or in the 4x4 notation, (0,0,1,.5). To express the addition of a constant (in this case 1/2 for the z-axis), the right-hand side of the 4x4 matrix is used. So, we would write ``x-y,x,z+1/2`` as:
+unit x, y, and z axes, respectively. So if we want to perform an inversion, we replace each axis with its opposite. Then, ``x,y,z`` becomes ``-x,-y,-z``. So, you can use ``-x,-y,-z`` to represent an inversion. Similarly, ``y,-x,z`` would represent a 90 degree rotation about the z axis (using the right hand rule). You can also map to a linear combination of axes, or add a constant value. So, you might see something like ``x-y,x,z+1/2``. Here, we just follow the same procedure: x, which is the vector (1,0,0) is mapped onto ``x-y``, which is the vector ``(1,-1,0)``. ``y (0,1,0)`` is mapped onto ``x (1,0,0)``, and ``z (0,0,1)`` is mapped onto ``z+1/2 (0,0,1)``, or in the 4x4 notation, ``(0,0,1,.5)``. To express the addition of a constant (in this case 1/2 for the z-axis), the right-hand side of the 4x4 matrix is used. So, we would write ``x-y,x,z+1/2`` as:
 
 .. image:: ../images/affine_matrix.png
    :height: 126 px
@@ -216,30 +216,30 @@ unit x, y, and z axes, respectively. So if we want to perform an inversion, we r
    :alt: [[1,-1,0,0],[1,0,0,0],[0,0,1,0.5],[0,0,0,1]]
 
 
-Note that the mapped vectors are written as rows, NOT columns. So, "x-y" is written on the first row as (1,-1,0,0). Again, the bottom row is always (0,0,0,1), so that matrix multiplication is preserved.
+Note that the mapped vectors are written as rows, NOT columns. So, ``x-y`` is written on the first row as ``(1,-1,0,0)``. Again, the bottom row is always ``(0,0,0,1)``, so that matrix multiplication is preserved.
 
 Groups
 ------
 
 Symmetry operations have several nice properties, and this allows certain sets of them to be classified as a mathematical object called a group. There are several simple and intuitive examples of groups, which we will discuss below. Formally, a group G is a set of mathematical objects (called elements) with 4 properties:
 
-1) There is a binary operation (often denoted by ) which maps any two elements in the set onto a third element which is also in the set: A*B = C. The operation must be defined for every possible pair on the set, and must map onto an element which is inside of the set.
+1) There is a binary operation which maps any two elements in the set onto a third element which is also in the set: ``A*B = C``. The operation must be defined for every possible pair on the set, and must map onto an element which is inside of the set.
 
-2) There must be exactly one identity element I which maps every element of the set onto itself: A*I = I*A = A for every A in G.
+2) There must be exactly one identity element ``I`` which maps every element of the set onto itself: ``A*I = I*A = A`` for every A in G.
 
-3) Every element A must have an inverse A^-1, such that multiplication by the inverse gives the identity: A*A^-1 = A^-1*A = I.
+3) Every element ``A`` must have an inverse ``A^-1``, such that multiplication by the inverse gives the identity: ``A*A^-1 = A^-1*A = I``.
 
-4) The operation * must be associative. That is, (A*B)*C = A*(B*C).
+4) The operation * must be associative. That is, ``(A*B)*C = A*(B*C)``.
 
 Note that commutativity is not a requirement for groups, but associativity is. Anticommutativity has important implications for describing rotations and angular momentum in 3 dimensions, which are beyond the scope of this study.
 
-One of the simplest examples of a group is the additive group of real integers (Z,+). Here, the set is that of the integers (-1, 0, 1, ...), and the operation is addition. Here, the inverse of a number is just its negative. For example, the inverse of -2 is 2. One can easily verify that the 4 properties listed above hold true for this group. Similarly, we can consider the additive group of real numbers (R,+), or the additive group of complex numbers (C,+).
+One of the simplest examples of a group is the additive group of real integers ``(Z,+)``. Here, the set is that of the integers ``(-1, 0, 1, ...)``, and the operation is addition. Here, the inverse of a number is just its negative. For example, the inverse of -2 is 2. One can easily verify that the 4 properties listed above hold true for this group. Similarly, we can consider the additive group of real numbers ``(R,+)``, or the additive group of complex numbers ``(C,+)``.
 
 However, if we replace addition with multiplication, then we no longer have a group, because the element 0 does not have a multiplicitive inverse: any number multiplied by 0 is 0, but any number divided by 0 is undefined. We can fix this by considering the multiplicative group of all numbers except for 0. Or, equivalently, we can consider the multiplicitave group exp(x), where x is any complex number. Then, the inverse is defined as exp(-x), and the identity element is exp(0) = 1.
 
 Interestingly, the  real numbers are a subset of the complex numbers, and yet both the complex numbers and the real numbers form groups in their own right. In this case, we call the real numbers a subgroup of the complex numbers. Likewise, we call the complex numbers a supergroup of the real numbers. More specifically, we say that the real numbers are a proper subgroup of the complex numbers, because there are fewer real numbers than complex numbers. Likewise, the complex numbers form a proper supergroup of the real numbers. So, a group is always both a subgroup and a supergroup of itself, but is never a proper subgroup or proper supergroup of itself.
 
-These are so far all examples of infinite groups, since there are infinitely many points on the number line. However, there also exist finite groups. For example, consider the permutation group of 3 objects (we'll call them 'a', 'b', and 'c'). Our group elements are:
+These are so far all examples of infinite groups, since there are infinitely many points on the number line. However, there also exist finite groups. For example, consider the permutation group of 3 objects (we'll call them ``a``, ``b``, and ``c``). Our group elements are:
 
 ::
 
@@ -250,11 +250,11 @@ These are so far all examples of infinite groups, since there are infinitely man
     5: (c,a,b)
     6: (c,b,a)
 
-As you can see, there are only 6 elements in this group. Element (1) is the identity, as it represents keeping a, b, and c in their original order. Element (2) represents swapping b and c, element (3) represents swapping a and b, and so on.
+As you can see, there are only 6 elements in this group. Element (1) is the identity, as it represents keeping ``a``, ``b``, and ``c`` in their original order. Element (2) represents swapping ``b`` and ``c``, element (3) represents swapping ``a`` and ``b``, and so on.
 
 In general, we call the number of elements in a group the order of that group. In the example above, the order is 6. If there are an infinite number of elements in a group (for example, the additive group of real numbers), we say the group has infinite order. A group of order 1 is called a trivial group, because it has only one element, and this must be the identity element. Furthermore, because every group has an identity element, every group also contains a trivial group as a subgroup.
 
-Sometimes, it is inconvenient to list every member of a group. Instead, it is often possible to list only a few elements, which can be used to determine, or "generate" the other elements. These chosen elements are called generators. For example, consider elements (2) and (3) in the permutation group shown above. We can define the remaining elements (1, 4, 5, and 6) starting with only (2) and (3) (with operations acting from the left):
+Sometimes, it is inconvenient to list every member of a group. Instead, it is often possible to list only a few elements, which can be used to determine, or **generate** the other elements. These chosen elements are called generators. For example, consider elements (2) and (3) in the permutation group shown above. We can define the remaining elements (1, 4, 5, and 6) starting with only (2) and (3) (with operations acting from the left):
 
 ::
 
@@ -263,7 +263,7 @@ Sometimes, it is inconvenient to list every member of a group. Instead, it is of
     3 * 4 = 6 : (b,a,c) * (b,c,a) = (c,b,a)
     6 * 2 = 5 : (c,b,a) * (a,c,b) = (c,a,b)
 
-Thus, we say that (2) and (3) are generators of the group. Typically, there is not a single "best" choice of generators for a group. We could just as easily have chosen (2) and (6), or (4) and (3), or some other subset as our generators.
+Thus, we say that (2) and (3) are generators of the group. Typically, there is not a single **best** choice of generators for a group. We could just as easily have chosen (2) and (6), or (4) and (3), or some other subset as our generators.
 
 Symmetry Groups
 ---------------
@@ -274,7 +274,7 @@ When we want to define the symmetry of an object, we specify the object's symmet
 
 The simplest 3D symmetry group is the trival group (called "1"). This group has only the identity transformation I, which means that it corresponds to a completely asymmetrical object. For such an object, there is no transformation (besides the identity) which brings the object back to its original state. Most molecules have at least some rotational symmetry, and crystals always have at least translational symmetry, so we will not encounter this group very often.
 
-On the other hand, we can consider empty 3D space, which is perfectly symmetrical (note: this does not apply to actual empty space, which contain gravitational and quantum fields). The symmetry group of empty space includes not only rotations and translations, but also scaling and shearing, since "nothing" will always be mapped back onto "nothing".
+On the other hand, we can consider empty 3D space, which is perfectly symmetrical (note: this does not apply to actual empty space, which contain gravitational and quantum fields). The symmetry group of empty space includes not only rotations and translations, but also scaling and shearing, since **nothing** will always be mapped back onto **nothing**.
 
 
 Note that only empty space, or other idealized objects (including some fractals) can have scaling symmetry. For atomic structures, we will never encounter this. However, shear symmetry is possible for lattices. As an example, consider the different choices for the primitive cell shown in the section above. These different primitive cells can be mapped onto each other using shear transformations. It is important to note that in general only simple lattices have this shearing symmetry; if there are atoms inside of the lattice, they may not map onto other atoms in the crystal.
@@ -327,7 +327,7 @@ A point group can contain rotations, reflections, and possibly inversion. There 
             :scale: 25%
             :figclass: align-center
 
-            Hypothetical crystal with ``mmm``
+            Hypothetical crystal (``mmm``)
 
       - .. figure:: ../images/Bucky.png
             :height: 720 px
@@ -335,7 +335,7 @@ A point group can contain rotations, reflections, and possibly inversion. There 
             :scale: 25%
             :figclass: align-center
 
-            Buckminsterfullerene ``Ih``
+            Buckminsterfullerene (``Ih``)
 
 
 
@@ -346,14 +346,14 @@ For crystals, we need to describe both the translational (lattice) and rotationa
 
 Technically speaking, two crystals with the same lattice type and point group, but with different cell parameters, have different space groups. The space group is the set of all symmetry operations, and in this case the translational symmetry operations would be different. But typically when someone says space group, they actually mean the set of all space groups with the same lattice type and point group. In this sense, we say that there are 230 different space groups. This is the meaning of space group which we will use from now on, unless otherwise specified. This is useful, since we don't need to define a new space group every time we shrink or stretch a crystal by some small amount.
 
-Not every rotational symmetry is compatible with a 3D lattice. Specifically, only rotations of order 2, 3, 4, or 6 are found in real crystals (Note: pseudo-crystals may have different local symmetries, but lack long-range periodicity). As a result, only 32 point groups are found as subgroups of space groups. These are called the crystallographic point groups. So, by choosing a crystallographic point group, along with a compatible lattice, we define a space group. By "compatible lattice", we mean any lattice which maps onto itself under the symmetry operations of the chosen point group. Because of this compatibility condition, the presence of a particular symmetry can tell you what kind of lattice is present. For example, a 6-fold rotation always belongs to a hexagonal lattice. A 3-fold rotation about one of the primary axes belongs to a trigonal axis, whereas a 3-fold rotation about the diagonal belongs to a cubic lattice. In this way, the lattice type can be determined from the Hermann-Mauguin symbol.
+Not every rotational symmetry is compatible with a 3D lattice. Specifically, only rotations of order 2, 3, 4, or 6 are found in real crystals (Note: pseudo-crystals may have different local symmetries, but lack long-range periodicity). As a result, only 32 point groups are found as subgroups of space groups. These are called the crystallographic point groups. So, by choosing a crystallographic point group, along with a **compatible lattice**, we define a space group. By **compatible lattice**, we mean any lattice which maps onto itself under the symmetry operations of the chosen point group. Because of this compatibility condition, the presence of a particular symmetry can tell you what kind of lattice is present. For example, a 6-fold rotation always belongs to a hexagonal lattice. A 3-fold rotation about one of the primary axes belongs to a trigonal axis, whereas a 3-fold rotation about the diagonal belongs to a cubic lattice. In this way, the lattice type can be determined from the Hermann-Mauguin symbol.
 
-In reality, a crystal is often distorted slightly from its ideal symmetrical state. As a result, two researchers may label the same crystal with different space groups. This phenomenon is called pseudosymmetry; it is when a crystal is close to possessing a certain space group, but is only slightly off. This is a real problem for computational crystallography, since numerical accuracy makes determining symmetry an imprecise business. For example, if an atom is located at (0,1/3,0), it will be encoded as something like (0,.33333,0) due to rounding. As a result, it will be slightly off from the expected location, and the computer may not recognize the 3-fold symmetry. So, whenever you work with crystal symmetry, it is a good idea to allow some numerical tolerance (roughly somewhere between .001 and .03 Angstroms), so as to correctly assess the symmetry. On the flip side, if a provided crystal is labeled as having P1 symmetry (which means no rotational symmetry was found), it is likely that some symmetry is actually present, but was not found due to numerical issues.
+In reality, a crystal is often distorted slightly from its ideal symmetrical state. As a result, two researchers may label the same crystal with different space groups. This phenomenon is called pseudosymmetry; it is when a crystal is close to possessing a certain space group, but is only slightly off. This is a real problem for computational crystallography, since numerical accuracy makes determining symmetry an imprecise business. For example, if an atom is located at ``(0,1/3,0)``, it will be encoded as something like ``(0,.33333,0)`` due to rounding. As a result, it will be slightly off from the expected location, and the computer may not recognize the 3-fold symmetry. So, whenever you work with crystal symmetry, it is a good idea to allow some numerical **tolerance** (roughly somewhere between ``.001`` and ``.03`` Angstroms), so as to correctly assess the symmetry. On the flip side, if a provided crystal is labeled as having P1 symmetry (which means no rotational symmetry was found), it is likely that some symmetry is actually present, but was not found due to numerical issues.
 
 Wyckoff Positions
 -----------------
 
-Because symmetry operations can be thought of as making "copies" of parts of an object, we can usually only describe part of a structure, and let symmetry generate the rest. This small part of the structure used to generate the rest is called the asymmetric unit. However, not all points in the asymmetric unit are generated the same. If an atom lies within certain regions - planes, lines, or points - then the atom may not be "copied" as many times as other atoms within the asymmetric unit. A familiar example is in the creation of a paper snowflake. We start with a hexagon, then fold it into a single triangle 6 sheets thick. Then, if we cut out a mark somewhere in the middle of the triangle, the mark is copied 6-fold. However, if we instead cut out a mark alonng the triangle's edge, or at the tip, the marks will only have 3 or 1 copies:
+Because symmetry operations can be thought of as making *copies* of parts of an object, we can usually only describe part of a structure, and let symmetry generate the rest. This small part of the structure used to generate the rest is called the asymmetric unit. However, not all points in the asymmetric unit are generated the same. If an atom lies within certain regions - planes, lines, or points - then the atom may not be "copied" as many times as other atoms within the asymmetric unit. A familiar example is in the creation of a paper snowflake. We start with a hexagon, then fold it into a single triangle 6 sheets thick. Then, if we cut out a mark somewhere in the middle of the triangle, the mark is copied 6-fold. However, if we instead cut out a mark alonng the triangle's edge, or at the tip, the marks will only have 3 or 1 copies:
 
 .. image:: ../images/PaperSnowflake.png
    :height: 256 px
@@ -365,7 +365,7 @@ These different regions are called Wyckoff positions, and the number of copies i
 
 The largest Wyckoff position, which makes a copy for every symmetry operation, is called the general Wyckoff position, or just the general position. In the snowflake example, this was the large inner region of the triangle. In general, the general position will consist of every location which does not lie along some special symmetry axis, plane, or point. For this reason, the other Wyckoff positions are called the special Wyckoff positions.
 
-The number and type of Wyckoff positions are different for every space group; a list of them can be found using the `Bilbao utility WYCKPOS <http://www.cryst.ehu.es/cryst/get_wp.html>`_. In the utility, Wyckoff positions are described using the "x,y,z" notation, where each operation shows how the original (x,y,z) point is transformed/copied. In other words, if we choose a single set of coordinates, then plugging these coordinates into the Wyckoff position will generate the remaining coordinates. As an example, consider the general position of space group P 2 2 2 (#16), which consists of the points (x,y,z), (-x,-y,z), (-x,y,-z), and (x,-y,-z). If we choose a random point, say (0.321,0.457,0.892), we can determine the remaining points:
+The number and type of Wyckoff positions are different for every space group; a list of them can be found using the `Bilbao utility WYCKPOS <http://www.cryst.ehu.es/cryst/get_wp.html>`_. In the utility, Wyckoff positions are described using the ``x,y,z`` notation, where each operation shows how the original ``(x,y,z)`` point is transformed/copied. In other words, if we choose a single set of coordinates, then plugging these coordinates into the Wyckoff position will generate the remaining coordinates. As an example, consider the general position of space group ``P222 (#16)``, which consists of the points ``(x,y,z), (-x,-y,z), (-x,y,-z), and (x,-y,-z)``. If we choose a random point, say ``(0.321,0.457,0.892)``, we can determine the remaining points:
 
 ::
 
@@ -376,13 +376,13 @@ The number and type of Wyckoff positions are different for every space group; a 
 
 keeping in mind that a negative value is equal to 1 minus that value (-0.321 = 1 - 0.321 = 0.679).
 
-To denote Wyckoff positions, a combination of number and letter is used. The number gives the multiplicity of the Wyckoff position, while the letter differentiates between positions with the same multiplicity. The letter 'a' is always given to the smallest Wyckoff position (usually located at the origin or z axis), and the letter increases for positions with higher multiplicity. So, for example, the space group I 4 m m (#107) has 5 different Wyckoff positions: 2a, 4b, 8c, 8d, and 16e. Here, 16e is the general position, since it has the largest multiplicity and last letter alphabetically.
+To denote Wyckoff positions, a combination of number and letter is used. The number gives the multiplicity of the Wyckoff position, while the letter differentiates between positions with the same multiplicity. The letter 'a' is always given to the smallest Wyckoff position (usually located at the origin or z axis), and the letter increases for positions with higher multiplicity. So, for example, the space group ``I4mm (#107)`` has 5 different Wyckoff positions: ``2a``, ``4b``, ``8c``, ``8d``, and ``16e``. Here, ``16e`` is the general position, since it has the largest multiplicity and last letter alphabetically.
 
-Note that for space groups with non-simple lattices (those which begin with a letter other than 'P'), the Wyckoff positions also contain fractional translations. Take for example the space group I 4 m m (#107). The Bilbao entry can be found `here <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-wp-list?gnum=107>`_. Each listed Wyckoff position coordinate has a copy which is translated by (0.5,0.5,0.5). It is inconvenient to list each of these translated copies for every Wyckoff position, so instead a note is placed at the top. This is why Wyckoff position 16e has only 8 points listed. In this case, to generate the full crystal, one could apply the 8 operations listed, then make a copy of the resulting structure by translating it by the vector (0.5,0.5,0.5). Note that in space groups beginning with letters other than P, the smallest Wyckoff position will never have a multiplicity of 1.
+Note that for space groups with non-simple lattices (those which begin with a letter other than 'P'), the Wyckoff positions also contain fractional translations. Take for example the space group ``I4mm (#107)``. The Bilbao entry can be found `here <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-wp-list?gnum=107>`_. Each listed Wyckoff position coordinate has a copy which is translated by ``(0.5,0.5,0.5)``. It is inconvenient to list each of these translated copies for every Wyckoff position, so instead a note is placed at the top. This is why Wyckoff position ``16e`` has only 8 points listed. In this case, to generate the full crystal, one could apply the 8 operations listed, then make a copy of the resulting structure by translating it by the vector ``(0.5,0.5,0.5)``. Note that in space groups beginning with letters other than P, the smallest Wyckoff position will never have a multiplicity of 1.
 
 In addition to the generating operations, the site symmetry of each Wyckoff position is listed. The site symmetry is just the point group which leaves the Wyckoff position invariant. So, if a Wyckoff position consists of an axis, then the site symmetry might be a rotation about that axis. The general position always has site symmetry 1, since it corresponds to choosing any arbitrary structure or location can be made symmetrical by copying it and applying all of the operations in the space group.
 
-Finally, since crystals are infinitely periodic, a Wyckoff position refers not only to the atoms inside a unit cell, but every periodic copy of those atoms in the other unit cells. Thus, the Wyckoff position "x,y,z" is the same as the position "x+1,y+1,z", and so on. This is usually a minor detail, but it must be taken into account for certain computational tasks.
+Finally, since crystals are infinitely periodic, a Wyckoff position refers not only to the atoms inside a unit cell, but every periodic copy of those atoms in the other unit cells. Thus, the Wyckoff position ``x,y,z`` is the same as the position ``x+1,y+1,z``, and so on. This is usually a minor detail, but it must be taken into account for certain computational tasks.
 
 Molecular Wyckoff Positions
 ---------------------------
@@ -407,7 +407,7 @@ Crystal Structure Prediction
 
 As the techniques for computational crystallography become more sophisticated, it becomes easier to model and generate new crystal structures. In theory, there are an infinite number of possible crystal structures, but in practice, structures which are only slightly different will converge to the same low-energy structure. This is because in nature, the lowest-energy structure is the most likely to be found. So, for a given temperature and pressure, crystallographers can analyze a large number of possible crystal structures, and determine which has the lowest energy. This low-energy structure is the one most likely to form under the given conditions, and thus will probably be the correct structure found on a pressure-temperature diagram.
 
-However, doing this "from scratch" requires a very large number of structures to be analyzed. Currently, it is often not feasible to analyze every possible structural prototype, so instead random sampling is used in combination with evolutionary algorithms. This all amounts to crystal structure prediction (CSP). CSP has two opposite but complimentary applications. On the one hand, a material may be known to exist at a given set of conditions. For example, we know that iron and oxygen exist below the earth's crust, but we cannot obtain physical samples of every iron-oxygen compound, in the same pressure-temperature range. So, scientists use CSP to determine what crystal structures are likely to exist at the conditions found below the crust.
+However, doing this *from scratch* requires a very large number of structures to be analyzed. Currently, it is often not feasible to analyze every possible structural prototype, so instead random sampling is used in combination with evolutionary algorithms. This all amounts to crystal structure prediction (CSP). CSP has two opposite but complimentary applications. On the one hand, a material may be known to exist at a given set of conditions. For example, we know that iron and oxygen exist below the earth's crust, but we cannot obtain physical samples of every iron-oxygen compound, in the same pressure-temperature range. So, scientists use CSP to determine what crystal structures are likely to exist at the conditions found below the crust.
 
 On the other hand, scientists may be looking for new, undiscovered materials. For example, a materials scientist may want to find a new matierial which possesses certain electronic and thermal properties. Using what they know about existing materials as a basis, the scientist can use CSP to search a wide range of crystal structures. then, they can filter out only those which meet the application's requirements. Using only the best-performing candidates, the scientist can then choose to synthesize a material and perform physical experiments on it. Because computer time is substantially cheaper than laboratory time, a research team could save months or years of trial and error, and could save tens of thousands of dollars on experimentation.
 

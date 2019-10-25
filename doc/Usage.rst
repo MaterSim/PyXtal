@@ -1,7 +1,7 @@
 Basic Usage Guide
 =================
 
-Here we describe the basic functionality of PyXtal.
+While the PyXtal can be used in the command mode, it can become much more powerful with Python scripting. Here we describe the basic functionality of PyXtal as a Python Library.
 
 Random Atomic Crystals
 ----------------------
@@ -150,7 +150,7 @@ The generating class is `molecular_crystal.molecular_crystal <pyxtal.molecular_c
 
 This would give a crystal with spacegroup 36, 4 molecules in the conventional cell (2 in the primitive cell), and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
 
-As with the random_crystal class, the molecular_crystal class has a print_all function which shows useful information about the structure. In addition to the Wyckoff position and location, you can view the orientation angles for each molecule:
+As with the random_crystal class, the molecular_crystal class has a `print_all <pyxtal.crystal.html#pyxtal.crystal.random_crystal.print_all>`_ function which shows useful information about the structure. In addition to the Wyckoff position and location, you can view the orientation angles for each molecule:
 
 .. code-block:: Python
 

@@ -33,6 +33,7 @@ Tutorial
 
 .. toctree::
    Installation
+   COMMAND_MODE
    Usage
    Background
    Algorithm

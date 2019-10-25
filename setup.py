@@ -30,7 +30,7 @@ setup(
                   #'pyxtal.potentials': ['*'],
                  },
 
-    scripts=['scripts/pyxtal', 'scripts/pyxtal_test'],
+    scripts=['scripts/pyxtal', 'scripts/pyxtal_test', 'scripts/pyxtal_m'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

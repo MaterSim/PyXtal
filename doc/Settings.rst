@@ -2,7 +2,14 @@ Group Settings
 ==============
 
 For the output 3D structures, PyXtal uses the conventional standard cell (the same as `Bilbao
-<http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_). This means unique axis b for monoclinic cells, the obverse triple hexagonal cell for rhombohedral groups, and origin choice ``2 (0,0,0)`` when two origin choices are available.
+<http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_). Below are the links for each set.
+
+- `Space group <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-table>`_
+- `Layer group <http://www.cryst.ehu.es/cgi-bin/subperiodic/programs/nph-sub_gen?subtype=layer&from=table>`_
+- `Rod group <http://www.cryst.ehu.es/cgi-bin/subperiodic/programs/nph-sub_gen?subtype=rod&from=table>`_
+
+
+This means unique axis b for monoclinic cells, the obverse triple hexagonal cell for rhombohedral groups, and origin choice ``2 (0,0,0)`` when two origin choices are available.
 
 For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and unique axis a for layer groups 8-18. When two origin choices are available, we use origin choice 1. We always choose c as the non-periodic axis.
 
