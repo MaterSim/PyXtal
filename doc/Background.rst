@@ -1,5 +1,3 @@
-Note: This page is currently under development.
-
 Background and Theory
 =====================
 This is a pedagical introduction to crystallography and basic group theory. For information about how PyXtal works specifically, see the `Algorithms <Algorithm>`_ page.
@@ -402,30 +400,29 @@ Because the intermolecular forces are so weak, molecular crystals often break do
 
 Important uses for molecular crystallography include pharmaceutical drug design, organic superconductors, water ice in extreme conditions, and novel material design.
 
-Crystal Structure Prediction
+.. Crystal Structure Prediction
 ----------------------------
+.. As the techniques for computational crystallography become more sophisticated, it becomes easier to model and generate new crystal structures. In theory, there are an infinite number of possible crystal structures, but in practice, structures which are only slightly different will converge to the same low-energy structure. This is because in nature, the lowest-energy structure is the most likely to be found. So, for a given temperature and pressure, crystallographers can analyze a large number of possible crystal structures, and determine which has the lowest energy. This low-energy structure is the one most likely to form under the given conditions, and thus will probably be the correct structure found on a pressure-temperature diagram.
 
-As the techniques for computational crystallography become more sophisticated, it becomes easier to model and generate new crystal structures. In theory, there are an infinite number of possible crystal structures, but in practice, structures which are only slightly different will converge to the same low-energy structure. This is because in nature, the lowest-energy structure is the most likely to be found. So, for a given temperature and pressure, crystallographers can analyze a large number of possible crystal structures, and determine which has the lowest energy. This low-energy structure is the one most likely to form under the given conditions, and thus will probably be the correct structure found on a pressure-temperature diagram.
+.. However, doing this *from scratch* requires a very large number of structures to be analyzed. Currently, it is often not feasible to analyze every possible structural prototype, so instead random sampling is used in combination with evolutionary algorithms. This all amounts to crystal structure prediction (CSP). CSP has two opposite but complimentary applications. On the one hand, a material may be known to exist at a given set of conditions. For example, we know that iron and oxygen exist below the earth's crust, but we cannot obtain physical samples of every iron-oxygen compound, in the same pressure-temperature range. So, scientists use CSP to determine what crystal structures are likely to exist at the conditions found below the crust.
 
-However, doing this *from scratch* requires a very large number of structures to be analyzed. Currently, it is often not feasible to analyze every possible structural prototype, so instead random sampling is used in combination with evolutionary algorithms. This all amounts to crystal structure prediction (CSP). CSP has two opposite but complimentary applications. On the one hand, a material may be known to exist at a given set of conditions. For example, we know that iron and oxygen exist below the earth's crust, but we cannot obtain physical samples of every iron-oxygen compound, in the same pressure-temperature range. So, scientists use CSP to determine what crystal structures are likely to exist at the conditions found below the crust.
+.. On the other hand, scientists may be looking for new, undiscovered materials. For example, a materials scientist may want to find a new matierial which possesses certain electronic and thermal properties. Using what they know about existing materials as a basis, the scientist can use CSP to search a wide range of crystal structures. then, they can filter out only those which meet the application's requirements. Using only the best-performing candidates, the scientist can then choose to synthesize a material and perform physical experiments on it. Because computer time is substantially cheaper than laboratory time, a research team could save months or years of trial and error, and could save tens of thousands of dollars on experimentation.
 
-On the other hand, scientists may be looking for new, undiscovered materials. For example, a materials scientist may want to find a new matierial which possesses certain electronic and thermal properties. Using what they know about existing materials as a basis, the scientist can use CSP to search a wide range of crystal structures. then, they can filter out only those which meet the application's requirements. Using only the best-performing candidates, the scientist can then choose to synthesize a material and perform physical experiments on it. Because computer time is substantially cheaper than laboratory time, a research team could save months or years of trial and error, and could save tens of thousands of dollars on experimentation.
+.. Roughly speaking, CSP can be split into five steps:
 
-Roughly speaking, CSP can be split into five steps:
+.. 1) Generate random crystal structures based on a given stoichiometry, pressure, and temperature range.
 
-1) Generate random crystal structures based on a given stoichiometry, pressure, and temperature range.
-
-2) Optimize these structures and determine their energy (this is step which takes the most time). This may be either a simple force-field optimization, or a more costly electron density (quantum mechanical) calculation. It can be useful to use a combination of these, performing the high-cost calculations on only the most promising structures.
-
-3) Keep the low-energy structures and filter out the high-energy ones. Then, add new random structures based on a genetic algorithm or other optimization technique
-
-4) After many iterations, keep only the lowest-energy structures, and check whether or not they meet the desired criteria.
-
-5) If a desirable structure is found, then great! If not, the stoichiometry can be changed to perform a new search. Furthermore, the results obtained so-far can be stored for use by other scientists, who may be looking for a different application.
-
-Clearly, each of these steps is dependent on the steps before it, and making an improvement to any of the steps can reduce the total time cost by a large amount. The puropose of PyXtal is to improve the first step of random generation, by properly utilizing symmetry considerations. These random structures can then be used in conjunction with other optimization software to perform a complete CSP search.
-
-As computer technology improves, the speed and applicability of CSP will also improve. The databases of known crystal structures will grow, and this will allow scientists to simply scan these databases to find materials for a given application. Indeed, databases like AFlow and the Materials Genome Initiative are already freely available for researchers.
+.. 2) Optimize these structures and determine their energy (this is step which takes the most time). This may be either a simple force-field optimization, or a more costly electron density (quantum mechanical) calculation. It can be useful to use a combination of these, performing the high-cost calculations on only the most promising structures.
+.. 
+.. 3) Keep the low-energy structures and filter out the high-energy ones. Then, add new random structures based on a genetic algorithm or other optimization technique
+.. 
+.. 4) After many iterations, keep only the lowest-energy structures, and check whether or not they meet the desired criteria.
+.. 
+.. 5) If a desirable structure is found, then great! If not, the stoichiometry can be changed to perform a new search. Furthermore, the results obtained so-far can be stored for use by other scientists, who may be looking for a different application.
+.. 
+.. Clearly, each of these steps is dependent on the steps before it, and making an improvement to any of the steps can reduce the total time cost by a large amount. The puropose of PyXtal is to improve the first step of random generation, by properly utilizing symmetry considerations. These random structures can then be used in conjunction with other optimization software to perform a complete CSP search.
+.. 
+.. As computer technology improves, the speed and applicability of CSP will also improve. The databases of known crystal structures will grow, and this will allow scientists to simply scan these databases to find materials for a given application. Indeed, databases like AFlow and the Materials Genome Initiative are already freely available for researchers.
 
 Crystal File Formats
 --------------------
