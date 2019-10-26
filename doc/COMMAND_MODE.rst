@@ -63,8 +63,8 @@ PyXtal_symmetry utility
 ------------------------
 ``PyXtal_symmetry`` is a utility to handle the generation of moelcular crystals.
 
-- `-d`, the dimension, e.g., ``3``, ``2``, ``1``, ``0``. The defult is 3.
-- `-s`: the target symmetry (*space*, *layer*, *rod*, *point* group information), either by *string* (e.g., `Ih`, `Pbca`) and *integer* (``61``).
+- `-d`, the dimension, e.g., ``3``, ``2``, ``1``, ``0``. The defult is ``3``.
+- `-s`: the target symmetry (*space*, *layer*, *rod*, *point* group information), either by *string* (e.g., ``Ih``, ``Pbca``) and *integer* (``61``).
 
 ::
     
@@ -159,7 +159,7 @@ PyXtal utility
 Typically, four arguments are requried to describe the target structure:
 
 - `-d`, the dimension, e.g., ``3``, ``2``, ``1``, ``0``.
-- `-s`: the target symmetry (*space*, *layer*, *rod*, *point* group information), either by *string* (e.g., `Ih`, `Pbca`) and *integer* (``61``).
+- `-s`: the target symmetry (*space*, *layer*, *rod*, *point* group information), either by *string* (e.g., ``Ih``, ``Pbca``) and *integer* (``61``).
 - `-e`: the list of elements, e.g., ``Si``, ``Si, O``
 - `-n`: the number of atoms in the target primitive unit cell, e.g., ``12``, ``4, 8``. The size should be consistent with the ``-e`` tag.
 
