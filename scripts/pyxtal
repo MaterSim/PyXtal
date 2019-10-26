@@ -7,7 +7,6 @@ from pyxtal.crystal import random_crystal, random_crystal_1D, random_crystal_2D,
 from pyxtal.symmetry import get_symbol_and_number
 from pymatgen.io.cif import CifWriter
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
-import os
 from time import time
 from optparse import OptionParser
 from spglib import get_symmetry_dataset

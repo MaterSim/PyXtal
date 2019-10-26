@@ -2166,7 +2166,7 @@ class Group():
 
 def get_symbol_and_number(group, dim=3):
     """
-    Class for quick conversion between symbols and numbers
+    Function for quick conversion between symbols and numbers
 
     Args:
         group: the group symbol or international number
@@ -2204,3 +2204,28 @@ def get_symbol_and_number(group, dim=3):
              raise ValueError('group ({:s}) not found for any of {:d} {:s}s'.\
                             format(group, len(lists), keys[dim]))
     return symbol, number
+
+def list_groups(dim=3):
+    """
+    Function for quick print of groups and symbols
+
+    Args:
+        group: the group symbol or international number
+        dim: the periodic dimension of the group
+    """
+    
+    import pandas as pd
+
+    keys = {3: 'space_group',
+            2: 'layer_group',
+            1: 'rod_group',
+            0: 'point_group',
+           }
+    data = symbols[keys[dim]]
+    df = pd.DataFrame(index=range(1, len(data)+1), 
+                      data=data, 
+                      columns=[keys[dim]])
+    pd.set_option('display.max_rows', len(df))
+    #df.set_index('Number')
+    print(df)
+

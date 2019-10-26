@@ -55,7 +55,7 @@ After a successfull `installation <Installation.html>`_, all of them can be acce
                             default None
    
 PyXtal utility
-======================
+--------------
 ``PyXtal`` is a utility to handle the generation of atomic crystals.
 Typically, four arguments are requried to describe the target structure:
 
@@ -65,7 +65,7 @@ Typically, four arguments are requried to describe the target structure:
 - `-n`: the number of atoms in the target primitive unit cell, e.g., ``12``, ``4, 8``. The size should be consistent with the ``-e`` tag.
 
 For **symmetry group setting**, please refer to the `Group Setting page <Settings.html>`_.
-**To our knowledge, ``PyXtal`` is perhaps the only open source code which can handle the crystal symmetry generation from 0 to 3 dimensional systems.**
+**To our knowledge, PyXtal is perhaps the only open source code which can handle the crystal symmetry generation from 0 to 3 dimensional systems.**
 Below we will introduce its capability in detail.
 
 A quick example of C60
@@ -149,7 +149,7 @@ It is important to note that we specified ``2`` for ``-n`` tag, which means 2 ca
 
 
 PyXtal_m utility
-======================
+----------------
 ``PyXtal_m`` is a utility to handle the generation of moelcular crystals.
 Below is an example to generate of random crystal for a famours drug molecule ROY.
 
@@ -166,4 +166,4 @@ Below is an example to generate of random crystal for a famours drug molecule RO
    :scale: 30 %
    :align: center
     
-For the specification of molecule, please ref to the section of `Working with Molecules <Usage.html#working-with-molecules>`_
+For the specification of molecule, please ref to the section of `Working with Molecules <Others.html#working-with-molecules>`_
