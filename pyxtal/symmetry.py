@@ -2147,9 +2147,9 @@ class Group():
             elif self.dim == 1:
                 s = "-- Rod "
             elif self.dim == 0:
-                s = "-- Point group " + self.symbol + " --"
-            if self.dim != 0:
-                s += "group # "+str(self.number)+" --"
+                s = "-- Point "
+
+            s += "group # "+str(self.number)+" ("+self.symbol+")--"
             for wp in self.Wyckoff_positions:
                 s += "\n"+str(wp.multiplicity)+wp.letter+" site symm: "
                 s += ss_string_from_ops(wp.symmetry_m[0], self.number, dim=self.dim)

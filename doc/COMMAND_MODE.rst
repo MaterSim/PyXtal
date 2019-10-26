@@ -4,11 +4,13 @@ Run PyXtal executables
 Currently, we provide several utilities to the users so that they can run the code from command line with Python scripting. 
 They include:
 
+- ``Pyxtal_symmetry``: a tool to access the symmetry information
 - ``Pyxtal``: a tool to generate atomic crystals
-- ``Pyxtal_m``: a tool to generate molecular crystals
+- ``Pyxtal_molecule``: a tool to generate molecular crystals
 - ``Pyxtal_test``: a tool to test all modules
 
 After a successfull `installation <Installation.html>`_, all of them can be accessed by invoking the ``-h`` command:
+
 ::
 
     $ pyxtal -h
@@ -53,7 +55,104 @@ After a successfull `installation <Installation.html>`_, all of them can be acce
                             Thickness, in Angstroms, of a 2D crystal, or area of a
                             1D crystal, None generates a value automatically:
                             default None
+
+
+Among them, ``pyxtal_test`` is mainly used for the internal test. In the following, we explain the rest utilites in detail.
    
+PyXtal_symmetry utility
+------------------------
+``PyXtal_symmetry`` is a utility to handle the generation of moelcular crystals.
+
+- `-d`, the dimension, e.g., ``3``, ``2``, ``1``, ``0``. The defult is 3.
+- `-s`: the target symmetry (*space*, *layer*, *rod*, *point* group information), either by *string* (e.g., `Ih`, `Pbca`) and *integer* (``61``).
+
+::
+    
+    $ pyxtal_symmetry -s 36
+
+    -- Space group # 36 (Cmc2_1)--
+    8b site symm: 1
+      x, y, z
+      -x, -y, z+1/2
+      x, -y, z+1/2
+      -x, y, z
+      x+1/2, y+1/2, z
+      -x+1/2, -y+1/2, z+1/2
+      x+1/2, -y+1/2, z+1/2
+      -x+1/2, y+1/2, z
+    4a site symm: m..
+      0, y, z
+      0, -y, z+1/2
+      1/2, y+1/2, z
+      1/2, -y+1/2, z+1/2
+
+::
+
+    $ pyxtal_symmetry -s 20 -d 2
+    
+    -- Layer group # 20 (p2_122)--
+    4d site symm: 1
+      x, y, z
+      x+1/2, -y, -z
+      -x+1/2, y, -z
+      -x, -y, z
+    2c site symm: .2.
+      1/4, y, 0
+      3/4, -y, 0
+    2b site symm: ..2
+      0, 1/2, z
+      1/2, 1/2, -z
+    2a site symm: ..2
+      0, 0, z
+      1/2, 0, -z
+ 
+if the ``-s`` tag is not given, it will output the list of all possible symmetry groups for the given dimension.
+
+::
+
+        space_group
+    1            P1
+    2           P-1
+    3            P2
+    4          P2_1
+    5            C2
+    6            Pm
+    7            Pc
+    8            Cm
+    9            Cc
+    10         P2/m
+    11       P2_1/m
+    12         C2/m
+    13         P2/c
+    14       P2_1/c
+    15         C2/c
+    16         P222
+    17       P222_1
+    18     P2_12_12
+    19   P2_12_12_1
+    20       C222_1
+    ...
+    ...
+    212       P4332
+    213      P4_132
+    214      I4_132
+    215       P-43m
+    216       F-43m
+    217       I-43m
+    218       P-43n
+    219       F-43c
+    220       I-43d
+    221       Pm-3m
+    222       Pn-3n
+    223       Pm-3n
+    224       Pn-3m
+    225       Fm-3m
+    226       Fm-3c
+    227       Fd-3m
+    228       Fd-3c
+    229       Im-3m
+    230       Ia-3d
+
 PyXtal utility
 --------------
 ``PyXtal`` is a utility to handle the generation of atomic crystals.
@@ -148,9 +247,14 @@ It is important to note that we specified ``2`` for ``-n`` tag, which means 2 ca
    :align: center
 
 
-PyXtal_m utility
-----------------
-``PyXtal_m`` is a utility to handle the generation of moelcular crystals.
+PyXtal_molecule utility
+------------------------
+
+``PyXtal_molecule`` is a utility to handle the generation of moelcular crystals.
+
+Molecular crystals occupying general Wyckoff positions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Below is an example to generate of random crystal for a famours drug molecule ROY.
 
 ::
@@ -166,4 +270,24 @@ Below is an example to generate of random crystal for a famours drug molecule RO
    :scale: 30 %
    :align: center
     
-For the specification of molecule, please ref to the section of `Working with Molecules <Others.html#working-with-molecules>`_
+Molecular crystals occupying special Wyckoff positions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+An import feature of PyXtal is that the program can automatically generate molecular crystals occupying special Wyckoff positions. 
+This is very useful for molecules with high internal symmetry. During crystallization, these molecule can occupy some special Wyckoff positions as long as the site symmetry is compatible with the molecular symmetry. For instance, the space group ``Cmc_21`` has 4 symmetry operations (``mm2``) in its primitive cell. However, we can still generate a structure with 2 moleulces for C60 by placing them to the special Wycoff position. This will be automatically processed by our `internal algorithm <Algorithm.html#finding-valid-molecular-orientations>`_.
+
+::
+
+    $ pyxtal_m -e C60 -n 2 -s 36
+
+.. image:: ../images/C60-x.png
+   :height: 763 px
+   :width: 963 px
+   :scale: 50 %
+   :align: center
+ 
+How to define the molecules?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For the specification of molecule, please ref to the section of `Working with Molecules <Others.html#working-with-molecules>`_.
+
+
+  
