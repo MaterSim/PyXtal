@@ -259,7 +259,7 @@ Below is an example to generate of random crystal for a famours drug molecule RO
 
 ::
 
-    $ pyxtal_m -e ROY -n 4 -s P2_12_12_1
+    $ pyxtal_molecule -e ROY -n 4 -s P2_12_12_1
     
     Symmetry requested: 19 (P2_12_12_1), generated: P2_12_12_1, vol: 2895.37 A^3
     Output to out/S4O8N12C48H36.cif
@@ -277,7 +277,7 @@ This is very useful for molecules with high internal symmetry. During crystalliz
 
 ::
 
-    $ pyxtal_m -e C60 -n 2 -s 36
+    $ pyxtal_molecule -e C60 -n 2 -s 36
 
 .. image:: ../images/C60-x.png
    :height: 763 px
