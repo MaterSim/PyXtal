@@ -40,7 +40,29 @@ User Input
 
 Checking Compatibility
 ----------------------
-Before attempting to generate a structure, PyXtal must make sure it is possible to do so. The WP's in different space groups have different multiplicities. As a result, not every number of atoms is compatible with every space group. For example, consider the space group Pn-3n (\#222). The smallest Wyckoff position is 2a, with the next smallest being 6b. It is impossible to create a crystal with 4 atoms in the unit cell for this symmetry group, because no combination of Wyckoff positions adds up to 4. The position 2a cannot be repeated, because it falls on the exact coordinates (1/4, 1/4, 1/4) and (3/4, 3/4, 3/4). A second set of atoms in the 2a position would overlap the atoms in the first position, but this is not physically possible.
+Before attempting to generate a structure, PyXtal must make sure it is possible to do so. The WP's in different space groups have different multiplicities. As a result, not every number of atoms is compatible with every space group. For example, consider the space group ``Pn-3n (222)``. 
+
+::
+
+    $ pyxtal_symmetry -s 222
+
+    -- Space group # 222 (Pn-3n)--
+    48i site symm: 1
+    ...
+    ...
+    ...
+    6b site symm: 42 . 2
+      3/4, 1/4, 1/4
+      1/4, 3/4, 1/4
+      1/4, 1/4, 3/4
+      1/4, 3/4, 3/4
+      3/4, 1/4, 3/4
+      3/4, 3/4, 1/4
+    2a site symm: 4 3 2
+      1/4, 1/4, 1/4
+      3/4, 3/4, 3/4
+
+The smallest Wyckoff position is ``2a``, with the next smallest being ``6b``. It is impossible to create a crystal with 4 atoms in the unit cell for this symmetry group, because no combination of Wyckoff positions adds up to 4. The position ``2a`` cannot be repeated, because it falls on the exact coordinates ``(1/4, 1/4, 1/4)`` and ``(3/4, 3/4, 3/4)``. A second set of atoms in the 2a position would overlap the atoms in the first position, but this is not physically possible.
 
 Thus, it is necessary to check the input stoichiometry against the Wyckoff positions of the desired space group. To accomplish this, PyXtal iterates through all possible Wyckoff position combinations within the confines of the stoichiometry. As soon as one valid combination is found, the check returns true. If no valid combination is found, the check returns false, and the generation attempt fails with a warning.
 

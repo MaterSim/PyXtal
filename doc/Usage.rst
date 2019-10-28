@@ -6,7 +6,14 @@ While the PyXtal can be used in the command mode, it can become much more powerf
 Random Atomic Crystals
 ----------------------
 
-PyXtal allows the user to generate random crystal structures with given symmetry constraints. The main class for this is the `crystal.random_crystal <pyxtal.crystal.html#pyxtal.crystal.random_crystal>`_ class. There are several parameters which can be specified, but only four are necessary: the symmetry group, the types of atoms, the number of each atom in the primitive cell, and the volume factor. Here is a simple example of a 3D carbon crystal:
+PyXtal allows the user to generate random crystal structures with given symmetry constraints. The main class for this is the `crystal.random_crystal <pyxtal.crystal.html#pyxtal.crystal.random_crystal>`_ class. There are several parameters which can be specified, but only four are necessary: 
+
+- the symmetry group, 
+- the types of atoms, 
+- the number of each atom in the primitive cell
+- the volume factor. 
+  
+Here is a simple example of a 3D carbon crystal:
 
 .. code-block:: Python
 
@@ -68,9 +75,16 @@ PyXtal can also generate subperiodic crystals. To generate a 2d crystal, use the
     from pyxtal.crystal import random_crystal_2D
     my_crystal = random_crystal_2D(20, ['C'], [4], 1.0, thickness=2.0)
 
-would generate a 2d crystal with layer group ``P2_122 (20)``, 4 carbon atoms in the primitive cell, a volume factor of 1.0, and a thickness of 2.0 Angstroms. As with the 3d case, for crystals with multiple atom types, you may replace ``[‘C’]`` and ``[4]`` with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. PyXtal adds 10 Angstroms of vacuum on each side of the 2D lattice, so that optimization may be performed without altering the structure file. However, care should be taken when using the cif file for applications designed for 3D crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; each axis will either be 1 or 0, representing either periodicity or non-periodicity. For example, PBC = [1,1,0] means that the x and y axes are periodic, while the z axis is non-periodic.
+would generate a 2d crystal with 
 
-Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see `the International Tables of Crystallography, Volume E, part 4 <https://it.iucr.org/Eb/ch4o1v0001/contents/>`_.
+- layer group ``P2_122 (20)``, 
+- 4 carbon atoms in the primitive cell, 
+- a volume factor of 1.0,
+- a thickness of 2.0 Angstroms. 
+  
+As with the 3d case, for crystals with multiple atom types, you may replace ``[‘C’]`` and ``[4]`` with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. PyXtal adds ``10 Angstroms of vacuum`` on each side of the 2D lattice, so that optimization may be performed without altering the structure file. However, care should be taken when using the cif file for applications designed for 3D crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; each axis will either be 1 or 0, representing either periodicity or non-periodicity. For example, PBC = [1,1,0] means that the x and y axes are periodic, while the z axis is non-periodic.
+
+Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see `the International Tables of Crystallography, Volume E, part 4 <https://it.iucr.org/Eb/ch4o1v0001/contents/>`_ or use the `pyxtal_symmetry utility <COMMAND_MODE.html#pyxtal-symmetry-utility>`_.
 
 By default, PyXtal will automatically generate a value for the thickness of the unit cell, based on the volume. By specifying a value for thickness, you override this behavior. So, if you are testing over a range of volume factors, consider how the shape of the unit cell will be affected, and change the thickness accordingly. Alternatively, you may supply a custom Lattice object, as described below.
 
@@ -216,14 +230,25 @@ It is possible to supply your own unit cell lattice for a random crystal, via th
     l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
     l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 
-Here, both l1 and l2 describe the same lattice. In this case, it is an orthorhombic lattice with side lengths 4.08 Angstroms, 9.13 Angstroms, and 5.50 Angstroms, which is the unit cell for common water ice. The lattice parameters are, in order: (a, b, c, alpha, beta, gamma). a, b, and c are the lengths of the lattice vectors; alpha, beta, and gamma are the angles (in degrees) between these vectors. You can use a custom Lattice to generate a random_crystal or molecular_crystal:
+Here, both ``l1`` and ``l2`` describe the same lattice. In this case, it is an orthorhombic lattice with side lengths 4.08, 9.13, and 5.50 Angstrom, which is the unit cell for common water ice. The lattice parameters are, in order: (a, b, c, :math:`\alpha, \beta, \gamma`). a, b, and c are the lengths of the lattice vectors; :math:`\alpha, \beta, \gamma` are the angles (in degrees) between these vectors. You can use a custom Lattice to generate a random_crystal or molecular_crystal:
+
+.. math::
+
+   E_s = \sum_i^{\textrm{all atoms}} \textrm{E}_i(\delta_i) 
+
 
 .. code-block:: Python
  
     from pyxtal.molecular_crystal import molecular_crystal
     my_crystal = molecular_crystal(36, ['H2O'], [2], 1.0, lattice=l1)
 
-This would generate a random water ice crystal, with space group 36, 4 molecules in the conventional cell (2 in the primitive cell), and using the lattice which we specified above. If you do not specify a lattice, a random one will be generated which is consistent with the chosen space group.
+This would generate a random water ice crystal, with 
+
+- space group 36, 
+- 4 molecules in the conventional cell (2 in the primitive cell)
+- the lattice which we specified above. 
+  
+If you do not specify a lattice, a random one will be generated which is consistent with the chosen space group.
 
 Note: For monoclinic layer groups, be careful when choosing the unique axis (see the `Settings <Settings.html>`_ page for details).
 

@@ -25,7 +25,7 @@ The current version is ``0.0.1`` at `GitHub <https://github.com/qzhu2017/PyXtal>
 
 Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
 
-PyXtal is an open source project. You are welcome to contribute it directly via the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your comments and suggestions to the `developer <http://www.physics.unlv.edu/~qzhu/>`_
+PyXtal is an open source project. You are welcome to contribute it directly via the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your comments and suggestions to the `developer <http://www.physics.unlv.edu/~qzhu/>`_.
 
 
 A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. 

@@ -110,6 +110,7 @@ if the ``-s`` tag is not given, it will output the list of all possible symmetry
 
 ::
 
+    $ pyxtal_symmetry -d 3
         space_group
     1            P1
     2           P-1
@@ -280,8 +281,8 @@ This is very useful for molecules with high internal symmetry. During crystalliz
     $ pyxtal_molecule -e C60 -n 2 -s 36
 
 .. image:: ../images/C60-x.png
-   :height: 763 px
-   :width: 963 px
+   :height: 703 px
+   :width: 683 px
    :scale: 50 %
    :align: center
  

@@ -1,16 +1,16 @@
 Background and Theory
 =====================
-This is a pedagical introduction to crystallography and basic group theory. For information about how PyXtal works specifically, see the `Algorithms <Algorithm>`_ page.
+This is a pedagogical introduction to crystallography and basic group theory. For information about how PyXtal works specifically, see the `Algorithms <Algorithm>`_ page.
 
 Crystals and Structures
 -----------------------
-When studying solids, it is often useful to describe a material's structure at the atomic level. From this description one can (in theory) determine the material's physical properties, including mechanical strength, electrical and thermal conductivity, melting point, etc. Due to the near-infinite number of possible materials and atomic geometries, it is necessary to have a consistent mathematical framework for such descriptions. This is the job of crystallographers.
+When studying solids, it is often useful to describe a material's structure at the atomic level. From this description one can (in theory) determine the material's physical properties, including mechanical strength, electrical and thermal conductivity, melting point, etc. Due to the near-infinite number of possible materials and atomic geometries, it is necessary to have a consistent mathematical framework for such descriptions. This is described by *crystallography*.
 
-For an atomic structure, we could describe the geometry by specifying the type and position of every atom. This works alright for molecules, and is in fact how computers typically encode molecules. But for an ideal crystal, which is infinitely large, it is impossible to describe where each individual atom lies. Fortunately, because crystals are symmetrical, we can specify one part of the crystal, and then use the symmetry operations to *generate* the rest of the crystal. This creates a perfectly symmetrical structure which is infinitely large in size. Such objects do not exist in nature, but they are nevertheless useful for understanding small parts of real, imperfect crystals. So, we call this infinite and symmetrical object an ideal crystal.
+For an atomic structure, we could describe the geometry by specifying the type and position of every atom. This works alright for molecules, and is in fact how computers typically encode molecules. But for an ideal crystal, which is infinitely large, it is impossible to describe where each individual atom lies. Fortunately, because crystals are symmetrical, we can specify one part of the crystal, and then use the symmetry operations to *generate* the rest of the crystal. This creates a perfectly symmetrical structure which is infinitely large in size. Such objects do not exist in nature, but they are nevertheless useful for understanding small parts of real, imperfect crystals. So, we call this infinite and symmetrical object an *ideal crystal*.
 
 Most inorganic materials are formed by many small (nearly) ideal crystals called *grains*. These grains may have different shapes, sizes, and orientations, but each grain has the same crystal structure at the inter-atomic scale. If we can determine this crystal structure, it becomes possible to predict the way that the grains form and interact with each other. From this, we can go on to predict properties at larger and larger scales, and determine how useful a material will behave in different physical situations. For this reason, determining a material's small-scale crystal structure is absolutely essential for modern materials science and engineering.
 
-At different pressures and temperatures, a material may go through a solid *phase transition*, and take on a different crystal structure. So, one job of crystallographers is to determine how a system will change under different conditions. Often, new structures will form at high pressure, and sometimes these structures have vastly superior properties (think diamond vs graphite). Thus, high pressure physics forms an active branch of physics and chemistry, and is a potential avenue for finding high temperature superconductors.
+At different pressures and temperatures, a material may go through a solid *phase transition*, and take on a different crystal structure. So, one job of crystallographers is to determine how a system will change under different conditions. Often, new structures will form at high pressure, and sometimes these structures have vastly superior properties (think diamond .v.s graphite). Thus, high pressure physics forms an active branch of physics and chemistry, and is a potential avenue for finding high temperature superconductors.
 
 Periodicity, Lattices, and Unit Cells
 -------------------------------------
@@ -54,7 +54,7 @@ Formally, an ideal crystal is an atomic structure that is periodic in 3 dimensio
    :alt: full crystal
    :align: center
 
-We say that the resulting object has translational symmetry, or that it is periodic. We can be more specific by defining the vectors of translational symmetry. For a given crystal, there are 3 such linearly independent vectors. These 3 vectors, placed into a matrix, define what is called the unit cell. Alternatively, we can define the unit cell using the lengths of each side of the box (usually called a, b, c), along with the angles between them (usually called alpha, beta, gamma). These 6 values are called the cell parameters. The unit cell is any parallepiped-shaped part of the crystal which can be used to generate the rest of the crystal through translations alone. Any unit cell which has the smallest possible volume is called a primitive cell.
+We say that the resulting object has *translational symmetry*, or that it is *periodic*. We can be more specific by defining the vectors of translational symmetry. For a given crystal, there are 3 such linearly independent vectors. These 3 vectors, placed into a matrix, define what is called the unit cell. Alternatively, we can define the unit cell using the lengths of each side of the box (usually called a, b, c), along with the angles between them (usually called :math:`alpha, beta, gamma`). These 6 values are called the cell parameters. The unit cell is any parallepiped-shaped part of the crystal which can be used to generate the rest of the crystal through translations alone. Any unit cell which has the smallest possible volume is called a *primitive cell*.
 
 Note: a given crystal can have multiple ways to define a primitive cell, and there is not always a clearly preferred choice. Consider a 2-dimensional square lattice. You could just as well define the lattice using parallelograms which run along the diagonal lines:
 
@@ -65,9 +65,9 @@ Note: a given crystal can have multiple ways to define a primitive cell, and the
    :alt: equivalent lattices
    :align: center
 
-To avoid this confusion, there is a set of standards (defined in the `International Tables of Crystallography <https://it.iucr.org/>`_) which is typically used. A cell based on these standards is called the conventional cell. In many cases, the conventional cell is not actually a primitive cell. Instead, the conventional cell may have extra atoms which exist in specific locations within the cell. So, the cell type is determined both by the cell parameters, and by any additional atomic sites within the cell.
+To avoid this confusion, there is a set of standards (defined in the `International Tables of Crystallography <https://it.iucr.org/>`_) which is typically used. A cell based on these standards is called the *conventional cell*. In many cases, the conventional cell is not actually a primitive cell. Instead, the conventional cell may have extra atoms which exist in specific locations within the cell. So, the cell type is determined both by the cell parameters, and by any additional atomic sites within the cell.
 
-Different cell parameters lead to different rotational symmetries of the unit cell (we will discuss this more below). Based on these symmetries, unit cells can be divided into seven different "crystal classes". Each crystal class has a different range of allowable cell parameters; triclinic is the general class, requiring no symmetry. Combining these restrictions with possible extra lattice positions, we get 14 possible types of lattices, called the Bravais lattices. We list these here:
+Different cell parameters lead to different rotational symmetries of the unit cell (we will discuss this more below). Based on these symmetries, unit cells can be divided into seven different ``crystal classes``. Each crystal class has a different range of allowable cell parameters; triclinic is the general class, requiring no symmetry. Combining these restrictions with possible extra lattice positions, we get 14 possible types of lattices, called the *Bravais lattices*. We list these here:
 
 .. list-table::
 
@@ -161,11 +161,11 @@ Much like squares can be considered a special case of rectangles, all unit cells
 
 The hexagonal and trigonal lattices are somewhat special cases. They can be generated using either trigonal/hexagonal prisms, or using the standard parallelepiped shape. For consistency, the parallelepiped is always used. Note that despite using a parallelepiped, this is still called a hexagonal cell choice.
 
-Some lattices can be generated using a rhombohedral unit cell. Such space groups begin with an "R", and always have trigonal symmetry. For these cases, we again use the hexagonal cell.
+Some lattices can be generated using a rhombohedral unit cell. Such space groups begin with an ``R``, and always have trigonal symmetry. For these cases, we again use the hexagonal cell.
 
 Whenever possible, PyXtal uses the same choices of unit cell as the Bilbao Crystallographic Server, which in turn uses the standard conventional cell. Their default choices are listed `here. <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_ For a complete list of the cell choices used by PyXtal, see the `Group Settings <http://www.physics.unlv.edu/~qzhu/PyXtal/html/Settings.html>`_ page.
 
-Typically, to describe coordinates within a crystal, we use what are called fractional coordinates. Fractional coordinates use the lattice vectors as the basis, as opposed to absolute coordinates, which use Euclidean space as the basis. This makes it easier to describe two similar structures that differ only in their lattice values. Unless otherwise specified, any listed coordinates are fractional coordinates.
+Typically, to describe coordinates within a crystal, we use what are called *fractional coordinates*. Fractional coordinates use the lattice vectors as the basis, as opposed to *absolute coordinates*, which use Euclidean space as the basis. This makes it easier to describe two similar structures that differ only in their lattice values. Unless otherwise specified, any listed coordinates are fractional coordinates.
 
 .. image:: ../images/fractional.png
    :height: 351 px
@@ -173,7 +173,7 @@ Typically, to describe coordinates within a crystal, we use what are called frac
    :scale: 100 %
    :alt: fractional vs absolute coordinates
 
-It is important to note that when periodicity is present, multiple coordinates can actually correspond to the same point, at least in notation. It is common practice to convert all coordintaes to lie within the range [0.1) for periodic axes. So, for example, if we have a point at (1.4,-0.3,0.6), it will usually be written as (0.4,0.7,0.6). This is because it is assumed that each unit cell is the same. In other words, an atom located at (1.4,-0.3,0.6) implies that another atom is located at (0.4,0.7,0.6). So, it is more convenient to only consider the unit cell which lies between (0,0,0) and (1,1,1).
+It is important to note that when periodicity is present, multiple coordinates can actually correspond to the same point, at least in notation. It is common practice to convert all coordintaes to lie within the range [0.1) for periodic axes. So, for example, if we have a point at ``(1.4,-0.3,0.6)``, it will usually be written as ``(0.4,0.7,0.6)``. This is because it is assumed that each unit cell is the same. In other words, an atom located at ``(1.4,-0.3,0.6)`` implies that another atom is located at ``(0.4,0.7,0.6)``. So, it is more convenient to only consider the unit cell which lies between ``(0,0,0)`` and ``(1,1,1)``.
 
 Symmetry Operations
 -------------------
@@ -182,7 +182,7 @@ Translations are just one kind of transformation operation. More generally, we c
 
 A symmetry operation is any transformation which leaves the original structure unchanged. In other words, if the structure looks the same before and after a transormation, then that transformation is a symmetry operation of the object. This includes the identity operation (doing nothing to the object), which means that every object has at least a trivial symmetry.
 
-We can artificially split a transformation into two parts: the rotational/inversional part (given by a 3x3 matrix), and the translational part (given by a 3D vector, specifically a 3x1 column matrix). Often, we denote this as a matrix-column pair (P,p) or (P|p), where the capital letter P represents the rotation matrix, and the lowercase letter p represents the translation vector.
+We can artificially split a transformation into two parts: the rotational/inversional part (given by a 3x3 matrix), and the translational part (given by a 3D vector, specifically a 3x1 column matrix). Often, we denote this as a matrix-column pair ``(P,p)`` or ``(P|p)``, where the capital letter *P* represents the rotation matrix, and the lowercase letter *p* represents the translation vector.
 
 We can define the 3x3 rotation matrix by using 3 orthogonal unit vectors as the columns. The resulting matrix is orthogonal, meaning the determinant is either +1 or -1. If only a rotation is applied, then the determinant is +1, and if an inversion is applied, the determinant is -1. If an object has no symmetry operations with determinant -1, it is said to be **chiral**. In this case, the object's mirror image is different from the original, and cannot be rotated to match its **twin**. This is especially important for molecules with biochemical applications, since the mirror molecule may have a different effect.
 
@@ -299,7 +299,7 @@ We can also define symmetry groups for objects of arbitrary dimension. A simple 
 It takes practice to develop an intuition for finding symmetries, but the results can be very rewarding. Often, a symmetry can be utilized to lessen the work needed to solve a problem, sometimes even reducing the problem to a trivial identity. This is a core concept in mathematics and physics, and deserves reflection.
 
 Point Groups
-------------
+~~~~~~~~~~~~
 
 In order for an object to be translationally symmetric, it must be periodic along one or more axes. This means that most objects (excluding crystals and certain idealized chain molecules) can only have rotational/inversional symmetry. A 3D symmetry group without translational symmetry is called a point group. This is because the transformations leave at least one point of space unmoved. This includes rotations, reflections, inversions, and combinations of the three. Note that we can either use rotations and reflections, or rotations and inversions, to generate the remaining point transformations. In PyXtal and the documentation, we use rotations and inversions as the basic transformations, meaning reflections are treated as rotoinversions.
 
@@ -338,7 +338,7 @@ A point group can contain rotations, reflections, and possibly inversion. There 
 
 
 Space Groups
-------------
+~~~~~~~~~~~~
 
 For crystals, we need to describe both the translational (lattice) and rotational (point group) symmetry. A 3D symmetry group containing both of these is called a space group, and is one of the main tools used by crystallographers. We can separate a space group into its point group and its lattice group. Thus, space groups can be neatly divided into the seven different crystal classes. Mathematically, the two different types of symmetry are connected; thus, certain kinds of translational symmetry (lattice types) can only have certain kinds of rotational symmetry (point groups). This is apparent from the names of the space groups; certain symbols are only found in certain lattice systems. A list of space groups and their symmetries is provided by the `Bilbao utility WYCKPOS <http://www.cryst.ehu.es/cryst/get_wp.html>`_. Note that for space groups, we use the `Hermann-Mauguin (H-M) notation <https://en.wikipedia.org/wiki/Hermann%E2%80%93Mauguin_notation>`_. This means a space group can be specified by a number between 1 and 230. However, a space group symbol should always be provided, as the numbers are not used as commonly. The numbers are more useful for computer applications like PyXtal or Pymatgen, or in conjunction with references like the Bilbao server or the Internatioal Tables.
 
@@ -391,14 +391,14 @@ In order for a molecule to fit within a Wyckoff position, its point group must b
 
 For larger site symmetry groups, it is more complicated to check if a molecule will fit or not. The algorithm used by PyXtal for doing this is detailed in the `How PyXtal Works <Algorithm.html>`_ page.
 
-Molecular Crystals
+..Molecular Crystals
 ------------------
 
-Knowing the limitations on molecular Wyckoff positions, we can consider crystals which have molecules, rather than atoms, as their basic building blocks. Typically, such crystals have strong intramolecular forces, which hold the atoms in a molecule together. In contrast, the intermolecular forces between molecules are weak, and often consist of hydrogen bonding and van der Waals forces. When the molecules are organic (carbon-based), the resulting structure is callled an organic crystal; this is an important case with many applications.
+.. Knowing the limitations on molecular Wyckoff positions, we can consider crystals which have molecules, rather than atoms, as their basic building blocks. Typically, such crystals have strong intramolecular forces, which hold the atoms in a molecule together. In contrast, the intermolecular forces between molecules are weak, and often consist of hydrogen bonding and van der Waals forces. When the molecules are organic (carbon-based), the resulting structure is callled an organic crystal; this is an important case with many applications.
 
-Because the intermolecular forces are so weak, molecular crystals often break down at high temperature, converting into atomic structures. But when molecular crystals do exist, they often have unique properties due to their low density and high level of variation in structure. Unlike atomic crystals, which are typically as close-packed as possible, molecular crystals have large gaps between atoms, and as a result the energy gap between different crystal structures is relatively low. This means that a given molecule may crystallize in many different ways; these different crystals may transform differently under pressure, temperature, or solvent conditions. So, it is often useful to look for different crystal structures for different applications.
+.. Because the intermolecular forces are so weak, molecular crystals often break down at high temperature, converting into atomic structures. But when molecular crystals do exist, they often have unique properties due to their low density and high level of variation in structure. Unlike atomic crystals, which are typically as close-packed as possible, molecular crystals have large gaps between atoms, and as a result the energy gap between different crystal structures is relatively low. This means that a given molecule may crystallize in many different ways; these different crystals may transform differently under pressure, temperature, or solvent conditions. So, it is often useful to look for different crystal structures for different applications.
 
-Important uses for molecular crystallography include pharmaceutical drug design, organic superconductors, water ice in extreme conditions, and novel material design.
+.. Important uses for molecular crystallography include pharmaceutical drug design, organic superconductors, water ice in extreme conditions, and novel material design.
 
 .. Crystal Structure Prediction
 ----------------------------
