@@ -97,7 +97,7 @@ You expect to see the following output.
     	230	|	230	|	230	|	0.18 s
     TEST COMPLETE
 
-    Total time elapsed: 34.15
+    Total time elapsed: 34.15 s
   
 More extensive test can be invoked by running
 

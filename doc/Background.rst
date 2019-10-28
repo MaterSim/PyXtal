@@ -359,7 +359,7 @@ Because symmetry operations can be thought of as making *copies* of parts of an 
    :scale: 100%
    :alt: Paper snowflake
 
-These different regions are called Wyckoff positions, and the number of copies is called the multiplicity of the Wyckoff position. So, if an atom lies in a Wyckoff position with multiplicity greater than 1, then that Wyckoff position actually corresponds to multiple atoms. However, thanks to symmetry, we can refer to all of the copies (for that particular atom) as a single Wyckoff position. This makes describing a crystal much easier, since we no longer need to specify the exact location of most of the atoms. Instead, we need only list the space group, the lattice, and the location and type of one atom from each Wyckoff position. This is exactly how the cif file format encodes crystal data (more info below). Just keep in mind that in this format, a single atomic entry may correspond to multiple atoms in the unit cell.
+These different regions are called Wyckoff positions, and the number of copies is called the multiplicity of the *Wyckoff position*. So, if an atom lies in a Wyckoff position with multiplicity greater than 1, then that Wyckoff position actually corresponds to multiple atoms. However, thanks to symmetry, we can refer to all of the copies (for that particular atom) as a single Wyckoff position. This makes describing a crystal much easier, since we no longer need to specify the exact location of most of the atoms. Instead, we need only list the space group, the lattice, and the location and type of one atom from each Wyckoff position. This is exactly how the cif file format encodes crystal data (more info below). Just keep in mind that in this format, a single atomic entry may correspond to multiple atoms in the unit cell.
 
 The largest Wyckoff position, which makes a copy for every symmetry operation, is called the general Wyckoff position, or just the general position. In the snowflake example, this was the large inner region of the triangle. In general, the general position will consist of every location which does not lie along some special symmetry axis, plane, or point. For this reason, the other Wyckoff positions are called the special Wyckoff positions.
 
@@ -391,8 +391,8 @@ In order for a molecule to fit within a Wyckoff position, its point group must b
 
 For larger site symmetry groups, it is more complicated to check if a molecule will fit or not. The algorithm used by PyXtal for doing this is detailed in the `How PyXtal Works <Algorithm.html>`_ page.
 
-..Molecular Crystals
-------------------
+.. Molecular Crystals
+.. ------------------
 
 .. Knowing the limitations on molecular Wyckoff positions, we can consider crystals which have molecules, rather than atoms, as their basic building blocks. Typically, such crystals have strong intramolecular forces, which hold the atoms in a molecule together. In contrast, the intermolecular forces between molecules are weak, and often consist of hydrogen bonding and van der Waals forces. When the molecules are organic (carbon-based), the resulting structure is callled an organic crystal; this is an important case with many applications.
 
@@ -401,7 +401,7 @@ For larger site symmetry groups, it is more complicated to check if a molecule w
 .. Important uses for molecular crystallography include pharmaceutical drug design, organic superconductors, water ice in extreme conditions, and novel material design.
 
 .. Crystal Structure Prediction
-----------------------------
+.. ----------------------------
 .. As the techniques for computational crystallography become more sophisticated, it becomes easier to model and generate new crystal structures. In theory, there are an infinite number of possible crystal structures, but in practice, structures which are only slightly different will converge to the same low-energy structure. This is because in nature, the lowest-energy structure is the most likely to be found. So, for a given temperature and pressure, crystallographers can analyze a large number of possible crystal structures, and determine which has the lowest energy. This low-energy structure is the one most likely to form under the given conditions, and thus will probably be the correct structure found on a pressure-temperature diagram.
 
 .. However, doing this *from scratch* requires a very large number of structures to be analyzed. Currently, it is often not feasible to analyze every possible structural prototype, so instead random sampling is used in combination with evolutionary algorithms. This all amounts to crystal structure prediction (CSP). CSP has two opposite but complimentary applications. On the one hand, a material may be known to exist at a given set of conditions. For example, we know that iron and oxygen exist below the earth's crust, but we cannot obtain physical samples of every iron-oxygen compound, in the same pressure-temperature range. So, scientists use CSP to determine what crystal structures are likely to exist at the conditions found below the crust.
