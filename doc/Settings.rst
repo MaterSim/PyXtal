@@ -15,7 +15,7 @@ For 2D structures, we use unique axis c for monoclinic layer groups 3-7, and uni
 
 For 1D structures, we use unique axis a for monoclinic Rod groups 3-7, and unique axis c for Rod groups 8-12. When two settings are available for a group, we use the 1st setting. We always choose c as the periodic axis.
 
-For point group structures, we use unique axis c for all groups except the polyhedral groups ``T, Th, O, Td, Oh, I, and Ih``. For all of these groups, we place the 2-fold rotation about the z axis and a 3-fold rotation about the (x,x,x) axis. For ``I`` and ``Ih``, we use a 5-fold rotation about the axis (1,tau,0), where tau is the golden ratio ( tau = 0.5(sqrt(5)+1) ~ 1.618 ).
+For point group structures, we use unique axis c for all groups except the polyhedral groups ``T, Th, O, Td, Oh, I, and Ih``. For all of these groups, we place the 2-fold rotation about the z axis and a 3-fold rotation about the (x,x,x) axis. For ``I`` and ``Ih``, we use a 5-fold rotation about the axis (1, :math:`\tau`, 0), where :math:`\tau` is the golden ratio ( :math:`\tau = \frac{\sqrt{5}+1}{2} = 1.618` ).
 
 Crystallographic point groups, listed by number:
 

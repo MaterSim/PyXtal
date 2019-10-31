@@ -5,7 +5,7 @@ Currently, we provide several utilities to the users so that they can run the co
 They include:
 
 - ``Pyxtal_symmetry``: a tool to access the symmetry information
-- ``Pyxtal``: a tool to generate atomic crystals
+- ``Pyxtal_atom``: a tool to generate atomic crystals
 - ``Pyxtal_molecule``: a tool to generate molecular crystals
 - ``Pyxtal_test``: a tool to test all modules
 
@@ -154,9 +154,9 @@ if the ``-s`` tag is not given, it will output the list of all possible symmetry
     229       Im-3m
     230       Ia-3d
 
-PyXtal utility
+PyXtal_atom utility
 --------------
-``PyXtal`` is a utility to handle the generation of atomic crystals.
+``PyXtal_atom`` is a utility to handle the generation of atomic crystals.
 Typically, four arguments are requried to describe the target structure:
 
 - `-d`, the dimension, e.g., ``3``, ``2``, ``1``, ``0``.
@@ -175,7 +175,7 @@ Below is a quick example to generate a random ``C60`` clusters with icosahedral 
 
 ::
 
-    $ pyxtal -e C -n 60 -d 0 -s Ih
+    $ pyxtal_atom -e C -n 60 -d 0 -s Ih
 
                  ______       _    _          _   
                 (_____ \     \ \  / /        | |   
@@ -215,7 +215,7 @@ By default, ``-d`` tag is 3, which means to generate 3D crystal. Below is a quic
 
 ::
 
-    $ pyxtal -e C -n 2 -s 227
+    $ pyxtal_atom -e C -n 2 -s 227
     
     Symmetry requested: 227(Fd-3m), generated: Fd-3m
     Output to out/C8.cif
@@ -235,7 +235,7 @@ It is important to note that we specified ``2`` for ``-n`` tag, which means 2 ca
 
 ::
 
-    $ pyxtal -e Mo,S -n 1,2 -s 77 -d 2 -t 2.4
+    $ pyxtal_atom -e Mo,S -n 1,2 -s 77 -d 2 -t 2.4
 
     Symmetry requested: 77(p6mm), generated: P6mm
     Output to out/Mo1S2.cif

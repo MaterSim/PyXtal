@@ -30,7 +30,7 @@ setup(
                   #'pyxtal.potentials': ['*'],
                  },
 
-    scripts=['scripts/pyxtal', 
+    scripts=['scripts/pyxtal_atom', 
              'scripts/pyxtal_test', 
              'scripts/pyxtal_symmetry',
              'scripts/pyxtal_molecule',
