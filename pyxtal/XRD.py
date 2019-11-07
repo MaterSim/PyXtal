@@ -403,9 +403,9 @@ class XRD(object):
         #k1 = 2*ceil(np.linalg.norm(crystal.cell_para[1])/d_min)
         #l1 = 2*ceil(np.linalg.norm(crystal.cell_para[2])/d_min)
         h1, k1, l1 = hkl_max
-        h = np.arange(-h1,h1)
-        k = np.arange(-k1,k1)
-        l = np.arange(-l1,l1)
+        h = np.arange(-h1,h1+1)
+        k = np.arange(-k1,k1+1)
+        l = np.arange(-l1,l1+1)
         
         hkl = np.array((np.meshgrid(h,k,l))).transpose()
         hkl_list = np.reshape(hkl, [len(h)*len(k)*len(l),3])
@@ -450,7 +450,7 @@ class XRD(object):
         """ N*1 array"""
         F = []
         for fj, hkl in zip(self.f.transpose(), self.hkl_list):
-            F_tmp = np.exp(-2*pi*1j*np.dot(crystal.coordinate, hkl.transpose()))
+            F_tmp = np.exp(2*pi*1j*np.dot(crystal.coordinate, hkl.transpose()))
             F.append(np.dot(fj, F_tmp))
 
         self.F = np.array(F)
