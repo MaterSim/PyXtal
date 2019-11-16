@@ -8,6 +8,7 @@ from pyxtal.molecule import PointGroupAnalyzer
 from pymatgen import Molecule
 from pyxtal.database.collection import Collection
 from time import time
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
@@ -185,7 +186,7 @@ class LJ_prediction():
         res = {'pos': pos,
                'energy': energy,
                'pg_init': pg1,
-               'pg_finial': pg2,
+               'pg_final': pg2,
                'ground': ground,
                'id': ind,
                }
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-d", "--dimension", dest="dim", metavar='dim', default=3, type=int,
             help="dimension, 3 or higher")
-    parser.add_option("-n", "--numIons", dest="numIons", default=16, type=int,
+    parser.add_option("-n", "--numIons", dest="numIons", default=38, type=int,
             help="desired numbers of atoms: 16")
     parser.add_option("-m", "--max", dest="max", default=100, type=int,
             help="maximum number of attempts")
@@ -212,8 +213,8 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     N = options.numIons #38
-    maxN = options.max #1000
-    dim = options.dim #4
+    maxN = options.max #100
+    dim = options.dim #3
     ncpu = options.proc
 
     lj_run = LJ_prediction(N)
@@ -227,41 +228,76 @@ if __name__ == "__main__":
     results2 = lj_run.predict(dim=dim, maxN=maxN, ncpu=ncpu, pgs=range(2, 33))
     print('time: {0:6.2f} seconds'.format(time()-t0))
 
-    print("---Oh only---")
+    #results3 and results4 would be used to compare structures with random symmetry
+    #to those only generated with a single chosen space group (in this case, Oh)
+    """print("---Oh only---")
     results3 = lj_run.predict(dim=dim, maxN=maxN, ncpu=ncpu, pgs=[32])
     print('time: {0:6.2f} seconds'.format(time()-t0))
 
     print("---Random symmetry (not Oh)---")
     results4 = lj_run.predict(dim=dim, maxN=maxN, ncpu=ncpu, pgs=range(2, 32))
-    print('time: {0:6.2f} seconds'.format(time()-t0))
+    print('time: {0:6.2f} seconds'.format(time()-t0))"""
+
     eng1 = []
     eng2 = []
-    eng3 = []
-    eng4 = []
+
+    """eng3 = []
+    eng4 = []"""
+
     ground1 = 0
     ground2 = 0
-    ground3 = 0
-    ground4 = 0
+
+    """ground3 = 0
+    ground4 = 0"""
+
+    #Create a json-dump-able list of dictionaries to store (results1)
+    dictlist = []
+    #Store the energies and number of ground state occurences
     for dct in results1:
         if dct['ground']:
             ground1 += 1
-        eng1.append(dct['energy']) 
+        eng1.append(dct['energy'])
+        dictlist.append({'pos': list([list(p) for p in dct['pos']]),
+               'energy': dct['energy'],
+               'pg_init': dct['pg_init'],
+               'pg_final': dct['pg_final'],
+               'ground': dct['ground'],
+               'id': dct['id']})
+    #Dump results to a json file
+    with open(str(N)+"-"+str(maxN)+"-asymmetric.json", "w") as f:
+        json.dump(dictlist, f)
+
+    #Create a json-dump-able list of dictionaries to store (results2)
+    dictlist = []
+    #Store the energies and number of ground state occurences
     for dct in results2:
         if dct['ground']:
             ground2 += 1
-        eng2.append(dct['energy']) 
-    for dct in results3:
+        eng2.append(dct['energy'])
+        dictlist.append({'pos': list([list(p) for p in dct['pos']]),
+               'energy': dct['energy'],
+               'pg_init': dct['pg_init'],
+               'pg_final': dct['pg_final'],
+               'ground': dct['ground'],
+               'id': dct['id']})
+    #Dump results to a json file
+    with open(str(N)+"-"+str(maxN)+"-symmetric.json", "w") as f:
+        json.dump(dictlist, f)
+
+    """for dct in results3:
         if dct['ground']:
             ground3 += 1
         eng3.append(dct['energy']) 
     for dct in results4:
         if dct['ground']:
             ground4 += 1
-        eng4.append(dct['energy']) 
+        eng4.append(dct['energy'])"""
+
     eng1 = np.array(eng1)
     eng2 = np.array(eng2)
-    eng3 = np.array(eng3)
-    eng4 = np.array(eng4)
+
+    """eng3 = np.array(eng3)
+    eng4 = np.array(eng4)"""
 
     eng_max = max([max(eng1), max(eng2)])
     bins = np.linspace(eng_min-0.1, 0.1, 100)
@@ -274,7 +310,7 @@ if __name__ == "__main__":
     plt.savefig(str(N)+'-'+str(maxN)+'-'+str(dim)+'.pdf')
     plt.close()
 
-    eng_max = max([max(eng3), max(eng4)])
+    """eng_max = max([max(eng3), max(eng4)])
     bins = np.linspace(eng_min-0.1, 0.1, 100)
     plt.hist(eng3, bins, alpha=0.5, label='Oh only: ' + str(ground3) + '/' + str(len(eng3)))
     plt.hist(eng4, bins, alpha=0.5, label='random point groups (excluding Oh): ' + str(ground4) + '/' + str(len(eng4)))
@@ -283,4 +319,4 @@ if __name__ == "__main__":
     plt.legend(loc=1)
     plt.title('LJ cluster: ' + str(N) + ' Ground state: ' + str(eng_min))
     plt.savefig(str(N)+'-'+str(maxN)+'-'+str(dim)+'_single.pdf')
-    plt.close()
+    plt.close()"""
