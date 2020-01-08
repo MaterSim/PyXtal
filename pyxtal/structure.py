@@ -162,9 +162,9 @@ if __name__ == "__main__":
     from pyxtal.crystal import *
     c = random_crystal(225, ['C'], [4], 1)
     x = Xstruct.from_random_crystal(c)
-    print(x)
+    print(x.group)
 
-    from pyxtal.molecular_crystal import *
-    m = molecular_crystal(20, ['H2O'], [8], 1)
-    x = Xstruct_m.from_molecular_crystal(m)
-    print(x)
+    #from pyxtal.molecular_crystal import *
+    #m = molecular_crystal(20, ['H2O'], [8], 1)
+    #x = Mstruct.from_molecular_crystal(m)
+    #print(x)
