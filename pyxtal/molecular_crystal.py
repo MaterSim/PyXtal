@@ -892,27 +892,24 @@ class molecular_crystal():
         oriented_molecules = []
         #Allow support for generating molecules from text via openbable
         for i, mol in enumerate(molecules):
+            # Parsing the molecular input
             if type(mol) == str:
-                #Read strings into molecules, try collection first,
-                #If string not in collection, use pymatgen format
-                try:
-                    mo = Molecule([Element(mol).short_name],[[0.,0.,0.]])
-                except:
-                    try:
-                        mo = molecule_collection[mol]
-                    except:
-                        try:
-                            mo = mol_from_file(mol)
-                        except:
-                            mo = mol_from_string(mol, fmt)
+                # Read strings into molecules, try collection first,
+                # If string not in collection, use pymatgen format
+                tmp = mol.split('.')
+                if len(tmp) > 1:
+                    print('\nLoad the molecule from the given file {:s}'.format(mol))
+                    if tmp[-1] in ['xyz', 'gjf', 'g03', 'json']:
+                        mo = mol_from_file(mol)
+                    else:
+                        raise NameError('{:s} is not a supported format'.format(tmp[-1]))
+                else:
+                    print('\nLoad the molecule {:s} from the built_in collections'.format(mol))
+                    mo = molecule_collection[mol]
                 if mo is not None:
                     molecules[i] = mo
                 else:
-                    printx("Error: Could not create molecules from given parameters.\n"
-                        +"Supported string values include: C60, H2O, CH4, NH3, benzene, naphthalene, anthracene, tetracene, pentacene, coumarin, resorcinol, benzamide, aspirin, ddt, lindane, glycine, glucose, or ROY\n"
-                        +"Alternatively, you can input the filename of a molecule file (xyz, gaussian, or json).\n"
-                        +'Finally, you can input a string representing the molecule (add the option fmt = “xyz”, “gjf”, “g03”, or “json”)\n'
-                        +"Installing the OpenBabel Python bindings allows more file formats.", priority=1)
+                    raise NameError("Could not create molecules from given input: {:s}".format(mol))
         for mol in molecules:
             if len(mol) > 1:
                 pga = PointGroupAnalyzer(mol)

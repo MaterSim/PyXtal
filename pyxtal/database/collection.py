@@ -48,7 +48,16 @@ class Collection:
 
     def __getitem__(self, name):
         self._read(name)
-        return self._data
+        if len(self._data)==0:
+            names = ''
+            for dct in self.content:
+                names += dct['name'] + ', '
+            msg = name + ' is not supported\n'
+            msg += 'Available molecules are:\n' 
+            msg += names
+            raise NameError(msg)
+        else:
+            return self._data
 
     def __iter__(self):
         for dct in self.content:
