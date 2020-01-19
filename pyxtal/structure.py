@@ -7,6 +7,7 @@ without breaking symmetry.
 #------------------------------
 #External libraries
 from pymatgen.core.structure import Structure
+import numpy as np
 
 #Define functions
 #------------------------------
