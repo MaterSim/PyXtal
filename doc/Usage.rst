@@ -224,11 +224,6 @@ It is possible to supply your own unit cell lattice for a random crystal, via th
 
 Here, both ``l1`` and ``l2`` describe the same lattice. In this case, it is an orthorhombic lattice with side lengths 4.08, 9.13, and 5.50 Angstrom, which is the unit cell for common water ice. The lattice parameters are, in order: (a, b, c, :math:`\alpha, \beta, \gamma`). a, b, and c are the lengths of the lattice vectors; :math:`\alpha, \beta, \gamma` are the angles (in degrees) between these vectors. You can use a custom Lattice to generate a random_crystal or molecular_crystal:
 
-.. math::
-
-   E_s = \sum_i^{\textrm{all atoms}} \textrm{E}_i(\delta_i) 
-
-
 .. code-block:: Python
  
     from pyxtal.molecular_crystal import molecular_crystal
@@ -289,60 +284,69 @@ Alternatively, you can specify one of the preset tolerance matrices by passing a
 By default, atomic crystals will use the average of the covalent radii between two atoms. Molecular crystals will use 1.2 times the sum of the covalent radii between two atoms. Using ``metallic`` will use the average of the metallic radius for metals, and the covalent radius for other atom types.
 
 Supports for Different File Formats
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------
 Once the structures are generated, they can be exported to a variety of formats for further analysis. PyXtal offers there different mechanisms to manipulate the structureformats.
 
 Suppose we generated a carbon structure as follows,
 
 .. code-block:: Python
->>> from pyxtal.crystal import random_crystal
->>> c = random_crystal(225, ['C'], [4], 1)
 
-- `c.struct` belongs to the Pymatgen structure class, `pymatgen.core.structure.Structure <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure>`_. In addition, pyxtal itself also provide an extended class containing the symmetry information.
+    >>> from pyxtal.crystal import random_crystal
+    >>> c = random_crystal(225, ['C'], [4], 1)
+
+Extended Pymatgen Structure Object 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`c.struct` belongs to the Pymatgen structure class, `pymatgen.core.structure.Structure <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure>`_. In addition, pyxtal itself also provide an extended class containing the symmetry information.
 
 .. code-block:: Python
->>> from pyxtal.structure import Xstruct
->>> xstruc = Xstruct.from_random_crystal(c)
->>> xstruc.group
--- Space group --# 225 (Fm-3m)--
-  192l	site symm: 1
-  96k	site symm: . . m
-  96j	site symm: m . .
-  48i	site symm: m . m2
-  48h	site symm: m . m2
-  48g	site symm: 2 . mm
-  32f	site symm: . 3 m
-  24e	site symm: 4m . m
-  24d	site symm: 2/m . 2/m2/m
-  8c	site symm: -4 3 m
-  4b	site symm: 4/m -3 2/m
-  4a	site symm: 4/m -3 2/m
->>> xstruc.wyckoff_sites
-[C: [0.25 0.25 0.25] 8c, site symmetry -4 3 m, C: [0. 0. 0.] 4a, site symmetry 4/m -3 2/m, C: [0.5 0.5 0.5] 4b, site symmetry 4/m -3 2/m]
+
+    >>> from pyxtal.structure import Xstruct
+    >>> xstruc = Xstruct.from_random_crystal(c)
+    >>> xstruc.group
+    -- Space group --# 225 (Fm-3m)--
+      192l	site symm: 1
+      96k	site symm: . . m
+      96j	site symm: m . .
+      48i	site symm: m . m2
+      48h	site symm: m . m2
+      48g	site symm: 2 . mm
+      32f	site symm: . 3 m
+      24e	site symm: 4m . m
+      24d	site symm: 2/m . 2/m2/m
+      8c	site symm: -4 3 m
+      4b	site symm: 4/m -3 2/m
+      4a	site symm: 4/m -3 2/m
+    >>> xstruc.wyckoff_sites
+    [C: [0.25 0.25 0.25] 8c, site symmetry -4 3 m, C: [0. 0. 0.] 4a, site symmetry 4/m -3 2/m, C: [0.5 0.5 0.5] 4b, site symmetry 4/m -3 2/m]
 
 One can also save the structure to different structure formats such as ``poscar`` and ``cif``.
 
 .. code-block:: Python
->>> xstruc.to(fmt='cif', filename='1.cif')
->>> xstruc.to(fmt='poscar', filename='1.vasp')
 
-- `c.spg_struct` is a tuple storing the information about cell, positions and atomic numbers. One can easily transform it to another popular ASE `atoms class <https://wiki.fysik.dtu.dk/ase/ase/atoms.html>`_
+    >>> xstruc.to(fmt='cif', filename='1.cif')
+    >>> xstruc.to(fmt='poscar', filename='1.vasp')
 
-.. code-block:: Python
->>> from ase import Atoms
->>> cell, pos, numbers = c.spg_struct
->>> ase_struc = Atoms(numbers=numbers, positions=pos, cell=cell, pbc=[1,1,1])
->>> ase_struc 
-Atoms(symbols='C16', pbc=True, cell=[[5.868582551554081, 0.0, 0.0], [3.593470418646356e-16, 5.868582551554081, 0.0], [3.593470418646356e-16, 3.593470418646356e-16, 5.868582551554081]])
-
-Similarly, `ASE Atoms` object supports a lot of methods for structural manipulation and file formats.
+ASE Atoms Object
+~~~~~~~~~~~~~~~~
+`c.spg_struct` is a tuple storing the information about cell, positions and atomic numbers. One can easily transform it to another popular ASE `atoms class <https://wiki.fysik.dtu.dk/ase/ase/atoms.html>`_
 
 .. code-block:: Python
->>> ase_struc * 2
-Atoms(symbols='C128', pbc=True, cell=[[13.312249674597792, 0.0, 0.0], [8.151401976723291e-16, 13.312249674597792, 0.0], [8.151401976723291e-16, 8.151401976723291e-16, 13.312249674597792]])
->>> ase_struc * [1, 2, 2]
-Atoms(symbols='C64', pbc=True, cell=[[6.656124837298896, 0.0, 0.0], [8.151401976723291e-16, 13.312249674597792, 0.0], [8.151401976723291e-16, 8.151401976723291e-16, 13.312249674597792]])
->>> ase_struc.write('1.vasp', format='vasp')
->>> ase_struc.write('1.xyz', format='extxyz')
 
+    >>> from ase import Atoms
+    >>> cell, pos, numbers = c.spg_struct
+    >>> ase_struc = Atoms(numbers=numbers, positions=pos, cell=cell, pbc=[1,1,1])
+    >>> ase_struc 
+    Atoms(symbols='C16', pbc=True, cell=[[5.868582551554081, 0.0, 0.0], [3.593470418646356e-16, 5.868582551554081, 0.0], [3.593470418646356e-16, 3.593470418646356e-16, 5.868582551554081]])
 
+Similarly, `ASE Atoms` object supports a lot of methods for structural manipulation and file formats (`cif`, `poscar`, `extxyz`, .etc).
+
+.. code-block:: Python
+
+    >>> ase_struc * 2
+    Atoms(symbols='C128', pbc=True, cell=[[13.312249674597792, 0.0, 0.0], [8.151401976723291e-16, 13.312249674597792, 0.0], [8.151401976723291e-16, 8.151401976723291e-16, 13.312249674597792]])
+    >>> ase_struc * [1, 2, 2]
+    Atoms(symbols='C64', pbc=True, cell=[[6.656124837298896, 0.0, 0.0], [8.151401976723291e-16, 13.312249674597792, 0.0], [8.151401976723291e-16, 8.151401976723291e-16, 13.312249674597792]])
+    >>> ase_struc.write('1.vasp', format='vasp', vasp5=True, direct=True)
+    >>> ase_struc.write('1.xyz', format='extxyz')
+    
