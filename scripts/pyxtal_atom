@@ -99,6 +99,17 @@ if __name__ == "__main__":
             print('Symmetry requested: {:d}({:s}), generated: {:s}'.format(sg, symbol, ans))
             print("Output to " + outpath)
 
+            if dimension > 0:
+                try:
+                    from ase import Atoms
+                    cell, pos, numbers = rand_crystal.spg_struct
+                    ase_struc = Atoms(numbers=numbers, positions=pos, cell=cell, pbc=[1,1,1])
+                    xyz_path = outdir + '/' + comp + '.xyz'
+                    ase_struc.write(xyz_path, format='extxyz')
+                    print("Output to " + xyz_path)
+                except:
+                    print('Warning: ASE is required to export the crystal in extxyz format')
+
             #Print additional information about the structure
             if verbosity > 0:
                 print("Time required for generation: " + str(timespent) + "s")

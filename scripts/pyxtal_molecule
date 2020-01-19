@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
             help="number of crystals to generate: default 1", metavar="attempts")
     parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
-            help="Directory for storing output cif files: default 'out'", metavar="outdir")
+            help="Directory for storing output cif/xyz files: default 'out'", metavar="outdir")
     parser.add_option("-c", "--checkatoms", dest="checkatoms", default="True", type=str, 
             help="Whether to check inter-atomic distances at each step: default True", metavar="outdir")
     parser.add_option("-i", "--allowinversion", dest="allowinversion", default="False", type=str, 
@@ -100,10 +100,18 @@ if __name__ == "__main__":
             comp = comp.replace(" ", "")
             cifpath = outdir + '/' + comp + '.cif'
             CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
-
             ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['international']
             print('Symmetry requested: {:d} ({:s}), generated: {:s}, vol: {:.2f} A^3'.format(sg, symbol, ans, rand_crystal.volume))
             print("Output to "+cifpath)
+            try:
+                from ase import Atoms
+                cell, pos, numbers = rand_crystal.spg_struct
+                ase_struc = Atoms(numbers=numbers, positions=pos, cell=cell, pbc=[1,1,1])
+                xyz_path = outdir + '/' + comp + '.xyz'
+                ase_struc.write(xyz_path, format='extxyz')
+                print("Output to " + xyz_path)
+            except:
+                print('Warning: ASE is required to export the crystal in extxyz format')
 
             #Print additional information about the structure
             if verbosity > 0:
