@@ -501,7 +501,7 @@ class mol_site():
             es_final.append(e*c)
         return np.array(es_final)
 
-    def _get_coords_and_species(self, absolute=False, add_PBC=False):
+    def _get_coords_and_species(self, absolute=False, add_PBC=False, first=False):
         """
         Used to generate coords and species for get_coords_and_species
 
@@ -510,6 +510,7 @@ class mol_site():
                 coordinates. If false, return relative coordinates instead
             add_PBC: whether or not to add coordinates in neighboring unit cells, used for
                 distance checking
+            first: whether or not to extract the information from only the first site
         
         Returns:
             atomic coords: a numpy array of fractional coordinates for the atoms in the site
@@ -544,6 +545,9 @@ class mol_site():
                 wp_atomic_sites.append(s)
             for c in current_atomic_coords:
                 wp_atomic_coords.append(c)
+
+            if first:
+                break
 
         if add_PBC is True:
             #Filter PBC of wp_atomic_coords
