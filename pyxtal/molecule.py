@@ -69,11 +69,7 @@ def mol_from_collection(mname):
     Returns:
         a pymatgen Molecule object
     """
-    try:
-        return Collection('molecules')[mname]
-    except:
-        printx("Could not find molecule '"+str(mname)+"' in pyxtal.database.", priority=1)
-        return
+    return Collection('molecules')[mname]
 
 def get_inertia_tensor(mol):
     """
