@@ -25,3 +25,13 @@ Distributed under the MIT License.
 
 ### Optional:
 * [openbabel 2.4.1 (Python bindings)](http://openbabel.org/wiki/Main_Page) (allows for additional molecule file formats)
+
+## Installation
+
+```
+$ pip install pyxtal
+```
+or 
+```
+$ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
+```
