@@ -364,7 +364,7 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
         else:
             return coor, index, point
 
-def choose_wyckoff_molecular(group, number, orientations):
+def choose_wyckoff_molecular(group, number, orientations, general_site_only=True):
     """
     Choose a Wyckoff position to fill based on the current number of molecules
     needed to be placed within a unit cell
@@ -387,7 +387,7 @@ def choose_wyckoff_molecular(group, number, orientations):
     """
     wyckoffs = group.wyckoffs_organized
     
-    if np.random.random()>0.5: #choose from high to low
+    if general_site_only or np.random.random()>0.5: #choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
                 good_wyckoff = []
@@ -864,7 +864,7 @@ class molecular_crystal():
         tm: the Tol_matrix object used to generate the crystal
     """
 
-    def init_common(self, molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm):
+    def init_common(self, molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm):
         """
         init functionality which is shared by 3D, 2D, and 1D crystals
         """
@@ -943,6 +943,8 @@ class molecular_crystal():
         """Whether or not inter-atomic distances are checked at each step."""
         self.allow_inversion = allow_inversion
         """Whether or not to allow chiral molecules to be inverted."""
+        self.select_high = select_high
+        """Whether or not to select high multi Wycoff sites only."""
         #When generating multiple crystals of the same stoichiometry and sg,
         #allow the user to re-use the allowed orientations, to reduce time cost
         if orientations is None:
@@ -1009,7 +1011,7 @@ class molecular_crystal():
                 return
         self.generate_crystal()
 
-    def __init__(self, group, molecules, numMols, volume_factor, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, volume_factor, select_high=True, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
         #Necessary input
@@ -1018,8 +1020,9 @@ class molecular_crystal():
         if type(group) != Group:
             group = Group(group, self.dim)
         self.sg = group.number
+        self.selec_high = select_high
         """The international spacegroup number of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
+        self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
 
     def Msgs(self):
         self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
@@ -1304,7 +1307,7 @@ class molecular_crystal():
                                 self.numattempts += 1
                                 #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
                                 #NOTE: The molecular version return wyckoff indices, not ops
-                                wp = choose_wyckoff_molecular(self.group, numMol-numMol_added, self.valid_orientations[i])
+                                wp = choose_wyckoff_molecular(self.group, numMol-numMol_added, self.valid_orientations[i], self.select_high)
                                 if wp is not False:
                                     #Generate a list of coords from the wyckoff position
                                     point = self.lattice.generate_point()
