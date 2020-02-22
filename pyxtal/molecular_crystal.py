@@ -916,8 +916,15 @@ class molecular_crystal():
                     raise NameError("Could not create molecules from given input: {:s}".format(mol))
         for mol in molecules:
             if len(mol) > 1:
+                props = mol.site_properties
                 pga = PointGroupAnalyzer(mol)
                 mo = pga.symmetrize_molecule()['sym_mol']
+                if len(props)>0:
+                    for key in props.keys():
+                        mo.add_site_property(key, props[key])
+                #print(mo.site_properties)
+                #import sys
+                #sys.exit()
                 oriented_molecules.append(mo)
             else:
                 oriented_molecules.append(mol)
