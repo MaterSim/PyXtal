@@ -1284,7 +1284,6 @@ class molecular_crystal():
                         sys.exit(0)
 
                     for cycle2 in range(max2):
-
                         molecular_coordinates_total = [] #to store the added molecular coordinates
                         molecular_sites_total = []      #to store the corresponding molecular specie
                         coordinates_total = [] #to store the added atomic coordinates
@@ -1293,6 +1292,7 @@ class molecular_crystal():
                         points_total = []   #to store the generating x,y,z points
                         mol_generators_total = []
                         good_structure = False
+
 
                         self.cycle2 = cycle2
                         molecular_coordinates_tmp = deepcopy(molecular_coordinates_total)
@@ -1322,13 +1322,12 @@ class molecular_crystal():
                                     projected_point = project_point(point, wp[0], lattice=cell_matrix, PBC=self.PBC)
                                     coords = apply_ops(projected_point, wp)
                                     #merge coordinates if the atoms are close
-                                    if not self.check_atomic_distances:
+                                    if self.check_atomic_distances is False:
                                         mtol = self.radii[i]*2
-                                    elif self.check_atomic_distances:
+                                    elif self.check_atomic_distances is True:
                                         mtol = self.radii[i]*0.5
-
                                     coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, self.group, mtol, self.valid_orientations[i])
-                                    if good_merge:
+                                    if good_merge is not False:
                                         wp_index = good_merge
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
 
@@ -1338,7 +1337,7 @@ class molecular_crystal():
                                         ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
                                         ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
                                         #Check distances within the WP
-                                        if not ms0.check_distances(atomic=self.check_atomic_distances):
+                                        if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
                                             #Check distance between centers
                                             d = distance_matrix(ms0.get_centers(), ms0.get_centers(), ms0.lattice, PBC=ms0.PBC)
                                             min_box_l = self.boxes[i].minl
@@ -1364,32 +1363,30 @@ class molecular_crystal():
                                                     break
                                         else:
                                             passed_ori = True
-
-                                        if passed_ori: 
+                                        if passed_ori is False: continue
                                         #Check distances with other WP's
-                                            coords_toadd, species_toadd = ms0.get_coords_and_species()
-                                            passed = True
-                                            for ms1 in mol_generators_tmp:
-                                                if not check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tm=self.tol_matrix):
-                                                    passed = False
-                                                    break
-                                            if passed:
+                                        coords_toadd, species_toadd = ms0.get_coords_and_species()
+                                        passed = True
+                                        for ms1 in mol_generators_tmp:
+                                            if check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tm=self.tol_matrix) is False:
+                                                passed = False
+                                                break
+                                        if passed is False: continue
+                                        elif passed is True:
                                             #Distance checks passed; store the new Wyckoff position
-                                                mol_generators_tmp.append(ms0)
-                                                if coordinates_tmp == []:
-                                                    coordinates_tmp = coords_toadd
-                                                else:
-                                                    coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
-                                                species_tmp += species_toadd
-                                                numMol_added += int(len(coords_toadd)/len(mo))
-                                                #print('----------------------->', len(coordinates_tmp), numMol_added, i, numMol)
-                                                if numMol_added == numMol:
-                                                    #We have enough molecules of the current type
-                                                    mol_generators_total = deepcopy(mol_generators_tmp)
-                                                    coordinates_total = deepcopy(coordinates_tmp)
-                                                    species_total = deepcopy(species_tmp)
-                                                    #print('--------------------break---------1')
-                                                    break
+                                            mol_generators_tmp.append(ms0)
+                                            if coordinates_tmp == []:
+                                                coordinates_tmp = coords_toadd
+                                            else:
+                                                coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                            species_tmp += species_toadd
+                                            numMol_added += len(coords_toadd)/len(mo)
+                                            if numMol_added == numMol:
+                                                #We have enough molecules of the current type
+                                                mol_generators_total = deepcopy(mol_generators_tmp)
+                                                coordinates_total = deepcopy(coordinates_tmp)
+                                                species_total = deepcopy(species_tmp)
+                                                break
 
                             if numMol_added != numMol:
                                 break  #need to repeat from the 1st species
