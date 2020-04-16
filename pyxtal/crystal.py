@@ -2186,12 +2186,15 @@ class random_crystal():
                         self.struct = None
                         return
 
-                coordinates_total = [] #to store the added coordinates
-                sites_total = []      #to store the corresponding specie
-                wyckoff_sites_total = []
-                good_structure = False
 
+                good_structure = False
+                
+                # to try to generate atomic coordinates
                 for cycle2 in range(max2):
+
+                    coordinates_total = [] #to store the added coordinates
+                    sites_total = []      #to store the corresponding specie
+                    wyckoff_sites_total = []
                     self.cycle2 = cycle2
                     coordinates_tmp = deepcopy(coordinates_total)
                     sites_tmp = deepcopy(sites_total)
@@ -2252,6 +2255,9 @@ class random_crystal():
                                 self.numattempts += 1
 
                         if numIon_added != numIon:
+                            coordinates_total = []
+                            sites_total = []
+                            wyckoff_sites_total = []
                             break  #need to repeat from the 1st species
 
                     if numIon_added == numIon:
