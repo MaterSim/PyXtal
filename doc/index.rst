@@ -21,7 +21,7 @@ PyXtal (pronounced ``pie-crystal``) is an open source Python library for the ab-
 - Easy access to symmetry group information (e.g., Wyckoff, site symmetry, and point group symbols).
 - Geometry optimization from built-in and external optimization methods.
 
-The current version is ``0.0.2`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license.
+The current version is ``0.0.3`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license.
 
 Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
 
