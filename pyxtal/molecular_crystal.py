@@ -425,7 +425,7 @@ class mol_site():
         ellipsoid: an optional binding Ellipsoid object for checking distances.
         tm: a Tol_matrix object for distance checking
     """
-    def __init__(self, mol, position, orientation, wyckoff_position, lattice, ellipsoid=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, mol, position, orientation, wyckoff_position, lattice, tols_matrix, ellipsoid=None, tm=Tol_matrix(prototype="molecular")):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = wyckoff_position[0].operate(position)
@@ -441,8 +441,10 @@ class mol_site():
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = wyckoff_position.PBC
         """The periodic axes"""
+        self.species = self.mol.species
         self.tol_matrix = tm
-        self.tols_matrix = self.get_tols_matrix()
+        self.tols_matrix = tols_matrix
+        self.radius = self.get_radius()
 
     def __str__(self):
         s = str(self.mol.formula)+": "+str(self.position)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
@@ -451,19 +453,6 @@ class mol_site():
         s += "\n    theta: "+str(theta)
         s += "\n    psi: "+str(psi)
         return s
-
-    def get_tols_matrix(self):
-        """
-        Returns: a 2D matrix which is used internally for distance checking.
-        """
-        species = self.mol.species
-        #Create tolerance matrix from subset of tm
-        tm = self.tol_matrix
-        tols = np.zeros((len(species),len(species)))
-        for i1, specie1 in enumerate(species):
-            for i2, specie2 in enumerate(species):
-                tols[i1][i2] = tm.get_tol(specie1, specie2)
-        return tols
 
     def get_ellipsoid(self):
         """
@@ -637,7 +626,7 @@ class mol_site():
         Returns:
             True if the atoms are not too close together, False otherwise
         """
-        if atomic is True:
+        if atomic:
             m_length = len(self.mol.species)
             #TODO: Use tm instead of tols lists
             #Get coords of WP with PBC
@@ -721,7 +710,7 @@ class mol_site():
             #Calculate distances between centers
             distances = np.linalg.norm(vectors, axis=-1)
             #Find which molecules need to be checked
-            indices_mol = np.where(distances < self.get_radius()*2)[0]
+            indices_mol = np.where(distances < self.radius()*2)[0]
             #Get indices of Wyckoff positions and PBC vectors
             indices_wp = []
             indices_pbc = []
@@ -742,7 +731,8 @@ class mol_site():
             pbc_toadd = np.repeat(ml[indices_pbc], m_length, axis=0)
             atomic_coords = original_coords + pbc_toadd
             #Get inter-atomic tolerances
-            tols = np.tile(self.get_tols_matrix(), len(indices_wp))
+            #tols = np.tile(self.get_tols_matrix(), len(indices_wp))
+            tols = np.tile(self.tols_matrix, len(indices_wp))
             if m_length <= max_fast_mol_size:
                 #Check all atomic pairs
                 d = cdist(coords_mol, atomic_coords)
@@ -810,7 +800,7 @@ class mol_site():
             
 
 
-        elif atomic is False:
+        else:
             #Check molecular ellipsoid overlap
             if self.multiplicity == 1:
                 return True
@@ -863,8 +853,26 @@ class molecular_crystal():
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
+    def __init__(self, group, molecules, numMols, volume_factor, 
+                 select_high=True, allow_inversion=False, orientations=None, 
+                 check_atomic_distances=True, fmt="xyz", lattice=None, 
+                 tm=Tol_matrix(prototype="molecular")):
 
-    def init_common(self, molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm):
+        self.dim = 3
+        """The number of periodic dimensions of the crystal"""
+        #Necessary input
+        self.PBC = [1,1,1]
+        """The periodic axes of the crystal"""
+        if type(group) != Group:
+            group = Group(group, self.dim)
+        self.sg = group.number
+        self.selec_high = select_high
+        """The international spacegroup number of the crystal."""
+        self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
+
+    def init_common(self, molecules, numMols, volume_factor, 
+                    select_high, allow_inversion, orientations, 
+                    check_atomic_distances, group, lattice, tm):
         """
         init functionality which is shared by 3D, 2D, and 1D crystals
         """
@@ -1016,20 +1024,27 @@ class molecular_crystal():
                 self.valid = False
                 self.struct = None
                 return
+        
+        self.tols_matrix = []
+        for mol in self.molecules:
+            self.tols_matrix.append(self.get_tols_matrix(mol))
+            #print(self.tols_matrix)
         self.generate_crystal()
 
-    def __init__(self, group, molecules, numMols, volume_factor, select_high=True, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt="xyz", lattice=None, tm=Tol_matrix(prototype="molecular")):
-        self.dim = 3
-        """The number of periodic dimensions of the crystal"""
-        #Necessary input
-        self.PBC = [1,1,1]
-        """The periodic axes of the crystal"""
-        if type(group) != Group:
-            group = Group(group, self.dim)
-        self.sg = group.number
-        self.selec_high = select_high
-        """The international spacegroup number of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
+
+    def get_tols_matrix(self, mol):
+        """
+        Returns: a 2D matrix which is used internally for distance checking.
+        """
+        species = mol.species
+        #Create tolerance matrix from subset of tm
+        tm = self.tol_matrix
+        tols = np.zeros((len(species),len(species)))
+        for i1, specie1 in enumerate(species):
+            for i2, specie2 in enumerate(species):
+                tols[i1][i2] = tm.get_tol(specie1, specie2)
+        return tols
+
 
     def Msgs(self):
         self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
@@ -1322,10 +1337,10 @@ class molecular_crystal():
                                     projected_point = project_point(point, wp[0], lattice=cell_matrix, PBC=self.PBC)
                                     coords = apply_ops(projected_point, wp)
                                     #merge coordinates if the atoms are close
-                                    if self.check_atomic_distances is False:
-                                        mtol = self.radii[i]*2
-                                    elif self.check_atomic_distances is True:
+                                    if self.check_atomic_distances:
                                         mtol = self.radii[i]*0.5
+                                    else:
+                                        mtol = self.radii[i]*2
                                     coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, self.group, mtol, self.valid_orientations[i])
                                     if good_merge is not False:
                                         wp_index = good_merge
@@ -1335,7 +1350,7 @@ class molecular_crystal():
                                         mo = deepcopy(self.molecules[i])
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
                                         ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
+                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tols_matrix=self.tols_matrix[i], tm=self.tol_matrix)
                                         #Check distances within the WP
                                         if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
                                             #Check distance between centers
@@ -1357,7 +1372,7 @@ class molecular_crystal():
                                             for cycle4 in range(max4):
                                                 self.cycle4 = cycle4
                                                 ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                                ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tm=self.tol_matrix)
+                                                ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tols_matrix=self.tols_matrix[i], tm=self.tol_matrix)
                                                 if ms0.check_distances(atomic=self.check_atomic_distances):
                                                     passed_ori = True
                                                     break
@@ -1368,7 +1383,7 @@ class molecular_crystal():
                                         coords_toadd, species_toadd = ms0.get_coords_and_species()
                                         passed = True
                                         for ms1 in mol_generators_tmp:
-                                            if check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tm=self.tol_matrix) is False:
+                                            if not check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tols_matrix=self.tols_matrix[i], tm=self.tol_matrix):
                                                 passed = False
                                                 break
                                         if passed is False: continue
