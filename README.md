@@ -35,3 +35,19 @@ or
 ```
 $ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
 ```
+
+## Citation
+
+Fredericks S, Sayre D, Zhu Q*(2019) 
+[PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis](https://arxiv.org/pdf/1911.11123.pdf)
+```
+@article{pyxtal,
+    title={PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis},
+    author={Scott Fredericks and Dean Sayre and Qiang Zhu},
+    year={2019},
+    eprint={1911.11123},
+    archivePrefix={arXiv},
+    primaryClass={cond-mat.mtrl-sci}
+}
+```
+
