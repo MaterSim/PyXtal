@@ -42,7 +42,7 @@ setup(
     ],
     install_requires=[
         'numpy>=1.13.3', 
-        'scipy>=1.1.0', 
+        'scipy>=1.5.0', 
         'spglib>=1.10.4',
         'pymatgen>=2020.1.28'],
     python_requires='>=3.6.1',

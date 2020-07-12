@@ -1549,6 +1549,7 @@ class Lattice():
             'allow_volume_reset': a bool stating whether or not the volume should be reset during
                 each crystal generation attempt
     """
+
     def __init__(self, ltype, volume, PBC=[1,1,1], **kwargs):
         #Set required parameters
         if ltype in ["triclinic", "monoclinic", "orthorhombic", "tetragonal",
