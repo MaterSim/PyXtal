@@ -82,8 +82,8 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
         c2, s2 = ms2.get_coords_and_species()
 
         #Calculate which distance matrix is smaller/faster
-        m_length1 = len(ms1.mol.species)
-        m_length2 = len(ms2.mol.species)
+        m_length1 = len(ms1.numbers)
+        m_length2 = len(ms2.numbers)
         wp_length1 = len(c1)
         wp_length2 = len(c2)
         size1 = m_length1 * wp_length2
@@ -94,9 +94,9 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
             coords_mol = c1[:m_length1]
             #Calculate tol matrix for species pairs
             tols = np.zeros((m_length1,m_length2))
-            for i1, specie1 in enumerate(s1[:m_length1]):
-                for i2, specie2 in enumerate(s2[:m_length2]):
-                    tols[i1][i2] = tm.get_tol(specie1, specie2)
+            for i1, number1 in enumerate(ms1.numbers):
+                for i2, number2 in enumerate(ms2.numbers):
+                    tols[i1][i2] = tm.get_tol(number1, number2)
             tols = np.repeat(tols, ms2.multiplicity, axis=1)
             d = distance_matrix(coords_mol, c2, ms1.lattice, PBC=ms1.PBC)
 
@@ -105,9 +105,9 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
             coords_mol = c2[:m_length2]
             #Calculate tol matrix for species pairs
             tols = np.zeros((m_length2,m_length1))
-            for i1, specie1 in enumerate(s2[:m_length2]):
-                for i2, specie2 in enumerate(s1[:m_length1]):
-                    tols[i1][i2] = tm.get_tol(specie1, specie2)
+            for i1, number1 in enumerate(ms2.numbers):
+                for i2, number2 in enumerate(ms1.numbers):
+                    tols[i1][i2] = tm.get_tol(number1, number2)
             tols = np.repeat(tols, ms1.multiplicity, axis=1)
             d = distance_matrix(coords_mol, c1, ms1.lattice, PBC=ms1.PBC)
 
@@ -328,7 +328,8 @@ def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
                     break
             if passed_distance_check is False:
                 break
-        if check_images([coor[0]], ['C'], lattice, PBC=PBC, tol=tol) is False:
+        #if check_images([coor[0]], ['C'], lattice, PBC=PBC, tol=tol) is False:
+        if check_images([coor[0]], [6], lattice, PBC=PBC, tol=tol) is False:
             passed_distance_check = False
         if passed_distance_check is False:
             mult1 = group[index].multiplicity
@@ -425,7 +426,7 @@ class mol_site():
         ellipsoid: an optional binding Ellipsoid object for checking distances.
         tm: a Tol_matrix object for distance checking
     """
-    def __init__(self, mol, position, orientation, wyckoff_position, lattice, tols_matrix, ellipsoid=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, mol, position, orientation, wyckoff_position, lattice, tols_matrix, radius, ellipsoid=None):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = wyckoff_position[0].operate(position)
@@ -442,9 +443,9 @@ class mol_site():
         self.PBC = wyckoff_position.PBC
         """The periodic axes"""
         self.species = self.mol.species
-        self.tol_matrix = tm
+        self.numbers = self.mol.atomic_numbers
         self.tols_matrix = tols_matrix
-        self.radius = self.get_radius()
+        self.radius = radius
 
     def __str__(self):
         s = str(self.mol.formula)+": "+str(self.position)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
@@ -506,7 +507,8 @@ class mol_site():
             species: a list of atomic species for the atomic coords
         """
         mo = deepcopy(self.mol)
-        mo.apply_operation(self.orientation.get_op(angle=0))
+        #mo.apply_operation(self.orientation.get_op(angle=0))
+        mo.apply_operation(self.orientation.get_op())
         wp_atomic_sites = []
         wp_atomic_coords = []
         for point_index, op2 in enumerate(self.wp.generators):
@@ -599,27 +601,13 @@ class mol_site():
         else:
             return np.dot(centers, self.lattice)
 
-    def get_radius(self):
-        try:
-            return self.radius
-        except:
-            r_max = 0
-            for site in self.mol:
-                radius = math.sqrt(site.x**2 + site.y**2 + site.z**2) + self.tol_matrix.get_tol(site.specie,site.specie)*0.5
-                if radius > r_max:
-                    r_max = radius
-            self.radius = r_max
-            return self.radius
-
-    def check_distances(self, factor=1.0, atomic=True):
+    def check_distances(self, atomic=True):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
         crystal.check_distance as the base code.
         
         Args:
-            factor: the tolerance factor to use. A higher value means atoms must
-                be farther apart
             atomic: if True, checks inter-atomic distances. If False, checks ellipsoid
                 overlap between molecules instead
         
@@ -798,8 +786,6 @@ class mol_site():
                 else:
                     return True    
             
-
-
         else:
             #Check molecular ellipsoid overlap
             if self.multiplicity == 1:
@@ -1026,23 +1012,33 @@ class molecular_crystal():
                 return
         
         self.tols_matrix = []
+        self.radii = []
         for mol in self.molecules:
             self.tols_matrix.append(self.get_tols_matrix(mol))
+            self.radii.append(self.get_radius(mol))
             #print(self.tols_matrix)
         self.generate_crystal()
+
+    def get_radius(self, mol):
+        r_max = 0
+        for coord, number in zip(mol.cart_coords, mol.atomic_numbers):
+            radius = np.sqrt(np.sum(coord*coord)) + self.tol_matrix.get_tol(number, number)*0.5
+            if radius > r_max:
+                r_max = radius
+        return r_max
 
 
     def get_tols_matrix(self, mol):
         """
         Returns: a 2D matrix which is used internally for distance checking.
         """
-        species = mol.species
+        numbers = mol.atomic_numbers
         #Create tolerance matrix from subset of tm
         tm = self.tol_matrix
-        tols = np.zeros((len(species),len(species)))
-        for i1, specie1 in enumerate(species):
-            for i2, specie2 in enumerate(species):
-                tols[i1][i2] = tm.get_tol(specie1, specie2)
+        tols = np.zeros((len(numbers),len(numbers)))
+        for i1, number1 in enumerate(numbers):
+            for i2, number2 in enumerate(numbers):
+                tols[i1][i2] = tm.get_tol(number1, number2)
         return tols
 
 
@@ -1350,9 +1346,33 @@ class molecular_crystal():
                                         mo = deepcopy(self.molecules[i])
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
                                         ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tols_matrix=self.tols_matrix[i], tm=self.tol_matrix)
+                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
                                         #Check distances within the WP
                                         if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
+                                            # Maximize the smallest distance for the general positions if needed
+                                            #if len(mo) > 1 and ori.degrees > 0:
+                                            #    # optimize the orientation with the bisection method
+                                            #    def fun_dist(angle, ori, mo, point):
+                                            #        ori.change_orientation(angle)
+                                            #        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
+                                            #        coords, _ = ms0.get_coords_and_species()
+                                            #        d = distance_matrix(coords, coords, ms0.lattice, PBC=ms0.PBC)
+                                            #        d = d[d>1e-3]
+                                            #        return np.min(d)
+
+                                            #    angle_lo = deepcopy(ori.angle)
+                                            #    angle_hi = angle_lo + np.pi
+                                            #    fun_lo = fun_dist(angle_lo, ori, mo, point)
+                                            #    fun_hi = fun_dist(angle_hi, ori, mo, point)
+                                            #    for it in range(5):
+                                            #        print('Bisection: ', it, fun_lo, fun_hi, ms0.check_distances(atomic=self.check_atomic_distances))
+                                            #        angle = (angle_lo + angle_hi)/2
+                                            #        fun = fun_dist(angle, ori, mo, point)
+                                            #        if fun_lo > fun_hi:
+                                            #            angle_hi, fun_hi = angle, fun
+                                            #        else:
+                                            #            angle_lo, fun_lo = angle, fun
+                                            #if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
                                             #Check distance between centers
                                             d = distance_matrix(ms0.get_centers(), ms0.get_centers(), ms0.lattice, PBC=ms0.PBC)
                                             min_box_l = self.boxes[i].minl
@@ -1372,10 +1392,11 @@ class molecular_crystal():
                                             for cycle4 in range(max4):
                                                 self.cycle4 = cycle4
                                                 ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                                ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, tols_matrix=self.tols_matrix[i], tm=self.tol_matrix)
+                                                ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
                                                 if ms0.check_distances(atomic=self.check_atomic_distances):
                                                     passed_ori = True
                                                     break
+
                                         else:
                                             passed_ori = True
                                         if passed_ori is False: continue
@@ -1383,7 +1404,7 @@ class molecular_crystal():
                                         coords_toadd, species_toadd = ms0.get_coords_and_species()
                                         passed = True
                                         for ms1 in mol_generators_tmp:
-                                            if not check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tols_matrix=self.tols_matrix[i], tm=self.tol_matrix):
+                                            if not check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tm=self.tol_matrix):
                                                 passed = False
                                                 break
                                         if passed is False: continue
