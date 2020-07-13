@@ -1144,6 +1144,7 @@ class molecular_crystal():
                     break
             p2 = p
             if n == n0:
+                print("n == n0", n, n0)
                 return False
             while True:
                 num = np.dot(n, l_mult)
@@ -1160,6 +1161,7 @@ class molecular_crystal():
                     break
                 #All combinations failed: return False
                 if n == n0 and p >= len(l_mult) - 1:
+                    print("All combinations failed: return False")
                     return False
                 #Too few atoms
                 if num < numIon:
@@ -1264,7 +1266,8 @@ class molecular_crystal():
         if degrees is False:
             self.struct = None
             self.valid = False
-            return
+            raise ValueError("the space group is incompatible with the number of molecules")
+            #return
         else:
             if degrees == 0:
                 max1 = 20
@@ -1347,59 +1350,63 @@ class molecular_crystal():
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
 
                                         #Create a mol_site object
-                                        mo = deepcopy(self.molecules[i])
+                                        #mo = deepcopy(self.molecules[i])
+                                        mo = self.molecules[i]
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
                                         ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
                                         ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
                                         #Check distances within the WP
                                         if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
                                             # Maximize the smallest distance for the general positions if needed
-                                            #if len(mo) > 1 and ori.degrees > 0:
-                                            #    # optimize the orientation with the bisection method
-                                            #    def fun_dist(angle, ori, mo, point):
-                                            #        ori.change_orientation(angle)
-                                            #        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
-                                            #        coords, _ = ms0.get_coords_and_species()
-                                            #        d = distance_matrix(coords, coords, ms0.lattice, PBC=ms0.PBC)
-                                            #        d = d[d>1e-3]
-                                            #        return np.min(d)
+                                            if len(mo) > 1 and ori.degrees > 0:
+                                                # optimize the orientation with the bisection method
+                                                def fun_dist(angle, ori, mo, point):
+                                                    ori.change_orientation(angle)
+                                                    ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
+                                                    coords, _ = ms0.get_coords_and_species()
+                                                    d = distance_matrix(coords, coords, ms0.lattice, PBC=ms0.PBC)
+                                                    d = d[d>1e-3]
+                                                    return np.min(d)
 
-                                            #    angle_lo = deepcopy(ori.angle)
-                                            #    angle_hi = angle_lo + np.pi
-                                            #    fun_lo = fun_dist(angle_lo, ori, mo, point)
-                                            #    fun_hi = fun_dist(angle_hi, ori, mo, point)
-                                            #    for it in range(5):
-                                            #        print('Bisection: ', it, fun_lo, fun_hi, ms0.check_distances(atomic=self.check_atomic_distances))
-                                            #        angle = (angle_lo + angle_hi)/2
-                                            #        fun = fun_dist(angle, ori, mo, point)
-                                            #        if fun_lo > fun_hi:
-                                            #            angle_hi, fun_hi = angle, fun
-                                            #        else:
-                                            #            angle_lo, fun_lo = angle, fun
-                                            #if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
-                                            #Check distance between centers
-                                            d = distance_matrix(ms0.get_centers(), ms0.get_centers(), ms0.lattice, PBC=ms0.PBC)
-                                            min_box_l = self.boxes[i].minl
-                                            xys = np.where(d < min_box_l)
-                                            passed_center = True
-                                            for i_y, x in enumerate(xys[0]):
-                                                y = xys[1][i_y]
-                                                val = d[x][y]
-                                                #Ignore self-distances
-                                                if x == y:
-                                                    continue
-                                                else:
-                                                    passed_center = False
-                                            if not passed_center: continue
-                                            #If centers are farther apart than min box length, allow multiple orientation attempts
-                                            passed_ori = False
-                                            for cycle4 in range(max4):
-                                                self.cycle4 = cycle4
-                                                ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                                ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
-                                                if ms0.check_distances(atomic=self.check_atomic_distances):
-                                                    passed_ori = True
-                                                    break
+                                                angle_lo = deepcopy(ori.angle)
+                                                angle_hi = angle_lo + np.pi
+                                                fun_lo = fun_dist(angle_lo, ori, mo, point)
+                                                fun_hi = fun_dist(angle_hi, ori, mo, point)
+                                                for it in range(5):
+                                                    if ms0.check_distances(atomic=self.check_atomic_distances):
+                                                        passed_ori = True
+                                                        break
+                                                    angle = (angle_lo + angle_hi)/2
+                                                    fun = fun_dist(angle, ori, mo, point)
+                                                    #print('Bisection: ', it, fun, ms0.check_distances(atomic=self.check_atomic_distances))
+                                                    if fun_lo > fun_hi:
+                                                        angle_hi, fun_hi = angle, fun
+                                                    else:
+                                                        angle_lo, fun_lo = angle, fun
+                                                if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
+                                                #Check distance between centers
+                                                    d = distance_matrix(ms0.get_centers(), ms0.get_centers(), ms0.lattice, PBC=ms0.PBC)
+                                                    min_box_l = self.boxes[i].minl
+                                                    xys = np.where(d < min_box_l)
+                                                    passed_center = True
+                                                    for i_y, x in enumerate(xys[0]):
+                                                        y = xys[1][i_y]
+                                                        val = d[x][y]
+                                                        #Ignore self-distances
+                                                        if x == y:
+                                                            continue
+                                                        else:
+                                                            passed_center = False
+                                                    if not passed_center: continue
+                                                    #If centers are farther apart than min box length, allow multiple orientation attempts
+                                                    passed_ori = False
+                                                    for cycle4 in range(max4):
+                                                        self.cycle4 = cycle4
+                                                        ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
+                                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
+                                                        if ms0.check_distances(atomic=self.check_atomic_distances):
+                                                            passed_ori = True
+                                                            break
 
                                         else:
                                             passed_ori = True
