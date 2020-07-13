@@ -1086,7 +1086,7 @@ class molecular_crystal():
                     else:
                         self.valid_orientations[-1][-1].append([])
 
-    def check_compatible(group, numMols, valid_orientations):
+    def check_compatible(self, group, numMols, valid_orientations):
         """
         Checks if the number of molecules is compatible with the Wyckoff
         positions. Considers the number of degrees of freedom for each Wyckoff
@@ -1262,7 +1262,7 @@ class molecular_crystal():
             max4: the number of attempts for changing the molecular orientation
         """
         #Check the minimum number of degrees of freedom within the Wyckoff positions
-        degrees = molecular_crystal.check_compatible(self.group, self.numMols, self.valid_orientations)
+        degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
         if degrees is False:
             self.struct = None
             self.valid = False
@@ -1372,8 +1372,9 @@ class molecular_crystal():
                                                 angle_hi = angle_lo + np.pi
                                                 fun_lo = fun_dist(angle_lo, ori, mo, point)
                                                 fun_hi = fun_dist(angle_hi, ori, mo, point)
-                                                for it in range(5):
-                                                    if ms0.check_distances(atomic=self.check_atomic_distances):
+                                                fun = fun_hi
+                                                for it in range(10):
+                                                    if (fun > 0.7) & (ms0.check_distances(atomic=self.check_atomic_distances)):
                                                         passed_ori = True
                                                         break
                                                     angle = (angle_lo + angle_hi)/2
