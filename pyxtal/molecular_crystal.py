@@ -437,12 +437,14 @@ class mol_site():
         """A SymmOp representing the minimal ellipsoid for the molecule"""
         self.wp = wyckoff_position
         self.lattice = lattice
+        self.inv_lattice = np.linalg.inv(lattice)
         """The crystal lattice in which the molecule resides"""
         self.multiplicity = self.wp.multiplicity
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = wyckoff_position.PBC
         """The periodic axes"""
         self.species = self.mol.species
+        self.symbols = [specie.name for specie in self.species]
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = tols_matrix
         self.radius = radius
@@ -506,39 +508,41 @@ class mol_site():
             atomic coords: a numpy array of fractional coordinates for the atoms in the site
             species: a list of atomic species for the atomic coords
         """
-        mo = deepcopy(self.mol)
+        # Remove deepcopy, here we only need to know the species/rotations
+        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T) #
+        #mo = deepcopy(self.mol)
         #mo.apply_operation(self.orientation.get_op(angle=0))
-        mo.apply_operation(self.orientation.get_op())
+        #print(mo.cart_coords.dot(self.orientation.matrix.T)[:3,:])
+        #mo.apply_operation(self.orientation.get_op())
+        #print(mo.cart_coords[:3,:])
         wp_atomic_sites = []
-        wp_atomic_coords = []
+        wp_atomic_coords = None
         for point_index, op2 in enumerate(self.wp.generators):
-            current_atomic_sites = []
-            current_atomic_coords = []
-
-            #Rotate the molecule (Euclidean metric)
-            op2_m = self.wp.generators_m[point_index]
-            mo2 = deepcopy(mo)
-            mo2.apply_operation(op2_m)
             #Obtain the center in absolute coords
             center_relative = op2.operate(self.position)
             center_absolute = np.dot(center_relative, self.lattice)
-            #Add absolute center to molecule
-            mo2.apply_operation(SymmOp.from_rotation_and_translation(np.identity(3),center_absolute))
 
-            for site in mo2:
-                #Place molecular coordinates in relative coordinates
-                relative_coords = np.dot(site.coords, np.linalg.inv(self.lattice))
-                #Do not filter: interferes with periodic image check
-                #relative_coords = filtered_coords(relative_coords, PBC=self.PBC)
-                current_atomic_sites.append(site.specie.name)
-                current_atomic_coords.append(relative_coords)
-            for s in current_atomic_sites:
-                wp_atomic_sites.append(s)
-            for c in current_atomic_coords:
-                wp_atomic_coords.append(c)
+            #Rotate the molecule (Euclidean metric)
+            op2_m = self.wp.generators_m[point_index]
+            rot = op2_m.affine_matrix[0:3][:, 0:3].T
+            tau = op2_m.affine_matrix[0:3][:, 3]
+            tmp = np.dot(coord0, rot) + tau
+            #Add absolute center to molecule
+            tmp += center_absolute
+            tmp = tmp.dot(self.inv_lattice)
+            #print(tmp[:3,:])
+            if wp_atomic_coords is None:
+                wp_atomic_coords = tmp
+            else:
+                wp_atomic_coords = np.append(wp_atomic_coords, tmp, axis=0)
+            wp_atomic_sites.extend(self.symbols)
 
             if first:
                 break
+        #print(wp_atomic_sites)
+        #import sys
+        #sys.exit()
+
 
         if add_PBC is True:
             #Filter PBC of wp_atomic_coords
@@ -554,7 +558,7 @@ class mol_site():
             new_coords = np.vstack([wp_atomic_coords + v for v in m2])
             wp_atomic_coords = new_coords
 
-        return np.array(wp_atomic_coords), wp_atomic_sites
+        return wp_atomic_coords, wp_atomic_sites
 
     def get_coords_and_species(self, absolute=False, add_PBC=False):
         """
