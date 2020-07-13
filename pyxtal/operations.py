@@ -485,8 +485,8 @@ def aa2matrix(axis, angle, radians=True, random=False):
         angle *= rad
     #Allow for generation of random rotations
     if random is True:
-        a = np.random.random()
-        axis = [np.random.random(),np.random.random(),np.random.random()]
+        #a = np.random.random()
+        axis = np.random.sample(3)
         angle = np.random.random()*pi*2
     #Ensure axis is a unit vector
     axis = axis / np.linalg.norm(axis)
@@ -866,6 +866,12 @@ class Orientation():
         """The number of degrees of freedom."""
         self.axis = axis
         """The axis (optional) about which the orientation may rotate."""
+        self.angle = None
+
+    def change_orientation(self, angle):
+        self.matrix = self.get_matrix(angle)
+        #return Orientation(self.get_matrix(), degrees=self.degrees, axis=self.axis)
+
 
     def get_matrix(self, angle="random"):
         """
@@ -884,20 +890,22 @@ class Orientation():
         """
         if self.degrees == 2:
             if angle == "random":
-                return aa2matrix(1,1,random=True)
+                self.axis = np.random.sample(3)
+                self.angle = np.random.random()*pi*2
             else:
-                return self.matrix
+                self.angle = angle
+            return aa2matrix(self.axis, self.angle)
         elif self.degrees == 1:
             if angle == "random":
-                R = aa2matrix(self.axis, np.random.random()*2*pi)
-                return np.dot(R, self.matrix)
-            else:
-                R = aa2matrix(self.axis, angle)
-                return np.dot(R, self.matrix)
+                angle = np.random.random()*pi*2
+            self.angle = angle
+            return aa2matrix(self.axis, angle)
+            #R = aa2matrix(self.axis, angle)
+            #return np.dot(R, self.matrix)
         elif self.degrees == 0:
             return self.matrix
 
-    def get_op(self, angle="random"):
+    def get_op(self, angle=None):
         """
         Generate a SymmOp object consistent with the orientation's
         constraints. Allows for specification of an angle (possibly random) to
@@ -913,7 +921,10 @@ class Orientation():
             pymatgen.core.structure. SymmOp object
         """
         #If "random", rotates by a random amount
-        m = self.get_matrix(angle=angle)
+        if angle is None:
+            m = self.matrix
+        else:
+            m = self.get_matrix(angle=angle)
         return SymmOp.from_rotation_and_translation(m,[0,0,0])
 
     @classmethod
@@ -975,7 +986,8 @@ class Orientation():
         Returns:
             a new orientation object with a different base rotation matrix
         """
-        return Orientation(self.get_matrix(), degrees=self.degrees, axis=self.axis)
+        self.get_matrix()
+        return self
 
 #Test Functionality
 if __name__ == "__main__":
