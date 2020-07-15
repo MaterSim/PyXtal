@@ -170,6 +170,39 @@ def dsquared(v):
     """
     return v[0]**2 + v[1]**2 + v[2]**2
 
+def distance_matrix_single(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
+    """
+    Returns the distances between two sets of fractional coordinates.
+    Takes into account the lattice metric and periodic boundary conditions.
+    
+    Args:
+        points1: a list of fractional coordinates
+        points2: another list of fractional coordinates
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        metric: the metric to use with cdist. Possible values include 'euclidean',
+            'sqeuclidean', 'minkowski', and others
+
+    Returns:
+        a 2x2 np array of scalar distances
+    """
+    if PBC != [0,0,0]:
+        l1 = filtered_coords(points1, PBC=PBC)
+        l2 = filtered_coords(points2, PBC=PBC)
+        l2 = np.dot(l2, lattice)
+        matrix = create_matrix(PBC=PBC)
+        m1 = np.array([(l1 + v) for v in matrix])
+        m1 = np.dot(m1, lattice)
+        d = np.array([cdist(l, l2, metric) for l in m1])
+    else:
+        l1 = np.dot(points1, lattice)
+        l2 = np.dot(points2, lattice)
+        d = cdist(l1, l2, metric)
+
+    return np.min(d)
+
+
 def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
     """
     Returns the distances between two sets of fractional coordinates.

@@ -605,6 +605,49 @@ class mol_site():
         else:
             return np.dot(centers, self.lattice)
 
+    def compute_distances(self):
+        """
+        compute if the atoms in the Wyckoff position are too close to each other
+        or not. Does not check distances between atoms in the same molecule. Uses
+        crystal.check_distance as the base code.
+        
+        Args:
+            atomic: if True, checks inter-atomic distances. If False, checks ellipsoid
+                overlap between molecules instead
+        
+        Returns:
+            True if the atoms are not too close together, False otherwise
+        """
+        m_length = len(self.mol.species)
+        #TODO: Use tm instead of tols lists
+        #Get coords of WP with PBC
+        coords, species = self._get_coords_and_species()
+
+        #Get coords of the generating molecule
+        coords_mol = coords[:m_length]
+        #Remove generating molecule's coords from large array
+        coords = coords[m_length:]
+        min_ds = []
+
+        if self.PBC != [0,0,0]:
+            #Check periodic images
+            m = create_matrix(PBC=self.PBC)
+            #Remove original coordinates
+            m2 = []
+            v0 = np.array([0.,0.,0.])
+            for v in m:
+                if not (v==v0).all():
+                    m2.append(v)
+            coords_PBC = np.vstack([coords_mol + v for v in m2])
+            d = distance_matrix_single(coords_mol, coords_PBC, self.lattice, PBC=[0,0,0])
+            min_ds.append(d)
+        if self.multiplicity > 1:
+            #Check inter-atomic distances
+            d = distance_matrix_single(coords_mol, coords, self.lattice, PBC=self.PBC)
+            min_ds.append(d)
+        return min(min_ds)
+
+
     def check_distances(self, atomic=True):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
@@ -1358,15 +1401,14 @@ class molecular_crystal():
                                         #Check distances within the WP
                                         if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
                                             # Maximize the smallest distance for the general positions if needed
+                                            passed_ori = False
                                             if len(mo) > 1 and ori.degrees > 0:
                                                 # optimize the orientation with the bisection method
                                                 def fun_dist(angle, ori, mo, point):
                                                     ori.change_orientation(angle)
                                                     ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
-                                                    coords, _ = ms0.get_coords_and_species()
-                                                    d = distance_matrix(coords, coords, ms0.lattice, PBC=ms0.PBC)
-                                                    d = d[d>1e-3]
-                                                    return np.min(d)
+                                                    d = ms0.compute_distances()
+                                                    return d
 
                                                 angle_lo = deepcopy(ori.angle)
                                                 angle_hi = angle_lo + np.pi
