@@ -349,8 +349,9 @@ def project_point(point, op, lattice=Euclidean_lattice, PBC=[1,1,1]):
         point -= translation
         new_vector = np.array([0.0,0.0,0.0])
         #Loop over basis vectors of the symmetry element
-        for basis_vector in np.transpose(op.rotation_matrix):
-            b = np.linalg.norm(basis_vector)
+        for basis_vector in op.rotation_matrix.T:
+            #b = np.linalg.norm(basis_vector)
+            b = np.sqrt(basis_vector.dot(basis_vector)) # a faster version?
             if not np.isclose(b, 0):
                 new_vector += basis_vector*(np.dot(point, basis_vector)/(b**2))
         new_vector += translation
@@ -366,6 +367,7 @@ def project_point(point, op, lattice=Euclidean_lattice, PBC=[1,1,1]):
         for v in m:
             #Get the direct projection onto each of the new symmetry elements
             new_op = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector + v)
+            #Needs to replace
             new_vector = project_point(point, new_op, lattice=lattice, PBC=[0,0,0])
             new_vectors.append(new_vector)
             distances.append(distance(new_vector - point, lattice=lattice, PBC=[0,0,0]))

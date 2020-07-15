@@ -78,8 +78,8 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
 
     elif atomic is True:
         #Get coordinates for both mol_sites
-        c1, s1 = ms1.get_coords_and_species()
-        c2, s2 = ms2.get_coords_and_species()
+        c1, _ = ms1.get_coords_and_species()
+        c2, _ = ms2.get_coords_and_species()
 
         #Calculate which distance matrix is smaller/faster
         m_length1 = len(ms1.numbers)
@@ -146,9 +146,7 @@ def get_group_orientations(mol, group, allow_inversion=False):
     Returns a list with 3 indices:
 
         index 1: the Wyckoff position's 1st index (based on multiplicity)  
-
         index 2: the WP's 2nd index (within the group of equal multiplicity)  
-
         index 3: the index of the valid orientation for the molecule/WP pair
 
     For example, self.valid_orientations[i][j] would be a list of valid
@@ -426,7 +424,7 @@ class mol_site():
         ellipsoid: an optional binding Ellipsoid object for checking distances.
         tm: a Tol_matrix object for distance checking
     """
-    def __init__(self, mol, position, orientation, wyckoff_position, lattice, tols_matrix, radius, ellipsoid=None):
+    def __init__(self, mol, position, symbols, orientation, wyckoff_position, lattice, tols_matrix, radius, ellipsoid=None):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = wyckoff_position[0].operate(position)
@@ -443,11 +441,11 @@ class mol_site():
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = wyckoff_position.PBC
         """The periodic axes"""
-        self.species = self.mol.species
-        self.symbols = [specie.name for specie in self.species]
+        self.symbols = symbols
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = tols_matrix
         self.radius = radius
+        self.coord0 = self.mol.cart_coords 
 
     def __str__(self):
         s = str(self.mol.formula)+": "+str(self.position)+" "+str(self.wp.multiplicity)+self.wp.letter+", site symmetry "+ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
@@ -508,13 +506,7 @@ class mol_site():
             atomic coords: a numpy array of fractional coordinates for the atoms in the site
             species: a list of atomic species for the atomic coords
         """
-        # Remove deepcopy, here we only need to know the species/rotations
-        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T) #
-        #mo = deepcopy(self.mol)
-        #mo.apply_operation(self.orientation.get_op(angle=0))
-        #print(mo.cart_coords.dot(self.orientation.matrix.T)[:3,:])
-        #mo.apply_operation(self.orientation.get_op())
-        #print(mo.cart_coords[:3,:])
+        coord0 = self.coord0.dot(self.orientation.matrix.T) #
         wp_atomic_sites = []
         wp_atomic_coords = None
         for point_index, op2 in enumerate(self.wp.generators):
@@ -530,7 +522,6 @@ class mol_site():
             #Add absolute center to molecule
             tmp += center_absolute
             tmp = tmp.dot(self.inv_lattice)
-            #print(tmp[:3,:])
             if wp_atomic_coords is None:
                 wp_atomic_coords = tmp
             else:
@@ -539,10 +530,6 @@ class mol_site():
 
             if first:
                 break
-        #print(wp_atomic_sites)
-        #import sys
-        #sys.exit()
-
 
         if add_PBC is True:
             #Filter PBC of wp_atomic_coords
@@ -573,22 +560,22 @@ class mol_site():
                 distance checking
         
         Returns:
-            coords, species: coords is an np array of 3-vectors. species is
-                a list of atomic species names, for example
-                ['H', 'H', 'O', 'H', 'H', 'O']
+            coords: a np array of 3-vectors. 
+            species: a list of atomic symbols, e.g. ['H', 'H', 'O', 'H', 'H', 'O']
         """
         if absolute is False:
+            # try to avoid repeating the computation
             try:
-                return self.relative_coords, self.species
+                return self.relative_coords, self.symbols_all
             except:
-                self.relative_coords, self.species = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
-            return self.relative_coords, self.species
+                self.relative_coords, self.symbols_all = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
+            return self.relative_coords, self.symbols_all
         else:
             try:
-                return self.absolute_coords, self.species
+                return self.absolute_coords, self.symbols_all
             except:
-                self.absolute_coords, self.species = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
-            return self.absolute_coords, self.species
+                self.absolute_coords, self.symbols_all = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
+            return self.absolute_coords, self.symbols_all
 
     def get_centers(self, absolute=False):
         """
@@ -611,17 +598,13 @@ class mol_site():
         or not. Does not check distances between atoms in the same molecule. Uses
         crystal.check_distance as the base code.
         
-        Args:
-            atomic: if True, checks inter-atomic distances. If False, checks ellipsoid
-                overlap between molecules instead
-        
         Returns:
             True if the atoms are not too close together, False otherwise
         """
-        m_length = len(self.mol.species)
+        m_length = len(self.symbols)
         #TODO: Use tm instead of tols lists
         #Get coords of WP with PBC
-        coords, species = self._get_coords_and_species()
+        coords, _ = self._get_coords_and_species()
 
         #Get coords of the generating molecule
         coords_mol = coords[:m_length]
@@ -662,10 +645,10 @@ class mol_site():
             True if the atoms are not too close together, False otherwise
         """
         if atomic:
-            m_length = len(self.mol.species)
+            m_length = len(self.symbols)
             #TODO: Use tm instead of tols lists
             #Get coords of WP with PBC
-            coords, species = self._get_coords_and_species()
+            coords, _ = self._get_coords_and_species()
 
             #Get coords of the generating molecule
             coords_mol = coords[:m_length]
@@ -696,142 +679,140 @@ class mol_site():
 
             return True
 
-
-
             """New method - only checks some atoms/molecules"""
-            #Store length of molecule
-            m_length = len(self.mol)
-            #Get coordinates of center molecule and Wyckoff position
-            coords, species = self._get_coords_and_species(absolute=True)
-            coords_mol = coords[:m_length]
+            ##Store length of molecule
+            #m_length = len(self.mol)
+            ##Get coordinates of center molecule and Wyckoff position
+            #coords, species = self._get_coords_and_species(absolute=True)
+            #coords_mol = coords[:m_length]
 
-            if self.PBC == [0,0,0]:
-                #Check non-periodic Wyckoff positions
-                if self.multiplicity == 1:
-                    return True
-                coords_other = coords[m_length:]
-                tols = np.repeat(self.tols_matrix, self.multiplicity-1, axis=1)
-                d = cdist(coords_mol, coords_other)
-                if (d<tols).any():
-                    return False
-                else:
-                    return True
+            #if self.PBC == [0,0,0]:
+            #    #Check non-periodic Wyckoff positions
+            #    if self.multiplicity == 1:
+            #        return True
+            #    coords_other = coords[m_length:]
+            #    tols = np.repeat(self.tols_matrix, self.multiplicity-1, axis=1)
+            #    d = cdist(coords_mol, coords_other)
+            #    if (d<tols).any():
+            #        return False
+            #    else:
+            #        return True
 
-            #Create PBC vectors
-            m = create_matrix(PBC=self.PBC)
-            ml = np.dot(m, self.lattice)
-            #Store the index of the (0,0,0) vector within ml
-            mid_index = len(ml) // 2
+            ##Create PBC vectors
+            #m = create_matrix(PBC=self.PBC)
+            #ml = np.dot(m, self.lattice)
+            ##Store the index of the (0,0,0) vector within ml
+            #mid_index = len(ml) // 2
 
-            if self.multiplicity == 1:
-                #Only check periodic images
-                #Remove original coordinates
-                m2 = []
-                v0 = np.array([0.,0.,0.])
-                for v in ml:
-                    if not (v==v0).all():
-                        m2.append(v)
-                coords_PBC = np.vstack([coords_mol + v for v in m2])
-                d = distance_matrix(coords_mol, coords_PBC, None, PBC=[0,0,0])
-                tols = np.repeat(self.tols_matrix, len(m2), axis=1)
-                if (d<tols).any():
-                    return False
-                else:
-                    return True
+            #if self.multiplicity == 1:
+            #    #Only check periodic images
+            #    #Remove original coordinates
+            #    m2 = []
+            #    v0 = np.array([0.,0.,0.])
+            #    for v in ml:
+            #        if not (v==v0).all():
+            #            m2.append(v)
+            #    coords_PBC = np.vstack([coords_mol + v for v in m2])
+            #    d = distance_matrix(coords_mol, coords_PBC, None, PBC=[0,0,0])
+            #    tols = np.repeat(self.tols_matrix, len(m2), axis=1)
+            #    if (d<tols).any():
+            #        return False
+            #    else:
+            #        return True
 
-            #Generate centers of all molecules
-            centers = self.get_centers(absolute=True)
-            vectors = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - np.dot(self.position, self.lattice)
-            #Calculate distances between centers
-            distances = np.linalg.norm(vectors, axis=-1)
-            #Find which molecules need to be checked
-            indices_mol = np.where(distances < self.radius()*2)[0]
-            #Get indices of Wyckoff positions and PBC vectors
-            indices_wp = []
-            indices_pbc = []
-            indices_vector = []
-            for index in indices_mol:
-                i_wp, i_pbc = divmod(index, len(ml))
-                #Omit original center molecule
-                if not (i_wp == 0 and i_pbc == mid_index):
-                    indices_wp.append(i_wp)
-                    indices_pbc.append(i_pbc)
-                    indices_vector.append(index)
+            ##Generate centers of all molecules
+            #centers = self.get_centers(absolute=True)
+            #vectors = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - np.dot(self.position, self.lattice)
+            ##Calculate distances between centers
+            #distances = np.linalg.norm(vectors, axis=-1)
+            ##Find which molecules need to be checked
+            #indices_mol = np.where(distances < self.radius()*2)[0]
+            ##Get indices of Wyckoff positions and PBC vectors
+            #indices_wp = []
+            #indices_pbc = []
+            #indices_vector = []
+            #for index in indices_mol:
+            #    i_wp, i_pbc = divmod(index, len(ml))
+            #    #Omit original center molecule
+            #    if not (i_wp == 0 and i_pbc == mid_index):
+            #        indices_wp.append(i_wp)
+            #        indices_pbc.append(i_pbc)
+            #        indices_vector.append(index)
 
-            if indices_wp == []:
-                return True
+            #if indices_wp == []:
+            #    return True
 
-            #Get atomic positions of molecules with small separation vectors
-            original_coords = np.vstack([coords[index_wp*m_length:index_wp*m_length+m_length] for index_wp in indices_wp])
-            pbc_toadd = np.repeat(ml[indices_pbc], m_length, axis=0)
-            atomic_coords = original_coords + pbc_toadd
-            #Get inter-atomic tolerances
-            #tols = np.tile(self.get_tols_matrix(), len(indices_wp))
-            tols = np.tile(self.tols_matrix, len(indices_wp))
-            if m_length <= max_fast_mol_size:
-                #Check all atomic pairs
-                d = cdist(coords_mol, atomic_coords)
+            ##Get atomic positions of molecules with small separation vectors
+            #original_coords = np.vstack([coords[index_wp*m_length:index_wp*m_length+m_length] for index_wp in indices_wp])
+            #pbc_toadd = np.repeat(ml[indices_pbc], m_length, axis=0)
+            #atomic_coords = original_coords + pbc_toadd
+            ##Get inter-atomic tolerances
+            ##tols = np.tile(self.get_tols_matrix(), len(indices_wp))
+            #tols = np.tile(self.tols_matrix, len(indices_wp))
+            #if m_length <= max_fast_mol_size:
+            #    #Check all atomic pairs
+            #    d = cdist(coords_mol, atomic_coords)
 
-                """
-                print("~~~~~~~~~~~~~~~~~~~~~~~")
-                print("ml:", ml.shape)
-                print(ml)
-                print("centers:", centers.shape)
-                print(centers)
-                print("vectors:", vectors.shape)
-                print(vectors)
-                print("radius*2: ", self.get_radius()*2)
-                print("distances:", distances.shape)
-                print(distances)
-                print("indices_mol:", len(indices_mol))
-                print(indices_mol)
-                print("indices_wp:", len(indices_wp))
-                print(indices_wp)
-                print("indices_pbc:", len(indices_pbc))
-                print(indices_pbc)
-                print("indices_vector:", len(indices_vector))
-                print(indices_vector)
-                print("coords_mol:", coords_mol.shape)
-                print(coords_mol)
-                print("coords:", coords.shape)
-                print(coords)
-                print("original_coords:", original_coords.shape)
-                print(original_coords)
-                print("pbc_toadd:", pbc_toadd.shape)
-                print(pbc_toadd[:12])
-                print("atomic_coords: ", atomic_coords.shape)
-                print(atomic_coords)
-                print("d:", d.shape)
-                print(d)
-                print("tols_matrix:", self.get_tols_matrix().shape)
-                print(self.get_tols_matrix())
-                print("tols:", tols.shape)
-                print(tols)
-                """
+            #    """
+            #    print("~~~~~~~~~~~~~~~~~~~~~~~")
+            #    print("ml:", ml.shape)
+            #    print(ml)
+            #    print("centers:", centers.shape)
+            #    print(centers)
+            #    print("vectors:", vectors.shape)
+            #    print(vectors)
+            #    print("radius*2: ", self.get_radius()*2)
+            #    print("distances:", distances.shape)
+            #    print(distances)
+            #    print("indices_mol:", len(indices_mol))
+            #    print(indices_mol)
+            #    print("indices_wp:", len(indices_wp))
+            #    print(indices_wp)
+            #    print("indices_pbc:", len(indices_pbc))
+            #    print(indices_pbc)
+            #    print("indices_vector:", len(indices_vector))
+            #    print(indices_vector)
+            #    print("coords_mol:", coords_mol.shape)
+            #    print(coords_mol)
+            #    print("coords:", coords.shape)
+            #    print(coords)
+            #    print("original_coords:", original_coords.shape)
+            #    print(original_coords)
+            #    print("pbc_toadd:", pbc_toadd.shape)
+            #    print(pbc_toadd[:12])
+            #    print("atomic_coords: ", atomic_coords.shape)
+            #    print(atomic_coords)
+            #    print("d:", d.shape)
+            #    print(d)
+            #    print("tols_matrix:", self.get_tols_matrix().shape)
+            #    print(self.get_tols_matrix())
+            #    print("tols:", tols.shape)
+            #    print(tols)
+            #    """
 
 
-                if (d<tols).any():
-                    return False
-                else:
-                    return True
+            #    if (d<tols).any():
+            #        return False
+            #    else:
+            #        return True
 
-            elif m_length > max_fast_mol_size:
-                #Get corresponding separation vectors
-                new_vectors = np.repeat(vectors[indices_vector], m_length, axis=0)
-                #Get atomic coordinates relative to molecular centers
-                relative_atomic_coords = atomic_coords - new_vectors
-                #Dot atomic coordinates with inter-molecular separation vectors
-                dots = np.einsum('...j,...j', new_vectors, relative_atomic_coords)
-                #Find where relative vectors point towards the original molecule
-                new_indices = np.where(dots<0)[0]
-                #Get new coordinates and tolerances for distance matrix
-                new_atomic_coords = atomic_coords[new_indices]
-                d = cdist(coords_mol, new_atomic_coords)
-                tols2 = tols[:,new_indices]
-                if (d<tols2).any():
-                    return False
-                else:
-                    return True    
+            #elif m_length > max_fast_mol_size:
+            #    #Get corresponding separation vectors
+            #    new_vectors = np.repeat(vectors[indices_vector], m_length, axis=0)
+            #    #Get atomic coordinates relative to molecular centers
+            #    relative_atomic_coords = atomic_coords - new_vectors
+            #    #Dot atomic coordinates with inter-molecular separation vectors
+            #    dots = np.einsum('...j,...j', new_vectors, relative_atomic_coords)
+            #    #Find where relative vectors point towards the original molecule
+            #    new_indices = np.where(dots<0)[0]
+            #    #Get new coordinates and tolerances for distance matrix
+            #    new_atomic_coords = atomic_coords[new_indices]
+            #    d = cdist(coords_mol, new_atomic_coords)
+            #    tols2 = tols[:,new_indices]
+            #    if (d<tols2).any():
+            #        return False
+            #    else:
+            #        return True    
             
         else:
             #Check molecular ellipsoid overlap
@@ -1060,9 +1041,11 @@ class molecular_crystal():
         
         self.tols_matrix = []
         self.radii = []
+        self.symbols = []
         for mol in self.molecules:
             self.tols_matrix.append(self.get_tols_matrix(mol))
             self.radii.append(self.get_radius(mol))
+            self.symbols.append([specie.name for specie in mol.species])
             #print(self.tols_matrix)
         self.generate_crystal()
 
@@ -1102,13 +1085,9 @@ class molecular_crystal():
         """
         Calculates the valid orientations for each Molecule and Wyckoff
         position. Returns a list with 4 indices:
-
         index 1: the molecular prototype's index within self.molecules
-
         index 2: the Wyckoff position's 1st index (based on multiplicity)
-
         index 3: the WP's 2nd index (within the group of equal multiplicity)
-
         index 4: the index of the valid orientation for the molecule/WP pair
 
         For example, self.valid_orientations[i][j][k] would be a list of valid
@@ -1367,6 +1346,7 @@ class molecular_crystal():
                         #Add molecules specie by specie
                         for i, numMol in enumerate(self.numMols):
                             mol = self.molecules[i]
+                            symbols = self.symbols[i]
                             numMol_added = 0
 
                             #Now we start to add the specie to the wyckoff position
@@ -1392,21 +1372,38 @@ class molecular_crystal():
                                         wp_index = good_merge
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
 
-                                        #Create a mol_site object
-                                        #mo = deepcopy(self.molecules[i])
                                         mo = self.molecules[i]
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
                                         ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
+                                        ms0 = mol_site(mo, point, symbols, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
                                         #Check distances within the WP
+                                        #if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
+
                                         if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
+                                        #Check distance between centers
+                                            center = ms0.get_centers()
+                                            d = distance_matrix(center, center, ms0.lattice, PBC=ms0.PBC)
+                                            min_box_l = self.boxes[i].minl
+                                            xys = np.where(d < min_box_l)
+                                            passed_center = True
+                                            for i_y, x in enumerate(xys[0]):
+                                                y = xys[1][i_y]
+                                                val = d[x][y]
+                                                #Ignore self-distances
+                                                if x == y:
+                                                    continue
+                                                else:
+                                                    passed_center = False
+                                            if not passed_center: continue
+                                            #If centers are farther apart than min box length, allow multiple orientation attempts
                                             # Maximize the smallest distance for the general positions if needed
                                             passed_ori = False
                                             if len(mo) > 1 and ori.degrees > 0:
                                                 # optimize the orientation with the bisection method
                                                 def fun_dist(angle, ori, mo, point):
                                                     ori.change_orientation(angle)
-                                                    ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
+                                                    ms0 = mol_site(mo, point, symbols, ori, self.group[wp_index], 
+                                                                   cell_matrix, self.tols_matrix[i], self.radii[i])
                                                     d = ms0.compute_distances()
                                                     return d
 
@@ -1415,45 +1412,30 @@ class molecular_crystal():
                                                 fun_lo = fun_dist(angle_lo, ori, mo, point)
                                                 fun_hi = fun_dist(angle_hi, ori, mo, point)
                                                 fun = fun_hi
-                                                for it in range(10):
+                                                for it in range(5):
                                                     if (fun > 0.7) & (ms0.check_distances(atomic=self.check_atomic_distances)):
                                                         passed_ori = True
                                                         break
                                                     angle = (angle_lo + angle_hi)/2
                                                     fun = fun_dist(angle, ori, mo, point)
-                                                    #print('Bisection: ', it, fun, ms0.check_distances(atomic=self.check_atomic_distances))
+                                                    #print('Bisection: ', it, fun, ms0.check_distances())
                                                     if fun_lo > fun_hi:
                                                         angle_hi, fun_hi = angle, fun
                                                     else:
                                                         angle_lo, fun_lo = angle, fun
-                                                if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
-                                                #Check distance between centers
-                                                    d = distance_matrix(ms0.get_centers(), ms0.get_centers(), ms0.lattice, PBC=ms0.PBC)
-                                                    min_box_l = self.boxes[i].minl
-                                                    xys = np.where(d < min_box_l)
-                                                    passed_center = True
-                                                    for i_y, x in enumerate(xys[0]):
-                                                        y = xys[1][i_y]
-                                                        val = d[x][y]
-                                                        #Ignore self-distances
-                                                        if x == y:
-                                                            continue
-                                                        else:
-                                                            passed_center = False
-                                                    if not passed_center: continue
-                                                    #If centers are farther apart than min box length, allow multiple orientation attempts
-                                                    passed_ori = False
-                                                    for cycle4 in range(max4):
-                                                        self.cycle4 = cycle4
-                                                        ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                                        ms0 = mol_site(mo, point, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
-                                                        if ms0.check_distances(atomic=self.check_atomic_distances):
-                                                            passed_ori = True
-                                                            break
+                                                #for cycle4 in range(max4):
+                                                #    self.cycle4 = cycle4
+                                                #    ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
+                                                #    ms0 = mol_site(mo, point, symbols, ori, self.group[wp_index], 
+                                                #                   cell_matrix, self.tols_matrix[i], self.radii[i])
+                                                #    if ms0.check_distances(atomic=self.check_atomic_distances):
+                                                #        passed_ori = True
+                                                #        break
 
                                         else:
                                             passed_ori = True
                                         if passed_ori is False: continue
+
                                         #Check distances with other WP's
                                         coords_toadd, species_toadd = ms0.get_coords_and_species()
                                         passed = True
