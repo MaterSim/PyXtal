@@ -12,11 +12,10 @@ constraints.
 import numpy as np
 from copy import deepcopy
 from warnings import warn
+from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation 
 
 #External Libraries
-import numpy as np
-from scipy.spatial.distance import cdist
 from pymatgen.core.operations import SymmOp
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.constants import pi, rad, deg, pyxtal_verbosity
@@ -584,6 +583,53 @@ def is_orthogonal(m, tol=.001):
     else:
         return True
 
+def aa2matrix(axis, angle, radians=True, random=False):
+    """
+    Given an axis and an angle, return a 3x3 rotation matrix.
+    Based on:
+    https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
+
+    Args:
+        axis: a vector about which to perform a rotation
+        angle: the angle of rotation
+        radians: whether the supplied angle is in radians (True)
+            or in degrees (False)
+        random: whether or not to choose a random rotation matrix. If True, the
+            axis and angle are ignored, and a random orientation is generated
+
+    Returns:
+        a 3x3 numpy array representing a rotation matrix
+    """
+    #Convert to radians if necessary
+    if radians is not True:
+        angle *= rad
+    #Allow for generation of random rotations
+    if random is True:
+        #a = np.random.random()
+        axis = np.random.sample(3)
+        angle = np.random.random()*pi*2
+    #Ensure axis is a unit vector
+    axis = axis / np.linalg.norm(axis)
+    #Define quantities which are reused
+    x = np.real(axis[0])
+    y = np.real(axis[1])
+    z = np.real(axis[2])
+    c = np.cos(angle)
+    s = np.sin(angle)
+    C = 1 - c
+    #Define the rotation matrix
+    Q = np.zeros([3,3])
+    Q[0][0] = x*x*C + c
+    Q[0][1] = x*y*C - z*s
+    Q[0][2] = x*z*C + y*s
+    Q[1][0] = y*x*C + z*s
+    Q[1][1] = y*y*C + c
+    Q[1][2] = y*z*C - x*s
+    Q[2][0] = z*x*C - y*s
+    Q[2][1] = z*y*C + x*s
+    Q[2][2] = z*z*C + c
+    return Q
+
 def rotate_vector(v1, v2):
     #TODO: Verify that multiplication order is correct
     #(matrix should come after vector in np.dot)
@@ -729,9 +775,12 @@ class OperationAnalyzer(SymmOp):
             if np.linalg.det(self.m) > 0:
                 self.inverted = False
                 rotvec = Rotation.from_matrix(self.m).as_rotvec()
-                self.angle = np.linalg.norm(rotvec)
-                self.axis = rotvec/self.angle
-                #self.axis, self.angle = matrix2aa(self.m)
+                if np.sum(rotvec.dot(rotvec)) < 1e-6:
+                    self.axis = None
+                    self.angle = 0
+                else:
+                    self.angle = np.linalg.norm(rotvec)
+                    self.axis = rotvec/self.angle
                 if np.isclose(self.angle, 0):
                     self.type = "identity"
                     """The type of operation. Is one of 'identity', 'inversion',
@@ -752,10 +801,14 @@ class OperationAnalyzer(SymmOp):
             #If determinant is negative
             elif np.linalg.det(self.m)< 0:
                 self.inverted = True
-                rotvec = Rotation.from_matrix(-self.m).as_rotvec()
-                self.angle = np.linalg.norm(rotvec)
-                self.axis = rotvec/self.angle
-                #self.axis, self.angle = matrix2aa(mi)
+                rotvec = Rotation.from_matrix(-1*self.m).as_rotvec()
+                if np.sum(rotvec.dot(rotvec)) < 1e-6:
+                    self.axis = None
+                    self.angle = 0
+                else:
+                    self.angle = np.linalg.norm(rotvec)
+                    self.axis = rotvec/self.angle
+
                 if np.isclose(self.angle, 0):
                     self.type = "inversion"
                     self.order = int(2)
@@ -839,76 +892,7 @@ class OperationAnalyzer(SymmOp):
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
 
-def matrix2aa(m, radians=True):
-    """
-    Return the axis and angle from a rotation matrix. m must be an orthogonal
-    matrix with determinant 1. The axis is an eigenvector with eigenvalue 1.
-    The angle is determined by the trace and the asymmetryic part of m.
-    Based on:
-    https://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
-    Args:
-        m: an orthogonal 3x3 matrix (list, array, or matrix) with determinant 1
-        radians: whether the returned angle is in radians (True)
-            or in degrees (False)
-    Returns:
-        [axis, angle]: the axis (3-vector) and angle (in radians) of the supplied rotation matrix
-    """
-    if type(m) == SymmOp:
-        m = m.rotation_matrix
-    #Check if m is the identity matrix
-    if np.allclose(m, np.identity(3)):
-        return None, 0.
-    if not is_orthogonal(m):
-        printx("Error: matrix is not orthogonal.", priority=1)
-        return
-    #Check that m has posititve determinant
-    if not np.isclose(np.linalg.det(m), 1, rtol=.001):
-        printx("Error: invalid rotation matrix. Determinant is not 1.\n"
-            +"Divide matrix by inversion operation beore calling matrix2aa.", priority=1)
-        return
-    #Determine the eigenvector(s) of m
-    e = np.linalg.eig(m)
-    eigenvalues = e[0]
-    possible = np.transpose(e[1])
-    eigenvectors = []
-    for v in possible:
-        if np.allclose(v, np.dot(m, v)):
-            eigenvectors.append(v)
-    #Determine the angle of rotation
-    if len(eigenvectors) == 1:
-        v = eigenvectors[0]
-        x = m[2][1] - m[1][2]
-        y = m[0][2] - m[2][0]
-        z = m[1][0] - m[0][1]
-        r = np.sqrt(x**2+y**2+z**2)
-        t = m[0][0] + m[1][1] + m[2][2]
-        theta = np.arctan2(r, t-1.)
-        #Ensure 0<theta<pi
-        if theta > pi:
-            #Make sure 180 degree rotations are not converted to 0
-            if np.isclose(theta, pi, atol=1e-2, rtol=1e-3):
-                theta = pi
-            else:
-                theta = pi*2 - theta
-        if theta < 0:
-            theta *= -1
-            v *= -1
-        #Convert to degrees if necessary
-        if radians is not True:
-            theta *= deg
-        return v, theta
-    #If no eigenvectors are found
-    elif len(eigenvectors) == 0:
-        printx("Error: matrix2aa did not find any eigenvectors.", priority=1)
-        return
-    #If multiple eigenvectors are found
-    elif len(eigenvectors) > 1:
-        printx("Warning: multiple eigenvectors found.\n"
-            +"Found eigenvectors:\n"
-            +str(eigenvectors), priority=1)
-        return None, 0.
-
-
+        
 #Test Functionality
 if __name__ == "__main__":
 #----------------------------------------------------

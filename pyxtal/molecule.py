@@ -3,6 +3,10 @@ Module for handling molecules. Uses the pymatgen.core.structure.Molecule
 class as a base. Has a function for reorienting molecules
 (reoriented_molecule), and for calculating valid orientations within a Wyckoff
 position based on symmetry (orientation_in_wyckoff_position).
+The orientation class can be used to identify
+degrees of freedom for molecules in Wyckoff positions with certain symmetry
+constraints.
+
 """
 #Imports
 import numpy as np
@@ -14,7 +18,7 @@ from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
 
 #PyXtal imports
-from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle, is_orthogonal
+from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle, printx
 from pyxtal.database.collection import Collection
 from pyxtal.constants import pi
 #Define functions
@@ -211,7 +215,9 @@ def get_symmetry(mol, already_oriented=False):
             symm_m.append(op)
         #Add 12-fold  and reflections in place of ininitesimal rotation
         for axis in [[1,0,0],[0,1,0],[0,0,1]]:
-            op = SymmOp.from_rotation_and_translation(aa2matrix(axis, pi/6), [0,0,0])
+            #op = SymmOp.from_rotation_and_translation(aa2matrix(axis, pi/6), [0,0,0])
+            m1 = Rotation.from_rotvec(pi/6*axis).as_matrix()
+            op = SymmOp.from_rotation_and_translation(m1, [0,0,0])
             if pga.is_valid_op(op):
                 symm_m.append(op)
                 #Any molecule with infinitesimal symmetry is linear;
@@ -279,6 +285,7 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
     #For single atoms, there are no constraints
     if len(mol) == 1:
         return [Orientation([[1,0,0],[0,1,0],[0,0,1]], degrees=2)]
+
     wyckoffs = wyckoff_position.ops
     w_symm = wyckoff_position.symmetry_m
     index = wyckoff_position.index
@@ -311,6 +318,7 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
             chiral = False
         elif opa.type == "inversion":
             chiral = False
+
     #If molecule is chiral and allow_inversion is False,
     #check if WP breaks symmetry
     if chiral is True:
@@ -319,6 +327,7 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
                 if np.linalg.det(op.rotation_matrix) < 0:
                     printx("Warning: cannot place chiral molecule in spagegroup", priority=2)
                     return False
+
     #Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
     opa_w = []
     for op_w in symm_w:
@@ -432,9 +441,12 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
                 if not np.isclose(a, 0, rtol=.01):
                     T2 = np.dot(np.linalg.inv(R), T)
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
-                if not np.isclose(a, 0, rtol=.01):
-                    printx("Error: Generated incorrect rotation: "+str(theta)+"\n"
-                    +"(Within orientation_in_wyckoff_position)", priority=0)
+                #if not np.isclose(a, 0, rtol=.01):
+                #    msg = "Error: Generated incorrect rotation: "
+                #    msg += str(theta)
+                #    msg += "\n(Within orientation_in_wyckoff_position)"
+                #    printx(msg, priority=0)
+
                 o = Orientation(T2, degrees=0)
                 orientations.append(o)
         #If there is only one constraint
@@ -455,8 +467,8 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
                 if i > j and j in list_j and j in list_i:
                     #m1 = o1.get_matrix(angle=0)
                     #m2 = o2.get_matrix(angle=0)
-                    m1 = o1.r.as_matrix()
-                    m2 = o2.r.as_matrix()
+                    m1 = o1.matrix
+                    m2 = o2.matrix
                     new_op = SymmOp.from_rotation_and_translation(np.dot(m2, np.linalg.inv(m1)), [0,0,0])
                     P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0,0,0])
                     old_op = P*new_op*P.inverse
@@ -508,9 +520,6 @@ class Orientation():
     """
 
     def __init__(self, matrix, degrees=0, axis=None):
-        if (not is_orthogonal(matrix)):
-            printx("Error: Supplied orientation matrix is not orthogonal", priority=1)
-            return
         if (degrees == 1) and (axis is None):
             printx("Error: Constraint vector required for orientation", priority=1)
         # scipy.spatial.transform.Rotation class
@@ -533,8 +542,6 @@ class Orientation():
                 random 3d rotation matrix to multiply by. If the original matrix
                 is wanted, set angle=0, or call self.matrix
 
-        Returns:
-            a 3x3 rotation (and/or inversion) matrix (numpy array)
         """
         if self.degrees == 2:
             if angle == "random":
@@ -546,7 +553,6 @@ class Orientation():
                 self.angle = angle
             self.r = Rotation.from_rotvec(self.angle*self.axis)
             self.matrix = self.r.as_matrix()
-            return self.matrix
 
         elif self.degrees == 1:
             if angle == "random":
@@ -554,8 +560,37 @@ class Orientation():
             self.angle = angle
             self.r = Rotation.from_rotvec(self.angle*self.axis)
             self.matrix = self.r.as_matrix()
-            return self.matrix
             
+
+    def get_matrix(self, angle="random"):
+        """
+        Generate a 3x3 rotation matrix consistent with the orientation's
+        constraints. Allows for specification of an angle (possibly random) to
+        rotate about the constraint axis.
+
+        Args:
+            angle: an angle to rotate about the constraint axis. If "random",
+                chooses a random rotation angle. If self.degrees==2, chooses a
+                random 3d rotation matrix to multiply by. If the original matrix
+                is wanted, set angle=0, or call self.matrix
+
+        Returns:
+            a 3x3 rotation (and/or inversion) matrix (numpy array)
+        """
+        if self.degrees == 2:
+            if angle == "random":
+                axis = np.random.sample(3)
+                axis = axis/np.linalg.norm(axis)
+                angle = np.random.random()*pi*2
+            else:
+                axis = self.axis
+            return Rotation.from_rotvec(angle*axis).as_matrix()
+
+        elif self.degrees == 1:
+            if angle == "random":
+                angle = np.random.random()*pi*2
+            return Rotation.from_rotvec(angle*self.axis).as_matrix()
+
         elif self.degrees == 0:
             return self.matrix
 
@@ -643,23 +678,3 @@ class Orientation():
         self.change_orientation()
         return self
 
-
-#Test Functionality
-if __name__ == "__main__":
-#---------------------------------------------------
-
-    #Testing water
-    mol = Collection('molecules')['H2O']
-    print("Original molecule:")
-    print(mol)
-    print()
-    #Apply random rotation to avoid lucky results
-    R = aa2matrix(1,1,random=True)
-    R_op = SymmOp.from_rotation_and_translation(R,[0,0,0])
-    mol.apply_operation(R_op)
-    print("Rotated molecule:")
-    print(mol)
-    print()
-
-    #pga = PointGroupAnalyzer(mol)
-    #mol = pga.symmetrize_molecule()['sym_mol']    
