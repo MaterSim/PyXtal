@@ -1,5 +1,4 @@
 #Standard Libraries
-import sys
 import os
 import random
 import numpy as np
@@ -9,8 +8,9 @@ from copy import deepcopy
 from pymatgen.core.structure import Structure, Molecule
 
 #PyXtal imports #avoid *
-from pyxtal.symmetry import Group, Wyckoff_site, check_wyckoff_sites, choose_wyckoff, check_wyckoff_position
-from pyxtal.operations import apply_ops, create_matrix, project_point, distance_matrix, distance
+from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position
+from pyxtal.Wyckoff_site import atom_site, check_atom_sites
+from pyxtal.operations import apply_ops, project_point, distance_matrix, distance
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
 from pyxtal.database.element import Element
@@ -536,12 +536,12 @@ class random_crystal():
 
                                 if wp_index is not False:
                                     #Use a Wyckoff_site object for the current site
-                                    current_site = Wyckoff_site(self.group[wp_index], point, specie)
+                                    current_site = atom_site(self.group[wp_index], point, specie)
 
                                     #Check current WP against existing WP's
                                     passed_wp_check = True
                                     for ws in wyckoff_sites_tmp:
-                                        if check_wyckoff_sites(current_site, ws, cell_matrix, tm=self.tol_matrix) is False:
+                                        if check_atom_sites(current_site, ws, cell_matrix, tm=self.tol_matrix) is False:
                                             passed_wp_check = False
 
                                     if passed_wp_check is True:

@@ -1292,37 +1292,6 @@ def calculate_generators(wp, gen_pos, PBC=[1,1,1]):
                     break
     return gens
 
-class Wyckoff_site():
-    """
-    Class for storing atomic Wyckoff positions with a single coordinate.
-    
-    Args:
-        wp: a Wyckoff_position object
-        coordinate: a fractional 3-vector for the generating atom's coordinate
-        specie: an Element, element name or symbol, or atomic number of the atom
-    """
-    def __init__(self, wp, coordinate, specie):
-        if type(wp) == Wyckoff_position:
-            self.wp = wp
-        else:
-            printx("Error: wp must be a Wyckoff_position object.", priority=1)
-            return
-        self.position = np.array(coordinate)
-        self.specie = Element(specie).short_name
-        self.multiplicity = wp.multiplicity
-        self.PBC = wp.PBC
-        self.coords = apply_ops(self.position, self.wp)
-
-    def __str__(self):
-        site_sym = ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
-        pos = self.position
-        s = "{:>2s}: [{:6.4f} {:6.4f} {:6.4f}], {:4d}{:s}, site symmetry: {:s}".format(\
-             self.specie, pos[0], pos[1], pos[2], self.wp.multiplicity, self.wp.letter, site_sym)
-        return s
-
-    def __repr__(self):
-        return str(self)
-
 
 class Wyckoff_position():
     """
@@ -2299,53 +2268,5 @@ def choose_wyckoff(group, number):
             return random.choice(good_wyckoff)
         else:
             return False
-
-def check_wyckoff_sites(ws1, ws2, lattice, tm, same_group=True):
-    """
-    Given two Wyckoff sites, checks the inter-atomic distances between them.
-
-    Args:
-        ws1: a Wyckoff_site object
-        ws2: a different Wyckoff_site object (will always return False if
-            two identical WS's are provided)
-        lattice: a 3x3 cell matrix
-        same_group: whether or not the two WS's are in the same structure.
-            Default value True reduces the calculation cost
-
-    Returns:
-        True if all distances are greater than the allowed tolerances.
-        False if any distance is smaller than the allowed tolerance
-    """
-    #Ensure the PBC values are valid
-    if ws1.PBC != ws2.PBC:
-        printx("Error: PBC values do not match between Wyckoff sites")
-        return
-    #Get tolerance
-    tol = tm.get_tol(ws1.specie, ws2.specie)
-    #Symmetry shortcut method: check only some atoms
-    if same_group is True:
-        #We can either check one atom in WS1 against all WS2, or vice-versa
-        #Check which option is faster
-        if ws1.multiplicity > ws2.multiplicity:
-            coords1 = [ws1.coords[0]]
-            coords2 = ws2.coords
-        else:
-            coords1 = [ws2.coords[0]]
-            coords2 = ws1.coords
-        #Calculate distances
-        dm = distance_matrix(coords1, coords2, lattice, PBC=ws1.PBC)
-        #Check if any distances are less than the tolerance
-        if (dm < tol).any():
-            return False
-        else:
-            return True
-    #No symmetry method: check all atomic pairs
-    else:
-        dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
-        #Check if any distances are less than the tolerance
-        if (dm < tol).any():
-            return False
-        else:
-            return True
 
 
