@@ -5,16 +5,18 @@ class as a base. Has a function for reorienting molecules
 position based on symmetry (orientation_in_wyckoff_position).
 """
 #Imports
+import numpy as np
+from copy import deepcopy
+from scipy.spatial.transform import Rotation 
 #------------------------------
 #External Libraries
 from pymatgen.core.structure import Molecule
-from pymatgen.symmetry.analyzer import PointGroupAnalyzer
-from pymatgen.symmetry.analyzer import generate_full_symmops
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
 
 #PyXtal imports
-from pyxtal.operations import *
+from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle, is_orthogonal
 from pyxtal.database.collection import Collection
-
+from pyxtal.constants import pi
 #Define functions
 #------------------------------
 def find_ellipsoid(mol):
@@ -423,7 +425,8 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
                 r = np.sin(phi)
                 c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
                 theta = np.arccos(1 - (c**2)/(2*(r**2)))
-                R = aa2matrix(constraint1.axis, theta)
+                #R = aa2matrix(constraint1.axis, theta)
+                R = Rotation.from_rotvec(theta*constraint1.axis).as_matrix()
                 T2 = np.dot(R, T)
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
                 if not np.isclose(a, 0, rtol=.01):
@@ -450,8 +453,10 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
         if i in list_i:
             for j , o2 in enumerate(orientations):
                 if i > j and j in list_j and j in list_i:
-                    m1 = o1.get_matrix(angle=0)
-                    m2 = o2.get_matrix(angle=0)
+                    #m1 = o1.get_matrix(angle=0)
+                    #m2 = o2.get_matrix(angle=0)
+                    m1 = o1.r.as_matrix()
+                    m2 = o2.r.as_matrix()
                     new_op = SymmOp.from_rotation_and_translation(np.dot(m2, np.linalg.inv(m1)), [0,0,0])
                     P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0,0,0])
                     old_op = P*new_op*P.inverse
@@ -480,6 +485,164 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
         return False
     else:
         return allowed
+
+class Orientation():
+    """
+    Stores orientations for molecules based on vector constraints.
+    Can be stored to regenerate orientations consistent with a given constraint
+    vector, without re-calling orientation_in_wyckoff_position. Allows for
+    generating orientations which differ only in their rotation about a given
+    axis.
+
+    Args:
+        matrix: a 3x3 rotation matrix describing the orientation (and/or
+            inversion) to store
+        degrees: the number of degrees of freedom...
+            0 - The orientation refers to a single rotation matrix
+            1 - The orientation can be rotated about a single axis
+            2 - The orientation can be any pure rotation matrix
+
+        axis:
+            an optional axis about which the orientation can rotate. Only used
+            if degrees is equal to 1
+    """
+
+    def __init__(self, matrix, degrees=0, axis=None):
+        if (not is_orthogonal(matrix)):
+            printx("Error: Supplied orientation matrix is not orthogonal", priority=1)
+            return
+        if (degrees == 1) and (axis is None):
+            printx("Error: Constraint vector required for orientation", priority=1)
+        # scipy.spatial.transform.Rotation class
+        self.matrix = np.array(matrix)
+        self.r = Rotation.from_matrix(matrix) #
+        self.degrees = degrees #The number of degrees of freedom.
+        self.axis = axis #The axis (optional) about which the orientation may rotate."""
+        self.angle = None
+
+
+    def change_orientation(self, angle="random"):
+        """
+        Generate a 3x3 rotation matrix consistent with the orientation's
+        constraints. Allows for specification of an angle (possibly random) to
+        rotate about the constraint axis.
+
+        Args:
+            angle: an angle to rotate about the constraint axis. If "random",
+                chooses a random rotation angle. If self.degrees==2, chooses a
+                random 3d rotation matrix to multiply by. If the original matrix
+                is wanted, set angle=0, or call self.matrix
+
+        Returns:
+            a 3x3 rotation (and/or inversion) matrix (numpy array)
+        """
+        if self.degrees == 2:
+            if angle == "random":
+                #randomly generate the axis and angle
+                axis = np.random.sample(3)
+                self.axis = axis/np.linalg.norm(axis)
+                self.angle = np.random.random()*pi*2
+            else:
+                self.angle = angle
+            self.r = Rotation.from_rotvec(self.angle*self.axis)
+            self.matrix = self.r.as_matrix()
+            return self.matrix
+
+        elif self.degrees == 1:
+            if angle == "random":
+                angle = np.random.random()*pi*2
+            self.angle = angle
+            self.r = Rotation.from_rotvec(self.angle*self.axis)
+            self.matrix = self.r.as_matrix()
+            return self.matrix
+            
+        elif self.degrees == 0:
+            return self.matrix
+
+    def get_op(self, angle=None):
+        """
+        Generate a SymmOp object consistent with the orientation's
+        constraints. Allows for specification of an angle (possibly random) to
+        rotate about the constraint axis.
+
+        Args:
+            angle: an angle to rotate about the constraint axis. If "random",
+                chooses a random rotation angle. If self.degrees==2, chooses a
+                random 3d rotation matrix to multiply by. If the original matrix
+                is wanted, set angle=0, or call self.matrix
+
+        Returns:
+            pymatgen.core.structure. SymmOp object
+        """
+        #If "random", rotates by a random amount
+
+        if angle is not None:
+            self.change_orientation(angle)
+        
+        return SymmOp.from_rotation_and_translation(self.matrix, [0,0,0])
+
+    @classmethod
+    def from_constraint(self, v1, c1):
+        """
+        Geneate an orientation object given a constraint axis c1, and a
+        corresponding vector v1. v1 will be rotated onto c1, and the resulting
+        orientation will have a rotational degree of freedom about c1.
+
+        Args:
+            v1: a 1x3 vector in the original reference frame
+            c1: a corresponding axis which v1 must be mapped to
+
+        Returns:
+            an orientation object consistent with the supplied constraint
+        """
+        #c1 is the constraint vector; v1 will be rotated onto it
+        m = rotate_vector(v1, c1)
+        return Orientation(m, degrees=1, axis=c1)
+
+    @classmethod
+    def from_constraints(self, v1, c1, v2, c2):
+        """
+        Geneate an orientation object given two constraint vectors
+
+        Args:
+            v1: a 1x3 vector in the original reference frame
+            c1: a corresponding axis which v1 must be mapped to
+            v1: a second 1x3 vector in the original reference frame
+            c1: a corresponding axis which v2 must be mapped to
+
+        Returns:
+            an orientation object consistent with the supplied constraints
+        """
+        T = rotate_vector(v1, c1)
+        phi = angle(c1, c2)
+        phi2 = angle(c1, (np.dot(T, v2)))
+        if not np.isclose(phi, phi2, rtol=.01):
+            printx("Error: constraints and vectors do not match.", priority=1)
+            return
+        r = np.sin(phi)
+        c = np.linalg.norm(np.dot(T, v2) - c2)
+        theta = np.arccos(1 - (c**2)/(2*(r**2)))
+        Rot = R.from_rotvec(theta*c1)
+        T2 = np.dot(R, T)
+        a = angle(np.dot(T2, v2), c2)
+        if not np.isclose(a, 0, rtol=.01):
+            T2 = np.dot(np.linalg.inv(R), T)
+        a = angle(np.dot(T2, v2), c2)
+        if not np.isclose(a, 0, rtol=.01):
+            printx("Error: Generated incorrect rotation: "+str(theta), priority=1)
+        return Orientation(T2, degrees=0)
+
+    def random_orientation(self):
+        """
+        Applies random rotation (if possible) and returns a new orientation with
+        the new base matrix.
+
+        Returns:
+            a new orientation object with a different base rotation matrix
+        """
+        self.change_orientation()
+        return self
+
 
 #Test Functionality
 if __name__ == "__main__":
