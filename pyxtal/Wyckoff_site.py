@@ -4,7 +4,7 @@ Module for handling Wyckoff sites for both atom and molecule
 
 import numpy as np
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.operations import apply_ops, create_matrix, distance_matrix, distance_matrix_single
+from pyxtal.operations import apply_ops, create_matrix, distance_matrix
 from pyxtal.symmetry import ss_string_from_ops as site_symm
 from scipy.spatial.transform import Rotation as R
 from pyxtal.database.element import Element
@@ -54,12 +54,12 @@ class mol_site():
         if not hasattr(self, 'site_symm'):
             self.site_symm = site_symm(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
             self.rotvec = self.orientation.r.as_rotvec()
-
+        pos = self.position
         s = str(self.mol.formula)+": "
-        s += "[{:6.3f} {:6.3f} {:6.3f}]  ".format(self.position[0], self.position[1], self.position[2])
+        s += "[{:6.3f} {:6.3f} {:6.3f}]  ".format(pos[0], pos[1], pos[2])
         s += str(self.wp.multiplicity)+self.wp.letter
-        s += " Site symmetry {:}".format(self.site_symm)
-        s += " ==> Angles: {:6.3f} {:6.3f} {:6.3f}".format(self.rotvec[0], self.rotvec[1], self.rotvec[2])
+        s += " Site symmetry {:} ==> Angles: ".format(self.site_symm)
+        s += "{:6.3f} {:6.3f} {:6.3f}".format(self.rotvec[0], self.rotvec[1], self.rotvec[2])
         return s
 
     def get_ellipsoid(self):
@@ -231,11 +231,11 @@ class mol_site():
                 if not (v==v0).all():
                     m2.append(v)
             coords_PBC = np.vstack([coords_mol + v for v in m2])
-            d = distance_matrix_single(coords_mol, coords_PBC, self.lattice, PBC=[0,0,0])
+            d = distance_matrix(coords_mol, coords_PBC, self.lattice, [0,0,0], True)
             min_ds.append(d)
         if self.multiplicity > 1:
             #Check inter-atomic distances
-            d = distance_matrix_single(coords_mol, coords, self.lattice, PBC=self.PBC)
+            d = distance_matrix(coords_mol, coords, self.lattice, self.PBC, True)
             min_ds.append(d)
         return min(min_ds)
 

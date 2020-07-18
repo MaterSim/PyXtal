@@ -18,7 +18,8 @@ from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
 
 #PyXtal imports
-from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle, printx
+from pyxtal.msg import printx
+from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
 from pyxtal.database.collection import Collection
 from pyxtal.constants import pi
 #Define functions

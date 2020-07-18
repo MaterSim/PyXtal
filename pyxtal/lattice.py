@@ -1,6 +1,10 @@
+#Standard Libraries
 import numpy as np
 import random
-from pyxtal.operations import angle, printx
+
+#PyXtal imports
+from pyxtal.msg import printx
+from pyxtal.operations import angle
 from pyxtal.constants import pi, deg, rad
 
 class Lattice():

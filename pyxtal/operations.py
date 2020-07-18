@@ -17,6 +17,9 @@ from scipy.spatial.transform import Rotation
 
 #External Libraries
 from pymatgen.core.operations import SymmOp
+
+#PyXtal imports
+from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.constants import pi, rad, deg, pyxtal_verbosity
 #------------------------------
@@ -174,7 +177,7 @@ def distance(xyz, lattice, PBC=[1,1,1]):
     matrix = np.dot(matrix, lattice)
     return np.min(cdist(matrix,[[0,0,0]]))     
 
-def distance_matrix_single(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
+def distance_matrix(points1, points2, lattice, PBC=[1,1,1], single=False, metric='euclidean'):
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account the lattice metric and periodic boundary conditions.
@@ -185,44 +188,12 @@ def distance_matrix_single(points1, points2, lattice, PBC=[1,1,1], metric='eucli
         lattice: a 3x3 matrix describing a unit cell's lattice vectors
         PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        single: return a scalor and matrix?
         metric: the metric to use with cdist. Possible values include 'euclidean',
             'sqeuclidean', 'minkowski', and others
 
     Returns:
-        a 2x2 np array of scalar distances
-    """
-    if PBC != [0,0,0]:
-        l1 = filtered_coords(points1, PBC=PBC)
-        l2 = filtered_coords(points2, PBC=PBC)
-        l2 = np.dot(l2, lattice)
-        matrix = create_matrix(PBC=PBC)
-        m1 = np.array([(l1 + v) for v in matrix])
-        m1 = np.dot(m1, lattice)
-        d = np.array([cdist(l, l2, metric) for l in m1])
-    else:
-        l1 = np.dot(points1, lattice)
-        l2 = np.dot(points2, lattice)
-        d = cdist(l1, l2, metric)
-
-    return np.min(d)
-
-
-def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
-    """
-    Returns the distances between two sets of fractional coordinates.
-    Takes into account the lattice metric and periodic boundary conditions.
-    
-    Args:
-        points1: a list of fractional coordinates
-        points2: another list of fractional coordinates
-        lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-        metric: the metric to use with cdist. Possible values include 'euclidean',
-            'sqeuclidean', 'minkowski', and others
-
-    Returns:
-        a 2x2 np array of scalar distances
+        a scalor or distance matrix
     """
     if lattice is not None:
         if (np.array(lattice) == np.eye(3)).all():
@@ -237,12 +208,19 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
             m1 = np.array([(l1 + v) for v in matrix])
             m1 = np.dot(m1, lattice)
             all_distances = np.array([cdist(l, l2, metric) for l in m1])
-            return np.apply_along_axis(np.min, 0, all_distances)
+            if single:
+                return np.min(all_distances)
+            else:
+                return np.apply_along_axis(np.min, 0, all_distances)
 
         else:
             l1 = np.dot(points1, lattice)
             l2 = np.dot(points2, lattice)
-            return cdist(l1, l2, metric)
+            d = cdist(l1, l2, metric)
+            if single:
+                return np.min(d)
+            else:
+                return d
     else:
         if PBC != [0,0,0]:
             l1 = filtered_coords(points1, PBC=PBC)
@@ -250,81 +228,19 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
             matrix = create_matrix(PBC=PBC)
             m1 = np.array([(l1 + v) for v in matrix])
             all_distances = np.array([cdist(l, l2, metric) for l in m1])
-            return np.apply_along_axis(np.min, 0, all_distances)
+            if single:
+                return all_distances
+            else:
+                return np.apply_along_axis(np.min, 0, all_distances)
         else:
-            return cdist(points1, points2, metric)
+            if single:
+                return np.min(cdist(points1, points2, metric))
+            else:
+                return cdist(points1, points2, metric)
 
-def find_short_dist(coor, lattice, tol, PBC=[1,1,1]):
-    """
-    Given a list of fractional coordinates, finds pairs which are closer
-    together than tol, and builds the connectivity map
-
-    Args:
-        coor: a list of fractional 3-dimensional coordinates
-        lattice: a matrix representing the crystal unit cell
-        tol: the distance tolerance for pairing coordinates
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-    
-    Returns:
-        pairs, graph: (pairs) is a list whose entries have the form [index1,
-        index2, distance], where index1 and index2 correspond to the indices
-        of a pair of points within the supplied list (coor). distance is the
-        distance between the two points. (graph) is a connectivity map in the
-        form of a list. Its first index represents a point within coor, and
-        the second indices represent which point(s) it is connected to.
-    """
-    pairs=[]
-    graph=[]
-    for i in range(len(coor)):
-        graph.append([])
-
-    d = distance_matrix(coor, coor, lattice, PBC=PBC)
-    ijs = np.where(d<= tol)
-    for i in np.unique(ijs[0]):
-        j = ijs[1][i]
-        if j <= i: continue
-        pairs.append([i, j, d[i][j]])
-
-    pairs = np.array(pairs)
-    if len(pairs) > 0:
-        d_min = min(pairs[:,-1]) + 1e-3
-        sequence = [pairs[:,-1] <= d_min]
-        #Avoid Futurewarning
-        #pairs1 = deepcopy(pairs)
-        #pairs = pairs1[sequence]
-        pairs = pairs[tuple(sequence)]
-        for pair in pairs:
-            pair0=int(pair[0])
-            pair1=int(pair[1])
-            graph[pair0].append(pair1)
-            graph[pair1].append(pair0)
-
-    return pairs, graph
 
 
 #------------------------------
-def printx(text, priority=1):
-    """
-    Custom printing function based on verbosity.
-
-    Args:
-        text: string to be passed to print
-        priority: the importance of printing the message
-            0: Critical; must be printed
-            1: Warning; unexpected event occured, but program functioning
-            2: Info; useful information not necessary to be printed
-            3: Debug; detailed information mainly used for debugging
-
-    Returns:
-        Nothing
-    """
-    if priority <= 1:
-        warn(text)
-        return
-    else:
-        if priority <= pyxtal_verbosity:
-            print(text)
 
 def create_matrix(PBC=[1,1,1]):
     """

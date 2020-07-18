@@ -16,9 +16,9 @@ from pandas import read_csv
 from monty.serialization import loadfn
 
 #PyXtal imports
+from pyxtal.msg import printx
 from pyxtal.operations import SymmOp, apply_ops, get_inverse_ops, filtered_coords_euclidean, distance_matrix, OperationAnalyzer
 from pyxtal.database.element import Element
-#from pyxtal.operations import *
 
 #Constants
 #------------------------------

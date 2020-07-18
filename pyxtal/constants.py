@@ -11,15 +11,3 @@ rad = pi/180. #converting degrees to radians
 deg = 180./pi #converting radians to degrees
 pyxtal_verbosity = 1    #constant for printx function
 max_fast_mol_size = 30 #Max number of atoms per molecule before using fast distance check
-"""
-Stores how much should be printed:
-0: prints critical messages only
-1: prints warnings
-2: prints useful information
-3: prints debug information
-"""
-
-
-
-
-

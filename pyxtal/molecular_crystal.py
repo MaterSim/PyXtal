@@ -8,11 +8,12 @@ from copy import deepcopy
 from pymatgen.core.structure import Structure, Molecule
 
 #PyXtal imports
+from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, para2matrix, add_vacuum
 from pyxtal.database.element import Element
 from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position, jk_from_i
-from pyxtal.operations import apply_ops, check_images, project_point, distance, distance_matrix, filtered_coords, printx
+from pyxtal.operations import apply_ops, check_images, project_point, distance, distance_matrix, filtered_coords 
 from pyxtal.molecule import PointGroupAnalyzer, reoriented_molecule, orientation_in_wyckoff_position
 from pyxtal.constants import *
 from pyxtal.Wyckoff_site import mol_site, check_mol_sites
@@ -278,7 +279,7 @@ class molecular_crystal():
                     else:
                         raise NameError('{:s} is not a supported format'.format(tmp[-1]))
                 else:
-                    #print('\nLoad the molecule {:s} from the built_in collections'.format(mol))
+                    #print('\nLoad the molecule {:s} from collections'.format(mol))
                     mo = molecule_collection[mol]
                 if mo is not None:
                     molecules[i] = mo
@@ -755,6 +756,7 @@ class molecular_crystal():
                         for i, numMol in enumerate(self.numMols):
                             mol = self.molecules[i]
                             symbols = self.symbols[i]
+                            valid_ori = self.valid_orientations[i]
                             numMol_added = 0
 
                             #Now we start to add the specie to the wyckoff position
@@ -764,7 +766,8 @@ class molecular_crystal():
                                 self.numattempts += 1
                                 # Choose a random WP for given multiplicity: 2a, 2b, 2c
                                 # NOTE: The molecular version return wyckoff indices, not ops
-                                wp = choose_wyckoff_molecular(self.group, numMol-numMol_added, self.valid_orientations[i], self.select_high)
+                                wp = choose_wyckoff_molecular(self.group, numMol-numMol_added,\
+                                                              valid_ori, self.select_high)
                                 if wp is not False:
                                     #Generate a list of coords from the wyckoff position
                                     point = self.lattice.generate_point()
@@ -775,14 +778,14 @@ class molecular_crystal():
                                         mtol = self.radii[i]*0.5
                                     else:
                                         mtol = self.radii[i]*2
-                                    coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, self.group, mtol, self.valid_orientations[i])
+                                    coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, self.group, mtol, valid_ori)
                                     if good_merge is not False:
                                         wp_index = good_merge
                                         coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
 
                                         mo = self.molecules[i]
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
-                                        ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
+                                        ori = random.choice(valid_ori[j][k]).random_orientation()
                                         ms0 = mol_site(mo, point, symbols, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
                                         #Check distances within the WP
 
@@ -805,7 +808,7 @@ class molecular_crystal():
                                                 fun_hi = fun_dist(angle_hi, ori, mo, point)
                                                 fun = fun_hi
                                                 for it in range(max4):
-                                                    if (fun > 0.7) & (ms0.check_distances(atomic=self.check_atomic_distances)):
+                                                    if (fun > 0.8) & (ms0.check_distances(atomic=self.check_atomic_distances)):
                                                         passed_ori = True
                                                         break
                                                     angle = (angle_lo + angle_hi)/2
