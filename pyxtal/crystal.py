@@ -10,7 +10,7 @@ from pymatgen.core.structure import Structure, Molecule
 #PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position
 from pyxtal.Wyckoff_site import atom_site, check_atom_sites
-from pyxtal.operations import apply_ops, project_point, distance_matrix, distance
+from pyxtal.operations import apply_ops, project_point, distance_matrix, distance, printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
 from pyxtal.database.element import Element
