@@ -5,7 +5,10 @@ a Wyckoff_Position class. These classes are used for generation of random struct
 #Imports
 #------------------------------
 #Standard Libraries
+import numpy as np
 from pkg_resources import resource_filename
+from copy import deepcopy
+import random
 
 #External Libraries
 from pymatgen.symmetry.analyzer import generate_full_symmops
@@ -13,7 +16,9 @@ from pandas import read_csv
 from monty.serialization import loadfn
 
 #PyXtal imports
-from pyxtal.operations import *
+from pyxtal.operations import SymmOp, apply_ops, get_inverse_ops, filtered_coords_euclidean, distance_matrix, OperationAnalyzer
+from pyxtal.database.element import Element
+#from pyxtal.operations import *
 
 #Constants
 #------------------------------
@@ -80,7 +85,7 @@ def symmetry_element_from_axis(axis):
     if len(axis) != 3:
         return
     #Vector must be non-zero
-    if dsquared(axis) < 1e-6:
+    if axis.dot(axis) < 1e-6:
         return
     v = np.array(axis) / np.linalg.norm(axis)
     #Find largest component (x, y, or z)
@@ -342,7 +347,7 @@ def get_wyckoff_symmetry(sg, PBC=[1,1,1], molecular=False):
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,np.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
     symmetry = []
     convert = False
@@ -413,7 +418,7 @@ def get_layer_symmetry(num, molecular=False):
         point in each Wyckoff position
     """
 
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,np.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(layer_symmetry_df["0"][num])
     symmetry = []
     convert = False
@@ -459,7 +464,7 @@ def get_rod_symmetry(num, molecular=False):
         point in each Wyckoff position
     """
 
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,np.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     symmetry_strings = eval(rod_symmetry_df["0"][num])
     symmetry = []
     convert = False
@@ -547,7 +552,7 @@ def get_wyckoff_generators(sg, PBC=[1,1,1], molecular=False):
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,np.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     generator_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
     convert = False
@@ -614,7 +619,7 @@ def get_layer_generators(num, molecular=False):
         single fractional (x,y,z) coordinate
     """
 
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,np.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     generator_strings = eval(layer_generators_df["0"][num])
     generators = []
     convert = False
@@ -660,7 +665,7 @@ def get_rod_generators(num, molecular=False):
         single fractional (x,y,z) coordinate
     """
 
-    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,math.sqrt(3)/2,0],[0,0,1]], [0,0,0])
+    P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,np.sqrt(3)/2,0],[0,0,1]], [0,0,0])
     generator_strings = eval(rod_generators_df["0"][num])
     generators = []
     convert = False
@@ -727,7 +732,7 @@ def general_position(number, dim=3):
     """
     return Wyckoff_position.from_group_and_index(number, 0, dim=dim)
 
-def site_symm(point, gen_pos, tol=1e-3, lattice=Euclidean_lattice, PBC=None):
+def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
     """
     Given a point and a general Wyckoff position, return the list of symmetry
     operations leaving the point (coordinate or SymmOp) invariant. The returned
@@ -826,7 +831,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
             #Check that point works as x,y,z value for wp
             xyz = filtered_coords_euclidean(wp[0].operate(p) - p, PBC=PBC)
 
-            if dsquared(xyz) > t: continue
+            if xyz.dot(xyz) > t: continue
             #Calculate distances between original and generated points
             pw = np.array([op.operate(p) for op in wp])
             dw = distance_matrix(points, pw, None, PBC=PBC, metric="sqeuclidean")
@@ -1286,6 +1291,38 @@ def calculate_generators(wp, gen_pos, PBC=[1,1,1]):
                     gens.append(op)
                     break
     return gens
+
+class Wyckoff_site():
+    """
+    Class for storing atomic Wyckoff positions with a single coordinate.
+    
+    Args:
+        wp: a Wyckoff_position object
+        coordinate: a fractional 3-vector for the generating atom's coordinate
+        specie: an Element, element name or symbol, or atomic number of the atom
+    """
+    def __init__(self, wp, coordinate, specie):
+        if type(wp) == Wyckoff_position:
+            self.wp = wp
+        else:
+            printx("Error: wp must be a Wyckoff_position object.", priority=1)
+            return
+        self.position = np.array(coordinate)
+        self.specie = Element(specie).short_name
+        self.multiplicity = wp.multiplicity
+        self.PBC = wp.PBC
+        self.coords = apply_ops(self.position, self.wp)
+
+    def __str__(self):
+        site_sym = ss_string_from_ops(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+        pos = self.position
+        s = "{:>2s}: [{:6.4f} {:6.4f} {:6.4f}], {:4d}{:s}, site symmetry: {:s}".format(\
+             self.specie, pos[0], pos[1], pos[2], self.wp.multiplicity, self.wp.letter, site_sym)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
 
 class Wyckoff_position():
     """
@@ -1836,7 +1873,7 @@ class Group():
                     #Add 2, 3, and 5-fold rotations
                     gens.append(SymmOp.from_xyz_string('-x,-y,z'))
                     gens.append(SymmOp.from_xyz_string('z,x,y'))
-                    tau = 0.5*(math.sqrt(5)+1)
+                    tau = 0.5*(np.sqrt(5)+1)
                     m = aa2matrix([1., tau, 0.], 2*pi/5)
                     gens.append(SymmOp.from_rotation_and_translation(m, [0,0,0]))
                     #Add Wyckoff generating operations
@@ -1950,13 +1987,13 @@ class Group():
                         gen_ops = [Identity]
                         if symbol[-1] == "d":
                             #Add half-angle plane
-                            m_ref = [[math.cos(0.5*angle),math.sin(0.5*angle),0],[math.sin(0.5*angle),-math.cos(0.5*angle),0],[0,0,1]]
+                            m_ref = [[np.cos(0.5*angle),np.sin(0.5*angle),0],[np.sin(0.5*angle),-np.cos(0.5*angle),0],[0,0,1]]
                             gens.append(SymmOp.from_rotation_and_translation(m_ref, [0.,0.,0.]))
                             self.symbol += "d"
                             #Add quarter-angle plane
-                            m_ref = [[math.cos(0.25*angle),0,0],[math.sin(0.25*angle),0,0],[0,0,1]]
+                            m_ref = [[np.cos(0.25*angle),0,0],[np.sin(0.25*angle),0,0],[0,0,1]]
                             if np.isclose(m_ref[0][0],0,rtol=.001,atol=.001):
-                                m_ref = [[0,0,0],[0,math.sin(0.25*angle),0],[0,0,1]]
+                                m_ref = [[0,0,0],[0,np.sin(0.25*angle),0],[0,0,1]]
                             gen_ops.append(SymmOp.from_rotation_and_translation(m_ref, [0.,0.,0.]))
                         elif symbol[-1] == "h":
                             #Add horizontal mirror plane
@@ -1968,9 +2005,9 @@ class Group():
                             gen_ops.append(SymmOp.from_xyz_string('x,0,z'))
                             if num % 2 == 0:
                                 #Add extra plane
-                                m_ref = [[math.cos(0.5*angle),0,0],[math.sin(0.5*angle),0,0],[0,0,1]]
+                                m_ref = [[np.cos(0.5*angle),0,0],[np.sin(0.5*angle),0,0],[0,0,1]]
                                 if np.isclose(m_ref[0][0],0,rtol=.001,atol=.001):
-                                    m_ref = [[0,0,0],[0,math.sin(0.5*angle),0],[0,0,1]]
+                                    m_ref = [[0,0,0],[0,np.sin(0.5*angle),0],[0,0,1]]
                                 gen_ops.append(SymmOp.from_rotation_and_translation(m_ref, [0.,0.,0.]))
                                 #Add extra axis
                                 m = aa2matrix([0.,0.,1.], 0.5*angle)
@@ -2228,4 +2265,87 @@ def list_groups(dim=3):
     pd.set_option('display.max_rows', len(df))
     #df.set_index('Number')
     print(df)
+
+def choose_wyckoff(group, number):
+    """
+    Choose a Wyckoff position to fill based on the current number of atoms
+    needed to be placed within a unit cell
+    Rules:
+        1) The new position's multiplicity is equal/less than (number).
+        2) We prefer positions with large multiplicity.
+
+    Args:
+        group: a pyxtal.symmetry.Group object
+        number: the number of atoms still needed in the unit cell
+
+    Returns:
+        a single index for the Wyckoff position. If no position is found,
+        returns False
+    """
+    wyckoffs_organized = group.wyckoffs_organized
+    
+    if random.uniform(0,1)>0.5: #choose from high to low
+        for wyckoff in wyckoffs_organized:
+            if len(wyckoff[0]) <= number:
+                return random.choice(wyckoff)
+        return False
+    else:
+        good_wyckoff = []
+        for wyckoff in wyckoffs_organized:
+            if len(wyckoff[0]) <= number:
+                for w in wyckoff:
+                    good_wyckoff.append(w)
+        if len(good_wyckoff) > 0:
+            return random.choice(good_wyckoff)
+        else:
+            return False
+
+def check_wyckoff_sites(ws1, ws2, lattice, tm, same_group=True):
+    """
+    Given two Wyckoff sites, checks the inter-atomic distances between them.
+
+    Args:
+        ws1: a Wyckoff_site object
+        ws2: a different Wyckoff_site object (will always return False if
+            two identical WS's are provided)
+        lattice: a 3x3 cell matrix
+        same_group: whether or not the two WS's are in the same structure.
+            Default value True reduces the calculation cost
+
+    Returns:
+        True if all distances are greater than the allowed tolerances.
+        False if any distance is smaller than the allowed tolerance
+    """
+    #Ensure the PBC values are valid
+    if ws1.PBC != ws2.PBC:
+        printx("Error: PBC values do not match between Wyckoff sites")
+        return
+    #Get tolerance
+    tol = tm.get_tol(ws1.specie, ws2.specie)
+    #Symmetry shortcut method: check only some atoms
+    if same_group is True:
+        #We can either check one atom in WS1 against all WS2, or vice-versa
+        #Check which option is faster
+        if ws1.multiplicity > ws2.multiplicity:
+            coords1 = [ws1.coords[0]]
+            coords2 = ws2.coords
+        else:
+            coords1 = [ws2.coords[0]]
+            coords2 = ws1.coords
+        #Calculate distances
+        dm = distance_matrix(coords1, coords2, lattice, PBC=ws1.PBC)
+        #Check if any distances are less than the tolerance
+        if (dm < tol).any():
+            return False
+        else:
+            return True
+    #No symmetry method: check all atomic pairs
+    else:
+        dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
+        #Check if any distances are less than the tolerance
+        if (dm < tol).any():
+            return False
+        else:
+            return True
+
 

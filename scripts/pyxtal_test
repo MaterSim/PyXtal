@@ -102,8 +102,7 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
             old_coords = np.array(crystal)
             old_species = ['C']*len(old_coords)
 
-        from pyxtal.symmetry import distance
-        from pyxtal.symmetry import filtered_coords
+        from pyxtal.operations import distance, filtered_coords
         from copy import deepcopy
         PBC = [1,1,1]
 
@@ -311,7 +310,7 @@ def test_molecular():
     slow = []
     failed = []
     print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
-    skip = []#[24, 183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
+    skip = [225, 228]#[24, 183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
         if sg not in skip:
             multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
@@ -863,21 +862,7 @@ def test_modules():
         import pyxtal.operations
     except Exception as e:
         fail(e)
-
-    print("  random_vector")
-    try:
-        from pyxtal.operations import random_vector
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            for i in range(10):
-                random_vector()
-        except Exception as e:
-            fail(e)
-
-    check()
+    from pyxtal.lattice import random_shear_matrix, random_vector
 
     print("  angle")
     try:
@@ -891,21 +876,6 @@ def test_modules():
                 v1 = random_vector()
                 v2 = random_vector()
                 angle(v1, v2)
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    print("  random_shear_matrix")
-    try:
-        from pyxtal.operations import random_shear_matrix
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            for i in range(10):
-                random_shear_matrix()
         except Exception as e:
             fail(e)
 

@@ -9,7 +9,7 @@ constraints.
 #Imports
 #------------------------------
 #Standard libraries
-import math
+import numpy as np
 from copy import deepcopy
 from warnings import warn
 
@@ -17,24 +17,292 @@ from warnings import warn
 import numpy as np
 from scipy.spatial.distance import cdist
 from pymatgen.core.operations import SymmOp
-
-#Constants
+from pyxtal.tolerance import Tol_matrix
+from pyxtal.constants import pi, rad, deg, pyxtal_verbosity
 #------------------------------
-pi = math.pi    #constant for pi
-rad = pi/180.   #constant for converting degrees to radians
-deg = 180./pi   #constant for converting radians to degrees
-pyxtal_verbosity = 1    #constant for printx function
-#Define identity 3x3 matrix array for distance checking
-Euclidean_lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
-"""
-Stores how much should be printed:
-0: prints critical messages only
-1: prints warnings
-2: prints useful information
-3: prints debug information
-"""
-
 #Define functions
+def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1], 
+                   tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
+    """
+    Check the distances between two set of atoms. Distances between coordinates
+    within the first set are not checked, and distances between coordinates within
+    the second set are not checked. Only distances between points from different
+    sets are checked.
+
+    Args:
+        coord1: a list of fractional coordinates e.g. [[.1,.6,.4]
+            [.3,.8,.2]]
+        coord2: a list of new fractional coordinates e.g. [[.7,.8,.9],
+            [.4,.5,.6]]
+        species1: a list of atomic species or numbers for coord1
+        species2: a list of atomic species or numbers for coord2
+        lattice: matrix describing the unit cell vectors
+        PBC: A periodic boundary condition list, 
+            where 1 means periodic, 0 means not periodic.
+            [1,1,1] -> full 3d periodicity, 
+            [0,0,1] -> periodicity along the z axis
+        tm: a Tol_matrix object, or a string representing Tol_matrix
+        d_factor: the tolerance is multiplied by this amount. Larger values
+            mean atoms must be farther apart
+
+    Returns:
+        a bool for whether or not the atoms are sufficiently far enough apart
+    """
+    #Check that there are points to compare
+    if len(coord1) < 1 or len(coord2) < 1:
+        return True
+
+    #Create tolerance matrix from subset of tm
+    tols = np.zeros((len(species1),len(species2)))
+    for i1, specie1 in enumerate(species1):
+        for i2, specie2 in enumerate(species2):
+            tols[i1][i2] = tm.get_tol(specie1, specie2)
+
+    #Calculate the distance between each i, j pair
+    d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
+
+    if (np.array(d) < np.array(tols)).any():
+        return False
+    else:
+        return True
+
+
+
+def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,1,1]):
+    """
+    Checks the inter-atomic distance between all pairs of atoms in a crystal.
+
+    Args:
+        coordinates: a 1x3 list of fractional coordinates
+        species: a list of atomic symbols for each coordinate
+        lattice: a 3x3 matrix representing the lattice vectors of the unit cell
+        factor: a tolerance factor for checking distances. A larger value means
+            atoms must be farther apart
+        PBC: A periodic boundary condition list, 
+            where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+    
+    Returns:
+        True if no atoms are too close together, False if any pair is too close
+    """
+    for i, c1 in enumerate(coordinates):
+        specie1 = species[i]
+        for j, c2 in enumerate(coordinates):
+            if j > i:
+                specie2 = species[j]
+                diff = np.array(c2) - np.array(c1)
+                d_min = distance(diff, lattice, PBC=PBC)
+                rad = Element(specie1).covalent_radius + Element(specie2).covalent_radius
+                tol = factor*0.5*rad
+                if d_min < tol:
+                    return False
+    return True
+
+def check_images(coords, species, lattice, PBC=[1,1,1], 
+                 tm=Tol_matrix(prototype="atomic"), tol=None, d_factor=1.0):
+    """
+    Given a set of (unfiltered) frac coordinates, checks if the periodic images are too close.
+    
+    Args:
+        coords: a list of fractional coordinates
+        species: the atomic species of each coordinate
+        lattice: a 3x3 lattice matrix
+        PBC: the periodic boundary conditions
+        tm: a Tol_matrix object
+        tol: a single override value for the distance tolerances
+        d_factor: the tolerance is multiplied by this amount. Larger values
+            mean atoms must be farther apart
+
+    Returns:
+        False if distances are too close. True if distances are not too close
+    """
+    #If no PBC, there are no images to check
+    if PBC == [0,0,0]:
+        return True
+    #Create image coords from given coords and PBC
+    coords = np.array(coords)
+    m = create_matrix(PBC=PBC)
+    new_coords = []
+    new_species = []
+    for v in m:
+        #Omit the [0,0,0] vector
+        if (v == [0,0,0]).all(): continue
+        for v2 in coords+v:
+            new_coords.append(v2)
+    new_coords = np.array(new_coords)
+    #Create a distance matrix
+    dm = distance_matrix(coords, new_coords, lattice, PBC=[0,0,0])
+    #Define tolerances
+    if tol is None:
+        tols = np.zeros((len(species), len(species)))
+        for i, s1 in enumerate(species):
+            for j, s2 in enumerate(species):
+                if i <= j:
+                    tols[i][j] = tm.get_tol(s1, s2)
+                    tols[j][i] = tm.get_tol(s1, s2)
+        tols2 = np.tile(tols, int(len(new_coords) / len(coords)))
+        if (dm < tols2).any():
+            return False
+        else:
+            return True
+    elif tol is not None:
+        if (dm < tol).any():
+            return False
+        else:
+            return True
+    return True
+
+def distance(xyz, lattice, PBC=[1,1,1]):
+    """
+    Returns the Euclidean distance from the origin for a fractional
+    displacement vector. Takes into account the lattice metric and periodic
+    boundary conditions, including up to one non-periodic axis.
+    
+    Args:
+        xyz: a fractional 3d displacement vector. Can be obtained by
+            subtracting one fractional vector from another
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+
+    Returns:
+        a scalar for the distance of the point from the origin
+    """
+    xyz = filtered_coords(xyz, PBC=PBC)
+    matrix = create_matrix(PBC=PBC)
+    matrix += xyz
+    matrix = np.dot(matrix, lattice)
+    return np.min(cdist(matrix,[[0,0,0]]))     
+
+def distance_matrix_single(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
+    """
+    Returns the distances between two sets of fractional coordinates.
+    Takes into account the lattice metric and periodic boundary conditions.
+    
+    Args:
+        points1: a list of fractional coordinates
+        points2: another list of fractional coordinates
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        metric: the metric to use with cdist. Possible values include 'euclidean',
+            'sqeuclidean', 'minkowski', and others
+
+    Returns:
+        a 2x2 np array of scalar distances
+    """
+    if PBC != [0,0,0]:
+        l1 = filtered_coords(points1, PBC=PBC)
+        l2 = filtered_coords(points2, PBC=PBC)
+        l2 = np.dot(l2, lattice)
+        matrix = create_matrix(PBC=PBC)
+        m1 = np.array([(l1 + v) for v in matrix])
+        m1 = np.dot(m1, lattice)
+        d = np.array([cdist(l, l2, metric) for l in m1])
+    else:
+        l1 = np.dot(points1, lattice)
+        l2 = np.dot(points2, lattice)
+        d = cdist(l1, l2, metric)
+
+    return np.min(d)
+
+
+def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
+    """
+    Returns the distances between two sets of fractional coordinates.
+    Takes into account the lattice metric and periodic boundary conditions.
+    
+    Args:
+        points1: a list of fractional coordinates
+        points2: another list of fractional coordinates
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        metric: the metric to use with cdist. Possible values include 'euclidean',
+            'sqeuclidean', 'minkowski', and others
+
+    Returns:
+        a 2x2 np array of scalar distances
+    """
+    if lattice is not None:
+        if (np.array(lattice) == np.eye(3)).all():
+            lattice = None
+
+    if lattice is not None:
+        if PBC != [0,0,0]:
+            l1 = filtered_coords(points1, PBC=PBC)
+            l2 = filtered_coords(points2, PBC=PBC)
+            l2 = np.dot(l2, lattice)
+            matrix = create_matrix(PBC=PBC)
+            m1 = np.array([(l1 + v) for v in matrix])
+            m1 = np.dot(m1, lattice)
+            all_distances = np.array([cdist(l, l2, metric) for l in m1])
+            return np.apply_along_axis(np.min, 0, all_distances)
+
+        else:
+            l1 = np.dot(points1, lattice)
+            l2 = np.dot(points2, lattice)
+            return cdist(l1, l2, metric)
+    elif lattice is None:
+        if PBC != [0,0,0]:
+            l1 = filtered_coords(points1, PBC=PBC)
+            l2 = filtered_coords(points2, PBC=PBC)
+            matrix = create_matrix(PBC=PBC)
+            m1 = np.array([(l1 + v) for v in matrix])
+            all_distances = np.array([cdist(l, l2, metric) for l in m1])
+            return np.apply_along_axis(np.min, 0, all_distances)
+        else:
+            return cdist(points1, points2, metric)
+
+def find_short_dist(coor, lattice, tol, PBC=[1,1,1]):
+    """
+    Given a list of fractional coordinates, finds pairs which are closer
+    together than tol, and builds the connectivity map
+
+    Args:
+        coor: a list of fractional 3-dimensional coordinates
+        lattice: a matrix representing the crystal unit cell
+        tol: the distance tolerance for pairing coordinates
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+    
+    Returns:
+        pairs, graph: (pairs) is a list whose entries have the form [index1,
+        index2, distance], where index1 and index2 correspond to the indices
+        of a pair of points within the supplied list (coor). distance is the
+        distance between the two points. (graph) is a connectivity map in the
+        form of a list. Its first index represents a point within coor, and
+        the second indices represent which point(s) it is connected to.
+    """
+    pairs=[]
+    graph=[]
+    for i in range(len(coor)):
+        graph.append([])
+
+    d = distance_matrix(coor, coor, lattice, PBC=PBC)
+    ijs = np.where(d<= tol)
+    for i in np.unique(ijs[0]):
+        j = ijs[1][i]
+        if j <= i: continue
+        pairs.append([i, j, d[i][j]])
+
+    pairs = np.array(pairs)
+    if len(pairs) > 0:
+        d_min = min(pairs[:,-1]) + 1e-3
+        sequence = [pairs[:,-1] <= d_min]
+        #Avoid Futurewarning
+        #pairs1 = deepcopy(pairs)
+        #pairs = pairs1[sequence]
+        pairs = pairs[tuple(sequence)]
+        for pair in pairs:
+            pair0=int(pair[0])
+            pair1=int(pair[1])
+            graph[pair0].append(pair1)
+            graph[pair1].append(pair0)
+
+    return pairs, graph
+
+
 #------------------------------
 def printx(text, priority=1):
     """
@@ -66,7 +334,8 @@ def create_matrix(PBC=[1,1,1]):
     points in cells adjacent to and diagonal to the original cell
 
     Args:
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+        PBC: A periodic boundary condition list, 
+            where 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
 
     Returns:
@@ -136,166 +405,27 @@ def filtered_coords_euclidean(coords, PBC=[1,1,1]):
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
-def distance(xyz, lattice, PBC=[1,1,1]):
-    """
-    Returns the Euclidean distance from the origin for a fractional
-    displacement vector. Takes into account the lattice metric and periodic
-    boundary conditions, including up to one non-periodic axis.
-    
-    Args:
-        xyz: a fractional 3d displacement vector. Can be obtained by
-            subtracting one fractional vector from another
-        lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-
-    Returns:
-        a scalar for the distance of the point from the origin
-    """
-    xyz = filtered_coords(xyz, PBC=PBC)
-    matrix = create_matrix(PBC=PBC)
-    matrix += xyz
-    matrix = np.dot(matrix, lattice)
-    return np.min(cdist(matrix,[[0,0,0]]))     
-
-def dsquared(v):
-    """
-    Returns the squared length of a 3-vector. Does not consider PBC.
-
-    Args:
-        v: a 3-vector
-    
-    Returns:
-        the squared length of the vector
-    """
-    return v[0]**2 + v[1]**2 + v[2]**2
-
-def distance_matrix_single(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
-    """
-    Returns the distances between two sets of fractional coordinates.
-    Takes into account the lattice metric and periodic boundary conditions.
-    
-    Args:
-        points1: a list of fractional coordinates
-        points2: another list of fractional coordinates
-        lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-        metric: the metric to use with cdist. Possible values include 'euclidean',
-            'sqeuclidean', 'minkowski', and others
-
-    Returns:
-        a 2x2 np array of scalar distances
-    """
-    if PBC != [0,0,0]:
-        l1 = filtered_coords(points1, PBC=PBC)
-        l2 = filtered_coords(points2, PBC=PBC)
-        l2 = np.dot(l2, lattice)
-        matrix = create_matrix(PBC=PBC)
-        m1 = np.array([(l1 + v) for v in matrix])
-        m1 = np.dot(m1, lattice)
-        d = np.array([cdist(l, l2, metric) for l in m1])
-    else:
-        l1 = np.dot(points1, lattice)
-        l2 = np.dot(points2, lattice)
-        d = cdist(l1, l2, metric)
-
-    return np.min(d)
-
-
-def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
-    """
-    Returns the distances between two sets of fractional coordinates.
-    Takes into account the lattice metric and periodic boundary conditions.
-    
-    Args:
-        points1: a list of fractional coordinates
-        points2: another list of fractional coordinates
-        lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-        metric: the metric to use with cdist. Possible values include 'euclidean',
-            'sqeuclidean', 'minkowski', and others
-
-    Returns:
-        a 2x2 np array of scalar distances
-    """
-    if lattice is not None:
-        if (np.array(lattice) == Euclidean_lattice).all():
-            lattice = None
-
-    if lattice is not None:
-        if PBC != [0,0,0]:
-            l1 = filtered_coords(points1, PBC=PBC)
-            l2 = filtered_coords(points2, PBC=PBC)
-            l2 = np.dot(l2, lattice)
-            matrix = create_matrix(PBC=PBC)
-            m1 = np.array([(l1 + v) for v in matrix])
-            m1 = np.dot(m1, lattice)
-            all_distances = np.array([cdist(l, l2, metric) for l in m1])
-            return np.apply_along_axis(np.min, 0, all_distances)
-
-        else:
-            l1 = np.dot(points1, lattice)
-            l2 = np.dot(points2, lattice)
-            return cdist(l1, l2, metric)
-    elif lattice is None:
-        if PBC != [0,0,0]:
-            l1 = filtered_coords(points1, PBC=PBC)
-            l2 = filtered_coords(points2, PBC=PBC)
-            matrix = create_matrix(PBC=PBC)
-            m1 = np.array([(l1 + v) for v in matrix])
-            all_distances = np.array([cdist(l, l2, metric) for l in m1])
-            return np.apply_along_axis(np.min, 0, all_distances)
-        else:
-            return cdist(points1, points2, metric)
-
-def distance_matrix_euclidean(points1, points2, PBC=[1,1,1], squared=False):
-    """
-    Returns the distances between two sets of fractional coordinates.
-    Takes into account periodic boundary conditions, but assumes a Euclidean matrix.
-    
-    Args:
-        points1: a list of fractional coordinates
-        points2: another list of fractional coordinates
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-        squared: whether to return the squared distance (True) or the Euclidean distance (False)
-
-    Returns:
-        a 2x2 np array of scalar distances
-    """
-    def subtract(p):
-        return points2 - p
-    #get displacement vectors
-    displacements = filtered_coords_euclidean(np.apply_along_axis(subtract, -1, points1), PBC=PBC)
-    #Calculate norms
-    if squared is True:
-        return np.apply_along_axis(dsquared, -1, displacements)
-    else:
-        return np.apply_along_axis(np.linalg.norm, -1, displacements)
-
-def euler_from_matrix(m, radians=True):
-    """
-    Given a 3x3 rotation matrix, determines the Euler angles
-    
-    Args:
-        m: a 3x3 rotation matrix
-        radians: whether or not to output angles in radians (degrees if False)
-    
-    Returns:
-        (phi, theta, psi): psi is the azimuthal angle, theta is the polar angle,
-            and psi is the angle about the z axis. All angles are in radians
-            unless radians is False
-    """
-    phi = np.arctan2(m[2][0], m[2][1])
-    theta = math.acos(m[2][2])
-    psi = - np.arctan2(m[0][2], m[1][2])
-    if radians is False:
-        phi *= deg
-        theta *= deg
-        psi *= deg
-    return (phi, theta, psi)
+#def euler_from_matrix(m, radians=True):
+#    """
+#    Given a 3x3 rotation matrix, determines the Euler angles
+#    
+#    Args:
+#        m: a 3x3 rotation matrix
+#        radians: whether or not to output angles in radians (degrees if False)
+#    
+#    Returns:
+#        (phi, theta, psi): psi is the azimuthal angle, theta is the polar angle,
+#            and psi is the angle about the z axis. All angles are in radians
+#            unless radians is False
+#    """
+#    phi = np.arctan2(m[2][0], m[2][1])
+#    theta = np.arccos(m[2][2])
+#    psi = - np.arctan2(m[0][2], m[1][2])
+#    if radians is False:
+#        phi *= deg
+#        theta *= deg
+#        psi *= deg
+#    return (phi, theta, psi)
 
 
 def get_inverse(op):
@@ -328,7 +458,7 @@ def get_inverse_ops(ops):
             inverses.append(get_inverse_ops(op))
     return inverses
     
-def project_point(point, op, lattice=Euclidean_lattice, PBC=[1,1,1]):
+def project_point(point, op, lattice=np.eye(3), PBC=[1,1,1]):
     """
     Given a 3-vector and a Wyckoff position operator, returns the projection of that
     point onto the axis, plane, or point.
@@ -427,57 +557,11 @@ def angle(v1, v2, radians=True):
         return 0
     elif np.isclose(dot, -1.0):
         return pi
-    a = math.acos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
+    a = np.arccos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
     if radians is True:
         return a
     else:
         return a * deg
-
-def random_shear_matrix(width=1.0, unitary=False):
-    """
-    Generate a random symmetric shear matrix with Gaussian elements. If unitary
-    is True, normalize to determinant 1
-
-    Args:
-        width: the width of the normal distribution to use when choosing values.
-            Passed to np.random.normal
-        unitary: whether or not to normalize the matrix to determinant 1
-    
-    Returns:
-        a 3x3 numpy array of floats
-    """
-    mat = np.zeros([3,3])
-    determinant = 0
-    while determinant == 0:
-        a, b, c = np.random.normal(scale=width), np.random.normal(scale=width), np.random.normal(scale=width)
-        mat = np.array([[1,a,b],[a,1,c],[b,c,1]])
-        determinant = np.linalg.det(mat)
-    if unitary:
-        new = mat / np.cbrt(np.linalg.det(mat))
-        return new
-    else: return mat
-
-def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
-    """
-    Generate a random vector for lattice constant generation. The ratios between
-    x, y, and z of the returned vector correspond to the ratios between a, b,
-    and c. Results in a Gaussian distribution of the natural log of the ratios.
-
-    Args:
-        minvec: the bottom-left-back minimum point which can be chosen
-        maxvec: the top-right-front maximum point which can be chosen
-        width: the width of the normal distribution to use when choosing values.
-            Passed to np.random.normal
-        unit: whether or not to normalize the vector to determinant 1
-
-    Returns:
-        a 1x3 numpy array of floats
-    """
-    vec = np.array([np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width))])
-    if unit:
-        return vec/np.linalg.norm(vec)
-    else:
-        return vec
 
 def is_orthogonal(m, tol=.001):
     """
@@ -529,8 +613,8 @@ def aa2matrix(axis, angle, radians=True, random=False):
     x = np.real(axis[0])
     y = np.real(axis[1])
     z = np.real(axis[2])
-    c = math.cos(angle)
-    s = math.sin(angle)
+    c = np.cos(angle)
+    s = np.sin(angle)
     C = 1 - c
     #Define the rotation matrix
     Q = np.zeros([3,3])
@@ -588,7 +672,7 @@ def matrix2aa(m, radians=True):
         x = m[2][1] - m[1][2]
         y = m[0][2] - m[2][0]
         z = m[1][0] - m[0][1]
-        r = math.sqrt(x**2+y**2+z**2)
+        r = np.sqrt(x**2+y**2+z**2)
         t = m[0][0] + m[1][1] + m[2][2]
         theta = np.arctan2(r, t-1.)
         #Ensure 0<theta<pi
@@ -829,7 +913,7 @@ class OperationAnalyzer(SymmOp):
             if opa2.type == self.type:
                 if self.type == "rotation" or self.type == "rotoinversion":
                     ratio = self.angle / opa2.angle
-                    if np.isclose(math.fabs(ratio), 1., atol=1e-2):
+                    if np.isclose(np.fabs(ratio), 1., atol=1e-2):
                         return True
                 elif self.type == "identity" or self.type == "inversion":
                     return True
@@ -1000,9 +1084,9 @@ class Orientation():
         if not np.isclose(phi, phi2, rtol=.01):
             printx("Error: constraints and vectors do not match.", priority=1)
             return
-        r = math.sin(phi)
+        r = np.sin(phi)
         c = np.linalg.norm(np.dot(T, v2) - c2)
-        theta = math.acos(1 - (c**2)/(2*(r**2)))
+        theta = np.arccos(1 - (c**2)/(2*(r**2)))
         R = aa2matrix(c1, theta)
         T2 = np.dot(R, T)
         a = angle(np.dot(T2, v2), c2)
@@ -1023,6 +1107,7 @@ class Orientation():
         """
         self.get_matrix()
         return self
+
 
 #Test Functionality
 if __name__ == "__main__":
