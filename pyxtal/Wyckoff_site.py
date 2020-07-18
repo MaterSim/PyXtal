@@ -58,7 +58,7 @@ class mol_site():
         s = str(self.mol.formula)+": "
         s += "[{:6.3f} {:6.3f} {:6.3f}]  ".format(pos[0], pos[1], pos[2])
         s += str(self.wp.multiplicity)+self.wp.letter
-        s += " Site symmetry {:} ==> Angles: ".format(self.site_symm)
+        s += " Site symmetry {:} ==> Rotvec: ".format(self.site_symm)
         s += "{:6.3f} {:6.3f} {:6.3f}".format(self.rotvec[0], self.rotvec[1], self.rotvec[2])
         return s
 

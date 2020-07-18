@@ -1207,16 +1207,16 @@ def test_modules():
 
     check()
 
-    print("  Collections")
+    print("pyxtal_molecule")
     try:
-        from pyxtal.molecule import mol_from_collection
+        from pyxtal.molecule import pyxtal_molecule
     except Exception as e:
         fail(e)
 
     if passed():
         try:
-            h2o = mol_from_collection('H2O')
-            ch4 = mol_from_collection('CH4')
+            h2o = pyxtal_molecule('H2O').mol
+            ch4 = pyxtal_molecule('CH4').mol
         except Exception as e:
             fail(e)
 

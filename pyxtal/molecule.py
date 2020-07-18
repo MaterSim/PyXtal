@@ -19,64 +19,151 @@ from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
 
 #PyXtal imports
 from pyxtal.msg import printx
+from pyxtal.tolerance import Tol_matrix
+from pyxtal.database.element import Element
 from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
 from pyxtal.database.collection import Collection
 from pyxtal.constants import pi
 #Define functions
 #------------------------------
-def find_ellipsoid(mol):
-    printx("Error: bounding ellipsoid calculator not yet implemented.", priority=0)
-    pass
+molecule_collection = Collection('molecules')
 
-def mol_from_file(fname):
+class pyxtal_molecule():
+   """
+   Extended molecule class based on pymatgen.core.structure.Molecule
+   The added features include:
+   0, parse the input
+   1, find and store symmetry
+   2, get the principle axis
+   3, re-align the molecule 
+
+   Args:
+      mol: a string to reprent the molecule
+      tm: tolerance matrix
+   
+   """
+
+   def __init__(self, mol, tm=Tol_matrix(prototype="molecular")):
+       mo = None
+       if type(mol) == str:
+           # Parse molecules: either file or molecule name
+           tmp = mol.split('.')
+           if len(tmp) > 1: 
+               # Load the molecule from the given file
+               if tmp[-1] in ['xyz', 'gjf', 'g03', 'json']:
+                   if os.path.exists(mol):
+                       mo = Molecule.from_file(mol)
+                   else:
+                       raise NameError('{:s} is not a valid path'.format(tmp))
+               else:
+                   raise NameError('{:s} is not a supported format'.format(tmp[-1]))
+           else:
+               # print('\nLoad the molecule {:s} from collections'.format(mol))
+               mo = molecule_collection[mol]
+
+       if mo is None:
+           msg = "Could not create molecules from given input: {:s}".format(mol)
+           raise NameError(msg)
+
+       if len(mo) > 1:
+           pga = PointGroupAnalyzer(mo)
+           mo = pga.symmetrize_molecule()['sym_mol']
+
+       props = mo.site_properties
+       if len(props) > 0:
+           for key in props.keys():
+               mo.add_site_property(key, props[key])
+       self.mol = mo
+       self.tm = tm
+       self.get_box()
+       self.volume = self.box.volume
+       self.get_radius()
+       self.get_symbols()
+       self.get_tols_matrix()
+
+
+   def get_box(self):
+       """
+       Given a molecule, find a minimum orthorhombic box containing it.
+       Size is calculated using min and max x, y, and z values, 
+       plus the padding defined by the vdw radius
+       For best results, call oriented_molecule first.
+       
+       Args:
+           mol: a pymatgen Molecule object. Should be oriented along its principle axes.
+   
+       Returns:
+           a Box object
+       """
+       minx, miny, minz, maxx, maxy, maxz = 0.,0.,0.,0.,0.,0.
+       for p in self.mol:
+           x, y, z = p.coords
+           r = Element(p.species_string).vdw_radius
+           if x-r < minx: minx = x-r
+           if y-r < miny: miny = y-r
+           if z-r < minz: minz = z-r
+           if x+r > maxx: maxx = x+r
+           if y+r > maxy: maxy = y+r
+           if z+r > maxz: maxz = z+r
+       self.box =  Box(minx,maxx,miny,maxy,minz,maxz)
+
+   def get_radius(self):
+       r_max = 0
+       for coord, number in zip(self.mol.cart_coords, self.mol.atomic_numbers):
+           radius = np.sqrt(np.sum(coord*coord)) + self.tm.get_tol(number, number)*0.5
+           if radius > r_max:
+               r_max = radius
+       self.radius = r_max
+
+   def get_symbols(self):
+           self.symbols = [specie.name for specie in self.mol.species]
+
+   def get_tols_matrix(self):
+       """
+       Returns: a 2D matrix which is used internally for distance checking.
+       """
+       numbers = self.mol.atomic_numbers
+       tols = np.zeros((len(numbers),len(numbers)))
+       for i1, number1 in enumerate(numbers):
+           for i2, number2 in enumerate(numbers):
+               tols[i1][i2] = self.tm.get_tol(number1, number2)
+       self.tols_matrix = tols
+
+
+class Box():
     """
-    Reads a file into a pymatgen Molecule. Supported formats include xyz, gaussian,
-    and pymatgen JSON. Openbabel is optional but adds additional format options.
-    
+    Class for storing the binding box for a molecule. Box is oriented along the x, y, and
+    z axes.
+
     Args:
-        fname: the file path string
-    
-    Returns:
-        a pymatgen Molecule object
+        minx: the minimum x value
+        maxx: the maximum x value
+        miny: the minimum y value
+        maxy: the maximum y value
+        minz: the minimum z value
+        maxz: the maximum z value
     """
-    try:
-        return Molecule.from_file(fname)
-    except:
-        printx("Error: could not import file "+str(fname)+" to Molecule.\n"
-            +"Default supported formats are xyz, gaussian and pymatgen JSON molecules.\n"
-            +"Installing openbabel allows for more extensions.", priority=1)
-        return
+    def __init__(self, minx, maxx, miny, maxy, minz, maxz):
+        self.minx = float(minx)
+        self.maxx = float(maxx)
+        self.miny = float(miny)
+        self.maxy = float(maxy)
+        self.minz = float(minz)
+        self.maxz = float(maxz)
 
-def mol_from_string(string, fmt):
-    """
-    Reads a string into a pymatgen Molecule. Uses the pymatgen IMolecule method from_str.
-    
-    Args:
-        string: a string containing the molecular data
-        fmt: the conversion format to use
-    
-    Returns:
-        a pymatgen Molecule object
-    """
-    try:
-        return Molecule.from_str(string, fmt)
-    except:
-        printx("Error: could not convert string '"+str(fmt)+"' to Molecule.\n"
-            +"Default supported formats are xyz, gaussian and pymatgen JSON molecules.\n"
-            +"Installing openbabel allows for more extensions.", priority=1)
-        return
+        self.width = float(abs(maxx - minx))
+        self.length = float(abs(maxy - miny))
+        self.height = float(abs(maxz - minz))
 
-def mol_from_collection(mname):
-    """
-    Get a molecule from pyxtal.database.collection
+        self.minl = min(self.width, self.length, self.height)
+        self.maxl = max(self.width, self.length, self.height)
+        for x in (self.width, self.length, self.height):
+            if x <= self.maxl and x >= self.minl:
+                self.midl = x
 
-    Args:
-        mname: the name of the molecule
-    
-    Returns:
-        a pymatgen Molecule object
-    """
-    return Collection('molecules')[mname]
+        self.volume = float(self.width * self.length * self.height)
+
+       
 
 def get_inertia_tensor(mol):
     """
@@ -491,7 +578,8 @@ def orientation_in_wyckoff_position(mol, wyckoff_position, randomize=True,
             op = o.get_op(angle=0)
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(mo, wyckoff_position, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:
+        if orientation_in_wyckoff_position(mo, wyckoff_position, exact_orientation=True, \
+                                        randomize=False, allow_inversion=allow_inversion):
             allowed.append(o)
     #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
@@ -523,25 +611,24 @@ class Orientation():
     def __init__(self, matrix, degrees=0, axis=None):
         if (degrees == 1) and (axis is None):
             printx("Error: Constraint vector required for orientation", priority=1)
-        # scipy.spatial.transform.Rotation class
         self.matrix = np.array(matrix)
-        self.r = Rotation.from_matrix(matrix) #
-        self.degrees = degrees #The number of degrees of freedom.
-        self.axis = axis #The axis (optional) about which the orientation may rotate."""
+        self.r = Rotation.from_matrix(matrix) # scipy transform.Rotation class
+        self.degrees = degrees # The number of degrees of freedom.
+        self.axis = axis # The rotational axis (optional)
         self.angle = None
 
 
     def change_orientation(self, angle="random"):
         """
-        Generate a 3x3 rotation matrix consistent with the orientation's
-        constraints. Allows for specification of an angle (possibly random) to
+        Allows for specification of an angle (possibly random) to
         rotate about the constraint axis.
 
         Args:
-            angle: an angle to rotate about the constraint axis. If "random",
-                chooses a random rotation angle. If self.degrees==2, chooses a
-                random 3d rotation matrix to multiply by. If the original matrix
-                is wanted, set angle=0, or call self.matrix
+            angle: an angle to rotate about the constraint axis. 
+            If "random", chooses a random rotation angle. 
+            If self.degrees==2, chooses a random rotation matrix. 
+            If self.degrees==1, only apply on angle
+            If self.degrees==0, no change
 
         """
         if self.degrees == 2:

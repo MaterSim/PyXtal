@@ -6,57 +6,24 @@ from copy import deepcopy
 
 #External Libraries
 from pymatgen.core.structure import Structure, Molecule
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 
 #PyXtal imports
+from pyxtal.constants import *
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, para2matrix, add_vacuum
 from pyxtal.database.element import Element
 from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position, jk_from_i
 from pyxtal.operations import apply_ops, check_images, project_point, distance, distance_matrix, filtered_coords 
-from pyxtal.molecule import PointGroupAnalyzer, reoriented_molecule, orientation_in_wyckoff_position
-from pyxtal.constants import *
+from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
 from pyxtal.Wyckoff_site import mol_site, check_mol_sites
 from pyxtal.database.collection import Collection
 
 
-molecule_collection = Collection('molecules')
 
 #Define functions
 #------------------------------
-class Box():
-    """
-    Class for storing the binding box for a molecule. Box is oriented along the x, y, and
-    z axes.
-
-    Args:
-        minx: the minimum x value
-        maxx: the maximum x value
-        miny: the minimum y value
-        maxy: the maximum y value
-        minz: the minimum z value
-        maxz: the maximum z value
-    """
-    def __init__(self, minx, maxx, miny, maxy, minz, maxz):
-        self.minx = float(minx)
-        self.maxx = float(maxx)
-        self.miny = float(miny)
-        self.maxy = float(maxy)
-        self.minz = float(minz)
-        self.maxz = float(maxz)
-
-        self.width = float(abs(maxx - minx))
-        self.length = float(abs(maxy - miny))
-        self.height = float(abs(maxz - minz))
-
-        self.minl = min(self.width, self.length, self.height)
-        self.maxl = max(self.width, self.length, self.height)
-        for x in (self.width, self.length, self.height):
-            if x <= self.maxl and x >= self.minl:
-                self.midl = x
-
-        self.volume = float(self.width * self.length * self.height)
-
 def merge_coordinate_molecular(coor, lattice, group, tol, orientations):
     """
     Given a list of fractional coordinates, merges them within a given
@@ -256,80 +223,47 @@ class molecular_crystal():
         None otherwise
         """
         self.Msgs()
-        """A list of warning messages to use during generation."""
-        self.factor = volume_factor
-        """The supplied volume factor for the unit cell."""
+        self.factor = volume_factor #volume factor for the unit cell.
         numMols = np.array(numMols) #must convert it to np.array
-        self.numMols0 = numMols
-        """The number of each type of molecule in the PRIMITIVE cell"""
-        self.numMols = self.numMols0 * cellsize(self.group)
-        """The number of each type of molecule in the CONVENTIONAL cell"""
-        oriented_molecules = []
-        #Allow support for generating molecules from text via openbable
-        for i, mol in enumerate(molecules):
-            # Parsing the molecular input
-            if type(mol) == str:
-                # Read strings into molecules, try collection first,
-                # If string not in collection, use pymatgen format
-                tmp = mol.split('.')
-                if len(tmp) > 1:
-                    #print('\nLoad the molecule from the given file {:s}'.format(mol))
-                    if tmp[-1] in ['xyz', 'gjf', 'g03', 'json']:
-                        mo = mol_from_file(mol)
-                    else:
-                        raise NameError('{:s} is not a supported format'.format(tmp[-1]))
-                else:
-                    #print('\nLoad the molecule {:s} from collections'.format(mol))
-                    mo = molecule_collection[mol]
-                if mo is not None:
-                    molecules[i] = mo
-                else:
-                    msg = "Could not create molecules from given input: {:s}".format(mol)
-                    raise NameError(msg)
-        for mol in molecules:
-            if len(mol) > 1:
-                props = mol.site_properties
-                pga = PointGroupAnalyzer(mol)
-                mo = pga.symmetrize_molecule()['sym_mol']
-                if len(props)>0:
-                    for key in props.keys():
-                        mo.add_site_property(key, props[key])
-                oriented_molecules.append(mo)
-            else:
-                oriented_molecules.append(mol)
-        self.molecules = oriented_molecules
-        """A list of pymatgen.core.structure.Molecule objects, symmetrized and
-        oriented along their symmetry axes."""
-        self.boxes = []
-        """A list of bounding boxes for each molecule. Used for estimating
-        volume of the unit cell."""
-        self.radii = []
-        """A list of approximated radii for each molecule type. Used for
-        checking inter-molecular distances."""
-        #Calculate boxes and radii for each molecule
-        for mol in self.molecules:
-            self.boxes.append(self.get_box(reoriented_molecule(mol)[0]))
-            max_r = 0
-            for site in mol:
-                radius = np.sqrt( site.x**2 + site.y**2 + site.z**2 )
-                if radius > max_r: max_r = radius
-            self.radii.append(max_r+1.0)
-        """The volume of the generated unit cell"""
+        self.numMols0 = numMols # in the PRIMITIVE cell
+        self.numMols = self.numMols0 * cellsize(self.group) #in the CONVENTIONAL cell
+
+        # boolean numbers
         self.check_atomic_distances = check_atomic_distances
-        """Whether or not inter-atomic distances are checked at each step."""
         self.allow_inversion = allow_inversion
-        """Whether or not to allow chiral molecules to be inverted."""
         self.select_high = select_high
-        """Whether or not to select high multi Wycoff sites only."""
-        #When generating multiple crystals of the same stoichiometry and sg,
-        #allow the user to re-use the allowed orientations, to reduce time cost
+
+
+        # Set the tolerance matrix
+        # The Tol_matrix object for checking inter-atomic distances within the structure.
+        if type(tm) == Tol_matrix:
+            self.tol_matrix = tm
+        else:
+            try:
+                self.tol_matrix = Tol_matrix(prototype=tm)
+            except:
+                msg = "Error: tm must either be a Tol_matrix object +\n" 
+                msg += "or a prototype string for initializing one."
+                printx(msg, priority=1)
+                self.valid = False
+                self.struct = None
+                return
+ 
+        self.molecules = [] # A pyxtal_molecule objects, 
+        for mol in molecules:
+            self.molecules.append(pyxtal_molecule(mol, self.tol_matrix))
+
+        """
+        The valid orientations for each molecule and Wyckoff position.
+        May be copied when generating a new molecular_crystal to save a
+        small amount of time 
+        """
+
         if orientations is None:
             self.get_orientations()
         else:
             self.valid_orientations = orientations
-            """The valid orientations for each molecule and Wyckoff position.
-            May be copied when generating a new molecular_crystal to save a
-            small amount of time"""
+
         if lattice is not None:
             # Use the provided lattice
             self.lattice = lattice
@@ -338,7 +272,7 @@ class molecular_crystal():
             if lattice.PBC != self.PBC:
                 self.lattice.PBC = self.PBC
                 printx("\n  Warning: converting custom lattice PBC to "+str(self.PBC))
-        elif lattice is None:
+        else:
             # Determine the unique axis
             if self.dim == 2:
                 if self.number in range(3, 8):
@@ -354,17 +288,16 @@ class molecular_crystal():
                 unique_axis = "c"
             # Generate a Lattice instance
             self.volume = self.estimate_volume()
-            """The volume of the generated unit cell."""
 
             # Calculate the minimum, middle, and maximum box lengths for the unit cell.
             # make sure at least one non-overlapping orientation exists for each molecule
             minls = []
             midls = []
             maxls = []
-            for box in self.boxes:
-                minls.append(box.minl)
-                midls.append(box.midl)
-                maxls.append(box.maxl)
+            for mol in self.molecules:
+                minls.append(mol.box.minl)
+                midls.append(mol.box.midl)
+                maxls.append(mol.box.maxl)
 
             # The Lattice object used to generate lattice matrices 
             if self.dim == 3 or self.dim == 0:
@@ -380,76 +313,10 @@ class molecular_crystal():
                 self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, 
                                        unique_axis=unique_axis, min_l=max(minls), 
                                        mid_l=max(midls), max_l=max(maxls), area=self.area)
-        # Set the tolerance matrix
-        # The Tol_matrix object for checking inter-atomic distances within the structure.
-        if type(tm) == Tol_matrix:
-            self.tol_matrix = tm
-        else:
-            try:
-                self.tol_matrix = Tol_matrix(prototype=tm)
-            except:
-                msg = "Error: tm must either be a Tol_matrix object +\n" 
-                msg += "or a prototype string for initializing one."
-                printx(msg, priority=1)
-                self.valid = False
-                self.struct = None
-                return
-        
-        self.tols_matrix = []
-        self.radii = []
-        self.symbols = []
-        for mol in self.molecules:
-            self.tols_matrix.append(self.get_tols_matrix(mol))
-            self.radii.append(self.get_radius(mol))
-            self.symbols.append([specie.name for specie in mol.species])
+       
         self.generate_crystal()
 
-    def get_radius(self, mol):
-        r_max = 0
-        for coord, number in zip(mol.cart_coords, mol.atomic_numbers):
-            radius = np.sqrt(np.sum(coord*coord)) + self.tol_matrix.get_tol(number, number)*0.5
-            if radius > r_max:
-                r_max = radius
-        return r_max
 
-    def get_box(self, mol):
-        """
-        Given a molecule, find a minimum orthorhombic box containing it.
-        Size is calculated using min and max x, y, and z values, 
-        plus the padding defined by the vdw radius
-        For best results, call oriented_molecule first.
-        
-        Args:
-            mol: a pymatgen Molecule object. Should be oriented along its principle axes.
-    
-        Returns:
-            a Box object
-        """
-        minx, miny, minz, maxx, maxy, maxz = 0.,0.,0.,0.,0.,0.
-        #for p in mol:
-        for p in mol:
-            x, y, z = p.coords
-            r = Element(p.species_string).vdw_radius
-            if x-r < minx: minx = x-r
-            if y-r < miny: miny = y-r
-            if z-r < minz: minz = z-r
-            if x+r > maxx: maxx = x+r
-            if y+r > maxy: maxy = y+r
-            if z+r > maxz: maxz = z+r
-        return Box(minx,maxx,miny,maxy,minz,maxz)
-
-    def get_tols_matrix(self, mol):
-        """
-        Returns: a 2D matrix which is used internally for distance checking.
-        """
-        numbers = mol.atomic_numbers
-        #Create tolerance matrix from subset of tm
-        tm = self.tol_matrix
-        tols = np.zeros((len(numbers),len(numbers)))
-        for i1, number1 in enumerate(numbers):
-            for i2, number2 in enumerate(numbers):
-                tols[i1][i2] = tm.get_tol(number1, number2)
-        return tols
 
     def estimate_volume(self):
         """
@@ -458,13 +325,9 @@ class molecular_crystal():
         Returns:
             the estimated volume (in cubic Angstroms) needed for the unit cell
         """
-        if self.boxes is None:
-            self.boxes = []
-            for mol in self.molecules:
-                self.boxes.append(self.get_box(reoriented_molecule(mol)[0]))
         volume = 0
-        for numMol, box in zip(self.numMols, self.boxes):
-            volume += numMol*box.volume
+        for numMol, mol in zip(self.numMols, self.molecules):
+            volume += numMol*mol.volume
         return abs(self.factor*volume)
 
 
@@ -491,19 +354,21 @@ class molecular_crystal():
         self.group.wyckoffs_organized[j][k]
         """
         self.valid_orientations = []
-        for mol in self.molecules:
+        for pyxtal_mol in self.molecules:
             self.valid_orientations.append([])
             wp_index = -1
             for i, x in enumerate(self.group.wyckoffs_organized):
                 self.valid_orientations[-1].append([])
                 for j, wp in enumerate(x):
                     wp_index += 1
-                    allowed = orientation_in_wyckoff_position(mol, wp, already_oriented=True, 
-                                                        allow_inversion=self.allow_inversion)
+                    allowed = orientation_in_wyckoff_position(pyxtal_mol.mol, wp, 
+                              already_oriented=True, allow_inversion=self.allow_inversion)
+
                     if allowed is not False:
                         self.valid_orientations[-1][-1].append(allowed)
                     else:
                         self.valid_orientations[-1][-1].append([])
+
 
     def check_compatible(self, group, numMols, valid_orientations):
         """
@@ -704,8 +569,8 @@ class molecular_crystal():
                 max4 = 1
             #Calculate a minimum vector length for generating a lattice
             all_lengths = []
-            for box in self.boxes:
-                all_lengths.append(box.minl)
+            for mol in self.molecules:
+                all_lengths.append(mol.box.minl)
             minvector = max(all_lengths) * 1.2 #Require slightly larger min vector for lattices
 
             for cycle1 in range(max1):
@@ -754,8 +619,12 @@ class molecular_crystal():
                         
                         #Add molecules specie by specie
                         for i, numMol in enumerate(self.numMols):
-                            mol = self.molecules[i]
-                            symbols = self.symbols[i]
+                            pyxtal_mol = self.molecules[i]
+                            mol = pyxtal_mol.mol
+                            symbols = pyxtal_mol.symbols
+                            radius = pyxtal_mol.radius
+                            tols_mat = pyxtal_mol.tols_matrix
+
                             valid_ori = self.valid_orientations[i]
                             numMol_added = 0
 
@@ -771,49 +640,54 @@ class molecular_crystal():
                                 if wp is not False:
                                     #Generate a list of coords from the wyckoff position
                                     point = self.lattice.generate_point()
-                                    projected_point = project_point(point, wp[0], lattice=cell_matrix, PBC=self.PBC)
+                                    projected_point = project_point(point, wp[0], 
+                                                                lattice=cell_matrix, PBC=self.PBC)
+
                                     coords = apply_ops(projected_point, wp)
                                     #merge coordinates if the atoms are close
                                     if self.check_atomic_distances:
-                                        mtol = self.radii[i]*0.5
+                                        mtol = radius*0.5
                                     else:
-                                        mtol = self.radii[i]*2
+                                        mtol = radius*2
+
                                     coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, self.group, mtol, valid_ori)
                                     if good_merge is not False:
                                         wp_index = good_merge
-                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC) #scale the coordinates to [0,1], very important!
+                                        # scale the coordinates to [0,1], very important!
+                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
 
-                                        mo = self.molecules[i]
                                         j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
                                         ori = random.choice(valid_ori[j][k]).random_orientation()
-                                        ms0 = mol_site(mo, point, symbols, ori, self.group[wp_index], cell_matrix, self.tols_matrix[i], self.radii[i])
+                                        ms0 = mol_site(mol, point, symbols, ori, 
+                                        self.group[wp_index], cell_matrix, tols_mat, radius)
                                         #Check distances within the WP
 
-                                        if ms0.check_distances(atomic=self.check_atomic_distances) is False: #continue
-                                            # Maximize the smallest distance for the general positions if needed
+                                        if not ms0.check_distances(self.check_atomic_distances):
+                                            # Maximize the smallest distance for the general 
+                                            # positions if needed
                                             passed_ori = False
-                                            if len(mo) > 1 and ori.degrees > 0:
-                                                # optimize the orientation with the bisection method
+                                            if len(symbols) > 1 and ori.degrees > 0:
+                                                # bisection method
                                                 def fun_dist(angle, ori, mo, point):
                                                     ori.change_orientation(angle)
-                                                    ms0 = mol_site(mo, point, symbols, ori, self.group[wp_index], 
-                                                                   cell_matrix, self.tols_matrix[i], self.radii[i])
+                                                    ms0 = mol_site(mo, point, symbols, ori, 
+                                                                   self.group[wp_index], 
+                                                                   cell_matrix, tols_mat, radius)
                                                     d = ms0.compute_distances()
                                                     return d
 
-                                                ori = random.choice(self.valid_orientations[i][j][k]).random_orientation()
-                                                angle_lo = deepcopy(ori.angle)
+                                                angle_lo = ori.angle
                                                 angle_hi = angle_lo + np.pi
-                                                fun_lo = fun_dist(angle_lo, ori, mo, point)
-                                                fun_hi = fun_dist(angle_hi, ori, mo, point)
+                                                fun_lo = fun_dist(angle_lo, ori, mol, point)
+                                                fun_hi = fun_dist(angle_hi, ori, mol, point)
                                                 fun = fun_hi
                                                 for it in range(max4):
                                                     if (fun > 0.8) & (ms0.check_distances(atomic=self.check_atomic_distances)):
                                                         passed_ori = True
                                                         break
                                                     angle = (angle_lo + angle_hi)/2
-                                                    fun = fun_dist(angle, ori, mo, point)
-                                                    #print('Bisection: ', it, fun, ms0.check_distances())
+                                                    fun = fun_dist(angle, ori, mol, point)
+                                                    #print('Bisection: ', it, fun)
                                                     if fun_lo > fun_hi:
                                                         angle_hi, fun_hi = angle, fun
                                                     else:
@@ -839,7 +713,7 @@ class molecular_crystal():
                                             else:
                                                 coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
                                             species_tmp += species_toadd
-                                            numMol_added += len(coords_toadd)/len(mo)
+                                            numMol_added += len(coords_toadd)/len(symbols)
                                             if numMol_added == numMol:
                                                 #We have enough molecules of the current type
                                                 mol_generators_total = deepcopy(mol_generators_tmp)
