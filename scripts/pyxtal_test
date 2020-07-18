@@ -900,37 +900,6 @@ def test_modules():
 
     check()
 
-    print("  aa2matrix")
-    try:
-        from pyxtal.operations import aa2matrix
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            for i in range(10):
-                aa2matrix(1, 1, random=True)
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    print("  matrix2aa")
-    try:
-        from pyxtal.operations import matrix2aa
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            for i in range(10):
-                m = aa2matrix(1, 1, random=True)
-                aa = matrix2aa(m)
-        except Exception as e:
-            fail(e)
-
-    check()
-
     print("  rotate_vector")
     try:
         from pyxtal.operations import rotate_vector
@@ -978,11 +947,10 @@ def test_modules():
 
     if passed():
         try:
-            for i in range(10):
-                m = aa2matrix(1,1,random=True)
-                t = random_vector()
-                op1 = SymmOp.from_rotation_and_translation(m, t)
-                OperationAnalyzer(op1)
+            m = np.eye(3)
+            t = random_vector()
+            op1 = SymmOp.from_rotation_and_translation(m, t)
+            OperationAnalyzer(op1)
         except Exception as e:
             fail(e)
 
@@ -990,7 +958,7 @@ def test_modules():
 
     print("  class Orientation")
     try:
-        from pyxtal.operations import Orientation
+        from pyxtal.molecule import Orientation
     except Exception as e:
         fail(e)
 
