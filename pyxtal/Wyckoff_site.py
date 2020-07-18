@@ -4,7 +4,7 @@ Module for handling Wyckoff sites for both atom and molecule
 
 import numpy as np
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.operations import apply_ops, create_matrix, create_matrix, distance_matrix, distance_matrix_single
+from pyxtal.operations import apply_ops, create_matrix, distance_matrix, distance_matrix_single
 from pyxtal.symmetry import ss_string_from_ops as site_symm
 from scipy.spatial.transform import Rotation as R
 from pyxtal.database.element import Element
@@ -53,13 +53,13 @@ class mol_site():
 
         if not hasattr(self, 'site_symm'):
             self.site_symm = site_symm(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
-            self.angles = R.from_matrix(self.orientation.matrix).as_euler('zyx', degrees=True)
+            self.rotvec = self.orientation.r.as_rotvec()
 
         s = str(self.mol.formula)+": "
         s += "[{:6.3f} {:6.3f} {:6.3f}]  ".format(self.position[0], self.position[1], self.position[2])
         s += str(self.wp.multiplicity)+self.wp.letter
         s += " Site symmetry {:}".format(self.site_symm)
-        s += " ==> Angles: {:6.3f} {:6.3f} {:6.3f}".format(self.angles[0], self.angles[1], self.angles[2])
+        s += " ==> Angles: {:6.3f} {:6.3f} {:6.3f}".format(self.rotvec[0], self.rotvec[1], self.rotvec[2])
         return s
 
     def get_ellipsoid(self):
@@ -175,13 +175,15 @@ class mol_site():
             try:
                 return self.relative_coords, self.symbols_all
             except:
-                self.relative_coords, self.symbols_all = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
+                self.relative_coords, self.symbols_all = \
+                self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
             return self.relative_coords, self.symbols_all
         else:
             try:
                 return self.absolute_coords, self.symbols_all
             except:
-                self.absolute_coords, self.symbols_all = self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
+                self.absolute_coords, self.symbols_all = \
+                self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
             return self.absolute_coords, self.symbols_all
 
     def get_centers(self, absolute=False):
@@ -237,7 +239,6 @@ class mol_site():
             min_ds.append(d)
         return min(min_ds)
 
-
     def check_distances(self, atomic=True):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
@@ -272,17 +273,20 @@ class mol_site():
                     if not (v==v0).all():
                         m2.append(v)
                 coords_PBC = np.vstack([coords_mol + v for v in m2])
-                d = distance_matrix(coords_mol, coords_PBC, self.lattice, PBC=[0,0,0])
-                tols = np.repeat(self.tols_matrix, len(m2), axis=1)
-                if (d<tols).any():
-                    return False
+                d = distance_matrix(coords_PBC, coords_mol, self.lattice, PBC=[0,0,0])
+                # only check if small distance is detected
+                if np.min(d) < np.max(self.tols_matrix):
+                    tols = np.min(d.reshape([len(m2),m_length,m_length]), axis=0)
+                    if (tols<self.tols_matrix).any():
+                        return False
 
             if self.multiplicity > 1:
                 #Check inter-atomic distances
-                d = distance_matrix(coords_mol, coords, self.lattice, PBC=self.PBC)
-                tols = np.repeat(self.tols_matrix, self.multiplicity-1, axis=1)
-                if (d<tols).any():
-                    return False
+                d = distance_matrix(coords, coords_mol, self.lattice, PBC=self.PBC)
+                if np.min(d) < np.max(self.tols_matrix):
+                    tols = np.min(d.reshape([self.multiplicity-1,m_length,m_length]), axis=0)
+                    if (tols<self.tols_matrix).any():
+                        return False
 
             return True
 

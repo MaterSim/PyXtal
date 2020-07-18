@@ -243,7 +243,7 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], metric='euclidean'):
             l1 = np.dot(points1, lattice)
             l2 = np.dot(points2, lattice)
             return cdist(l1, l2, metric)
-    elif lattice is None:
+    else:
         if PBC != [0,0,0]:
             l1 = filtered_coords(points1, PBC=PBC)
             l2 = filtered_coords(points2, PBC=PBC)

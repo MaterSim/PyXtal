@@ -1,4 +1,5 @@
 #Standard Libraries
+import os
 import random
 import numpy as np
 from copy import deepcopy
@@ -228,8 +229,8 @@ class molecular_crystal():
             group = Group(group, self.dim)
         self.sg = group.number
         self.selec_high = select_high
-        """The international spacegroup number of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
+        self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, 
+                         orientations, check_atomic_distances, group, lattice, tm)
 
     def init_common(self, molecules, numMols, volume_factor, 
                     select_high, allow_inversion, orientations, 
@@ -282,7 +283,8 @@ class molecular_crystal():
                 if mo is not None:
                     molecules[i] = mo
                 else:
-                    raise NameError("Could not create molecules from given input: {:s}".format(mol))
+                    msg = "Could not create molecules from given input: {:s}".format(mol)
+                    raise NameError(msg)
         for mol in molecules:
             if len(mol) > 1:
                 props = mol.site_properties
@@ -291,9 +293,6 @@ class molecular_crystal():
                 if len(props)>0:
                     for key in props.keys():
                         mo.add_site_property(key, props[key])
-                #print(mo.site_properties)
-                #import sys
-                #sys.exit()
                 oriented_molecules.append(mo)
             else:
                 oriented_molecules.append(mol)
@@ -331,15 +330,15 @@ class molecular_crystal():
             May be copied when generating a new molecular_crystal to save a
             small amount of time"""
         if lattice is not None:
-            #Use the provided lattice
+            # Use the provided lattice
             self.lattice = lattice
             self.volume = lattice.volume
-            #Make sure the custom lattice PBC axes are correct.
+            # Make sure the custom lattice PBC axes are correct.
             if lattice.PBC != self.PBC:
                 self.lattice.PBC = self.PBC
                 printx("\n  Warning: converting custom lattice PBC to "+str(self.PBC))
         elif lattice is None:
-            #Determine the unique axis
+            # Determine the unique axis
             if self.dim == 2:
                 if self.number in range(3, 8):
                     unique_axis = "c"
@@ -352,12 +351,12 @@ class molecular_crystal():
                     unique_axis = "c"
             else:
                 unique_axis = "c"
-            #Generate a Lattice instance
+            # Generate a Lattice instance
             self.volume = self.estimate_volume()
             """The volume of the generated unit cell."""
 
-            #Calculate the minimum, middle, and maximum box lengths for the unit cell.
-            #Used to make sure at least one non-overlapping orientation exists for each molecule
+            # Calculate the minimum, middle, and maximum box lengths for the unit cell.
+            # make sure at least one non-overlapping orientation exists for each molecule
             minls = []
             midls = []
             maxls = []
@@ -366,22 +365,31 @@ class molecular_crystal():
                 midls.append(box.midl)
                 maxls.append(box.maxl)
 
+            # The Lattice object used to generate lattice matrices 
             if self.dim == 3 or self.dim == 0:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls))
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, 
+                                       unique_axis=unique_axis, min_l=max(minls), 
+                                       mid_l=max(midls), max_l=max(maxls))
             elif self.dim == 2:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls), thickness=self.thickness)
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, 
+                                       unique_axis=unique_axis, min_l=max(minls), 
+                                       mid_l=max(midls), max_l=max(maxls), 
+                                       thickness=self.thickness)
             elif self.dim == 1:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, unique_axis=unique_axis, min_l=max(minls), mid_l=max(midls), max_l=max(maxls), area=self.area)
-            """The Lattice object used to generate lattice matrices for the structure."""
-        #Set the tolerance matrix
+                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC, 
+                                       unique_axis=unique_axis, min_l=max(minls), 
+                                       mid_l=max(midls), max_l=max(maxls), area=self.area)
+        # Set the tolerance matrix
+        # The Tol_matrix object for checking inter-atomic distances within the structure.
         if type(tm) == Tol_matrix:
             self.tol_matrix = tm
-            """The Tol_matrix object used for checking inter-atomic distances within the structure."""
         else:
             try:
                 self.tol_matrix = Tol_matrix(prototype=tm)
             except:
-                printx("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.", priority=1)
+                msg = "Error: tm must either be a Tol_matrix object +\n" 
+                msg += "or a prototype string for initializing one."
+                printx(msg, priority=1)
                 self.valid = False
                 self.struct = None
                 return
@@ -393,7 +401,6 @@ class molecular_crystal():
             self.tols_matrix.append(self.get_tols_matrix(mol))
             self.radii.append(self.get_radius(mol))
             self.symbols.append([specie.name for specie in mol.species])
-            #print(self.tols_matrix)
         self.generate_crystal()
 
     def get_radius(self, mol):
@@ -490,7 +497,8 @@ class molecular_crystal():
                 self.valid_orientations[-1].append([])
                 for j, wp in enumerate(x):
                     wp_index += 1
-                    allowed = orientation_in_wyckoff_position(mol, wp, already_oriented=True, allow_inversion=self.allow_inversion)
+                    allowed = orientation_in_wyckoff_position(mol, wp, already_oriented=True, 
+                                                        allow_inversion=self.allow_inversion)
                     if allowed is not False:
                         self.valid_orientations[-1][-1].append(allowed)
                     else:
@@ -624,8 +632,8 @@ class molecular_crystal():
                 fmt = "cif"
             if filename == None:
                 filename = str(self.struct.formula).replace(" ","") + "." + fmt
-            #Check if filename already exists
-            #If it does, add a new number to end of filename
+            # Check if filename already exists
+            # If it does, add a new number to end of filename
             if os.path.exists(filename):
                 if given is False:
                     filename = filename[:(-len(fmt)-1)]
@@ -716,18 +724,20 @@ class molecular_crystal():
                     break
                 else:
                     cell_matrix = para2matrix(cell_para)
-                    if abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                        printx('Error, volume is not equal to the estimated value: ', self.volume, ' -> ', np.linalg.det(cell_matrix), priority=0)
-                        printx('cell_para:  ', cell_para, priority=0)
-                        sys.exit(0)
+                    vol = np.linalg.det(cell_matrix)
+                    if abs(self.volume - vol) > 1.0: 
+                        msg = 'Error, volume is not equal to the estimated value: '
+                        msg += "{:8.3f} -> {:8.3f}".format(self.volume, vol) 
+                        msg += "\ncell_para: " + str(cell_para)
+                        raise ValueError(msg)
 
                     for cycle2 in range(max2):
-                        molecular_coordinates_total = [] #to store the added molecular coordinates
-                        molecular_sites_total = []      #to store the corresponding molecular specie
-                        coordinates_total = [] #to store the added atomic coordinates
-                        species_total = []      #to store the corresponding atomic specie
-                        wps_total = []      #to store corresponding Wyckoff position indices
-                        points_total = []   #to store the generating x,y,z points
+                        molecular_coordinates_total = [] # added molecular coordinates
+                        molecular_sites_total = []       # corresponding molecular specie
+                        coordinates_total = [] #added atomic coordinates
+                        species_total = []  # corresponding atomic specie
+                        wps_total = []      # corresponding Wyckoff position indices
+                        points_total = []   # generating x,y,z points
                         mol_generators_total = []
                         good_structure = False
 
@@ -752,8 +762,8 @@ class molecular_crystal():
                                 self.cycle3 = cycle3
                                 self.cycle4 = 0
                                 self.numattempts += 1
-                                #Choose a random Wyckoff position for given multiplicity: 2a, 2b, 2c
-                                #NOTE: The molecular version return wyckoff indices, not ops
+                                # Choose a random WP for given multiplicity: 2a, 2b, 2c
+                                # NOTE: The molecular version return wyckoff indices, not ops
                                 wp = choose_wyckoff_molecular(self.group, numMol-numMol_added, self.valid_orientations[i], self.select_high)
                                 if wp is not False:
                                     #Generate a list of coords from the wyckoff position
@@ -1008,116 +1018,3 @@ class molecular_crystal_1D(molecular_crystal):
         self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
 
 
-if __name__ == "__main__":
-    #-------------------------------- Options -------------------------
-    import os
-    from time import time
-    from spglib import get_symmetry_dataset
-
-    parser = OptionParser()
-    parser.add_option("-s", "--spacegroup", dest="sg", metavar='sg', default=36, type=int,
-            help="desired space group number: 1-230, e.g., 36")
-    parser.add_option("-e", "--molecule", dest="molecule", default='H2O', 
-            help="desired molecules: e.g., H2O", metavar="molecule")
-    parser.add_option("-n", "--numMols", dest="numMols", default=4, 
-            help="desired numbers of molecules: 4", metavar="numMols")
-    parser.add_option("-f", "--factor", dest="factor", default=1.0, type=float, 
-            help="volume factor: default 1.0", metavar="factor")
-    parser.add_option("-v", "--verbosity", dest="verbosity", default=0, type=int, help="verbosity: default 0; higher values print more information", metavar="verbosity")
-    parser.add_option("-a", "--attempts", dest="attempts", default=1, type=int, 
-            help="number of crystals to generate: default 1", metavar="attempts")
-    parser.add_option("-o", "--outdir", dest="outdir", default="out", type=str, 
-            help="Directory for storing output cif files: default 'out'", metavar="outdir")
-    parser.add_option("-c", "--checkatoms", dest="checkatoms", default="True", type=str, 
-            help="Whether to check inter-atomic distances at each step: default True", metavar="outdir")
-    parser.add_option("-i", "--allowinversion", dest="allowinversion", default="False", type=str, 
-            help="Whether to allow inversion of chiral molecules: default False", metavar="outdir")
-    parser.add_option("-d", "--dimension", dest="dimension", metavar='dimension', default=3, type=int,
-            help="desired dimension: (3 or 2 for 3d or 2d, respectively): default 3")
-    parser.add_option("-t", "--thickness", dest="thickness", metavar='thickness', default=None, type=float,
-            help="Thickness, in Angstroms, of a 2D crystal, or area of a 1D crystal, None generates a value automatically: default None")
-
-    (options, args) = parser.parse_args()    
-    molecule = options.molecule
-    number = options.numMols
-    verbosity = options.verbosity
-    attempts = options.attempts
-    outdir = options.outdir
-    factor = options.factor
-    dimension = options.dimension
-    thickness = options.thickness
-
-    if options.checkatoms == "True" or options.checkatoms == "False":
-        checkatoms = eval(options.checkatoms)
-    else:
-        print("Invalid value for -c (--checkatoms): must be 'True' or 'False'.")
-        checkatoms = True
-    if options.allowinversion == "True" or options.allowinversion == "False":
-        allowinversion = eval(options.allowinversion)
-    else:
-        print("Invalid value for -i (--allowinversion): must be 'True' or 'False'.")
-        allowinversion = False
-    
-    numMols = []
-    if molecule.find(',') > 0:
-        strings = molecule.split(',')
-        system = []
-        for mol in strings:
-            system.append(mol)
-        for x in number.split(','):
-            numMols.append(int(x))
-    else:
-        system = [molecule]
-        numMols = [int(number)]
-    orientations = None
-
-    try:
-        os.mkdir(outdir)
-    except: pass
-
-    filecount = 1 #To check whether a file already exists
-    for i in range(attempts):
-        start = time()
-        numMols0 = np.array(numMols)
-        sg = options.sg
-        if dimension == 3:
-            rand_crystal = molecular_crystal(options.sg, system, numMols0, factor, check_atomic_distances=checkatoms, allow_inversion=allowinversion)
-        elif dimension == 2:
-            rand_crystal = molecular_crystal_2D(options.sg, system, numMols0, thickness, factor, allow_inversion=allowinversion, check_atomic_distances=checkatoms)
-        end = time()
-        timespent = np.around((end - start), decimals=2)
-        if rand_crystal.valid:
-            #Output a cif file
-            written = False
-            try:
-                comp = str(rand_crystal.struct.composition)
-                comp = comp.replace(" ", "")
-                cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
-                while os.path.isfile(cifpath):
-                    filecount += 1
-                    cifpath = outdir + '/' + comp + "_" + str(filecount) + '.cif'
-                CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename = cifpath)
-                written = True
-            except: pass
-
-            #spglib style structure called cell
-            ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)['number']
-            print('Space group requested: ', sg, 'generated', ans, 'vol: ', rand_crystal.volume)
-            if written is True:
-                print("    Output to "+cifpath)
-            else:
-                print("    Could not write cif file.")
-
-            #Print additional information about the structure
-            if verbosity > 0:
-                print("Time required for generation: " + str(timespent) + "s")
-                print("Molecular Wyckoff positions:")
-                for ms in rand_crystal.mol_generators:
-                    print(str(ms.mol.composition) + ": " + str(ms.multiplicity)+str(ms.letter)+" "+str(ms.position))
-            if verbosity > 1:
-                print(rand_crystal.struct)
-
-        #If generation fails
-        else: 
-            print('something is wrong')
-            print('Time spent during generation attempt: ' + str(timespent) + "s")
