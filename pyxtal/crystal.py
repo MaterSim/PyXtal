@@ -470,7 +470,7 @@ class random_crystal():
                 max3 = 5
 
             # Calculate a minimum vector length for generating a lattice
-            minvector = max(max(1.0*self.tol_matrix.get_tol(specie,specie) for specie in self.species), tol_m)
+            minvector = max(self.tol_matrix.get_tol(s,s) for s in self.species)
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
 
@@ -520,28 +520,27 @@ class random_crystal():
                         cycle3 = 0
                         while cycle3 < max3:
                             self.cycle3 = cycle3
-                            # Choose a random Wyckoff position for given multiplicity: 2a, 2b
-                            # QZ: to choose the Wyckoff position from a given list?
-
+                            # Choose a random WP for given multiplicity: 2a, 2b
+                            # QZ: to choose the WP from a given list?
                             ops = choose_wyckoff(self.group, numIon-numIon_added) 
 
                             if ops is not False:
                                 # Generate a list of coords from ops
-                                point = self.lattice.generate_point()
-                                projected_point = project_point(point, ops[0], lattice=cell_matrix, PBC=self.PBC)
-                                coords = apply_ops(projected_point, ops)
+                                pt = self.lattice.generate_point()
+                                proj_pt = project_point(pt, ops[0], cell_matrix, self.PBC)
+                                coords = apply_ops(proj_pt, ops)
 
                                 # Merge coordinates if the atoms are close
-                                coords_toadd, wp_index, point = merge_coordinate(coords, cell_matrix, self.group, tol)
+                                coords_toadd, wp_index, pt = merge_coordinate(coords, cell_matrix, self.group, tol)
 
                                 if wp_index is not False:
                                     #Use a Wyckoff_site object for the current site
-                                    current_site = atom_site(self.group[wp_index], point, specie)
+                                    current_site = atom_site(self.group[wp_index], pt, specie)
 
                                     #Check current WP against existing WP's
                                     passed_wp_check = True
                                     for ws in wyckoff_sites_tmp:
-                                        if check_atom_sites(current_site, ws, cell_matrix, tm=self.tol_matrix) is False:
+                                        if not check_atom_sites(current_site, ws, cell_matrix, self.tol_matrix):
                                             passed_wp_check = False
 
                                     if passed_wp_check is True:
@@ -593,36 +592,26 @@ class random_crystal():
                         final_site.append(ele)
                         final_number.append(Element(ele).z)
                     final_coor = np.array(final_coor)
+                    cart_coords = np.dot(final_coor, final_lattice)
 
                     if self.dim != 0:
                         final_lattice, final_coor = add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                        self.lattice_matrix = final_lattice   
-                        self.frac_coords = np.array(final_coor)
-                        self.cart_coords = np.dot(final_coor, final_lattice)
-                        self.sites = final_site
-                        self.struct = Structure(final_lattice, final_site, np.array(final_coor))
-                        self.spg_struct = (final_lattice, np.array(final_coor), final_number)
-                        self.wyckoff_sites = wyckoff_sites_total
-                        self.valid = True
-                        return
-                    elif self.dim == 0:
-                        self.lattice_matrix = final_lattice   
-                        self.frac_coords = np.array(final_coor)
-                        self.cart_coords = np.dot(final_coor, final_lattice)
-                        self.sites = final_site
+                        self.struct = Structure(final_lattice, final_site, final_coor)
+                        self.spg_struct = (final_lattice, final_coor, final_number)
+                    else:
                         self.species = final_site
-                        self.molecule = Molecule(self.species, self.cart_coords)
+                        self.molecule = Molecule(final_site, cart_coords)
                         #Calculate binding box
-                        maxx = max(self.cart_coords[:,0])
-                        minx = min(self.cart_coords[:,0])
-                        maxy = max(self.cart_coords[:,1])
-                        miny = min(self.cart_coords[:,1])
-                        maxz = max(self.cart_coords[:,2])
-                        minz = min(self.cart_coords[:,2])
-                        self.struct = self.molecule.get_boxed_structure(maxx-minx+10, maxy-miny+10, maxz-minz+10)
-                        self.wyckoff_sites = wyckoff_sites_total
-                        self.valid = True
-                        return
+                        diffs = np.max(cart_coords, axis=0) - np.min(cart_coords, axis=0) + 10
+                        a, b, c = diffs[0], diffs[1], diffs[2]
+                        self.struct = self.molecule.get_boxed_structure(a,b,c)
+                    self.sites = final_site
+                    self.frac_coords = final_coor
+                    self.cart_coords = np.dot(final_coor, final_lattice)
+                    self.lattice_matrix = final_lattice   
+                    self.wyckoff_sites = wyckoff_sites_total
+                    self.valid = True
+                    return
         if degrees == 0: 
             printx("Wyckoff positions have no degrees of freedom.", priority=2)
 

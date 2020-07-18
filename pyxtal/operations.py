@@ -322,7 +322,6 @@ def printx(text, priority=1):
     if priority <= 1:
         warn(text)
         return
-
     else:
         if priority <= pyxtal_verbosity:
             print(text)
@@ -467,8 +466,10 @@ def project_point(point, op, lattice=np.eye(3), PBC=[1,1,1]):
         point: a 3-vector (numeric list, tuple, or array)
         op: a SymmOp object representing a symmetry element within a symmetry group
         lattice: 3x3 matrix describing the unit cell vectors
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        PBC: A periodic boundary condition list, 
+            where 1 means periodic, 0 means not periodic.
+            Ex: [1,1,1] -> full 3d periodicity, 
+                [0,0,1] -> periodicity along the z axis
 
     Returns:
         a transformed 3-vector (numpy array)

@@ -1052,7 +1052,9 @@ def random_vector(minvec=[0.,0.,0.], maxvec=[1.,1.,1.], width=0.35, unit=False):
     Returns:
         a 1x3 numpy array of floats
     """
-    vec = np.array([np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width)), np.exp(np.random.normal(scale=width))])
+    vec = np.array([np.exp(np.random.normal(scale=width)), 
+                    np.exp(np.random.normal(scale=width)), 
+                    np.exp(np.random.normal(scale=width))])
     if unit:
         return vec/np.linalg.norm(vec)
     else:
