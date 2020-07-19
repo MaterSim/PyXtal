@@ -823,7 +823,11 @@ class molecular_crystal_2D(molecular_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, molecules, numMols, volume_factor, select_high=True, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', thickness=None, lattice=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, volume_factor, select_high=True, 
+                 allow_inversion=True, orientations=None, check_atomic_distances=True, 
+                 fmt='xyz', thickness=None, lattice=None, 
+                 tm=Tol_matrix(prototype="molecular")):
+
         self.dim = 2
         """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
@@ -838,7 +842,9 @@ class molecular_crystal_2D(molecular_crystal):
         dimension."""
         self.PBC = [1,1,0]
         """The periodic axes of the crystal."""
-        self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
+        self.init_common(molecules, numMols, volume_factor, select_high, 
+                         allow_inversion, orientations, check_atomic_distances, 
+                         group, lattice, tm)
 
 class molecular_crystal_1D(molecular_crystal):
     """
@@ -880,7 +886,9 @@ class molecular_crystal_1D(molecular_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, molecules, numMols, volume_factor, select_high=True, allow_inversion=False, orientations=None, check_atomic_distances=True, fmt='xyz', area=None, lattice=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, group, molecules, numMols, volume_factor, select_high=True, 
+                 allow_inversion=False, orientations=None, check_atomic_distances=True, 
+                 fmt='xyz', area=None, lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 1
         """The number of periodic dimensions of the crystal"""
         #Necessary input
@@ -892,6 +900,8 @@ class molecular_crystal_1D(molecular_crystal):
         self.sg = None
         """The international space group number (there is not a 1-1 correspondence
         with Rod groups)."""
-        self.init_common(molecules, numMols, volume_factor, select_high, allow_inversion, orientations, check_atomic_distances, group, lattice, tm)
+        self.init_common(molecules, numMols, volume_factor, select_high, 
+                         allow_inversion, orientations, check_atomic_distances, 
+                         group, lattice, tm)
 
 

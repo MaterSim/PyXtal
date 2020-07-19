@@ -1235,22 +1235,6 @@ def test_modules():
 
     check()
 
-    print("  get_moment_of_inertia")
-    try:
-        from pyxtal.molecule import get_moment_of_inertia
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            v = random_vector()
-            get_moment_of_inertia(h2o, v)
-            get_moment_of_inertia(ch4, v)
-        except Exception as e:
-            fail(e)
-
-    check()
-
     print("  reoriented_molecule")
     try:
         from pyxtal.molecule import reoriented_molecule
