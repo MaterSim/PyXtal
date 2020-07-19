@@ -427,9 +427,8 @@ class random_crystal():
         s += "\nVolume factor: " + str(self.factor)
         s += "\n" + str(self.lattice)
         if self.valid:
-            s += "\nWyckoff sites:"
             for wyc in self.wyckoff_sites:
-                s += "\n" + str(wyc) 
+                s += "\nWyckoff sites:" + str(wyc) 
         else:
             s += "\nStructure not generated."
         return s

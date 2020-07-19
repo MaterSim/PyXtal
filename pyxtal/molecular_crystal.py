@@ -12,7 +12,7 @@ from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 from pyxtal.constants import *
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.lattice import Lattice, cellsize, para2matrix, add_vacuum
+from pyxtal.lattice import Lattice, cellsize, add_vacuum
 from pyxtal.database.element import Element
 from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position, jk_from_i
 from pyxtal.operations import apply_ops, check_images, project_point, distance, distance_matrix, filtered_coords 
@@ -527,9 +527,8 @@ class molecular_crystal():
         s += "\nVolume factor: " + str(self.factor)
         s += "\n" + str(self.lattice)
         if self.valid:
-            s += "\nWyckoff sites:"
-            for wyc in self.mol_generators:
-                s += "\n" + str(wyc) 
+            for wyc in self.mol_sites:
+                s += "\nWyckoff sites:" + str(wyc) 
         else:
             s += "\nStructure not generated."
         return s
@@ -554,6 +553,7 @@ class molecular_crystal():
             max3: the number of attempts for a given Wyckoff position
             max4: the number of attempts for changing the molecular orientation
         """
+        atomic = self.check_atomic_distances
         #Check the minimum number of degrees of freedom within the Wyckoff positions
         degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
         if degrees is False:
@@ -580,201 +580,174 @@ class molecular_crystal():
                     self.volume = self.estimate_volume()
                     self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
-                try:
-                    cell_matrix = self.lattice.get_matrix
-                except:
-                    continue
-                cell_para = self.lattice.get_para()
+                cell_matrix = self.lattice.get_matrix()
 
-                if cell_para is None:
-                    break
-                else:
-                    cell_matrix = para2matrix(cell_para)
-                    vol = np.linalg.det(cell_matrix)
-                    if abs(self.volume - vol) > 1.0: 
-                        msg = 'Error, volume is not equal to the estimated value: '
-                        msg += "{:8.3f} -> {:8.3f}".format(self.volume, vol) 
-                        msg += "\ncell_para: " + str(cell_para)
-                        raise ValueError(msg)
-
-                    for cycle2 in range(max2):
-                        molecular_coordinates_total = [] # added molecular coordinates
-                        molecular_sites_total = []       # corresponding molecular specie
-                        coordinates_total = [] #added atomic coordinates
-                        species_total = []  # corresponding atomic specie
-                        wps_total = []      # corresponding Wyckoff position indices
-                        points_total = []   # generating x,y,z points
-                        mol_generators_total = []
-                        good_structure = False
+                for cycle2 in range(max2):
+                    molecular_coordinates_total = [] # added molecular coordinates
+                    molecular_sites_total = []       # corresponding molecular specie
+                    coordinates_total = [] #added atomic coordinates
+                    species_total = []  # corresponding atomic specie
+                    wps_total = []      # corresponding Wyckoff position indices
+                    points_total = []   # generating x,y,z points
+                    mol_sites_total = []
+                    good_structure = False
 
 
-                        self.cycle2 = cycle2
-                        molecular_coordinates_tmp = deepcopy(molecular_coordinates_total)
-                        molecular_sites_tmp = deepcopy(molecular_sites_total)
-                        coordinates_tmp = deepcopy(coordinates_total)
-                        species_tmp = deepcopy(species_total)
-                        wps_tmp = deepcopy(wps_total)
-                        points_tmp = deepcopy(points_total)
-                        mol_generators_tmp = []
-                        
-                        #Add molecules specie by specie
-                        for i, numMol in enumerate(self.numMols):
-                            pyxtal_mol = self.molecules[i]
-                            mol = pyxtal_mol.mol
-                            symbols = pyxtal_mol.symbols
-                            radius = pyxtal_mol.radius
-                            tols_mat = pyxtal_mol.tols_matrix
+                    self.cycle2 = cycle2
+                    molecular_coordinates_tmp = deepcopy(molecular_coordinates_total)
+                    molecular_sites_tmp = deepcopy(molecular_sites_total)
+                    coordinates_tmp = deepcopy(coordinates_total)
+                    species_tmp = deepcopy(species_total)
+                    wps_tmp = deepcopy(wps_total)
+                    points_tmp = deepcopy(points_total)
+                    mol_sites_tmp = []
+                    
+                    #Add molecules specie by specie
+                    for i, numMol in enumerate(self.numMols):
+                        pyxtal_mol = self.molecules[i]
+                        mol = pyxtal_mol.mol
+                        symbols = pyxtal_mol.symbols
+                        radius = pyxtal_mol.radius
+                        tols_mat = pyxtal_mol.tols_matrix
 
-                            valid_ori = self.valid_orientations[i]
-                            numMol_added = 0
+                        valid_ori = self.valid_orientations[i]
+                        numMol_added = 0
 
-                            #Now we start to add the specie to the wyckoff position
-                            for cycle3 in range(max3):
-                                self.cycle3 = cycle3
-                                self.cycle4 = 0
-                                self.numattempts += 1
-                                # Choose a random WP for given multiplicity: 2a, 2b, 2c
-                                # NOTE: The molecular version return wyckoff indices, not ops
-                                wp = choose_wyckoff_molecular(self.group, numMol-numMol_added,\
-                                                              valid_ori, self.select_high)
-                                if wp is not False:
-                                    #Generate a list of coords from the wyckoff position
-                                    point = self.lattice.generate_point()
-                                    projected_point = project_point(point, wp[0], 
-                                                                lattice=cell_matrix, PBC=self.PBC)
+                        #Now we start to add the specie to the wyckoff position
+                        for cycle3 in range(max3):
+                            self.cycle3 = cycle3
+                            self.cycle4 = 0
+                            self.numattempts += 1
+                            # Choose a random WP for given multiplicity: 2a, 2b, 2c
+                            # NOTE: The molecular version return wyckoff indices, not ops
+                            wp = choose_wyckoff_molecular(self.group, numMol-numMol_added,\
+                                                          valid_ori, self.select_high)
+                            if wp is not False:
+                                #Generate a list of coords from the wyckoff position
+                                point = self.lattice.generate_point()
+                                projected_point = project_point(point, wp[0], 
+                                                            lattice=cell_matrix, PBC=self.PBC)
 
-                                    coords = apply_ops(projected_point, wp)
-                                    #merge coordinates if the atoms are close
-                                    if self.check_atomic_distances:
-                                        mtol = radius*0.5
+                                coords = apply_ops(projected_point, wp)
+                                #merge coordinates if the atoms are close
+                                if self.check_atomic_distances:
+                                    mtol = radius*0.5
+                                else:
+                                    mtol = radius*2
+
+                                coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, self.group, mtol, valid_ori)
+                                if good_merge is not False:
+                                    wp_index = good_merge
+                                    # scale the coordinates to [0,1], very important!
+                                    coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
+
+                                    j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
+                                    ori = random.choice(valid_ori[j][k]).random_orientation()
+                                    ms0 = mol_site(mol, point, symbols, ori, 
+                                    self.group[wp_index], cell_matrix, tols_mat, radius)
+                                    #Check distances within the WP
+
+                                    if not ms0.check_distances(atomic):
+                                        # Maximize the smallest distance for the general 
+                                        # positions if needed
+                                        passed_ori = False
+                                        if len(symbols) > 1 and ori.degrees > 0:
+                                            # bisection method
+                                            def fun_dist(angle, ori, mo, point):
+                                                ori.change_orientation(angle)
+                                                ms0 = mol_site(mo, point, symbols, ori, 
+                                                               self.group[wp_index], 
+                                                               cell_matrix, tols_mat, radius)
+                                                d = ms0.compute_distances()
+                                                return d
+
+                                            angle_lo = ori.angle
+                                            angle_hi = angle_lo + np.pi
+                                            fun_lo = fun_dist(angle_lo, ori, mol, point)
+                                            fun_hi = fun_dist(angle_hi, ori, mol, point)
+                                            fun = fun_hi
+                                            for it in range(max4):
+                                                if (fun > 0.8) & (ms0.check_distances(atomic)):
+                                                    passed_ori = True
+                                                    break
+                                                angle = (angle_lo + angle_hi)/2
+                                                fun = fun_dist(angle, ori, mol, point)
+                                                #print('Bisection: ', it, fun)
+                                                if fun_lo > fun_hi:
+                                                    angle_hi, fun_hi = angle, fun
+                                                else:
+                                                    angle_lo, fun_lo = angle, fun
                                     else:
-                                        mtol = radius*2
+                                        passed_ori = True
+                                    if passed_ori is False: continue
 
-                                    coords_toadd, good_merge, point = merge_coordinate_molecular(coords, cell_matrix, self.group, mtol, valid_ori)
-                                    if good_merge is not False:
-                                        wp_index = good_merge
-                                        # scale the coordinates to [0,1], very important!
-                                        coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
-
-                                        j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
-                                        ori = random.choice(valid_ori[j][k]).random_orientation()
-                                        ms0 = mol_site(mol, point, symbols, ori, 
-                                        self.group[wp_index], cell_matrix, tols_mat, radius)
-                                        #Check distances within the WP
-
-                                        if not ms0.check_distances(self.check_atomic_distances):
-                                            # Maximize the smallest distance for the general 
-                                            # positions if needed
-                                            passed_ori = False
-                                            if len(symbols) > 1 and ori.degrees > 0:
-                                                # bisection method
-                                                def fun_dist(angle, ori, mo, point):
-                                                    ori.change_orientation(angle)
-                                                    ms0 = mol_site(mo, point, symbols, ori, 
-                                                                   self.group[wp_index], 
-                                                                   cell_matrix, tols_mat, radius)
-                                                    d = ms0.compute_distances()
-                                                    return d
-
-                                                angle_lo = ori.angle
-                                                angle_hi = angle_lo + np.pi
-                                                fun_lo = fun_dist(angle_lo, ori, mol, point)
-                                                fun_hi = fun_dist(angle_hi, ori, mol, point)
-                                                fun = fun_hi
-                                                for it in range(max4):
-                                                    if (fun > 0.8) & (ms0.check_distances(atomic=self.check_atomic_distances)):
-                                                        passed_ori = True
-                                                        break
-                                                    angle = (angle_lo + angle_hi)/2
-                                                    fun = fun_dist(angle, ori, mol, point)
-                                                    #print('Bisection: ', it, fun)
-                                                    if fun_lo > fun_hi:
-                                                        angle_hi, fun_hi = angle, fun
-                                                    else:
-                                                        angle_lo, fun_lo = angle, fun
+                                    #Check distances with other WP's
+                                    coords_toadd, species_toadd = ms0.get_coords_and_species()
+                                    passed = True
+                                    for ms1 in mol_sites_tmp:
+                                        if not check_mol_sites(ms0, ms1, atomic, tm=self.tol_matrix):
+                                            passed = False
+                                            break
+                                    if not passed:
+                                        continue
+                                    else:
+                                        #Distance checks passed; store the new Wyckoff position
+                                        mol_sites_tmp.append(ms0)
+                                        if len(coordinates_tmp) == 0:
+                                            coordinates_tmp = coords_toadd
                                         else:
-                                            passed_ori = True
-                                        if passed_ori is False: continue
+                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                        species_tmp += species_toadd
+                                        numMol_added += len(coords_toadd)/len(symbols)
+                                        if numMol_added == numMol:
+                                            #We have enough molecules of the current type
+                                            mol_sites_total = deepcopy(mol_sites_tmp)
+                                            coordinates_total = deepcopy(coordinates_tmp)
+                                            species_total = deepcopy(species_tmp)
+                                            break
 
-                                        #Check distances with other WP's
-                                        coords_toadd, species_toadd = ms0.get_coords_and_species()
-                                        passed = True
-                                        for ms1 in mol_generators_tmp:
-                                            if not check_mol_sites(ms0, ms1, atomic=self.check_atomic_distances, tm=self.tol_matrix):
-                                                passed = False
-                                                break
-                                        if not passed:
-                                            continue
-                                        else:
-                                            #Distance checks passed; store the new Wyckoff position
-                                            mol_generators_tmp.append(ms0)
-                                            if len(coordinates_tmp) == 0:
-                                                coordinates_tmp = coords_toadd
-                                            else:
-                                                coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
-                                            species_tmp += species_toadd
-                                            numMol_added += len(coords_toadd)/len(symbols)
-                                            if numMol_added == numMol:
-                                                #We have enough molecules of the current type
-                                                mol_generators_total = deepcopy(mol_generators_tmp)
-                                                coordinates_total = deepcopy(coordinates_tmp)
-                                                species_total = deepcopy(species_tmp)
-                                                break
+                        if numMol_added != numMol:
+                            break  #need to repeat from the 1st species
 
-                            if numMol_added != numMol:
-                                break  #need to repeat from the 1st species
+                    if numMol_added == numMol:
+                        printx(self.Msg6, priority=3)
+                        good_structure = True
+                        break
+                    else: #reset the coordinates and sites
+                        molecular_coordinates_total = []
+                        molecular_sites_total = []
+                        wps_total = []
+                #placing molecules here
+                if good_structure:
+                    final_lattice = cell_matrix 
+                    final_coor = []
+                    final_site = []
+                    final_number = []
+                    self.mol_sites = [] # to regenerate the crystal
 
-                        if numMol_added == numMol:
-                            printx(self.Msg6, priority=3)
-                            good_structure = True
-                            break
-                        else: #reset the coordinates and sites
-                            molecular_coordinates_total = []
-                            molecular_sites_total = []
-                            wps_total = []
-                    #placing molecules here
-                    if good_structure:
-                        final_lattice = cell_matrix 
-                        final_coor = []
-                        final_site = []
-                        final_number = []
-                        self.mol_generators = []
-                        """A list of mol_site objects which can be used to regenerate the crystal."""
+                    final_coor = deepcopy(coordinates_total)
+                    final_site = deepcopy(species_total)
+                    final_number = list(Element(ele).z for ele in species_total)
+                    self.mol_sites = deepcopy(mol_sites_total)
 
-                        final_coor = deepcopy(coordinates_total)
-                        final_site = deepcopy(species_total)
-                        final_number = list(Element(ele).z for ele in species_total)
-                        self.mol_generators = deepcopy(mol_generators_total)
-                        """A list of mol_site objects which can be used
-                        for generating the crystal."""
+                    final_coor = filtered_coords(final_coor, PBC=self.PBC)
+                    lattice, coor = add_vacuum(final_lattice, final_coor, PBC=self.PBC)
 
-                        final_coor = filtered_coords(final_coor, PBC=self.PBC)
-                        final_lattice, final_coor = add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-                        #if verify_distances(final_coor, final_site, final_lattice, factor=0.75, PBC=self.PBC):
-                        self.lattice_matrix = final_lattice
-                        """A 3x3 matrix representing the lattice of the
-                        unit cell."""
-                        self.frac_coords = np.array(final_coor)
-                        """The fractional coordinates for each molecule
-                        in the final structure"""
-                        self.cart_coords = np.dot(final_coor, final_lattice)
-                        """The absolute coordinates for each molecule
-                        in the final structure"""
-                        self.sites = final_site
-                        """The indices within self.molecules corresponding
-                        to the type of molecule for each site in
-                        self.cart_coords."""              
-                        self.struct = Structure(final_lattice, self.sites, self.frac_coords)
-                        """A pymatgen.core.structure.Structure object for
-                        the final generated crystal."""
-                        self.spg_struct = (final_lattice, self.frac_coords, final_number)
-                        """A list of information describing the generated
-                        crystal, which may be used by spglib for symmetry
-                        analysis."""
-                        self.valid = True
-                        """Whether or not a valid crystal was generated."""
-                        return
-                    else: printx("Failed final distance check.", priority=3)
+                    self.lattice_matrix = lattice
+                    self.frac_coords = np.array(coor)
+                    self.cart_coords = np.dot(coor, lattice)
+                    self.sites = final_site
+
+                    # A pymatgen.core.structure.Structure object for
+                    self.struct = Structure(lattice, self.sites, self.frac_coords)
+                    # ASE/spglib structure
+                    self.spg_struct = (lattice, self.frac_coords, final_number)
+                    self.valid = True
+
+                    return
+                else: 
+                    printx("Failed final distance check.", priority=3)
+
         printx("Couldn't generate crystal after max attempts.", priority=1)
         if degrees == 0:
             printx("Note: Wyckoff positions have no degrees of freedom.", priority=2)
@@ -829,19 +802,12 @@ class molecular_crystal_2D(molecular_crystal):
                  tm=Tol_matrix(prototype="molecular")):
 
         self.dim = 2
-        """The number of periodic dimensions of the crystal"""
         self.numattempts = 0
-        """The number of attempts needed to generate the crystal."""
-        #Necessary input
         if type(group) != Group:
             group = Group(group, self.dim)
-        number = group.number
-        """The layer group number of the crystal."""
-        self.thickness = thickness
-        """the thickness, in Angstroms, of the unit cell in the 3rd
-        dimension."""
+        number = group.number #The layer group number of the crystal."""
+        self.thickness = thickness #the thickness in Angstroms
         self.PBC = [1,1,0]
-        """The periodic axes of the crystal."""
         self.init_common(molecules, numMols, volume_factor, select_high, 
                          allow_inversion, orientations, check_atomic_distances, 
                          group, lattice, tm)
@@ -890,16 +856,9 @@ class molecular_crystal_1D(molecular_crystal):
                  allow_inversion=False, orientations=None, check_atomic_distances=True, 
                  fmt='xyz', area=None, lattice=None, tm=Tol_matrix(prototype="molecular")):
         self.dim = 1
-        """The number of periodic dimensions of the crystal"""
-        #Necessary input
-        self.area = area
-        """the effective cross-sectional area, in Angstroms squared, of the
-        unit cell."""
-        self.PBC = [0,0,1]
-        """The periodic axes of the crystal (1,2,3)->(x,y,z)."""
-        self.sg = None
-        """The international space group number (there is not a 1-1 correspondence
-        with Rod groups)."""
+        self.area = area #the effective cross-sectional area in A^2
+        self.PBC = [0,0,1] #The periodic axes of the crystal (1,2,3)->(x,y,z)
+        self.sg = None #The international space group number, not rod groups
         self.init_common(molecules, numMols, volume_factor, select_high, 
                          allow_inversion, orientations, check_atomic_distances, 
                          group, lattice, tm)

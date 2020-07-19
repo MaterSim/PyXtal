@@ -11,7 +11,6 @@ constraints.
 #Standard libraries
 import numpy as np
 from copy import deepcopy
-from warnings import warn
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation 
 
