@@ -1,0 +1,17 @@
+*.py[cod]
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+.eggs/*
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64

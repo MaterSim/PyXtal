@@ -1,23 +1,27 @@
-#Standard Libraries
+# Standard Libraries
 import os
 import random
 import numpy as np
 from copy import deepcopy
 
-#External Libraries
+# External Libraries
 from pymatgen.core.structure import Structure, Molecule
 
-#PyXtal imports #avoid *
+# PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position
-from pyxtal.Wyckoff_site import atom_site, check_atom_sites
-from pyxtal.operations import apply_ops, project_point, distance_matrix, distance, printx
+from pyxtal.wyckoff_site import atom_site, check_atom_sites
+from pyxtal.operations import (
+    apply_ops, project_point,
+    distance_matrix,
+    distance, printx
+)
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
 from pyxtal.database.element import Element
-from pyxtal.constants import *
+from pyxtal.constants import max1, max2, max3
 
-#Define functions
-#------------------------------
+# Define functions
+# ------------------------------
 
 
 def merge_coordinate(coor, lattice, group, tol):
@@ -40,8 +44,8 @@ def merge_coordinate(coor, lattice, group, tol):
         when plugged into the Wyckoff position, it will generate all the other
         points.
     """
-    coor = np.array(coor)  
-    #Get index of current Wyckoff position. If not one, return False
+    coor = np.array(coor)
+    # Get index of current Wyckoff position. If not one, return False
     index, point = check_wyckoff_position(coor, group)
     if index is False:
         return coor, False, None
@@ -55,14 +59,14 @@ def merge_coordinate(coor, lattice, group, tol):
         group.print_all()
         return coor, False, None
     PBC = group.PBC
-    #Main loop for merging multiple times
+    # Main loop for merging multiple times
     while True:
-        #Check distances of current WP. If too small, merge
+        # Check distances of current WP. If too small, merge
         dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
         passed_distance_check = True
         x = np.argwhere(dm < tol)
         for y in x:
-            #Ignore distance from atom to itself
+            # Ignore distance from atom to itself
             if y[0] == 0 and y[1] == 0:
                 pass
             else:
@@ -71,24 +75,25 @@ def merge_coordinate(coor, lattice, group, tol):
 
         if passed_distance_check is False:
             mult1 = group[index].multiplicity
-            #Find possible wp's to merge into
+            # Find possible wp's to merge into
             possible = []
             for i, wp in enumerate(group):
                 mult2 = wp.multiplicity
-                #factor = mult2 / mult1
+                # factor = mult2 / mult1
                 if (mult2 < mult1) and (mult1 % mult2 == 0):
                     possible.append(i)
             if possible == []:
                 return coor, False, None
-            #Calculate minimum separation for each WP
+            # Calculate minimum separation for each WP
             distances = []
             for i in possible:
                 wp = group[i]
                 projected_point = project_point(point, wp[0], lattice=lattice, PBC=PBC)
+                # NOTE Comprhys: new_coor note used?
                 new_coor = apply_ops(projected_point, wp)
                 d = distance(point - projected_point, lattice, PBC=PBC)
                 distances.append(np.min(d))
-            #Choose wp with shortest translation for generating point
+            # Choose wp with shortest translation for generating point
             tmpindex = np.argmin(distances)
             index = possible[tmpindex]
             newwp = group[index]
@@ -96,9 +101,10 @@ def merge_coordinate(coor, lattice, group, tol):
             coor = apply_ops(projected_point, newwp)
             point = coor[0]
             index = newwp.index
-        #Distances were not too small; return True
+        # Distances were not too small; return True
         else:
             return coor, index, point
+
 
 class random_crystal():
     """
@@ -107,7 +113,7 @@ class random_crystal():
     and a volume factor, generates a random crystal consistent with the
     spacegroup's symmetry. This crystal is stored as a pymatgen struct via
     self.struct
-    
+
     Args:
         group: the international spacegroup number, or a Group object
         species: a list of atomic symbols for each ion type
@@ -118,7 +124,7 @@ class random_crystal():
             unit cell. Increasing this gives extra space between atoms
         lattice: an optional Lattice object to use for the unit cell
     """
-    def __init__(self, group, species, numIons, factor, lattice=None, 
+    def __init__(self, group, species, numIons, factor, lattice=None,
                  tm=Tol_matrix(prototype="atomic")):
 
         self.dim = 3
@@ -127,25 +133,24 @@ class random_crystal():
             group = Group(group, self.dim)
         self.sg = group.number
         """The international spacegroup number of the crystal."""
-        self.PBC = [1,1,1]
+        self.PBC = [1, 1, 1]
         """The periodic boundary axes of the crystal"""
         self.init_common(species, numIons, factor, group, lattice, tm)
-
 
     def init_common(self, species, numIons, factor, group, lattice, tm):
         """
         Common init functionality for 0D-3D cases of random_crystal.
         """
         self.valid = False
-        #Check that numIons are integers greater than 0
+        # Check that numIons are integers greater than 0
         for num in numIons:
             if int(num) != num or num < 1:
                 printx("Error: stoichiometry must consist of positive integers.", priority=1)
                 return False
         if type(group) == Group:
             """
-            A pyxtal.symmetry.Group object storing information 
-            about the space/layer/Rod/point group, 
+            A pyxtal.symmetry.Group object storing information
+            about the space/layer/Rod/point group,
             and its Wyckoff positions.
             """
             self.group = group
@@ -160,17 +165,17 @@ class random_crystal():
         1-32 for crystallographic point groups
         None otherwise
         """
-    
+
         # The number of attempts to generate the crystal, max1*max2*max3.
         # number of atoms
         # volume factor for the unit cell.
         # The number of atom in the PRIMITIVE cell
         # The number of each type of atom in the CONVENTIONAL cell.
-        # A list of atomic symbols for the types of atoms 
-        # A list of warning messages 
+        # A list of atomic symbols for the types of atoms
+        # A list of warning messages
 
         self.numattempts = 0
-        numIons = np.array(numIons) 
+        numIons = np.array(numIons)
         self.factor = factor
         self.numIons0 = numIons
         self.numIons = self.numIons0 * cellsize(self.group)
@@ -187,7 +192,7 @@ class random_crystal():
                 printx("\n  Warning: converting custom lattice PBC to "+str(self.PBC))
 
         # Generate a Lattice instance based on a given volume estimation
-        elif lattice == None:
+        elif lattice is None:
 
             # Determine the unique axis
             if self.dim == 2:
@@ -204,29 +209,33 @@ class random_crystal():
                 unique_axis = "c"
 
             self.volume = self.estimate_volume()
-       
+
             if self.dim == 3 or self.dim == 0:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, 
-                                       PBC=self.PBC, 
+                self.lattice = Lattice(self.group.lattice_type, self.volume,
+                                       PBC=self.PBC,
                                        unique_axis=unique_axis)
             elif self.dim == 2:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, 
-                                       PBC=self.PBC, 
-                                       unique_axis=unique_axis, 
+                self.lattice = Lattice(self.group.lattice_type, self.volume,
+                                       PBC=self.PBC,
+                                       unique_axis=unique_axis,
+                                       # NOTE self.thickness is part of 2D class
                                        thickness=self.thickness)
             elif self.dim == 1:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, 
-                                       PBC=self.PBC, 
-                                       unique_axis=unique_axis, 
+                self.lattice = Lattice(self.group.lattice_type, self.volume,
+                                       PBC=self.PBC,
+                                       unique_axis=unique_axis,
+                                       # NOTE self.area is part of 1D class
                                        area=self.area)
-        # Set the tolerance matrix for checking inter-atomic distances 
+        # Set the tolerance matrix for checking inter-atomic distances
         if type(tm) == Tol_matrix:
             self.tol_matrix = tm
         else:
             try:
                 self.tol_matrix = Tol_matrix(prototype=tm)
+            # TODO Remove bare except
             except:
-                printx("Error: tm must either be a Tol_matrix object or a prototype string for initializing one.", priority=1)
+                printx(("Error: tm must either be a Tol_matrix object or "
+                        "a prototype string for initializing one."), priority=1)
                 self.valid = False
                 self.struct = None
                 return
@@ -253,7 +262,7 @@ class random_crystal():
         Estimates the volume of a unit cell based on the number and types of ions.
         Assumes each atom takes up a sphere with radius equal to its covalent bond
         radius.
-    
+
         Returns:
             a float value for the estimated volume
         """
@@ -263,7 +272,7 @@ class random_crystal():
             volume += numIon*4/3*np.pi*r**3
         return self.factor*volume
 
-
+    # TODO make into a function rather than a method
     def check_compatible(group, numIons):
         """
         Checks if the number of atoms is compatible with the Wyckoff
@@ -285,7 +294,7 @@ class random_crystal():
                 indices0.append(i_wp)
                 l_mult0.append(len(wp))
                 l_maxn0.append(numIon // len(wp))
-                if np.allclose(wp[0].rotation_matrix, np.zeros([3,3])):
+                if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
                     l_free0.append(False)
                 else:
                     l_free0.append(True)
@@ -327,9 +336,9 @@ class random_crystal():
             while True:
                 num = np.dot(n, l_mult)
                 dobackwards = False
-                #The combination works: move to next species
+                # The combination works: move to next species
                 if num == numIon:
-                    #Check if at least one degree of freedom exists
+                    # Check if at least one degree of freedom exists
                     for val, free, i_wp in zip(n, l_free, indices):
                         if val > 0:
                             if free is True:
@@ -337,23 +346,23 @@ class random_crystal():
                             elif free is False:
                                 used_indices.append(i_wp)
                     break
-                #All combinations failed: return False
+                # All combinations failed: return False
                 if n == n0 and p >= len(l_mult) - 1:
                     return False
-                #Too few atoms
+                # Too few atoms
                 if num < numIon:
-                    #Forwards routine
-                    #Move p to the right and max out
+                    # Forwards routine
+                    # Move p to the right and max out
                     if p < len(l_mult) - 1:
                         p += 1
                         n[p] = min((numIon - num) // l_mult[p], l_maxn[p])
                     elif p == len(l_mult) - 1:
-                        #p is already at last position: trigger backwards routine
+                        # p is already at last position: trigger backwards routine
                         dobackwards = True
-                #Too many atoms
+                # Too many atoms
                 if num > numIon or dobackwards is True:
-                    #Backwards routine
-                    #Set n[p] to 0, move p backwards to non-zero, and decrease by 1
+                    # Backwards routine
+                    # Set n[p] to 0, move p backwards to non-zero, and decrease by 1
                     n[p] = 0
                     while p > 0 and p > p2:
                         p -= 1
@@ -362,10 +371,10 @@ class random_crystal():
                             if n[p] == 0 and p == p2:
                                 p2 = p + 1
                             break
-        #All species passed: return True
+        # All species passed: return True
         if has_freedom is True:
             return True
-        #All species passed, but no degrees of freedom: return 0
+        # All species passed, but no degrees of freedom: return 0
         elif has_freedom is False:
             return 0
 
@@ -382,17 +391,17 @@ class random_crystal():
         Returns:
             Nothing. Creates a file at the specified path
         """
-        if filename == None:
+        if filename is None:
             given = False
         else:
             given = True
         if self.valid:
             if self.dim == 0:
-                if filename == None:
-                    filename = str(self.molecule.formula).replace(" ","") + "." + fmt
+                if filename is None:
+                    filename = str(self.molecule.formula).replace(" ", "") + "." + fmt
             if self.dim != 0:
-                if filename == None:
-                    filename = str(self.struct.formula).replace(" ","") + "." + fmt
+                if filename is None:
+                    filename = str(self.struct.formula).replace(" ", "") + "." + fmt
 
             # Check if filename already exists
             # If it does, add a new number to end of filename
@@ -422,13 +431,14 @@ class random_crystal():
 
     def __str__(self):
         s = "------Random Crystal------"
-        s += "\nDimension: " + str(self.dim)
-        s += "\nGroup: " + self.group.symbol
-        s += "\nVolume factor: " + str(self.factor)
-        s += "\n" + str(self.lattice)
+        s += "\nDimension: {}".format(self.dim)
+        s += "\nGroup: {} ({})".format(self.group.symbol, self.group.number)
+        s += "\nVolume factor: {}".format(self.factor)
+        s += "\n{}".format(self.lattice)
         if self.valid:
+            s += "\nWyckoff sites:"
             for wyc in self.wyckoff_sites:
-                s += "\nWyckoff sites:" + str(wyc) 
+                s += "\n{}".format(wyc)
         else:
             s += "\nStructure not generated."
         return s
@@ -454,7 +464,7 @@ class random_crystal():
             max2: the number of attempts for a given lattice
             max3: the number of attempts for a given Wyckoff position
         """
-        #Check the minimum number of degrees of freedom within the Wyckoff positions
+        # Check the minimum number of degrees of freedom within the Wyckoff positions
         self.numattempts = 1
         degrees = random_crystal.check_compatible(self.group, self.numIons)
         if degrees is False:
@@ -463,13 +473,14 @@ class random_crystal():
             self.valid = False
             return
         else:
-            if degrees is 0:
+            if degrees == 0:
                 max1 = 5
                 max2 = 5
                 max3 = 5
 
             # Calculate a minimum vector length for generating a lattice
-            minvector = max(self.tol_matrix.get_tol(s,s) for s in self.species)
+            # NOTE Comprhys: minvector never used?
+            minvector = max(self.tol_matrix.get_tol(s, s) for s in self.species)
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
 
@@ -483,45 +494,47 @@ class random_crystal():
                     cell_matrix = self.lattice.get_matrix()
                     if cell_matrix is None:
                         continue
+                # TODO remove bare except
                 except:
                     continue
 
                 # Check that the correct volume was generated
                 if self.lattice.random is True:
-                    if self.dim != 0 and abs(self.volume - np.linalg.det(cell_matrix)) > 1.0: 
-                        printx("Error, volume is not equal to the estimated value: "\
-                                + str(self.volume)
-                                + " -> "+str(np.linalg.det(cell_matrix))
-                                + "cell_para:  "+str(matrix2para(cell_matrix)), priority=0)
+                    if self.dim != 0 and abs(self.volume - np.linalg.det(cell_matrix)) > 1.0:
+                        cell_det = np.linalg.det(cell_matrix)
+                        # TODO Comprhys: matrix2para not defined - from XRD class?
+                        mat2para = matrix2para(cell_matrix)
+                        printx(("Error, volume is not equal to the estimated value: "
+                                "{} -> {} cell_para: {}").format(self.volume, cell_det, mat2para), priority=0)
                         self.valid = False
                         self.struct = None
                         return
 
                 good_structure = False
-                
+
                 # to try to generate atomic coordinates
                 for cycle2 in range(max2):
 
-                    coordinates_total = [] #to store the added coordinates
-                    sites_total = []      #to store the corresponding specie
+                    coordinates_total = []  # to store the added coordinates
+                    sites_total = []  # to store the corresponding specie
                     wyckoff_sites_total = []
                     self.cycle2 = cycle2
                     coordinates_tmp = deepcopy(coordinates_total)
                     sites_tmp = deepcopy(sites_total)
                     wyckoff_sites_tmp = deepcopy(wyckoff_sites_total)
-                    
-                    #Add specie by specie
+
+                    # Add specie by specie
                     for numIon, specie in zip(self.numIons, self.species):
                         numIon_added = 0
-                        tol = self.tol_matrix.get_tol(specie,specie)
+                        tol = self.tol_matrix.get_tol(specie, specie)
 
-                        #Now we start to add the specie to the wyckoff position
+                        # Now we start to add the specie to the wyckoff position
                         cycle3 = 0
                         while cycle3 < max3:
                             self.cycle3 = cycle3
                             # Choose a random WP for given multiplicity: 2a, 2b
                             # QZ: to choose the WP from a given list?
-                            ops = choose_wyckoff(self.group, numIon-numIon_added) 
+                            ops = choose_wyckoff(self.group, numIon-numIon_added)
 
                             if ops is not False:
                                 # Generate a list of coords from ops
@@ -533,17 +546,17 @@ class random_crystal():
                                 coords_toadd, wp_index, pt = merge_coordinate(coords, cell_matrix, self.group, tol)
 
                                 if wp_index is not False:
-                                    #Use a Wyckoff_site object for the current site
+                                    # Use a Wyckoff_site object for the current site
                                     current_site = atom_site(self.group[wp_index], pt, specie)
 
-                                    #Check current WP against existing WP's
+                                    # Check current WP against existing WP's
                                     passed_wp_check = True
                                     for ws in wyckoff_sites_tmp:
                                         if not check_atom_sites(current_site, ws, cell_matrix, self.tol_matrix):
                                             passed_wp_check = False
 
                                     if passed_wp_check is True:
-                                        #The current Wyckoff site passed; store it
+                                        # The current Wyckoff site passed; store it
                                         if coordinates_tmp == []:
                                             coordinates_tmp = current_site.coords
                                         else:
@@ -552,7 +565,7 @@ class random_crystal():
                                         wyckoff_sites_tmp.append(current_site)
                                         numIon_added += len(coords_toadd)
 
-                                        #Check if enough atoms have been added
+                                        # Check if enough atoms have been added
                                         if numIon_added == numIon:
                                             coordinates_total = deepcopy(coordinates_tmp)
                                             sites_total = deepcopy(sites_tmp)
@@ -572,12 +585,12 @@ class random_crystal():
                             coordinates_total = []
                             sites_total = []
                             wyckoff_sites_total = []
-                            break  #need to repeat from the 1st species
+                            break  # need to repeat from the 1st species
 
                     if numIon_added == numIon:
                         good_structure = True
                         break
-                    else: #reset the coordinates and sites
+                    else:  # reset the coordinates and sites
                         coordinates_total = []
                         sites_total = []
 
@@ -600,23 +613,24 @@ class random_crystal():
                     else:
                         self.species = final_site
                         self.molecule = Molecule(final_site, cart_coords)
-                        #Calculate binding box
+                        # Calculate binding box
                         diffs = np.max(cart_coords, axis=0) - np.min(cart_coords, axis=0) + 10
                         a, b, c = diffs[0], diffs[1], diffs[2]
-                        self.struct = self.molecule.get_boxed_structure(a,b,c)
+                        self.struct = self.molecule.get_boxed_structure(a, b, c)
                     self.sites = final_site
                     self.frac_coords = final_coor
                     self.cart_coords = np.dot(final_coor, final_lattice)
-                    self.lattice_matrix = final_lattice   
+                    self.lattice_matrix = final_lattice
                     self.wyckoff_sites = wyckoff_sites_total
                     self.valid = True
                     return
-        if degrees == 0: 
+        if degrees == 0:
             printx("Wyckoff positions have no degrees of freedom.", priority=2)
 
         self.struct = None
         self.valid = False
         return
+
 
 class random_crystal_2D(random_crystal):
     """
@@ -639,17 +653,18 @@ class random_crystal_2D(random_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, species, numIons, factor, thickness=None, 
+    def __init__(self, group, species, numIons, factor, thickness=None,
                  lattice=None, tm=Tol_matrix(prototype="atomic")):
-        self.dim = 2 
-        self.PBC = [1,1,0] 
+        self.dim = 2
+        self.PBC = [1, 1, 0]
 
         if type(group) != Group:
             group = Group(group, self.dim)
 
-        number = group.number #The layer group number of the crystal."""
-        self.thickness = thickness # in Angstroms, in the 3rd dimenion of unit cell
+        number = group.number  # The layer group number of the crystal
+        self.thickness = thickness  # in Angstroms, in the 3rd dimenion of unit cell
         self.init_common(species, numIons, factor, number, lattice, tm)
+
 
 class random_crystal_1D(random_crystal):
     """
@@ -671,13 +686,14 @@ class random_crystal_1D(random_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, species, numIons, factor, area=None, 
+    def __init__(self, group, species, numIons, factor, area=None,
                  lattice=None, tm=Tol_matrix(prototype="atomic")):
         self.dim = 1
-        self.PBC = [0,0,1]
-        self.sg = None 
-        self.area = area #the effective cross-sectional area, in A^2, of the unit cell.
+        self.PBC = [0, 0, 1]
+        self.sg = None
+        self.area = area  # the effective cross-sectional area, in A^2, of the unit cell.
         self.init_common(species, numIons, factor, group, lattice, tm)
+
 
 class random_cluster(random_crystal):
     """
@@ -700,11 +716,11 @@ class random_cluster(random_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, species, numIons, factor, lattice=None, 
+    def __init__(self, group, species, numIons, factor, lattice=None,
                  tm=Tol_matrix(prototype="atomic", factor=0.7)):
+        # NOTE tol_m unused?
         tol_m = 0.1
         self.dim = 0
-        self.PBC = [0,0,0]
+        self.PBC = [0, 0, 0]
         self.sg = None
         self.init_common(species, numIons, factor, group, lattice, tm)
-

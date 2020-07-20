@@ -17,7 +17,7 @@ from pyxtal.database.element import Element
 from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position, jk_from_i
 from pyxtal.operations import apply_ops, check_images, project_point, distance, distance_matrix, filtered_coords 
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
-from pyxtal.Wyckoff_site import mol_site, check_mol_sites
+from pyxtal.wyckoff_site import mol_site, check_mol_sites
 from pyxtal.database.collection import Collection
 
 
