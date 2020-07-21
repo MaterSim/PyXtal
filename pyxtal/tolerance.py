@@ -1,7 +1,8 @@
 from pyxtal.database.element import Element
 import numpy as np
 
-class Tol_matrix():
+
+class Tol_matrix:
     """
     Class for variable distance tolerance checking. Used within random_crystal and
     molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-
@@ -18,6 +19,7 @@ class Tol_matrix():
             in Angstroms, and specie1 and specie2 can be strings, integers, Element objects,
             or pymatgen Specie objects. Custom values may also be set using set_tol
     """
+
     def __init__(self, *tuples, prototype="atomic", factor=1.0):
         f = factor
         self.prototype = prototype
@@ -36,17 +38,17 @@ class Tol_matrix():
         else:
             self.radius_type = "N/A"
         self.f = f
-        H = Element('H')
-        m = [[0.]*(len(H.elements_list)+1)]
+        H = Element("H")
+        m = [[0.0] * (len(H.elements_list) + 1)]
         for i, tup1 in enumerate(H.elements_list):
-            m.append([0.])
+            m.append([0.0])
             for j, tup2 in enumerate(H.elements_list):
-                #Get the appropriate atomic radii
+                # Get the appropriate atomic radii
                 if tup1[attrindex] is None:
                     if tup1[5] is None:
                         val1 = None
                     else:
-                        #Use the covalent radius
+                        # Use the covalent radius
                         val1 = tup1[5]
                 else:
                     val1 = tup1[attrindex]
@@ -54,29 +56,37 @@ class Tol_matrix():
                     if tup2[5] is None:
                         val2 = None
                     else:
-                        #Use the covalent radius
+                        # Use the covalent radius
                         val2 = tup1[5]
                 else:
                     val2 = tup2[attrindex]
                 if val1 is not None and val2 is not None:
-                    m[-1].append( f * (val1 + val2))
+                    m[-1].append(f * (val1 + val2))
                 else:
-                    #If no radius is found for either atom, set tolerance to None
+                    # If no radius is found for either atom, set tolerance to None
                     m[-1].append(None)
-        self.matrix = np.array(m) #A symmetric np matrix storing the tolerance between specie pairs
-        self.custom_values = []   #A list of tuples storing which species pair tolerances have custom values
+        self.matrix = np.array(
+            m
+        )  # A symmetric np matrix storing the tolerance between specie pairs
+        self.custom_values = (
+            []
+        )  # A list of tuples storing which species pair tolerances have custom values
 
         try:
             for tup in tuples:
                 self.set_tol(*tup)
         except:
-            printx("Error: Could not set custom tolerance value(s).\n"
-                +"All custom entries should be entered using the following form:\n"
-                +"(specie1, specie2, value), where value is the tolerance in Angstroms.", priority=1)
+            printx(
+                "Error: Could not set custom tolerance value(s).\n"
+                + "All custom entries should be entered using the following form:\n"
+                + "(specie1, specie2, value), where value is the tolerance in Angstroms.",
+                priority=1,
+            )
 
         self.radius_list = []
         for i in range(len(self.matrix)):
-            if i == 0: continue
+            if i == 0:
+                continue
             x = self.get_tol(i, i)
             self.radius_list.append(x)
 
@@ -117,7 +127,10 @@ class Tol_matrix():
         self.matrix[index1][index2] = float(value)
         if index1 != index2:
             self.matrix[index2][index1] = float(value)
-        if (index1, index2) not in self.custom_values and (index2, index1) not in self.custom_values:
+        if (index1, index2) not in self.custom_values and (
+            index2,
+            index1,
+        ) not in self.custom_values:
             larger = max(index1, index2)
             smaller = min(index1, index2)
             self.custom_values.append((smaller, larger))
@@ -147,8 +160,9 @@ class Tol_matrix():
         tups = []
         for i, row in enumerate(matrix):
             for j, value in enumerate(row):
-                if j > i: continue
-                tups.append( (i+1-begin_with, j+1-begin_with, matrix[i][j]) )
+                if j > i:
+                    continue
+                tups.append((i + 1 - begin_with, j + 1 - begin_with, matrix[i][j]))
         tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
         return tm
 
@@ -175,8 +189,9 @@ class Tol_matrix():
         f = factor * 0.5
         for i, r1 in enumerate(radius_list):
             for j, r2 in enumerate(radius_list):
-                if j > i: continue
-                tups.append( (i+1-begin_with, j+1-begin_with, f*(r1+r2)) )
+                if j > i:
+                    continue
+                tups.append((i + 1 - begin_with, j + 1 - begin_with, f * (r1 + r2)))
         tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
         return tm
 
@@ -195,7 +210,7 @@ class Tol_matrix():
         tm = Tol_matrix()
         tm.prototype = "single value"
         tm.matrix = np.array([[value]])
-        tm.custom_values = [(1,1)]
+        tm.custom_values = [(1, 1)]
         tm.radius_type = "N/A"
         return tm
 
@@ -205,21 +220,23 @@ class Tol_matrix():
 
     def print_all(self):
         print("--Tol_matrix class object--")
-        print("  Prototype: "+str(self.prototype))
-        print("  Atomic radius type: "+str(self.radius_type))
-        print("  Radius scaling factor: "+str(self.f))
+        print("  Prototype: " + str(self.prototype))
+        print("  Atomic radius type: " + str(self.radius_type))
+        print("  Radius scaling factor: " + str(self.f))
         if self.prototype == "single value":
-            print("  Custom tolerance value: "+str(self.matrix([0][0])))
+            print("  Custom tolerance value: " + str(self.matrix([0][0])))
         else:
             if self.custom_values == []:
                 print("  Custom tolerance values: None")
             else:
                 print("  Custom tolerance values:")
                 for tup in self.custom_values:
-                    name1 = str(Element(tup[0]).short_name) 
+                    name1 = str(Element(tup[0]).short_name)
                     name2 = str(Element(tup[1]).short_name)
-                    #print("    " + name1+ ", " + name2 + ": " +str(self.get_tol(tup[0],tup[1])))
-                    s += "\n{:s}-{:s}: {:6.3f}".format(name1, name2, self.get_tol(tup[0],tup[1]))
+                    # print("    " + name1+ ", " + name2 + ": " +str(self.get_tol(tup[0],tup[1])))
+                    s += "\n{:s}-{:s}: {:6.3f}".format(
+                        name1, name2, self.get_tol(tup[0], tup[1])
+                    )
                 print(s)
 
     def to_file(self, filename=None):
@@ -241,8 +258,8 @@ class Tol_matrix():
             given = True
         if filename == None:
             filename = "custom_tol_matrix"
-        #Check if filename already exists
-        #If it does, add a new number to end of filename
+        # Check if filename already exists
+        # If it does, add a new number to end of filename
         if os.path.exists(filename):
             i = 1
             while True:

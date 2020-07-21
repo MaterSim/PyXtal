@@ -6,25 +6,34 @@ identify conjugate operations. The orientation class can be used to identify
 degrees of freedom for molecules in Wyckoff positions with certain symmetry
 constraints.
 """
-#Imports
-#------------------------------
-#Standard libraries
+# Imports
+# ------------------------------
+# Standard libraries
 import numpy as np
 from copy import deepcopy
 from scipy.spatial.distance import cdist
-from scipy.spatial.transform import Rotation 
+from scipy.spatial.transform import Rotation
 
-#External Libraries
+# External Libraries
 from pymatgen.core.operations import SymmOp
 
-#PyXtal imports
+# PyXtal imports
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.constants import pi, rad, deg, pyxtal_verbosity
-#------------------------------
-#Define functions
-def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1], 
-                   tm=Tol_matrix(prototype="atomic"), d_factor=1.0):
+
+# ------------------------------
+# Define functions
+def check_distance(
+    coord1,
+    coord2,
+    species1,
+    species2,
+    lattice,
+    PBC=[1, 1, 1],
+    tm=Tol_matrix(prototype="atomic"),
+    d_factor=1.0,
+):
     """
     Check the distances between two set of atoms. Distances between coordinates
     within the first set are not checked, and distances between coordinates within
@@ -50,17 +59,17 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1],
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
     """
-    #Check that there are points to compare
+    # Check that there are points to compare
     if len(coord1) < 1 or len(coord2) < 1:
         return True
 
-    #Create tolerance matrix from subset of tm
-    tols = np.zeros((len(species1),len(species2)))
+    # Create tolerance matrix from subset of tm
+    tols = np.zeros((len(species1), len(species2)))
     for i1, specie1 in enumerate(species1):
         for i2, specie2 in enumerate(species2):
             tols[i1][i2] = tm.get_tol(specie1, specie2)
 
-    #Calculate the distance between each i, j pair
+    # Calculate the distance between each i, j pair
     d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
 
     if (np.array(d) < np.array(tols)).any():
@@ -69,8 +78,7 @@ def check_distance(coord1, coord2, species1, species2, lattice, PBC=[1,1,1],
         return True
 
 
-
-def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,1,1]):
+def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]):
     """
     Checks the inter-atomic distance between all pairs of atoms in a crystal.
 
@@ -94,14 +102,24 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1,1,1]):
                 specie2 = species[j]
                 diff = np.array(c2) - np.array(c1)
                 d_min = distance(diff, lattice, PBC=PBC)
-                rad = Element(specie1).covalent_radius + Element(specie2).covalent_radius
-                tol = factor*0.5*rad
+                rad = (
+                    Element(specie1).covalent_radius + Element(specie2).covalent_radius
+                )
+                tol = factor * 0.5 * rad
                 if d_min < tol:
                     return False
     return True
 
-def check_images(coords, species, lattice, PBC=[1,1,1], 
-                 tm=Tol_matrix(prototype="atomic"), tol=None, d_factor=1.0):
+
+def check_images(
+    coords,
+    species,
+    lattice,
+    PBC=[1, 1, 1],
+    tm=Tol_matrix(prototype="atomic"),
+    tol=None,
+    d_factor=1.0,
+):
     """
     Given a set of (unfiltered) frac coordinates, checks if the periodic images are too close.
     
@@ -118,23 +136,24 @@ def check_images(coords, species, lattice, PBC=[1,1,1],
     Returns:
         False if distances are too close. True if distances are not too close
     """
-    #If no PBC, there are no images to check
-    if PBC == [0,0,0]:
+    # If no PBC, there are no images to check
+    if PBC == [0, 0, 0]:
         return True
-    #Create image coords from given coords and PBC
+    # Create image coords from given coords and PBC
     coords = np.array(coords)
     m = create_matrix(PBC=PBC)
     new_coords = []
     new_species = []
     for v in m:
-        #Omit the [0,0,0] vector
-        if (v == [0,0,0]).all(): continue
-        for v2 in coords+v:
+        # Omit the [0,0,0] vector
+        if (v == [0, 0, 0]).all():
+            continue
+        for v2 in coords + v:
             new_coords.append(v2)
     new_coords = np.array(new_coords)
-    #Create a distance matrix
-    dm = distance_matrix(coords, new_coords, lattice, PBC=[0,0,0])
-    #Define tolerances
+    # Create a distance matrix
+    dm = distance_matrix(coords, new_coords, lattice, PBC=[0, 0, 0])
+    # Define tolerances
     if tol is None:
         tols = np.zeros((len(species), len(species)))
         for i, s1 in enumerate(species):
@@ -154,7 +173,8 @@ def check_images(coords, species, lattice, PBC=[1,1,1],
             return True
     return True
 
-def distance(xyz, lattice, PBC=[1,1,1]):
+
+def distance(xyz, lattice, PBC=[1, 1, 1]):
     """
     Returns the Euclidean distance from the origin for a fractional
     displacement vector. Takes into account the lattice metric and periodic
@@ -174,9 +194,12 @@ def distance(xyz, lattice, PBC=[1,1,1]):
     matrix = create_matrix(PBC=PBC)
     matrix += xyz
     matrix = np.dot(matrix, lattice)
-    return np.min(cdist(matrix,[[0,0,0]]))     
+    return np.min(cdist(matrix, [[0, 0, 0]]))
 
-def distance_matrix(points1, points2, lattice, PBC=[1,1,1], single=False, metric='euclidean'):
+
+def distance_matrix(
+    points1, points2, lattice, PBC=[1, 1, 1], single=False, metric="euclidean"
+):
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account the lattice metric and periodic boundary conditions.
@@ -199,7 +222,7 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], single=False, metric
             lattice = None
 
     if lattice is not None:
-        if PBC != [0,0,0]:
+        if PBC != [0, 0, 0]:
             l1 = filtered_coords(points1, PBC=PBC)
             l2 = filtered_coords(points2, PBC=PBC)
             l2 = np.dot(l2, lattice)
@@ -221,7 +244,7 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], single=False, metric
             else:
                 return d
     else:
-        if PBC != [0,0,0]:
+        if PBC != [0, 0, 0]:
             l1 = filtered_coords(points1, PBC=PBC)
             l2 = filtered_coords(points2, PBC=PBC)
             matrix = create_matrix(PBC=PBC)
@@ -238,10 +261,10 @@ def distance_matrix(points1, points2, lattice, PBC=[1,1,1], single=False, metric
                 return cdist(points1, points2, metric)
 
 
+# ------------------------------
 
-#------------------------------
 
-def create_matrix(PBC=[1,1,1]):
+def create_matrix(PBC=[1, 1, 1]):
     """
     Used for calculating distances in lattices with periodic boundary
     conditions. When multiplied with a set of points, generates additional
@@ -269,10 +292,11 @@ def create_matrix(PBC=[1,1,1]):
     for i in i_list:
         for j in j_list:
             for k in k_list:
-                matrix.append([i,j,k])
+                matrix.append([i, j, k])
     return np.array(matrix, dtype=float)
 
-def filtered_coords(coords, PBC=[1,1,1]):
+
+def filtered_coords(coords, PBC=[1, 1, 1]):
     """
     Given an array of 3d fractional coordinates or a single 3d point, transform
     all coordinates to less than 1 and greater than 0. If one axis is not
@@ -288,13 +312,15 @@ def filtered_coords(coords, PBC=[1,1,1]):
     Returns:
         an array of filtered coords with the same shape as coords
     """
+
     def filter_vector(vector):
         f = np.floor(vector)
         return vector - np.multiply(f, PBC)
 
     return np.apply_along_axis(filter_vector, -1, coords)
 
-def filtered_coords_euclidean(coords, PBC=[1,1,1]):
+
+def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
     """
     Given an array of fractional 3-vectors, filters coordinates to between 0 and
     1. Then, values which are greater than 0.5 are converted to 1 minus their
@@ -309,6 +335,7 @@ def filtered_coords_euclidean(coords, PBC=[1,1,1]):
     Returns:
         an array of filtered coords with the same shape as coords
     """
+
     def filter_vector_euclidean(vector):
         for i, a in enumerate(PBC):
             if a:
@@ -319,14 +346,15 @@ def filtered_coords_euclidean(coords, PBC=[1,1,1]):
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
-#def euler_from_matrix(m, radians=True):
+
+# def euler_from_matrix(m, radians=True):
 #    """
 #    Given a 3x3 rotation matrix, determines the Euler angles
-#    
+#
 #    Args:
 #        m: a 3x3 rotation matrix
 #        radians: whether or not to output angles in radians (degrees if False)
-#    
+#
 #    Returns:
 #        (phi, theta, psi): psi is the azimuthal angle, theta is the polar angle,
 #            and psi is the angle about the z axis. All angles are in radians
@@ -354,6 +382,7 @@ def get_inverse(op):
     """
     return SymmOp(np.linalg.inv(op.affine_matrix))
 
+
 def get_inverse_ops(ops):
     """
     Given a (possibly nested) list of SymmOp objects, returns a list of the inverses.
@@ -371,8 +400,9 @@ def get_inverse_ops(ops):
         else:
             inverses.append(get_inverse_ops(op))
     return inverses
-    
-def project_point(point, op, lattice=np.eye(3), PBC=[1,1,1]):
+
+
+def project_point(point, op, lattice=np.eye(3), PBC=[1, 1, 1]):
     """
     Given a 3-vector and a Wyckoff position operator, returns the projection of that
     point onto the axis, plane, or point.
@@ -389,37 +419,41 @@ def project_point(point, op, lattice=np.eye(3), PBC=[1,1,1]):
     Returns:
         a transformed 3-vector (numpy array)
     """
-    if PBC == [0,0,0]:
-        #Temporarily move the point in the opposite direction of the translation
+    if PBC == [0, 0, 0]:
+        # Temporarily move the point in the opposite direction of the translation
         translation = op.translation_vector
         point -= translation
-        new_vector = np.array([0.0,0.0,0.0])
-        #Loop over basis vectors of the symmetry element
+        new_vector = np.array([0.0, 0.0, 0.0])
+        # Loop over basis vectors of the symmetry element
         for basis_vector in op.rotation_matrix.T:
-            #b = np.linalg.norm(basis_vector)
-            b = np.sqrt(basis_vector.dot(basis_vector)) # a faster version?
+            # b = np.linalg.norm(basis_vector)
+            b = np.sqrt(basis_vector.dot(basis_vector))  # a faster version?
             if not np.isclose(b, 0):
-                new_vector += basis_vector*(np.dot(point, basis_vector)/(b**2))
+                new_vector += basis_vector * (np.dot(point, basis_vector) / (b ** 2))
         new_vector += translation
         return new_vector
     else:
-        #With PBC, the point could be projected onto multiple places on the symmetry element
+        # With PBC, the point could be projected onto multiple places on the symmetry element
         point = filtered_coords(point)
-        #Generate translation vectors for the equivalent symmetry elements
+        # Generate translation vectors for the equivalent symmetry elements
         m = create_matrix(PBC=PBC)
-        #Create new symmetry elements for each of the PBC vectors
+        # Create new symmetry elements for each of the PBC vectors
         new_vectors = []
         distances = []
         for v in m:
-            #Get the direct projection onto each of the new symmetry elements
-            new_op = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector + v)
-            #Needs to replace
-            new_vector = project_point(point, new_op, lattice=lattice, PBC=[0,0,0])
+            # Get the direct projection onto each of the new symmetry elements
+            new_op = SymmOp.from_rotation_and_translation(
+                op.rotation_matrix, op.translation_vector + v
+            )
+            # Needs to replace
+            new_vector = project_point(point, new_op, lattice=lattice, PBC=[0, 0, 0])
             new_vectors.append(new_vector)
-            distances.append(distance(new_vector - point, lattice=lattice, PBC=[0,0,0]))
+            distances.append(
+                distance(new_vector - point, lattice=lattice, PBC=[0, 0, 0])
+            )
         i = np.argmin(distances)
         return filtered_coords(new_vectors[i], PBC=PBC)
-            
+
 
 def apply_ops(coord, ops):
     """
@@ -438,6 +472,7 @@ def apply_ops(coord, ops):
     matrices = np.array([op.affine_matrix for op in ops])
     return np.inner(affine_point, matrices)[..., :-1]
 
+
 def apply_ops_diagonal(coords, ops):
     """
     Given a list of coordinates and SymmOps, apply the ith op to the ith coord
@@ -452,7 +487,8 @@ def apply_ops_diagonal(coords, ops):
     coords = np.array(coords)
     affine_points = np.concatenate([coords, np.ones(coords.shape[:-1] + (1,))], axis=-1)
     matrices = np.array([op.affine_matrix for op in ops])
-    return np.einsum('...ij,...j', matrices, affine_points)[:,:3]
+    return np.einsum("...ij,...j", matrices, affine_points)[:, :3]
+
 
 def angle(v1, v2, radians=True):
     """
@@ -479,7 +515,8 @@ def angle(v1, v2, radians=True):
     else:
         return a * deg
 
-def is_orthogonal(m, tol=.001):
+
+def is_orthogonal(m, tol=0.001):
     """
     Check whether or not a 3x3 matrix is orthogonal. An orthogonal matrix has
     the property that it is equal to its transpose.
@@ -493,10 +530,13 @@ def is_orthogonal(m, tol=.001):
     """
     m1 = np.dot(m, np.transpose(m))
     m2 = np.dot(np.transpose(m), m)
-    if not np.allclose(m1, np.identity(3), rtol=tol) or not np.allclose(m2, np.identity(3), rtol=tol):
+    if not np.allclose(m1, np.identity(3), rtol=tol) or not np.allclose(
+        m2, np.identity(3), rtol=tol
+    ):
         return False
     else:
         return True
+
 
 def aa2matrix(axis, angle, radians=True, random=False):
     """
@@ -515,39 +555,40 @@ def aa2matrix(axis, angle, radians=True, random=False):
     Returns:
         a 3x3 numpy array representing a rotation matrix
     """
-    #Convert to radians if necessary
+    # Convert to radians if necessary
     if radians is not True:
         angle *= rad
-    #Allow for generation of random rotations
+    # Allow for generation of random rotations
     if random is True:
-        #a = np.random.random()
+        # a = np.random.random()
         axis = np.random.sample(3)
-        angle = np.random.random()*pi*2
-    #Ensure axis is a unit vector
+        angle = np.random.random() * pi * 2
+    # Ensure axis is a unit vector
     axis = axis / np.linalg.norm(axis)
-    #Define quantities which are reused
+    # Define quantities which are reused
     x = np.real(axis[0])
     y = np.real(axis[1])
     z = np.real(axis[2])
     c = np.cos(angle)
     s = np.sin(angle)
     C = 1 - c
-    #Define the rotation matrix
-    Q = np.zeros([3,3])
-    Q[0][0] = x*x*C + c
-    Q[0][1] = x*y*C - z*s
-    Q[0][2] = x*z*C + y*s
-    Q[1][0] = y*x*C + z*s
-    Q[1][1] = y*y*C + c
-    Q[1][2] = y*z*C - x*s
-    Q[2][0] = z*x*C - y*s
-    Q[2][1] = z*y*C + x*s
-    Q[2][2] = z*z*C + c
+    # Define the rotation matrix
+    Q = np.zeros([3, 3])
+    Q[0][0] = x * x * C + c
+    Q[0][1] = x * y * C - z * s
+    Q[0][2] = x * z * C + y * s
+    Q[1][0] = y * x * C + z * s
+    Q[1][1] = y * y * C + c
+    Q[1][2] = y * z * C - x * s
+    Q[2][0] = z * x * C - y * s
+    Q[2][1] = z * y * C + x * s
+    Q[2][2] = z * z * C + c
     return Q
 
+
 def rotate_vector(v1, v2):
-    #TODO: Verify that multiplication order is correct
-    #(matrix should come after vector in np.dot)
+    # TODO: Verify that multiplication order is correct
+    # (matrix should come after vector in np.dot)
     """
     Rotates a vector v1 to v2 about an axis perpendicular to both. Returns the
     3x3 rotation matrix used to do so.
@@ -563,20 +604,21 @@ def rotate_vector(v1, v2):
     v1 = v1 / np.linalg.norm(v1)
     v2 = v2 / np.linalg.norm(v2)
     dot = np.dot(v1, v2)
-    #Handle collinear vectors
-    if np.isclose(dot, 1, rtol=.0001):
+    # Handle collinear vectors
+    if np.isclose(dot, 1, rtol=0.0001):
         return np.identity(3)
-    elif np.isclose(dot, -1, rtol=.0001):
-        r = [np.random.random(),np.random.random(),np.random.random()]
+    elif np.isclose(dot, -1, rtol=0.0001):
+        r = [np.random.random(), np.random.random(), np.random.random()]
         v3 = np.cross(v1, r)
-        #return aa2matrix(v3, pi)
-        return Rotation.from_rotvec(pi*v3).as_matrix()
+        # return aa2matrix(v3, pi)
+        return Rotation.from_rotvec(pi * v3).as_matrix()
     theta = angle(v1, v2)
     v3 = np.cross(v1, v2)
-    #return aa2matrix(v3, theta)
-    return Rotation.from_rotvec(theta*v3).as_matrix()
-        
-def are_equal(op1, op2, PBC=[1,1,1], rtol=1e-3, atol=1e-3):
+    # return aa2matrix(v3, theta)
+    return Rotation.from_rotvec(theta * v3).as_matrix()
+
+
+def are_equal(op1, op2, PBC=[1, 1, 1], rtol=1e-3, atol=1e-3):
     """
     Check whether two SymmOp objects are equal up to some numerical tolerance.
     Allows for optional consideration of periodic boundary conditions. This
@@ -595,18 +637,18 @@ def are_equal(op1, op2, PBC=[1,1,1], rtol=1e-3, atol=1e-3):
     Returns:
         True if op1 and op2 are equivalent, False otherwise
     """
-    #Check two SymmOps for equivalence
-    #pbc=True means integer translations will be ignored
+    # Check two SymmOps for equivalence
+    # pbc=True means integer translations will be ignored
     m1 = op1.rotation_matrix
     m2 = op2.rotation_matrix
-    #Check that rotations are equivalent
+    # Check that rotations are equivalent
     if not np.allclose(m1, m2, rtol=rtol, atol=atol):
         return False
     v1 = op1.translation_vector
     v2 = op2.translation_vector
 
     difference = v2 - v1
-    
+
     for i, a in enumerate(PBC):
         if a:
             difference[i] -= np.floor(difference[i])
@@ -617,6 +659,7 @@ def are_equal(op1, op2, PBC=[1,1,1], rtol=1e-3, atol=1e-3):
         return True
     else:
         return False
+
 
 class OperationAnalyzer(SymmOp):
     """
@@ -636,20 +679,21 @@ class OperationAnalyzer(SymmOp):
     Args:
         SymmOp: a pymatgen.core.structure.SymmOp object to analyze
     """
-    #TODO: include support for off-center operations
-    #TODO: include support for shear and scaling operations
-    #TODO: include support for matrix-column and axis-angle initialization
+
+    # TODO: include support for off-center operations
+    # TODO: include support for shear and scaling operations
+    # TODO: include support for matrix-column and axis-angle initialization
     def get_order(angle, rotoinversion=False, tol=1e-2):
-        #Find the order of a rotation based on its angle
+        # Find the order of a rotation based on its angle
         found = False
         for n in range(1, 61):
-            x = (n*angle) / (2.*pi)
+            x = (n * angle) / (2.0 * pi)
             y = x - np.round(x)
             if abs(y) <= tol:
                 found = True
                 break
         if found is True:
-            #Double order of odd-rotation rotoinversions
+            # Double order of odd-rotation rotoinversions
             if rotoinversion is True:
                 if n % 2 == 1:
                     return int(n * 2)
@@ -659,7 +703,7 @@ class OperationAnalyzer(SymmOp):
                 return int(n)
         if not found:
             return "irrational"
-    
+
     def __init__(self, op):
         if type(op) == deepcopy(SymmOp):
             self.op = op
@@ -674,19 +718,26 @@ class OperationAnalyzer(SymmOp):
             self.det = np.linalg.det(self.m)
             """The determinant of self.m"""
         elif (type(op) == np.ndarray) or (type(op) == np.matrix):
-            if op.shape == (3,3):
-                self.op = SymmOp.from_rotation_and_translation(op, [0,0,0])
+            if op.shape == (3, 3):
+                self.op = SymmOp.from_rotation_and_translation(op, [0, 0, 0])
                 self.m = self.op.rotation_matrix
                 self.det = np.linalg.det(op)
         else:
-            printx("Error: OperationAnalyzer requires a SymmOp or 3x3 array.", priority=1)
-        #If rotation matrix is not orthogonal
+            printx(
+                "Error: OperationAnalyzer requires a SymmOp or 3x3 array.", priority=1
+            )
+        # If rotation matrix is not orthogonal
         if not is_orthogonal(self.m):
             self.type = "general"
-            self.axis, self.angle, self.order, self.rotation_order = None, None, None, None
-        #If rotation matrix is orthogonal
+            self.axis, self.angle, self.order, self.rotation_order = (
+                None,
+                None,
+                None,
+                None,
+            )
+        # If rotation matrix is orthogonal
         else:
-            #If determinant is positive
+            # If determinant is positive
             if np.linalg.det(self.m) > 0:
                 self.inverted = False
                 rotvec = Rotation.from_matrix(self.m).as_rotvec()
@@ -695,7 +746,7 @@ class OperationAnalyzer(SymmOp):
                     self.angle = 0
                 else:
                     self.angle = np.linalg.norm(rotvec)
-                    self.axis = rotvec/self.angle
+                    self.axis = rotvec / self.angle
                 if np.isclose(self.angle, 0):
                     self.type = "identity"
                     """The type of operation. Is one of 'identity', 'inversion',
@@ -713,16 +764,16 @@ class OperationAnalyzer(SymmOp):
                     self.type = "rotation"
                     self.order = OperationAnalyzer.get_order(self.angle)
                     self.rotation_order = self.order
-            #If determinant is negative
-            elif np.linalg.det(self.m)< 0:
+            # If determinant is negative
+            elif np.linalg.det(self.m) < 0:
                 self.inverted = True
-                rotvec = Rotation.from_matrix(-1*self.m).as_rotvec()
+                rotvec = Rotation.from_matrix(-1 * self.m).as_rotvec()
                 if np.sum(rotvec.dot(rotvec)) < 1e-6:
                     self.axis = None
                     self.angle = 0
                 else:
                     self.angle = np.linalg.norm(rotvec)
-                    self.axis = rotvec/self.angle
+                    self.axis = rotvec / self.angle
 
                 if np.isclose(self.angle, 0):
                     self.type = "inversion"
@@ -731,28 +782,41 @@ class OperationAnalyzer(SymmOp):
                 else:
                     self.axis *= -1
                     self.type = "rotoinversion"
-                    self.order = OperationAnalyzer.get_order(self.angle, rotoinversion=True)
-                    self.rotation_order = OperationAnalyzer.get_order(self.angle, rotoinversion=False)
+                    self.order = OperationAnalyzer.get_order(
+                        self.angle, rotoinversion=True
+                    )
+                    self.rotation_order = OperationAnalyzer.get_order(
+                        self.angle, rotoinversion=False
+                    )
             elif np.linalg.det(self.m) == 0:
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
+
     def __str__(self):
         """
         A custom printing string for the object. The type, order, angle, and
         axis are printed. Converts values close to 0 to 0 for readability. Also
         only prints the real part of the axis.
         """
-        #Avoid printing '-0.' instead of '0.'
+        # Avoid printing '-0.' instead of '0.'
         if self.axis is not None:
             if len(self.axis) == 3:
                 for i, x in enumerate(self.axis):
                     if np.isclose(x, 0):
-                        self.axis[i] = 0.
-        return ("~~ Operation: "+self.op.as_xyz_string()+" ~~"+
-            "\nType: "+str(self.type)+
-            "\nOrder: "+str(self.order)+
-            "\nAngle: "+str(self.angle)+
-            "\nAxis: "+str(np.real(self.axis)) )
+                        self.axis[i] = 0.0
+        return (
+            "~~ Operation: "
+            + self.op.as_xyz_string()
+            + " ~~"
+            + "\nType: "
+            + str(self.type)
+            + "\nOrder: "
+            + str(self.order)
+            + "\nAngle: "
+            + str(self.angle)
+            + "\nAxis: "
+            + str(np.real(self.axis))
+        )
 
     def is_conjugate(self, op2):
         """
@@ -772,7 +836,7 @@ class OperationAnalyzer(SymmOp):
             if opa2.type == self.type:
                 if self.type == "rotation" or self.type == "rotoinversion":
                     ratio = self.angle / opa2.angle
-                    if np.isclose(np.fabs(ratio), 1., atol=1e-2):
+                    if np.isclose(np.fabs(ratio), 1.0, atol=1e-2):
                         return True
                 elif self.type == "identity" or self.type == "inversion":
                     return True
@@ -782,7 +846,7 @@ class OperationAnalyzer(SymmOp):
             if op2.type == self.type:
                 if self.type == "rotation" or self.type == "rotoinversion":
                     ratio = self.angle / op2.angle
-                    if np.isclose(ratio, 1., atol=1e-2):
+                    if np.isclose(ratio, 1.0, atol=1e-2):
                         return True
                 elif self.type == "identity" or self.type == "inversion":
                     return True
@@ -807,13 +871,16 @@ class OperationAnalyzer(SymmOp):
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
 
-        
-#Test Functionality
+
+# Test Functionality
 if __name__ == "__main__":
-#----------------------------------------------------
-    op = SymmOp.from_rotation_and_translation(Rotation.from_rotvec(pi/6*np.array([1,0,0])).as_matrix(), [0,0,0])
+    # ----------------------------------------------------
+    op = SymmOp.from_rotation_and_translation(
+        Rotation.from_rotvec(pi / 6 * np.array([1, 0, 0])).as_matrix(), [0, 0, 0]
+    )
     ops = [op]
     from pymatgen.symmetry.analyzer import generate_full_symmops
+
     symm_m = generate_full_symmops(ops, 1e-3)
     for op in symm_m:
         opa = OperationAnalyzer(op)

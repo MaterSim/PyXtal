@@ -6,6 +6,7 @@ from copy import deepcopy
 
 # External Libraries
 from pymatgen.core.structure import Structure  # , Molecule
+
 # from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 
 # PyXtal imports
@@ -16,6 +17,7 @@ from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
 from pyxtal.database.element import Element
+
 # from pyxtal.database.collection import Collection
 from pyxtal.wyckoff_site import mol_site, check_mol_sites
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
@@ -25,9 +27,12 @@ from pyxtal.symmetry import (
     jk_from_i,
 )
 from pyxtal.operations import (
-    apply_ops, check_images,
-    project_point, distance,
-    distance_matrix, filtered_coords,
+    apply_ops,
+    check_images,
+    project_point,
+    distance,
+    distance_matrix,
+    filtered_coords,
 )
 
 
@@ -160,7 +165,7 @@ def choose_wyckoff_molecular(group, number, orientations, general_site_only=True
             return False
 
 
-class molecular_crystal():
+class molecular_crystal:
     """
     Class for storing and generating molecular crystals based on symmetry
     constraints. Based on the crystal.random_crystal class for atomic crystals.
@@ -196,10 +201,21 @@ class molecular_crystal():
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, molecules, numMols, volume_factor,
-                 select_high=True, allow_inversion=False, orientations=None,
-                 check_atomic_distances=True, fmt="xyz", lattice=None,
-                 tm=Tol_matrix(prototype="molecular")):
+
+    def __init__(
+        self,
+        group,
+        molecules,
+        numMols,
+        volume_factor,
+        select_high=True,
+        allow_inversion=False,
+        orientations=None,
+        check_atomic_distances=True,
+        fmt="xyz",
+        lattice=None,
+        tm=Tol_matrix(prototype="molecular"),
+    ):
 
         self.dim = 3
         """The number of periodic dimensions of the crystal"""
@@ -210,14 +226,32 @@ class molecular_crystal():
             group = Group(group, self.dim)
         self.sg = group.number
         self.selec_high = select_high
-        self.init_common(molecules, numMols, volume_factor,
-                         select_high, allow_inversion,
-                         orientations, check_atomic_distances,
-                         group, lattice, tm)
+        self.init_common(
+            molecules,
+            numMols,
+            volume_factor,
+            select_high,
+            allow_inversion,
+            orientations,
+            check_atomic_distances,
+            group,
+            lattice,
+            tm,
+        )
 
-    def init_common(self, molecules, numMols, volume_factor,
-                    select_high, allow_inversion, orientations,
-                    check_atomic_distances, group, lattice, tm):
+    def init_common(
+        self,
+        molecules,
+        numMols,
+        volume_factor,
+        select_high,
+        allow_inversion,
+        orientations,
+        check_atomic_distances,
+        group,
+        lattice,
+        tm,
+    ):
         """
         init functionality which is shared by 3D, 2D, and 1D crystals
         """
@@ -286,7 +320,7 @@ class molecular_crystal():
             # Make sure the custom lattice PBC axes are correct.
             if lattice.PBC != self.PBC:
                 self.lattice.PBC = self.PBC
-                printx("\n  Warning: converting custom lattice PBC to "+str(self.PBC))
+                printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
         else:
             # Determine the unique axis
             if self.dim == 2:
@@ -317,18 +351,37 @@ class molecular_crystal():
 
             # The Lattice object used to generate lattice matrices
             if self.dim == 3 or self.dim == 0:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC,
-                                       unique_axis=unique_axis, min_l=max(minls),
-                                       mid_l=max(midls), max_l=max(maxls))
+                self.lattice = Lattice(
+                    self.group.lattice_type,
+                    self.volume,
+                    PBC=self.PBC,
+                    unique_axis=unique_axis,
+                    min_l=max(minls),
+                    mid_l=max(midls),
+                    max_l=max(maxls),
+                )
             elif self.dim == 2:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC,
-                                       unique_axis=unique_axis, min_l=max(minls),
-                                       mid_l=max(midls), max_l=max(maxls),
-                                       thickness=self.thickness)
+                self.lattice = Lattice(
+                    self.group.lattice_type,
+                    self.volume,
+                    PBC=self.PBC,
+                    unique_axis=unique_axis,
+                    min_l=max(minls),
+                    mid_l=max(midls),
+                    max_l=max(maxls),
+                    thickness=self.thickness,
+                )
             elif self.dim == 1:
-                self.lattice = Lattice(self.group.lattice_type, self.volume, PBC=self.PBC,
-                                       unique_axis=unique_axis, min_l=max(minls),
-                                       mid_l=max(midls), max_l=max(maxls), area=self.area)
+                self.lattice = Lattice(
+                    self.group.lattice_type,
+                    self.volume,
+                    PBC=self.PBC,
+                    unique_axis=unique_axis,
+                    min_l=max(minls),
+                    mid_l=max(midls),
+                    max_l=max(maxls),
+                    area=self.area,
+                )
 
         self.generate_crystal()
 
@@ -341,17 +394,19 @@ class molecular_crystal():
         """
         volume = 0
         for numMol, mol in zip(self.numMols, self.molecules):
-            volume += numMol*mol.volume
-        return abs(self.factor*volume)
+            volume += numMol * mol.volume
+        return abs(self.factor * volume)
 
     def Msgs(self):
-        self.Msg1 = 'Error: the stoichiometry is incompatible with the wyckoff sites choice'
-        self.Msg2 = 'Error: failed in the cycle of generating structures'
-        self.Msg3 = 'Warning: failed in the cycle of adding species'
-        self.Msg4 = 'Warning: failed in the cycle of choosing wyckoff sites'
-        self.Msg5 = 'Finishing: added the specie'
-        self.Msg6 = 'Finishing: added the whole structure'
-        self.Msg7 = 'Error: invalid paramaters for initialization'
+        self.Msg1 = (
+            "Error: the stoichiometry is incompatible with the wyckoff sites choice"
+        )
+        self.Msg2 = "Error: failed in the cycle of generating structures"
+        self.Msg3 = "Warning: failed in the cycle of adding species"
+        self.Msg4 = "Warning: failed in the cycle of choosing wyckoff sites"
+        self.Msg5 = "Finishing: added the specie"
+        self.Msg6 = "Finishing: added the whole structure"
+        self.Msg7 = "Error: invalid paramaters for initialization"
 
     def get_orientations(self):
         """
@@ -378,7 +433,7 @@ class molecular_crystal():
                         pyxtal_mol.mol,
                         wp,
                         already_oriented=True,
-                        allow_inversion=self.allow_inversion
+                        allow_inversion=self.allow_inversion,
                     )
 
                     if allowed is not False:
@@ -435,7 +490,7 @@ class molecular_crystal():
             # Create pointer variable to move through lists
             p = 0
             # Store the number of each WP, used across possible WP combinations
-            n0 = [0]*len(l_mult)
+            n0 = [0] * len(l_mult)
             n = deepcopy(n0)
             for i, mult in enumerate(l_mult):
                 if l_maxn[i] != 0:
@@ -518,7 +573,7 @@ class molecular_crystal():
             # If it does, add a new number to end of filename
             if os.path.exists(filename):
                 if given is False:
-                    filename = filename[:(-len(fmt)-1)]
+                    filename = filename[: (-len(fmt) - 1)]
                 i = 1
                 while True:
                     outdir = filename + "_" + str(i)
@@ -570,11 +625,15 @@ class molecular_crystal():
         """
         atomic = self.check_atomic_distances
         # Check the minimum number of degrees of freedom within the Wyckoff positions
-        degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
+        degrees = self.check_compatible(
+            self.group, self.numMols, self.valid_orientations
+        )
         if degrees is False:
             self.struct = None
             self.valid = False
-            raise ValueError("the space group is incompatible with the number of molecules")
+            raise ValueError(
+                "the space group is incompatible with the number of molecules"
+            )
             # return
         else:
             if degrees == 0:
@@ -586,7 +645,9 @@ class molecular_crystal():
             all_lengths = []
             for mol in self.molecules:
                 all_lengths.append(mol.box.minl)
-            minvector = max(all_lengths) * 1.2  # Require slightly larger min vector for lattices
+            minvector = (
+                max(all_lengths) * 1.2
+            )  # Require slightly larger min vector for lattices
 
             for cycle1 in range(max1):
                 self.cycle1 = cycle1
@@ -599,11 +660,11 @@ class molecular_crystal():
 
                 for cycle2 in range(max2):
                     molecular_coordinates_total = []  # added molecular coordinates
-                    molecular_sites_total = []       # corresponding molecular specie
+                    molecular_sites_total = []  # corresponding molecular specie
                     coordinates_total = []  # added atomic coordinates
                     species_total = []  # corresponding atomic specie
-                    wps_total = []      # corresponding Wyckoff position indices
-                    points_total = []   # generating x,y,z points
+                    wps_total = []  # corresponding Wyckoff position indices
+                    points_total = []  # generating x,y,z points
                     mol_sites_total = []
                     good_structure = False
 
@@ -634,35 +695,46 @@ class molecular_crystal():
                             self.numattempts += 1
                             # Choose a random WP for given multiplicity: 2a, 2b, 2c
                             # NOTE: The molecular version return wyckoff indices, not ops
-                            wp = choose_wyckoff_molecular(self.group, numMol-numMol_added,
-                                                          valid_ori, self.select_high)
+                            wp = choose_wyckoff_molecular(
+                                self.group,
+                                numMol - numMol_added,
+                                valid_ori,
+                                self.select_high,
+                            )
                             if wp is not False:
                                 # Generate a list of coords from the wyckoff position
                                 point = self.lattice.generate_point()
                                 projected_point = project_point(
-                                    point,
-                                    wp[0],
-                                    lattice=cell_matrix,
-                                    PBC=self.PBC
+                                    point, wp[0], lattice=cell_matrix, PBC=self.PBC
                                 )
 
                                 coords = apply_ops(projected_point, wp)
                                 # merge coordinates if the atoms are close
                                 if self.check_atomic_distances:
-                                    mtol = radius*0.5
+                                    mtol = radius * 0.5
                                 else:
-                                    mtol = radius*2
+                                    mtol = radius * 2
 
-                                coords_toadd, good_merge, point = merge_coordinate_molecular(
+                                (
+                                    coords_toadd,
+                                    good_merge,
+                                    point,
+                                ) = merge_coordinate_molecular(
                                     coords, cell_matrix, self.group, mtol, valid_ori
                                 )
                                 if good_merge is not False:
                                     wp_index = good_merge
                                     # scale the coordinates to [0,1], very important!
-                                    coords_toadd = filtered_coords(coords_toadd, PBC=self.PBC)
+                                    coords_toadd = filtered_coords(
+                                        coords_toadd, PBC=self.PBC
+                                    )
 
-                                    j, k = jk_from_i(wp_index, self.group.wyckoffs_organized)
-                                    ori = random.choice(valid_ori[j][k]).random_orientation()
+                                    j, k = jk_from_i(
+                                        wp_index, self.group.wyckoffs_organized
+                                    )
+                                    ori = random.choice(
+                                        valid_ori[j][k]
+                                    ).random_orientation()
                                     ms0 = mol_site(
                                         mol,
                                         point,
@@ -671,7 +743,7 @@ class molecular_crystal():
                                         self.group[wp_index],
                                         cell_matrix,
                                         tols_mat,
-                                        radius
+                                        radius,
                                     )
                                     # Check distances within the WP
 
@@ -683,9 +755,16 @@ class molecular_crystal():
                                             # bisection method
                                             def fun_dist(angle, ori, mo, point):
                                                 ori.change_orientation(angle)
-                                                ms0 = mol_site(mo, point, symbols, ori,
-                                                               self.group[wp_index],
-                                                               cell_matrix, tols_mat, radius)
+                                                ms0 = mol_site(
+                                                    mo,
+                                                    point,
+                                                    symbols,
+                                                    ori,
+                                                    self.group[wp_index],
+                                                    cell_matrix,
+                                                    tols_mat,
+                                                    radius,
+                                                )
                                                 d = ms0.compute_distances()
                                                 return d
 
@@ -695,10 +774,12 @@ class molecular_crystal():
                                             fun_hi = fun_dist(angle_hi, ori, mol, point)
                                             fun = fun_hi
                                             for it in range(max4):
-                                                if (fun > 0.8) & (ms0.check_distances(atomic)):
+                                                if (fun > 0.8) & (
+                                                    ms0.check_distances(atomic)
+                                                ):
                                                     passed_ori = True
                                                     break
-                                                angle = (angle_lo + angle_hi)/2
+                                                angle = (angle_lo + angle_hi) / 2
                                                 fun = fun_dist(angle, ori, mol, point)
                                                 # print('Bisection: ', it, fun)
                                                 if fun_lo > fun_hi:
@@ -711,10 +792,15 @@ class molecular_crystal():
                                         continue
 
                                     # Check distances with other WP's
-                                    coords_toadd, species_toadd = ms0.get_coords_and_species()
+                                    (
+                                        coords_toadd,
+                                        species_toadd,
+                                    ) = ms0.get_coords_and_species()
                                     passed = True
                                     for ms1 in mol_sites_tmp:
-                                        if not check_mol_sites(ms0, ms1, atomic, tm=self.tol_matrix):
+                                        if not check_mol_sites(
+                                            ms0, ms1, atomic, tm=self.tol_matrix
+                                        ):
                                             passed = False
                                             break
                                     if not passed:
@@ -725,13 +811,17 @@ class molecular_crystal():
                                         if len(coordinates_tmp) == 0:
                                             coordinates_tmp = coords_toadd
                                         else:
-                                            coordinates_tmp = np.vstack([coordinates_tmp, coords_toadd])
+                                            coordinates_tmp = np.vstack(
+                                                [coordinates_tmp, coords_toadd]
+                                            )
                                         species_tmp += species_toadd
-                                        numMol_added += len(coords_toadd)/len(symbols)
+                                        numMol_added += len(coords_toadd) / len(symbols)
                                         if numMol_added == numMol:
                                             # We have enough molecules of the current type
                                             mol_sites_total = deepcopy(mol_sites_tmp)
-                                            coordinates_total = deepcopy(coordinates_tmp)
+                                            coordinates_total = deepcopy(
+                                                coordinates_tmp
+                                            )
                                             species_total = deepcopy(species_tmp)
                                             break
 
@@ -826,10 +916,22 @@ class molecular_crystal_2D(molecular_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, molecules, numMols, volume_factor, select_high=True,
-                 allow_inversion=True, orientations=None, check_atomic_distances=True,
-                 fmt='xyz', thickness=None, lattice=None,
-                 tm=Tol_matrix(prototype="molecular")):
+
+    def __init__(
+        self,
+        group,
+        molecules,
+        numMols,
+        volume_factor,
+        select_high=True,
+        allow_inversion=True,
+        orientations=None,
+        check_atomic_distances=True,
+        fmt="xyz",
+        thickness=None,
+        lattice=None,
+        tm=Tol_matrix(prototype="molecular"),
+    ):
 
         self.dim = 2
         self.numattempts = 0
@@ -838,9 +940,19 @@ class molecular_crystal_2D(molecular_crystal):
         number = group.number  # The layer group number of the crystal."""
         self.thickness = thickness  # the thickness in Angstroms
         self.PBC = [1, 1, 0]
-        self.init_common(molecules, numMols, volume_factor, select_high,
-                         allow_inversion, orientations, check_atomic_distances,
-                         group, lattice, tm)
+        self.init_common(
+            molecules,
+            numMols,
+            volume_factor,
+            select_high,
+            allow_inversion,
+            orientations,
+            check_atomic_distances,
+            group,
+            lattice,
+            tm,
+        )
+
 
 class molecular_crystal_1D(molecular_crystal):
     """
@@ -882,13 +994,36 @@ class molecular_crystal_1D(molecular_crystal):
         lattice: an optional Lattice object to use for the unit cell
         tm: the Tol_matrix object used to generate the crystal
     """
-    def __init__(self, group, molecules, numMols, volume_factor, select_high=True,
-                 allow_inversion=False, orientations=None, check_atomic_distances=True,
-                 fmt='xyz', area=None, lattice=None, tm=Tol_matrix(prototype="molecular")):
+
+    def __init__(
+        self,
+        group,
+        molecules,
+        numMols,
+        volume_factor,
+        select_high=True,
+        allow_inversion=False,
+        orientations=None,
+        check_atomic_distances=True,
+        fmt="xyz",
+        area=None,
+        lattice=None,
+        tm=Tol_matrix(prototype="molecular"),
+    ):
         self.dim = 1
         self.area = area  # the effective cross-sectional area in A^2
         self.PBC = [0, 0, 1]  # The periodic axes of the crystal (1,2,3)->(x,y,z)
         self.sg = None  # The international space group number, not rod groups
-        self.init_common(molecules, numMols, volume_factor, select_high,
-                         allow_inversion, orientations, check_atomic_distances,
-                         group, lattice, tm)
+        self.init_common(
+            molecules,
+            numMols,
+            volume_factor,
+            select_high,
+            allow_inversion,
+            orientations,
+            check_atomic_distances,
+            group,
+            lattice,
+            tm,
+        )
+
