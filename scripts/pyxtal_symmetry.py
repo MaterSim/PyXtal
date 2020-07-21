@@ -6,12 +6,23 @@ from pyxtal.symmetry import Group, list_groups
 from optparse import OptionParser
 
 if __name__ == "__main__":
-    #-------------------------------- Options -------------------------
+    # -------------------------------- Options -------------------------
     parser = OptionParser()
-    parser.add_option("-s", "--symmetry", dest="sg", type=str,
-            help="desired symmetry, number or string, e.g., 36, Pbca, Ih. if None, show all list of available groups")
-    parser.add_option("-d", "--dimension", dest="dimension", default=3, type=int,
-            help="desired dimension: (3, 2, 1, 0): default 3")
+    parser.add_option(
+        "-s",
+        "--symmetry",
+        dest="sg",
+        type=str,
+        help="desired symmetry, number or string, e.g., 36, Pbca, Ih. if None, show all list of available groups",
+    )
+    parser.add_option(
+        "-d",
+        "--dimension",
+        dest="dimension",
+        default=3,
+        type=int,
+        help="desired dimension: (3, 2, 1, 0): default 3",
+    )
 
     print_logo()
     (options, args) = parser.parse_args()

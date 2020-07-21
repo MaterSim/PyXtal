@@ -350,9 +350,7 @@ def test_atomic():
 def test_molecular():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of molecular 3D crystals. This may take some time. ==="
-    )
+    print("=== Testing generation of molecular 3D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
     from pyxtal.symmetry import get_wyckoffs
@@ -527,9 +525,7 @@ def test_atomic_2D():
 def test_molecular_2D():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of molecular 2D crystals. This may take some time. ==="
-    )
+    print("=== Testing generation of molecular 2D crystals. This may take some time. ===")
     from time import time
     from pyxtal.symmetry import Group
     from pyxtal.molecular_crystal import molecular_crystal_2D
@@ -679,9 +675,7 @@ def test_atomic_1D():
 def test_molecular_1D():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of molecular 1D crystals. This may take some time. ==="
-    )
+    print("=== Testing generation of molecular 1D crystals. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
     from pyxtal.symmetry import get_rod
@@ -770,9 +764,7 @@ def test_molecular_1D():
 def test_cluster():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of point group clusters. This may take some time. ==="
-    )
+    print("=== Testing generation of point group clusters. This may take some time. ===")
     from time import time
     from spglib import get_symmetry_dataset
     from pyxtal.symmetry import Group
