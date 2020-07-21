@@ -18,7 +18,7 @@ def angle(a, b):
 
 
 class crystal(object):
-    """a class of crystal structure. 
+    """a class of crystal structure.
     Attributes:
         cell_para: a,b,c, alpha, beta, gamma
         cell_matrix: 3*3 matrix
@@ -62,7 +62,7 @@ class crystal(object):
 
         # Now the lattice vectors
         a = []
-        for ii in range(3):
+        for i in range(3):
             s = f.readline().split()
             floatvect = float(s[0]), float(s[1]), float(s[2])
             a.append(floatvect)
@@ -351,7 +351,7 @@ class cif(object):
 
 
 class XRD(object):
-    """a class of crystal structure. 
+    """a class of crystal structure.
     Attributes:
         cell_para: a,b,c, alpha, beta, gamma
         cell_matrix: 3*3 matrix
@@ -666,4 +666,3 @@ if __name__ == "__main__":
     print(tabulate(df, headers="keys"))  # , tablefmt='psql'))
     if options.plot is not None:
         xrd.plot_pxrd(filename=options.plot, minimum_I=options.minimum_I)
-
