@@ -1348,7 +1348,7 @@ class Wyckoff_position():
         """
         wp = Wyckoff_position()
         wp.dim = dim
-        if type(group) == int:
+        if np.issubdtype(group, np.integer):
             wp.number = group
             number = group
         else:
@@ -1356,7 +1356,7 @@ class Wyckoff_position():
             printx("Error: must use an integer group number.", priority=1)
             return
         use_letter = False
-        if type(index) == int:
+        if np.issubdtype(index, np.integer):
             wp.index = index
         elif type(index) == str:
             use_letter = True
@@ -1780,7 +1780,7 @@ class Group():
                 if group in pglist:
                     group = pglist.index(group) + 1
             #Get crystallographic point group
-            if type(group) == int or type(group) == float:
+            if np.issubdtype(group, np.number):
                 if number in range(1, 57):
 
                     self.symbol = pglist[number-1]
@@ -2103,7 +2103,7 @@ class Group():
 
         Returns: a Hermann-Mauguin style string for the site symmetry
         """
-        if type(index) == int:
+        if np.issubdtype(index, np.integer):
             pass
         elif type(index) == str:
             #Extract letter from number-letter combinations ("4d"->"d")
@@ -2192,7 +2192,7 @@ def get_symbol_and_number(group, dim=3):
     if dim not in [0, 1, 2, 3]:
         raise ValueError('Dimension ({:d}) should in [0, 1, 2, 3] '.format(dim))
 
-    if type(group) == int:
+    if np.issubdtype(group, np.integer):
         if 0 < group < len(lists) + 1:
             number = group
             symbol = lists[number-1]
@@ -2207,7 +2207,7 @@ def get_symbol_and_number(group, dim=3):
                 found = True
                 break
         if not found:
-             raise ValueError('group ({:s}) not found for any of {:d} {:s}s'.\
+             raise ValueError('group ({:s}) not found for any of {:d} {:s}'.\
                             format(group, len(lists), keys[dim]))
     return symbol, number
 
