@@ -433,6 +433,7 @@ class random_crystal():
 
     def __str__(self):
         s = "------Random Crystal------"
+        s += "\nComposition: {}".format(self.struct.formula)
         s += "\nDimension: {}".format(self.dim)
         s += "\nGroup: {} ({})".format(self.group.symbol, self.group.number)
         s += "\nVolume factor: {}".format(self.factor)
