@@ -4,7 +4,7 @@ import numpy as np
 from structure import *
 from ast import literal_eval as eval
 
-'''mylist = [None]
+"""mylist = [None]
 print("Adding space group:")
 for sg in range(1, 231):
     print(sg)
@@ -24,9 +24,11 @@ for sg in range(1, 231):
                 mylist[-1][-1].append(oplist)
 print(len(mylist))
 df = pd.DataFrame(data=mylist)
-df.to_csv("wyckoff_symmetry.csv")'''
+df.to_csv("wyckoff_symmetry.csv")"""
 
 wyckoff_df = pd.read_csv("wyckoff_list.csv")
+
+
 def get_wyckoffs(sg):
     wyckoff_strings = eval(wyckoff_df["0"][sg])
     wyckoffs = []
@@ -36,8 +38,6 @@ def get_wyckoffs(sg):
             wyckoffs[-1].append(SymmOp.from_xyz_string(y))
     return wyckoffs
 
-
-    
 
 print(type(get_wyckoffs(2)[0][0]))
 print(get_wyckoffs(2))

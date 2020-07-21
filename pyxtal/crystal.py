@@ -535,15 +535,14 @@ class random_crystal:
 
                 # Check that the correct volume was generated
                 if self.lattice.random is True:
-                    if (
-                        self.dim != 0
-                        and abs(self.volume - self.lattice.volume) > 1.0
-                    ):
+                    if self.dim != 0 and abs(self.volume - self.lattice.volume) > 1.0:
                         printx(
                             (
                                 "Error, volume is not equal to the estimated value: "
                                 "{} -> {} cell_para: {}"
-                            ).format(self.volume, self.lattice.volume, self.lattice.get_para),
+                            ).format(
+                                self.volume, self.lattice.volume, self.lattice.get_para
+                            ),
                             priority=0,
                         )
                         self.valid = False
