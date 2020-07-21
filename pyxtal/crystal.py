@@ -265,8 +265,7 @@ class random_crystal:
         for num in numIons:
             if int(num) != num or num < 1:
                 printx(
-                    "Error: stoichiometry must consist of positive integers.",
-                    priority=1,
+                    "Error: stoichiometry must consist of positive integers.", priority=1,
                 )
                 return False
         if type(group) == Group:
@@ -507,185 +506,170 @@ class random_crystal:
             self.struct = None
             self.valid = False
             return
-        else:
-            if degrees == 0:
-                max1 = 5
-                max2 = 5
-                max3 = 5
 
-            # Calculate a minimum vector length for generating a lattice
-            # NOTE Comprhys: minvector never used?
-            minvector = max(self.tol_matrix.get_tol(s, s) for s in self.species)
-            for cycle1 in range(max1):
-                self.cycle1 = cycle1
+        if degrees == 0:
+            max1 = 5
+            max2 = 5
+            max3 = 5
 
-                # 1, Generate a lattice
-                if self.lattice.allow_volume_reset is True:
-                    self.volume = self.estimate_volume()
-                    self.lattice.volume = self.volume
-                self.lattice.reset_matrix()
+        # Calculate a minimum vector length for generating a lattice
+        # NOTE Comprhys: minvector never used?
+        minvector = max(self.tol_matrix.get_tol(s, s) for s in self.species)
+        for cycle1 in range(max1):
+            self.cycle1 = cycle1
 
-                try:
-                    cell_matrix = self.lattice.get_matrix()
-                    if cell_matrix is None:
-                        continue
-                # TODO remove bare except
-                except:
+            # 1, Generate a lattice
+            if self.lattice.allow_volume_reset is True:
+                self.volume = self.estimate_volume()
+                self.lattice.volume = self.volume
+            self.lattice.reset_matrix()
+
+            try:
+                cell_matrix = self.lattice.get_matrix()
+                if cell_matrix is None:
                     continue
+            # TODO remove bare except
+            except:
+                continue
 
-                # Check that the correct volume was generated
-                if self.lattice.random is True:
-                    if self.dim != 0 and abs(self.volume - self.lattice.volume) > 1.0:
-                        printx(
-                            (
-                                "Error, volume is not equal to the estimated value: "
-                                "{} -> {} cell_para: {}"
-                            ).format(
-                                self.volume, self.lattice.volume, self.lattice.get_para
-                            ),
-                            priority=0,
-                        )
-                        self.valid = False
-                        self.struct = None
-                        return
+            # Check that the correct volume was generated
+            if self.lattice.random is True:
+                if self.dim != 0 and abs(self.volume - self.lattice.volume) > 1.0:
+                    printx(
+                        (
+                            "Error, volume is not equal to the estimated value: "
+                            "{} -> {} cell_para: {}"
+                        ).format(self.volume, self.lattice.volume, self.lattice.get_para),
+                        priority=0,
+                    )
+                    self.valid = False
+                    self.struct = None
+                    return
 
-                good_structure = False
+            good_structure = False
 
-                # to try to generate atomic coordinates
-                for cycle2 in range(max2):
+            # to try to generate atomic coordinates
+            for cycle2 in range(max2):
 
-                    coordinates_total = []  # to store the added coordinates
-                    sites_total = []  # to store the corresponding specie
-                    wyckoff_sites_total = []
-                    self.cycle2 = cycle2
-                    coordinates_tmp = deepcopy(coordinates_total)
-                    sites_tmp = deepcopy(sites_total)
-                    wyckoff_sites_tmp = deepcopy(wyckoff_sites_total)
+                coordinates_total = []  # to store the added coordinates
+                sites_total = []  # to store the corresponding specie
+                wyckoff_sites_total = []
+                self.cycle2 = cycle2
+                coordinates_tmp = deepcopy(coordinates_total)
+                sites_tmp = deepcopy(sites_total)
+                wyckoff_sites_tmp = deepcopy(wyckoff_sites_total)
 
-                    # Add specie by specie
-                    for numIon, specie in zip(self.numIons, self.species):
-                        numIon_added = 0
-                        tol = self.tol_matrix.get_tol(specie, specie)
+                # Add specie by specie
+                for numIon, specie in zip(self.numIons, self.species):
+                    numIon_added = 0
+                    tol = self.tol_matrix.get_tol(specie, specie)
 
-                        # Now we start to add the specie to the wyckoff position
-                        cycle3 = 0
-                        while cycle3 < max3:
-                            self.cycle3 = cycle3
-                            # Choose a random WP for given multiplicity: 2a, 2b
-                            # QZ: to choose the WP from a given list?
-                            ops = choose_wyckoff(self.group, numIon - numIon_added)
+                    # Now we start to add the specie to the wyckoff position
+                    cycle3 = 0
+                    while cycle3 < max3:
+                        self.cycle3 = cycle3
+                        # Choose a random WP for given multiplicity: 2a, 2b
+                        # QZ: to choose the WP from a given list?
+                        ops = choose_wyckoff(self.group, numIon - numIon_added)
 
-                            if ops is not False:
-                                # Generate a list of coords from ops
-                                pt = self.lattice.generate_point()
-                                proj_pt = project_point(
-                                    pt, ops[0], cell_matrix, self.PBC
-                                )
-                                coords = apply_ops(proj_pt, ops)
+                        if ops is not False:
+                            # Generate a list of coords from ops
+                            pt = self.lattice.generate_point()
+                            proj_pt = project_point(pt, ops[0], cell_matrix, self.PBC)
+                            coords = apply_ops(proj_pt, ops)
 
-                                # Merge coordinates if the atoms are close
-                                coords_toadd, wp_index, pt = merge_coordinate(
-                                    coords, cell_matrix, self.group, tol
-                                )
+                            # Merge coordinates if the atoms are close
+                            coords_toadd, wp_index, pt = merge_coordinate(
+                                coords, cell_matrix, self.group, tol
+                            )
 
-                                if wp_index is not False:
-                                    # Use a Wyckoff_site object for the current site
-                                    current_site = atom_site(
-                                        self.group[wp_index], pt, specie
-                                    )
+                            if wp_index is not False:
+                                # Use a Wyckoff_site object for the current site
+                                current_site = atom_site(self.group[wp_index], pt, specie)
 
-                                    # Check current WP against existing WP's
-                                    passed_wp_check = True
-                                    for ws in wyckoff_sites_tmp:
-                                        if not check_atom_sites(
-                                            current_site,
-                                            ws,
-                                            cell_matrix,
-                                            self.tol_matrix,
-                                        ):
-                                            passed_wp_check = False
+                                # Check current WP against existing WP's
+                                passed_wp_check = True
+                                for ws in wyckoff_sites_tmp:
+                                    if not check_atom_sites(
+                                        current_site, ws, cell_matrix, self.tol_matrix,
+                                    ):
+                                        passed_wp_check = False
 
-                                    if passed_wp_check is True:
-                                        # The current Wyckoff site passed; store it
-                                        if coordinates_tmp == []:
-                                            coordinates_tmp = current_site.coords
-                                        else:
-                                            coordinates_tmp = np.vstack(
-                                                [coordinates_tmp, current_site.coords]
-                                            )
-                                        sites_tmp += [specie] * len(coords_toadd)
-                                        wyckoff_sites_tmp.append(current_site)
-                                        numIon_added += len(coords_toadd)
-
-                                        # Check if enough atoms have been added
-                                        if numIon_added == numIon:
-                                            coordinates_total = deepcopy(
-                                                coordinates_tmp
-                                            )
-                                            sites_total = deepcopy(sites_tmp)
-                                            wyckoff_sites_total = deepcopy(
-                                                wyckoff_sites_tmp
-                                            )
-                                            break
+                                if passed_wp_check is True:
+                                    # The current Wyckoff site passed; store it
+                                    if coordinates_tmp == []:
+                                        coordinates_tmp = current_site.coords
                                     else:
-                                        cycle3 += 1
-                                        self.numattempts += 1
+                                        coordinates_tmp = np.vstack(
+                                            [coordinates_tmp, current_site.coords]
+                                        )
+                                    sites_tmp += [specie] * len(coords_toadd)
+                                    wyckoff_sites_tmp.append(current_site)
+                                    numIon_added += len(coords_toadd)
+
+                                    # Check if enough atoms have been added
+                                    if numIon_added == numIon:
+                                        coordinates_total = deepcopy(coordinates_tmp)
+                                        sites_total = deepcopy(sites_tmp)
+                                        wyckoff_sites_total = deepcopy(wyckoff_sites_tmp)
+                                        break
                                 else:
                                     cycle3 += 1
                                     self.numattempts += 1
                             else:
                                 cycle3 += 1
                                 self.numattempts += 1
+                        else:
+                            cycle3 += 1
+                            self.numattempts += 1
 
-                        if numIon_added != numIon:
-                            coordinates_total = []
-                            sites_total = []
-                            wyckoff_sites_total = []
-                            break  # need to repeat from the 1st species
-
-                    if numIon_added == numIon:
-                        good_structure = True
-                        break
-                    else:  # reset the coordinates and sites
+                    if numIon_added != numIon:
                         coordinates_total = []
                         sites_total = []
+                        wyckoff_sites_total = []
+                        break  # need to repeat from the 1st species
 
-                if good_structure:
-                    final_coor = []
-                    final_site = []
-                    final_number = []
-                    final_lattice = cell_matrix
-                    for coor, ele in zip(coordinates_total, sites_total):
-                        final_coor.append(coor)
-                        final_site.append(ele)
-                        final_number.append(Element(ele).z)
-                    final_coor = np.array(final_coor)
-                    cart_coords = np.dot(final_coor, final_lattice)
+                if numIon_added == numIon:
+                    good_structure = True
+                    break
+                else:  # reset the coordinates and sites
+                    coordinates_total = []
+                    sites_total = []
 
-                    if self.dim != 0:
-                        final_lattice, final_coor = add_vacuum(
-                            final_lattice, final_coor, PBC=self.PBC
-                        )
-                        self.struct = Structure(final_lattice, final_site, final_coor)
-                        self.spg_struct = (final_lattice, final_coor, final_number)
-                    else:
-                        self.species = final_site
-                        self.molecule = Molecule(final_site, cart_coords)
-                        # Calculate binding box
-                        diffs = (
-                            np.max(cart_coords, axis=0)
-                            - np.min(cart_coords, axis=0)
-                            + 10
-                        )
-                        a, b, c = diffs[0], diffs[1], diffs[2]
-                        self.struct = self.molecule.get_boxed_structure(a, b, c)
-                    self.sites = final_site
-                    self.frac_coords = final_coor
-                    self.cart_coords = np.dot(final_coor, final_lattice)
-                    self.lattice_matrix = final_lattice
-                    self.wyckoff_sites = wyckoff_sites_total
-                    self.valid = True
-                    return
+            if good_structure:
+                final_coor = []
+                final_site = []
+                final_number = []
+                final_lattice = cell_matrix
+                for coor, ele in zip(coordinates_total, sites_total):
+                    final_coor.append(coor)
+                    final_site.append(ele)
+                    final_number.append(Element(ele).z)
+                final_coor = np.array(final_coor)
+                cart_coords = np.dot(final_coor, final_lattice)
+
+                if self.dim != 0:
+                    final_lattice, final_coor = add_vacuum(
+                        final_lattice, final_coor, PBC=self.PBC
+                    )
+                    self.struct = Structure(final_lattice, final_site, final_coor)
+                    self.spg_struct = (final_lattice, final_coor, final_number)
+                else:
+                    self.species = final_site
+                    self.molecule = Molecule(final_site, cart_coords)
+                    # Calculate binding box
+                    diffs = np.max(cart_coords, axis=0) - np.min(cart_coords, axis=0) + 10
+                    a, b, c = diffs[0], diffs[1], diffs[2]
+                    self.struct = self.molecule.get_boxed_structure(a, b, c)
+
+                self.sites = final_site
+                self.frac_coords = final_coor
+                self.cart_coords = np.dot(final_coor, final_lattice)
+                self.lattice_matrix = final_lattice
+                self.wyckoff_sites = wyckoff_sites_total
+                self.valid = True
+                return
+
         if degrees == 0:
             printx("Wyckoff positions have no degrees of freedom.", priority=2)
 
@@ -771,9 +755,7 @@ class random_crystal_1D(random_crystal):
         self.dim = 1
         self.PBC = [0, 0, 1]
         self.sg = None
-        self.area = (
-            area  # the effective cross-sectional area, in A^2, of the unit cell.
-        )
+        self.area = area  # the effective cross-sectional area, in A^2, of the unit cell.
         self.init_common(species, numIons, factor, group, lattice, tm)
 
 
