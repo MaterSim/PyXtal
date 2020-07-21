@@ -537,16 +537,13 @@ class random_crystal:
                 if self.lattice.random is True:
                     if (
                         self.dim != 0
-                        and abs(self.volume - np.linalg.det(cell_matrix)) > 1.0
+                        and abs(self.volume - self.lattice.volume) > 1.0
                     ):
-                        cell_det = np.linalg.det(cell_matrix)
-                        # TODO Comprhys: matrix2para not defined - from XRD class?
-                        mat2para = matrix2para(cell_matrix)
                         printx(
                             (
                                 "Error, volume is not equal to the estimated value: "
                                 "{} -> {} cell_para: {}"
-                            ).format(self.volume, cell_det, mat2para),
+                            ).format(self.volume, self.lattice.volume, self.lattice.get_para),
                             priority=0,
                         )
                         self.valid = False
