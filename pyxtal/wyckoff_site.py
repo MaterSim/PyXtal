@@ -10,7 +10,7 @@ from scipy.spatial.transform import Rotation as R
 from pyxtal.database.element import Element
 
 
-class mol_site():
+class mol_site:
     """
     Class for storing molecular Wyckoff positions and orientations within
     the molecular_crystal class. Each mol_site object represenents an
@@ -26,8 +26,19 @@ class mol_site():
         ellipsoid: an optional binding Ellipsoid object for checking distances.
         tm: a Tol_matrix object for distance checking
     """
-    def __init__(self, mol, position, symbols, orientation, wyckoff_position, 
-                 lattice, tols_matrix, radius, ellipsoid=None):
+
+    def __init__(
+        self,
+        mol,
+        position,
+        symbols,
+        orientation,
+        wyckoff_position,
+        lattice,
+        tols_matrix,
+        radius,
+        ellipsoid=None,
+    ):
         self.mol = mol
         """A Pymatgen molecule object"""
         self.position = wyckoff_position[0].operate(position)
@@ -52,15 +63,19 @@ class mol_site():
 
     def __str__(self):
 
-        if not hasattr(self, 'site_symm'):
-            self.site_symm = site_symm(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+        if not hasattr(self, "site_symm"):
+            self.site_symm = site_symm(
+                self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
+            )
             self.rotvec = self.orientation.r.as_rotvec()
         pos = self.position
-        s = str(self.mol.formula)+": "
+        s = str(self.mol.formula) + ": "
         s += "[{:6.3f} {:6.3f} {:6.3f}]  ".format(pos[0], pos[1], pos[2])
         s += "Wyckoff letter: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Rotvec: ".format(self.site_symm)
-        s += "{:6.3f} {:6.3f} {:6.3f}".format(self.rotvec[0], self.rotvec[1], self.rotvec[2])
+        s += "{:6.3f} {:6.3f} {:6.3f}".format(
+            self.rotvec[0], self.rotvec[1], self.rotvec[2]
+        )
         return s
 
     def get_ellipsoid(self):
@@ -93,10 +108,12 @@ class mol_site():
         e1 = self.get_ellipsoid()
         es = np.dot(self.wp.generators_m, e1)
         # Add centers to ellipsoids
-        center_ops = [SymmOp.from_rotation_and_translation(Euclidean_lattice, c) for c in centers1]
+        center_ops = [
+            SymmOp.from_rotation_and_translation(Euclidean_lattice, c) for c in centers1
+        ]
         es_final = []
         for e, c in zip(es, center_ops):
-            es_final.append(e*c)
+            es_final.append(e * c)
         return np.array(es_final)
 
     def _get_coords_and_species(self, absolute=False, add_PBC=False, first=False):
@@ -114,7 +131,7 @@ class mol_site():
             atomic coords: a numpy array of fractional coordinates for the atoms in the site
             species: a list of atomic species for the atomic coords
         """
-        coord0 = self.coord0.dot(self.orientation.matrix.T) #
+        coord0 = self.coord0.dot(self.orientation.matrix.T)  #
         wp_atomic_sites = []
         wp_atomic_coords = None
         for point_index, op2 in enumerate(self.wp.generators):
@@ -146,7 +163,7 @@ class mol_site():
             m = create_matrix(PBC=self.PBC)
             # Move [0,0,0] PBC vector to first position in array
             m2 = [[0, 0, 0]]
-            v0 = np.array([0., 0., 0.])
+            v0 = np.array([0.0, 0.0, 0.0])
             for v in m:
                 if not (v == v0).all():
                     m2.append(v)
@@ -176,15 +193,17 @@ class mol_site():
             try:
                 return self.relative_coords, self.symbols_all
             except:
-                self.relative_coords, self.symbols_all = \
-                self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
+                self.relative_coords, self.symbols_all = self._get_coords_and_species(
+                    absolute=absolute, add_PBC=add_PBC
+                )
             return self.relative_coords, self.symbols_all
         else:
             try:
                 return self.absolute_coords, self.symbols_all
             except:
-                self.absolute_coords, self.symbols_all = \
-                self._get_coords_and_species(absolute=absolute, add_PBC=add_PBC)
+                self.absolute_coords, self.symbols_all = self._get_coords_and_species(
+                    absolute=absolute, add_PBC=add_PBC
+                )
             return self.absolute_coords, self.symbols_all
 
     def get_centers(self, absolute=False):
@@ -227,7 +246,7 @@ class mol_site():
             m = create_matrix(PBC=self.PBC)
             # Remove original coordinates
             m2 = []
-            v0 = np.array([0., 0., 0.])
+            v0 = np.array([0.0, 0.0, 0.0])
             for v in m:
                 if not (v == v0).all():
                     m2.append(v)
@@ -269,7 +288,7 @@ class mol_site():
                 m = create_matrix(PBC=self.PBC)
                 # Remove original coordinates
                 m2 = []
-                v0 = np.array([0., 0., 0.])
+                v0 = np.array([0.0, 0.0, 0.0])
                 for v in m:
                     if not (v == v0).all():
                         m2.append(v)
@@ -285,7 +304,9 @@ class mol_site():
                 # Check inter-atomic distances
                 d = distance_matrix(coords, coords_mol, self.lattice, PBC=self.PBC)
                 if np.min(d) < np.max(self.tols_matrix):
-                    tols = np.min(d.reshape([self.multiplicity-1, m_length, m_length]), axis=0)
+                    tols = np.min(
+                        d.reshape([self.multiplicity - 1, m_length, m_length]), axis=0
+                    )
                     if (tols < self.tols_matrix).any():
                         return False
 
@@ -431,7 +452,10 @@ class mol_site():
                 return True
             es0 = self.get_ellipsoids()[1:]
             PBC_vectors = np.dot(create_matrix(PBC=self.PBC), self.lattice)
-            PBC_ops = [SymmOp.from_rotation_and_translation(Euclidean_lattice, v) for v in PBC_vectors]
+            PBC_ops = [
+                SymmOp.from_rotation_and_translation(Euclidean_lattice, v)
+                for v in PBC_vectors
+            ]
             es1 = []
             for op in PBC_ops:
                 es1.append(np.dot(es0, op))
@@ -459,7 +483,7 @@ def check_intersection(ellipsoid1, ellipsoid2):
     Op = ellipsoid1.inverse * ellipsoid2
     # We define a new ellipsoid by moving the sphere around the old ellipsoid
     M = Op.rotation_matrix
-    a = 1.0 /(1.0 / np.linalg.norm(M[0]) + 1)
+    a = 1.0 / (1.0 / np.linalg.norm(M[0]) + 1)
     M[0] = M[0] / np.linalg.norm(M[0]) * a
     b = 1.0 / (1.0 / np.linalg.norm(M[1]) + 1)
     M[1] = M[1] / np.linalg.norm(M[1]) * b
@@ -467,13 +491,16 @@ def check_intersection(ellipsoid1, ellipsoid2):
     M[2] = M[2] / np.linalg.norm(M[2]) * c
     p = Op.translation_vector
     # Calculate the transformed distance from the sphere's center to the new ellipsoid
-    dsq = np.dot(p, M[0])**2 + np.dot(p, M[1])**2 + np.dot(p, M[2])**2
+    dsq = np.dot(p, M[0]) ** 2 + np.dot(p, M[1]) ** 2 + np.dot(p, M[2]) ** 2
     if dsq < 2:
         return False
     else:
         return True
 
-def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype="molecular")):
+
+def check_mol_sites(
+    ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype="molecular")
+):
     """
     Checks whether or not the molecules of two mol sites overlap. Uses
     ellipsoid overlapping approximation to check. Takes PBC and lattice
@@ -494,7 +521,10 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
     if atomic is False:
         es0 = ms1.get_ellipsoids()
         PBC_vectors = np.dot(create_matrix(PBC=ms1.PBC), ms1.lattice)
-        PBC_ops = [SymmOp.from_rotation_and_translation(Euclidean_lattice, v) for v in PBC_vectors]
+        PBC_ops = [
+            SymmOp.from_rotation_and_translation(Euclidean_lattice, v)
+            for v in PBC_vectors
+        ]
         es1 = []
         for op in PBC_ops:
             es1.append(np.dot(es0, op))
@@ -546,7 +576,7 @@ def check_mol_sites(ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype=
         return True
 
 
-class atom_site():
+class atom_site:
     """
     Class for storing atomic Wyckoff positions with a single coordinate.
 
@@ -555,6 +585,7 @@ class atom_site():
         coordinate: a fractional 3-vector for the generating atom's coordinate
         specie: an Element, element name or symbol, or atomic number of the atom
     """
+
     def __init__(self, wp, coordinate, specie):
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
@@ -564,17 +595,22 @@ class atom_site():
         self.coords = apply_ops(self.position, self.wp)
 
     def __str__(self):
-        if not hasattr(self, 'site_symm'):
-            self.site_symm = site_symm(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+        if not hasattr(self, "site_symm"):
+            self.site_symm = site_symm(
+                self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
+            )
 
         pos = self.position
-        s = "{:>2s}: [{:6.4f} {:6.4f} {:6.4f}], ".format(self.specie, pos[0], pos[1], pos[2])
+        s = "{:>2s}: [{:6.4f} {:6.4f} {:6.4f}], ".format(
+            self.specie, pos[0], pos[1], pos[2]
+        )
         s += "Wyckoff letter: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry: {:s}".format(self.site_symm)
         return s
 
     def __repr__(self):
         return str(self)
+
 
 def check_atom_sites(ws1, ws2, lattice, tm, same_group=True):
     """
