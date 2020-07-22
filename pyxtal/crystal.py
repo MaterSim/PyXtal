@@ -472,7 +472,7 @@ class random_crystal:
         if self.valid:
             s += "\nWyckoff sites:"
             for wyc in self.wyckoff_sites:
-                s += "\n{}".format(wyc)
+                s += "\n\t{}".format(wyc)
         else:
             s += "\nStructure not generated."
         return s
