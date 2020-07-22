@@ -16,12 +16,12 @@ from time import time
 from spglib import get_symmetry_dataset
 import numpy as np
 
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------
-    parser = OptionParser()
-    parser.add_option(
+    parser = ArgumentParser()
+    parser.add_argument(
         "-s",
         "--symmetry",
         dest="sg",
@@ -30,7 +30,7 @@ if __name__ == "__main__":
         type=str,
         help="desired symmetry, number or string, e.g., 36, Pbca, Ih",
     )
-    parser.add_option(
+    parser.add_argument(
         "-e",
         "--element",
         dest="element",
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         help="desired elements: e.g., Li",
         metavar="element",
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--numIons",
         dest="numIons",
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         help="desired numbers of atoms: 16",
         metavar="numIons",
     )
-    parser.add_option(
+    parser.add_argument(
         "-f",
         "--factor",
         dest="factor",
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         help="volume factor: default 1.0",
         metavar="factor",
     )
-    parser.add_option(
+    parser.add_argument(
         "-v",
         "--verbosity",
         dest="verbosity",
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         help="verbosity: default 0; higher values print more information",
         metavar="verbosity",
     )
-    parser.add_option(
+    parser.add_argument(
         "-a",
         "--attempts",
         dest="attempts",
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         help="number of crystals to generate: default 1",
         metavar="attempts",
     )
-    parser.add_option(
+    parser.add_argument(
         "-o",
         "--outdir",
         dest="outdir",
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         help="Directory for storing output cif files: default 'out'",
         metavar="outdir",
     )
-    parser.add_option(
+    parser.add_argument(
         "-d",
         "--dimension",
         dest="dimension",
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         type=int,
         help="desired dimension: (3, 2, 1, 0): default 3",
     )
-    parser.add_option(
+    parser.add_argument(
         "-t",
         "--thickness",
         dest="thickness",
@@ -102,10 +102,10 @@ if __name__ == "__main__":
     )
 
     print_logo()
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     sg = options.sg
     dimension = options.dimension
-    if sg.isnumeric():
+    if isinstance(sg, str) and sg.isnumeric():
         sg = int(sg)
     symbol, sg = get_symbol_and_number(sg, dimension)
 

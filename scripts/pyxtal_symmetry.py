@@ -3,19 +3,19 @@
 
 from pyxtal import print_logo
 from pyxtal.symmetry import Group, list_groups
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------
-    parser = OptionParser()
-    parser.add_option(
+    parser = ArgumentParser()
+    parser.add_argument(
         "-s",
         "--symmetry",
         dest="sg",
         type=str,
         help="desired symmetry, number or string, e.g., 36, Pbca, Ih. if None, show all list of available groups",
     )
-    parser.add_option(
+    parser.add_argument(
         "-d",
         "--dimension",
         dest="dimension",
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     )
 
     print_logo()
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
 
     dimension = options.dimension
 

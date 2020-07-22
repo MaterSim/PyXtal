@@ -10,13 +10,12 @@ from pymatgen.io.cif import CifWriter
 import numpy as np
 from pyxtal import print_logo
 
-# NOTE comprhys: optparse is deprecated
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------
-    parser = OptionParser()
-    parser.add_option(
+    parser = ArgumentParser()
+    parser.add_argument(
         "-s",
         "--symmetry",
         dest="sg",
@@ -25,7 +24,7 @@ if __name__ == "__main__":
         type=str,
         help="desired symmetry, number or string, e.g., 36, Pbca",
     )
-    parser.add_option(
+    parser.add_argument(
         "-e",
         "--molecule",
         dest="molecule",
@@ -33,7 +32,7 @@ if __name__ == "__main__":
         help="desired molecules: e.g., H2O",
         metavar="molecule",
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--numMols",
         dest="numMols",
@@ -41,7 +40,7 @@ if __name__ == "__main__":
         help="desired numbers of molecules: 4",
         metavar="numMols",
     )
-    parser.add_option(
+    parser.add_argument(
         "-f",
         "--factor",
         dest="factor",
@@ -50,7 +49,7 @@ if __name__ == "__main__":
         help="volume factor: default 1.0",
         metavar="factor",
     )
-    parser.add_option(
+    parser.add_argument(
         "-v",
         "--verbosity",
         dest="verbosity",
@@ -58,7 +57,7 @@ if __name__ == "__main__":
         type=int,
         help="verbosity: default 0; higher values print more information",
     )
-    parser.add_option(
+    parser.add_argument(
         "-a",
         "--attempts",
         dest="attempts",
@@ -67,7 +66,7 @@ if __name__ == "__main__":
         help="number of crystals to generate: default 1",
         metavar="attempts",
     )
-    parser.add_option(
+    parser.add_argument(
         "-o",
         "--outdir",
         dest="outdir",
@@ -76,7 +75,7 @@ if __name__ == "__main__":
         help="Directory for storing output cif/xyz files: default 'out'",
         metavar="outdir",
     )
-    parser.add_option(
+    parser.add_argument(
         "-c",
         "--checkatoms",
         dest="checkatoms",
@@ -85,7 +84,7 @@ if __name__ == "__main__":
         help="Whether to check inter-atomic distances at each step: default True",
         metavar="outdir",
     )
-    parser.add_option(
+    parser.add_argument(
         "-i",
         "--allowinversion",
         dest="allowinversion",
@@ -94,7 +93,7 @@ if __name__ == "__main__":
         help="Whether to allow inversion of chiral molecules: default False",
         metavar="outdir",
     )
-    parser.add_option(
+    parser.add_argument(
         "-d",
         "--dimension",
         dest="dimension",
@@ -103,7 +102,7 @@ if __name__ == "__main__":
         type=int,
         help="desired dimension: (3 or 2 for 3d or 2d, respectively): default 3",
     )
-    parser.add_option(
+    parser.add_argument(
         "-t",
         "--thickness",
         dest="thickness",
@@ -114,10 +113,10 @@ if __name__ == "__main__":
     )
 
     print_logo()
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     sg = options.sg
     dimension = options.dimension
-    if sg.isnumeric():
+    if isinstance(sg, str) and sg.isnumeric():
         sg = int(sg)
     symbol, sg = get_symbol_and_number(sg, dimension)
 

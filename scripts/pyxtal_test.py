@@ -1453,15 +1453,14 @@ def test_modules():
     end(condition=2)
 
 
-from optparse import OptionParser
-
 if __name__ == "__main__":
     import sys
     from time import time
     from pyxtal import print_logo
+    from argparse import ArgumentParser
 
-    parser = OptionParser()
-    parser.add_option(
+    parser = ArgumentParser()
+    parser.add_argument(
         "-m",
         "--module",
         dest="module",
