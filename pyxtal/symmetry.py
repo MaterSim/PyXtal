@@ -2176,7 +2176,7 @@ class Group:
                     gens.append(SymmOp.from_xyz_string("-x,-y,z"))
                     gens.append(SymmOp.from_xyz_string("z,x,y"))
                     tau = 0.5 * (np.sqrt(5) + 1)
-                    m = aa2matrix([1.0, tau, 0.0], 2 * pi / 5)
+                    m = aa2matrix([1.0, tau, 0.0], 2 * np.pi / 5)
                     gens.append(SymmOp.from_rotation_and_translation(m, [0, 0, 0]))
                     # Add Wyckoff generating operations
                     op_c = SymmOp.from_xyz_string("x,0,0")
@@ -2211,7 +2211,7 @@ class Group:
                     else:
                         # Add rotation
                         self.symbol = "C" + str(num)
-                        m = aa2matrix([0.0, 0.0, 1.0], 2 * pi / num)
+                        m = aa2matrix([0.0, 0.0, 1.0], 2 * np.pi / num)
                         gens.append(
                             SymmOp.from_rotation_and_translation(m, [0.0, 0.0, 0.0])
                         )
@@ -2257,7 +2257,7 @@ class Group:
                     else:
                         # Add rotoinversion
                         m = np.dot(
-                            aa2matrix([0.0, 0.0, 1.0], 2 * pi / num),
+                            aa2matrix([0.0, 0.0, 1.0], 2 * np.pi / num),
                             [[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]],
                         )
                         gens.append(
@@ -2286,7 +2286,7 @@ class Group:
                         # Add rotation
                         self.symbol = "D" + str(num)
                         # Rotation angle
-                        angle = 2 * pi / num
+                        angle = 2 * np.pi / num
                         # Add n-fold rotation
                         m = aa2matrix([0.0, 0.0, 1.0], angle)
                         gens.append(
@@ -2380,7 +2380,7 @@ class Group:
                         printx("Error: invalid point group symbol.", priority=1)
                         return
                     m = np.dot(
-                        aa2matrix([0.0, 0.0, 1.0], 2 * pi / num),
+                        aa2matrix([0.0, 0.0, 1.0], 2 * np.pi / num),
                         [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0]],
                     )
                     gens.append(

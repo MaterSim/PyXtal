@@ -1,5 +1,5 @@
 # Standard Libraries
-from math import acos, pi, ceil, sin, cos, sqrt
+from math import acos, ceil, sin, cos, sqrt
 import numpy as np
 import re
 import matplotlib as mpl
@@ -470,7 +470,7 @@ class XRD(object):
         """ N*1 array"""
         F = []
         for fj, hkl in zip(self.f.transpose(), self.hkl_list):
-            F_tmp = np.exp(2 * pi * 1j * np.dot(crystal.coordinate, hkl.transpose()))
+            F_tmp = np.exp(2 * np.pi * 1j * np.dot(crystal.coordinate, hkl.transpose()))
             F.append(np.dot(fj, F_tmp))
 
         self.F = np.array(F)
