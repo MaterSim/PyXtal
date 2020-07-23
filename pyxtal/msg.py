@@ -23,4 +23,3 @@ def printx(text, priority=1):
     else:
         if priority <= pyxtal_verbosity:
             print(text)
-

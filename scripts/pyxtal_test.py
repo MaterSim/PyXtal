@@ -1,89 +1,180 @@
 #!/usr/bin/env  python
 # encoding: utf-8
 
-#Test script for pyXtal version 0.1dev. Tests core functions for all modules.
+# Test script for pyXtal version 0.1dev. Tests core functions for all modules.
 
-#Custom print function for output to file
+
+import sys
+import numpy as np
+import warnings
+
+from time import time
+from copy import deepcopy
+
+from spglib import get_symmetry_dataset
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pyxtal.symmetry import (
+    Group,
+    get_wyckoffs,
+    get_layer,
+    get_rod,
+    get_point,
+)
+from pyxtal.crystal import (
+    random_crystal,
+    random_crystal_2D,
+    random_crystal_1D,
+    random_cluster,
+    cellsize,
+)
+from pyxtal.molecular_crystal import (
+    molecular_crystal,
+    molecular_crystal_2D,
+)
+from pyxtal.operations import distance, filtered_coords
+
+
 _summary_text_ = ""
 
-oldprint = print
 
-def newprint(text):
+def fprint(text):
+    """Custom print function for output to file
+    """
     global _summary_text_
-    oldprint(text)
+    print(text)
     if _summary_text_ != "":
         _summary_text_ += "\n"
     _summary_text_ += text
 
-print = newprint
 
-import sys
 sys.settrace(None)
 
 outstructs = []
 outstrings = []
 
+
 class Logger(object):
     def __init__(self):
         self.terminal = sys.stdout
-        self.log = open("Summary.txt", "w")
+        self.log = open("test_summary.txt", "w")
 
     def write(self, message):
         self.terminal.write(message)
         self.log.write(message)
 
     def flush(self):
-        #this flush method is needed for python 3 compatibility.
-        #this handles the flush command by doing nothing.
-        #you might want to specify some extra behavior here.
+        # this flush method is needed for python 3 compatibility.
+        # this handles the flush command by doing nothing.
+        # you might want to specify some extra behavior here.
         pass
 
+
 sys.stdout = Logger()
+
+
+# Check if module and classes work correctly
+def passed():
+    global failed_module
+    global failed
+    if failed_module is False and failed is False:
+        return True
+    else:
+        return False
+
+
+# Reset flags for module and class
+def reset():
+    global failed_module
+    global failed
+    failed_module = False
+    failed = False
+
+
+# Set flags for package, module, class if error occurs
+def fail(*argv):
+    if argv != ():
+        e = argv[0]
+    else:
+        e = "Unknown error"
+    global failed_package
+    global failed_module
+    global failed
+    failed_package = True
+    failed_module = True
+    failed = True
+    try:
+        fprint("~~~ Error:")
+        import pdb, traceback
+
+        extype, value, tb = sys.exc_info()
+        traceback.print_exc()
+    except:
+        fprint("~~~ Error: ", e)
+
+
+# Print whether module passed or failed
+def check():
+    if passed():
+        pass  # fprint("Success!")
+    else:
+        fprint("~~~ Failed module ~~~")
+
+
+# Call at end of script, or if module fails
+def end(condition=1):
+    fprint("===")
+    if failed_package is False:
+        fprint("All modules passed!")
+        if condition == 1:
+            sys.exit(0)
+        elif condition == 2:
+            pass
+    else:
+        fprint("One or more modules failed. Try reinstalling the package.")
+        sys.exit(0)
+
 
 def compare_wyckoffs(num1, num2, dim=3):
     """Given 2 groups, return whether the second point
     group has equal or greater symmetry than the first group."""
-    from numpy import allclose
+
     if num1 == "???":
-        print("Error: invalid value for num1 passed to compare_wyckoffs")
+        fprint("Error: invalid value for num1 passed to compare_wyckoffs")
         return
     if num2 == "???":
         return False
-    #Get general positions for both groups
+    # Get general positions for both groups
     if dim == 3:
-        from pyxtal.symmetry import get_wyckoffs
+
         g1 = get_wyckoffs(num1)[0]
         g2 = get_wyckoffs(num2)[0]
     elif dim == 2:
-        from pyxtal.symmetry import get_layer
+
         g1 = get_layer(num1)[0]
         g2 = get_layer(num2)[0]
     elif dim == 1:
-        from pyxtal.symmetry import get_rod
+
         g1 = get_rod(num1)[0]
         g2 = get_rod(num2)[0]
     elif dim == 0:
-        from pyxtal.symmetry import get_point
+
         g1 = get_point(num1)[0]
         g2 = get_point(num2)[0]
-    #If group 2 has higher symmetry
+    # If group 2 has higher symmetry
     if len(g2) > len(g1):
         return True
-    #Compare point group operations
+    # Compare point group operations
     for i, op2 in enumerate(g2):
         op1 = g1[i]
         m1 = op1.rotation_matrix
         m2 = op2.rotation_matrix
-        if not allclose(m1, m2):
+        if not np.allclose(m1, m2):
             return False
     return True
 
+
 def check_struct_group(crystal, group, dim=3, tol=1e-2):
-    #Supress pymatgen/numpy complex casting warnings
-    from pyxtal.crystal import random_crystal
-    from pyxtal.molecular_crystal import molecular_crystal
-    from copy import deepcopy
-    import warnings
+    # Supress pymatgen/numpy complex casting warnings
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
@@ -98,36 +189,34 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
                 old_coords = deepcopy(crystal.cart_coords)
                 old_species = deepcopy(crystal.species)
         else:
-            lattice = np.array([[1,0,0],[0,1,0],[0,0,1]])
+            lattice = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
             old_coords = np.array(crystal)
-            old_species = ['C']*len(old_coords)
+            old_species = ["C"] * len(old_coords)
 
-        from pyxtal.operations import distance, filtered_coords
-        from copy import deepcopy
-        PBC = [1,1,1]
+        PBC = [1, 1, 1]
 
-        #Obtain the generators for the group
+        # Obtain the generators for the group
         if dim == 3:
-            from pyxtal.symmetry import get_wyckoffs
+
             generators = get_wyckoffs(group)[0]
 
         elif dim == 2:
-            from pyxtal.symmetry import get_layer
+
             generators = get_layer(group)[0]
-            PBC = [1,1,0]
+            PBC = [1, 1, 0]
         elif dim == 1:
-            from pyxtal.symmetry import get_rod
+
             generators = get_rod(group)[0]
-            PBC = [0,0,1]
+            PBC = [0, 0, 1]
         elif dim == 0:
-            from pyxtal.symmetry import Group
+
             generators = Group(group, dim=0)[0]
-            PBC = [0,0,0]
+            PBC = [0, 0, 0]
 
-        #TODO: Add check for lattice symmetry
+        # TODO: Add check for lattice symmetry
 
-        #Apply SymmOps to generate new points
-        #old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
+        # Apply SymmOps to generate new points
+        # old_coords = filtered_coords(struct.frac_coords,PBC=PBC)
 
         new_coords = []
         new_species = []
@@ -136,9 +225,9 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
                 if j != 0:
                     new_coords.append(op.operate(point))
                     new_species.append(old_species[i])
-        #new_coords = filtered_coords(new_coords,PBC=PBC)
+        # new_coords = filtered_coords(new_coords,PBC=PBC)
 
-        #Check that all points in new list are still in old
+        # Check that all points in new list are still in old
         failed = False
         i_list = list(range(len(new_coords)))
         for i, point1 in enumerate(new_coords):
@@ -158,81 +247,27 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
         else:
             return False
 
-#Check if module and classes work correctly
-def passed():
-    global failed_module
-    global failed
-    if failed_module is False and failed is False:
-        return True
-    else:
-        return False
-
-#Reset flags for module and class
-def reset():
-    global failed_module
-    global failed
-    failed_module = False
-    failed = False
-
-#Set flags for package, module, class if error occurs
-def fail(*argv):
-    if argv != ():
-        e = argv[0]
-    else:
-        e = "Unknown error"
-    global failed_package
-    global failed_module
-    global failed
-    failed_package = True
-    failed_module = True
-    failed = True
-    try:
-        print("~~~ Error:")
-        import pdb, traceback
-        extype, value, tb = sys.exc_info()
-        traceback.print_exc()
-    except:
-        print("~~~ Error: ", e)
-
-#Print whether module passed or failed
-def check():
-    if passed():
-        pass#print("Success!")
-    else:
-        print("~~~ Failed module ~~~")
-
-#Call at end of script, or if module fails
-def end(condition=1):
-    print("===")
-    if failed_package is False:
-        print("All modules passed!")
-        if condition == 1:
-            sys.exit(0)
-        elif condition == 2:
-            pass
-    else:
-        print("One or more modules failed. Try reinstalling the package.")
-        sys.exit(0)
 
 def test_atomic():
     global outstructs
     global outstrings
-    print("=== Testing generation of atomic 3D crystals. This may take some time. ===")
-    from time import time
-    from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import get_wyckoffs
-    from pyxtal.crystal import random_crystal
-    from pyxtal.crystal import cellsize
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    fprint("=== Testing generation of atomic 3D crystals. This may take some time. ===")
+
     slow = []
     failed = []
-    print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
-    skip = []#[124, 139, 166, 167, 196, 202, 203, 204, 207, 209, 210, 216, 217, 219, 220, 221, 223, 225, 226, 227, 228, 229, 230] #slow to generate
+    fprint("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
+    skip = []
+    # skip = (
+    #     [124, 139, 166, 167, 196, 202, 203, 204, 207, 209, 210, 216, 217,
+    #     219, 220, 221, 223, 225, 226, 227, 228, 229, 230] #slow to generate
+    # )
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(
+                sg
+            )  # multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal(sg, ['C'], [multiplicity], 1.0)
+            rand_crystal = random_crystal(sg, ["C"], [multiplicity], 1.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -254,68 +289,80 @@ def test_atomic():
                 if ans1 is None:
                     ans1 = "???"
                 else:
-                    ans1 = ans1['number']
+                    ans1 = ans1["number"]
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
                 ans2 = "???"
                 if sga is not None:
                     try:
                         ans2 = sga.get_space_group_number()
-                    except: ans2 = "???"
+                    except:
+                        ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
 
-                #Compare expected and detected groups
+                # Compare expected and detected groups
                 if ans1 == "???" and ans2 == "???":
                     check = True
                 elif ans1 == "???":
-                    if int(ans2) > sg: pass
+                    if int(ans2) > sg:
+                        pass
                 elif ans2 == "???":
-                    if int(ans1) > sg: pass
+                    if int(ans1) > sg:
+                        pass
                 else:
                     if ans1 < sg and ans2 < sg:
-                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: check = True
+                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2):
+                            pass
+                        else:
+                            check = True
 
-                #output cif files for incorrect space groups
+                # output cif files for incorrect space groups
                 if check is True:
                     if check_struct_group(rand_crystal, sg, dim=3):
                         pass
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("3D_Atomic_"+str(sg)+".vasp"))
-                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                        outstrings.append(str("3D_Atomic_" + str(sg) + ".vasp"))
+                fprint("\t{}\t|\t{}\t|\t{}\t|\t{}".format(sg, ans1, ans2, t))
             else:
-                print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
+                fprint(
+                    "~~~~ Error: Could not generate space group {} after {}".format(sg, t)
+                )
                 failed.append(sg)
     if slow != []:
-        print("~~~~ The following space groups took more than 60 seconds to generate:")
+        fprint("~~~~ The following space groups took more than 60 seconds to generate:")
         for i in slow:
-            print("     "+str(i))
+            fprint("     " + str(i))
     if failed != []:
-        print("~~~~ The following space groups failed to generate:")
+        fprint("~~~~ The following space groups failed to generate:")
         for i in failed:
-            print("     "+str(i))
+            fprint("     " + str(i))
+
 
 def test_molecular():
     global outstructs
     global outstrings
-    print("=== Testing generation of molecular 3D crystals. This may take some time. ===")
-    from time import time
-    from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import get_wyckoffs
-    from pyxtal.crystal import cellsize
-    from pyxtal.molecular_crystal import molecular_crystal
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    fprint(
+        "=== Testing generation of molecular 3D crystals. This may take some time. ==="
+    )
+
     slow = []
     failed = []
-    print("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
-    skip = [225, 226, 227, 228]#[24, 183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
+    fprint("  Spacegroup #  |Generated (SPG)|Generated (PMG)|  Time Elapsed")
+    skip = [
+        225,
+        226,
+        227,
+        228,
+    ]  # [24, 183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)#multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(
+                sg
+            )  # multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal(sg, ['H2O'], [multiplicity], 2.5)
+            rand_crystal = molecular_crystal(sg, ["H2O"], [multiplicity], 2.5)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -337,71 +384,75 @@ def test_molecular():
                 if ans1 is None:
                     ans1 = "???"
                 else:
-                    ans1 = ans1['number']
+                    ans1 = ans1["number"]
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
                 ans2 = "???"
                 if sga is not None:
                     try:
                         ans2 = sga.get_space_group_number()
-                    except: ans2 = "???"
+                    except:
+                        ans2 = "???"
                 if ans2 is None:
                     ans2 = "???"
 
-                #Compare expected and detected groups
+                # Compare expected and detected groups
                 if ans1 == "???" and ans2 == "???":
                     check = True
                 elif ans1 == "???":
-                    if int(ans2) > sg: pass
+                    if int(ans2) > sg:
+                        pass
                 elif ans2 == "???":
-                    if int(ans1) > sg: pass
+                    if int(ans1) > sg:
+                        pass
                 else:
                     if ans1 < sg and ans2 < sg:
-                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2): pass
-                        else: check = True
+                        if compare_wyckoffs(sg, ans1) or compare_wyckoffs(sg, ans2):
+                            pass
+                        else:
+                            check = True
 
-
-                #output cif files for incorrect space groups
+                # output cif files for incorrect space groups
                 if check is True:
                     if check_struct_group(rand_crystal, sg, dim=3):
                         pass
                     else:
                         t += " xxxxx"
-                        #rand_crystal.to_file("poscar", "1.vasp")
-                        #import sys
-                        #sys.exit()
+                        # rand_crystal.to_file("poscar", "1.vasp")
+                        # import sys
+                        # sys.exit()
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("3D_Molecular_"+str(sg)+".vasp"))
-                print("\t"+str(sg)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                        outstrings.append(str("3D_Molecular_" + str(sg) + ".vasp"))
+                fprint("\t{}\t|\t{}\t|\t{}\t|\t{}".format(sg, ans1, ans2, t))
             else:
-                print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
+                fprint(
+                    "~~~~ Error: Could not generate space group {} after {}".format(sg, t)
+                )
                 failed.append(sg)
     if slow != []:
-        print("~~~~ The following space groups took more than 60 seconds to generate:")
+        fprint("~~~~ The following space groups took more than 60 seconds to generate:")
         for i in slow:
-            print("     "+str(i))
+            fprint("     " + str(i))
     if failed != []:
-        print("~~~~ The following space groups failed to generate:")
+        fprint("~~~~ The following space groups failed to generate:")
         for i in failed:
-            print("     "+str(i))
+            fprint("     " + str(i))
+
 
 def test_atomic_2D():
     global outstructs
     global outstrings
-    print("=== Testing generation of atomic 2D crystals. This may take some time. ===")
-    from time import time
-    from pyxtal.symmetry import Group
-    from pyxtal.crystal import random_crystal_2D
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    fprint("=== Testing generation of atomic 2D crystals. This may take some time. ===")
+
     slow = []
     failed = []
-    print("  Layer group # |     Symbol    |  Time Elapsed")
+    fprint("  Layer group # |     Symbol    |  Time Elapsed")
     skip = []
     for sg in range(1, 81):
         if sg not in skip:
             g = Group(sg, dim=2)
-            multiplicity = len(g[0])#multiplicity of the general position
+            multiplicity = len(g[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_2D(sg, ['C'], [multiplicity], 4.0)
+            rand_crystal = random_crystal_2D(sg, ["C"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -423,39 +474,41 @@ def test_atomic_2D():
                 else:
                     t += " xxxxx"
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("atomic_2D_"+str(sg)+".vasp"))
+                    outstrings.append(str("atomic_2D_" + str(sg) + ".vasp"))
                 symbol = g.symbol
-                print("\t"+str(sg)+"\t|\t"+symbol+"\t|\t"+t)
+                fprint("\t{}\t|\t{}\t|\t{}".format(sg, symbol, t))
             else:
-                print("~~~~ Error: Could not generate layer group "+str(sg)+" after "+t)
+                fprint(
+                    "~~~~ Error: Could not generate layer group {} after {}".format(sg, t)
+                )
                 failed.append(sg)
     if slow != []:
-        print("~~~~ The following layer groups took more than 60 seconds to generate:")
+        fprint("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
-            print("     "+str(i))
+            fprint("     " + str(i))
     if failed != []:
-        print("~~~~ The following layer groups failed to generate:")
+        fprint("~~~~ The following layer groups failed to generate:")
         for i in failed:
-            print("     "+str(i))
+            fprint("     " + str(i))
+
 
 def test_molecular_2D():
     global outstructs
     global outstrings
-    print("=== Testing generation of molecular 2D crystals. This may take some time. ===")
-    from time import time
-    from pyxtal.symmetry import Group
-    from pyxtal.molecular_crystal import molecular_crystal_2D
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    fprint(
+        "=== Testing generation of molecular 2D crystals. This may take some time. ==="
+    )
+
     slow = []
     failed = []
-    print("  Layer group # |     Symbol    |  Time Elapsed")
+    fprint("  Layer group # |     Symbol    |  Time Elapsed")
     skip = []
     for sg in range(1, 81):
         if sg not in skip:
             g = Group(sg, dim=2)
-            multiplicity = len(g[0])#multiplicity of the general position
+            multiplicity = len(g[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_2D(sg, ['H2O'], [multiplicity], 4.0)
+            rand_crystal = molecular_crystal_2D(sg, ["H2O"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -477,39 +530,38 @@ def test_molecular_2D():
                 else:
                     t += " xxxxx"
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("molecular_2D_"+str(sg)+".vasp"))
+                    outstrings.append(str("molecular_2D_" + str(sg) + ".vasp"))
                 symbol = g.symbol
-                print("\t"+str(sg)+"\t|\t"+symbol+"\t|\t"+t)
+                fprint("\t{}\t|\t{}\t|\t{}".format(sg, symbol, t))
             else:
-                print("~~~~ Error: Could not generate layer group "+str(sg)+" after "+t)
+                fprint(
+                    "~~~~ Error: Could not generate layer group {} after {}".format(sg, t)
+                )
                 failed.append(sg)
     if slow != []:
-        print("~~~~ The following layer groups took more than 60 seconds to generate:")
+        fprint("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
-            print("     "+str(i))
+            fprint("     " + str(i))
     if failed != []:
-        print("~~~~ The following layer groups failed to generate:")
+        fprint("~~~~ The following layer groups failed to generate:")
         for i in failed:
-            print("     "+str(i))
+            fprint("     " + str(i))
+
 
 def test_atomic_1D():
     global outstructs
     global outstrings
-    print("=== Testing generation of atomic 1D crystals. This may take some time. ===")
-    from time import time
-    from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import get_rod
-    from pyxtal.crystal import random_crystal_1D
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    fprint("=== Testing generation of atomic 1D crystals. This may take some time. ===")
+
     slow = []
     failed = []
-    print("    Rod group   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
-    skip = []#slow to generate
+    fprint("    Rod group   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
+    skip = []  # slow to generate
     for num in range(1, 76):
         if num not in skip:
-            multiplicity = len(get_rod(num)[0]) #multiplicity of the general position
+            multiplicity = len(get_rod(num)[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_1D(num, ['H'], [multiplicity], 4.0)
+            rand_crystal = random_crystal_1D(num, ["H"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -533,7 +585,7 @@ def test_atomic_1D():
                 if ans1 is None or ans1 == "???":
                     ans1 = "???"
                 else:
-                    ans1 = ans1['number']
+                    ans1 = ans1["number"]
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
                 try:
                     ans2 = sga.get_space_group_number()
@@ -544,45 +596,53 @@ def test_atomic_1D():
 
                 check = True
 
-                #output cif files for incorrect space groups
+                # output cif files for incorrect space groups
                 if check is True:
                     if check_struct_group(rand_crystal, num, dim=1):
                         pass
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("1D_Atomic_"+str(num)+".vasp"))
-                print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                        outstrings.append(str("1D_Atomic_" + str(num) + ".vasp"))
+                fprint("\t{}\t|\t{}\t|\t{}\t|\t{}".format(num, ans1, ans2, t))
             else:
-                print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
+                fprint(
+                    "~~~~ Error: Could not generate layer group {} after {}".format(
+                        num, t
+                    )
+                )
                 failed.append(num)
     if slow != []:
-        print("~~~~ The following layer groups took more than 60 seconds to generate:")
+        fprint("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
-            print("     "+str(i))
+            fprint("     " + str(i))
     if failed != []:
-        print("~~~~ The following layer groups failed to generate:")
+        fprint("~~~~ The following layer groups failed to generate:")
         for i in failed:
-            print("     "+str(i))
+            fprint("     " + str(i))
+
 
 def test_molecular_1D():
     global outstructs
     global outstrings
-    print("=== Testing generation of molecular 1D crystals. This may take some time. ===")
+    fprint(
+        "=== Testing generation of molecular 1D crystals. This may take some time. ==="
+    )
     from time import time
     from spglib import get_symmetry_dataset
     from pyxtal.symmetry import get_rod
     from pyxtal.molecular_crystal import molecular_crystal_1D
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+
     slow = []
     failed = []
-    print("    Rod group   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
-    skip = []#slow to generate
+    fprint("    Rod group   | Gen sg. (SPG) | Gen. sg (PMG) |Time Elapsed")
+    skip = []  # slow to generate
     for num in range(1, 76):
         if num not in skip:
-            multiplicity = len(get_rod(num)[0]) #multiplicity of the general position
+            multiplicity = len(get_rod(num)[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_1D(num, ['H2O'], [multiplicity], 4.0)
+            rand_crystal = molecular_crystal_1D(num, ["H2O"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -606,7 +666,7 @@ def test_molecular_1D():
                 if ans1 is None or ans1 == "???":
                     ans1 = "???"
                 else:
-                    ans1 = ans1['number']
+                    ans1 = ans1["number"]
                 sga = SpacegroupAnalyzer(rand_crystal.struct)
                 try:
                     ans2 = sga.get_space_group_number()
@@ -617,45 +677,48 @@ def test_molecular_1D():
 
                 check = True
 
-                #output cif files for incorrect space groups
+                # output cif files for incorrect space groups
                 if check is True:
                     if check_struct_group(rand_crystal, num, dim=1):
                         pass
                     else:
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
-                        outstrings.append(str("1D_Molecular_"+str(num)+".vasp"))
-                print("\t"+str(num)+"\t|\t"+str(ans1)+"\t|\t"+str(ans2)+"\t|\t"+t)
+                        outstrings.append(str("1D_Molecular_" + str(num) + ".vasp"))
+                fprint("\t{}\t|\t{}\t|\t{}\t|\t{}".format(num, ans1, ans2, t))
             else:
-                print("~~~~ Error: Could not generate layer group "+str(num)+" after "+t)
+                fprint(
+                    "~~~~ Error: Could not generate layer group {} after {}".format(
+                        num, t
+                    )
+                )
                 failed.append(num)
     if slow != []:
-        print("~~~~ The following layer groups took more than 60 seconds to generate:")
+        fprint("~~~~ The following layer groups took more than 60 seconds to generate:")
         for i in slow:
-            print("     "+str(i))
+            fprint("     " + str(i))
     if failed != []:
-        print("~~~~ The following layer groups failed to generate:")
+        fprint("~~~~ The following layer groups failed to generate:")
         for i in failed:
-            print("     "+str(i))
+            fprint("     " + str(i))
+
 
 def test_cluster():
     global outstructs
     global outstrings
-    print("=== Testing generation of point group clusters. This may take some time. ===")
-    from time import time
-    from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import Group
-    from pyxtal.crystal import random_cluster
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    fprint("=== Testing generation of point group clusters. This may take some time. ===")
+
     slow = []
     failed = []
-    print("  Point group # |     Symbol    |  Time Elapsed")
-    skip = []#[32,55,56]#[28,29,30,31,32,55,56]
+    fprint("  Point group # |     Symbol    |  Time Elapsed")
+    skip = []  # [32,55,56]#[28,29,30,31,32,55,56]
     for sg in range(1, 57):
         if sg not in skip:
-            multiplicity = len(Group(sg, dim=0)[0])#multiplicity of the general position
+            multiplicity = len(
+                Group(sg, dim=0)[0]
+            )  # multiplicity of the general position
             start = time()
-            rand_crystal = random_cluster(sg, ['C'], [multiplicity], 1.0)
+            rand_crystal = random_cluster(sg, ["C"], [multiplicity], 1.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -677,51 +740,55 @@ def test_cluster():
                 else:
                     t += " xxxxx"
                     outstructs.append(rand_crystal.struct)
-                    outstrings.append(str("Cluster_"+str(sg)+".vasp"))
+                    outstrings.append(str("Cluster_" + str(sg) + ".vasp"))
                 pgsymbol = Group(sg, dim=0).symbol
-                print("\t"+str(sg)+"\t|\t"+pgsymbol+"\t|\t"+t)
+                fprint("\t{}\t|\t{}\t|\t{}".format(sg, pgsymbol, t))
             else:
-                print("~~~~ Error: Could not generate space group "+str(sg)+" after "+t)
+                fprint(
+                    "~~~~ Error: Could not generate space group {} after {}".format(sg, t)
+                )
                 failed.append(sg)
     if slow != []:
-        print("~~~~ The following space groups took more than 60 seconds to generate:")
+        fprint("~~~~ The following space groups took more than 60 seconds to generate:")
         for i in slow:
-            print("     "+str(i))
+            fprint("     " + str(i))
     if failed != []:
-        print("~~~~ The following space groups failed to generate:")
+        fprint("~~~~ The following space groups failed to generate:")
         for i in failed:
-            print("     "+str(i))
+            fprint("     " + str(i))
+
 
 def test_modules():
-    print("====== Testing functionality for pyXtal version 0.1dev ======")
+    fprint("====== Testing functionality for pyXtal version 0.1dev ======")
 
     global failed_package
-    failed_package = False #Record if errors occur at any level
+    failed_package = False  # Record if errors occur at any level
 
     reset()
 
-    print("Importing sys...")
+    fprint("Importing sys...")
     try:
         import sys
-        print("Success!")
+
+        fprint("Success!")
     except Exception as e:
         fail(e)
         sys.exit(0)
 
-    print("Importing numpy...")
+    fprint("Importing numpy...")
     try:
         import numpy as np
-        print("Success!")
+
+        fprint("Success!")
     except Exception as e:
         fail(e)
         sys.exit(0)
 
-    I = np.array([[1,0,0],[0,1,0],[0,0,1]])
-
-    print("Importing pymatgen...")
+    fprint("Importing pymatgen...")
     try:
         import pymatgen
-        print("Success!")
+
+        fprint("Success!")
     except Exception as e:
         fail(e)
         sys.exit(0)
@@ -732,48 +799,52 @@ def test_modules():
         fail(e)
         sys.exit(0)
 
-    print("Importing pandas...")
+    fprint("Importing pandas...")
     try:
         import pandas
-        print("Success!")
+
+        fprint("Success!")
     except Exception as e:
         fail(e)
         sys.exit(0)
 
-    print("Importing spglib...")
+    fprint("Importing spglib...")
     try:
         import spglib
-        print("Success!")
+
+        fprint("Success!")
     except Exception as e:
         fail(e)
         sys.exit(0)
 
-    print("Importing openbabel...")
+    fprint("Importing openbabel...")
     try:
         import ase
-        print("Success!")
-    except:
-        print("Error: could not import openbabel. Try reinstalling the package.")
 
-    print("Importing pyxtal...")
+        fprint("Success!")
+    except:
+        fprint("Error: could not import openbabel. Try reinstalling the package.")
+
+    fprint("Importing pyxtal...")
     try:
         import pyxtal
-        print("Success!")
+
+        fprint("Success!")
     except Exception as e:
         fail(e)
         sys.exit(0)
 
-    print("=== Testing modules ===")
+    fprint("=== Testing modules ===")
 
-    #=====database.element=====
-    print("pyxtal.database.element")
+    # =====database.element=====
+    fprint("pyxtal.database.element")
     reset()
     try:
         import pyxtal.database.element
     except Exception as e:
         fail(e)
 
-    print("  class Element")
+    fprint("  class Element")
     try:
         from pyxtal.database.element import Element
     except Exception as e:
@@ -784,7 +855,7 @@ def test_modules():
                 try:
                     ele = Element(i)
                 except:
-                    fail("Could not access Element # "+str(i))
+                    fail("Could not access Element # " + str(i))
                 try:
                     y = ele.sf
                     y = ele.z
@@ -796,7 +867,7 @@ def test_modules():
                     y = ele.vdw_radius
                     y = ele.get_all(0)
                 except:
-                    fail("Could not access attribute for element # "+str(i))
+                    fail("Could not access attribute for element # " + str(i))
                 try:
                     ele.all_z()
                     ele.all_short_names()
@@ -810,15 +881,15 @@ def test_modules():
 
     check()
 
-    #=====database.hall=====
-    print("pyxtal.database.hall")
+    # =====database.hall=====
+    fprint("pyxtal.database.hall")
     reset()
     try:
         import pyxtal.database.hall
     except Exception as e:
         fail(e)
 
-    print("  hall_from_hm")
+    fprint("  hall_from_hm")
     try:
         from pyxtal.database.hall import hall_from_hm
     except Exception as e:
@@ -830,19 +901,19 @@ def test_modules():
                 try:
                     hall_from_hm(i)
                 except:
-                    fail("Could not access hm # "+str(i))
+                    fail("Could not access hm # " + str(i))
 
     check()
 
-    #=====database.collection=====
-    print("pyxtal.database.collection")
+    # =====database.collection=====
+    fprint("pyxtal.database.collection")
     reset()
     try:
         import pyxtal.database.collection
     except Exception as e:
         fail(e)
 
-    print("  Collection")
+    fprint("  Collection")
     try:
         from pyxtal.database.collection import Collection
     except Exception as e:
@@ -852,14 +923,14 @@ def test_modules():
         for i in range(1, 230):
             if passed():
                 try:
-                    molecule_collection = Collection('molecules')
+                    molecule_collection = Collection("molecules")
                 except:
-                    fail("Could not access hm # "+str(i))
+                    fail("Could not access hm # " + str(i))
 
     check()
 
-    #=====operations=====
-    print("pyxtal.operations")
+    # =====operations=====
+    fprint("pyxtal.operations")
     reset()
     try:
         import pyxtal.operations
@@ -867,7 +938,7 @@ def test_modules():
         fail(e)
     from pyxtal.lattice import random_shear_matrix, random_vector
 
-    print("  angle")
+    fprint("  angle")
     try:
         from pyxtal.operations import angle
     except Exception as e:
@@ -884,7 +955,7 @@ def test_modules():
 
     check()
 
-    print("  is_orthogonal")
+    fprint("  is_orthogonal")
     try:
         from pyxtal.operations import is_orthogonal
     except Exception as e:
@@ -892,8 +963,8 @@ def test_modules():
 
     if passed():
         try:
-            a = is_orthogonal([[1,0,0],[0,1,0],[0,0,1]])
-            b = is_orthogonal([[0,0,1],[1,0,0],[1,0,0]])
+            a = is_orthogonal([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+            b = is_orthogonal([[0, 0, 1], [1, 0, 0], [1, 0, 0]])
             if a is True and b is False:
                 pass
             else:
@@ -903,7 +974,7 @@ def test_modules():
 
     check()
 
-    print("  rotate_vector")
+    fprint("  rotate_vector")
     try:
         from pyxtal.operations import rotate_vector
     except Exception as e:
@@ -920,7 +991,7 @@ def test_modules():
 
     check()
 
-    print("  are_equal")
+    fprint("  are_equal")
     try:
         from pyxtal.operations import are_equal
     except Exception as e:
@@ -928,10 +999,10 @@ def test_modules():
 
     if passed():
         try:
-            op1 = SymmOp.from_xyz_string('x,y,z')
-            op2 = SymmOp.from_xyz_string('x,y,z+1')
-            a = are_equal(op1, op2, PBC=[0,0,1])
-            b = are_equal(op1, op2, PBC=[1,0,0])
+            op1 = SymmOp.from_xyz_string("x,y,z")
+            op2 = SymmOp.from_xyz_string("x,y,z+1")
+            a = are_equal(op1, op2, PBC=[0, 0, 1])
+            b = are_equal(op1, op2, PBC=[1, 0, 0])
             if a is True and b is False:
                 pass
             else:
@@ -941,8 +1012,7 @@ def test_modules():
 
     check()
 
-
-    print("  class OperationAnalyzer")
+    fprint("  class OperationAnalyzer")
     try:
         from pyxtal.operations import OperationAnalyzer
     except Exception as e:
@@ -959,7 +1029,7 @@ def test_modules():
 
     check()
 
-    print("  class Orientation")
+    fprint("  class Orientation")
     try:
         from pyxtal.molecule import Orientation
     except Exception as e:
@@ -976,15 +1046,15 @@ def test_modules():
 
     check()
 
-    #=====symmetry=====
-    print("pyxtal.symmetry")
+    # =====symmetry=====
+    fprint("pyxtal.symmetry")
     reset()
     try:
         import pyxtal.symmetry
     except Exception as e:
         fail(e)
 
-    print("  get_wyckoffs (may take a moment)")
+    fprint("  get_wyckoffs (may take a moment)")
     try:
         from pyxtal.symmetry import get_wyckoffs
     except Exception as e:
@@ -996,11 +1066,11 @@ def test_modules():
                 get_wyckoffs(i)
                 get_wyckoffs(i, organized=True)
         except:
-            fail(" Could not access Wyckoff positions for space group # "+str(i))
+            fail(" Could not access Wyckoff positions for space group # " + str(i))
 
     check()
 
-    print("  get_wyckoff_symmetry (may take a moment)")
+    fprint("  get_wyckoff_symmetry (may take a moment)")
     try:
         from pyxtal.symmetry import get_wyckoff_symmetry
     except Exception as e:
@@ -1012,11 +1082,11 @@ def test_modules():
                 get_wyckoff_symmetry(i)
                 get_wyckoff_symmetry(i, molecular=True)
         except:
-            fail("Could not access Wyckoff symmetry for space group # "+str(i))
+            fail("Could not access Wyckoff symmetry for space group # " + str(i))
 
     check()
 
-    print("  get_wyckoffs_generators (may take a moment)")
+    fprint("  get_wyckoffs_generators (may take a moment)")
     try:
         from pyxtal.symmetry import get_wyckoff_generators
     except Exception as e:
@@ -1027,11 +1097,11 @@ def test_modules():
             for i in [1, 2, 229, 230]:
                 get_wyckoff_generators(i)
         except:
-            fail("Could not access Wyckoff generators for space group # "+str(i))
+            fail("Could not access Wyckoff generators for space group # " + str(i))
 
     check()
 
-    print("  letter_from_index")
+    fprint("  letter_from_index")
     try:
         from pyxtal.symmetry import letter_from_index
     except Exception as e:
@@ -1048,7 +1118,7 @@ def test_modules():
 
     check()
 
-    print("  index_from_letter")
+    fprint("  index_from_letter")
     try:
         from pyxtal.symmetry import index_from_letter
     except Exception as e:
@@ -1065,7 +1135,7 @@ def test_modules():
 
     check()
 
-    print("  jk_from_i")
+    fprint("  jk_from_i")
     try:
         from pyxtal.symmetry import jk_from_i
     except Exception as e:
@@ -1078,14 +1148,14 @@ def test_modules():
             if j == 1 and k == 0:
                 pass
             else:
-                print(j, k)
+                fprint(j, k)
                 fail()
         except Exception as e:
             fail(e)
 
     check()
 
-    print("  i_from_jk")
+    fprint("  i_from_jk")
     try:
         from pyxtal.symmetry import i_from_jk
     except Exception as e:
@@ -1099,14 +1169,14 @@ def test_modules():
             if i == 1:
                 pass
             else:
-                print(j, k)
+                fprint(j, k)
                 fail()
         except Exception as e:
             fail(e)
 
     check()
 
-    print("  ss_string_from_ops")
+    fprint("  ss_string_from_ops")
     try:
         from pyxtal.symmetry import ss_string_from_ops
     except Exception as e:
@@ -1114,7 +1184,7 @@ def test_modules():
 
     if passed():
         try:
-            strings = ['1','4 . .','2 3 .']
+            strings = ["1", "4 . .", "2 3 ."]
             for i, sg in enumerate([1, 75, 195]):
                 ops = get_wyckoffs(sg)[0]
                 ss_string_from_ops(ops, sg, dim=3)
@@ -1123,7 +1193,7 @@ def test_modules():
 
     check()
 
-    print("  Wyckoff_position")
+    fprint("  Wyckoff_position")
     try:
         from pyxtal.symmetry import Wyckoff_position
     except Exception as e:
@@ -1137,7 +1207,7 @@ def test_modules():
 
     check()
 
-    print("  Group")
+    fprint("  Group")
     try:
         from pyxtal.symmetry import Group
     except Exception as e:
@@ -1153,15 +1223,15 @@ def test_modules():
 
     check()
 
-    #=====crystal=====
-    print("pyxtal.crystal")
+    # =====crystal=====
+    fprint("pyxtal.crystal")
     reset()
     try:
         import pyxtal.crystal
     except Exception as e:
         fail(e)
 
-    print("  random_crystal")
+    fprint("  random_crystal")
     try:
         from pyxtal.crystal import random_crystal
     except Exception as e:
@@ -1169,7 +1239,7 @@ def test_modules():
 
     if passed():
         try:
-            c = random_crystal(1, ['H'], [1], 10.0)
+            c = random_crystal(1, ["H"], [1], 10.0)
             if c.valid is True:
                 pass
             else:
@@ -1179,7 +1249,7 @@ def test_modules():
 
     check()
 
-    print("  random_crystal_2D")
+    fprint("  random_crystal_2D")
     try:
         from pyxtal.crystal import random_crystal_2D
     except Exception as e:
@@ -1187,7 +1257,7 @@ def test_modules():
 
     if passed():
         try:
-            c = random_crystal_2D(1, ['H'], [1], 10.0)
+            c = random_crystal_2D(1, ["H"], [1], 10.0)
             if c.valid is True:
                 pass
             else:
@@ -1197,8 +1267,8 @@ def test_modules():
 
     check()
 
-    #=====molecule=====
-    print("pyxtal.molecule")
+    # =====molecule=====
+    fprint("pyxtal.molecule")
     reset()
     try:
         import pyxtal.molecule
@@ -1207,7 +1277,7 @@ def test_modules():
 
     check()
 
-    print("pyxtal_molecule")
+    fprint("pyxtal_molecule")
     try:
         from pyxtal.molecule import pyxtal_molecule
     except Exception as e:
@@ -1215,12 +1285,12 @@ def test_modules():
 
     if passed():
         try:
-            h2o = pyxtal_molecule('H2O').mol
-            ch4 = pyxtal_molecule('CH4').mol
+            h2o = pyxtal_molecule("H2O").mol
+            ch4 = pyxtal_molecule("CH4").mol
         except Exception as e:
             fail(e)
 
-    print("  get_inertia_tensor")
+    fprint("  get_inertia_tensor")
     try:
         from pyxtal.molecule import get_inertia_tensor
     except Exception as e:
@@ -1235,7 +1305,7 @@ def test_modules():
 
     check()
 
-    print("  reoriented_molecule")
+    fprint("  reoriented_molecule")
     try:
         from pyxtal.molecule import reoriented_molecule
     except Exception as e:
@@ -1250,7 +1320,7 @@ def test_modules():
 
     check()
 
-    print("  orientation_in_wyckoff_position")
+    fprint("  orientation_in_wyckoff_position")
     try:
         from pyxtal.molecule import orientation_in_wyckoff_position
     except Exception as e:
@@ -1268,15 +1338,15 @@ def test_modules():
 
     check()
 
-    #=====molecular_crystal=====
-    print("pyxtal.molecular_crystal")
+    # =====molecular_crystal=====
+    fprint("pyxtal.molecular_crystal")
     reset()
     try:
         import pyxtal.crystal
     except Exception as e:
         fail(e)
 
-    print("  molecular_crystal")
+    fprint("  molecular_crystal")
     try:
         from pyxtal.molecular_crystal import molecular_crystal
     except Exception as e:
@@ -1284,7 +1354,7 @@ def test_modules():
 
     if passed():
         try:
-            c = molecular_crystal(1, ['H2O'], [1], 10.0)
+            c = molecular_crystal(1, ["H2O"], [1], 10.0)
             if c.valid is True:
                 pass
             else:
@@ -1294,7 +1364,7 @@ def test_modules():
 
     check()
 
-    print("  molecular_crystal_2D")
+    fprint("  molecular_crystal_2D")
     try:
         from pyxtal.molecular_crystal import molecular_crystal_2D
     except Exception as e:
@@ -1302,7 +1372,7 @@ def test_modules():
 
     if passed():
         try:
-            c = molecular_crystal_2D(1, ['H2O'], [1], 10.0)
+            c = molecular_crystal_2D(1, ["H2O"], [1], 10.0)
             if c.valid is True:
                 pass
             else:
@@ -1314,44 +1384,45 @@ def test_modules():
 
     end(condition=2)
 
-from optparse import OptionParser
+
 if __name__ == "__main__":
-    import sys
-    from time import time
     from pyxtal import print_logo
-    parser = OptionParser()
-    parser.add_option("-m", "--module", dest="module", metavar='module', \
-                      default='atomic', type=str,
-                      help="modules options: 'all', 'atomic', 'molecular', \
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-m",
+        "--module",
+        dest="module",
+        metavar="module",
+        default="all",
+        type=str,
+        help="modules options: 'all', 'atomic', 'molecular', \
                                'atomic_2D', 'molecular_2D', 'atomic_1D',\
-                               'molecular_1D', 'cluster' ")
-    (options, args) = parser.parse_args()
+                               'molecular_1D', 'cluster' ",
+    )
+    options = parser.parse_args()
 
     print_logo()
 
-    try:
-        import numpy as np
-    except Exception as e:
-        fail(e)
-        sys.exit(0)
     modules_lib = {
-            'atomic': 'test_atomic()', 
-            'molecular': 'test_molecular()',
-            'atomic_2D': 'test_atomic_2D()',
-            'molecular_2D': 'test_molecular_2D()',
-            'atomic_1D': 'test_atomic_1D()', 
-            'molecular_1D': 'test_molecular_1D()', 
-            'cluster': 'test_cluster()', 
-            }
-    if options.module == 'all':
+        "atomic": "test_atomic()",
+        "molecular": "test_molecular()",
+        "atomic_2D": "test_atomic_2D()",
+        "molecular_2D": "test_molecular_2D()",
+        "atomic_1D": "test_atomic_1D()",
+        "molecular_1D": "test_molecular_1D()",
+        "cluster": "test_cluster()",
+    }
+    if options.module == "all":
         modules = modules_lib
     else:
         if options.module in modules_lib.keys():
             modules = [options.module]
         else:
-            print('please choose the modules from the followings:')
+            fprint("please choose the modules from the followings:")
             for module in modules_lib.keys():
-                print(module)
+                fprint(module)
 
     masterstart = time()
 
@@ -1363,5 +1434,5 @@ if __name__ == "__main__":
     masterend = time()
     mastertime = masterend - masterstart
 
-    print("TEST COMPLETE")
-    print("\nTotal time elapsed: {:.2f}s".format(mastertime))
+    fprint("TEST COMPLETE")
+    fprint("\nTotal time elapsed: {:.2f}s".format(mastertime))

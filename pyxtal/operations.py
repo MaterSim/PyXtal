@@ -20,7 +20,7 @@ from pymatgen.core.operations import SymmOp
 # PyXtal imports
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.constants import pi, rad, deg, pyxtal_verbosity
+from pyxtal.constants import rad, deg, pyxtal_verbosity
 
 # ------------------------------
 # Define functions
@@ -102,9 +102,7 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]):
                 specie2 = species[j]
                 diff = np.array(c2) - np.array(c1)
                 d_min = distance(diff, lattice, PBC=PBC)
-                rad = (
-                    Element(specie1).covalent_radius + Element(specie2).covalent_radius
-                )
+                rad = Element(specie1).covalent_radius + Element(specie2).covalent_radius
                 tol = factor * 0.5 * rad
                 if d_min < tol:
                     return False
@@ -448,9 +446,7 @@ def project_point(point, op, lattice=np.eye(3), PBC=[1, 1, 1]):
             # Needs to replace
             new_vector = project_point(point, new_op, lattice=lattice, PBC=[0, 0, 0])
             new_vectors.append(new_vector)
-            distances.append(
-                distance(new_vector - point, lattice=lattice, PBC=[0, 0, 0])
-            )
+            distances.append(distance(new_vector - point, lattice=lattice, PBC=[0, 0, 0]))
         i = np.argmin(distances)
         return filtered_coords(new_vectors[i], PBC=PBC)
 
@@ -508,7 +504,7 @@ def angle(v1, v2, radians=True):
     if np.isclose(dot, 1.0):
         return 0
     elif np.isclose(dot, -1.0):
-        return pi
+        return np.pi
     a = np.arccos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
     if radians is True:
         return a
@@ -562,7 +558,7 @@ def aa2matrix(axis, angle, radians=True, random=False):
     if random is True:
         # a = np.random.random()
         axis = np.random.sample(3)
-        angle = np.random.random() * pi * 2
+        angle = np.random.random() * np.pi * 2
     # Ensure axis is a unit vector
     axis = axis / np.linalg.norm(axis)
     # Define quantities which are reused
@@ -610,8 +606,8 @@ def rotate_vector(v1, v2):
     elif np.isclose(dot, -1, rtol=0.0001):
         r = [np.random.random(), np.random.random(), np.random.random()]
         v3 = np.cross(v1, r)
-        # return aa2matrix(v3, pi)
-        return Rotation.from_rotvec(pi * v3).as_matrix()
+        # return aa2matrix(v3, np.pi)
+        return Rotation.from_rotvec(np.pi * v3).as_matrix()
     theta = angle(v1, v2)
     v3 = np.cross(v1, v2)
     # return aa2matrix(v3, theta)
@@ -687,7 +683,7 @@ class OperationAnalyzer(SymmOp):
         # Find the order of a rotation based on its angle
         found = False
         for n in range(1, 61):
-            x = (n * angle) / (2.0 * pi)
+            x = (n * angle) / (2.0 * np.pi)
             y = x - np.round(x)
             if abs(y) <= tol:
                 found = True
@@ -723,9 +719,7 @@ class OperationAnalyzer(SymmOp):
                 self.m = self.op.rotation_matrix
                 self.det = np.linalg.det(op)
         else:
-            printx(
-                "Error: OperationAnalyzer requires a SymmOp or 3x3 array.", priority=1
-            )
+            printx("Error: OperationAnalyzer requires a SymmOp or 3x3 array.", priority=1)
         # If rotation matrix is not orthogonal
         if not is_orthogonal(self.m):
             self.type = "general"
@@ -876,7 +870,7 @@ class OperationAnalyzer(SymmOp):
 if __name__ == "__main__":
     # ----------------------------------------------------
     op = SymmOp.from_rotation_and_translation(
-        Rotation.from_rotvec(pi / 6 * np.array([1, 0, 0])).as_matrix(), [0, 0, 0]
+        Rotation.from_rotvec(np.pi / 6 * np.array([1, 0, 0])).as_matrix(), [0, 0, 0]
     )
     ops = [op]
     from pymatgen.symmetry.analyzer import generate_full_symmops

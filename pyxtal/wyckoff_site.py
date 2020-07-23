@@ -68,9 +68,7 @@ class mol_site:
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
             self.rotvec = self.orientation.r.as_rotvec()
-        pos = self.position
-        s = str(self.mol.formula) + ": "
-        s += "[{:6.3f} {:6.3f} {:6.3f}]  ".format(pos[0], pos[1], pos[2])
+        s = "{} @ [{:6.3f} {:6.3f} {:6.3f}]  ".format(self.mol.formula, *self.position)
         s += "Wyckoff letter: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Rotvec: ".format(self.site_symm)
         s += "{:6.3f} {:6.3f} {:6.3f}".format(
@@ -78,6 +76,7 @@ class mol_site:
         )
         return s
 
+    # NOTE appears deprecated?
     def get_ellipsoid(self):
         """
         Returns the bounding ellipsoid for the molecule. Applies the orientation
@@ -93,6 +92,7 @@ class mol_site:
         m = np.dot(e.rotation_matrix, self.orientation.get_matrix(angle=0))
         return SymmOp.from_rotation_and_translation(m, e.translation_vector)
 
+    # NOTE appears deprecated?
     def get_ellipsoids(self):
         """
         Returns the bounding ellipsoids for the molecules in the WP. Includes the correct
@@ -600,10 +600,7 @@ class atom_site:
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
 
-        pos = self.position
-        s = "{:>2s}: [{:6.4f} {:6.4f} {:6.4f}], ".format(
-            self.specie, pos[0], pos[1], pos[2]
-        )
+        s = "{:>2s} @ [{:6.4f} {:6.4f} {:6.4f}], ".format(self.specie, *self.position)
         s += "Wyckoff letter: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry: {:s}".format(self.site_symm)
         return s

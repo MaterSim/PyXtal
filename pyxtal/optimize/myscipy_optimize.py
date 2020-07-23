@@ -7,30 +7,45 @@ import warnings
 import sys
 import numpy
 from scipy._lib.six import callable, xrange
-from numpy import (atleast_1d, eye, mgrid, argmin, zeros, shape, squeeze,
-                   vectorize, asarray, sqrt, Inf, asfarray, isinf)
+from numpy import (
+    atleast_1d,
+    eye,
+    mgrid,
+    argmin,
+    zeros,
+    shape,
+    squeeze,
+    vectorize,
+    asarray,
+    sqrt,
+    Inf,
+    asfarray,
+    isinf,
+)
 import numpy as np
-from scipy.optimize.linesearch import (line_search_wolfe1, line_search_wolfe2,
-                         line_search_wolfe2 as line_search,
-                         LineSearchWarning)
+from scipy.optimize.linesearch import (
+    line_search_wolfe1,
+    line_search_wolfe2,
+    line_search_wolfe2 as line_search,
+    LineSearchWarning,
+)
 
 _epsilon = sqrt(numpy.finfo(float).eps)
 
 # standard status messages of optimizers
-_status_message = {'success': 'Optimization terminated successfully.',
-                   'maxfev': 'Maximum number of function evaluations has '
-                              'been exceeded.',
-                   'maxiter': 'Maximum number of iterations has been '
-                              'exceeded.',
-                   'pr_loss': 'Desired error not necessarily achieved due '
-                              'to precision loss.'}
+_status_message = {
+    "success": "Optimization terminated successfully.",
+    "maxfev": "Maximum number of function evaluations has " "been exceeded.",
+    "maxiter": "Maximum number of iterations has been " "exceeded.",
+    "pr_loss": "Desired error not necessarily achieved due " "to precision loss.",
+}
 
 
 class _LineSearchError(RuntimeError):
     pass
 
-def _line_search_wolfe12(f, fprime, xk, pk, gfk, old_fval, old_old_fval,
-                         **kwargs):
+
+def _line_search_wolfe12(f, fprime, xk, pk, gfk, old_fval, old_old_fval, **kwargs):
     """
     Same as line_search_wolfe1, but fall back to line_search_wolfe2 if
     suitable step length is not found, and raise an exception if a
@@ -41,11 +56,9 @@ def _line_search_wolfe12(f, fprime, xk, pk, gfk, old_fval, old_old_fval,
         If no suitable step size is found
     """
 
-    extra_condition = kwargs.pop('extra_condition', None)
+    extra_condition = kwargs.pop("extra_condition", None)
 
-    ret = line_search_wolfe1(f, fprime, xk, pk, gfk,
-                             old_fval, old_old_fval,
-                             **kwargs)
+    ret = line_search_wolfe1(f, fprime, xk, pk, gfk, old_fval, old_old_fval, **kwargs)
 
     if ret[0] is not None and extra_condition is not None:
         xp1 = xk + ret[0] * pk
@@ -56,20 +69,28 @@ def _line_search_wolfe12(f, fprime, xk, pk, gfk, old_fval, old_old_fval,
     if ret[0] is None:
         # line search failed: try different one.
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', LineSearchWarning)
+            warnings.simplefilter("ignore", LineSearchWarning)
             kwargs2 = {}
-            for key in ('c1', 'c2', 'amax'):
+            for key in ("c1", "c2", "amax"):
                 if key in kwargs:
                     kwargs2[key] = kwargs[key]
-            ret = line_search_wolfe2(f, fprime, xk, pk, gfk,
-                                     old_fval, old_old_fval,
-                                     extra_condition=extra_condition,
-                                     **kwargs2)
+            ret = line_search_wolfe2(
+                f,
+                fprime,
+                xk,
+                pk,
+                gfk,
+                old_fval,
+                old_old_fval,
+                extra_condition=extra_condition,
+                **kwargs2
+            )
 
     if ret[0] is None:
         raise _LineSearchError()
 
     return ret
+
 
 def vecnorm(x, ord=2):
     if ord == Inf:
@@ -77,18 +98,19 @@ def vecnorm(x, ord=2):
     elif ord == -Inf:
         return numpy.amin(numpy.abs(x))
     else:
-        return numpy.sum(numpy.abs(x)**ord, axis=0)**(1.0 / ord)
+        return numpy.sum(numpy.abs(x) ** ord, axis=0) ** (1.0 / ord)
+
 
 def wrap_function(function, args):
     ncalls = [0]
-    #print(wrapper_args)
-    #sys.exit()
+    # print(wrapper_args)
+    # sys.exit()
     def function_wrapper(*wrapper_args):
         ncalls[0] += 1
         return function(*(wrapper_args + args))
 
-
     return ncalls, function_wrapper
+
 
 class OptimizeResult(dict):
     """ Represents the optimization result.
@@ -125,6 +147,7 @@ class OptimizeResult(dict):
     with attribute accessors, one can see which attributes are available
     using the `keys()` method.
     """
+
     def __getattr__(self, name):
         try:
             return self[name]
@@ -137,13 +160,15 @@ class OptimizeResult(dict):
     def __repr__(self):
         if self.keys():
             m = max(map(len, list(self.keys()))) + 1
-            return '\n'.join([k.rjust(m) + ': ' + repr(v)
-                              for k, v in sorted(self.items())])
+            return "\n".join(
+                [k.rjust(m) + ": " + repr(v) for k, v in sorted(self.items())]
+            )
         else:
             return self.__class__.__name__ + "()"
 
     def __dir__(self):
         return list(self.keys())
+
 
 def _minimize_tpgd(fun, x0, args, jac, beta=1.001, gtol=1e-3, norm=Inf, maxiter=None):
     """
@@ -153,43 +178,53 @@ def _minimize_tpgd(fun, x0, args, jac, beta=1.001, gtol=1e-3, norm=Inf, maxiter=
     f = fun
     fprime = jac
     if maxiter is None:
-        maxiter = len(x0)*200
+        maxiter = len(x0) * 200
     k = 0
     func_calls, f = wrap_function(f, args)
     grad_calls, myfprime = wrap_function(fprime, args)
     fx0, gx0 = f(x0), myfprime(x0)
     gnorm = vecnorm(gx0, ord=norm)
-    gamma0 = 1e-3/gnorm
-    x1 = x0 + gamma0*gx0
+    gamma0 = 1e-3 / gnorm
+    x1 = x0 + gamma0 * gx0
     fx1, gx1 = f(x1), myfprime(x1)
     gnorm = vecnorm(gx1, ord=norm)
 
     while (gnorm > gtol) and (k < maxiter):
         (dim, mu, shift) = args
-        args = (dim, mu*beta, shift)
-        #compute gamma based on the Barzilai-Borwein[1] method 
-        #https://en.wikipedia.org/wiki/Gradient_descent
+        args = (dim, mu * beta, shift)
+        # compute gamma based on the Barzilai-Borwein[1] method
+        # https://en.wikipedia.org/wiki/Gradient_descent
         dg = gx1 - gx0
         dx = x1 - x0
-        gamma = np.abs(np.dot(dx, dg)/np.dot(dg, dg))
+        gamma = np.abs(np.dot(dx, dg) / np.dot(dg, dg))
 
-        #update the x0, gx0, fx0
+        # update the x0, gx0, fx0
         x0, gx0, fx0 = x1.copy(), gx1.copy(), fx1.copy()
-        x1 = x1-gx1*gamma
+        x1 = x1 - gx1 * gamma
         fx1, gx1 = f(x1), myfprime(x1)
         gnorm = vecnorm(gx1, ord=norm)
-        k +=1
-        #print('step in tpgd: {:4d} {:12.4f} {:12.4f}'.format(count, fx1, np.max(gx1)))
+        k += 1
+        # print('step in tpgd: {:4d} {:12.4f} {:12.4f}'.format(count, fx1, np.max(gx1)))
 
-    result = OptimizeResult(fun=fx1, jac=gx1, nfev=func_calls[0],
-                            x=x1, nit=k)
+    result = OptimizeResult(fun=fx1, jac=gx1, nfev=func_calls[0], x=x1, nit=k)
     return result
- 
 
-def _minimize_bfgs(fun, x0, args=(), jac=None, beta=1.001, callback=None,
-                   gtol=1e-5, norm=Inf, eps=_epsilon, maxiter=None,
-                   disp=False, return_all=False,
-                   **unknown_options):
+
+def _minimize_bfgs(
+    fun,
+    x0,
+    args=(),
+    jac=None,
+    beta=1.001,
+    callback=None,
+    gtol=1e-5,
+    norm=Inf,
+    eps=_epsilon,
+    maxiter=None,
+    disp=False,
+    return_all=False,
+    **unknown_options
+):
     """
     Minimization of scalar function of one or more variables using the
     BFGS algorithm.
@@ -236,13 +271,21 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, beta=1.001, callback=None,
     gnorm = vecnorm(gfk, ord=norm)
     while (gnorm > gtol) and (k < maxiter):
         (dim, mu, shift) = args
-        args = (dim, mu*beta, shift)
+        args = (dim, mu * beta, shift)
 
         pk = -numpy.dot(Hk, gfk)
         try:
-            alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = \
-                     _line_search_wolfe12(f, myfprime, xk, pk, gfk,
-                                          old_fval, old_old_fval, amin=1e-100, amax=1e100)
+            alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = _line_search_wolfe12(
+                f,
+                myfprime,
+                xk,
+                pk,
+                gfk,
+                old_fval,
+                old_old_fval,
+                amin=1e-100,
+                amax=1e100,
+            )
         except _LineSearchError:
             # Line search failed to find a better solution.
             warnflag = 2
@@ -262,7 +305,7 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, beta=1.001, callback=None,
             callback(xk)
         k += 1
         gnorm = vecnorm(gfk, ord=norm)
-        if (gnorm <= gtol):
+        if gnorm <= gtol:
             break
 
         if not numpy.isfinite(old_fval):
@@ -283,8 +326,9 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, beta=1.001, callback=None,
                 print("Divide-by-zero encountered: rhok assumed large")
         A1 = I - sk[:, numpy.newaxis] * yk[numpy.newaxis, :] * rhok
         A2 = I - yk[:, numpy.newaxis] * sk[numpy.newaxis, :] * rhok
-        Hk = numpy.dot(A1, numpy.dot(Hk, A2)) + (rhok * sk[:, numpy.newaxis] *
-                                                 sk[numpy.newaxis, :])
+        Hk = numpy.dot(A1, numpy.dot(Hk, A2)) + (
+            rhok * sk[:, numpy.newaxis] * sk[numpy.newaxis, :]
+        )
 
     fval = old_fval
     if np.isnan(fval):
@@ -293,12 +337,12 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, beta=1.001, callback=None,
         warnflag = 2
 
     if warnflag == 2:
-        msg = _status_message['pr_loss']
+        msg = _status_message["pr_loss"]
     elif k >= maxiter:
         warnflag = 1
-        msg = _status_message['maxiter']
+        msg = _status_message["maxiter"]
     else:
-        msg = _status_message['success']
+        msg = _status_message["success"]
 
     if disp:
         print("%s%s" % ("Warning: " if warnflag != 0 else "", msg))
@@ -307,19 +351,38 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, beta=1.001, callback=None,
         print("         Function evaluations: %d" % func_calls[0])
         print("         Gradient evaluations: %d" % grad_calls[0])
 
-    result = OptimizeResult(fun=fval, jac=gfk, hess_inv=Hk, nfev=func_calls[0],
-                            njev=grad_calls[0], status=warnflag,
-                            success=(warnflag == 0), message=msg, x=xk,
-                            nit=k)
+    result = OptimizeResult(
+        fun=fval,
+        jac=gfk,
+        hess_inv=Hk,
+        nfev=func_calls[0],
+        njev=grad_calls[0],
+        status=warnflag,
+        success=(warnflag == 0),
+        message=msg,
+        x=xk,
+        nit=k,
+    )
     if retall:
-        result['allvecs'] = allvecs
+        result["allvecs"] = allvecs
     return result
 
 
-def _minimize_cg(fun, x0, args=(), jac=None, beta=1.001, callback=None,
-                 gtol=1e-5, norm=Inf, eps=_epsilon, maxiter=None,
-                 disp=False, return_all=False,
-                 **unknown_options):
+def _minimize_cg(
+    fun,
+    x0,
+    args=(),
+    jac=None,
+    beta=1.001,
+    callback=None,
+    gtol=1e-5,
+    norm=Inf,
+    eps=_epsilon,
+    maxiter=None,
+    disp=False,
+    return_all=False,
+    **unknown_options
+):
     """
     Minimization of scalar function of one or more variables using the
     conjugate gradient algorithm.
@@ -366,8 +429,8 @@ def _minimize_cg(fun, x0, args=(), jac=None, beta=1.001, callback=None,
 
     while (gnorm > gtol) and (k < maxiter):
         (dim, mu, shift) = args
-        args = (dim, mu*beta, shift)
-        #print(k, mu)
+        args = (dim, mu * beta, shift)
+        # print(k, mu)
 
         deltak = numpy.dot(gfk, gfk)
 
@@ -401,10 +464,19 @@ def _minimize_cg(fun, x0, args=(), jac=None, beta=1.001, callback=None,
             return numpy.dot(pk, gfk) <= -sigma_3 * numpy.dot(gfk, gfk)
 
         try:
-            alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = \
-                     _line_search_wolfe12(f, myfprime, xk, pk, gfk, old_fval,
-                                          old_old_fval, c2=0.4, amin=1e-100, amax=1e100,
-                                          extra_condition=descent_condition)
+            alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = _line_search_wolfe12(
+                f,
+                myfprime,
+                xk,
+                pk,
+                gfk,
+                old_fval,
+                old_old_fval,
+                c2=0.4,
+                amin=1e-100,
+                amax=1e100,
+                extra_condition=descent_condition,
+            )
         except _LineSearchError:
             # Line search failed to find a better solution.
             warnflag = 2
@@ -424,12 +496,12 @@ def _minimize_cg(fun, x0, args=(), jac=None, beta=1.001, callback=None,
 
     fval = old_fval
     if warnflag == 2:
-        msg = _status_message['pr_loss']
+        msg = _status_message["pr_loss"]
     elif k >= maxiter:
         warnflag = 1
-        msg = _status_message['maxiter']
+        msg = _status_message["maxiter"]
     else:
-        msg = _status_message['success']
+        msg = _status_message["success"]
 
     if disp:
         print("%s%s" % ("Warning: " if warnflag != 0 else "", msg))
@@ -438,12 +510,18 @@ def _minimize_cg(fun, x0, args=(), jac=None, beta=1.001, callback=None,
         print("         Function evaluations: %d" % func_calls[0])
         print("         Gradient evaluations: %d" % grad_calls[0])
 
-    result = OptimizeResult(fun=fval, jac=gfk, nfev=func_calls[0],
-                            njev=grad_calls[0], status=warnflag,
-                            success=(warnflag == 0), message=msg, x=xk,
-                            nit=k)
+    result = OptimizeResult(
+        fun=fval,
+        jac=gfk,
+        nfev=func_calls[0],
+        njev=grad_calls[0],
+        status=warnflag,
+        success=(warnflag == 0),
+        message=msg,
+        x=xk,
+        nit=k,
+    )
     if retall:
-        result['allvecs'] = allvecs
+        result["allvecs"] = allvecs
     return result
-
 

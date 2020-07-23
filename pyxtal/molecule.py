@@ -24,7 +24,6 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.database.element import Element
 from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
 from pyxtal.database.collection import Collection
-from pyxtal.constants import pi
 
 # Define functions
 # ------------------------------
@@ -227,7 +226,7 @@ class Orientation:
                 # randomly generate the axis and angle
                 axis = np.random.sample(3)
                 self.axis = axis / np.linalg.norm(axis)
-                self.angle = np.random.random() * pi * 2
+                self.angle = np.random.random() * np.pi * 2
             else:
                 self.angle = angle
             self.r = Rotation.from_rotvec(self.angle * self.axis)
@@ -235,7 +234,7 @@ class Orientation:
 
         elif self.degrees == 1:
             if angle == "random":
-                angle = np.random.random() * pi * 2
+                angle = np.random.random() * np.pi * 2
             self.angle = angle
             self.r = Rotation.from_rotvec(self.angle * self.axis)
             self.matrix = self.r.as_matrix()
@@ -259,14 +258,14 @@ class Orientation:
             if angle == "random":
                 axis = np.random.sample(3)
                 axis = axis / np.linalg.norm(axis)
-                angle = np.random.random() * pi * 2
+                angle = np.random.random() * np.pi * 2
             else:
                 axis = self.axis
             return Rotation.from_rotvec(angle * axis).as_matrix()
 
         elif self.degrees == 1:
             if angle == "random":
-                angle = np.random.random() * pi * 2
+                angle = np.random.random() * np.pi * 2
             return Rotation.from_rotvec(angle * self.axis).as_matrix()
 
         elif self.degrees == 0:
@@ -478,8 +477,8 @@ def get_symmetry(mol, already_oriented=False):
             symm_m.append(op)
         # Add 12-fold  and reflections in place of ininitesimal rotation
         for axis in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
-            # op = SymmOp.from_rotation_and_translation(aa2matrix(axis, pi/6), [0,0,0])
-            m1 = Rotation.from_rotvec(pi / 6 * axis).as_matrix()
+            # op = SymmOp.from_rotation_and_translation(aa2matrix(axis, np.pi/6), [0,0,0])
+            m1 = Rotation.from_rotvec(np.pi / 6 * axis).as_matrix()
             op = SymmOp.from_rotation_and_translation(m1, [0, 0, 0])
             if pga.is_valid_op(op):
                 symm_m.append(op)
@@ -596,8 +595,7 @@ def orientation_in_wyckoff_position(
             for op in wyckoffs:
                 if np.linalg.det(op.rotation_matrix) < 0:
                     printx(
-                        "Warning: cannot place chiral molecule in spagegroup",
-                        priority=2,
+                        "Warning: cannot place chiral molecule in spagegroup", priority=2,
                     )
                     return False
 
@@ -753,9 +751,7 @@ def orientation_in_wyckoff_position(
                     new_op = SymmOp.from_rotation_and_translation(
                         np.dot(m2, np.linalg.inv(m1)), [0, 0, 0]
                     )
-                    P = SymmOp.from_rotation_and_translation(
-                        np.linalg.inv(m1), [0, 0, 0]
-                    )
+                    P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0, 0, 0])
                     old_op = P * new_op * P.inverse
                     if pga.is_valid_op(old_op):
                         list_i.remove(j)

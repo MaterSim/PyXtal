@@ -598,8 +598,9 @@ class molecular_crystal:
         s += "\nVolume factor: " + str(self.factor)
         s += "\n" + str(self.lattice)
         if self.valid:
+            s += "\nWyckoff sites:"
             for wyc in self.mol_sites:
-                s += "\nWyckoff sites:" + str(wyc)
+                s += "\n\t{}".format(wyc)
         else:
             s += "\nStructure not generated."
         return s
@@ -625,9 +626,7 @@ class molecular_crystal:
         """
         atomic = self.check_atomic_distances
         # Check the minimum number of degrees of freedom within the Wyckoff positions
-        degrees = self.check_compatible(
-            self.group, self.numMols, self.valid_orientations
-        )
+        degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
         if degrees is False:
             self.struct = None
             self.valid = False
@@ -819,9 +818,7 @@ class molecular_crystal:
                                         if numMol_added == numMol:
                                             # We have enough molecules of the current type
                                             mol_sites_total = deepcopy(mol_sites_tmp)
-                                            coordinates_total = deepcopy(
-                                                coordinates_tmp
-                                            )
+                                            coordinates_total = deepcopy(coordinates_tmp)
                                             species_total = deepcopy(species_tmp)
                                             break
 
@@ -1026,4 +1023,3 @@ class molecular_crystal_1D(molecular_crystal):
             lattice,
             tm,
         )
-

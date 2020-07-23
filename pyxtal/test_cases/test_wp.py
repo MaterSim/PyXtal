@@ -4,12 +4,12 @@ from sys import exit
 
 data = np.load("wyckoff_symmetry.npy")
 identity = data[1][0][0]
-#loop sg's
-for x in range(1,231):
+# loop sg's
+for x in range(1, 231):
     seen = []
-    #loop Wyckoff positions
+    # loop Wyckoff positions
     for i, y in enumerate(data[x]):
-        #loop points
+        # loop points
         for j, z in enumerate(y):
             if z not in seen:
                 seen.append(z)

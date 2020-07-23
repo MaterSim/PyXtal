@@ -9,7 +9,7 @@ from copy import deepcopy
 from matrix import *
 from math import sqrt
 
-'''site_symmetry = [None]
+"""site_symmetry = [None]
 #site_symm is stored by space group number starting with 1 (site_symm[1] is P1))
 print("Calculating space group:")
 for sg in range(1, 231):
@@ -84,25 +84,29 @@ for sg in range(1, 231):
             symm_point = generate_full_symmops(symm_point_partial, 1e-2)
             #print("Done")
             for op in symm_point:
-                site_symmetry[sg][-1][-1].append(op.as_xyz_string())'''
+                site_symmetry[sg][-1][-1].append(op.as_xyz_string())"""
 
-P = SymmOp.from_rotation_and_translation([[1,-.5,0],[0,sqrt(3)/2,0],[0,0,1]], [0,0,0])
+P = SymmOp.from_rotation_and_translation(
+    [[1, -0.5, 0], [0, sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
+)
 
 site_symmetry = [None]
-#site_symm is stored by space group number starting with 1 (site_symm[1] is P1))
+# site_symm is stored by space group number starting with 1 (site_symm[1] is P1))
 print("Calculating space group:")
 for sg in range(1, 231):
     print(sg)
     site_symmetry.append([])
     symm_sg = get_wyckoff_symmetry(sg)
-    #Get site symmetry for every point in each wp, and store
+    # Get site symmetry for every point in each wp, and store
     for i, symm_wp in enumerate(symm_sg):
         site_symmetry[sg].append([])
         for j, symm_point in enumerate(symm_wp):
             site_symmetry[sg][-1].append([])
             for op in symm_point:
-                new_op = P*op*P.inverse
-                new_op = new_op.from_rotation_and_translation(new_op.rotation_matrix,[0,0,0])
+                new_op = P * op * P.inverse
+                new_op = new_op.from_rotation_and_translation(
+                    new_op.rotation_matrix, [0, 0, 0]
+                )
                 site_symmetry[sg][-1][-1].append(new_op.as_xyz_string())
 
 

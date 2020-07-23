@@ -5,7 +5,7 @@ import random
 # PyXtal imports
 from pyxtal.msg import printx
 from pyxtal.operations import angle
-from pyxtal.constants import pi, deg, rad
+from pyxtal.constants import deg, rad
 
 
 class Lattice:
@@ -96,9 +96,7 @@ class Lattice:
             self.unique_axis = "c"
         # Set stress normalization info
         if self.ltype == "triclinic":
-            self.stress_normalization_matrix = np.array(
-                [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
-            )
+            self.stress_normalization_matrix = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
         elif self.ltype == "monoclinic":
             if self.PBC == [1, 1, 1]:
                 self.stress_normalization_matrix = np.array(
@@ -124,13 +122,9 @@ class Lattice:
             "hexagonal",
             "cubic",
         ]:
-            self.stress_normalization_matrix = np.array(
-                [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-            )
+            self.stress_normalization_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         elif self.ltype in ["spherical", "ellipsoidal"]:
-            self.stress_normalization_matrix = np.array(
-                [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-            )
+            self.stress_normalization_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
         # Set info for on-diagonal stress symmetrization
         if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral"]:
             self.stress_indices = [(0, 0), (1, 1)]
@@ -169,6 +163,7 @@ class Lattice:
         """
         try:
             return self.matrix
+        # TODO remove bare except
         except:
             printx("Error: Lattice matrix undefined.", priority=1)
             return
@@ -180,13 +175,13 @@ class Lattice:
         return (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
 
     def set_matrix(self, matrix=None):
-        if matrix != None:
+        if matrix is not None:
             m = np.array(matrix)
             if np.shape(m) == (3, 3):
                 self.matrix = m
             else:
                 printx("Error: matrix must be a 3x3 numpy array or list", priority=1)
-        elif matrix == None:
+        elif matrix is None:
             self.reset_matrix()
         para = matrix2para(self.matrix)
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
@@ -255,41 +250,48 @@ class Lattice:
         **kwargs
     ):
         """
-        Creates a Lattice object from 6 lattice parameters. Additional keyword arguments
-        are available. Unless specified by the keyword random=True, does not create a
-        new matrix upon calling reset_matrix. This allows for generation of random
-        crystals with a specific choice of unit cell.
+        Creates a Lattice object from 6 lattice parameters. Additional keyword
+        arguments  are available. Unless specified by the keyword random=True,
+        does not create a new matrix upon calling reset_matrix. This allows
+        for generation of random crystals with a specific choice of unit cell.
 
         Args:
             a, b, c: The length (in Angstroms) of the unit cell vectors
             alpha: the angle (in degrees) between the b and c vectors
             beta: the angle (in degrees) between the a and c vectors
             gamma: the angle (in degrees) between the a and b vectors
-            ltype: the lattice type ("cubic, tetragonal, etc."). Also available are "spherical",
-                which confines generated points to lie within a sphere, and "ellipsoidal", which
-                confines generated points to lie within an ellipse (oriented about the z axis)
-            radians: whether or not to use radians (instead of degrees) for the lattice angles
-            PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-            kwargs: various values which may be defined. If none are defined, random ones
-                will be generated. Values will be passed to generate_lattice. Options include:
-                area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
-                    crystals
-                thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
-                    generate 2D crystals
-                unique_axis: The unique axis for certain symmetry (and especially layer) groups.
-                    Because the symmetry operations are not also transformed, you should use the
-                    default values for random crystal generation
-                random: If False, keeps the stored values for the lattice geometry even upon applying
-                    reset_matrix. To alter the matrix, use set_matrix() or set_para
+            ltype: the lattice type ("cubic, tetragonal, etc."). Also available
+                are "spherical", which confines generated points to lie within a
+                sphere, and "ellipsoidal", which confines generated points to lie
+                within an ellipse (oriented about the z axis)
+            radians: whether or not to use radians (instead of degrees) for the
+                lattice angles
+            PBC: A periodic boundary condition list, where 1 means periodic,
+                0 means not periodic.
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along
+                the z axis
+            kwargs: various values which may be defined. If none are defined,
+                random ones will be generated. Values will be passed to generate_lattice.
+                Options include:
+                area: The cross-sectional area (in Angstroms squared). Only used
+                    to generate 1D crystals
+                thickness: The unit cell's non-periodic thickness (in Angstroms).
+                    Only used to generate 2D crystals
+                unique_axis: The unique axis for certain symmetry (and especially
+                    layer) groups. Because the symmetry operations are not also
+                    transformed, you should use the default values for random
+                    crystal generation
+                random: If False, keeps the stored values for the lattice geometry
+                    even upon applying reset_matrix. To alter the matrix, 
+                    use set_matrix() or set_para
                 'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
                     equivalent to the other two
-                'min_l': the smallest allowed cell vector. The smallest vector must be larger
-                    than this.
-                'mid_l': the second smallest allowed cell vector. The second smallest vector
-                    must be larger than this.
-                'max_l': the third smallest allowed cell vector. The largest cell vector must
+                'min_l': the smallest allowed cell vector. The smallest vector must
                     be larger than this.
+                'mid_l': the second smallest allowed cell vector. The second
+                    smallest vector must be larger than this.
+                'max_l': the third smallest allowed cell vector. The largest cell
+                    vector must be larger than this.
 
         Returns:
             a Lattice object with the specified parameters
@@ -393,7 +395,7 @@ def generate_lattice(
     ltype,
     volume,
     minvec=1.2,
-    minangle=pi / 6,
+    minangle=np.pi / 6,
     max_ratio=10.0,
     maxattempts=100,
     **kwargs
@@ -426,7 +428,7 @@ def generate_lattice(
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
-    maxangle = pi - minangle
+    maxangle = np.pi - minangle
     for n in range(maxattempts):
         # Triclinic
         # if sg <= 2:
@@ -450,7 +452,7 @@ def generate_lattice(
         # Monoclinic
         # elif sg <= 15:
         elif ltype == "monoclinic":
-            alpha, gamma = pi / 2, pi / 2
+            alpha, gamma = np.pi / 2, np.pi / 2
             beta = gaussian(minangle, maxangle)
             x = np.sin(beta)
             vec = random_vector()
@@ -462,7 +464,7 @@ def generate_lattice(
         # Orthorhombic
         # elif sg <= 74:
         elif ltype == "orthorhombic":
-            alpha, beta, gamma = pi / 2, pi / 2, pi / 2
+            alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
             xyz = vec[0] * vec[1] * vec[2]
@@ -473,7 +475,7 @@ def generate_lattice(
         # Tetragonal
         # elif sg <= 142:
         elif ltype == "tetragonal":
-            alpha, beta, gamma = pi / 2, pi / 2, pi / 2
+            alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
             c = vec[2] / (vec[0] * vec[1]) * np.cbrt(volume / x)
@@ -481,7 +483,7 @@ def generate_lattice(
         # Trigonal/Rhombohedral/Hexagonal
         # elif sg <= 194:
         elif ltype in ["hexagonal", "trigonal", "rhombohedral"]:
-            alpha, beta, gamma = pi / 2, pi / 2, pi / 3 * 2
+            alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 3 * 2
             x = np.sqrt(3.0) / 2.0
             vec = random_vector()
             c = vec[2] / (vec[0] * vec[1]) * np.cbrt(volume / x)
@@ -489,7 +491,7 @@ def generate_lattice(
         # Cubic
         # else:
         elif ltype == "cubic":
-            alpha, beta, gamma = pi / 2, pi / 2, pi / 2
+            alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             s = (volume) ** (1.0 / 3.0)
             a, b, c = s, s, s
         # Check that lattice meets requirements
@@ -561,7 +563,7 @@ def generate_lattice_2D(
     volume,
     thickness=None,
     minvec=1.2,
-    minangle=pi / 6,
+    minangle=np.pi / 6,
     max_ratio=10.0,
     maxattempts=100,
     **kwargs
@@ -608,7 +610,7 @@ def generate_lattice_2D(
     # Set the unique axis for monoclinic cells
     # if num in range(3, 8): unique_axis = "c"
     # elif num in range(8, 19): unique_axis = "a"
-    maxangle = pi - minangle
+    maxangle = np.pi - minangle
     for n in range(maxattempts):
         abc = np.ones([3])
         if thickness is None:
@@ -617,7 +619,7 @@ def generate_lattice_2D(
         else:
             thickness1 = thickness
         abc[NPA - 1] = thickness1
-        alpha, beta, gamma = pi / 2, pi / 2, pi / 2
+        alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
         # Triclinic
         # if num <= 2:
         if ltype == "triclinic":
@@ -630,9 +632,7 @@ def generate_lattice_2D(
                 - np.cos(gamma) ** 2
                 + 2 * (np.cos(alpha) * np.cos(beta) * np.cos(gamma))
             )
-            abc[NPA - 1] = (
-                abc[NPA - 1] / x
-            )  # scale thickness by outer product of vectors
+            abc[NPA - 1] = abc[NPA - 1] / x  # scale thickness by outer product of vectors
             ab = volume / (abc[NPA - 1] * x)
             ratio = a / b
             if NPA == 3:
@@ -702,7 +702,7 @@ def generate_lattice_2D(
         # Trigonal/Hexagonal
         # elif num <= 80:
         elif ltype in ["hexagonal", "trigonal"]:
-            gamma = pi / 3 * 2
+            gamma = np.pi / 3 * 2
             x = np.sqrt(3.0) / 2.0
             if NPA == 3:
                 abc[0] = abc[1] = np.sqrt((volume / x) / abc[NPA - 1])
@@ -784,7 +784,7 @@ def generate_lattice_1D(
     volume,
     area=None,
     minvec=1.2,
-    minangle=pi / 6,
+    minangle=np.pi / 6,
     max_ratio=10.0,
     maxattempts=100,
     **kwargs
@@ -831,7 +831,7 @@ def generate_lattice_1D(
     # Set the unique axis for monoclinic cells
     # if num in range(3, 8): unique_axis = "a"
     # elif num in range(8, 13): unique_axis = "c"
-    maxangle = pi - minangle
+    maxangle = np.pi - minangle
     for n in range(maxattempts):
         abc = np.ones([3])
         if area is None:
@@ -840,7 +840,7 @@ def generate_lattice_1D(
         else:
             thickness1 = volume / area
         abc[PA - 1] = thickness1
-        alpha, beta, gamma = pi / 2, pi / 2, pi / 2
+        alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
         # Triclinic
         # if num <= 2:
         if ltype == "triclinic":
@@ -923,7 +923,7 @@ def generate_lattice_1D(
         # Trigonal/Rhombohedral/Hexagonal
         # elif num <= 75:
         elif ltype in ["hexagonal", "trigonal"]:
-            gamma = pi / 3 * 2
+            gamma = np.pi / 3 * 2
             x = np.sqrt(3.0) / 2.0
             if PA == 3:
                 abc[0] = abc[1] = np.sqrt((volume / x) / abc[PA - 1])
@@ -1038,8 +1038,8 @@ def generate_lattice_0D(
     """
     if ltype == "spherical":
         # Use a cubic lattice with altered volume
-        a = b = c = np.cbrt((3 * volume) / (4 * pi))
-        alpha = beta = gamma = 0.5 * pi
+        a = b = c = np.cbrt((3 * volume) / (4 * np.pi))
+        alpha = beta = gamma = 0.5 * np.pi
         if a < minvec:
             printx(
                 "Could not generate spherical lattice; volume too small compared to minvec",
@@ -1049,8 +1049,8 @@ def generate_lattice_0D(
         return np.array([a, b, c, alpha, beta, gamma])
     if ltype == "ellipsoidal":
         # Use a matrix with only on-diagonal elements, with a = b
-        alpha, beta, gamma = pi / 2, pi / 2, pi / 2
-        x = (4.0 / 3.0) * pi
+        alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
+        x = (4.0 / 3.0) * np.pi
         for numattempts in range(maxattempts):
             vec = random_vector()
             c = vec[2] / (vec[0] * vec[1]) * np.cbrt(volume / x)
@@ -1092,7 +1092,7 @@ def matrix2para(matrix, radians=True):
 
     if not radians:
         # convert radians to degrees
-        deg = 180.0 / pi
+        deg = 180.0 / np.pi
         cell_para[3] *= deg
         cell_para[4] *= deg
         cell_para[5] *= deg
@@ -1126,7 +1126,7 @@ def para2matrix(cell_para, radians=True, format="lower"):
     beta = cell_para[4]
     gamma = cell_para[5]
     if radians is not True:
-        rad = pi / 180.0
+        rad = np.pi / 180.0
         alpha *= rad
         beta *= rad
         gamma *= rad
@@ -1308,9 +1308,7 @@ def gaussian(min, max, sigma=3.0):
             return x
 
 
-def random_vector(
-    minvec=[0.0, 0.0, 0.0], maxvec=[1.0, 1.0, 1.0], width=0.35, unit=False
-):
+def random_vector(minvec=[0.0, 0.0, 0.0], maxvec=[1.0, 1.0, 1.0], width=0.35, unit=False):
     """
     Generate a random vector for lattice constant generation. The ratios between
     x, y, and z of the returned vector correspond to the ratios between a, b,
