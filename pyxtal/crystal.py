@@ -557,34 +557,34 @@ class random_crystal:
                 if output:
                     final_coords, final_species, wyckoff_sites = output
                     break
+            if self.valid:
+                final_number = [Element(ele).z for ele in final_species]
+                final_coords = np.array(final_coords)
+                cart_coords = np.dot(final_coords, cell_matrix)
 
-            final_number = [Element(ele).z for ele in final_species]
-            final_coords = np.array(final_coords)
-            cart_coords = np.dot(final_coords, cell_matrix)
+                if self.dim != 0:
+                    # Add space above and below a 2D or 1D crystals
+                    cell_matrix, final_coords = add_vacuum(
+                        cell_matrix, final_coords, PBC=self.PBC
+                    )
+                    self.struct = Structure(cell_matrix, final_species, final_coords)
+                    self.spg_struct = (cell_matrix, final_coords, final_number)
+                else:
+                    self.species = final_species
+                    # Clusters are handled as large molecules
+                    self.molecule = Molecule(final_species, cart_coords)
+                    # Calculate binding box
+                    diffs = np.max(cart_coords, axis=0) - np.min(cart_coords, axis=0) + 10
+                    # a, b, c = diffs[0], diffs[1], diffs[2]
+                    self.struct = self.molecule.get_boxed_structure(*diffs)
 
-            if self.dim != 0:
-                # Add space above and below a 2D or 1D crystals
-                cell_matrix, final_coords = add_vacuum(
-                    cell_matrix, final_coords, PBC=self.PBC
-                )
-                self.struct = Structure(cell_matrix, final_species, final_coords)
-                self.spg_struct = (cell_matrix, final_coords, final_number)
-            else:
-                self.species = final_species
-                # Clusters are handled as large molecules
-                self.molecule = Molecule(final_species, cart_coords)
-                # Calculate binding box
-                diffs = np.max(cart_coords, axis=0) - np.min(cart_coords, axis=0) + 10
-                # a, b, c = diffs[0], diffs[1], diffs[2]
-                self.struct = self.molecule.get_boxed_structure(*diffs)
-
-            self.sites = final_species
-            self.frac_coords = final_coords
-            self.cart_coords = np.dot(final_coords, cell_matrix)
-            self.lattice_matrix = cell_matrix
-            self.wyckoff_sites = wyckoff_sites
-            self.valid = True
-            return
+                self.sites = final_species
+                self.frac_coords = final_coords
+                self.cart_coords = np.dot(final_coords, cell_matrix)
+                self.lattice_matrix = cell_matrix
+                self.wyckoff_sites = wyckoff_sites
+                self.valid = True
+                return
 
         self.valid = False
         self.struct = None
