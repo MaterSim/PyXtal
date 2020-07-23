@@ -15,8 +15,8 @@ from pyxtal.operations import (
     project_point,
     distance_matrix,
     distance,
-    printx,
 )
+from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
 from pyxtal.database.element import Element

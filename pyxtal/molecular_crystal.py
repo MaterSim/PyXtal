@@ -5,9 +5,7 @@ import numpy as np
 from copy import deepcopy
 
 # External Libraries
-from pymatgen.core.structure import Structure  # , Molecule
-
-# from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+from pymatgen.core.structure import Structure  
 
 # PyXtal imports
 # NOTE comprhys: surely importing constants to use as defaults
