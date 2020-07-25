@@ -32,10 +32,10 @@ setup(
         #'pyxtal.potentials': ['*'],
     },
     scripts=[
-        "scripts/pyxtal_atom",
-        "scripts/pyxtal_test",
-        "scripts/pyxtal_symmetry",
-        "scripts/pyxtal_molecule",
+        "scripts/pyxtal_atom.py",
+        "scripts/pyxtal_test.py",
+        "scripts/pyxtal_symmetry.py",
+        "scripts/pyxtal_molecule.py",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

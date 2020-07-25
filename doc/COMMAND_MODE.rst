@@ -4,71 +4,73 @@ Run PyXtal executables
 Currently, we provide several utilities to the users so that they can run the code from command line with Python scripting. 
 They include:
 
-- ``Pyxtal_symmetry``: a tool to access the symmetry information
-- ``Pyxtal_atom``: a tool to generate atomic crystals
-- ``Pyxtal_molecule``: a tool to generate molecular crystals
-- ``Pyxtal_test``: a tool to test all modules
+- ``Pyxtal_symmetry.py``: a tool to access the symmetry information
+- ``Pyxtal_atom.py``: a tool to generate atomic crystals
+- ``Pyxtal_molecule.py``: a tool to generate molecular crystals
+- ``Pyxtal_test.py``: a tool to test all modules
 
 After a successfull `installation <Installation.html>`_, all of them can be accessed by invoking the ``-h`` command:
 
 ::
 
-    $ pyxtal -h
+ $ pyxtal_atom.py -h
 
-                 ______       _    _          _   
-                (_____ \     \ \  / /        | |   
-                 _____) )   _ \ \/ / |_  ____| |  
-                |  ____/ | | | )  (|  _)/ _  | | 
-                | |    | |_| |/ /\ \ |_( ( | | |___
-                |_|     \__  /_/  \_\___)_||_|_(___
-                       (____/      
-    
-    
-    ----------------------(version 0.0.1 )----------------------
-    
-    A Python package for random crystal generation
-    The source code is available at https://github.com/qzhu2017/pyxtal
-    Developed by Zhu's group at University of Nevada Las Vegas
-    
-    
-    Usage: pyxtal [options]
-    
-    Options:
-      -h, --help            show this help message and exit
-      -s sg, --symmetry=sg  desired symmetry, number or string, e.g., 36, Pbca, Ih
-      -e element, --element=element
-                            desired elements: e.g., Li
-      -n numIons, --numIons=numIons
-                            desired numbers of atoms: 16
-      -f factor, --factor=factor
-                            volume factor: default 1.0
-      -v verbosity, --verbosity=verbosity
-                            verbosity: default 0; higher values print more
-                            information
-      -a attempts, --attempts=attempts
-                            number of crystals to generate: default 1
-      -o outdir, --outdir=outdir
-                            Directory for storing output cif files: default 'out'
-      -d dimension, --dimension=dimension
-                            desired dimension: (3, 2, 1, 0): default 3
-      -t thickness, --thickness=thickness
-                            Thickness, in Angstroms, of a 2D crystal, or area of a
-                            1D crystal, None generates a value automatically:
-                            default None
+             ______       _    _          _   
+            (_____ \     \ \  / /        | |   
+             _____) )   _ \ \/ / |_  ____| |  
+            |  ____/ | | | )  (|  _)/ _  | | 
+            | |    | |_| |/ /\ \ |_( (_| | |___
+            |_|     \__  /_/  \_\___)__|_|_____)
+                   (____/      
 
 
-Among them, ``pyxtal_test`` is mainly used for the internal test. In the following, we explain the rest utilites in detail.
+----------------------(version 0.0.4 )----------------------
+
+A Python package for random crystal generation
+The source code is available at https://github.com/qzhu2017/pyxtal
+Developed by Zhu's group at University of Nevada Las Vegas
+
+
+usage: pyxtal_atom.py [-h] [-s sg] [-e element] [-n numIons] [-f factor]
+                      [-v verbosity] [-a attempts] [-o outdir] [-d dimension]
+                      [-t thickness]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s sg, --symmetry sg  desired symmetry, number or string, e.g., 36, Pbca, Ih
+  -e element, --element element
+                        desired elements: e.g., Li
+  -n numIons, --numIons numIons
+                        desired numbers of atoms: 16
+  -f factor, --factor factor
+                        volume factor: default 1.0
+  -v verbosity, --verbosity verbosity
+                        verbosity: default 0; higher values print more
+                        information
+  -a attempts, --attempts attempts
+                        number of crystals to generate: default 1
+  -o outdir, --outdir outdir
+                        Directory for storing output cif files: default 'out'
+  -d dimension, --dimension dimension
+                        desired dimension: (3, 2, 1, 0): default 3
+  -t thickness, --thickness thickness
+                        Thickness, in Angstroms, of a 2D crystal, or area of a
+                        1D crystal, None generates a value automatically:
+                        default None
+
+
+Among them, ``pyxtal_test.py`` is mainly used for the internal test. In the following, we explain the rest utilites in detail.
    
 PyXtal_symmetry utility
 ------------------------
-``PyXtal_symmetry`` is a utility to handle the generation of moelcular crystals.
+``PyXtal_symmetry.py`` is a utility to handle the generation of moelcular crystals.
 
 - `-d`, the dimension, e.g., ``3``, ``2``, ``1``, ``0``. The defult is ``3``.
 - `-s`: the target symmetry (*space*, *layer*, *rod*, *point* group information), either by *string* (e.g., ``Ih``, ``Pbca``) and *integer* (``61``).
 
 ::
     
-    $ pyxtal_symmetry -s 36
+    $ pyxtal_symmetry.py -s 36
 
     -- Space group # 36 (Cmc2_1)--
     8b site symm: 1
@@ -88,7 +90,7 @@ PyXtal_symmetry utility
 
 ::
 
-    $ pyxtal_symmetry -s 20 -d 2
+    $ pyxtal_symmetry.py -s 20 -d 2
     
     -- Layer group # 20 (p2_122)--
     4d site symm: 1
@@ -110,7 +112,7 @@ if the ``-s`` tag is not given, it will output the list of all possible symmetry
 
 ::
 
-    $ pyxtal_symmetry -d 3
+    $ pyxtal_symmetry.py -d 3
         space_group
     1            P1
     2           P-1
@@ -155,8 +157,8 @@ if the ``-s`` tag is not given, it will output the list of all possible symmetry
     230       Ia-3d
 
 PyXtal_atom utility
---------------
-``PyXtal_atom`` is a utility to handle the generation of atomic crystals.
+--------------------
+``PyXtal_atom.py`` is a utility to handle the generation of atomic crystals.
 Typically, four arguments are requried to describe the target structure:
 
 - `-d`, the dimension, e.g., ``3``, ``2``, ``1``, ``0``.
@@ -175,7 +177,7 @@ Below is a quick example to generate a random ``C60`` clusters with icosahedral 
 
 ::
 
-    $ pyxtal_atom -e C -n 60 -d 0 -s Ih
+    $ pyxtal_atom.py -e C -n 60 -d 0 -s Ih
 
                  ______       _    _          _   
                 (_____ \     \ \  / /        | |   
@@ -215,7 +217,7 @@ By default, ``-d`` tag is 3, which means to generate 3D crystal. Below is a quic
 
 ::
 
-    $ pyxtal_atom -e C -n 2 -s 227
+    $ pyxtal_atom.py -e C -n 2 -s 227
     
     Symmetry requested: 227(Fd-3m), generated: Fd-3m
     Output to out/C8.cif
@@ -235,7 +237,7 @@ It is important to note that we specified ``2`` for ``-n`` tag, which means 2 ca
 
 ::
 
-    $ pyxtal_atom -e Mo,S -n 1,2 -s 77 -d 2 -t 2.4
+    $ pyxtal_atom.py -e Mo,S -n 1,2 -s 77 -d 2 -t 2.4
 
     Symmetry requested: 77(p6mm), generated: P6mm
     Output to out/Mo1S2.cif
@@ -260,7 +262,7 @@ Below is an example to generate of random crystal for a famours drug molecule RO
 
 ::
 
-    $ pyxtal_molecule -e ROY -n 4 -s P2_12_12_1
+    $ pyxtal_molecule.py -e ROY -n 4 -s P2_12_12_1
     
     Symmetry requested: 19 (P2_12_12_1), generated: P2_12_12_1, vol: 2895.37 A^3
     Output to out/S4O8N12C48H36.cif
@@ -278,7 +280,7 @@ This is very useful for molecules with high internal symmetry. During crystalliz
 
 ::
 
-    $ pyxtal_molecule -e C60 -n 2 -s 36
+    $ pyxtal_molecule.py -e C60 -n 2 -s 36
 
 .. image:: ../images/C60-x.png
    :height: 703 px

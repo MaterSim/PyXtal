@@ -23,15 +23,19 @@ In order to generate random symmetrical crystals, PyXtal uses space groups and t
 2) Check the compatibility of the stoichiometry with the space group. 
 
 .. Because atoms lie in Wyckoff positions, and these can only have specific numbers of atoms in them, not every number of atoms will be able to fit into a unit cell without breaking the symmetry. To check this, we consider the full number of each type of atom, then reduce this number by the size of a Wyckoff position, beginning with the largest (general) position. If the number goes to exactly zero for each atom type, we say the stoichiometry is compatible with the space group. Additionally, we check the degrees of freedom of each Wyckoff position, so as to avoid placing multiple atoms in the same location. For molecular crystals, we also check whether the molecules can be symmetrically oriented into each Wyckoff position.
+
 3) Generate a random lattice consistent with the space group. 
 
 .. The cell parameters are based on both the crystal class (which determines the latice angles) and the stoichiometry (which determines the volume). Where there is some leeway for the lattice parameters, a value will be randomly chosen, with preference for more symmetrical values. If the user has defined a lattice, that will be used instead. For randomly generated lattices, we also check that the atoms or molecules can fit into the unit cell without extending outside of it.
+
 4) Begin placing atoms into Wyckoff positions, one atomic specie at a time. 
 
 .. First we check the multiplicity of the general Wyckoff position. If at least this number of atoms still needs to be added, then we place the atoms into the general position. If fewer atoms are needed, we instead place the atoms into a special Wyckoff position, beginning with the largest, then decreasing in multiplicity as needed. We choose a random vector between [0,0,0] and (1,1,1), and use this as the generating point for the atoms in the Wyckoff position.
+
 5) Check that the atoms in the single Wyckoff position are not too close together. If the minimum distance is smaller than some tolerance (based on the atomic species), then we merge the Wyckoff position into a smaller special position. 
 
 .. To do this, we first group atoms together based on the shortest distances between them, then replace the clusters with single atoms at the clusters' geometric centers. We check the Wyckoff position of the resulting cluster, then continue to merge as needed until the atoms are sufficiently far apart.
+
 6) Check the inter-atomic distance between the newly generated Wyckoff position and the previously generated positions. If the distances are too close, we choose a new generating point within the same original Wyckoff position. For molecular crystals, we also attempt to reorient the molecule, so as to reduce the distance between atoms.
 
 

@@ -32,31 +32,20 @@ If the generation is successful, the value ``my_crystal.valid`` will be set to T
 
 .. code-block:: Python
 
-    >>> my_crystal.print_all()
-    --Random Crystal--
+    >>> print(my_crystal)
+    ------Random Crystal------
+    Composition: Ba1 Ti1 O3
     Dimension: 3
-    Group: 99
+    Group: P4mm (99)
     Volume factor: 1.0
+    tetragonal lattice:   5.1029   5.1029   4.3018  90.0000  90.0000  90.0000
     Wyckoff sites:
-      Ba: [0.         0.         0.87409062] 1a, site symmetry 4 m m
-      Ti: [0.         0.         0.36696892] 1a, site symmetry 4 m m
-      O: [0.         0.         0.83119703] 1a, site symmetry 4 m m
-      O: [0.         0.         0.19427634] 1a, site symmetry 4 m m
-      O: [0.5        0.5        0.65656028] 1b, site symmetry 4 m m
-    Pymatgen Structure:
-    Full Formula (Ba1 Ti1 O3)
-    Reduced Formula: BaTiO3
-    abc   :   5.867513   5.867513   2.595120
-    angles:  90.000000  90.000000  90.000000
-    Sites (5)
-      #  SP       a     b         c
-    ---  ----  ----  ----  --------
-      0  Ba    -0    -0    0.874091
-      1  Ti     0     0    0.366969
-      2  O     -0    -0    0.831197
-      3  O     -0    -0    0.194276
-      4  O      0.5   0.5  0.65656
-  
+    	Ba @ [0.5000 0.5000 0.3612], Wyckoff letter:  1b, Site symmetry: 4 m m
+    	Ti @ [0.5000 0.5000 0.8701], Wyckoff letter:  1b, Site symmetry: 4 m m
+    	 O @ [0.5000 0.0000 0.0823], Wyckoff letter:  2c, Site symmetry: 2 mm .
+    	 O @ [0.5000 0.5000 0.8177], Wyckoff letter:  1b, Site symmetry: 4 m m
+
+
 2D Crystals
 ~~~~~~~~~~~
 
@@ -141,36 +130,15 @@ As with the random_crystal class, the molecular_crystal class has a `print_all <
 
 .. code-block:: Python
 
-    >>> my_crystal.print_all()
-    --Molecular Crystal--
+    >>> print(my_crystal)
+    ------Random Molecular Crystal------
     Dimension: 3
-    Group: 36
+    Group: Cmc21
     Volume factor: 1.0
+    orthorhombic lattice:   5.6448   6.3389   4.4262  90.0000  90.0000  90.0000
     Wyckoff sites:
-      H2 O1: [0.         0.79326384 0.46437326] 4a, site symmetry m..
-        phi: 162.428952999251
-        theta: 39.50992575496611
-        psi: 91.03067679170424
-    Pymatgen Structure:
-    Full Formula (H8 O4)
-    Reduced Formula: H2O
-    abc   :   4.163035   4.609831   3.324136
-    angles:  90.000000  90.000000  90.000000
-    Sites (12)
-      #  SP           a         b         c
-    ---  ----  --------  --------  --------
-      0  O     0         0.780633  0.474203
-      1  H     0.816608  0.893514  0.386356
-      2  H     0.183392  0.893514  0.386356
-      3  O     1         0.219367  0.974203
-      4  H     0.183392  0.106486  0.886356
-      5  H     0.816608  0.106486  0.886356
-      6  O     0.5       0.280633  0.474203
-      7  H     0.316608  0.393514  0.386356
-      8  H     0.683392  0.393514  0.386356
-      9  O     0.5       0.719367  0.974203
-     10  H     0.683392  0.606486  0.886356
-     11  H     0.316608  0.606486  0.886356
+    	H2 O1 @ [ 0.000  0.596  0.986]  Wyckoff letter:  4a, Site symmetry m.. ==> Rotvec: -0.343  0.000  0.000
+
 
 There are a few other parameters which may be passed to the class. See the `module documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one of the imput molecules is chiral.
 
