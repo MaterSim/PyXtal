@@ -2670,37 +2670,43 @@ def list_groups(dim=3):
     print(df)
 
 
-def choose_wyckoff(group, number):
+def choose_wyckoff(group, number=None, site=None):
     """
     Choose a Wyckoff position to fill based on the current number of atoms
     needed to be placed within a unit cell
     Rules:
+        0) use the pre-assigned list if this is provided
         1) The new position's multiplicity is equal/less than (number).
         2) We prefer positions with large multiplicity.
 
     Args:
         group: a pyxtal.symmetry.Group object
         number: the number of atoms still needed in the unit cell
+        site: the pre-assigned Wyckoff sites (e.g., 4a)
 
     Returns:
         a single index for the Wyckoff position. If no position is found,
         returns False
     """
-    wyckoffs_organized = group.wyckoffs_organized
 
-    if random.uniform(0, 1) > 0.5:  # choose from high to low
-        for wyckoff in wyckoffs_organized:
-            if len(wyckoff[0]) <= number:
-                return random.choice(wyckoff)
-        return False
+    if site is not None:
+        return Wyckoff_position.from_group_and_index(group.number, site)
     else:
-        good_wyckoff = []
-        for wyckoff in wyckoffs_organized:
-            if len(wyckoff[0]) <= number:
-                for w in wyckoff:
-                    good_wyckoff.append(w)
-        if len(good_wyckoff) > 0:
-            return random.choice(good_wyckoff)
-        else:
+        wyckoffs_organized = group.wyckoffs_organized
+
+        if random.uniform(0, 1) > 0.5:  # choose from high to low
+            for wyckoff in wyckoffs_organized:
+                if len(wyckoff[0]) <= number:
+                    return random.choice(wyckoff)
             return False
+        else:
+            good_wyckoff = []
+            for wyckoff in wyckoffs_organized:
+                if len(wyckoff[0]) <= number:
+                    for w in wyckoff:
+                        good_wyckoff.append(w)
+            if len(good_wyckoff) > 0:
+                return random.choice(good_wyckoff)
+            else:
+                return False
 
