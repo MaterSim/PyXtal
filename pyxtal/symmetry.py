@@ -1506,7 +1506,7 @@ class Wyckoff_position:
             index: the index or letter of the Wyckoff position within the group.
                 0 is always the general position, and larger indeces represent positions
                 with lower multiplicity. Alternatively, index can be the Wyckoff letter
-                ("4a6" or "f")
+                ("4a" or "6f")
             dim: the periodic dimension of the crystal
             PBC: the periodic boundary conditions
         """

@@ -68,8 +68,8 @@ class mol_site:
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
             self.rotvec = self.orientation.r.as_rotvec()
-        s = "{} @ [{:6.3f} {:6.3f} {:6.3f}]  ".format(self.mol.formula, *self.position)
-        s += "Wyckoff letter: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
+        s = "{:} @ [{:6.4f} {:6.4f} {:6.4f}]  ".format(self.mol.formula.replace(" ",""), *self.position)
+        s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Rotvec: ".format(self.site_symm)
         s += "{:6.3f} {:6.3f} {:6.3f}".format(
             self.rotvec[0], self.rotvec[1], self.rotvec[2]
@@ -601,7 +601,7 @@ class atom_site:
             )
 
         s = "{:>2s} @ [{:6.4f} {:6.4f} {:6.4f}], ".format(self.specie, *self.position)
-        s += "Wyckoff letter: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
+        s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry: {:s}".format(self.site_symm)
         return s
 

@@ -378,7 +378,8 @@ class random_crystal:
         
         self.sites = {}
         for i, specie in enumerate(self.species):
-            if sites is not None:
+            if sites[i] is not None:
+                self.check_consistency(sites[i], self.numIons[i])
                 self.sites[specie] = sites[i]
             else:
                 self.sites[specie] = None
@@ -389,6 +390,19 @@ class random_crystal:
         self.wyckoff_attempts=10
 
         self.generate_crystal()
+
+
+    def check_consistency(self, site, numIon):
+        num = 0
+        for s in site:
+            num += int(s[:-1])
+        if numIon == num:
+            return True
+        else:
+            msg = "\nThe requested number of atoms is inconsistent: " + str(site)
+            msg += "\nfrom numIons: {:d}".format(numIon)
+            msg += "\nfrom Wyckoff list: {:d}".format(num)
+            raise ValueError(msg)
 
     def Msgs(self):
         """
