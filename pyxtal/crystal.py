@@ -378,7 +378,7 @@ class random_crystal:
         
         self.sites = {}
         for i, specie in enumerate(self.species):
-            if sites[i] is not None:
+            if sites is not None and sites[i] is not None:
                 self.check_consistency(sites[i], self.numIons[i])
                 self.sites[specie] = sites[i]
             else:
