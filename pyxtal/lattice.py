@@ -220,7 +220,10 @@ class Lattice:
         if self.ltype in ["triclinic", "orthorhombic"]:
             allowed_ids = [[0,1],[0,2],[1,2]]
         elif self.ltype == "monoclinic":
-            allowed_ids = [[0,2]]
+            if abs(self.beta-90*rad) > 1e-3:
+                allowed_ids = [[0,2]]
+            else:
+                allowed_ids = [[0,1],[0,2],[1,2]]
         else:
             allowed_ids = []
 
@@ -233,12 +236,15 @@ class Lattice:
                 raise ValueError("the above swap is not allowed in "+self.ltype)
 
         (a,b,c,alpha,beta,gamma) = self.get_para()
-        if ids == [0,1]: #a->b
-            return self.from_para(b, a, c, beta, alpha, gamma, self.ltype, True)
+        alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
+        if ids is None:
+            return self
+        elif ids == [0,1]: #a->b
+            return self.from_para(b, a, c, beta, alpha, gamma, self.ltype)
         elif ids == [0,2]: #a->c
-            return self.from_para(c, b, a, gamma, beta, alpha, self.ltype, True)
+            return self.from_para(c, b, a, gamma, beta, alpha, self.ltype)
         else: #b-c
-            return self.from_para(a, c, b, alpha, gamma, beta, self.ltype, True)
+            return self.from_para(a, c, b, alpha, gamma, beta, self.ltype)
     
 
     def generate_point(self):
