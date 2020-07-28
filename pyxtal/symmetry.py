@@ -2670,7 +2670,7 @@ def list_groups(dim=3):
     print(df)
 
 
-def choose_wyckoff(group, number=None, site=None):
+def choose_wyckoff(group, number=None, site=None, dim=3):
     """
     Choose a Wyckoff position to fill based on the current number of atoms
     needed to be placed within a unit cell
@@ -2690,7 +2690,7 @@ def choose_wyckoff(group, number=None, site=None):
     """
 
     if site is not None:
-        return Wyckoff_position.from_group_and_index(group.number, site)
+        return Wyckoff_position.from_group_and_index(group.number, site, dim)
     else:
         wyckoffs_organized = group.wyckoffs_organized
 

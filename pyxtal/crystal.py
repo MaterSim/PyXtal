@@ -666,20 +666,20 @@ class random_crystal:
 
         # Now we start to add the specie to the wyckoff position
         sites_list = deepcopy(self.sites[specie]) # the list of Wyckoff site
+        if sites_list is not None: 
+            self.wyckoff_attempts = len(sites_list)*2
 
         cycle3 = 0
         while cycle3 < self.wyckoff_attempts:
 
             self.cycle3 = cycle3
             # Choose a random WP for given multiplicity: 2a, 2b
-            # QZ: to choose the WP from a given list?
             if sites_list is not None:
                 site = sites_list[0]
             else: # Selecting the merging 
                 site = None
             
-            ops = choose_wyckoff(self.group, numIon - numIon_added, site)
-
+            ops = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
             if ops is not False:
                 # Generate a list of coords from ops
                 pt = self.lattice.generate_point()
@@ -693,7 +693,10 @@ class random_crystal:
                 )
                 if site is not None and len(coords_toadd) < len(coords):
                     continue # break the cycle if the merge happens
-
+                #print(coords)
+                #print(coords_toadd, wp_index, pt)
+                #import sys
+                #sys.exit()
 
                 if wp_index is not False:
                     # Use a Wyckoff_site object for the current site
@@ -770,7 +773,6 @@ class random_crystal_2D(random_crystal):
 
         if type(group) != Group:
             group = Group(group, self.dim)
-
         number = group.number  # The layer group number of the crystal
         self.thickness = thickness  # in Angstroms, in the 3rd dimenion of unit cell
         self.init_common(species, numIons, factor, number, lattice, sites, tm)

@@ -7,7 +7,6 @@ from pyxtal.msg import printx
 from pyxtal.operations import angle
 from pyxtal.constants import deg, rad
 
-
 class Lattice:
     """
     Class for storing and generating crystal lattices. Allows for
