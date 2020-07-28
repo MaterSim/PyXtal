@@ -196,7 +196,7 @@ class Lattice:
             self.set_matrix()
 
     def reset_matrix(self):
-        if self.random is True:
+        if self.random:
             for i in range(3):
                 m = self.generate_matrix()
                 if m is not None:
@@ -213,6 +213,33 @@ class Lattice:
     def set_volume(self, volume):
         if self.allow_volume_reset is True:
             self.volume = volume
+
+
+    def swap_axis(self, random=True, ids=None):
+        # only applied to triclinic/monoclinic/orthorhombic
+        if self.ltype in ["triclinic", "orthorhombic"]:
+            allowed_ids = [[0,1],[0,2],[1,2]]
+        elif self.ltype == "monoclinic":
+            allowed_ids = [[0,2]]
+        else:
+            allowed_ids = []
+
+        if random:
+            from random import choice
+            ids = choice(allowed_ids)
+        else:
+            if ids not in allowed_ids:
+                print(ids)
+                raise ValueError("the above swap is not allowed in "+self.ltype)
+
+        (a,b,c,alpha,beta,gamma) = self.get_para()
+        if ids == [0,1]: #a->b
+            return self.from_para(b, a, c, beta, alpha, gamma, self.ltype, True)
+        elif ids == [0,2]: #a->c
+            return self.from_para(c, b, a, gamma, beta, alpha, self.ltype, True)
+        else: #b-c
+            return self.from_para(a, c, b, alpha, gamma, beta, self.ltype, True)
+    
 
     def generate_point(self):
         point = np.random.random(3)
