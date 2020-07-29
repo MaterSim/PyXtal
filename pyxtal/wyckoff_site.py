@@ -254,7 +254,11 @@ class mol_site:
         import pymatgen as mg
 
         coord0 = self.coord0.dot(self.orientation.matrix.T)  #
+        props = self.mol.site_properties
         self.mol = mg.Molecule(self.symbols, coord0)
+        if len(props) > 0: #in case there are some site properties
+            for key in props.keys():
+                self.mol.add_site_property(key, props[key])
         self.coord0 = self.mol.cart_coords
         ax = self.get_principle_axes()[axis]
         self.orientation.axis = ax
