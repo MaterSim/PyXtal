@@ -170,6 +170,9 @@ class mol_site:
             new_coords = np.vstack([wp_atomic_coords + v for v in m2])
             wp_atomic_coords = new_coords
 
+        if absolute:
+            wp_atomic_coords = wp_atomic_coords.dot(self.lattice)
+
         return wp_atomic_coords, wp_atomic_sites
 
     def get_coords_and_species(self, absolute=False, add_PBC=False):
@@ -188,7 +191,7 @@ class mol_site:
             coords: a np array of 3-vectors.
             species: a list of atomic symbols, e.g. ['H', 'H', 'O', 'H', 'H', 'O']
         """
-        if absolute is False:
+        if not absolute:
             # try to avoid repeating the computation
             try:
                 return self.relative_coords, self.symbols_all
@@ -220,6 +223,47 @@ class mol_site:
             return centers
         else:
             return np.dot(centers, self.lattice)
+
+    def get_principle_axes(self):
+        """
+        compute the principle axis
+        """
+        mol = self.mol.get_centered_molecule()
+        I11 = I22 = I33 = I12 = I13 = I23 = 0.0
+        for i in range(len(mol)):
+            x, y, z = mol.cart_coords[i]
+            m = mol[i].specie.atomic_mass
+            I11 += m * (y ** 2 + z ** 2)
+            I22 += m * (x ** 2 + z ** 2)
+            I33 += m * (x ** 2 + y ** 2)
+            I12 += -m * x * y
+            I13 += -m * x * z
+            I23 += -m * y * z
+        A = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
+        P = np.transpose(np.linalg.eigh(A)[1])
+        return P
+
+    def flip(self, axis=0):
+        """
+        to flip the molecule (under experiment)
+        1, update self.mol
+        2, obtain the principle axes
+        3, flip the molecule according to the axis
+        4, update orientation matrix
+        """
+        import pymatgen as mg
+
+        coord0 = self.coord0.dot(self.orientation.matrix.T)  #
+        self.mol = mg.Molecule(self.symbols, coord0)
+        self.coord0 = self.mol.cart_coords
+        ax = self.get_principle_axes()[axis]
+        self.orientation.axis = ax
+        self.orientation.matrix = self.orientation.get_matrix(np.pi) #flip
+        #c2 = self._get_coords_and_species(absolute=True, first=True)[0]
+        #mol2 = mg.Molecule(self.symbols, c2)
+        #mol2.to('xyz', "t2.xyz")
+        #self.mol.to('xyz', 't1.xyz')
+
 
     def compute_distances(self):
         """
