@@ -221,9 +221,9 @@ class Lattice:
             allowed_ids = [[0,1],[0,2],[1,2]]
         elif self.ltype == "monoclinic":
             if abs(self.beta-90*rad) > 1e-3:
-                allowed_ids = [[0,2]]
+                allowed_ids = [[0,2],[0,0]]
             else:
-                allowed_ids = [[0,1],[0,2],[1,2]]
+                allowed_ids = [[0,1],[0,2],[1,2],[0,0]]
         else:
             allowed_ids = []
 
@@ -243,8 +243,10 @@ class Lattice:
             return self.from_para(b, a, c, beta, alpha, gamma, self.ltype)
         elif ids == [0,2]: #a->c
             return self.from_para(c, b, a, gamma, beta, alpha, self.ltype)
-        else: #b-c
+        elif ids == [1,2]: #b-c
             return self.from_para(a, c, b, alpha, gamma, beta, self.ltype)
+        else:
+            return self
     
 
     def generate_point(self):
