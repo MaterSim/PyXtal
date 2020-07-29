@@ -225,7 +225,7 @@ class Lattice:
             else:
                 allowed_ids = [[0,1],[0,2],[1,2],[0,0]]
         else:
-            allowed_ids = []
+            allowed_ids = [[0,0]]
 
         if random:
             from random import choice
@@ -245,6 +245,36 @@ class Lattice:
             return self.from_para(c, b, a, gamma, beta, alpha, self.ltype)
         elif ids == [1,2]: #b-c
             return self.from_para(a, c, b, alpha, gamma, beta, self.ltype)
+        else:
+            return self
+    
+    def swap_angle(self, random=True, ids=None):
+        # only applied to triclinic/monoclinic #/hexagonal
+        if self.ltype == "monoclinic":
+            allowed_ids = ["beta", "No"]
+        elif self.ltype == "triclinic":
+            allowed_ids = ["alpha", "beta", "gamma", "No"]
+        else:
+            allowed_ids = ["No"]
+
+        if random:
+            from random import choice
+            ids = choice(allowed_ids)
+        else:
+            if ids not in allowed_ids:
+                print(ids)
+                raise ValueError("the above swap is not allowed in "+self.ltype)
+
+        (a,b,c,alpha,beta,gamma) = self.get_para()
+        alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
+        if ids is None:
+            return self
+        elif ids == "alpha": 
+            return self.from_para(a, b, c, 180-alpha, beta, gamma, self.ltype)
+        elif ids == "beta": 
+            return self.from_para(a, b, c, alpha, 180-beta, gamma, self.ltype)
+        elif ids == "gamma": 
+            return self.from_para(a, b, c, alpha, beta, 180-gamma, self.ltype)
         else:
             return self
     
