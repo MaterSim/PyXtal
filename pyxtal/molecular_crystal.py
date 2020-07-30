@@ -14,9 +14,8 @@ from pyxtal.constants import max1, max2, max3, max4
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
+from pyxtal.io import write_cif
 from pyxtal.database.element import Element
-
-# from pyxtal.database.collection import Collection
 from pyxtal.wyckoff_site import mol_site, check_mol_sites
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
 from pyxtal.symmetry import (
@@ -545,7 +544,7 @@ class molecular_crystal:
         elif has_freedom is False:
             return 0
 
-    def to_file(self, fmt=None, filename=None):
+    def to_file(self, fmt=None, filename=None, permission='w'):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
@@ -567,25 +566,11 @@ class molecular_crystal:
                 fmt = "cif"
             if filename is None:
                 filename = str(self.struct.formula).replace(" ", "") + "." + fmt
-            # Check if filename already exists
-            # If it does, add a new number to end of filename
-            if os.path.exists(filename):
-                if given is False:
-                    filename = filename[: (-len(fmt) - 1)]
-                i = 1
-                while True:
-                    outdir = filename + "_" + str(i)
-                    if given is False:
-                        outdir += "." + fmt
-                    if not os.path.exists(outdir):
-                        break
-                    i += 1
-                    if i > 10000:
-                        return "Could not create file: too many files already created."
+            if fmt == "cif":
+                write_cif(self, filename, "from_pyxtal", permission)
             else:
-                outdir = filename
-            self.struct.to(fmt=fmt, filename=outdir)
-            return "Output file to " + outdir
+                self.struct.to(fmt=fmt, filename=outdir)
+            return 
         elif self.valid:
             printx("Cannot create file: structure did not generate.", priority=1)
 
