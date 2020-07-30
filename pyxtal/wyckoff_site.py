@@ -281,21 +281,21 @@ class mol_site:
         [a, b, c] = np.linalg.norm(self.lattice, axis=1)
         if a > 20:
             i_list = [0]
-        elif a < 5:
+        elif a < 6.5:
             i_list = [-1,0,2]
         else:
             i_list = [-1, 0, 1]
             
         if b > 20:
             j_list = [0]
-        elif b < 5:
+        elif b < 6.5:
             j_list = [-1, 0, 2]
         else:
             j_list = [-1, 0, 1]
             
         if c > 20:
             k_list = [0]
-        elif c < 5:
+        elif c < 6.5:
             k_list = [-1, 0, 2]
         else:
             k_list = [-1, 0, 1]
