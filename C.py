@@ -2,18 +2,20 @@ from pyxtal.interface.gulp import GULP
 from pyxtal.crystal import random_crystal
 from ase import Atoms
 import os
+from spglib import get_symmetry_dataset
 
 file = "C-POSCARs"
 if os.path.exists(file):
     os.remove(file)
-for i in range(10):
+for i in range(100):
     struc = random_crystal(19, ["C"], [16], 1.0)
     if struc.valid:
         calc = GULP(struc, ff="tersoff.lib")
         calc.run()
         s = Atoms(struc.sites, scaled_positions=calc.positions, cell=calc.cell)
+        info = get_symmetry_dataset(s, symprec=1e-1)
         s.write("1.vasp", format='vasp', vasp5=True, direct=True)
         os.system("cat 1.vasp >> " + file)
-        print(i, calc.energy)
+        print("{:4d} {:8.3f} {:s}".format(i, calc.energy, info['international']))
         #print(calc.stress)
         #print(calc.cell)
