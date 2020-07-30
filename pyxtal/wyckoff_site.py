@@ -4,7 +4,7 @@ Module for handling Wyckoff sites for both atom and molecule
 
 import numpy as np
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.operations import apply_ops, create_matrix, distance_matrix
+from pyxtal.operations import apply_ops, distance_matrix
 from pyxtal.symmetry import ss_string_from_ops as site_symm
 from scipy.spatial.transform import Rotation as R
 from pyxtal.database.element import Element
@@ -268,6 +268,49 @@ class mol_site:
         #mol2.to('xyz', "t2.xyz")
         #self.mol.to('xyz', 't1.xyz')
 
+    def create_matrix(self):
+        """
+        Used for calculating distances in lattices with periodic boundary
+        conditions. When multiplied with a set of points, generates additional
+        points in cells adjacent to and diagonal to the original cell
+        Returns:
+            A numpy array of matrices which can be multiplied by a set of
+            coordinates
+        """
+        matrix = []
+        [a, b, c] = np.linalg.norm(self.lattice, axis=1)
+        if a > 20:
+            i_list = [0]
+        elif a < 5:
+            i_list = [-1,0,2]
+        else:
+            i_list = [-1, 0, 1]
+            
+        if b > 20:
+            j_list = [0]
+        elif b < 5:
+            j_list = [-1, 0, 2]
+        else:
+            j_list = [-1, 0, 1]
+            
+        if c > 20:
+            k_list = [0]
+        elif c < 5:
+            k_list = [-1, 0, 2]
+        else:
+            k_list = [-1, 0, 1]
+        
+        if not self.PBC[0]:
+            i_list = [0]
+        if not self.PBC[1]:
+            j_list = [0]
+        if not self.PBC[2]:
+            k_list = [0]
+        for i in i_list:
+            for j in j_list:
+                for k in k_list:
+                    matrix.append([i, j, k])
+        return np.array(matrix, dtype=float)
 
     def compute_distances(self):
         """
@@ -291,7 +334,7 @@ class mol_site:
 
         if self.PBC != [0, 0, 0]:
             # Check periodic images
-            m = create_matrix(PBC=self.PBC)
+            m = self.create_matrix()
             # Remove original coordinates
             m2 = []
             v0 = np.array([0.0, 0.0, 0.0])
@@ -333,7 +376,7 @@ class mol_site:
 
             if self.PBC != [0, 0, 0]:
                 # Check periodic images
-                m = create_matrix(PBC=self.PBC)
+                m = self.create_matrix()
                 # Remove original coordinates
                 m2 = []
                 v0 = np.array([0.0, 0.0, 0.0])
