@@ -668,6 +668,10 @@ class random_crystal:
         sites_list = deepcopy(self.sites[specie]) # the list of Wyckoff site
         if sites_list is not None: 
             self.wyckoff_attempts = len(sites_list)*2
+        else:
+            # the minimum numattempts is to put all atoms to the general WPs
+            min_wyckoffs = int(numIon/len(self.group.wyckoffs_organized[0][0]))
+            self.wyckoff_attempts = 2*min_wyckoffs
 
         cycle3 = 0
         while cycle3 < self.wyckoff_attempts:
