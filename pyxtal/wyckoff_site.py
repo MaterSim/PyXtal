@@ -8,6 +8,7 @@ from pyxtal.operations import apply_ops, distance_matrix
 from pyxtal.symmetry import ss_string_from_ops as site_symm
 from scipy.spatial.transform import Rotation as R
 from pyxtal.database.element import Element
+from pyxtal.constants import rad, deg
 
 
 class mol_site:
@@ -59,7 +60,10 @@ class mol_site:
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = tols_matrix
         self.radius = radius
-        self.coord0 = self.mol.cart_coords
+        tmp = self.mol.cart_coords
+        tmp -= np.mean(tmp, axis=0)
+        ax1 = self.get_principle_axes(tmp)
+        self.coord0 = tmp.dot(ax1)
 
     def __str__(self):
 
@@ -67,13 +71,12 @@ class mol_site:
             self.site_symm = site_symm(
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
-            self.rotvec = self.orientation.r.as_rotvec()
+            #self.rotvec = self.orientation.r.as_rotvec()
+            self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         s = "{:} @ [{:6.4f} {:6.4f} {:6.4f}]  ".format(self.mol.formula.replace(" ",""), *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site symmetry {:} ==> Rotvec: ".format(self.site_symm)
-        s += "{:6.3f} {:6.3f} {:6.3f}".format(
-            self.rotvec[0], self.rotvec[1], self.rotvec[2]
-        )
+        s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
+        s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
         return s
 
     # NOTE appears deprecated?
@@ -224,49 +227,64 @@ class mol_site:
         else:
             return np.dot(centers, self.lattice)
 
-    def get_principle_axes(self):
+    def get_principle_axes(self, coords, adjust=False):
         """
         compute the principle axis
         """
-        mol = self.mol.get_centered_molecule()
+        coords -= np.mean(coords, axis=0)
         I11 = I22 = I33 = I12 = I13 = I23 = 0.0
-        for i in range(len(mol)):
-            x, y, z = mol.cart_coords[i]
-            m = mol[i].specie.atomic_mass
-            I11 += m * (y ** 2 + z ** 2)
-            I22 += m * (x ** 2 + z ** 2)
-            I33 += m * (x ** 2 + y ** 2)
-            I12 += -m * x * y
-            I13 += -m * x * z
-            I23 += -m * y * z
+        for coord in coords:
+            x, y, z = coord
+            I11 += (y ** 2 + z ** 2)
+            I22 += (x ** 2 + z ** 2)
+            I33 += (x ** 2 + y ** 2)
+            I12 -= x * y
+            I13 -= x * z
+            I23 -= y * z
         A = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
-        P = np.transpose(np.linalg.eigh(A)[1])
-        return P
+        _, matrix = np.linalg.eigh(A)
+        if adjust:
+            diffs = coords.dot(matrix) - self.coord0
+            diffs = np.sqrt(np.sum(diffs**2,axis=0))/len(coords)
+            for axis in range(3):
+                if diffs[axis] > 0.05: #needs to check
+                    matrix[:,axis] *= -1
 
-    def flip(self, axis=0):
-        """
-        to flip the molecule (under experiment)
-        1, update self.mol
-        2, obtain the principle axes
-        3, flip the molecule according to the axis
-        4, update orientation matrix
-        """
-        import pymatgen as mg
+            diffs = coords.dot(matrix) - self.coord0
+            tol = np.sqrt(np.sum(diffs**2))/len(coords)
+            if tol > 0.1:
+                print("warining: molecular geometry changed")
+                print(diffs)
 
+        return matrix
+
+    def get_Euler_angle(self):
+        """
+        To compute the Euler_angle for the given molecule
+        """
         coord0 = self.coord0.dot(self.orientation.matrix.T)  #
-        props = self.mol.site_properties
-        self.mol = mg.Molecule(self.symbols, coord0)
-        if len(props) > 0: #in case there are some site properties
-            for key in props.keys():
-                self.mol.add_site_property(key, props[key])
-        self.coord0 = self.mol.cart_coords
-        ax = self.get_principle_axes()[axis]
-        self.orientation.axis = ax
-        self.orientation.matrix = self.orientation.get_matrix(np.pi) #flip
-        #c2 = self._get_coords_and_species(absolute=True, first=True)[0]
-        #mol2 = mg.Molecule(self.symbols, c2)
-        #mol2.to('xyz', "t2.xyz")
-        #self.mol.to('xyz', 't1.xyz')
+        coord0 -= np.mean(coord0, axis=0)
+        matrix = self.get_principle_axes(coord0, True)
+        return R.from_matrix(matrix).as_euler('zxy', degrees=True)
+
+    def rotate(self, axis=0, angle=180):
+        """
+        To rotate the molecule 
+        Here we assume the molecule is free to rotate in SO(3)
+        Needs to add the symmetry constraints later
+        """
+        p = self.orientation.r
+        if type(axis) == int:
+            coord0 = self.coord0.dot(self.orientation.r.as_matrix().T) 
+            coord0 -= np.mean(coord0, axis=0)
+            ax = self.get_principle_axes(coord0).T[axis]
+        elif len(axis) == 3:
+            axis /= np.linalg.norm(axis)
+
+        q = R.from_rotvec(ax*rad*angle)
+        o = q*p
+        self.orientation.r = o 
+        self.orientation.matrix = o.as_matrix()
 
     def create_matrix(self):
         """
@@ -279,21 +297,21 @@ class mol_site:
         """
         matrix = []
         [a, b, c] = np.linalg.norm(self.lattice, axis=1)
-        if a > 20:
+        if a > 20 and self.radius<10:
             i_list = [0]
         elif a < 6.5:
             i_list = [-1,0,2]
         else:
             i_list = [-1, 0, 1]
             
-        if b > 20:
+        if b > 20 and self.radius<10:
             j_list = [0]
         elif b < 6.5:
             j_list = [-1, 0, 2]
         else:
             j_list = [-1, 0, 1]
             
-        if c > 20:
+        if c > 20 and self.radius<10:
             k_list = [0]
         elif c < 6.5:
             k_list = [-1, 0, 2]
@@ -341,9 +359,10 @@ class mol_site:
             for v in m:
                 if not (v == v0).all():
                     m2.append(v)
-            coords_PBC = np.vstack([coords_mol + v for v in m2])
-            d = distance_matrix(coords_mol, coords_PBC, self.lattice, [0, 0, 0], True)
-            min_ds.append(d)
+            if len(m2) > 0:
+                coords_PBC = np.vstack([coords_mol + v for v in m2])
+                d = distance_matrix(coords_mol, coords_PBC, self.lattice, [0, 0, 0], True)
+                min_ds.append(d)
         if self.multiplicity > 1:
             # Check inter-atomic distances
             d = distance_matrix(coords_mol, coords, self.lattice, self.PBC, True)
@@ -383,13 +402,14 @@ class mol_site:
                 for v in m:
                     if not (v == v0).all():
                         m2.append(v)
-                coords_PBC = np.vstack([coords_mol + v for v in m2])
-                d = distance_matrix(coords_PBC, coords_mol, self.lattice, PBC=[0, 0, 0])
-                # only check if small distance is detected
-                if np.min(d) < np.max(self.tols_matrix):
-                    tols = np.min(d.reshape([len(m2), m_length, m_length]), axis=0)
-                    if (tols < self.tols_matrix).any():
-                        return False
+                if len(m2) > 0:
+                    coords_PBC = np.vstack([coords_mol + v for v in m2])
+                    d = distance_matrix(coords_PBC, coords_mol, self.lattice, PBC=[0, 0, 0])
+                    # only check if small distance is detected
+                    if np.min(d) < np.max(self.tols_matrix):
+                        tols = np.min(d.reshape([len(m2), m_length, m_length]), axis=0)
+                        if (tols < self.tols_matrix).any():
+                            return False
 
             if self.multiplicity > 1:
                 # Check inter-atomic distances

@@ -355,6 +355,9 @@ class Orientation:
         self.change_orientation()
         return self
 
+    def get_Euler_angles(self):
+        return self.r.as_euler('zxy', degrees=True)
+
 
 def get_inertia_tensor(mol):
     """
@@ -372,7 +375,7 @@ def get_inertia_tensor(mol):
     I11 = I22 = I33 = I12 = I13 = I23 = 0.0
     for i in range(len(mo)):
         x, y, z = mo.cart_coords[i]
-        m = mo[i].specie.number
+        m = 1 #mo[i].specie.number
         I11 += m * (y ** 2 + z ** 2)
         I22 += m * (x ** 2 + z ** 2)
         I33 += m * (x ** 2 + y ** 2)
