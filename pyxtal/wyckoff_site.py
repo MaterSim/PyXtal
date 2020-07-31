@@ -286,6 +286,17 @@ class mol_site:
         self.orientation.r = o 
         self.orientation.matrix = o.as_matrix()
 
+    def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
+        """
+        To translate the molecule 
+        Here we assume the molecule is free to rotate in SO(3)
+        Needs to add the symmetry constraints later
+        """
+        disp = np.array(disp)
+        if absolute:
+            disp = disp.dot(self.inv_lattice)
+        self.position += disp
+
     def create_matrix(self):
         """
         Used for calculating distances in lattices with periodic boundary
