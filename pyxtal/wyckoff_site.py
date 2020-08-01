@@ -306,6 +306,8 @@ class mol_site:
         if id <= len(self.wp.generators):
             op = self.wp.generators[id]
             center_relative = op.operate(self.position)
+            center_relative -= np.floor(center_relative)
+            #print(center_relative)
             center_absolute = np.dot(center_relative, self.lattice)
             # Rotate the molecule (Euclidean metric)
             op_m = self.wp.generators_m[id]
