@@ -1,0 +1,114 @@
+<link rel="shortcut icon"
+href="{{ url_for('static', filename='img/navlogo.ico') }}">
+
+.navbar {
+  min-height: 50px;
+}
+
+<div class="form-group ">
+  <label class="control-label" for="method">{{ form.method.label }}</label>
+  {{ form.method(class="form-control") }}
+  <p class="help-block">{{ form.method.description }}</p>
+</div>
+<div class="form-group  required">
+  <label class="control-label" id="fwhm-label" for="fwhm">{{ form.fwhm.label }}</label>
+  {{ form.fwhm(class="form-control") }}
+  <p class="help-block" id="fwhm-help">{{ form.fwhm.description }}</p>
+</div>
+<div class="form-group  required">
+  <label class="control-label" id="u-label" for="u" style="display: none;">{{ form.u.label }}</label>
+  {{ form.u(class="form-control", style="display: none;") }}
+  <p class="help-block" id="u-help" style="display: none;">{{ form.u.description }}</p>
+</div>
+<div class="form-group  required">
+  <label class="control-label" id="v-label" for="v" style="display: none;">{{ form.v.label }}</label>
+  {{ form.v(class="form-control", style="display: none;") }}
+  <p class="help-block" id="v-help" style="display: none;">{{ form.v.description }}</p>
+</div>
+<div class="form-group  required">
+  <label class="control-label" id="w-label" for="w" style="display: none;">{{ form.w.label }}</label>
+  {{ form.w(class="form-control", style="display: none;") }}
+  <p class="help-block" id="w-help" style="display: none;">{{ form.w.description }}</p>
+</div>
+<div class="form-group  required">
+  <label class="control-label" id="a-label" for="a" style="display: none;">{{ form.a.label }}</label>
+    {{ form.a(class="form-control", style="display: none;") }}
+    <p class="help-block" id="a-help" style="display: none;">{{ form.a.description }}</p>
+</div>
+<div class="form-group  required">
+  <label class="control-label" id="eta_h-label" for="eta_h" style="display: none;">{{ form.eta_h.label }}</label>
+  {{ form.eta_h(class="form-control", style="display: none;") }}
+  <p class="help-block" id="eta_h-help" style="display: none;">{{ form.eta_h.description }}</p>
+</div>
+<div class="form-group  required">
+  <label class="control-label" id="eta_l-label" for="eta_l" style="display: none;">{{ form.eta_l.label }}</label>
+  {{ form.eta_l(class="form-control", style="display: none;") }}
+  <p class="help-block" id="eta_l-help" style="display: none;">{{ form.eta_l.description }}</p>
+</div>
+
+$('#fwhm-label').show();
+$('#fwhm').show();
+$('#fwhm-help').show();
+$('#u-label').hide();
+$('#u').hide();
+$('#u-help').hide();
+$('#v-label').hide();
+$('#v').hide();
+$('#v-help').hide();
+$('#w-label').hide();
+$('#w').hide();
+$('#w-help').hide();
+$('#a-label').hide();
+$('#a').hide();
+$('#a-help').hide();
+$('#eta_h-label').hide();
+$('#eta_h').hide();
+$('#eta_h-help').hide();
+$('#eta_l-label').hide();
+$('#eta_l').hide();
+$('#eta_l-help').hide();
+
+$('#fwhm-label').hide();
+$('#fwhm').hide();
+$('#fwhm-help').hide();
+$('#u-label').show();
+$('#u').show();
+$('#u-help').show();
+$('#v-label').show();
+$('#v').show();
+$('#v-help').show();
+$('#w-label').show();
+$('#w').show();
+$('#w-help').show();
+$('#a-label').show();
+$('#a').show();
+$('#a-help').show();
+$('#eta_h-label').show();
+$('#eta_h').show();
+$('#eta_h-help').show();
+$('#eta_l-label').show();
+$('#eta_l').show();
+$('#eta_l-help').show();
+
+
+var Info = {
+  width: 550,
+  height: 400,
+  debug: false,
+  color: "0xFFFFFF",
+  addSelectionOptions: false,
+  use: "HTML5",
+  j2sPath: "/static/jsmol/j2s",
+  readyFunction: jmol_isReady,
+  disableJ2SLoadMonitor: true,
+  disableInitialConsole: true,
+  allowJavaScript: false
+};
+
+<script>
+  jmol_isReady = function(applet) {
+    Jmol._getElement(applet, "appletdiv").style.border="1px solid lightgray";
+    Jmol.script(jmolApplet0, "set displaycellparameters false;");
+    Jmol.script(jmolApplet0, "load struct/cif { 1 1 1 };");
+  }
+</script>

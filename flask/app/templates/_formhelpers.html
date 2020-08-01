@@ -1,0 +1,30 @@
+{% macro render_field(field, class) %}
+  {% if field.errors %}
+    <div class="form-group  {{ class }}  has-error required">
+  {% else %}
+    <div class="form-group  {{ class }}  required">
+  {% endif %}
+      <label class="control-label">{{ field.label }}</label>
+      {{ field(class="form-control")|safe }}
+  {% if field.errors %}
+      {% for error in field.errors %}
+        <p class="help-block">{{ error }}</p>
+      {% endfor %}
+  {% else %}
+      <p class="help-block">{{ field.description }}</p>
+  {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro structure(num) %}
+  <div id="appdiv{{ num }}"></div>
+  <div class="btn-group pull-left">
+    <button type="button" class="btn btn-link dropdown-toggle btn-sm" data-toggle="dropdown">
+      Unit cell <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu">
+      <li><a onclick="repeatCell(1, 1, 1, {{ num }});">1x1x1</a></li>
+      <li><a onclick="repeatCell(2, 2, 2, {{ num }});">2x2x2</a></li>
+    </ul>
+  </div>
+{% endmacro %}

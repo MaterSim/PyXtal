@@ -19,3 +19,9 @@ lib64
 # output files
 test_summary.txt
 out
+
+# JSmol files for flask app (VXRD)
+flask/app/static/jsmol/
+
+# VS Code
+*.code-workspace
