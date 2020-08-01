@@ -21,10 +21,10 @@ def write_cif(struc, filename, header="", permission='w'):
     change_set = False
     G1 = struc.group[0].generators
     if hasattr(struc, 'mol_sites'):
-        sites = struc.mol_sites[0]
+        sites = struc.mol_sites
         molecule = True
     else:
-        sites = struc.atom_sites[0]
+        sites = struc.atom_sites
         molecule = False
 
     if l_type == 'monoclinic':

@@ -2,14 +2,19 @@
 Module for handling Wyckoff sites for both atom and molecule
 """
 
+# Standard Libraries
 import numpy as np
+from scipy.spatial.transform import Rotation as R
+
+# External Libraries
+from pymatgen import Molecule
+
+# PyXtal imports
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.operations import apply_ops, distance_matrix
 from pyxtal.symmetry import ss_string_from_ops as site_symm
-from scipy.spatial.transform import Rotation as R
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg
-
 
 class mol_site:
     """
@@ -285,6 +290,33 @@ class mol_site:
         o = q*p
         self.orientation.r = o 
         self.orientation.matrix = o.as_matrix()
+
+    def get_mol_object(self, id=0):
+        """
+        make the pymatgen molecule object
+
+        Args:
+            id: the index of molecules in the given site
+
+        Returns:
+            a molecule object
+        """
+        coord0 = self.coord0.dot(self.orientation.matrix.T)  #
+        # Obtain the center in absolute coords
+        if id <= len(self.wp.generators):
+            op = self.wp.generators[id]
+            center_relative = op.operate(self.position)
+            center_absolute = np.dot(center_relative, self.lattice)
+            # Rotate the molecule (Euclidean metric)
+            op_m = self.wp.generators_m[id]
+            rot = op_m.affine_matrix[0:3][:, 0:3].T
+            tau = op_m.affine_matrix[0:3][:, 3]
+            tmp = np.dot(coord0, rot) + tau
+            # Add absolute center to molecule
+            tmp += center_absolute
+            return Molecule(self.symbols, tmp)           
+        else:
+            raise ValueError("id is greater than the number of molecules")
 
     def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
         """
