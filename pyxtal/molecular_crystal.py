@@ -571,7 +571,7 @@ class molecular_crystal:
             else:
                 self.struct.to(fmt=fmt, filename=outdir)
             return 
-        elif self.valid:
+        else:
             printx("Cannot create file: structure did not generate.", priority=1)
 
     def __str__(self):

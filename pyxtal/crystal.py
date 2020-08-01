@@ -438,7 +438,7 @@ class random_crystal:
             volume += numIon * 4 / 3 * np.pi * r ** 3
         return self.factor * volume
 
-    def to_file(self, fmt="cif", filename=None):
+    def to_file(self, fmt="cif", filename=None, permission='w'):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
@@ -463,30 +463,14 @@ class random_crystal:
                 if filename is None:
                     filename = str(self.struct.formula).replace(" ", "") + "." + fmt
 
-            # Check if filename already exists
-            # If it does, add a new number to end of filename
-
-            if os.path.exists(filename):
-                if given is False:
-                    filename = filename[: (-len(fmt) - 1)]
-                i = 1
-                while True:
-                    outdir = filename + "_" + str(i)
-                    if given is False:
-                        outdir += "." + fmt
-                    if not os.path.exists(outdir):
-                        break
-                    i += 1
-                    if i > 10000:
-                        return "Could not create file: too many files already created."
-            else:
-                outdir = filename
             if self.dim == 0 and fmt == "xyz":
                 self.molecule.to(fmt=fmt, filename=outdir)
+            elif fmt == "cif":
+                write_cif(self, filename, "from_pyxtal", permission)
             else:
                 self.struct.to(fmt=fmt, filename=outdir)
-            return "Output file to " + outdir
-        elif self.valid is False:
+            return 
+        else:
             printx("Cannot create file: structure did not generate.", priority=1)
 
     def __str__(self):
