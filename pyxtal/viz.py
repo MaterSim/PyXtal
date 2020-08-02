@@ -1,4 +1,5 @@
 import py3Dmol
+import os
 import numpy as np
 
 def addBox(view, vecs, label=True, viewer=None):
@@ -63,6 +64,25 @@ def addlines(view, orig, axes, viewer=None):
                            viewer=viewer)
 
 
+
+def display_atomic_crystal(structure, height=300, width=600, scale=0.25, radius=0.10, show_wp=True):
+    view = py3Dmol.view(height=height, width=width)
+    if structure.dim == 0:
+        file, fmt, = "tmp.xyz", "xyz"
+    else:
+        file, fmt = "tmp.cif", "cif"
+
+    structure.to_file(file)
+    txt = open(file).read()
+    view.addModel(txt, fmt, {'doAssembly':True,'duplicateAssemblyAtoms':True})
+    view.setStyle({'sphere':{'colorscheme':'Jmol','scale':scale},
+                   'stick':{'colorscheme':'Jmol', 'radius':radius}})
+    if structure.dim != 0:
+        view.addUnitCell()
+        if show_wp:
+            view.setStyle({'sym':2},{'sphere':{'scale':scale*1.1,'color':'blue'}})
+    os.remove(file)
+    return view.zoomTo()
 
 def display_molecular_crystal(structure, height=300, width=600, axis=False, axis_label=True):
     view = py3Dmol.view(height=height, width=width)

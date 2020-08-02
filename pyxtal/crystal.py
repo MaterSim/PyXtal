@@ -10,6 +10,7 @@ from pymatgen.core.structure import Structure, Molecule
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position
 from pyxtal.wyckoff_site import atom_site, check_atom_sites
+from pyxtal.io import write_cif
 from pyxtal.operations import (
     apply_ops,
     project_point,
@@ -438,33 +439,35 @@ class random_crystal:
             volume += numIon * 4 / 3 * np.pi * r ** 3
         return self.factor * volume
 
-    def to_file(self, fmt="cif", filename=None, permission='w'):
+    def to_file(self, filename=None, fmt=None, permission='w'):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
         By default, the filename is based on the stoichiometry.
 
         Args:
-            fmt: the file type ('cif', 'xyz', etc.)
             filename: the file path
+            fmt: the file type ('cif', 'xyz', etc.)
+            permission: "w" or "a+"
 
         Returns:
             Nothing. Creates a file at the specified path
         """
-        if filename is None:
-            given = False
-        else:
-            given = True
         if self.valid:
-            if self.dim == 0:
-                if filename is None:
+            if fmt is None:
+                if self.dim == 0:
+                    fmt = 'xyz'
+                else:
+                    fmt = 'cif'
+
+            if filename is None:
+                if self.dim == 0:
                     filename = str(self.molecule.formula).replace(" ", "") + "." + fmt
-            if self.dim != 0:
-                if filename is None:
+                else: 
                     filename = str(self.struct.formula).replace(" ", "") + "." + fmt
 
-            if self.dim == 0 and fmt == "xyz":
-                self.molecule.to(fmt=fmt, filename=outdir)
+            if self.dim == 0:
+                self.molecule.to(fmt=fmt, filename=filename)
             elif fmt == "cif":
                 write_cif(self, filename, "from_pyxtal", permission)
             else:
@@ -482,7 +485,7 @@ class random_crystal:
         s += "\n{}".format(self.lattice)
         if self.valid:
             s += "\nWyckoff sites:"
-            for wyc in self.wyckoff_sites:
+            for wyc in self.atom_sites:
                 s += "\n\t{}".format(wyc)
         else:
             s += "\nStructure not generated."
@@ -496,6 +499,13 @@ class random_crystal:
         Prints useful information about the generated crystal.
         """
         print(str(self))
+
+    def show(self, **kwargs):
+        """
+        display the crystal structure
+        """
+        from pyxtal.viz import display_atomic_crystal
+        return display_atomic_crystal(self, **kwargs)
 
     def generate_crystal(self):
         """
@@ -588,7 +598,7 @@ class random_crystal:
                 self.frac_coords = final_coords
                 self.cart_coords = np.dot(final_coords, cell_matrix)
                 self.lattice_matrix = cell_matrix
-                self.wyckoff_sites = wyckoff_sites
+                self.atom_sites = wyckoff_sites
                 self.valid = True
                 return
 

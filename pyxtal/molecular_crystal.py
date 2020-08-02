@@ -544,32 +544,27 @@ class molecular_crystal:
         elif has_freedom is False:
             return 0
 
-    def to_file(self, fmt=None, filename=None, permission='w'):
+    def to_file(self, filename=None, fmt="cif", permission='w'):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
         By default, the filename is based on the stoichiometry.
 
         Args:
-            fmt: the file type ('cif', 'xyz', etc.)
             filename: the file path
+            fmt: the file type ('cif', 'xyz', etc.)
+            permission: "w" or "a+"
 
         Returns:
             Nothing. Creates a file at the specified path
         """
-        if filename is None:
-            given = False
-        else:
-            given = True
         if self.valid:
-            if fmt is None:
-                fmt = "cif"
             if filename is None:
                 filename = str(self.struct.formula).replace(" ", "") + "." + fmt
             if fmt == "cif":
                 write_cif(self, filename, "from_pyxtal", permission)
             else:
-                self.struct.to(fmt=fmt, filename=outdir)
+                self.struct.to(fmt=fmt, filename=filename)
             return 
         else:
             printx("Cannot create file: structure did not generate.", priority=1)
@@ -595,6 +590,9 @@ class molecular_crystal:
         print(str(self))
 
     def show(self, **kwargs):
+        """
+        display the crystal structure
+        """
         from pyxtal.viz import display_molecular_crystal
         return display_molecular_crystal(self, **kwargs)
 
