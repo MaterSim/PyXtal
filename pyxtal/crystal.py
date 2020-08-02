@@ -302,6 +302,11 @@ class random_crystal:
         self.factor = factor
         self.numIons0 = numIons
         self.numIons = self.numIons0 * cellsize(self.group)
+        formula = ""
+        for i,s in zip(self.numIons, species):
+            formula += "{:s}{:d}".format(s, i)
+        self.formula = formula
+
         self.species = species
         self.Msgs()
 
@@ -443,7 +448,7 @@ class random_crystal:
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
-        By default, the filename is based on the stoichiometry.
+        For other formats, Pymatgen is used
 
         Args:
             filename: the file path
@@ -460,25 +465,17 @@ class random_crystal:
                 else:
                     fmt = 'cif'
 
-            if filename is None:
-                if self.dim == 0:
-                    filename = str(self.molecule.formula).replace(" ", "") + "." + fmt
-                else: 
-                    filename = str(self.struct.formula).replace(" ", "") + "." + fmt
-
-            if self.dim == 0:
-                self.molecule.to(fmt=fmt, filename=filename)
-            elif fmt == "cif":
-                write_cif(self, filename, "from_pyxtal", permission)
+            if fmt == "cif":
+                return write_cif(self, filename, "from_pyxtal", permission)
             else:
-                self.struct.to(fmt=fmt, filename=filename)
-            return 
+                pmg_struc = self.to_pymatgen()
+                return pmg_struc.to(fmt=fmt, filename=filename)
         else:
             printx("Cannot create file: structure did not generate.", priority=1)
 
     def __str__(self):
         s = "------Random Crystal------"
-        s += "\nComposition: {}".format(self.struct.formula)
+        s += "\nComposition: {}".format(self.formula)
         s += "\nDimension: {}".format(self.dim)
         s += "\nGroup: {} ({})".format(self.group.symbol, self.group.number)
         s += "\nVolume factor: {}".format(self.factor)
@@ -538,7 +535,7 @@ class random_crystal:
             self.cycle1 = cycle1
 
             # 1, Generate a lattice
-            if self.lattice.allow_volume_reset is True:
+            if self.lattice.allow_volume_reset:
                 self.volume = self.estimate_volume()
                 self.lattice.volume = self.volume
             self.lattice.reset_matrix()
@@ -552,7 +549,7 @@ class random_crystal:
                 continue
 
             # Check that the correct volume was generated
-            if self.lattice.random is True:
+            if self.lattice.random:
                 if self.dim != 0 and abs(self.volume - self.lattice.volume) > 1.0:
                     printx(
                         (
@@ -571,46 +568,69 @@ class random_crystal:
                 output = self._generate_coords(cell_matrix)
 
                 if output:
-                    final_coords, final_species, wyckoff_sites = output
+                    self.atom_sites = output
                     break
+
             if self.valid:
-                final_number = [Element(ele).z for ele in final_species]
-                final_coords = np.array(final_coords)
-                cart_coords = np.dot(final_coords, cell_matrix)
-
-                if self.dim != 0:
-                    # Add space above and below a 2D or 1D crystals
-                    cell_matrix, final_coords = add_vacuum(
-                        cell_matrix, final_coords, PBC=self.PBC
-                    )
-                    self.struct = Structure(cell_matrix, final_species, final_coords)
-                    self.spg_struct = (cell_matrix, final_coords, final_number)
-                else:
-                    self.species = final_species
-                    # Clusters are handled as large molecules
-                    self.molecule = Molecule(final_species, cart_coords)
-                    # Calculate binding box
-                    diffs = np.max(cart_coords, axis=0) - np.min(cart_coords, axis=0) + 10
-                    # a, b, c = diffs[0], diffs[1], diffs[2]
-                    self.struct = self.molecule.get_boxed_structure(*diffs)
-
-                self.sites = final_species
-                self.frac_coords = final_coords
-                self.cart_coords = np.dot(final_coords, cell_matrix)
-                self.lattice_matrix = cell_matrix
-                self.atom_sites = wyckoff_sites
-                self.valid = True
                 return
 
         self.valid = False
         self.struct = None
         return
 
+    def get_coords_and_species(self, absolute=False):
+        species = []
+        total_coords = None
+        for site in self.atom_sites:
+            species.extend([site.specie]*site.multiplicity)
+            if total_coords is None:
+                total_coords = site.coords
+            else:
+                total_coords = np.append(total_coords, site.coords, axis=0)
+        if absolute:
+            return total_coords.dot(self.lattice.matrix), species
+        else:
+            return total_coords, speices
+
+    def to_ase(self):
+        """
+        export to ase Atoms object
+        """
+        from ase import Atoms
+        if self.valid:
+            if self.dim > 0:
+                coords, speices = self.get_coords_snd_species()
+                # Add space above and below a 2D or 1D crystals
+                latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+                return Atoms(species, scaled_positions=coords, cell=latt)
+            else:
+                coords, speices = self.get_coords_snd_species(True)
+                return Atoms(species, positions=coords)
+        else:
+            printx("No valid structure can be converted to ase.", priority=1)
+
+    def to_pymatgen(self):
+        """
+        export to Pymatgen structure object
+        """
+
+        if self.valid:
+            if self.dim > 0:
+                coords, speices = self.get_coords_snd_species()
+                # Add space above and below a 2D or 1D crystals
+                latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+                return Structure(latt, species, coords)
+            else:
+                # Clusters are handled as large molecules
+                coords, species = self.get_coords_and_species(True)
+                return Molecule(species, coords)
+        else:
+            printx("No valid structure can be converted to pymatgen.", priority=1)
+
+
     def _generate_coords(self, cell_matrix):
         """
         """
-        coordinates_list = []  # to store the added coordinates
-        species_list = []  # to store the corresponding specie
         wyckoff_sites_list = []
 
         # generate coordinates for each ion type in turn
@@ -618,19 +638,15 @@ class random_crystal:
             output = self._generate_ion_wyckoffs(
                 numIon, specie, cell_matrix, wyckoff_sites_list
             )
-
-            if output:
-                coords, species, wyks = output
-                coordinates_list.extend(coords)
-                species_list.extend(species)
-                wyckoff_sites_list.extend(wyks)
+            if output is not None:
+                wyckoff_sites_list.extend(output)
             else:
                 # correct multiplicity not achieved exit and start over
                 return None
 
         # If numIon_added correct for all specie return structure
         self.valid = True
-        return coordinates_list, species_list, wyckoff_sites_list
+        return wyckoff_sites_list
 
     def _generate_ion_wyckoffs(self, numIon, specie, cell_matrix, wyks):
         """
@@ -653,9 +669,6 @@ class random_crystal:
         """
         numIon_added = 0
         tol = self.tol_matrix.get_tol(specie, specie)
-
-        coordinates_tmp = []
-        species_tmp = []
         wyckoff_sites_tmp = []
 
         # Now we start to add the specie to the wyckoff position
@@ -669,8 +682,6 @@ class random_crystal:
 
         cycle3 = 0
         while cycle3 < wyckoff_attempts:
-
-            self.cycle3 = cycle3
             # Choose a random WP for given multiplicity: 2a, 2b
             if sites_list is not None:
                 site = sites_list[0]
@@ -691,10 +702,6 @@ class random_crystal:
                 )
                 if site is not None and len(coords_toadd) < len(coords):
                     continue # break the cycle if the merge happens
-                #print(coords)
-                #print(coords_toadd, wp_index, pt)
-                #import sys
-                #sys.exit()
 
                 if wp_index is not False:
                     # Use a Wyckoff_site object for the current site
@@ -708,24 +715,15 @@ class random_crystal:
                         ):
                             passed_wp_check = False
 
-                    if passed_wp_check is True:
+                    if passed_wp_check:
                         if sites_list is not None:
                             sites_list.pop(0)
-
-                        # The current Wyckoff site passed; store it
-                        if coordinates_tmp == []:
-                            coordinates_tmp = current_site.coords
-                        else:
-                            coordinates_tmp = np.vstack(
-                                [coordinates_tmp, current_site.coords]
-                            )
-                        species_tmp.extend([specie] * len(coords_toadd))
                         wyckoff_sites_tmp.append(current_site)
-                        numIon_added += len(coords_toadd)
+                        numIon_added += current_site.multiplicity #len(coords_toadd)
 
                         # Check if enough atoms have been added
                         if numIon_added == numIon:
-                            return coordinates_tmp, species_tmp, wyckoff_sites_tmp
+                            return wyckoff_sites_tmp
 
             cycle3 += 1
             self.numattempts += 1

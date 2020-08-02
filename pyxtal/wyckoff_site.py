@@ -763,7 +763,7 @@ class atom_site:
         self.multiplicity = wp.multiplicity
         self.wp = wp
         self.PBC = wp.PBC
-        self.coords = apply_ops(self.position, self.wp)
+        self.update_coords(coordinate)
 
     def __str__(self):
         if not hasattr(self, "site_symm"):
@@ -775,6 +775,13 @@ class atom_site:
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry: {:s}".format(self.site_symm)
         return s
+
+    def update_coords(self, pos):
+        """
+        Used to generate coords from self.position
+        """
+        self.position = pos
+        self.coords = apply_ops(pos, self.wp) 
 
     def __repr__(self):
         return str(self)
