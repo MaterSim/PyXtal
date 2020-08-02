@@ -15,9 +15,9 @@
 * [How to contribute?](#how-to-contribute)
 
 ## Introduction
-PyXtal is an open source Python package for generating random crystal structures based on symmetry constraints. The package allows for generation of both atomic and molecular crystals, with both general and special Wyckoff positions. These structures can exported to various structural formats for further study. The package also allows users to easily access symmetry group information. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for information about installation and usage.
+PyXtal is an open source Python package which was initiated by [Qiang Zhu](http://www.physics.unlv.edu/~qzhu/index.html) and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas. The goal of PyXtal project is to develop a fundamental library to allow one to design the material structure with a certain symmetry constraint. So far, the package allows for generation/manipulation of crystals, with both general and special Wyckoff positions. These structures can exported to various structural formats for further study. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for information about installation and usage.
 
-PyXtal is an open-source project which was initiated by Qiang Zhu and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas. To contribute to this project, please check [How to contribute?](#how-to-contribute).
+To contribute to this project, please check [How to contribute?](#how-to-contribute).
 
 ## Current Features
 * Random generation of atomic/molecular crystals in 3D, 2D, 1D and 0D crystals for a given symmetry group and stoichiometry
