@@ -468,7 +468,7 @@ class random_crystal:
             elif fmt == "cif":
                 write_cif(self, filename, "from_pyxtal", permission)
             else:
-                self.struct.to(fmt=fmt, filename=outdir)
+                self.struct.to(fmt=fmt, filename=filename)
             return 
         else:
             printx("Cannot create file: structure did not generate.", priority=1)
@@ -651,11 +651,11 @@ class random_crystal:
         # Now we start to add the specie to the wyckoff position
         sites_list = deepcopy(self.sites[specie]) # the list of Wyckoff site
         if sites_list is not None: 
-            wyckoff_attempts = len(sites_list)*2
+            wyckoff_attempts = max(len(sites_list)*2, 10)
         else:
             # the minimum numattempts is to put all atoms to the general WPs
             min_wyckoffs = int(numIon/len(self.group.wyckoffs_organized[0][0]))
-            wyckoff_attempts = 2*min_wyckoffs
+            wyckoff_attempts = max(2*min_wyckoffs, 10)
 
         cycle3 = 0
         while cycle3 < wyckoff_attempts:
