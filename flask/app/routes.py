@@ -5,8 +5,8 @@ from flask import render_template, flash, session, Markup
 from app import app
 from app.forms import MainForm
 from werkzeug.utils import secure_filename
-from pyxtal_xrd.XRD import XRD
-from pyxtal_xrd.similarity import Similarity
+from pyxtal.XRD import XRD
+from pyxtal.XRD import Similarity
 from ase.io import read
 
 @app.route('/')
