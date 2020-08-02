@@ -594,6 +594,10 @@ class molecular_crystal:
     def print_all(self):
         print(str(self))
 
+    def show(self, **kwargs):
+        from pyxtal.viz import display_molecular_crystal
+        return display_molecular_crystal(self, **kwargs)
+
     def generate_crystal(self, max1=max1, max2=max2, max3=max3, max4=max4):
         """
         The main code to generate a random molecular crystal. If successful,

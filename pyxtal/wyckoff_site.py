@@ -84,6 +84,10 @@ class mol_site:
         s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
         return s
 
+    def show(self, id=None, **kwargs):
+        from pyxtal.viz import display_molecular_site
+        return display_molecular_site(self, id, **kwargs)
+
     # NOTE appears deprecated?
     def get_ellipsoid(self):
         """
@@ -237,17 +241,28 @@ class mol_site:
         compute the principle axis
         """
         coords -= np.mean(coords, axis=0)
-        I11 = I22 = I33 = I12 = I13 = I23 = 0.0
-        for coord in coords:
-            x, y, z = coord
-            I11 += (y ** 2 + z ** 2)
-            I22 += (x ** 2 + z ** 2)
-            I33 += (x ** 2 + y ** 2)
-            I12 -= x * y
-            I13 -= x * z
-            I23 -= y * z
-        A = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
-        _, matrix = np.linalg.eigh(A)
+        #I11 = I22 = I33 = I12 = I13 = I23 = 0.0
+        #for coord in coords:
+        #    x, y, z = coord
+        #    I11 += (y ** 2 + z ** 2)
+        #    I22 += (x ** 2 + z ** 2)
+        #    I33 += (x ** 2 + y ** 2)
+        #    I12 -= x * y
+        #    I13 -= x * z
+        #    I23 -= y * z
+        #A = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
+        #_, matrix = np.linalg.eigh(A)
+
+        Inertia = np.zeros([3,3])
+        Inertia[0,0] = np.sum(coords[:,1]**2 + coords[:,2]**2)
+        Inertia[1,1] = np.sum(coords[:,0]**2 + coords[:,2]**2)
+        Inertia[2,2] = np.sum(coords[:,0]**2 + coords[:,1]**2)
+        Inertia[0,1] = Inertia[1,0] = -np.sum(coords[:,0]*coords[:,1])
+        Inertia[0,2] = Inertia[2,0] = -np.sum(coords[:,0]*coords[:,2])
+        Inertia[1,2] = Inertia[2,1] = -np.sum(coords[:,1]*coords[:,2])
+        _, matrix = np.linalg.eigh(Inertia)
+        
+        # search for the best direction
         if adjust:
             diffs = coords.dot(matrix) - self.coord0
             diffs = np.sqrt(np.sum(diffs**2,axis=0))/len(coords)
