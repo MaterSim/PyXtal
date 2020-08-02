@@ -5,6 +5,8 @@
 [![Download Status](https://img.shields.io/pypi/pyversions/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/v/pyxtal)](https://pypi.org/project/pyxtal/)
 [![DOI](https://zenodo.org/badge/128165891.svg)](https://zenodo.org/badge/latestdoi/128165891)
+<img align="right" width="450" src="https://github.com/qzhu2017/PyXtal/blob/master/images/water.gif">
+
 
 ## Content
 
@@ -13,6 +15,8 @@
 * [Installation](#installation)
 * [Citation](#citation)
 * [How to contribute?](#how-to-contribute)
+
+
 
 ## Introduction
 PyXtal is an open source Python package which was initiated by [Qiang Zhu](http://www.physics.unlv.edu/~qzhu/index.html) and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas. The goal of PyXtal project is to develop a fundamental library to allow one to design the material structure with a certain symmetry constraint. So far, the package allows for generation/manipulation of crystals, with both general and special Wyckoff positions. These structures can exported to various structural formats for further study. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for information about installation and usage.
