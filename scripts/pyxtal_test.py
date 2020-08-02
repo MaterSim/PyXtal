@@ -252,6 +252,19 @@ def test_atomic():
     global outstructs
     global outstrings
     fprint("=== Testing generation of atomic 3D crystals. This may take some time. ===")
+    my_crystal1 = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.0, sites=[["1b"], ["1b"], ["2c", "1b"]])
+    print(my_crystal1)
+    my_crystal1.to_file("1.cif")
+    
+    my_crystal2 = random_crystal(225, ['C'], [3], 1.0, sites=[["4a", "8c"]])
+    my_crystal2 = random_crystal(225, ['C'], [3], 1.0)
+    print(my_crystal2)
+    my_crystal2.to_file("2.cif")
+    
+    my_crystal3 = random_crystal(225, ['C','Si'], [3, 1], 1.0, sites=[["4a", "8c"], None])
+    print(my_crystal3)
+    my_crystal3.to_file("3.cif")
+
 
     slow = []
     failed = []
@@ -338,7 +351,6 @@ def test_atomic():
         fprint("~~~~ The following space groups failed to generate:")
         for i in failed:
             fprint("     " + str(i))
-
 
 def test_molecular():
     global outstructs
