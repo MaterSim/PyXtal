@@ -1497,6 +1497,32 @@ class Wyckoff_position:
     def __repr__(self):
         return str(self)
 
+    def from_symops(ops):
+        """
+        search Wyckoff Position by symmetry operations
+
+        Args:
+        ops: a list of symmetry operations
+        gen_only: boolean, check general positions only?
+
+        Returns:
+        Wyckoff_position
+
+        """
+        str1 = [op.as_xyz_string() for op in ops]
+        N_sym = len(str1)
+
+        for i in range(1,231):
+            for wyc in Group(i):
+                if len(wyc) == N_sym:
+                    str2 = [op.as_xyz_string() for op in wyc.ops]
+                    if set(str1) == set(str2):
+                        return wyc
+                elif len(wyc) < N_sym:
+                    continue #break since it won'
+
+        return None
+
     def from_group_and_index(group, index, dim=3, PBC=None):
         """
         Creates a Wyckoff_position using the space group number and index

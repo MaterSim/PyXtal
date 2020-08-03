@@ -37,12 +37,12 @@ class mol_site:
         self,
         mol,
         position,
-        symbols,
         orientation,
         wyckoff_position,
         lattice,
         tols_matrix,
         radius,
+        rotate_ref=True,
         ellipsoid=None,
     ):
         self.mol = mol
@@ -61,14 +61,17 @@ class mol_site:
         """The multiplicity of the molecule's Wyckoff position"""
         self.PBC = wyckoff_position.PBC
         """The periodic axes"""
-        self.symbols = symbols
+        self.symbols = [site.specie.value for site in self.mol.sites]
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = tols_matrix
         self.radius = radius
-        tmp = self.mol.cart_coords
-        tmp -= np.mean(tmp, axis=0)
-        ax1 = self.get_principle_axes(tmp)
-        self.coord0 = tmp.dot(ax1)
+        if rotate_ref:
+            tmp = self.mol.cart_coords
+            tmp -= np.mean(tmp, axis=0)
+            ax1 = self.get_principle_axes(tmp)
+            self.coord0 = tmp.dot(ax1)
+        else:
+            self.coord0 = self.mol.cart_coords
 
     def __str__(self):
 
@@ -241,18 +244,6 @@ class mol_site:
         compute the principle axis
         """
         coords -= np.mean(coords, axis=0)
-        #I11 = I22 = I33 = I12 = I13 = I23 = 0.0
-        #for coord in coords:
-        #    x, y, z = coord
-        #    I11 += (y ** 2 + z ** 2)
-        #    I22 += (x ** 2 + z ** 2)
-        #    I33 += (x ** 2 + y ** 2)
-        #    I12 -= x * y
-        #    I13 -= x * z
-        #    I23 -= y * z
-        #A = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
-        #_, matrix = np.linalg.eigh(A)
-
         Inertia = np.zeros([3,3])
         Inertia[0,0] = np.sum(coords[:,1]**2 + coords[:,2]**2)
         Inertia[1,1] = np.sum(coords[:,0]**2 + coords[:,2]**2)
@@ -299,7 +290,7 @@ class mol_site:
             coord0 -= np.mean(coord0, axis=0)
             ax = self.get_principle_axes(coord0).T[axis]
         elif len(axis) == 3:
-            axis /= np.linalg.norm(axis)
+            ax = axis/np.linalg.norm(axis)
 
         q = R.from_rotvec(ax*rad*angle)
         o = q*p
@@ -334,6 +325,24 @@ class mol_site:
             return Molecule(self.symbols, tmp)           
         else:
             raise ValueError("id is greater than the number of molecules")
+
+    def check_decomposition(self, frac_coords):
+        """
+        After the geometry relaxation, the returned atomic coordinates
+        maybe rescaled to [0, 1] bound. In this case, we need to refind
+        the molecular coordinates according to the original neighbor list. 
+        If the list does not change, we return the new coordinates
+        otherwise, terminate the calculation.
+        """
+
+        m1 = self.get_mol_object()
+        if len(m1.get_covalent_bonds()) == len(self.mol.get_covalent_bonds()):
+            return False
+        else:
+            printx("Error: molecular connectivity is broken. Please check")
+            return True
+
+
 
     def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
         """

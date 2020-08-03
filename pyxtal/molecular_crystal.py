@@ -8,13 +8,11 @@ from copy import deepcopy
 from pymatgen.core.structure import Structure  
 
 # PyXtal imports
-# NOTE comprhys: surely importing constants to use as defaults
-# is less clear than just specifying the defaults?
 from pyxtal.constants import max1, max2, max3, max4
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
-from pyxtal.io import write_cif
+from pyxtal.io import write_cif, structure_from_cif
 from pyxtal.database.element import Element
 from pyxtal.wyckoff_site import mol_site, check_mol_sites
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
@@ -212,6 +210,7 @@ class molecular_crystal:
         fmt="xyz",
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),
+        seed = None,
     ):
 
         self.dim = 3
@@ -223,6 +222,8 @@ class molecular_crystal:
             group = Group(group, self.dim)
         self.sg = group.number
         self.selec_high = select_high
+        self.seed = seed
+
         self.init_common(
             molecules,
             numMols,
@@ -379,8 +380,17 @@ class molecular_crystal:
                     max_l=max(maxls),
                     area=self.area,
                 )
+        if self.seed is None:
+            self.generate_crystal()
+        else:
+            seed = structure_from_cif(self.seed, self.molecules[0].mol)
+            if seed.match():
+                self.mol_sites = [seed.make_mol_site()]
+                self.group = Group(seed.wyc.number)
+                self.lattice = Lattice.from_matrix(seed.lattice)
+            else:
+                printx("Cannot extract the structure from cif")
 
-        self.generate_crystal()
 
     def estimate_volume(self):
         """
@@ -722,7 +732,6 @@ class molecular_crystal:
                                     ms0 = mol_site(
                                         mol,
                                         point,
-                                        symbols,
                                         ori,
                                         self.group[wp_index],
                                         cell_matrix,
@@ -735,14 +744,13 @@ class molecular_crystal:
                                         # Maximize the smallest distance for the general
                                         # positions if needed
                                         passed_ori = False
-                                        if len(symbols) > 1 and ori.degrees > 0:
+                                        if len(mol) > 1 and ori.degrees > 0:
                                             # bisection method
                                             def fun_dist(angle, ori, mo, point):
                                                 ori.change_orientation(angle)
                                                 ms0 = mol_site(
                                                     mo,
                                                     point,
-                                                    symbols,
                                                     ori,
                                                     self.group[wp_index],
                                                     cell_matrix,

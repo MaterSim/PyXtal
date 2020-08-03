@@ -54,6 +54,7 @@ class pyxtal_molecule:
             if len(tmp) > 1:
                 # Load the molecule from the given file
                 if tmp[-1] in ["xyz", "gjf", "g03", "json"]:
+                    import os
                     if os.path.exists(mol):
                         mo = Molecule.from_file(mol)
                     else:

@@ -81,33 +81,38 @@ def display_atomic_crystal(structure, height=300, width=600, scale=0.25, radius=
             view.setStyle({'sym':2},{'sphere':{'scale':scale*1.1,'color':'blue'}})
     return view.zoomTo()
 
-def display_molecular_crystal(structure, height=300, width=600, axis=False, axis_label=True):
+def display_molecular_crystal(structure, height=300, width=600, axis=None, scale=1, axis_label=True):
     view = py3Dmol.view(height=height, width=width)
     for site in structure.mol_sites:
         for i in range(site.multiplicity):
             mol = site.get_mol_object(i)
             view.addModel(mol.to(fmt='xyz'), 'xyz')
-            if axis:
-                axes = site.get_principle_axes(mol.cart_coords)
-                addlines(view, np.mean(mol.cart_coords, axis=0), axes.T*5)
+            if axis is not None:
+                axes = []
+                if axis is True:
+                    axes = site.get_principle_axes(mol.cart_coords).T*scale
+                else:
+                    axes = [axis*scale]
+                if len(axes) > 0:
+                    addlines(view, np.mean(mol.cart_coords, axis=0), axes)
 
-    addBox(view, structure.lattice_matrix, axis_label)
+    addBox(view, structure.lattice.matrix, axis_label)
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
 
     return view.zoomTo()
 
 def display_molecular_site(site, id=None, height=300, width=800, axis=True, axis_label=True):
-    view = py3Dmol.view(height=height, width=width, linked=False, viewergrid=(1,2))
+    view = py3Dmol.view(height=height, width=width, viewergrid=(1,2))
 
     view.addModel(site.mol.to(fmt='xyz'), 'xyz', viewer=(0,0))
     view.setStyle({'stick':{'colorscheme':'blueCarbon'}}, viewer=(0,0))
 
-    if id is not None:
+    if id is None:
         ids = range(site.multiplicity)
     else:
         ids = [id]
 
-    for i in range(site.multiplicity):
+    for i in ids:
         mol = site.get_mol_object(i)
         view.addModel(mol.to(fmt='xyz'), 'xyz', viewer=(0,1))
         if axis:
