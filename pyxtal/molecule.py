@@ -789,3 +789,39 @@ def orientation_in_wyckoff_position(
     else:
         return allowed
 
+def make_graph(mol, tol=0.2):
+    """
+    make graph object for the input molecule
+    """   
+    G = nx.Graph()
+    names = {}
+    for i, site in enumerate(mol._sites):
+        names[i] = site.specie.value
+
+    for i in range(len(mol)-1):
+        site1 = mol.sites[i]
+        for j in range(i+1, len(mol)):
+            site2 = mol.sites[j]
+            if CovalentBond.is_bonded(site1, site2, tol):
+                G.add_edge(i,j)
+    nx.set_node_attributes(G, names, 'name')
+
+    return G
+ 
+def compare_mol_connectivity(mol1, mol2, ignore_name=False):
+    """
+    Compare two molecules by connectivity
+    """
+    import networkx as nx
+
+    G1 = make_graph(mol1)
+    G2 = make_graph(mol2)
+    if ignore_name:
+        GM = nx.isomorphism.GraphMatcher(G1, G2)
+    else:
+        fun = lambda n1, n2: n1['name'] == n2['name']
+        GM = nx.isomorphism.GraphMatcher(G1, G2, node_match=fun)
+
+    return GM.is_isomorphic(), GM.mapping
+
+

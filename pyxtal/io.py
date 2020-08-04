@@ -83,13 +83,10 @@ def write_cif(struc, filename=None, header="", permission='w'):
 from pymatgen.io.cif import CifParser
 from molmod.molecules import Molecule as mmm
 from pymatgen import Molecule
-import networkx as nx
 from pymatgen.core.bonds import CovalentBond
-import numpy as np
 import py3Dmol
 from pyxtal.wyckoff_site import mol_site
-from pyxtal.symmetry import Group
-from pyxtal.molecule import pyxtal_molecule, Orientation
+from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
 #from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Wyckoff_position
 
@@ -119,30 +116,10 @@ class structure_from_cif():
         self.cif = CifParser(cif_file)
         self.pmg_struc = self.cif.get_structures()[0]
         self.wyc = Wyckoff_position.from_symops(self.cif.symmetry_operations)  
-        
-        
-        first_site = self.pmg_struc.sites[0]
-        first_site.index = 0 #assign the index
-        visited = [first_site] 
-
-        n_iter, max_iter = 0, len(self.ref_mol)
-        n_iter = 0
-        while n_iter < max_iter:
-            if n_iter == 0:
-                new_sites, visited = self.check_one_site(first_site, visited)
-            else:
-                new_sites, visited = self.check_one_layer(new_sites, visited)
-            n_iter += 1
-            if len(new_sites)==0:
-                break
-    
-        coords = [s.coords for s in visited]
-        numbers = [s.specie.number for s in visited]
+        coords, numbers = search_molecule_in_crystal(self.pmg_struc, self.tol)
         self.molecule = Molecule(numbers, coords)
-
     
     def make_mol_site(self):
-
         mol = pyxtal_molecule(self.molecule)
         radius = mol.radius
         tols_matrix = mol.tols_matrix
@@ -156,69 +133,21 @@ class structure_from_cif():
                         rotate_ref = False,
                         )
         return site
-    
-    def check_one_layer(self, sites0, visited):
-        new_members = []
-        for site0 in sites0:
-            sites_add, visited = self.check_one_site(site0, visited)
-            new_members.extend(sites_add)
-        return new_members, visited
-    
-    def check_one_site(self, site0, visited):
-        neigh_sites = self.pmg_struc.get_neighbors(site0, 3.0)
-        ids = [m.index for m in visited]
-        sites_add = []
-        ids_add = []
 
-        for site1 in neigh_sites:
-            if (site1.index not in ids+ids_add):
-                if CovalentBond.is_bonded(site0, site1, self.tol):
-                    sites_add.append(site1)
-                    ids_add.append(site1.index)
-        if len(sites_add) > 0:
-            visited.extend(sites_add)
-
-        return sites_add, visited
-
-
-    def check_one_layer(self, sites0, visited):
-        new_members = []
-        for site0 in sites0:
-            sites_add, visited = self.check_one_site(site0, visited)
-            new_members.extend(sites_add)
-        return new_members, visited
-
-
-    def make_graph(self, mol):
-    
-        G = nx.Graph()
-        names = {}
-        for i, site in enumerate(mol._sites):
-            names[i] = site.specie.value
-    
-        for i in range(len(mol)-1):
-            site1 = mol.sites[i]
-            for j in range(i+1, len(mol)):
-                site2 = mol.sites[j]
-                if CovalentBond.is_bonded(site1, site2, self.tol):
-                    G.add_edge(i,j)
-        nx.set_node_attributes(G, names, 'name')
-
-        return G
-    
+   
     def match(self):
         """
         Check the two molecular graphs are isomorphic
         """
-        self.G_ref = self.make_graph(self.ref_mol)
-        self.G_cif = self.make_graph(self.molecule)
+        self.G_ref = make_graph(self.ref_mol)
+        self.G_cif = make_graph(self.molecule)
         fun = lambda n1, n2: n1['name'] == n2['name']
-        GM = nx.isomorphism.GraphMatcher(self.G_ref, self.G_cif, node_match=fun)
-        if not GM.is_isomorphic():
+        match, mapping = compare_mol_connectivity(self.ref_mol, self.molecule)
+        if not match:
             return False
         else:
             # resort the atomic number for molecule 1
-            order = [GM.mapping[i] for i in range(len(self.ref_mol))]
+            order = [mapping[i] for i in range(len(self.ref_mol))]
             numbers = np.array(self.molecule.atomic_numbers)
             numbers = numbers[order].tolist()
             coords = self.molecule.cart_coords[order]
@@ -250,3 +179,78 @@ class structure_from_cif():
         view.addModel(trans_mol.to(fmt='xyz'), 'xyz')
         view.setStyle({'stick':{'colorscheme':'redCarbon'}})
         return view.zoomTo()
+
+
+def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
+    """
+    This is a function to perform a search to find the molecule
+    in a Pymatgen crystal structure
+
+    Args:
+    struc: Pymatgen Structure
+    keep_order: whether or not use the orignal sequence
+    absolute: whether or not output absolute coordindates
+
+    Returns:
+    coords: frac
+    numbers: atomic numbers
+    """
+    def check_one_layer(struc, sites0, visited):
+        new_members = []
+        for site0 in sites0:
+            sites_add, visited = check_one_site(struc, site0, visited)
+            new_members.extend(sites_add)
+        return new_members, visited
+    
+    def check_one_site(struc, site0, visited):
+        neigh_sites = struc.get_neighbors(site0, 3.0)
+        ids = [m.index for m in visited]
+        sites_add = []
+        ids_add = []
+
+        for site1 in neigh_sites:
+            if (site1.index not in ids+ids_add):
+                if CovalentBond.is_bonded(site0, site1, tol):
+                    sites_add.append(site1)
+                    ids_add.append(site1.index)
+        if len(sites_add) > 0:
+            visited.extend(sites_add)
+
+        return sites_add, visited
+
+    first_site = struc.sites[0]
+    first_site.index = 0 #assign the index
+    visited = [first_site] 
+    ids = [0]
+
+    n_iter, max_iter = 0, len(struc)
+    while n_iter < max_iter:
+        if n_iter == 0:
+            new_sites, visited = check_one_site(struc, first_site, visited)
+        else:
+            new_sites, visited = check_one_layer(struc, new_sites, visited)
+        n_iter += 1
+        if len(new_sites)==0:
+            break
+    
+    coords = [s.coords for s in visited]
+    numbers = [s.specie.number for s in visited]
+    
+    if keep_order:
+        ids = [s.index for s in visited]
+        seq = np.argsort(ids)
+        coords = coords[seq]
+        numbers = numbers[seq]
+
+    if not absolute:
+        coords = coords.dot(struc.lattice.inv)
+    return coords, numbers
+
+
+
+seed = structure_from_cif("254385.cif", "1.xyz")
+print(seed.molecule)
+
+
+
+

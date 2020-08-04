@@ -5,7 +5,6 @@ import numpy as np
 from copy import deepcopy
 
 # External Libraries
-from pymatgen.core.structure import Structure  
 
 # PyXtal imports
 from pyxtal.constants import max1, max2, max3, max4
@@ -388,6 +387,7 @@ class molecular_crystal:
                 self.mol_sites = [seed.make_mol_site()]
                 self.group = Group(seed.wyc.number)
                 self.lattice = Lattice.from_matrix(seed.lattice)
+                self.valid = True # Need to add a check function
             else:
                 printx("Cannot extract the structure from cif")
 
@@ -614,6 +614,7 @@ class molecular_crystal:
         """
         export to Pymatgen structure object
         """
+        from pymatgen.core.structure import Structure  
 
         if self.valid:
             coords, species = self.get_coords_and_species()

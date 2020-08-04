@@ -278,6 +278,18 @@ class mol_site:
         matrix = self.get_principle_axes(coord0, True)
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
 
+    def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
+        """
+        To translate the molecule 
+        Here we assume the molecule is free to rotate in SO(3)
+        Needs to add the symmetry constraints later
+        """
+        disp = np.array(disp)
+        if absolute:
+            disp = disp.dot(self.inv_lattice)
+        self.position += disp
+
+
     def rotate(self, axis=0, angle=180):
         """
         To rotate the molecule 
@@ -326,7 +338,7 @@ class mol_site:
         else:
             raise ValueError("id is greater than the number of molecules")
 
-    def check_decomposition(self, frac_coords):
+    def update(self, coords, lattice=None, absolute=False):
         """
         After the geometry relaxation, the returned atomic coordinates
         maybe rescaled to [0, 1] bound. In this case, we need to refind
@@ -334,26 +346,31 @@ class mol_site:
         If the list does not change, we return the new coordinates
         otherwise, terminate the calculation.
         """
+        from pymatgen.core.structure import Structure  
+        from pyxtal.io import search_molecule_from_crystal
+        from pyxtal.molecule import compare_mol_connectivity
 
-        m1 = self.get_mol_object()
-        if len(m1.get_covalent_bonds()) == len(self.mol.get_covalent_bonds()):
-            return False
-        else:
-            printx("Error: molecular connectivity is broken. Please check")
-            return True
-
-
-
-    def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
-        """
-        To translate the molecule 
-        Here we assume the molecule is free to rotate in SO(3)
-        Needs to add the symmetry constraints later
-        """
-        disp = np.array(disp)
+        if lattice is not None:
+            self.lattice = lattice
+            self.inv_lattice = np.linalg.norm(lattice)
         if absolute:
-            disp = disp.dot(self.inv_lattice)
-        self.position += disp
+            coords = coords.dot(self.inv_lattice)
+
+        pmg = Structure(self.symbols, self.lattice, coords)
+        coords, numbers = search_molecule_from_crystal(pmg, True)
+        mol = Molecule(numbers, coords)
+        match, _ = compare_mol_connectivity(mol, self.mol, True)
+        if match:
+            position = np.mean(coords, axis=0).dot(self.inv_lattice)
+            position -= np.floor(position)
+            self.position = position
+            # Need to figure out the orientation
+ 
+        else:
+            raise ValueError("molecular connectivity changes! Exit")
+        #todo check if connectivty changed
+        
+
 
     def create_matrix(self):
         """
