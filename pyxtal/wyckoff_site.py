@@ -11,7 +11,7 @@ from pymatgen import Molecule
 
 # PyXtal imports
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.operations import apply_ops, distance_matrix
+from pyxtal.operations import apply_ops, distance_matrix, filtered_coords, create_matrix
 from pyxtal.symmetry import ss_string_from_ops as site_symm
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg

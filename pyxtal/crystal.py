@@ -303,8 +303,8 @@ class random_crystal:
         self.numIons0 = numIons
         self.numIons = self.numIons0 * cellsize(self.group)
         formula = ""
-        for i,s in zip(self.numIons, species):
-            formula += "{:s}{:d}".format(s, i)
+        for i, s in zip(self.numIons, species):
+            formula += "{:s}{:d}".format(s, int(i))
         self.formula = formula
 
         self.species = species
@@ -587,10 +587,11 @@ class random_crystal:
                 total_coords = site.coords
             else:
                 total_coords = np.append(total_coords, site.coords, axis=0)
+
         if absolute:
             return total_coords.dot(self.lattice.matrix), species
         else:
-            return total_coords, speices
+            return total_coords, species
 
     def to_ase(self):
         """
@@ -599,12 +600,12 @@ class random_crystal:
         from ase import Atoms
         if self.valid:
             if self.dim > 0:
-                coords, speices = self.get_coords_snd_species()
+                coords, species = self.get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
                 latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
                 return Atoms(species, scaled_positions=coords, cell=latt)
             else:
-                coords, speices = self.get_coords_snd_species(True)
+                coords, species = self.get_coords_and_species(True)
                 return Atoms(species, positions=coords)
         else:
             printx("No valid structure can be converted to ase.", priority=1)
@@ -616,7 +617,7 @@ class random_crystal:
 
         if self.valid:
             if self.dim > 0:
-                coords, speices = self.get_coords_snd_species()
+                coords, species = self.get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
                 latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
                 return Structure(latt, species, coords)

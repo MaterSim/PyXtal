@@ -579,6 +579,51 @@ class molecular_crystal:
         else:
             printx("Cannot create file: structure did not generate.", priority=1)
 
+
+    def get_coords_and_species(self, absolute=False):
+        species = []
+        total_coords = None
+        for site in self.mol_sites:
+            coords, site_species = site.get_coords_and_species(absolute)
+            species.extend(site_species)
+            if total_coords is None:
+                total_coords = coords
+            else:
+                total_coords = np.append(total_coords, coords, axis=0)
+
+        return total_coords, species
+
+
+    def to_ase(self, resort=True):
+        """
+        export to ase Atoms object
+        """
+        from ase import Atoms
+        if self.valid:
+            coords, species = self.get_coords_and_species(True)
+            latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+            atoms = Atoms(species, positions=coords, cell=latt)
+            if resort:
+                permutation = np.argsort(atoms.numbers)
+                atoms = atoms[permutation]
+            return atoms
+        else:
+            printx("No valid structure can be converted to ase.", priority=1)
+
+    def to_pymatgen(self):
+        """
+        export to Pymatgen structure object
+        """
+
+        if self.valid:
+            coords, species = self.get_coords_and_species()
+            # Add space above and below a 2D or 1D crystals
+            latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+            return Structure(latt, species, coords)
+        else:
+            printx("No valid structure can be converted to pymatgen.", priority=1)
+
+
     def __str__(self):
         s = "------Random Molecular Crystal------"
         s += "\nDimension: " + str(self.dim)
@@ -653,22 +698,10 @@ class molecular_crystal:
                 cell_matrix = self.lattice.get_matrix()
 
                 for cycle2 in range(max2):
-                    molecular_coordinates_total = []  # added molecular coordinates
-                    molecular_sites_total = []  # corresponding molecular specie
-                    coordinates_total = []  # added atomic coordinates
-                    species_total = []  # corresponding atomic specie
-                    wps_total = []  # corresponding Wyckoff position indices
-                    points_total = []  # generating x,y,z points
                     mol_sites_total = []
                     good_structure = False
 
                     self.cycle2 = cycle2
-                    molecular_coordinates_tmp = deepcopy(molecular_coordinates_total)
-                    molecular_sites_tmp = deepcopy(molecular_sites_total)
-                    coordinates_tmp = deepcopy(coordinates_total)
-                    species_tmp = deepcopy(species_total)
-                    wps_tmp = deepcopy(wps_total)
-                    points_tmp = deepcopy(points_total)
                     mol_sites_tmp = []
 
                     # Add molecules specie by specie
@@ -800,19 +833,10 @@ class molecular_crystal:
                                     else:
                                         # Distance checks passed; store the new Wyckoff position
                                         mol_sites_tmp.append(ms0)
-                                        if len(coordinates_tmp) == 0:
-                                            coordinates_tmp = coords_toadd
-                                        else:
-                                            coordinates_tmp = np.vstack(
-                                                [coordinates_tmp, coords_toadd]
-                                            )
-                                        species_tmp += species_toadd
-                                        numMol_added += len(coords_toadd) / len(symbols)
+                                        numMol_added += len(ms0.wp)
                                         if numMol_added == numMol:
                                             # We have enough molecules of the current type
                                             mol_sites_total = deepcopy(mol_sites_tmp)
-                                            coordinates_total = deepcopy(coordinates_tmp)
-                                            species_total = deepcopy(species_tmp)
                                             break
 
                         if numMol_added != numMol:
@@ -822,37 +846,10 @@ class molecular_crystal:
                         printx(self.Msg6, priority=3)
                         good_structure = True
                         break
-                    else:  # reset the coordinates and sites
-                        molecular_coordinates_total = []
-                        molecular_sites_total = []
-                        wps_total = []
                 # placing molecules here
                 if good_structure:
-                    final_lattice = cell_matrix
-                    final_coor = []
-                    final_site = []
-                    final_number = []
-                    self.mol_sites = []  # to regenerate the crystal
-
-                    final_coor = deepcopy(coordinates_total)
-                    final_site = deepcopy(species_total)
-                    final_number = list(Element(ele).z for ele in species_total)
-                    self.mol_sites = deepcopy(mol_sites_total)
-
-                    final_coor = filtered_coords(final_coor, PBC=self.PBC)
-                    lattice, coor = add_vacuum(final_lattice, final_coor, PBC=self.PBC)
-
-                    self.lattice_matrix = lattice
-                    self.frac_coords = np.array(coor)
-                    self.cart_coords = np.dot(coor, lattice)
-                    self.sites = final_site
-
-                    # A pymatgen.core.structure.Structure object for
-                    self.struct = Structure(lattice, self.sites, self.frac_coords)
-                    # ASE/spglib structure
-                    self.spg_struct = (lattice, self.frac_coords, final_number)
+                    self.mol_sites = mol_sites_total
                     self.valid = True
-
                     return
                 else:
                     printx("Failed final distance check.", priority=3)
@@ -925,6 +922,7 @@ class molecular_crystal_2D(molecular_crystal):
 
         self.dim = 2
         self.numattempts = 0
+        self.seed = None
         if type(group) != Group:
             group = Group(group, self.dim)
         number = group.number  # The layer group number of the crystal."""
@@ -940,7 +938,7 @@ class molecular_crystal_2D(molecular_crystal):
             check_atomic_distances,
             group,
             lattice,
-            tm,
+            tm
         )
 
 
@@ -1004,6 +1002,7 @@ class molecular_crystal_1D(molecular_crystal):
         self.area = area  # the effective cross-sectional area in A^2
         self.PBC = [0, 0, 1]  # The periodic axes of the crystal (1,2,3)->(x,y,z)
         self.sg = None  # The international space group number, not rod groups
+        self.seed = None
         self.init_common(
             molecules,
             numMols,
@@ -1014,5 +1013,5 @@ class molecular_crystal_1D(molecular_crystal):
             check_atomic_distances,
             group,
             lattice,
-            tm,
+            tm
         )
