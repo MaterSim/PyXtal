@@ -729,7 +729,7 @@ def test_cluster():
     slow = []
     failed = []
     fprint("  Point group # |     Symbol    |  Time Elapsed")
-    skip = []  # [32,55,56]#[28,29,30,31,32,55,56]
+    skip = [56]  # [32,55,56]#[28,29,30,31,32,55,56]
     for sg in range(1, 57):
         if sg not in skip:
             multiplicity = len(
