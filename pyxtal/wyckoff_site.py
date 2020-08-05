@@ -11,10 +11,12 @@ from pymatgen import Molecule
 
 # PyXtal imports
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.operations import apply_ops, distance_matrix, filtered_coords, create_matrix
+from pyxtal.operations import apply_ops, distance, distance_matrix, project_point, filtered_coords, create_matrix
 from pyxtal.symmetry import ss_string_from_ops as site_symm
+from pyxtal.symmetry import Group
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg
+from pyxtal.msg import printx
 
 class mol_site:
     """
@@ -349,6 +351,7 @@ class mol_site:
         from pymatgen.core.structure import Structure  
         from pyxtal.io import search_molecule_from_crystal
         from pyxtal.molecule import compare_mol_connectivity
+        from openbabel import pybel, openbabel
 
         if lattice is not None:
             self.lattice = lattice
@@ -364,8 +367,23 @@ class mol_site:
             position = np.mean(coords, axis=0).dot(self.inv_lattice)
             position -= np.floor(position)
             self.position = position
-            # Need to figure out the orientation
- 
+            # orientation
+            m1 = pybel.readstring('xyz', self.mol.to('xyz'))
+            m2 = pybel.readstring('xyz', mol.to('xyz'))
+            aligner = openbabel.OBAlign(True, False)
+            aligner.SetRefMol(m1.OBMol)
+            aligner.SetTargetMol(m2.OBMol)
+            if aligner.Align():
+                print("RMSD: ", aligner.GetRMSD())
+                rot=np.zeros([3,3])
+                for i in range(3):
+                    for j in range(3):
+                        rot[i,j] = aligner.GetRotMatrix().Get(i,j)
+                if abs(np.linalg.det(rot) - 1) < 1e-2:
+                    self.orientation.matrix = rot
+                    self.orientation.r = R.from_matrix(rot)
+                else:
+                    raise ValueError("rotation matrix is wrong")
         else:
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
@@ -783,7 +801,7 @@ class atom_site:
         specie: an Element, element name or symbol, or atomic number of the atom
     """
 
-    def __init__(self, wp, coordinate, specie):
+    def __init__(self, wp, coordinate, specie=1):
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
         self.multiplicity = wp.multiplicity
@@ -860,3 +878,152 @@ def check_atom_sites(ws1, ws2, lattice, tm, same_group=True):
             return False
         else:
             return True
+
+def WP_merge_old(coor, lattice, group, tol):
+    """
+    Given a list of fractional coordinates, merges them within a given
+    tolerance, and checks if the merged coordinates satisfy a Wyckoff
+    position. Used for merging general Wyckoff positions into special Wyckoff
+    positions within the random_crystal (and its derivative) classes.
+
+    Args:
+        coor: a list of fractional coordinates
+        lattice: a 3x3 matrix representing the unit cell
+        group: a pyxtal.symmetry.Group object
+        tol: the cutoff distance for merging coordinates
+
+    Returns:
+        coor: the new list of fractional coordinates after merging. 
+        index: a single index for the Wyckoff position within the sg. 
+        If no matching WP is found, returns False. 
+        point: is a 3-vector when plugged into the Wyckoff position,
+    """
+    coor = np.array(coor)
+
+    # Get index of current Wyckoff position. If not one, return False
+    index, point = check_wyckoff_position(coor, group)
+    if index is False:
+        return coor, False, None
+    if point is None:
+        printx("Error: Could not find generating point.", priority=1)
+        printx("coordinates:")
+        printx(str(coor))
+        printx("Lattice: ")
+        printx(str(lattice))
+        printx("group: ")
+        group.print_all()
+        return coor, False, None
+    PBC = group.PBC
+    # Main loop for merging multiple times
+    while True:
+        # Check distances of current WP. If too small, merge
+        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
+        passed_distance_check = True
+        x = np.argwhere(dm < tol)
+        for y in x:
+            # Ignore distance from atom to itself
+            if y[0] == 0 and y[1] == 0:
+                pass
+            else:
+                passed_distance_check = False
+                break
+
+        if passed_distance_check is False:
+            mult1 = group[index].multiplicity
+            # Find possible wp's to merge into
+            possible = []
+            for i, wp in enumerate(group):
+                mult2 = wp.multiplicity
+                # factor = mult2 / mult1
+                if (mult2 < mult1) and (mult1 % mult2 == 0):
+                    possible.append(i)
+            if possible == []:
+                return coor, False, None
+            # Calculate minimum separation for each WP
+            distances = []
+            for i in possible:
+                wp = group[i]
+                projected_point = project_point(point, wp[0], lattice=lattice, PBC=PBC)
+                d = distance(point - projected_point, lattice, PBC=PBC)
+                distances.append(np.min(d))
+            # Choose wp with shortest translation for generating point
+            tmpindex = np.argmin(distances)
+            index = possible[tmpindex]
+            newwp = group[index]
+            projected_point = project_point(point, newwp[0], lattice=lattice, PBC=PBC)
+            coor = apply_ops(projected_point, newwp)
+            point = coor[0]
+            index = newwp.index
+        # Distances were not too small; return True
+        else:
+            return coor, index, point
+
+def WP_merge(pt, lattice, wp, tol):
+    """
+    Given a list of fractional coordinates, merges them within a given
+    tolerance, and checks if the merged coordinates satisfy a Wyckoff
+    position. Used for merging general Wyckoff positions into special Wyckoff
+    positions within the random_crystal (and its derivative) classes.
+
+    Args:
+        pt: the originl point (3-vector)
+        lattice: a 3x3 matrix representing the unit cell
+        wp: a pyxtal.symmetry.Wyckoff_position object after merge
+        tol: the cutoff distance for merging coordinates
+
+    Returns:
+        pt: 3-vector after merge
+        wp: a pyxtal.symmetry.Wyckoff_position object
+        If no matching WP is found, returns False. 
+    """
+    index = wp.index
+    PBC = wp.PBC
+    group = Group(wp.number, wp.dim)
+
+    pt = project_point(pt, wp[0], lattice, PBC)
+    coor = apply_ops(pt, wp)
+    # Main loop for merging multiple times
+
+    while True:
+        # Check distances of current WP. If too small, merge
+        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
+        passed_distance_check = True
+        x = np.argwhere(dm < tol)
+        for y in x:
+            # Ignore distance from atom to itself
+            if y[0] == 0 and y[1] == 0:
+                pass
+            else:
+                passed_distance_check = False
+                break
+        
+        if not passed_distance_check:
+            mult1 = group[index].multiplicity
+            # Find possible wp's to merge into
+            possible = []
+            for i, wp0 in enumerate(group):
+                mult2 = wp0.multiplicity
+                # factor = mult2 / mult1
+                if (mult2 < mult1) and (mult1 % mult2 == 0):
+                    possible.append(i)
+            if possible == []:
+                return None, False
+        
+            # Calculate minimum separation for each WP
+            distances = []
+            for i in possible:
+                wp = group[i]
+                projected_point = project_point(pt, wp[0], lattice=lattice, PBC=PBC)
+                d = distance(pt - projected_point, lattice, PBC=PBC)
+                distances.append(np.min(d))
+            # Choose wp with shortest translation for generating point
+            tmpindex = np.argmin(distances)
+            index = possible[tmpindex]
+            wp = group[index]
+            pt = project_point(pt, wp[0], lattice=lattice, PBC=PBC)
+            coor = apply_ops(pt, wp)
+        # Distances were not too small; return True
+        else:
+            return pt, wp
+
+

@@ -215,17 +215,20 @@ class Lattice:
             self.volume = volume
 
 
-    def swap_axis(self, random=True, ids=None):
+    def swap_axis(self, random=False, ids=None):
+        """
+        For the lattice
+        """
         # only applied to triclinic/monoclinic/orthorhombic
         if self.ltype in ["triclinic", "orthorhombic"]:
-            allowed_ids = [[0,1],[0,2],[1,2]]
+            allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0]]
         elif self.ltype == "monoclinic":
             if abs(self.beta-90*rad) > 1e-3:
-                allowed_ids = [[0,2],[0,0]]
+                allowed_ids = [[0,1,2],[2,1,0]]
             else:
-                allowed_ids = [[0,1],[0,2],[1,2],[0,0]]
+                allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0]]
         else:
-            allowed_ids = [[0,0]]
+            allowed_ids = [[0,1,2]]
 
         if random:
             from random import choice
@@ -239,17 +242,21 @@ class Lattice:
         alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
         if ids is None:
             return self
-        elif ids == [0,1]: #a->b
+        elif ids == [1,0,2]: #a->b
             return self.from_para(b, a, c, beta, alpha, gamma, self.ltype)
-        elif ids == [0,2]: #a->c
+        elif ids == [2,1,0]: #a->c
             return self.from_para(c, b, a, gamma, beta, alpha, self.ltype)
-        elif ids == [1,2]: #b-c
+        elif ids == [0,2,1]: #b-c
             return self.from_para(a, c, b, alpha, gamma, beta, self.ltype)
         else:
             return self
     
     def swap_angle(self, random=True, ids=None):
         # only applied to triclinic/monoclinic #/hexagonal
+        """
+        If the angle is not 90. There will be two equivalent versions
+        e.g., 80 and 100. 
+        """
         if self.ltype == "monoclinic":
             allowed_ids = ["beta", "No"]
         elif self.ltype == "triclinic":

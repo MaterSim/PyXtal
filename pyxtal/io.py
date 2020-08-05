@@ -62,6 +62,7 @@ def write_cif(struc, filename=None, header="", permission='w'):
     lines += ' _atom_site_fract_x\n'
     lines += ' _atom_site_fract_y\n'
     lines += ' _atom_site_fract_z\n'
+    lines += ' _atom_site_occupancy\n'
 
     for site in sites:
         if molecule:
@@ -69,7 +70,7 @@ def write_cif(struc, filename=None, header="", permission='w'):
         else:
             coords, species = [site.position], [site.specie]
         for specie, coord in zip(species, coords):
-            lines += '{:6s}  {:12.6f}{:12.6f}{:12.6f}\n'.format(specie, *coord)
+            lines += '{:6s}  {:12.6f}{:12.6f}{:12.6f} 1\n'.format(specie, *coord)
     lines +='#END\n\n'
     
 
@@ -81,14 +82,15 @@ def write_cif(struc, filename=None, header="", permission='w'):
         return
 
 from pymatgen.io.cif import CifParser
-from molmod.molecules import Molecule as mmm
-from pymatgen import Molecule
+from pymatgen.core.structure import Structure, Molecule
 from pymatgen.core.bonds import CovalentBond
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import py3Dmol
-from pyxtal.wyckoff_site import mol_site
+from pyxtal.wyckoff_site import mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
-#from pyxtal.lattice import Lattice
-from pyxtal.symmetry import Wyckoff_position
+from pyxtal.symmetry import Wyckoff_position, Group
+from pyxtal.lattice import Lattice
+
 
 class structure_from_cif():
     
@@ -105,43 +107,85 @@ class structure_from_cif():
         
     """
         if isinstance(ref_mol, str):
-            self.ref_mol = Molecule.from_file(ref_mol)
+            ref_mol = Molecule.from_file(ref_mol)
         elif isinstance(ref_mol, Molecule):
-            self.ref_mol = ref_mol
+            ref_mol = ref_mol
         else:
             print(type(ref_mol))
             raise NameError("reference molecule cannot be defined")
+        self.ref_mol = ref_mol.get_centered_molecule()
         self.tol = tol
-        
-        self.cif = CifParser(cif_file)
-        self.pmg_struc = self.cif.get_structures()[0]
-        self.wyc = Wyckoff_position.from_symops(self.cif.symmetry_operations)  
-        coords, numbers = search_molecule_in_crystal(self.pmg_struc, self.tol)
-        self.molecule = Molecule(numbers, coords)
+        # sometimes this returns a funny lattice
+        pmg_struc = Structure.from_file(cif_file)
+        sga = SpacegroupAnalyzer(pmg_struc)
+        #pmg_struc = sga.get_conventional_standard_structure()
+        ops = sga.get_space_group_operations()
+        #for op in ops:
+        #    print(op.as_xyz_string())
+        self.wyc, perm = Wyckoff_position.from_symops(ops)
+        if self.wyc is not None:
+            self.group = Group(self.wyc.number)
+            if perm != [0,1,2]:
+                lattice = Lattice.from_matrix(pmg_struc.lattice.matrix)
+                latt = self.lattice.swap_axis(ids=perm, random=False).get_matrix()
+                coor = pmg_struc.frac_coords[perm]
+                pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
+            coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
+            self.molecule = Molecule(numbers, coords)
+            self.pmg_struc = pmg_struc
+            self.lattice = pmg_struc.lattice
+        else:
+            raise ValueError("Cannot find the space group matching the symmetry operation")
+
     
-    def make_mol_site(self):
-        mol = pyxtal_molecule(self.molecule)
-        radius = mol.radius
-        tols_matrix = mol.tols_matrix
-        site = mol_site(self.molecule, 
+    def make_mol_site(self, ref=False):
+        if ref:
+            mol = self.ref_mol
+            ori = self.ori
+        else:
+            mol = self.molecule
+            ori = Orientation(np.eye(3))
+        pmol = pyxtal_molecule(self.ref_mol)
+        radius = pmol.radius
+        tols_matrix = pmol.tols_matrix
+        site = mol_site(mol,
                         self.position, 
-                        Orientation(np.eye(3)),
+                        ori,
                         self.wyc, 
-                        self.lattice, #.matrix,
+                        self.lattice.matrix,
                         tols_matrix, 
                         radius,
                         rotate_ref = False,
                         )
         return site
 
+    def align(self):
+        """
+        compute the orientation wrt the reference molecule
+        """
+        from openbabel import pybel, openbabel
+
+        m1 = pybel.readstring('xyz', self.ref_mol.to('xyz'))
+        m2 = pybel.readstring('xyz', self.molecule.to('xyz'))
+        aligner = openbabel.OBAlign(True, False)
+        aligner.SetRefMol(m1.OBMol)
+        aligner.SetTargetMol(m2.OBMol)
+        aligner.Align()
+        print("RMSD: ", aligner.GetRMSD())
+        rot=np.zeros([3,3])
+        for i in range(3):
+            for j in range(3):
+                rot[i,j] = aligner.GetRotMatrix().Get(i,j)
+        coord2 = self.molecule.cart_coords
+        coord2 -= np.mean(coord2, axis=0)
+        coord3 = rot.dot(coord2.T).T + np.mean(self.ref_mol.cart_coords, axis=0)
+        self.mol_aligned = Molecule(self.ref_mol.atomic_numbers, coord3)
+        self.ori = Orientation(rot)
    
     def match(self):
         """
         Check the two molecular graphs are isomorphic
         """
-        self.G_ref = make_graph(self.ref_mol)
-        self.G_cif = make_graph(self.molecule)
-        fun = lambda n1, n2: n1['name'] == n2['name']
         match, mapping = compare_mol_connectivity(self.ref_mol, self.molecule)
         if not match:
             return False
@@ -151,34 +195,24 @@ class structure_from_cif():
             numbers = np.array(self.molecule.atomic_numbers)
             numbers = numbers[order].tolist()
             coords = self.molecule.cart_coords[order]
-            # Ideally, we want to 
-            self.lattice = self.pmg_struc.lattice.matrix
-            #Todo: figure out the molecular rotation
-            #Needs to fix the lattice
-            position = np.mean(coords, axis=0).dot(np.linalg.inv(self.lattice))
+            position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
             position -= np.floor(position)
-            position[0] = 0 #parse symmetry to adjust the position
+            # check if molecule is on the special wyckoff position
+            if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
+                # todo: Get the subgroup to display
+                position, wp = WP_merge(position, self.lattice.matrix, self.wyc, 2.0)
+                self.wyc = wp
             self.position = position
             self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
- 
+            self.align()
             return True
 
-    def show_overlay(self):
-        from molmod import angstrom
-        mol1 = mmm(self.ref_mol.atomic_numbers, self.ref_mol.cart_coords/angstrom)
-        mol2 = mmm(self.molecule.atomic_numbers, self.molecule.cart_coords/angstrom)
-        trans, coord, rmsd = mol1.rmsd(mol2)
-        trans_mol = Molecule(self.molecule.atomic_numbers, (coord-5)*angstrom)
-        #print(rmsd)
-
-        view = py3Dmol.view()
-        view.setStyle({'stick':{'colorscheme':'blueCarbon'}})
-        view.addModel(self.molecule.to(fmt='xyz'), 'xyz')
-        view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
-        view.addModel(self.ref_mol.to(fmt='xyz'), 'xyz')
-        view.addModel(trans_mol.to(fmt='xyz'), 'xyz')
-        view.setStyle({'stick':{'colorscheme':'redCarbon'}})
-        return view.zoomTo()
+    def show(self, overlay=True):
+        from pyxtal.viz import display_molecules
+        if overlay:
+            return display_molecules([self.ref_mol, self.mol_aligned])
+        else:
+            return display_molecules([self.ref_mol, self.molecule])
 
 
 def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
@@ -246,11 +280,8 @@ def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
         coords = coords.dot(struc.lattice.inv)
     return coords, numbers
 
-
-
-seed = structure_from_cif("254385.cif", "1.xyz")
-print(seed.molecule)
-
-
+#seed = structure_from_cif("254385.cif", "1.xyz")
+#if seed.match():
+#    print(seed.pmg_struc)
 
 

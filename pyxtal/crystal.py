@@ -8,15 +8,9 @@ from copy import deepcopy
 from pymatgen.core.structure import Structure, Molecule
 
 # PyXtal imports #avoid *
-from pyxtal.symmetry import Group, choose_wyckoff, check_wyckoff_position
-from pyxtal.wyckoff_site import atom_site, check_atom_sites
+from pyxtal.symmetry import Group, choose_wyckoff
+from pyxtal.wyckoff_site import atom_site, check_atom_sites, WP_merge
 from pyxtal.io import write_cif
-from pyxtal.operations import (
-    apply_ops,
-    project_point,
-    distance_matrix,
-    distance,
-)
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
@@ -24,90 +18,6 @@ from pyxtal.database.element import Element
 
 # Define functions
 # ------------------------------
-
-
-def merge_coordinate(coor, lattice, group, tol):
-    """
-    Given a list of fractional coordinates, merges them within a given
-    tolerance, and checks if the merged coordinates satisfy a Wyckoff
-    position. Used for merging general Wyckoff positions into special Wyckoff
-    positions within the random_crystal (and its derivative) classes.
-
-    Args:
-        coor: a list of fractional coordinates
-        lattice: a 3x3 matrix representing the unit cell
-        group: a pyxtal.symmetry.Group object
-        tol: the cutoff distance for merging coordinates
-
-    Returns:
-        coor, index, point: (coor) is the new list of fractional coordinates after
-        merging. index is a single index for the Wyckoff position within
-        the sg. If no matching WP is found, returns False. point is a 3-vector;
-        when plugged into the Wyckoff position, it will generate all the other
-        points.
-    """
-    coor = np.array(coor)
-    # Get index of current Wyckoff position. If not one, return False
-    index, point = check_wyckoff_position(coor, group)
-    if index is False:
-        return coor, False, None
-    if point is None:
-        printx("Error: Could not find generating point.", priority=1)
-        printx("coordinates:")
-        printx(str(coor))
-        printx("Lattice: ")
-        printx(str(lattice))
-        printx("group: ")
-        group.print_all()
-        return coor, False, None
-    PBC = group.PBC
-    # Main loop for merging multiple times
-    while True:
-        # Check distances of current WP. If too small, merge
-        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
-        passed_distance_check = True
-        x = np.argwhere(dm < tol)
-        for y in x:
-            # Ignore distance from atom to itself
-            if y[0] == 0 and y[1] == 0:
-                pass
-            else:
-                passed_distance_check = False
-                break
-
-        if passed_distance_check is False:
-            mult1 = group[index].multiplicity
-            # Find possible wp's to merge into
-            possible = []
-            for i, wp in enumerate(group):
-                mult2 = wp.multiplicity
-                # factor = mult2 / mult1
-                if (mult2 < mult1) and (mult1 % mult2 == 0):
-                    possible.append(i)
-            if possible == []:
-                return coor, False, None
-            # Calculate minimum separation for each WP
-            distances = []
-            for i in possible:
-                wp = group[i]
-                projected_point = project_point(point, wp[0], lattice=lattice, PBC=PBC)
-                # NOTE Comprhys: new_coor note used?
-                new_coor = apply_ops(projected_point, wp)
-                d = distance(point - projected_point, lattice, PBC=PBC)
-                distances.append(np.min(d))
-            # Choose wp with shortest translation for generating point
-            tmpindex = np.argmin(distances)
-            index = possible[tmpindex]
-            newwp = group[index]
-            projected_point = project_point(point, newwp[0], lattice=lattice, PBC=PBC)
-            coor = apply_ops(projected_point, newwp)
-            point = coor[0]
-            index = newwp.index
-        # Distances were not too small; return True
-        else:
-            return coor, index, point
-
-
 def check_compatible(group, numIons):
     """
     Checks if the number of atoms is compatible with the Wyckoff
@@ -501,8 +411,8 @@ class random_crystal:
         """
         display the crystal structure
         """
-        from pyxtal.viz import display_atomic_crystal
-        return display_atomic_crystal(self, **kwargs)
+        from pyxtal.viz import display_atomic
+        return display_atomic(self, **kwargs)
 
     def generate_crystal(self):
         """
@@ -631,6 +541,7 @@ class random_crystal:
 
     def _generate_coords(self, cell_matrix):
         """
+        generate coordinates for random crystal
         """
         wyckoff_sites_list = []
 
@@ -670,6 +581,7 @@ class random_crystal:
         """
         numIon_added = 0
         tol = self.tol_matrix.get_tol(specie, specie)
+        tol_matrix = self.tol_matrix
         wyckoff_sites_tmp = []
 
         # Now we start to add the specie to the wyckoff position
@@ -681,52 +593,47 @@ class random_crystal:
             min_wyckoffs = int(numIon/len(self.group.wyckoffs_organized[0][0]))
             wyckoff_attempts = max(2*min_wyckoffs, 10)
 
-        cycle3 = 0
-        while cycle3 < wyckoff_attempts:
+        cycle = 0
+        while cycle < wyckoff_attempts:
             # Choose a random WP for given multiplicity: 2a, 2b
             if sites_list is not None:
                 site = sites_list[0]
             else: # Selecting the merging 
                 site = None
             
-            ops = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
-            if ops is not False:
+            wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
+            if wp is not False:
                 # Generate a list of coords from ops
+                mult = wp.multiplicity # remember the original multiplicity
                 pt = self.lattice.generate_point()
-                proj_pt = project_point(pt, ops[0], cell_matrix, self.PBC)
-                coords = apply_ops(proj_pt, ops)
-
 
                 # Merge coordinates if the atoms are close
-                coords_toadd, wp_index, pt = merge_coordinate(
-                    coords, cell_matrix, self.group, tol
-                )
-                if site is not None and len(coords_toadd) < len(coords):
-                    continue # break the cycle if the merge happens
+                pt, wp = WP_merge(pt, cell_matrix, wp, tol)
+                # If site the pre-assigned, do not accept merge
+                if site is not None and mult < wp.multiplicity:
+                    continue 
 
-                if wp_index is not False:
+                if wp is not False:
                     # Use a Wyckoff_site object for the current site
-                    current_site = atom_site(self.group[wp_index], pt, specie)
+                    new_site = atom_site(wp, pt, specie)
 
                     # Check current WP against existing WP's
                     passed_wp_check = True
                     for ws in wyckoff_sites_tmp + wyks:
-                        if not check_atom_sites(
-                            current_site, ws, cell_matrix, self.tol_matrix,
-                        ):
+                        if not check_atom_sites(new_site, ws, cell_matrix, tol_matrix):
                             passed_wp_check = False
 
                     if passed_wp_check:
                         if sites_list is not None:
                             sites_list.pop(0)
-                        wyckoff_sites_tmp.append(current_site)
-                        numIon_added += current_site.multiplicity #len(coords_toadd)
+                        wyckoff_sites_tmp.append(new_site)
+                        numIon_added += new_site.multiplicity 
 
                         # Check if enough atoms have been added
                         if numIon_added == numIon:
                             return wyckoff_sites_tmp
 
-            cycle3 += 1
+            cycle += 1
             self.numattempts += 1
 
         return None

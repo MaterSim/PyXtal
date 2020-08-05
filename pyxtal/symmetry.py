@@ -1511,17 +1511,21 @@ class Wyckoff_position:
         """
         str1 = [op.as_xyz_string() for op in ops]
         N_sym = len(str1)
-
+        # sometimes, we allow the permutation
+        permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
         for i in range(1,231):
             for wyc in Group(i):
                 if len(wyc) == N_sym:
                     str2 = [op.as_xyz_string() for op in wyc.ops]
-                    if set(str1) == set(str2):
-                        return wyc
+                    for perm in permutations:
+                        str_perm = permutate_xyz_string(str1, perm)
+                        if set(str_perm) == set(str2):
+                            return wyc, perm
                 elif len(wyc) < N_sym:
                     continue #break since it won'
 
-        return None
+        return None, None
+
 
     def from_group_and_index(group, index, dim=3, PBC=None):
         """
@@ -2736,3 +2740,26 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
             else:
                 return False
 
+def permutate_xyz_string(xyzs, permutation):
+    if permutation == [0,1,2]:
+        return xyzs
+    else:
+        new = []
+        for xyz in xyzs:
+            tmp = xyz.split(',')
+            tmp = [tmp[it] for it in permutation]
+            if permutation == [1,0,2]: #a,b
+                tmp[0].replace('y','x')
+                tmp[1].replace('x','y')
+            elif permutation == [2,1,0]: #a, c
+                tmp[0].replace('z','x')
+                tmp[2].replace('x','z')
+            elif permutation == [0,2,1]: #a, c
+                tmp[1].replace('z','y')
+                tmp[2].replace('y','z')
+
+            new.append(tmp[0] + ", " + tmp[1] + ", " + tmp[2])
+
+        return new
+
+            

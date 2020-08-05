@@ -295,9 +295,22 @@ class molecular_crystal:
                 self.struct = None
                 return
 
-        self.molecules = []  # A pyxtal_molecule objects,
-        for mol in molecules:
-            self.molecules.append(pyxtal_molecule(mol, self.tol_matrix))
+        # if seeds, directly parse the structure from cif
+        # At the moment, we only support one specie
+        if self.seed is not None:
+            seed = structure_from_cif(self.seed, molecules[0])
+            if seed.match():
+                self.mol_sites = [seed.make_mol_site()]
+                self.group = Group(seed.wyc.number)
+                self.lattice = Lattice.from_matrix(seed.lattice.matrix)
+                self.molecules = [pyxtal_molecule(seed.molecule)]
+                self.valid = True # Need to add a check function
+            else:
+                raise ValueError("Cannot extract the structure from cif")
+        else:
+            self.molecules = []  # A pyxtal_molecule objects,
+            for mol in molecules:
+                self.molecules.append(pyxtal_molecule(mol, self.tol_matrix))
 
         """
         The valid orientations for each molecule and Wyckoff position.
@@ -310,87 +323,79 @@ class molecular_crystal:
         else:
             self.valid_orientations = orientations
 
-        if lattice is not None:
-            # Use the provided lattice
-            self.lattice = lattice
-            self.volume = lattice.volume
-            # Make sure the custom lattice PBC axes are correct.
-            if lattice.PBC != self.PBC:
-                self.lattice.PBC = self.PBC
-                printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
-        else:
-            # Determine the unique axis
-            if self.dim == 2:
-                if self.number in range(3, 8):
-                    unique_axis = "c"
-                else:
-                    unique_axis = "a"
-            elif self.dim == 1:
-                if self.number in range(3, 8):
-                    unique_axis = "a"
-                else:
-                    unique_axis = "c"
-            else:
-                unique_axis = "c"
-            # Generate a Lattice instance
-            self.volume = self.estimate_volume()
-
-            # Calculate the minimum, middle, and maximum box lengths for
-            # the unit cell. make sure at least one non-overlapping orientation
-            # exists for each molecule
-            minls = []
-            midls = []
-            maxls = []
-            for mol in self.molecules:
-                minls.append(mol.box.minl)
-                midls.append(mol.box.midl)
-                maxls.append(mol.box.maxl)
-
-            # The Lattice object used to generate lattice matrices
-            if self.dim == 3 or self.dim == 0:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                    min_l=max(minls),
-                    mid_l=max(midls),
-                    max_l=max(maxls),
-                )
-            elif self.dim == 2:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                    min_l=max(minls),
-                    mid_l=max(midls),
-                    max_l=max(maxls),
-                    thickness=self.thickness,
-                )
-            elif self.dim == 1:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                    min_l=max(minls),
-                    mid_l=max(midls),
-                    max_l=max(maxls),
-                    area=self.area,
-                )
         if self.seed is None:
-            self.generate_crystal()
-        else:
-            seed = structure_from_cif(self.seed, self.molecules[0].mol)
-            if seed.match():
-                self.mol_sites = [seed.make_mol_site()]
-                self.group = Group(seed.wyc.number)
-                self.lattice = Lattice.from_matrix(seed.lattice)
-                self.valid = True # Need to add a check function
+            if lattice is not None:
+                # Use the provided lattice
+                self.lattice = lattice
+                self.volume = lattice.volume
+                # Make sure the custom lattice PBC axes are correct.
+                if lattice.PBC != self.PBC:
+                    self.lattice.PBC = self.PBC
+                    printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
             else:
-                printx("Cannot extract the structure from cif")
+                # Determine the unique axis
+                if self.dim == 2:
+                    if self.number in range(3, 8):
+                        unique_axis = "c"
+                    else:
+                        unique_axis = "a"
+                elif self.dim == 1:
+                    if self.number in range(3, 8):
+                        unique_axis = "a"
+                    else:
+                        unique_axis = "c"
+                else:
+                    unique_axis = "c"
+                # Generate a Lattice instance
+                self.volume = self.estimate_volume()
 
+                # Calculate the minimum, middle, and maximum box lengths for
+                # the unit cell. make sure at least one non-overlapping orientation
+                # exists for each molecule
+                minls = []
+                midls = []
+                maxls = []
+                for mol in self.molecules:
+                    minls.append(mol.box.minl)
+                    midls.append(mol.box.midl)
+                    maxls.append(mol.box.maxl)
+
+                # The Lattice object used to generate lattice matrices
+                if self.dim == 3 or self.dim == 0:
+                    self.lattice = Lattice(
+                        self.group.lattice_type,
+                        self.volume,
+                        PBC=self.PBC,
+                        unique_axis=unique_axis,
+                        min_l=max(minls),
+                        mid_l=max(midls),
+                        max_l=max(maxls),
+                    )
+                elif self.dim == 2:
+                    self.lattice = Lattice(
+                        self.group.lattice_type,
+                        self.volume,
+                        PBC=self.PBC,
+                        unique_axis=unique_axis,
+                        min_l=max(minls),
+                        mid_l=max(midls),
+                        max_l=max(maxls),
+                        thickness=self.thickness,
+                    )
+                elif self.dim == 1:
+                    self.lattice = Lattice(
+                        self.group.lattice_type,
+                        self.volume,
+                        PBC=self.PBC,
+                        unique_axis=unique_axis,
+                        min_l=max(minls),
+                        mid_l=max(midls),
+                        max_l=max(maxls),
+                        area=self.area,
+                    )
+
+
+            self.generate_crystal()
 
     def estimate_volume(self):
         """
@@ -569,13 +574,12 @@ class molecular_crystal:
             Nothing. Creates a file at the specified path
         """
         if self.valid:
-            if filename is None:
-                filename = str(self.struct.formula).replace(" ", "") + "." + fmt
             if fmt == "cif":
-                write_cif(self, filename, "from_pyxtal", permission)
+                return write_cif(self, filename, "from_pyxtal", permission)
             else:
-                self.struct.to(fmt=fmt, filename=filename)
-            return 
+                pmg_struc = self.to_pymatgen()
+                pmg_struc.sort()
+                return pmg_struc.to(fmt=fmt, filename=filename)
         else:
             printx("Cannot create file: structure did not generate.", priority=1)
 
@@ -649,8 +653,8 @@ class molecular_crystal:
         """
         display the crystal structure
         """
-        from pyxtal.viz import display_molecular_crystal
-        return display_molecular_crystal(self, **kwargs)
+        from pyxtal.viz import display_molecular
+        return display_molecular(self, **kwargs)
 
     def generate_crystal(self, max1=max1, max2=max2, max3=max3, max4=max4):
         """
@@ -671,9 +675,8 @@ class molecular_crystal:
         if degrees is False:
             self.struct = None
             self.valid = False
-            raise ValueError(
-                "the space group is incompatible with the number of molecules"
-            )
+            msg = "the space group is incompatible with the number of molecules"
+            raise ValueError(msg)
             # return
         else:
             if degrees == 0:

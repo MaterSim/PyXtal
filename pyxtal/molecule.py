@@ -12,11 +12,13 @@ constraints.
 import numpy as np
 from copy import deepcopy
 from scipy.spatial.transform import Rotation
+import networkx as nx
 
 # ------------------------------
 # External Libraries
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
+from pymatgen.core.bonds import CovalentBond
 
 # PyXtal imports
 from pyxtal.msg import printx
@@ -74,7 +76,7 @@ class pyxtal_molecule:
         props = mo.site_properties
         if len(mo) > 1:
             pga = PointGroupAnalyzer(mo)
-            mo = pga.symmetrize_molecule()["sym_mol"]
+            mo = pga.symmetrize_molecule()["sym_mol"] #Here we re-allign the molecule
 
         if len(props) > 0:
             for key in props.keys():
@@ -142,6 +144,12 @@ class pyxtal_molecule:
             for i2, number2 in enumerate(numbers):
                 tols[i1][i2] = self.tm.get_tol(number1, number2)
         self.tols_matrix = tols
+
+    def show(self):
+        from pyxtal.viz import display_molecules
+        return display_molecules([self.mol])
+
+
 
 
 class Box:
@@ -812,7 +820,6 @@ def compare_mol_connectivity(mol1, mol2, ignore_name=False):
     """
     Compare two molecules by connectivity
     """
-    import networkx as nx
 
     G1 = make_graph(mol1)
     G2 = make_graph(mol2)
