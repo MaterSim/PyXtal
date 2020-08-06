@@ -4,7 +4,7 @@ import numpy as np
 from pyxtal.crystal import *
 from pyxtal.molecular_crystal import *
 from pyxtal.lattice import Lattice
-from pyxtal.symmetry import Wyckoff_position
+from pyxtal.symmetry import Wyckoff_position, get_wyckoffs
 from pyxtal.wyckoff_site import WP_merge
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -28,6 +28,11 @@ class TestWP(unittest.TestCase):
         pt, wp = WP_merge([0.15, 0.7, 0.24], l1.get_matrix(), wp1, 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol=='8b')
+
+    def test_get_wyckoff(self):
+        for i in [1, 2, 229, 230]:
+            get_wyckoffs(i)
+            get_wyckoffs(i, organized=True)
 
     # to add test from string
 
@@ -160,10 +165,6 @@ class TestLattice(unittest.TestCase):
         abc = l1.get_para()[:3]
         self.assertTrue(abc, np.array([9.13, 4.08, 5.50]))
 
-#class TestWyckoffSite(unittest.TestCase):
-#WP_merge()
-
-#class TestSymmetry(unittest.TestCase):
 #class TestOperation(unittest.TestCase):
 #class TestIO(unittest.TestCase):
 
