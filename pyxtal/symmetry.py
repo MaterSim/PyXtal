@@ -167,20 +167,18 @@ def get_wyckoffs(sg, organized=False, PBC=[1, 1, 1]):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
     organize the list based on multiplicity (this is used for
-    random_crystal.wyckoffs) For an unorganized list:
+    random_crystal.wyckoffs) 
+    
+    For an unorganized list:
 
-    1st index: index of WP in sg (0 is the WP with largest multiplicity)
-
-    2nd index: a SymmOp object in the WP
+        - 1st index: index of WP in sg (0 is the WP with largest multiplicity)
+        - 2nd index: a SymmOp object in the WP
 
     For an organized list:
 
-    1st index: specifies multiplicity (0 is the largest multiplicity)
-
-    2nd index: corresponds to a Wyckoff position within the group of equal
-        multiplicity.
-
-    3nd index: corresponds to a SymmOp object within the Wyckoff position
+        - 1st index: specifies multiplicity (0 is the largest multiplicity)
+        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
+        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
@@ -241,20 +239,18 @@ def get_layer(num, organized=False):
     """
     Returns a list of Wyckoff positions for a given 2D layer group. Has
     option to organize the list based on multiplicity (this is used for
-    random_crystal_2D.wyckoffs) For an unorganized list:
+    random_crystal_2D.wyckoffs) 
+    
+    For an unorganized list:
 
-    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
-
-    2nd index: a SymmOp object in the WP
+        - 1st index: index of WP in layer group (0 is the WP with largest multiplicity)
+        - 2nd index: a SymmOp object in the WP
 
     For an organized list:
 
-    1st index: specifies multiplicity (0 is the largest multiplicity)
-
-    2nd index: corresponds to a Wyckoff position within the group of equal
-        multiplicity.
-
-    3nd index: corresponds to a SymmOp object within the Wyckoff position
+        - 1st index: specifies multiplicity (0 is the largest multiplicity)
+        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
+        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
@@ -295,20 +291,18 @@ def get_rod(num, organized=False):
     """
     Returns a list of Wyckoff positions for a given 1D Rod group. Has option to
     organize the list based on multiplicity (this is used for
-    random_crystal_1D.wyckoffs) For an unorganized list:
+    random_crystal_1D.wyckoffs) 
+    
+    For an unorganized list:
 
-    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
-
-    2nd index: a SymmOp object in the WP
+        - 1st index: index of WP in layer group (0 is the WP with largest multiplicity)
+        - 2nd index: a SymmOp object in the WP
 
     For an organized list:
 
-    1st index: specifies multiplicity (0 is the largest multiplicity)
-
-    2nd index: corresponds to a Wyckoff position within the group of equal
-        multiplicity.
-
-    3nd index: corresponds to a SymmOp object within the Wyckoff position
+        - 1st index: specifies multiplicity (0 is the largest multiplicity)
+        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
+        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
@@ -395,8 +389,7 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
 
     Args:
         sg: the international spacegroup number
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic. Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         molecular: whether or not to return the Euclidean point symmetry
             operations. If True, cuts off translational part of operation, and
             converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -476,9 +469,9 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
 def get_layer_symmetry(num, molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
-    1st index: index of WP in group (0 is the WP with largest multiplicity)
-    2nd index: a point within the WP
-    3rd index: a site symmetry SymmOp of the point
+    - 1st index: index of WP in group (0 is the WP with largest multiplicity)
+    - 2nd index: a point within the WP
+    - 3rd index: a site symmetry SymmOp of the point
 
     Args:
         num: the layer group number

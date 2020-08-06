@@ -1,5 +1,5 @@
 """
-CIF in PyXtal format
+This module handles reading and write crystal files.
 """
 from pyxtal.constants import deg, logo
 import numpy as np
@@ -226,13 +226,13 @@ def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
     in a Pymatgen crystal structure
 
     Args:
-    struc: Pymatgen Structure
-    keep_order: whether or not use the orignal sequence
-    absolute: whether or not output absolute coordindates
+        struc: Pymatgen Structure
+        keep_order: whether or not use the orignal sequence
+        absolute: whether or not output absolute coordindates
 
     Returns:
-    coords: frac
-    numbers: atomic numbers
+        coords: fractional coordinates
+        numbers: atomic numbers
     """
     def check_one_layer(struc, sites0, visited):
         new_members = []

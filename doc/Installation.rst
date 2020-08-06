@@ -11,10 +11,8 @@ Versions indicated are those used during development. Other versions may be comp
   * `Pandas 0.20.3 <https://pandas.pydata.org/getpandas.html>`_  
   * `Pymatgen 2017.9.3 <http://pymatgen.org/#getting-pymatgen>`_  
   * `SpgLib for Python 1.9.9.44 <https://atztogo.github.io/spglib/python-spglib.html#installation>`_  
-
-Optional:
-
   * `Openbabel 2.4.1 <http://openbabel.org/wiki/Category:Installation>`_  
+  * `Networkx 2.3 <https://networkx.github.io>`_
 
 Openbabel is not necessary, and only adds additional file format support for importing molecules. You must install the C++ pacakge before installing the Python bindings. For Debian based systems, your distribution may already have installable packages:
 
@@ -54,7 +52,7 @@ This will install the module. You can check the installation of the code by a si
 
 ::
 
-    $ pyxtal_test
+    $ pyxtal_test.py
 
 You expect to see the following output.
 
@@ -103,6 +101,6 @@ More extensive test can be invoked by running
 
 ::
 
-    $ pyxtal_test -m all
+    $ pyxtal_test.py -m all
 
 Ideally, one should see the completion of all modules in the end.

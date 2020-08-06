@@ -327,7 +327,9 @@ class Lattice:
         for generation of random crystals with a specific choice of unit cell.
 
         Args:
-            a, b, c: The length (in Angstroms) of the unit cell vectors
+            a: The length (in Angstroms) of the unit cell vectors
+            b: The length (in Angstroms) of the unit cell vectors
+            c: The length (in Angstroms) of the unit cell vectors
             alpha: the angle (in degrees) between the b and c vectors
             beta: the angle (in degrees) between the a and c vectors
             gamma: the angle (in degrees) between the a and b vectors

@@ -1,3 +1,7 @@
+"""
+This module handles visualization. Mostly powered by py3Dmol
+"""
+
 import py3Dmol
 import numpy as np
 

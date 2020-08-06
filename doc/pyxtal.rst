@@ -23,3 +23,7 @@ Submodules
    pyxtal.molecule
    pyxtal.operations
    pyxtal.symmetry
+   pyxtal.lattice
+   pyxtal.tolerance
+   pyxtal.viz
+   pyxtal.io
