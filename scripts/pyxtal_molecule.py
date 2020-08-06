@@ -50,14 +50,6 @@ if __name__ == "__main__":
         metavar="factor",
     )
     parser.add_argument(
-        "-v",
-        "--verbosity",
-        dest="verbosity",
-        default=0,
-        type=int,
-        help="verbosity: default 0; higher values print more information",
-    )
-    parser.add_argument(
         "-a",
         "--attempts",
         dest="attempts",
@@ -73,24 +65,6 @@ if __name__ == "__main__":
         default="out",
         type=str,
         help="Directory for storing output cif/xyz files: default 'out'",
-        metavar="outdir",
-    )
-    parser.add_argument(
-        "-c",
-        "--checkatoms",
-        dest="checkatoms",
-        default="True",
-        type=str,
-        help="Whether to check inter-atomic distances at each step: default True",
-        metavar="outdir",
-    )
-    parser.add_argument(
-        "-i",
-        "--allowinversion",
-        dest="allowinversion",
-        default="False",
-        type=str,
-        help="Whether to allow inversion of chiral molecules: default False",
         metavar="outdir",
     )
     parser.add_argument(
@@ -122,23 +96,10 @@ if __name__ == "__main__":
 
     molecule = options.molecule
     number = options.numMols
-    verbosity = options.verbosity
     attempts = options.attempts
     outdir = options.outdir
     factor = options.factor
     thickness = options.thickness
-
-    if options.checkatoms == "True" or options.checkatoms == "False":
-        checkatoms = eval(options.checkatoms)
-    else:
-        print("Invalid value for -c (--checkatoms): must be 'True' or 'False'.")
-        checkatoms = True
-
-    if options.allowinversion == "True" or options.allowinversion == "False":
-        allowinversion = eval(options.allowinversion)
-    else:
-        print("Invalid value for -i (--allowinversion): must be 'True' or 'False'.")
-        allowinversion = False
 
     numMols = []
     if molecule.find(",") > 0:
@@ -151,7 +112,6 @@ if __name__ == "__main__":
     else:
         system = [molecule]
         numMols = [int(number)]
-    orientations = None
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -160,68 +120,47 @@ if __name__ == "__main__":
         start = time()
         numMols0 = np.array(numMols)
         if dimension == 3:
+            print(sg, system, numMols0, factor)
             rand_crystal = molecular_crystal(
                 sg,
                 system,
                 numMols0,
                 factor,
-                check_atomic_distances=checkatoms,
-                allow_inversion=allowinversion,
             )
         elif dimension == 2:
             rand_crystal = molecular_crystal_2D(
                 sg,
                 system,
                 numMols0,
-                thickness,
                 factor,
-                allow_inversion=allowinversion,
-                check_atomic_distances=checkatoms,
+                thickness,
             )
         end = time()
         timespent = np.around((end - start), decimals=2)
         if rand_crystal.valid:
-            comp = str(rand_crystal.struct.composition)
+            pmg_struc = rand_crystal.to_pymatgen()
+            ase_struc = rand_crystal.to_ase()
+ 
+            comp = str(pmg_struc.composition)
             comp = comp.replace(" ", "")
             cifpath = outdir + "/" + comp + ".cif"
-            CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename=cifpath)
-            ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)[
-                "international"
-            ]
+            CifWriter(pmg_struc, symprec=0.1).write_file(filename=cifpath)
+            ans = get_symmetry_dataset(ase_struc, symprec=1e-1)["international"]
             print(
                 "Symmetry requested: {:d} ({:s}), generated: {:s}, vol: {:.2f} A^3".format(
                     sg, symbol, ans, rand_crystal.volume
                 )
             )
             print("Output to " + cifpath)
-            try:
-                from ase import Atoms
 
-                cell, pos, numbers = rand_crystal.spg_struct
-                ase_struc = Atoms(
-                    numbers=numbers, positions=pos, cell=cell, pbc=[1, 1, 1]
-                )
-                xyz_path = outdir + "/" + comp + ".xyz"
-                ase_struc.write(xyz_path, format="extxyz")
-                print("Output to " + xyz_path)
-            except:
-                print("Warning: ASE is required to export the crystal in extxyz format")
+            xyz_path = outdir + "/" + comp + ".xyz"
+            ase_struc.write(xyz_path, format="extxyz")
+            print("Output to " + xyz_path)
 
             # Print additional information about the structure
-            if verbosity > 0:
-                print("Time required for generation: " + str(timespent) + "s")
-                print("Molecular Wyckoff positions:")
-                for ms in rand_crystal.mol_generators:
-                    print(
-                        str(ms.mol.composition)
-                        + ": "
-                        + str(ms.multiplicity)
-                        + str(ms.letter)
-                        + " "
-                        + str(ms.position)
-                    )
-            if verbosity > 1:
-                print(rand_crystal.struct)
+            print("Time required for generation: " + str(timespent) + "s")
+            print("Molecular Wyckoff positions:")
+            print(rand_crystal)
 
         # If generation fails
         else:
