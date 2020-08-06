@@ -409,6 +409,28 @@ class molecular_crystal:
             volume += numMol * mol.volume
         return abs(self.factor * volume)
 
+    def check_short_distances(self, r=1.0, exclude_H = True):
+        """
+        A function to check short distance pairs
+        Mainly used for debug, powered by pymatgen
+
+        Args:
+        r: the given cutoff distances
+
+        Returns:
+        pairs: list of pairs within the cutoff
+        """
+        pairs = []
+        pmg_struc = self.to_pymatgen()
+        if exclude_H:
+            pmg_struc.remove_species('H')
+        res = pmg_struc.get_all_neighbors(r)
+        for i, neighs in enumerate(res):
+            for n in neighs:
+                pairs.append([pmg_struc.sites[i].specie, n.specie, n.nn_distance])
+        return pairs
+
+
     def Msgs(self):
         self.Msg1 = (
             "Error: the stoichiometry is incompatible with the wyckoff sites choice"

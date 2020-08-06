@@ -86,7 +86,16 @@ class TestMolecular(unittest.TestCase):
         self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
         #print(pmg_struc.frac_coords[:3])
 
-
+    def test_big_molecule(self):
+        for mol in ['ROY', 'aspirin']:
+            struc = molecular_crystal(19, ['ROY'], [4], 1.0)
+            self.assertTrue(struc.valid)
+            pair = struc.check_short_distances()
+            if len(pair) > 0:
+                print(mol, pair)
+            self.assertTrue(len(pair)==0)
+ 
+ 
     def test_mutiple_species(self):
         Li = Molecule(['Li'], [[0.0,0.0,0.0]])
         coords = [[ 0.000000,  0.000000,  0.000000],

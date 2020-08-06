@@ -320,6 +320,27 @@ class random_crystal:
             msg += "\nfrom Wyckoff list: {:d}".format(num)
             raise ValueError(msg)
 
+    def check_short_distances(self, r=0.7, exclude_H = True):
+        """
+        A function to check short distance pairs
+        Mainly used for debug, powered by pymatgen
+
+        Args:
+        r: the given cutoff distances
+
+        Returns:
+        pairs: list of pairs within the cutoff
+        """
+        pairs = []
+        pmg_struc = self.to_pymatgen()
+        if exclude_H:
+            pmg_struc.remove_species('H')
+        res = pmg_struc.get_all_neighbors(r)
+        for i, neighs in enumerate(res):
+            for n in neighs:
+                pairs.append([pmg_struc.sites[i].specie, n.specie, n.nn_distance])
+        return pairs
+
     def Msgs(self):
         """
         Define a set of error and warning message if generation fails.
