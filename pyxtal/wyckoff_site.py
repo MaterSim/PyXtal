@@ -67,8 +67,8 @@ class mol_site:
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = tols_matrix
         self.radius = radius
-        if rotate_ref:
-            tmp = self.mol.cart_coords
+        if len(mol)>1 and rotate_ref:
+            tmp = np.array(self.mol.cart_coords)
             tmp -= np.mean(tmp, axis=0)
             ax1 = self.get_principle_axes(tmp)
             self.coord0 = tmp.dot(ax1)

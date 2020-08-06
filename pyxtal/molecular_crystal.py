@@ -11,7 +11,7 @@ from pyxtal.constants import max1, max2, max3, max4
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize, add_vacuum
-from pyxtal.io import write_cif, structure_from_cif
+from pyxtal.io import write_cif, structure_from_ext
 from pyxtal.database.element import Element
 from pyxtal.wyckoff_site import mol_site, check_mol_sites
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
@@ -298,7 +298,7 @@ class molecular_crystal:
         # if seeds, directly parse the structure from cif
         # At the moment, we only support one specie
         if self.seed is not None:
-            seed = structure_from_cif(self.seed, molecules[0])
+            seed = structure_from_ext(self.seed, molecules[0])
             if seed.match():
                 self.mol_sites = [seed.make_mol_site()]
                 self.group = Group(seed.wyc.number)

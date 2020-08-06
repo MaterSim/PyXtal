@@ -81,27 +81,25 @@ def write_cif(struc, filename=None, header="", permission='w'):
             f.write(lines)
         return
 
-from pymatgen.io.cif import CifParser
 from pymatgen.core.structure import Structure, Molecule
 from pymatgen.core.bonds import CovalentBond
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-import py3Dmol
 from pyxtal.wyckoff_site import mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
 from pyxtal.symmetry import Wyckoff_position, Group
 from pyxtal.lattice import Lattice
 
 
-class structure_from_cif():
+class structure_from_ext():
     
-    def __init__(self, cif_file, ref_mol=None, tol=0.2):
+    def __init__(self, struc, ref_mol=None, tol=0.2):
 
         """
         extract the mol_site information from the give cif file 
         and reference molecule
     
         Args: 
-            cif_file: file to store the experimental
+            struc: cif/poscar file or a Pymatgen Structure object
             ref_mol: xyz file or a reference Pymatgen molecule object
             tol: scale factor for covalent bond distance
         
@@ -113,16 +111,23 @@ class structure_from_cif():
         else:
             print(type(ref_mol))
             raise NameError("reference molecule cannot be defined")
+
+    
+        if isinstance(struc, str):
+            pmg_struc = Structure.from_file(struc)
+        elif isinstance(struc, Structure):
+            pmg_struc = struc
+        else:
+            print(type(struc))
+            raise NameError("input structure cannot be intepretted")
+
         self.ref_mol = ref_mol.get_centered_molecule()
         self.tol = tol
-        # sometimes this returns a funny lattice
-        pmg_struc = Structure.from_file(cif_file)
+
         sga = SpacegroupAnalyzer(pmg_struc)
-        #pmg_struc = sga.get_conventional_standard_structure()
         ops = sga.get_space_group_operations()
-        #for op in ops:
-        #    print(op.as_xyz_string())
         self.wyc, perm = Wyckoff_position.from_symops(ops)
+
         if self.wyc is not None:
             self.group = Group(self.wyc.number)
             if perm != [0,1,2]:
