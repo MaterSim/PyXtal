@@ -5,7 +5,7 @@
 [![Download Status](https://img.shields.io/pypi/pyversions/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/v/pyxtal)](https://pypi.org/project/pyxtal/)
 [![DOI](https://zenodo.org/badge/128165891.svg)](https://zenodo.org/badge/latestdoi/128165891)
-<img align="right" width="450" src="https://github.com/qzhu2017/PyXtal/blob/master/images/water.gif">
+<img align="right" width="450" src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/water.gif">
 
 
 ## Content
