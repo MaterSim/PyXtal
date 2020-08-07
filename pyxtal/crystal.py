@@ -289,7 +289,6 @@ class random_crystal:
                     priority=1,
                 )
                 self.valid = False
-                self.struct = None
                 return
         
         self.sites = {}
@@ -451,7 +450,6 @@ class random_crystal:
         degrees = check_compatible(self.group, self.numIons)
         if degrees is False:
             printx(self.Msg1, priority=1)
-            self.struct = None
             self.valid = False
             return
 
@@ -508,10 +506,25 @@ class random_crystal:
                 return
 
         self.valid = False
-        self.struct = None
         return
 
+    def copy(self):
+        """
+        simply copy the structure
+        """
+        return deepcopy(self)
+
     def get_coords_and_species(self, absolute=False):
+        """
+        extract the coordinates and species information 
+
+        Args:
+        abosulte: if True, return the cartesian coords otherwise fractional
+
+        Returns:
+        total_coords: N*3 numpy array 
+        species: N-length list, e.g. ["C", "C", ...]
+        """
         species = []
         total_coords = None
         for site in self.atom_sites:
