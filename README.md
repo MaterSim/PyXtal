@@ -23,6 +23,11 @@ PyXtal is an open source Python package which was initiated by [Qiang Zhu](http:
 
 To contribute to this project, please check [How to contribute?](#how-to-contribute).
 
+## Quick Start
+Check the folloowing links to quickly understand how pyxtal works
+- [Atomic crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb)
+- [Molecular crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb)
+
 ## Current Features
 * Random generation of atomic/molecular crystals in 3D, 2D, 1D and 0D crystals for a given symmetry group and stoichiometry
 * Molecules in special Wyckoff positions are automatically oriented to preserve the space group symmetry
