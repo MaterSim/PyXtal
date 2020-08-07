@@ -331,14 +331,17 @@ class random_crystal:
         Returns:
         pairs: list of pairs within the cutoff
         """
-        pairs = []
-        pmg_struc = self.to_pymatgen()
-        if exclude_H:
-            pmg_struc.remove_species('H')
-        res = pmg_struc.get_all_neighbors(r)
-        for i, neighs in enumerate(res):
-            for n in neighs:
-                pairs.append([pmg_struc.sites[i].specie, n.specie, n.nn_distance])
+        if dim > 0:
+            pairs = []
+            pmg_struc = self.to_pymatgen()
+            if exclude_H:
+                pmg_struc.remove_species('H')
+            res = pmg_struc.get_all_neighbors(r)
+            for i, neighs in enumerate(res):
+                for n in neighs:
+                    pairs.append([pmg_struc.sites[i].specie, n.specie, n.nn_distance])
+        else:
+            raise NotImplementedError("Does not support cluster for now")
         return pairs
 
     def Msgs(self):
@@ -490,7 +493,6 @@ class random_crystal:
                         priority=0,
                     )
                     self.valid = False
-                    self.struct = None
                     return
 
             # to try to generate atomic coordinates

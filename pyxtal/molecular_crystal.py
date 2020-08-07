@@ -581,7 +581,7 @@ class molecular_crystal:
         elif has_freedom is False:
             return 0
 
-    def to_file(self, filename=None, fmt="cif", permission='w'):
+    def to_file(self, filename=None, fmt="cif", permission='w', **kwargs):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
@@ -591,13 +591,14 @@ class molecular_crystal:
             filename: the file path
             fmt: the file type ('cif', 'xyz', etc.)
             permission: "w" or "a+"
+            sym_num: "w" or "a+"
 
         Returns:
             Nothing. Creates a file at the specified path
         """
         if self.valid:
             if fmt == "cif":
-                return write_cif(self, filename, "from_pyxtal", permission)
+                return write_cif(self, filename, "from_pyxtal", permission, **kwargs)
             else:
                 pmg_struc = self.to_pymatgen()
                 pmg_struc.sort()

@@ -3,8 +3,9 @@ This module handles reading and write crystal files.
 """
 from pyxtal.constants import deg, logo
 import numpy as np
+from pyxtal.symmetry import Group
 
-def write_cif(struc, filename=None, header="", permission='w'):
+def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
     """
     Export the structure in cif format
 
@@ -13,14 +14,21 @@ def write_cif(struc, filename=None, header="", permission='w'):
         filename: path of the structure file 
         header: additional information
         permission: write('w') or append('a+') to the given file
+        sym_num: the number of symmetry operations, None means writing all symops
     
     """
+    if sym_num is None:
+        l_type = struc.group.lattice_type
+        symbol = struc.group.symbol
+        number = struc.group.number
+        G1 = struc.group.Wyckoff_positions[0]
 
-    l_type = struc.group.lattice_type
-    symbol = struc.group.symbol
-    number = struc.group.number
-    change_set = False
-    G1 = struc.group.Wyckoff_positions[0]
+    else: #P1 symmetry
+        l_type = 'triclinic'
+        symbol = 'P1'
+        number = 1
+        G1 = Group(1).Wyckoff_positions[0]
+
     if hasattr(struc, 'mol_sites'):
         sites = struc.mol_sites
         molecule = True
@@ -28,6 +36,7 @@ def write_cif(struc, filename=None, header="", permission='w'):
         sites = struc.atom_sites
         molecule = False
 
+    change_set = False
     if l_type == 'monoclinic':
         if G1 != sites[0].wp.generators:
             symbol = symbol.replace('c','n')
@@ -55,8 +64,10 @@ def write_cif(struc, filename=None, header="", permission='w'):
         wps = G1
     else:
         wps = sites[0].wp.generators
+
     for i, op in enumerate(wps):
         lines += "{:d} '{:s}'\n".format(i+1, op.as_xyz_string())
+
     lines += '\nloop_\n'
     lines += ' _atom_site_label\n'
     lines += ' _atom_site_fract_x\n'
@@ -66,7 +77,20 @@ def write_cif(struc, filename=None, header="", permission='w'):
 
     for site in sites:
         if molecule:
-            coords, species = site._get_coords_and_species(first=True)
+            if sym_num is None:
+                coords, species = site._get_coords_and_species(first=True)
+            else:
+                coords = None
+                species = []
+                for id in range(sym_num):
+                    mol = site.get_mol_object(id)
+                    tmp = mol.cart_coords.dot(site.inv_lattice)
+                    if coords is None:
+                        coords = tmp
+                    else:
+                        coords = np.append(coords, tmp, axis=0)
+                    species.extend([s.value for s in mol.species])
+                #coords, species = site._get_coords_and_species(ids=sym_num)
         else:
             coords, species = [site.position], [site.specie]
         for specie, coord in zip(species, coords):

@@ -83,23 +83,34 @@ def display_atomic(struc, size=(600,300), scale=0.25, radius=0.10, supercell=(1,
     if struc.dim != 0:
         view.addUnitCell()
         A, B, C = supercell
-        viewer.replicateUnitCell(A,B,C)
+        view.replicateUnitCell(A,B,C)
         if show_wp:
             view.setStyle({'sym':2},{'sphere':{'scale':scale*1.1,'color':'blue'}})
     return view.zoomTo()
 
-def display_molecular(struc, size=(600, 300), supercell=(1,1,1)):
-    cif = struc.to_file()
+def display_molecular(struc, size=(600, 300), supercell=(1,1,1), animation=False):
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
-    view.addModel(cif,'cif',{'doAssembly':True,'duplicateAssemblyAtoms':True,'normalizeAssembly':True})
-    view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
-    view.addUnitCell()
-    A, B, C = supercell
-    view.replicateUnitCell(A,B,C)
+    if not animation:
+        cif = struc.to_file()
+        view.addModel(cif,'cif',{'doAssembly':True,'duplicateAssemblyAtoms':True,'normalizeAssembly':True})
+        view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
+        view.addUnitCell()
+        A, B, C = supercell
+        view.replicateUnitCell(A,B,C)
+    else:
+        cifs = ""
+        for i in range(len(struc.mol_sites[0].wp)):
+            cifs += struc.to_file(sym_num=i+1)
+        view.addModelsAsFrames(cifs, 'cif')
+        view.animate({'loop': 'forward','step':205})
+        view.setStyle({'stick':{}})
+        view.addUnitCell()
+        view.setStyle({'model':0},{'stick':{'colorscheme':'cyanCarbon'}})
+        view.zoomTo()
     return view.zoomTo()
 
-def display_molecular_site(site, id=None, size=(300, 800), axis=True, axis_label=True):
+def display_molecular_site(site, id=None, size=(800, 300), axis=True, axis_label=True):
     (width, height) = size
     view = py3Dmol.view(height=height, width=width, viewergrid=(1,2))
     view.addModel(site.mol.to(fmt='xyz'), 'xyz', viewer=(0,0))
