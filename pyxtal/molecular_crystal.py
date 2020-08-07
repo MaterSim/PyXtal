@@ -201,7 +201,7 @@ class molecular_crystal:
         group,
         molecules,
         numMols,
-        volume_factor,
+        volume_factor=1.1,
         select_high=True,
         allow_inversion=False,
         orientations=None,
@@ -606,6 +606,9 @@ class molecular_crystal:
         else:
             printx("Cannot create file: structure did not generate.", priority=1)
 
+    def copy(self):
+        from copy import deepcopy
+        return deepcopy(self)
 
     def get_coords_and_species(self, absolute=False):
         species = []
@@ -936,7 +939,7 @@ class molecular_crystal_2D(molecular_crystal):
         group,
         molecules,
         numMols,
-        volume_factor,
+        volume_factor=1.1,
         select_high=True,
         allow_inversion=True,
         orientations=None,
@@ -1015,7 +1018,7 @@ class molecular_crystal_1D(molecular_crystal):
         group,
         molecules,
         numMols,
-        volume_factor,
+        volume_factor=1.1,
         select_high=True,
         allow_inversion=False,
         orientations=None,
