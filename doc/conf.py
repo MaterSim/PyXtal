@@ -97,8 +97,9 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'bottom',
     'style_external_links': False,
-    'style_nav_header_background': 'white',
-#    'vcs_pageview_mode': '',
+    'style_nav_header_background': '#5BA887',
+    #'style_nav_header_background': '#067BF8',
+    'vcs_pageview_mode': 'view',
     # Toc options
     'collapse_navigation': False,
     'sticky_navigation': False,
