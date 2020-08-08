@@ -19,19 +19,20 @@ class random_crystal:
     Class for storing and generating atomic crystals based on symmetry
     constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
     and a volume factor, generates a random crystal consistent with the
-    spacegroup's symmetry. This crystal is stored as a pymatgen struct via
-    self.struct
+    spacegroup's symmetry. 
 
     Args:
-        group: the international spacegroup number, or a Group object
-        species: a list of atomic symbols for each ion type, e.g. ["Ti", "O"]
+        group: the spacegroup number (1-230), or a 
+            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
+        species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
-            primitive cell (NOT the conventional cell), e.g.[4, 2]
-        tm: the Tol_matrix object used to generate the crystal
-        factor: a volume factor used to generate a larger or smaller
-            unit cell. Increasing this gives extra space between atoms
-        sites: pre-assigned wyckoff sites (e.g., [["4a"], ["2b"]])
-        lattice: an optional Lattice object to use for the unit cell
+            primitive cell (NOT the conventional cell), e.g., `[4, 2]`
+        factor (optional): volume factor used to generate the crystal
+        sites (optional): pre-assigned wyckoff sites (e.g., [["4a"], ["2b"]])
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+            object to define the unit cell
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+            object to define the distances
     """
 
     def __init__(
@@ -45,12 +46,10 @@ class random_crystal:
         tm=Tol_matrix(prototype="atomic"),
     ):
 
-        self.dim = 3
-        """The number of periodic dimensions of the crystal"""
+        self.dim = 3 #periodic dimensions of the crystal
         if type(group) != Group:
             group = Group(group, self.dim)
-        self.sg = group.number
-        """The international spacegroup number of the crystal."""
+        self.sg = group.number #The international spacegroup number 
         self.PBC = [1, 1, 1]
         """The periodic boundary axes of the crystal"""
         self.init_common(species, numIons, factor, group, lattice, sites, tm)
@@ -63,16 +62,9 @@ class random_crystal:
         # Check that numIons are integers greater than 0
         for num in numIons:
             if int(num) != num or num < 1:
-                printx(
-                    "Error: stoichiometry must consist of positive integers.", priority=1,
-                )
+                printx("Error: composition must be positive integers.", priority=1)
                 return False
         if type(group) == Group:
-            """
-            A pyxtal.symmetry.Group object storing information
-            about the space/layer/Rod/point group,
-            and its Wyckoff positions.
-            """
             self.group = group
         else:
             self.group = Group(group, dim=self.dim)
@@ -86,7 +78,7 @@ class random_crystal:
         None otherwise
         """
 
-        # The number of attempts to generate the crystal, max1*max2*max3.
+        # The number of attempts to generate the crystal
         # number of atoms
         # volume factor for the unit cell.
         # The number of atom in the PRIMITIVE cell
@@ -325,7 +317,7 @@ class random_crystal:
             exclude_H: whether or not exclude the H atoms
 
         Returns:
-            pairs: list of pairs within the cutoff
+            list of pairs within the cutoff
         """
         if dim > 0:
             pairs = []
@@ -382,8 +374,8 @@ class random_crystal:
 
         Args:
             filename: the file path
-            fmt: the file type ('cif', 'xyz', etc.)
-            permission: "w" or "a+"
+            fmt: the file type (`cif`, `xyz`, etc.)
+            permission: `w` or `a+`
 
         Returns:
             Nothing. Creates a file at the specified path
@@ -506,7 +498,7 @@ class random_crystal:
         """
         return deepcopy(self)
 
-    def get_coords_and_species(self, absolute=False):
+    def _get_coords_and_species(self, absolute=False):
         """
         extract the coordinates and species information 
 
@@ -514,8 +506,7 @@ class random_crystal:
             abosulte: if True, return the cartesian coords otherwise fractional
 
         Returns:
-            total_coords: N*3 numpy array 
-            species: N-length list, e.g. `["C", "C", ...]`
+            total_coords (N*3 numpy array) and the list of species
         """
         species = []
         total_coords = None
@@ -538,12 +529,12 @@ class random_crystal:
         from ase import Atoms
         if self.valid:
             if self.dim > 0:
-                coords, species = self.get_coords_and_species()
+                coords, species = self._get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
                 latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
                 return Atoms(species, scaled_positions=coords, cell=latt)
             else:
-                coords, species = self.get_coords_and_species(True)
+                coords, species = self._get_coords_and_species(True)
                 return Atoms(species, positions=coords)
         else:
             printx("No valid structure can be converted to ase.", priority=1)
@@ -556,13 +547,13 @@ class random_crystal:
 
         if self.valid:
             if self.dim > 0:
-                coords, species = self.get_coords_and_species()
+                coords, species = self._get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
                 latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
                 return Structure(latt, species, coords)
             else:
                 # Clusters are handled as large molecules
-                coords, species = self.get_coords_and_species(True)
+                coords, species = self._get_coords_and_species(True)
                 return Molecule(species, coords)
         else:
             printx("No valid structure can be converted to pymatgen.", priority=1)
@@ -676,18 +667,20 @@ class random_crystal_2D(random_crystal):
     direction. The generated pymatgen structure can be accessed via self.struct
 
     Args:
-        group: the layer group number between 1 and 80. NOT equal to the
-            international space group number, which is between 1 and 230
-            OR, a pyxtal.symmetry.Group object
-        species: a list of atomic symbols for each ion type
+        group: the layer group number (1-80), or a 
+            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
+        species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
-            primitive cell (NOT the conventional cell)
+            primitive cell (NOT the conventional cell), e.g., `[4, 2]`
+        factor (optional): volume factor used to generate the crystal
         thickness: the thickness, in Angstroms, of the unit cell in the 3rd
             dimension (the direction which is not repeated periodically)
-        factor: a volume factor used to generate a larger or smaller
-            unit cell. Increasing this gives extra space between atoms
-        lattice: an optional Lattice object to use for the unit cell
-        tm: the Tol_matrix object used to generate the crystal
+        sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+            object to define the unit cell
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+            object to define the distances
+ 
     """
 
     def __init__(
@@ -718,18 +711,19 @@ class random_crystal_1D(random_crystal):
     structure can be accessed via self.struct
 
     Args:
-        group: the Rod group number between 1 and 75. NOT equal to the
-            international space group number, which is between 1 and 230
-            OR, a pyxtal.symmetry.Group object
-        species: a list of atomic symbols for each ion type
+        group: the Rod group number (1-75), or a 
+            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
+        species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
-            primitive cell (NOT the conventional cell)
-        area: the effective cross-sectional area, in Angstroms squared, of the
-            unit cell
-        factor: a volume factor used to generate a larger or smaller
-            unit cell. Increasing this gives extra space between atoms
-        lattice: an optional Lattice object to use for the unit cell
-        tm: the Tol_matrix object used to generate the crystal
+            primitive cell (NOT the conventional cell), e.g., `[4, 2]`
+        factor (optional): volume factor used to generate the crystal
+        area: the effective cross-sectional area (A^2), of the unit cell
+        sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+            object to define the unit cell
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+            object to define the distances
+ 
     """
 
     def __init__(
@@ -757,19 +751,20 @@ class random_cluster(random_crystal):
     structure can be accessed via self.struct
 
     Args:
-        group: the Schoenflies symbol for the point group (ex: "Oh", "C5v", "D3")
+        group: the Schoenflies symbol for the point group (ex: `Oh, C5v, D3`)
             OR the number between 1-32 for a crystallographic point group,
-            OR, a pyxtal.symmetry.Group object
-            See:
-            https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups
+            OR the `group <pyxtal.symmetry.Group.html>`_ object, see `wikipedia
+            <https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups>`_
             for more information
-        species: a list of atomic symbols for each ion type
+        species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
-            primitive cell (NOT the conventional cell)
-        factor: a volume factor used to generate a larger or smaller
-            unit cell. Increasing this gives extra space between atoms
-        lattice: an optional Lattice object to use for the unit cell
-        tm: the Tol_matrix object used to generate the crystal
+            primitive cell (NOT the conventional cell), e.g., `[4, 2]`
+        factor (optional): volume factor used to generate the crystal
+        sites (optional): pre-assigned wyckoff sites (e.g., [["4a"], ["2b"]])
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+            object to define the unit cell
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+            object to define the distances
     """
 
     def __init__(

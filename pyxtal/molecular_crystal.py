@@ -28,8 +28,8 @@ class molecular_crystal:
     constraints. 
 
     Args:
-        group: The international spacegroup number
-            OR, a pyxtal.symmetry.Group object
+        group: the spacegroup number (1-230), or a 
+            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or the name of molecules from the built_in 
@@ -46,8 +46,10 @@ class molecular_crystal:
             stoichiometry has been generated, you may pass its
             valid_orientations attribute here to avoid repeating the
             calculation, but this is not required
-        lattice: an optional Lattice object to use for the unit cell
-        tm: the Tol_matrix object used to generate the crystal
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+            object to define the unit cell
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
+            object to define the distances
     """
 
     def __init__(
@@ -264,7 +266,7 @@ class molecular_crystal:
             exclude_H: whether or not ignore the H atoms
 
         Returns:
-            pairs: list of pairs within the cutoff
+            a list of pairs within the cutoff
         """
         pairs = []
         pmg_struc = self.to_pymatgen()
@@ -459,7 +461,7 @@ class molecular_crystal:
         """
         return deepcopy(self)
 
-    def get_coords_and_species(self, absolute=False):
+    def _get_coords_and_species(self, absolute=False):
         """
         extract the coordinates and species information 
 
@@ -490,7 +492,7 @@ class molecular_crystal:
         """
         from ase import Atoms
         if self.valid:
-            coords, species = self.get_coords_and_species(True)
+            coords, species = self._get_coords_and_species(True)
             latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
             atoms = Atoms(species, positions=coords, cell=latt)
             if resort:
@@ -507,7 +509,7 @@ class molecular_crystal:
         from pymatgen.core.structure import Structure  
 
         if self.valid:
-            coords, species = self.get_coords_and_species()
+            coords, species = self._get_coords_and_species()
             # Add space above and below a 2D or 1D crystals
             latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
             return Structure(latt, species, coords)
