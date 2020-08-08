@@ -696,6 +696,7 @@ class molecular_crystal:
         if degrees == 0:
             printx("Note: Wyckoff positions have no degrees of freedom.", priority=2)
         self.valid = False
+
         return
 
 
