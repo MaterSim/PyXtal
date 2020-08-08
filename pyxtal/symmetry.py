@@ -2733,6 +2733,52 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
             else:
                 return False
 
+def choose_wyckoff_molecular(group, number, orientations, general_site_only=True):
+    """
+    Choose a Wyckoff position to fill based on the current number of molecules
+    needed to be placed within a unit cell
+
+    Rules:
+
+        1) The new position's multiplicity is equal/less than (number).
+        2) We prefer positions with large multiplicity.
+        3) The site must admit valid orientations for the desired molecule.
+
+    Args:
+        group: a pyxtal.symmetry.Group object
+        number: the number of molecules still needed in the unit cell
+        orientations: the valid orientations for a given molecule. Obtained
+            from get_sg_orientations, which is called within molecular_crystal
+
+    Returns:
+        a single index for the Wyckoff position. If no position is found,
+        returns False
+    """
+    wyckoffs = group.wyckoffs_organized
+
+    if general_site_only or np.random.random() > 0.5:  # choose from high to low
+        for j, wyckoff in enumerate(wyckoffs):
+            if len(wyckoff[0]) <= number:
+                good_wyckoff = []
+                for k, w in enumerate(wyckoff):
+                    if orientations[j][k] != []:
+                        good_wyckoff.append(w)
+                if len(good_wyckoff) > 0:
+                    return random.choice(good_wyckoff)
+        return False
+    else:
+        good_wyckoff = []
+        for j, wyckoff in enumerate(wyckoffs):
+            if len(wyckoff[0]) <= number:
+                for k, w in enumerate(wyckoff):
+                    if orientations[j][k] != []:
+                        good_wyckoff.append(w)
+        if len(good_wyckoff) > 0:
+            return random.choice(good_wyckoff)
+        else:
+            return False
+
+
 def permutate_xyz_string(xyzs, permutation):
     if permutation == [0,1,2]:
         return xyzs

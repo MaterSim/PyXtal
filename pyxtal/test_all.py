@@ -22,10 +22,10 @@ class TestWP(unittest.TestCase):
         self.assertTrue(symbol=='4a')
 
     def test_merge(self):
-        pt, wp = WP_merge([0.05, 0.7, 0.24], l1.get_matrix(), wp1, 0.5)
+        pt, wp, _ = WP_merge([0.05, 0.7, 0.24], l1.get_matrix(), wp1, 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol=='4a')
-        pt, wp = WP_merge([0.15, 0.7, 0.24], l1.get_matrix(), wp1, 0.5)
+        pt, wp, _ = WP_merge([0.15, 0.7, 0.24], l1.get_matrix(), wp1, 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol=='8b')
 
@@ -36,30 +36,10 @@ class TestWP(unittest.TestCase):
 
     # to add test from string
 
-class TestAtomic3D(unittest.TestCase):
-
-    def test_single_specie(self):
-        struc = random_crystal(225, ['C'], [4], 1.2)
-        struc.to_file()
-        self.assertTrue(struc.valid)
-
-    def test_mutiple_species(self):
-        struc = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.2)
-        self.assertTrue(struc.valid)
-
-    def test_preassigned_sites(self):
-        sites=[["1b"], ["1b"], ["2c", "1b"]]
-        struc = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.0, sites=sites)
-        self.assertTrue(struc.valid)
-
-        struc = random_crystal(225, ['C'], [3], 1.0, sites=[["4a", "8c"]])
-        self.assertTrue(struc.valid)
-
-    #def test_space_groups(self):
-
 class TestMolecular(unittest.TestCase):
 
     def test_single_specie(self):
+        #print("test_h2o")
         struc = molecular_crystal(36, ['H2O'], [2], 1.0)
         struc.to_file()
         self.assertTrue(struc.valid)
@@ -87,15 +67,19 @@ class TestMolecular(unittest.TestCase):
         #print(pmg_struc.frac_coords[:3])
 
     def test_big_molecule(self):
+        #print("test_big_molecule")
         for mol in ['ROY', 'aspirin']:
-            struc = molecular_crystal(19, ['ROY'], [4], 1.0)
+            struc = molecular_crystal(19, ['ROY'], [4], 1.2)
             self.assertTrue(struc.valid)
             pair = struc.check_short_distances()
             if len(pair) > 0:
                 print(mol, pair)
             self.assertTrue(len(pair)==0)
  
- 
+    #def test_c60(self):
+    #    struc = molecular_crystal(36, ['C60'], [2], 1.0)
+    #    self.assertTrue(struc.valid)
+
     def test_mutiple_species(self):
         Li = Molecule(['Li'], [[0.0,0.0,0.0]])
         coords = [[ 0.000000,  0.000000,  0.000000],
@@ -111,6 +95,7 @@ class TestMolecular(unittest.TestCase):
                 self.assertTrue(len(struc.to_pymatgen()) == 16)
 
     def test_molecular_2d(self):
+        #print("test_molecular_2d")
         struc = molecular_crystal_2D(20, ['H2O'], [4], 1.0)
         cif = struc.to_file()
         self.assertTrue(struc.valid)
@@ -119,6 +104,28 @@ class TestMolecular(unittest.TestCase):
         cif = struc.to_file()
         self.assertTrue(struc.valid)
         #def test_space_groups(self):
+
+
+class TestAtomic3D(unittest.TestCase):
+
+    def test_single_specie(self):
+        struc = random_crystal(225, ['C'], [4], 1.2)
+        struc.to_file()
+        self.assertTrue(struc.valid)
+
+    def test_mutiple_species(self):
+        struc = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.2)
+        self.assertTrue(struc.valid)
+
+    def test_preassigned_sites(self):
+        sites=[["1b"], ["1b"], ["2c", "1b"]]
+        struc = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.0, sites=sites)
+        self.assertTrue(struc.valid)
+
+        struc = random_crystal(225, ['C'], [3], 1.0, sites=[["4a", "8c"]])
+        self.assertTrue(struc.valid)
+
+    #def test_space_groups(self):
 
 
 class TestAtomic2D(unittest.TestCase):

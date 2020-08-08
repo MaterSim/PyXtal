@@ -143,6 +143,8 @@ class pyxtal_molecule:
         for i1, number1 in enumerate(numbers):
             for i2, number2 in enumerate(numbers):
                 tols[i1][i2] = self.tm.get_tol(number1, number2)
+        if len(self.mol)==1:
+            tols *= 0.8 # if only one atom, reduce the tolerance
         self.tols_matrix = tols
 
     def show(self):
@@ -537,6 +539,7 @@ def orientation_in_wyckoff_position(
     exact_orientation=False,
     already_oriented=False,
     allow_inversion=False,
+    rtol = 1e-2,
 ):
     """
     Tests if a molecule meets the symmetry requirements of a Wyckoff position,
@@ -629,8 +632,8 @@ def orientation_in_wyckoff_position(
             for j, op_w in enumerate(symm_w):
                 if opa_w[j].axis is not None:
                     dot = np.dot(opa_w[i].axis, opa_w[j].axis)
-                    if (not np.isclose(dot, 1, rtol=0.01)) and (
-                        not np.isclose(dot, -1, rtol=0.01)
+                    if (not np.isclose(dot, 1, rtol=rtol)) and (
+                        not np.isclose(dot, -1, rtol=rtol)
                     ):
                         constraint2 = opa_w[j]
                         break
@@ -658,7 +661,7 @@ def orientation_in_wyckoff_position(
             for j, c2 in enumerate(copy):
                 if i > j and j in list_j and j in list_i:
                     # Check if axes are colinear
-                    if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=0.01):
+                    if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=rtol):
                         list_i.remove(j)
                         list_j.remove(j)
                     # Check if axes are symmetrically equivalent
@@ -671,7 +674,7 @@ def orientation_in_wyckoff_position(
                                 if np.isclose(
                                     np.dot(op.operate(c1[0].axis), c2[0].axis),
                                     1,
-                                    rtol=0.05,
+                                    rtol=5*rtol,
                                 ):
                                     cond1 = True
                                     break
@@ -729,7 +732,7 @@ def orientation_in_wyckoff_position(
                 R = Rotation.from_rotvec(theta * constraint1.axis).as_matrix()
                 T2 = np.dot(R, T)
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
-                if not np.isclose(a, 0, rtol=0.01):
+                if not np.isclose(a, 0, rtol=rtol):
                     T2 = np.dot(np.linalg.inv(R), T)
                 a = angle(np.dot(T2, opa.axis), constraint2.axis)
                 # if not np.isclose(a, 0, rtol=.01):

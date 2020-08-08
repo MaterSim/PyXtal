@@ -11,9 +11,17 @@ from pymatgen import Molecule
 
 # PyXtal imports
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.operations import apply_ops, distance, distance_matrix, project_point, filtered_coords, create_matrix
+from pyxtal.operations import (
+    apply_ops, 
+    check_images,
+    distance, 
+    distance_matrix, 
+    project_point, 
+    filtered_coords, 
+    create_matrix,
+)
 from pyxtal.symmetry import ss_string_from_ops as site_symm
-from pyxtal.symmetry import Group
+from pyxtal.symmetry import Group, jk_from_i
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg
 from pyxtal.msg import printx
@@ -26,7 +34,7 @@ class mol_site:
     molecular version of Wyckoff_site
 
     Args:
-        mol: a Pymatgen Molecule object
+        mol: a Pyxtal.molecule object
         position: the fractional 3-vector representing the generating molecule's position
         orientation: an Orientation object for the generating molecule
         wyckoff_position: a Wyckoff_position object
@@ -42,32 +50,27 @@ class mol_site:
         orientation,
         wyckoff_position,
         lattice,
-        tols_matrix,
-        radius,
         rotate_ref=True,
         ellipsoid=None,
     ):
-        self.mol = mol
-        """A Pymatgen molecule object"""
-        self.position = wyckoff_position[0].operate(position)
-        """Relative coordinates of the molecule's center within the unit cell"""
-        self.orientation = orientation
-        """The orientation object of the Mol in the first point in the WP"""
-        self.ellipsoid = ellipsoid
-        """A SymmOp representing the minimal ellipsoid for the molecule"""
+        # describe the molecule
+        self.mol = mol.mol # A Pymatgen molecule object
+        self.symbols = mol.symbols #[site.specie.value for site in self.mol.sites]
+        self.numbers = self.mol.atomic_numbers
+        self.tols_matrix = mol.tols_matrix
+        self.radius = mol.radius
+
+        self.position = position # fractional coordinate of molecular center
+        self.orientation = orientation #pyxtal.molecule.orientation object 
+        self.ellipsoid = ellipsoid #A SymmOp representing the minimal ellipsoid 
         self.wp = wyckoff_position
         self.lattice = lattice
         self.inv_lattice = np.linalg.inv(lattice)
-        """The crystal lattice in which the molecule resides"""
-        self.multiplicity = self.wp.multiplicity
-        """The multiplicity of the molecule's Wyckoff position"""
-        self.PBC = wyckoff_position.PBC
-        """The periodic axes"""
-        self.symbols = [site.specie.value for site in self.mol.sites]
-        self.numbers = self.mol.atomic_numbers
-        self.tols_matrix = tols_matrix
-        self.radius = radius
-        if len(mol)>1 and rotate_ref:
+        self.multiplicity = self.wp.multiplicity #The multiplicity of WP
+        self.PBC = wyckoff_position.PBC #The periodic axes
+
+        # rotate the molecule or not
+        if len(self.mol)>1 and rotate_ref:
             tmp = np.array(self.mol.cart_coords)
             tmp -= np.mean(tmp, axis=0)
             ax1 = self.get_principle_axes(tmp)
@@ -713,9 +716,7 @@ def check_intersection(ellipsoid1, ellipsoid2):
         return True
 
 
-def check_mol_sites(
-    ms1, ms2, atomic=False, factor=1.0, tm=Tol_matrix(prototype="molecular")
-):
+def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="molecular")):
     """
     Checks whether or not the molecules of two mol sites overlap. Uses
     ellipsoid overlapping approximation to check. Takes PBC and lattice
@@ -958,7 +959,7 @@ def WP_merge_old(coor, lattice, group, tol):
         else:
             return coor, index, point
 
-def WP_merge(pt, lattice, wp, tol):
+def WP_merge(pt, lattice, wp, tol, orientations=None):
     """
     Given a list of fractional coordinates, merges them within a given
     tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -970,18 +971,26 @@ def WP_merge(pt, lattice, wp, tol):
         lattice: a 3x3 matrix representing the unit cell
         wp: a pyxtal.symmetry.Wyckoff_position object after merge
         tol: the cutoff distance for merging coordinates
+        orientations: the valid orientations for a given molecule. Obtained
+            from get_sg_orientations, which is called within molecular_crystal
 
     Returns:
         pt: 3-vector after merge
-        wp: a pyxtal.symmetry.Wyckoff_position object
-        If no matching WP is found, returns False. 
+        wp: a pyxtal.symmetry.Wyckoff_position object, If no matching WP, returns False. 
+        valid_ori: the valid orientations after merge
+
     """
     index = wp.index
     PBC = wp.PBC
     group = Group(wp.number, wp.dim)
-
     pt = project_point(pt, wp[0], lattice, PBC)
     coor = apply_ops(pt, wp)
+    if orientations is None:
+        valid_ori = None
+    else:
+        j, k = jk_from_i(index, orientations)
+        valid_ori = orientations[j][k]
+    
     # Main loop for merging multiple times
 
     while True:
@@ -996,6 +1005,11 @@ def WP_merge(pt, lattice, wp, tol):
             else:
                 passed_distance_check = False
                 break
+
+        # for molecular crystal, one more check
+        if check_images([coor[0]], [6], lattice, PBC=PBC, tol=tol) is False:
+            passed_distance_check = False
+
         
         if not passed_distance_check:
             mult1 = group[index].multiplicity
@@ -1003,11 +1017,19 @@ def WP_merge(pt, lattice, wp, tol):
             possible = []
             for i, wp0 in enumerate(group):
                 mult2 = wp0.multiplicity
+                # Check that a valid orientation exists
+                if orientations is not None:
+                    j, k = jk_from_i(i, orientations)
+                    if orientations[j][k] == []:
+                        continue
+                    else:
+                        valid_ori = orientations[j][k]
                 # factor = mult2 / mult1
+
                 if (mult2 < mult1) and (mult1 % mult2 == 0):
                     possible.append(i)
             if possible == []:
-                return None, False
+                return None, False, valid_ori
         
             # Calculate minimum separation for each WP
             distances = []
@@ -1024,6 +1046,6 @@ def WP_merge(pt, lattice, wp, tol):
             coor = apply_ops(pt, wp)
         # Distances were not too small; return True
         else:
-            return pt, wp
+            return pt, wp, valid_ori
 
 

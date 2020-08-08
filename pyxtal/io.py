@@ -175,15 +175,12 @@ class structure_from_ext():
             mol = self.molecule
             ori = Orientation(np.eye(3))
         pmol = pyxtal_molecule(self.ref_mol)
-        radius = pmol.radius
-        tols_matrix = pmol.tols_matrix
-        site = mol_site(mol,
+        # needs to fix coord0
+        site = mol_site(pmol,
                         self.position, 
                         ori,
                         self.wyc, 
                         self.lattice.matrix,
-                        tols_matrix, 
-                        radius,
                         rotate_ref = False,
                         )
         return site
