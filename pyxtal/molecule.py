@@ -211,13 +211,27 @@ class Orientation:
     """
 
     def __init__(self, matrix, degrees=0, axis=None):
-        if (degrees == 1) and (axis is None):
-            printx("Error: Constraint vector required for orientation", priority=1)
         self.matrix = np.array(matrix)
         self.r = Rotation.from_matrix(matrix)  # scipy transform.Rotation class
         self.degrees = degrees  # The number of degrees of freedom.
-        self.axis = axis  # The rotational axis (optional)
-        self.angle = None
+        if degrees == 1:
+            if axis is None:
+                printx("Error: axis is required for orientation", priority=1)
+            else: # check if axis is consistent with the matrix
+                ax = self.r.as_rotvec()
+                ang = angle(ax, axis)/np.pi # two axis should be (anti)parralell
+                self.axis = axis  # The rotational axis (optional)
+                self.angle = np.linalg.norm(ax)/np.linalg.norm(axis)
+                #QZ: looks like the axis is compatible with rotation matrix
+                #print(ang)
+                #if abs(ang-np.floor(ang)) < 1e-2:
+                #    print(self.angle)
+                #    print(ax, axis)
+                #    print(ang)
+                #    raise ValueError("The axis is incompatible with the rotation matrix")
+        else:
+            self.axis = axis
+            self.angle = None
 
     def change_orientation(self, angle="random"):
         """
@@ -277,6 +291,8 @@ class Orientation:
         elif self.degrees == 1:
             if angle == "random":
                 angle = np.random.random() * np.pi * 2
+            else:
+                angle = self.angle
             return Rotation.from_rotvec(angle * self.axis).as_matrix()
 
         elif self.degrees == 0:
@@ -301,7 +317,6 @@ class Orientation:
 
         if angle is not None:
             self.change_orientation(angle)
-
         return SymmOp.from_rotation_and_translation(self.matrix, [0, 0, 0])
 
     @classmethod
@@ -538,7 +553,7 @@ def orientation_in_wyckoff_position(
     randomize=True,
     exact_orientation=False,
     already_oriented=False,
-    allow_inversion=False,
+    allow_inversion=True,
     rtol = 1e-2,
 ):
     """
@@ -720,33 +735,28 @@ def orientation_in_wyckoff_position(
         v1 = c1[0].axis
         v2 = constraint1.axis
         T = rotate_vector(v1, v2)
-        # Loop over second molecular constraints
-        for opa in c1[1]:
-            phi = angle(constraint1.axis, constraint2.axis)
-            phi2 = angle(constraint1.axis, np.dot(T, opa.axis))
-            if np.isclose(phi, phi2, rtol=0.01):
-                r = np.sin(phi)
-                c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
-                theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
-                # R = aa2matrix(constraint1.axis, theta)
-                R = Rotation.from_rotvec(theta * constraint1.axis).as_matrix()
-                T2 = np.dot(R, T)
-                a = angle(np.dot(T2, opa.axis), constraint2.axis)
-                if not np.isclose(a, 0, rtol=rtol):
-                    T2 = np.dot(np.linalg.inv(R), T)
-                a = angle(np.dot(T2, opa.axis), constraint2.axis)
-                # if not np.isclose(a, 0, rtol=.01):
-                #    msg = "Error: Generated incorrect rotation: "
-                #    msg += str(theta)
-                #    msg += "\n(Within orientation_in_wyckoff_position)"
-                #    printx(msg, priority=0)
-
-                o = Orientation(T2, degrees=0)
-                orientations.append(o)
         # If there is only one constraint
         if c1[1] == []:
             o = Orientation(T, degrees=1, axis=constraint1.axis)
             orientations.append(o)
+        else:
+            # Loop over second molecular constraints
+            for opa in c1[1]:
+                phi = angle(constraint1.axis, constraint2.axis)
+                phi2 = angle(constraint1.axis, np.dot(T, opa.axis))
+                if np.isclose(phi, phi2, rtol=rtol):
+                    r = np.sin(phi)
+                    c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
+                    theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
+                    # R = aa2matrix(constraint1.axis, theta)
+                    R = Rotation.from_rotvec(theta * constraint1.axis).as_matrix()
+                    T2 = np.dot(R, T)
+                    a = angle(np.dot(T2, opa.axis), constraint2.axis)
+                    if not np.isclose(a, 0, rtol=rtol):
+                        T2 = np.dot(np.linalg.inv(R), T)
+                    o = Orientation(T2, degrees=0)
+                    orientations.append(o)
+
     # Ensure the identity orientation is checked if no constraints are found
     if constraints_m == []:
         o = Orientation(np.identity(3), degrees=2)
@@ -778,23 +788,40 @@ def orientation_in_wyckoff_position(
 
     # Check each of the found orientations for consistency with the Wyckoff pos.
     # If consistent, put into an array of valid orientations
+    #allowed = []
+    #print(wyckoff_position.letter, len(orientations))
+    #for o in orientations:
+    #    if randomize:
+    #        op = o.get_op()
+    #    else:
+    #        op = o.get_op(angle=0)
+
+    #    mo = deepcopy(mol)
+    #    mo.apply_operation(op)
+    #    test_var = orientation_in_wyckoff_position(mo, wyckoff_position, True, False, allow_inversion=allow_inversion)
+    #    print(op, test_var)
+    #    if test_var is not False:
+    #        allowed.append(o)
+    ## Return the array of allowed orientations. If there are none, return False
+    #if allowed == []:
+    #    return False
+    #else:
+    #    return allowed
+
+
+    #Check each of the found orientations for consistency with the Wyckoff pos.
+    #If consistent, put into an array of valid orientations
     allowed = []
     for o in orientations:
         if randomize is True:
-            op = o.get_op()
+            op = o.get_op() #randomize
         elif randomize is False:
-            op = o.get_op(angle=0)
+            op = o.get_op() #don't change
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(
-            mo,
-            wyckoff_position,
-            exact_orientation=True,
-            randomize=False,
-            allow_inversion=allow_inversion,
-        ):
+        if orientation_in_wyckoff_position(mo, wyckoff_position, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:
             allowed.append(o)
-    # Return the array of allowed orientations. If there are none, return False
+    #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
         return False
     else:
