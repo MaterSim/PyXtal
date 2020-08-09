@@ -216,22 +216,30 @@ class Orientation:
         self.degrees = degrees  # The number of degrees of freedom.
         if degrees == 1:
             if axis is None:
-                printx("Error: axis is required for orientation", priority=1)
-            else: # check if axis is consistent with the matrix
-                ax = self.r.as_rotvec()
-                ang = angle(ax, axis)/np.pi # two axis should be (anti)parralell
-                self.axis = axis  # The rotational axis (optional)
-                self.angle = np.linalg.norm(ax)/np.linalg.norm(axis)
-                #QZ: looks like the axis is compatible with rotation matrix
-                #print(ang)
-                #if abs(ang-np.floor(ang)) < 1e-2:
-                #    print(self.angle)
-                #    print(ax, axis)
-                #    print(ang)
-                #    raise ValueError("The axis is incompatible with the rotation matrix")
-        else:
-            self.axis = axis
-            self.angle = None
+                raise ValueError("axis is required for orientation")
+            else:
+                axis /= np.linalg.norm(axis)
+        self.axis = axis
+        self.angle = None
+
+    def __str__(self):
+        s = "-------PyXtal.molecule.Orientation class----\n"
+        s += "degree of freedom: {:d}\n".format(self.degrees)
+        s += "Rotation matrix:\n"
+        s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:,0])
+        s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:,1])
+        s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:,2])
+        if self.axis is not None:
+            s += "Rotation axis\n"
+            s += "{:6.2f} {:6.2f} {:6.3f}\n".format(*self.axis)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+
+    def copy(self):
+        return deepcopy(self)
 
     def change_orientation(self, angle="random"):
         """
@@ -246,23 +254,23 @@ class Orientation:
             If self.degrees==0, no change
 
         """
-        if self.degrees == 2:
-            if angle == "random":
-                # randomly generate the axis and angle
+        if self.degrees >= 1:
+            # choose the axis
+            if self.axis is None:
                 axis = np.random.sample(3)
                 self.axis = axis / np.linalg.norm(axis)
-                self.angle = np.random.random() * np.pi * 2
-            else:
-                self.angle = angle
-            self.r = Rotation.from_rotvec(self.angle * self.axis)
-            self.matrix = self.r.as_matrix()
-
-        elif self.degrees == 1:
+ 
+            # parse the angle
             if angle == "random":
                 angle = np.random.random() * np.pi * 2
             self.angle = angle
-            self.r = Rotation.from_rotvec(self.angle * self.axis)
+    
+            # update the matrix
+            r1 = Rotation.from_rotvec(self.angle * self.axis)
+            self.r = r1 * self.r
+            #self.r *= r1 
             self.matrix = self.r.as_matrix()
+
 
     def get_matrix(self, angle="random"):
         """
@@ -313,10 +321,8 @@ class Orientation:
         Returns:
             pymatgen.core.structure. SymmOp object
         """
-        # If "random", rotates by a random amount
-
-        if angle is not None:
-            self.change_orientation(angle)
+        #if angle is not None:
+        #    self.change_orientation(angle)
         return SymmOp.from_rotation_and_translation(self.matrix, [0, 0, 0])
 
     @classmethod
@@ -378,6 +384,7 @@ class Orientation:
         Returns:
             a new orientation object with a different base rotation matrix
         """
+
         self.change_orientation()
         return self
 
@@ -786,37 +793,14 @@ def orientation_in_wyckoff_position(
     for i in list_i:
         orientations.append(copy[i])
 
-    # Check each of the found orientations for consistency with the Wyckoff pos.
-    # If consistent, put into an array of valid orientations
-    #allowed = []
-    #print(wyckoff_position.letter, len(orientations))
-    #for o in orientations:
-    #    if randomize:
-    #        op = o.get_op()
-    #    else:
-    #        op = o.get_op(angle=0)
-
-    #    mo = deepcopy(mol)
-    #    mo.apply_operation(op)
-    #    test_var = orientation_in_wyckoff_position(mo, wyckoff_position, True, False, allow_inversion=allow_inversion)
-    #    print(op, test_var)
-    #    if test_var is not False:
-    #        allowed.append(o)
-    ## Return the array of allowed orientations. If there are none, return False
-    #if allowed == []:
-    #    return False
-    #else:
-    #    return allowed
-
-
     #Check each of the found orientations for consistency with the Wyckoff pos.
     #If consistent, put into an array of valid orientations
     allowed = []
     for o in orientations:
         if randomize is True:
-            op = o.get_op() #randomize
+            op = o.get_op("random")
         elif randomize is False:
-            op = o.get_op() #don't change
+            op = o.get_op() #do not change
         mo = deepcopy(mol)
         mo.apply_operation(op)
         if orientation_in_wyckoff_position(mo, wyckoff_position, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:

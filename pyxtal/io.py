@@ -181,7 +181,6 @@ class structure_from_ext():
                         ori,
                         self.wyc, 
                         self.lattice.matrix,
-                        rotate_ref = False,
                         )
         return site
 

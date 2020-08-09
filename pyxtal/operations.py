@@ -606,11 +606,13 @@ def rotate_vector(v1, v2):
     elif np.isclose(dot, -1, rtol=0.0001):
         r = [np.random.random(), np.random.random(), np.random.random()]
         v3 = np.cross(v1, r)
-        # return aa2matrix(v3, np.pi)
+        v3 /= np.linalg.norm(v3)
+        #return aa2matrix(v3, np.pi)
         return Rotation.from_rotvec(np.pi * v3).as_matrix()
     theta = angle(v1, v2)
     v3 = np.cross(v1, v2)
-    # return aa2matrix(v3, theta)
+    v3 /= np.linalg.norm(v3)
+    #return aa2matrix(v3, theta)
     return Rotation.from_rotvec(theta * v3).as_matrix()
 
 

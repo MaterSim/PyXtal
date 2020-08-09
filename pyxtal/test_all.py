@@ -76,9 +76,9 @@ class TestMolecular(unittest.TestCase):
                 print(mol, pair)
             self.assertTrue(len(pair)==0)
  
-    #def test_c60(self):
-    #    struc = molecular_crystal(36, ['C60'], [2], 1.0)
-    #    self.assertTrue(struc.valid)
+    def test_c60(self):
+        struc = molecular_crystal(36, ['C60'], [2], 1.0)
+        self.assertTrue(struc.valid)
 
     def test_mutiple_species(self):
         Li = Molecule(['Li'], [[0.0,0.0,0.0]])

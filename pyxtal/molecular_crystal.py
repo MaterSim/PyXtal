@@ -617,7 +617,8 @@ class molecular_crystal:
 
                                 if wp is not False:
                                     # Use a Wyckoff_site object for the current site
-                                    ori = random.choice(oris).random_orientation()
+                                    ori = random.choice(oris).copy()
+                                    ori.change_orientation()
                                     ms0 = mol_site(pyxtal_mol, pt, ori, wp, cell_matrix)
                                     # Check distances within the WP
                                     if not ms0.check_distances():
@@ -627,6 +628,7 @@ class molecular_crystal:
                                         if len(pyxtal_mol.mol) > 1 and ori.degrees > 0:
                                             # bisection method
                                             def fun_dist(angle, ori, mo, pt):
+                                                ori0 = ori.copy()
                                                 ori.change_orientation(angle)
                                                 ms0 = mol_site(
                                                     mo,
@@ -649,7 +651,7 @@ class molecular_crystal:
                                                     break
                                                 angle = (angle_lo + angle_hi) / 2
                                                 fun = fun_dist(angle, ori, pyxtal_mol, pt)
-                                                # print('Bisection: ', it, fun)
+                                                #print('Bisection: ', it, fun)
                                                 if fun_lo > fun_hi:
                                                     angle_hi, fun_hi = angle, fun
                                                 else:

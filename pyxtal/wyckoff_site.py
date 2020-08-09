@@ -40,7 +40,6 @@ class mol_site:
         wyckoff_position: a Wyckoff_position object
         lattice: a Lattice object for the crystal
         ellipsoid: an optional binding Ellipsoid object for checking distances.
-        tm: a Tol_matrix object for distance checking
     """
 
     def __init__(
@@ -50,7 +49,6 @@ class mol_site:
         orientation,
         wyckoff_position,
         lattice,
-        rotate_ref=True,
         ellipsoid=None,
     ):
         # describe the molecule
@@ -59,6 +57,7 @@ class mol_site:
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
+        self.coord0 = self.mol.cart_coords
 
         self.position = position # fractional coordinate of molecular center
         self.orientation = orientation #pyxtal.molecule.orientation object 
@@ -69,14 +68,6 @@ class mol_site:
         self.multiplicity = self.wp.multiplicity #The multiplicity of WP
         self.PBC = wyckoff_position.PBC #The periodic axes
 
-        # rotate the molecule or not
-        if len(self.mol)>1 and rotate_ref:
-            tmp = np.array(self.mol.cart_coords)
-            tmp -= np.mean(tmp, axis=0)
-            ax1 = self.get_principle_axes(tmp)
-            self.coord0 = tmp.dot(ax1)
-        else:
-            self.coord0 = self.mol.cart_coords
 
     def __str__(self):
 
