@@ -155,14 +155,14 @@ class structure_from_ext():
         if self.wyc is not None:
             self.group = Group(self.wyc.number)
             if perm != [0,1,2]:
-                lattice = Lattice.from_matrix(pmg_struc.lattice.matrix)
-                latt = self.lattice.swap_axis(ids=perm, random=False).get_matrix()
+                lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
+                latt = lattice.swap_axis(ids=perm, random=False).get_matrix()
                 coor = pmg_struc.frac_coords[perm]
                 pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
             coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
             self.molecule = Molecule(numbers, coords)
             self.pmg_struc = pmg_struc
-            self.lattice = pmg_struc.lattice
+            self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
         else:
             raise ValueError("Cannot find the space group matching the symmetry operation")
 
@@ -174,13 +174,13 @@ class structure_from_ext():
         else:
             mol = self.molecule
             ori = Orientation(np.eye(3))
-        pmol = pyxtal_molecule(self.ref_mol)
+        pmol = pyxtal_molecule(mol)
         # needs to fix coord0
         site = mol_site(pmol,
                         self.position, 
                         ori,
                         self.wyc, 
-                        self.lattice.matrix,
+                        self.lattice,
                         )
         return site
 
@@ -213,6 +213,8 @@ class structure_from_ext():
         """
         match, mapping = compare_mol_connectivity(self.ref_mol, self.molecule)
         if not match:
+            print(self.ref_mol)
+            print(self.molecule)
             return False
         else:
             # resort the atomic number for molecule 1
@@ -225,7 +227,7 @@ class structure_from_ext():
             # check if molecule is on the special wyckoff position
             if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
                 # todo: Get the subgroup to display
-                position, wp = WP_merge(position, self.lattice.matrix, self.wyc, 2.0)
+                position, wp, _ = WP_merge(position, self.lattice.matrix, self.wyc, 2.0)
                 self.wyc = wp
             self.position = position
             self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
@@ -308,5 +310,17 @@ def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
 #seed = structure_from_cif("254385.cif", "1.xyz")
 #if seed.match():
 #    print(seed.pmg_struc)
+
+"""
+Symmetry transformation
+group -> subgroup
+At the moment we only consider 
+for multiplicity 2: P-1, P21, P2, Pm and Pc
+to add: for multiplicity 4: P21/c, P212121
+Permutation is allowed
+"""
+
+
+
 
 

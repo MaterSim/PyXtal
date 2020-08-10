@@ -73,14 +73,12 @@ class pyxtal_molecule:
             msg = "Could not create molecules from given input: {:s}".format(mol)
             raise NameError(msg)
 
-        props = mo.site_properties
+        self.props = mo.site_properties
+
         if len(mo) > 1:
             pga = PointGroupAnalyzer(mo)
-            mo = pga.symmetrize_molecule()["sym_mol"] #Here we re-allign the molecule
+            mo = pga.symmetrize_molecule()["sym_mol"] 
 
-        if len(props) > 0:
-            for key in props.keys():
-                mo.add_site_property(key, props[key])
         self.mol = mo
         self.tm = tm
         self.get_box()
@@ -88,6 +86,23 @@ class pyxtal_molecule:
         self.get_radius()
         self.get_symbols()
         self.get_tols_matrix()
+
+    def swap_axis(self, ax):
+        """
+        swap the molecular axis
+        """
+        coords = self.mol.cart_coords[:, ax]
+        mo = Molecule(self.symbols, coords)
+        mo = self.add_site_props(mo)
+
+        return pyxtal_molecule(mo, self.tm)
+
+
+    def add_site_props(self, mo):
+        if len(self.props) > 0:
+            for key in self.props.keys():
+                mo.add_site_property(key, props[key])
+        return mo
 
     def get_box(self):
         """
@@ -210,7 +225,7 @@ class Orientation:
             if degrees is equal to 1
     """
 
-    def __init__(self, matrix, degrees=0, axis=None):
+    def __init__(self, matrix, degrees=2, axis=None):
         self.matrix = np.array(matrix)
         self.r = Rotation.from_matrix(matrix)  # scipy transform.Rotation class
         self.degrees = degrees  # The number of degrees of freedom.
@@ -271,6 +286,27 @@ class Orientation:
             #self.r *= r1 
             self.matrix = self.r.as_matrix()
 
+    def rotate_by_matrix(self, matrix, ignore_constraint=True):
+        """
+        rotate
+
+        Args:
+            matrix: 3*3 rotation matrix
+
+        """
+        if not ignore_constraint:
+            if self.degrees == 0:
+                raise ValueError("cannot rotate")
+            elif self.degrees == 1:
+                axis = self.axis
+                vec = Rotation.from_matrix(matrix).as_rotvec()
+                if angle(vec, self.axis) > 1e-2 and angle(vec, -self.axis) > 1e-2:
+                    raise ValueError("must rotate along the given axis")
+        else:
+            axis = None
+            
+        matrix = matrix.dot(self.matrix)
+        return Orientation(matrix, self.degrees, axis)
 
     def get_matrix(self, angle="random"):
         """

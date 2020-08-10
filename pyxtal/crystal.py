@@ -9,7 +9,7 @@ from pyxtal.symmetry import Group, choose_wyckoff
 from pyxtal.wyckoff_site import atom_site, check_atom_sites, WP_merge
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.lattice import Lattice, cellsize, add_vacuum
+from pyxtal.lattice import Lattice, cellsize
 from pyxtal.database.element import Element
 
 # Define functions
@@ -531,7 +531,7 @@ class random_crystal:
             if self.dim > 0:
                 coords, species = self._get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
-                latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+                latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
                 return Atoms(species, scaled_positions=coords, cell=latt)
             else:
                 coords, species = self._get_coords_and_species(True)
@@ -549,7 +549,7 @@ class random_crystal:
             if self.dim > 0:
                 coords, species = self._get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
-                latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+                latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
                 return Structure(latt, species, coords)
             else:
                 # Clusters are handled as large molecules

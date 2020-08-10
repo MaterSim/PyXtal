@@ -20,10 +20,11 @@ from pyxtal.operations import (
     filtered_coords, 
     create_matrix,
 )
-from pyxtal.symmetry import ss_string_from_ops as site_symm
 from pyxtal.symmetry import Group, jk_from_i
+from pyxtal.symmetry import ss_string_from_ops as site_symm
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg
+from pyxtal.lattice import Lattice
 from pyxtal.msg import printx
 
 class mol_site:
@@ -52,6 +53,7 @@ class mol_site:
         ellipsoid=None,
     ):
         # describe the molecule
+        self.molecule = mol
         self.mol = mol.mol # A Pymatgen molecule object
         self.symbols = mol.symbols #[site.specie.value for site in self.mol.sites]
         self.numbers = self.mol.atomic_numbers
@@ -63,8 +65,10 @@ class mol_site:
         self.orientation = orientation #pyxtal.molecule.orientation object 
         self.ellipsoid = ellipsoid #A SymmOp representing the minimal ellipsoid 
         self.wp = wyckoff_position
-        self.lattice = lattice
-        self.inv_lattice = np.linalg.inv(lattice)
+        if isinstance(lattice, Lattice):
+            self.lattice = lattice
+        else:
+            self.lattice = Lattice.from_matrix(lattice)
         self.multiplicity = self.wp.multiplicity #The multiplicity of WP
         self.PBC = wyckoff_position.PBC #The periodic axes
 
@@ -114,7 +118,7 @@ class mol_site:
         """
         # Get molecular centers
         centers0 = apply_ops(self.position, self.wp.generators)
-        centers1 = np.dot(centers0, self.lattice)
+        centers1 = np.dot(centers0, self.lattice.matrix)
         # Rotate ellipsoids
         e1 = self.get_ellipsoid()
         es = np.dot(self.wp.generators_m, e1)
@@ -148,7 +152,7 @@ class mol_site:
         for point_index, op2 in enumerate(self.wp.generators):
             # Obtain the center in absolute coords
             center_relative = op2.operate(self.position)
-            center_absolute = np.dot(center_relative, self.lattice)
+            center_absolute = np.dot(center_relative, self.lattice.matrix)
 
             # Rotate the molecule (Euclidean metric)
             op2_m = self.wp.generators_m[point_index]
@@ -157,7 +161,7 @@ class mol_site:
             tmp = np.dot(coord0, rot) + tau
             # Add absolute center to molecule
             tmp += center_absolute
-            tmp = tmp.dot(self.inv_lattice)
+            tmp = tmp.dot(self.lattice.inv_matrix)
             if wp_atomic_coords is None:
                 wp_atomic_coords = tmp
             else:
@@ -182,7 +186,7 @@ class mol_site:
             wp_atomic_coords = new_coords
 
         if absolute:
-            wp_atomic_coords = wp_atomic_coords.dot(self.lattice)
+            wp_atomic_coords = wp_atomic_coords.dot(self.lattice.matrix)
 
         return wp_atomic_coords, wp_atomic_sites
 
@@ -233,7 +237,7 @@ class mol_site:
         if absolute is False:
             return centers
         else:
-            return np.dot(centers, self.lattice)
+            return np.dot(centers, self.lattice.matrix)
 
     def get_principle_axes(self, coords, adjust=False):
         """
@@ -282,7 +286,7 @@ class mol_site:
         """
         disp = np.array(disp)
         if absolute:
-            disp = disp.dot(self.inv_lattice)
+            disp = disp.dot(self.lattice.inv_matrix)
         self.position += disp
 
 
@@ -322,7 +326,7 @@ class mol_site:
             center_relative = op.operate(self.position)
             center_relative -= np.floor(center_relative)
             #print(center_relative)
-            center_absolute = np.dot(center_relative, self.lattice)
+            center_absolute = np.dot(center_relative, self.lattice.matrix)
             # Rotate the molecule (Euclidean metric)
             op_m = self.wp.generators_m[id]
             rot = op_m.affine_matrix[0:3][:, 0:3].T
@@ -349,16 +353,15 @@ class mol_site:
 
         if lattice is not None:
             self.lattice = lattice
-            self.inv_lattice = np.linalg.norm(lattice)
         if absolute:
-            coords = coords.dot(self.inv_lattice)
+            coords = coords.dot(self.lattice.inv_matrix)
 
-        pmg = Structure(self.symbols, self.lattice, coords)
+        pmg = Structure(self.symbols, self.lattice.matrix, coords)
         coords, numbers = search_molecule_from_crystal(pmg, True)
         mol = Molecule(numbers, coords)
         match, _ = compare_mol_connectivity(mol, self.mol, True)
         if match:
-            position = np.mean(coords, axis=0).dot(self.inv_lattice)
+            position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
             position -= np.floor(position)
             self.position = position
             # orientation
@@ -382,6 +385,50 @@ class mol_site:
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
         
+   
+    def _find_gen_wyckoff_in_subgroup(self, groups=None):
+        """
+        Symmetry transformation
+        group -> subgroup
+        At the moment we only consider 
+        for multiplicity 2: P-1, P21, P2, Pm and Pc
+        to add: for multiplicity 4: P21/c, P212121
+        Permutation is allowed
+        """
+        from pyxtal.symmetry import Wyckoff_position
+
+        pos = self.position
+        wp0 = self.wp
+        pos0 = apply_ops(pos, wp0)
+
+        if len(wp0) == 2:
+            if groups is None:
+                groups = [4, 3, 6, 7, 2]
+            if 15 < wp0.number < 71:
+                axes = [[0,1,2],[0,2,1],[1,0,2],[2,1,0]]
+            elif wp0.number < 15:
+                axes = [[0,1,2],[2,0,1]]
+            for group in groups:
+                wp1 = Wyckoff_position.from_group_and_index(group, 0)
+                for ax in axes:
+                    pos1 = apply_ops(pos[ax], wp1)
+                    diff = (pos1[:, ax] - pos0)[1]
+                    diff -= np.floor(diff)
+                    if len(diff[diff==0]) >= 2:
+                        return wp1, ax, pos[ax] - 0.5*diff
+
+    def make_gen_wyckoff_site(self):
+
+        if self.wp.index > 0:
+            wp, ax, pos = self._find_gen_wyckoff_in_subgroup()
+            ori = self.orientation.rotate_by_matrix(np.eye(3)[ax])
+            lat = self.lattice.swap_axis(ids=ax)
+            lat.ltype = Group(wp.number).lattice_type
+            return mol_site(self.molecule, pos, ori, wp, lat)
+        else:
+            print("This is already a general position")
+            return self
+
 
 
     def create_matrix(self):
@@ -394,7 +441,7 @@ class mol_site:
             coordinates
         """
         matrix = []
-        [a, b, c] = np.linalg.norm(self.lattice, axis=1)
+        [a, b, c] = np.linalg.norm(self.lattice.matrix, axis=1)
         if a > 20 and self.radius<10:
             i_list = [0]
         elif a < 6.5:
@@ -459,11 +506,11 @@ class mol_site:
                     m2.append(v)
             if len(m2) > 0:
                 coords_PBC = np.vstack([coords_mol + v for v in m2])
-                d = distance_matrix(coords_mol, coords_PBC, self.lattice, [0, 0, 0], True)
+                d = distance_matrix(coords_mol, coords_PBC, self.lattice.matrix, [0, 0, 0], True)
                 min_ds.append(d)
         if self.multiplicity > 1:
             # Check inter-atomic distances
-            d = distance_matrix(coords_mol, coords, self.lattice, self.PBC, True)
+            d = distance_matrix(coords_mol, coords, self.lattice.matrix, self.PBC, True)
             min_ds.append(d)
         return min(min_ds)
 
@@ -502,7 +549,7 @@ class mol_site:
                         m2.append(v)
                 if len(m2) > 0:
                     coords_PBC = np.vstack([coords_mol + v for v in m2])
-                    d = distance_matrix(coords_PBC, coords_mol, self.lattice, PBC=[0, 0, 0])
+                    d = distance_matrix(coords_PBC, coords_mol, self.lattice.matrix, PBC=[0, 0, 0])
                     # only check if small distance is detected
                     if np.min(d) < np.max(self.tols_matrix):
                         tols = np.min(d.reshape([len(m2), m_length, m_length]), axis=0)
@@ -511,7 +558,7 @@ class mol_site:
 
             if self.multiplicity > 1:
                 # Check inter-atomic distances
-                d = distance_matrix(coords, coords_mol, self.lattice, PBC=self.PBC)
+                d = distance_matrix(coords, coords_mol, self.lattice.matrix, PBC=self.PBC)
                 if np.min(d) < np.max(self.tols_matrix):
                     tols = np.min(
                         d.reshape([self.multiplicity - 1, m_length, m_length]), axis=0
@@ -521,146 +568,12 @@ class mol_site:
 
             return True
 
-            """New method - only checks some atoms/molecules"""
-            # #Store length of molecule
-            # m_length = len(self.mol)
-            # #Get coordinates of center molecule and Wyckoff position
-            # coords, species = self._get_coords_and_species(absolute=True)
-            # coords_mol = coords[:m_length]
-
-            # if self.PBC == [0,0,0]:
-            #    #Check non-periodic Wyckoff positions
-            #    if self.multiplicity == 1:
-            #        return True
-            #    coords_other = coords[m_length:]
-            #    tols = np.repeat(self.tols_matrix, self.multiplicity-1, axis=1)
-            #    d = cdist(coords_mol, coords_other)
-            #    if (d<tols).any():
-            #        return False
-            #    else:
-            #        return True
-
-            # #Create PBC vectors
-            # m = create_matrix(PBC=self.PBC)
-            # ml = np.dot(m, self.lattice)
-            # #Store the index of the (0,0,0) vector within ml
-            # mid_index = len(ml) // 2
-
-            # if self.multiplicity == 1:
-            #    #Only check periodic images
-            #    #Remove original coordinates
-            #    m2 = []
-            #    v0 = np.array([0.,0.,0.])
-            #    for v in ml:
-            #        if not (v==v0).all():
-            #            m2.append(v)
-            #    coords_PBC = np.vstack([coords_mol + v for v in m2])
-            #    d = distance_matrix(coords_mol, coords_PBC, None, PBC=[0,0,0])
-            #    tols = np.repeat(self.tols_matrix, len(m2), axis=1)
-            #    if (d<tols).any():
-            #        return False
-            #    else:
-            #        return True
-
-            # #Generate centers of all molecules
-            # centers = self.get_centers(absolute=True)
-            # vectors = np.repeat(centers, len(ml), axis=0) + np.tile(ml,(len(centers),1)) - np.dot(self.position, self.lattice)
-            # #Calculate distances between centers
-            # distances = np.linalg.norm(vectors, axis=-1)
-            # #Find which molecules need to be checked
-            # indices_mol = np.where(distances < self.radius()*2)[0]
-            # #Get indices of Wyckoff positions and PBC vectors
-            # indices_wp = []
-            # indices_pbc = []
-            # indices_vector = []
-            # for index in indices_mol:
-            #    i_wp, i_pbc = divmod(index, len(ml))
-            #    #Omit original center molecule
-            #    if not (i_wp == 0 and i_pbc == mid_index):
-            #        indices_wp.append(i_wp)
-            #        indices_pbc.append(i_pbc)
-            #        indices_vector.append(index)
-
-            # if indices_wp == []:
-            #    return True
-
-            # #Get atomic positions of molecules with small separation vectors
-            # original_coords = np.vstack([coords[index_wp*m_length:index_wp*m_length+m_length] for index_wp in indices_wp])
-            # pbc_toadd = np.repeat(ml[indices_pbc], m_length, axis=0)
-            # atomic_coords = original_coords + pbc_toadd
-            # #Get inter-atomic tolerances
-            # #tols = np.tile(self.get_tols_matrix(), len(indices_wp))
-            # tols = np.tile(self.tols_matrix, len(indices_wp))
-            # if m_length <= max_fast_mol_size:
-            #    #Check all atomic pairs
-            #    d = cdist(coords_mol, atomic_coords)
-
-            #    """
-            #    print("~~~~~~~~~~~~~~~~~~~~~~~")
-            #    print("ml:", ml.shape)
-            #    print(ml)
-            #    print("centers:", centers.shape)
-            #    print(centers)
-            #    print("vectors:", vectors.shape)
-            #    print(vectors)
-            #    print("radius*2: ", self.get_radius()*2)
-            #    print("distances:", distances.shape)
-            #    print(distances)
-            #    print("indices_mol:", len(indices_mol))
-            #    print(indices_mol)
-            #    print("indices_wp:", len(indices_wp))
-            #    print(indices_wp)
-            #    print("indices_pbc:", len(indices_pbc))
-            #    print(indices_pbc)
-            #    print("indices_vector:", len(indices_vector))
-            #    print(indices_vector)
-            #    print("coords_mol:", coords_mol.shape)
-            #    print(coords_mol)
-            #    print("coords:", coords.shape)
-            #    print(coords)
-            #    print("original_coords:", original_coords.shape)
-            #    print(original_coords)
-            #    print("pbc_toadd:", pbc_toadd.shape)
-            #    print(pbc_toadd[:12])
-            #    print("atomic_coords: ", atomic_coords.shape)
-            #    print(atomic_coords)
-            #    print("d:", d.shape)
-            #    print(d)
-            #    print("tols_matrix:", self.get_tols_matrix().shape)
-            #    print(self.get_tols_matrix())
-            #    print("tols:", tols.shape)
-            #    print(tols)
-            #    """
-
-            #    if (d<tols).any():
-            #        return False
-            #    else:
-            #        return True
-
-            # elif m_length > max_fast_mol_size:
-            #    #Get corresponding separation vectors
-            #    new_vectors = np.repeat(vectors[indices_vector], m_length, axis=0)
-            #    #Get atomic coordinates relative to molecular centers
-            #    relative_atomic_coords = atomic_coords - new_vectors
-            #    #Dot atomic coordinates with inter-molecular separation vectors
-            #    dots = np.einsum('...j,...j', new_vectors, relative_atomic_coords)
-            #    #Find where relative vectors point towards the original molecule
-            #    new_indices = np.where(dots<0)[0]
-            #    #Get new coordinates and tolerances for distance matrix
-            #    new_atomic_coords = atomic_coords[new_indices]
-            #    d = cdist(coords_mol, new_atomic_coords)
-            #    tols2 = tols[:,new_indices]
-            #    if (d<tols2).any():
-            #        return False
-            #    else:
-            #        return True
-
         else:
             # Check molecular ellipsoid overlap
             if self.multiplicity == 1:
                 return True
             es0 = self.get_ellipsoids()[1:]
-            PBC_vectors = np.dot(create_matrix(PBC=self.PBC), self.lattice)
+            PBC_vectors = np.dot(create_matrix(PBC=self.PBC), self.lattice.matrix)
             PBC_ops = [
                 SymmOp.from_rotation_and_translation(Euclidean_lattice, v)
                 for v in PBC_vectors
@@ -727,7 +640,7 @@ def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="
     """
     if atomic is False:
         es0 = ms1.get_ellipsoids()
-        PBC_vectors = np.dot(create_matrix(PBC=ms1.PBC), ms1.lattice)
+        PBC_vectors = np.dot(create_matrix(PBC=ms1.PBC), ms1.lattice.matrix)
         PBC_ops = [
             SymmOp.from_rotation_and_translation(Euclidean_lattice, v)
             for v in PBC_vectors
@@ -764,7 +677,7 @@ def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="
                 for i2, number2 in enumerate(ms2.numbers):
                     tols[i1][i2] = tm.get_tol(number1, number2)
             tols = np.repeat(tols, ms2.multiplicity, axis=1)
-            d = distance_matrix(coords_mol, c2, ms1.lattice, PBC=ms1.PBC)
+            d = distance_matrix(coords_mol, c2, ms1.lattice.matrix, PBC=ms1.PBC)
 
         # Case 2
         elif size1 > size2:
@@ -775,7 +688,7 @@ def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="
                 for i2, number2 in enumerate(ms1.numbers):
                     tols[i1][i2] = tm.get_tol(number1, number2)
             tols = np.repeat(tols, ms1.multiplicity, axis=1)
-            d = distance_matrix(coords_mol, c1, ms1.lattice, PBC=ms1.PBC)
+            d = distance_matrix(coords_mol, c1, ms1.lattice.matrix, PBC=ms1.PBC)
 
         # Check if distances are smaller than tolerances
         if (d < tols).any():

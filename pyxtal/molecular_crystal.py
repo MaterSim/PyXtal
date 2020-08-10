@@ -10,7 +10,7 @@ from copy import deepcopy
 from pyxtal.constants import max1, max2, max3, max4
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.lattice import Lattice, cellsize, add_vacuum
+from pyxtal.lattice import Lattice, cellsize
 from pyxtal.io import write_cif, structure_from_ext
 from pyxtal.database.element import Element
 from pyxtal.wyckoff_site import mol_site, check_mol_sites, WP_merge
@@ -50,6 +50,7 @@ class molecular_crystal:
             object to define the unit cell
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
             object to define the distances
+        seed (optional): the cif file from user
     """
 
     def __init__(
@@ -67,11 +68,11 @@ class molecular_crystal:
     ):
 
         self.dim = 3 # The number of periodic dimensions (1,2,3)
-        # Necessary input
         self.PBC = [1, 1, 1]
 
         if type(group) != Group:
             group = Group(group, self.dim)
+
         self.sg = group.number
         self.selec_high = select_high
         self.seed = seed
@@ -149,7 +150,7 @@ class molecular_crystal:
             if seed.match():
                 self.mol_sites = [seed.make_mol_site()]
                 self.group = Group(seed.wyc.number)
-                self.lattice = Lattice.from_matrix(seed.lattice.matrix)
+                self.lattice = seed.lattice
                 self.molecules = [pyxtal_molecule(seed.molecule)]
                 self.valid = True # Need to add a check function
             else:
@@ -493,7 +494,7 @@ class molecular_crystal:
         from ase import Atoms
         if self.valid:
             coords, species = self._get_coords_and_species(True)
-            latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+            latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
             atoms = Atoms(species, positions=coords, cell=latt)
             if resort:
                 permutation = np.argsort(atoms.numbers)
@@ -511,7 +512,7 @@ class molecular_crystal:
         if self.valid:
             coords, species = self._get_coords_and_species()
             # Add space above and below a 2D or 1D crystals
-            latt, coords = add_vacuum(self.lattice.matrix, coords, PBC=self.PBC)
+            latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
             return Structure(latt, species, coords)
         else:
             printx("No valid structure can be converted to pymatgen.", priority=1)
@@ -578,7 +579,7 @@ class molecular_crystal:
                     self.volume = self.estimate_volume()
                     self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
-                cell_matrix = self.lattice.get_matrix()
+                #cell_matrix = self.lattice.get_matrix()
 
                 for cycle2 in range(max2):
                     mol_sites_total = []
@@ -613,13 +614,13 @@ class molecular_crystal:
 
                                 # merge coordinates if the atoms are close
                                 mtol = mol.radius * 0.5
-                                pt, wp, oris = WP_merge(pt, cell_matrix, wp, mtol, valid_ori)
+                                pt, wp, oris = WP_merge(pt, self.lattice.matrix, wp, mtol, valid_ori)
 
                                 if wp is not False:
                                     # Use a Wyckoff_site object for the current site
                                     ori = random.choice(oris).copy()
                                     ori.change_orientation()
-                                    ms0 = mol_site(pyxtal_mol, pt, ori, wp, cell_matrix)
+                                    ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
                                     # Check distances within the WP
                                     if not ms0.check_distances():
                                         # Maximize the smallest distance for the general
@@ -635,7 +636,7 @@ class molecular_crystal:
                                                     pt,
                                                     ori,
                                                     wp,
-                                                    cell_matrix,
+                                                    self.lattice,
                                                 )
                                                 d = ms0.compute_distances()
                                                 return d
@@ -672,8 +673,6 @@ class molecular_crystal:
                                         continue
                                     else:
                                         # Distance checks passed; store the new Wyckoff position
-                                        #import sys
-                                        #sys.exit()
                                         mol_sites_tmp.append(ms0)
                                         numMol_added += len(ms0.wp)
                                         if numMol_added == numMol:
@@ -752,6 +751,7 @@ class molecular_crystal_2D(molecular_crystal):
         thickness=None,
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),
+        seed = None,
     ):
 
         self.dim = 2
@@ -771,7 +771,7 @@ class molecular_crystal_2D(molecular_crystal):
             orientations,
             group,
             lattice,
-            tm
+            tm,
         )
 
 

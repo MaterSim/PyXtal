@@ -134,6 +134,14 @@ class Lattice:
         # Set values for the matrix
         self.reset_matrix()
 
+    def copy(self):
+        """
+        simply copy the structure
+        """
+        from copy import deepcopy
+        return deepcopy(self)
+
+
     def generate_para(self):
         if self.dim == 3:
             return generate_lattice(self.ltype, self.volume, **self.kwargs)
@@ -178,6 +186,7 @@ class Lattice:
             m = np.array(matrix)
             if np.shape(m) == (3, 3):
                 self.matrix = m
+                self.matrix = np.linalg.inv(m)
             else:
                 printx("Error: matrix must be a 3x3 numpy array or list", priority=1)
         elif matrix is None:
@@ -201,6 +210,7 @@ class Lattice:
                 m = self.generate_matrix()
                 if m is not None:
                     self.matrix = m
+                    self.inv_matrix = np.linalg.inv(m)
                     [a, b, c, alpha, beta, gamma] = matrix2para(self.matrix)
                     self.a = a
                     self.b = b
@@ -285,6 +295,28 @@ class Lattice:
         else:
             return self
     
+    def add_vacuum(self, coor, vacuum=10, PBC=[0, 0, 0]):
+        """
+        Adds space above and below a 2D or 1D crystal. 
+    
+        Args:
+            coor: the relative coordinates of the crystal
+            vacuum: the amount of space, in Angstroms, to add above and below
+            PBC: A periodic boundary condition list,
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along                 the z axis    
+
+        Returns:
+            The transformed lattice and coordinates after the vacuum is added
+        """
+        matrix = self.matrix
+        absolute_coords = np.dot(coor, matrix)
+        for i, a in enumerate(PBC):
+            if not a:
+                ratio = 1 + vacuum/np.linalg.norm(matrix[i])
+                matrix[i] *= ratio
+        coor = np.dot(absolute_coords, np.linalg.inv(matrix))
+        return matrix, coor
+
 
     def generate_point(self):
         point = np.random.random(3)
@@ -380,6 +412,7 @@ class Lattice:
         l.a, l.b, l.c = a, b, c
         l.alpha, l.beta, l.gamma = alpha * rad, beta * rad, gamma * rad
         l.matrix = cell_matrix
+        l.inv_matrix = np.linalg.inv(cell_matrix)
         l.ltype = ltype
         l.volume = volume
         l.random = False
@@ -435,6 +468,7 @@ class Lattice:
         l.a, l.b, l.c = a, b, c
         l.alpha, l.beta, l.gamma = alpha, beta, gamma
         l.matrix = m
+        l.inv_matrix = np.linalg.inv(m)
         l.ltype = ltype
         l.volume = volume
         l.random = False
@@ -1409,29 +1443,6 @@ def random_vector(minvec=[0.0, 0.0, 0.0], maxvec=[1.0, 1.0, 1.0], width=0.35, un
     else:
         return vec
 
-
-def add_vacuum(lattice, coor, vacuum=10, PBC=[0, 0, 0]):
-    """
-    Adds space above and below a 2D or 1D crystal. This allows for treating the
-    structure as a 3D crystal during energy optimization
-
-    Args:
-        lattice: the lattice matrix of the crystal
-        coor: the relative coordinates of the crystal
-        vacuum: the amount of space, in Angstroms, to add above and below
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-
-    Returns:
-        lattice, coor: The transformed lattice and coordinates after the
-            vacuum space is added
-    """
-    absolute_coords = np.dot(coor, lattice)
-    for i, a in enumerate(PBC):
-        if not a:
-            lattice[i] += (lattice[i] / np.linalg.norm(lattice[i])) * vacuum
-    new_coor = np.dot(absolute_coords, np.linalg.inv(lattice))
-    return lattice, new_coor
 
 
 def random_shear_matrix(width=1.0, unitary=False):

@@ -178,7 +178,7 @@ def display_molecular_site(site, id=None, size=(800, 300), axis=True):
             axes = site.get_principle_axes(mol.cart_coords)
             addlines(view, mol.cart_coords.mean(axis=0), axes.T*2.5, viewer=(0,1))
     
-    addBox(view, site.lattice, viewer=(0,1))
+    addBox(view, site.lattice.matrix, viewer=(0,1))
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
 
     return view.zoomTo()
