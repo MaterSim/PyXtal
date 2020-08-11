@@ -47,7 +47,7 @@ setup(
         "pymatgen>=2020.1.28",
         "pandas>=0.25.1",
         "networkx>=2.3",
-        "openbabel>=3.0.0",
+        #"openbabel>=3.0.0",
     ],
     python_requires=">=3.6.1",
     license="MIT",
