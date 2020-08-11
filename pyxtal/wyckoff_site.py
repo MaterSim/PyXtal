@@ -97,46 +97,6 @@ class mol_site:
         from pyxtal.viz import display_molecular_site
         return display_molecular_site(self, id, **kwargs)
 
-    # NOTE appears deprecated?
-    def get_ellipsoid(self):
-        """
-        Returns the bounding ellipsoid for the molecule. Applies the orientation
-        transformation first.
-
-        Returns:
-            a re-orientated SymmOp representing the molecule's bounding ellipsoid
-        """
-        if self.ellipsoid is None:
-            self.ellipsoid = find_ellipsoid(self.mol)
-        e = self.ellipsoid
-        # Apply orientation
-        m = np.dot(e.rotation_matrix, self.orientation.get_matrix(angle=0))
-        return SymmOp.from_rotation_and_translation(m, e.translation_vector)
-
-    # NOTE appears deprecated?
-    def get_ellipsoids(self):
-        """
-        Returns the bounding ellipsoids for the molecules in the WP. Includes the correct
-        molecular centers and orientations.
-
-        Returns:
-            an array of re-orientated SymmOp's representing the molecule's bounding ellipsoids
-        """
-        # Get molecular centers
-        centers0 = apply_ops(self.position, self.wp.generators)
-        centers1 = np.dot(centers0, self.lattice.matrix)
-        # Rotate ellipsoids
-        e1 = self.get_ellipsoid()
-        es = np.dot(self.wp.generators_m, e1)
-        # Add centers to ellipsoids
-        center_ops = [
-            SymmOp.from_rotation_and_translation(Euclidean_lattice, c) for c in centers1
-        ]
-        es_final = []
-        for e, c in zip(es, center_ops):
-            es_final.append(e * c)
-        return np.array(es_final)
-
     def _get_coords_and_species(self, absolute=False, add_PBC=False, first=False):
         """
         Used to generate coords and species for get_coords_and_species
@@ -435,9 +395,7 @@ class mol_site:
             print("This is already a general position")
             return self
 
-
-
-    def create_matrix(self):
+    def _create_matrix(self):
         """
         Used for calculating distances in lattices with periodic boundary
         conditions. When multiplied with a set of points, generates additional
@@ -503,7 +461,7 @@ class mol_site:
 
         if self.PBC != [0, 0, 0]:
             # Check periodic images
-            m = self.create_matrix()
+            m = self._create_matrix()
             # Remove original coordinates
             m2 = []
             v0 = np.array([0.0, 0.0, 0.0])
@@ -520,79 +478,52 @@ class mol_site:
             min_ds.append(d)
         return min(min_ds)
 
-    def check_distances(self, atomic=True):
+    def check_distances(self):
         """
         Checks if the atoms in the Wyckoff position are too close to each other
         or not. Does not check distances between atoms in the same molecule. Uses
         crystal.check_distance as the base code.
 
-        Args:
-            atomic: if True, checks inter-atomic distances. If False, checks ellipsoid
-                overlap between molecules instead
-
         Returns:
             True if the atoms are not too close together, False otherwise
         """
-        if atomic:
-            m_length = len(self.symbols)
-            # TODO: Use tm instead of tols lists
-            # Get coords of WP with PBC
-            coords, _ = self._get_coords_and_species()
+        m_length = len(self.symbols)
+        coords, _ = self._get_coords_and_species()
 
-            # Get coords of the generating molecule
-            coords_mol = coords[:m_length]
-            # Remove generating molecule's coords from large array
-            coords = coords[m_length:]
+        # Get coords of the generating molecule
+        coords_mol = coords[:m_length]
+        # Remove generating molecule's coords from large array
+        coords = coords[m_length:]
 
-            if self.PBC != [0, 0, 0]:
-                # Check periodic images
-                m = self.create_matrix()
-                # Remove original coordinates
-                m2 = []
-                v0 = np.array([0.0, 0.0, 0.0])
-                for v in m:
-                    if not (v == v0).all():
-                        m2.append(v)
-                if len(m2) > 0:
-                    coords_PBC = np.vstack([coords_mol + v for v in m2])
-                    d = distance_matrix(coords_PBC, coords_mol, self.lattice.matrix, PBC=[0, 0, 0])
-                    # only check if small distance is detected
-                    if np.min(d) < np.max(self.tols_matrix):
-                        tols = np.min(d.reshape([len(m2), m_length, m_length]), axis=0)
-                        if (tols < self.tols_matrix).any():
-                            return False
-
-            if self.wp.multiplicity > 1:
-                # Check inter-atomic distances
-                d = distance_matrix(coords, coords_mol, self.lattice.matrix, PBC=self.PBC)
+        if self.PBC != [0, 0, 0]:
+            # Check periodic images
+            m = self._create_matrix()
+            # Remove original coordinates
+            m2 = []
+            v0 = np.array([0.0, 0.0, 0.0])
+            for v in m:
+                if not (v == v0).all():
+                    m2.append(v)
+            if len(m2) > 0:
+                coords_PBC = np.vstack([coords_mol + v for v in m2])
+                d = distance_matrix(coords_PBC, coords_mol, self.lattice.matrix, PBC=[0, 0, 0])
+                # only check if small distance is detected
                 if np.min(d) < np.max(self.tols_matrix):
-                    tols = np.min(
-                        d.reshape([self.wp.multiplicity - 1, m_length, m_length]), axis=0
-                    )
+                    tols = np.min(d.reshape([len(m2), m_length, m_length]), axis=0)
                     if (tols < self.tols_matrix).any():
                         return False
 
-            return True
+        if self.wp.multiplicity > 1:
+            # Check inter-atomic distances
+            d = distance_matrix(coords, coords_mol, self.lattice.matrix, PBC=self.PBC)
+            if np.min(d) < np.max(self.tols_matrix):
+                tols = np.min(
+                    d.reshape([self.wp.multiplicity - 1, m_length, m_length]), axis=0
+                )
+                if (tols < self.tols_matrix).any():
+                    return False
 
-        else:
-            # Check molecular ellipsoid overlap
-            if self.wp.multiplicity == 1:
-                return True
-            es0 = self.get_ellipsoids()[1:]
-            PBC_vectors = np.dot(create_matrix(PBC=self.PBC), self.lattice.matrix)
-            PBC_ops = [
-                SymmOp.from_rotation_and_translation(Euclidean_lattice, v)
-                for v in PBC_vectors
-            ]
-            es1 = []
-            for op in PBC_ops:
-                es1.append(np.dot(es0, op))
-            es1 = np.squeeze(es1)
-            truth_values = np.vectorize(check_intersection)(es1, self.get_ellipsoid())
-            if np.sum(truth_values) < len(truth_values):
-                return False
-            else:
-                return True
+        return True
 
 
 def check_intersection(ellipsoid1, ellipsoid2):

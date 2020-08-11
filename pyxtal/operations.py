@@ -405,6 +405,18 @@ def project_point(point, op, lattice=np.eye(3), PBC=[1, 1, 1]):
     Given a 3-vector and a Wyckoff position operator, returns the projection of that
     point onto the axis, plane, or point.
 
+    >>> from pyxtal.symmetry import Wyckoff_position
+    >>> ops1 = Wyckoff_position.from_group_and_index(14,1)
+    >>> ops0 = Wyckoff_position.from_group_and_index(14,0)
+    >>> print(ops)
+    Wyckoff position 2d in space group 14 with site symmetry -1
+    1/2, 0, 1/2
+    1/2, 1/2, 0
+    >>> project_point([0,0.3,0.1], ops0[0])
+    array([0. , 0.3, 0.1])
+    >>> project_point([0,0.3,0.1], ops1[0])
+    array([0.5, 0. , 0.5])
+
     Args:
         point: a 3-vector (numeric list, tuple, or array)
         op: a SymmOp object representing a symmetry element within a symmetry group

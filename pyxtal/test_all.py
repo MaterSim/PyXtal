@@ -74,7 +74,9 @@ class TestMolecular(unittest.TestCase):
             self.assertTrue(struc.valid)
             pair = struc.check_short_distances()
             if len(pair) > 0:
-                print(mol, pair)
+                print("short distances were detected")
+                print(mol)
+                print(pair)
             self.assertTrue(len(pair)==0)
  
     def test_c60(self):
