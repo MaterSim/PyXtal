@@ -50,6 +50,7 @@ class mol_site:
         orientation,
         wyckoff_position,
         lattice,
+        diag = False,
         ellipsoid=None,
     ):
         # describe the molecule
@@ -60,16 +61,19 @@ class mol_site:
         self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
         self.coord0 = self.mol.cart_coords
+        self.diag = diag
 
         self.position = position # fractional coordinate of molecular center
         self.orientation = orientation #pyxtal.molecule.orientation object 
         self.ellipsoid = ellipsoid #A SymmOp representing the minimal ellipsoid 
         self.wp = wyckoff_position
+        if self.diag:
+            self.wp.diagonalize_symops()
+
         if isinstance(lattice, Lattice):
             self.lattice = lattice
         else:
             self.lattice = Lattice.from_matrix(lattice)
-        self.multiplicity = self.wp.multiplicity #The multiplicity of WP
         self.PBC = wyckoff_position.PBC #The periodic axes
 
 
@@ -81,11 +85,13 @@ class mol_site:
             )
             #self.rotvec = self.orientation.r.as_rotvec()
             self.angles = self.orientation.r.as_euler('zxy', degrees=True)
-        s = "{:} @ [{:6.4f} {:6.4f} {:6.4f}]  ".format(self.mol.formula.replace(" ",""), *self.position)
+        formula = self.mol.formula.replace(" ","")
+        s = "{:} @ [{:6.4f} {:6.4f} {:6.4f}]  ".format(formula, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
         s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
         return s
+
 
     def show(self, id=None, **kwargs):
         from pyxtal.viz import display_molecular_site
@@ -508,7 +514,7 @@ class mol_site:
                 coords_PBC = np.vstack([coords_mol + v for v in m2])
                 d = distance_matrix(coords_mol, coords_PBC, self.lattice.matrix, [0, 0, 0], True)
                 min_ds.append(d)
-        if self.multiplicity > 1:
+        if self.wp.multiplicity > 1:
             # Check inter-atomic distances
             d = distance_matrix(coords_mol, coords, self.lattice.matrix, self.PBC, True)
             min_ds.append(d)
@@ -556,12 +562,12 @@ class mol_site:
                         if (tols < self.tols_matrix).any():
                             return False
 
-            if self.multiplicity > 1:
+            if self.wp.multiplicity > 1:
                 # Check inter-atomic distances
                 d = distance_matrix(coords, coords_mol, self.lattice.matrix, PBC=self.PBC)
                 if np.min(d) < np.max(self.tols_matrix):
                     tols = np.min(
-                        d.reshape([self.multiplicity - 1, m_length, m_length]), axis=0
+                        d.reshape([self.wp.multiplicity - 1, m_length, m_length]), axis=0
                     )
                     if (tols < self.tols_matrix).any():
                         return False
@@ -570,7 +576,7 @@ class mol_site:
 
         else:
             # Check molecular ellipsoid overlap
-            if self.multiplicity == 1:
+            if self.wp.multiplicity == 1:
                 return True
             es0 = self.get_ellipsoids()[1:]
             PBC_vectors = np.dot(create_matrix(PBC=self.PBC), self.lattice.matrix)
@@ -676,7 +682,7 @@ def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="
             for i1, number1 in enumerate(ms1.numbers):
                 for i2, number2 in enumerate(ms2.numbers):
                     tols[i1][i2] = tm.get_tol(number1, number2)
-            tols = np.repeat(tols, ms2.multiplicity, axis=1)
+            tols = np.repeat(tols, ms2.wp.multiplicity, axis=1)
             d = distance_matrix(coords_mol, c2, ms1.lattice.matrix, PBC=ms1.PBC)
 
         # Case 2
@@ -687,7 +693,7 @@ def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="
             for i1, number1 in enumerate(ms2.numbers):
                 for i2, number2 in enumerate(ms1.numbers):
                     tols[i1][i2] = tm.get_tol(number1, number2)
-            tols = np.repeat(tols, ms1.multiplicity, axis=1)
+            tols = np.repeat(tols, ms1.wp.multiplicity, axis=1)
             d = distance_matrix(coords_mol, c1, ms1.lattice.matrix, PBC=ms1.PBC)
 
         # Check if distances are smaller than tolerances

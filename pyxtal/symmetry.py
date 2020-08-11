@@ -1490,12 +1490,26 @@ class Wyckoff_position:
     def __repr__(self):
         return str(self)
 
-    def from_symops(ops):
+    def diagonalize_symops(self):
+        """
+        Obtain the symmetry in n representation for P21/c, Pc, C2/c
+        """
+        if self.number in [7, 14, 15]:
+            trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+            for j, op in enumerate(self.ops):
+                vec = op.translation_vector.dot(trans)
+                vec -= np.floor(vec) 
+                op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                self.ops[j] = op1    
+
+    def from_symops(ops, group=None):
         """
         search Wyckoff Position by symmetry operations
+        Now only supports space group symmetry
 
         Args:
         ops: a list of symmetry operations
+        group: the space group number
         gen_only: boolean, check general positions only?
 
         Returns:
@@ -1506,16 +1520,36 @@ class Wyckoff_position:
         N_sym = len(str1)
         # sometimes, we allow the permutation
         permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
-        for i in range(1,231):
+        if group is None:
+            groups = range(1,231)
+        else:
+            groups = [group]
+
+        for i in groups:
             for wyc in Group(i):
                 if len(wyc) == N_sym:
+                    # Try permutation first
                     str2 = [op.as_xyz_string() for op in wyc.ops]
                     for perm in permutations:
                         str_perm = permutate_xyz_string(str1, perm)
                         if set(str_perm) == set(str2):
                             return wyc, perm
+
+                    # Try monoclinic space groups (P21/n, Pn, C2/n) 
+                    if i in [7, 14, 15]:
+                        trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+                        str3 = []
+                        for j, op in enumerate(wyc.ops):
+                            vec = op.translation_vector.dot(trans)
+                            vec -= np.floor(vec) 
+                            op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                            str3.append(op3.as_xyz_string())
+                            #wyc.ops[j] = op3
+                        if set(str3) == set(str1):
+                            return wyc, trans
                 elif len(wyc) < N_sym:
                     continue #break since it won'
+
 
         return None, None
 
@@ -2022,6 +2056,8 @@ class Group:
                 self.lattice_type = "triclinic"
             elif self.number <= 15:
                 self.lattice_type = "monoclinic"
+                if self.number in [7, 14, 15]:
+                    self.alias = self.symbol.replace("c","n")
             elif self.number <= 74:
                 self.lattice_type = "orthorhombic"
             elif self.number <= 142:

@@ -65,10 +65,12 @@ class molecular_crystal:
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),
         seed = None,
+        diag = False,
     ):
 
         self.dim = 3 # The number of periodic dimensions (1,2,3)
         self.PBC = [1, 1, 1]
+        self.diag = diag
 
         if type(group) != Group:
             group = Group(group, self.dim)
@@ -152,6 +154,7 @@ class molecular_crystal:
                 self.group = Group(seed.wyc.number)
                 self.lattice = seed.lattice
                 self.molecules = [pyxtal_molecule(seed.molecule)]
+                self.diag = seed.diag
                 self.valid = True # Need to add a check function
             else:
                 raise ValueError("Cannot extract the structure from cif")
@@ -521,7 +524,11 @@ class molecular_crystal:
     def __str__(self):
         s = "------Random Molecular Crystal------"
         s += "\nDimension: " + str(self.dim)
-        s += "\nGroup: " + self.group.symbol
+        if self.diag and hasattr(self.group, 'alias'):
+            symbol = self.group.alias
+        else:
+            symbol = self.group.symbol
+        s += "\nGroup: " + symbol
         s += "\nVolume factor: " + str(self.factor)
         s += "\n" + str(self.lattice)
         if self.valid:
@@ -620,7 +627,7 @@ class molecular_crystal:
                                     # Use a Wyckoff_site object for the current site
                                     ori = random.choice(oris).copy()
                                     ori.change_orientation()
-                                    ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
+                                    ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice, self.diag)
                                     # Check distances within the WP
                                     if not ms0.check_distances():
                                         # Maximize the smallest distance for the general
@@ -637,6 +644,7 @@ class molecular_crystal:
                                                     ori,
                                                     wp,
                                                     self.lattice,
+                                                    self.diag,
                                                 )
                                                 d = ms0.compute_distances()
                                                 return d
@@ -760,6 +768,7 @@ class molecular_crystal_2D(molecular_crystal):
         if type(group) != Group:
             group = Group(group, self.dim)
         number = group.number  # The layer group number of the crystal."""
+        self.diag = False
         self.thickness = thickness  # the thickness in Angstroms
         self.PBC = [1, 1, 0]
         self.init_common(
@@ -825,6 +834,7 @@ class molecular_crystal_1D(molecular_crystal):
     ):
         self.dim = 1
         self.area = area  # the effective cross-sectional area in A^2
+        self.diag = False
         self.PBC = [0, 0, 1]  # The periodic axes of the crystal (1,2,3)->(x,y,z)
         self.sg = None  # The international space group number, not rod groups
         self.seed = None

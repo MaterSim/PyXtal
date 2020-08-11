@@ -147,18 +147,23 @@ class structure_from_ext():
 
         self.ref_mol = ref_mol.get_centered_molecule()
         self.tol = tol
+        self.diag = False
 
         sga = SpacegroupAnalyzer(pmg_struc)
         ops = sga.get_space_group_operations()
-        self.wyc, perm = Wyckoff_position.from_symops(ops)
-
+        self.wyc, perm = Wyckoff_position.from_symops(ops, sga.get_space_group_number())
+    
         if self.wyc is not None:
             self.group = Group(self.wyc.number)
-            if perm != [0,1,2]:
-                lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
-                latt = lattice.swap_axis(ids=perm, random=False).get_matrix()
-                coor = pmg_struc.frac_coords[perm]
-                pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
+            if isinstance(perm, list):
+                if perm != [0,1,2]:
+                    lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
+                    latt = lattice.swap_axis(ids=perm, random=False).get_matrix()
+                    coor = pmg_struc.frac_coords[perm]
+                    pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
+            else:
+                self.diag = True
+
             coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
             self.molecule = Molecule(numbers, coords)
             self.pmg_struc = pmg_struc
@@ -181,8 +186,10 @@ class structure_from_ext():
                         ori,
                         self.wyc, 
                         self.lattice,
+                        self.diag,
                         )
         return site
+
 
     def align(self):
         """
@@ -310,17 +317,4 @@ def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
 #seed = structure_from_cif("254385.cif", "1.xyz")
 #if seed.match():
 #    print(seed.pmg_struc)
-
-"""
-Symmetry transformation
-group -> subgroup
-At the moment we only consider 
-for multiplicity 2: P-1, P21, P2, Pm and Pc
-to add: for multiplicity 4: P21/c, P212121
-Permutation is allowed
-"""
-
-
-
-
 
