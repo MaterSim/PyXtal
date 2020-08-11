@@ -51,6 +51,7 @@ class molecular_crystal:
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
             object to define the distances
         seed (optional): the cif file from user
+        diag (optional): if use the nonstandart setting (P21/n, Pn, C2/n)?
     """
 
     def __init__(

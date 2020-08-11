@@ -35,11 +35,11 @@ class mol_site:
     molecular version of Wyckoff_site
 
     Args:
-        mol: a Pyxtal.molecule object
+        mol: a `pyxtal_molecule <pyxtal.molecule.pyxtal_molecule.html>`_ object
         position: the fractional 3-vector representing the generating molecule's position
-        orientation: an Orientation object for the generating molecule
-        wyckoff_position: a Wyckoff_position object
-        lattice: a Lattice object for the crystal
+        orientation: an `Orientation <pyxtal.molecule.Oreintation.html>`_ object 
+        wyckoff_position: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
+        lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object 
         ellipsoid: an optional binding Ellipsoid object for checking distances.
     """
 
@@ -244,23 +244,29 @@ class mol_site:
         matrix = self.get_principle_axes(coord0, True)
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
 
+    def pertubate(self, magnitude=1.0):
+
+        disp = np.random.random([1,3])-0.5
+        self.translate(self, magnitude*disp, True)
+        self.orientation.change_orientation()
+
+    
     def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
         """
         To translate the molecule 
-        Here we assume the molecule is free to rotate in SO(3)
-        Needs to add the symmetry constraints later
+        symmetry needs to be preserved
         """
         disp = np.array(disp)
         if absolute:
             disp = disp.dot(self.lattice.inv_matrix)
-        self.position += disp
+        position = self.position + disp
+        self.position = project_point(position, self.wp[0])
 
 
     def rotate(self, axis=0, angle=180):
         """
         To rotate the molecule 
-        Here we assume the molecule is free to rotate in SO(3)
-        Needs to add the symmetry constraints later
+        symmetry needs to be preserved
         """
         p = self.orientation.r
         if type(axis) == int:
@@ -303,6 +309,8 @@ class mol_site:
             return Molecule(self.symbols, tmp)           
         else:
             raise ValueError("id is greater than the number of molecules")
+        
+
 
     def update(self, coords, lattice=None, absolute=False):
         """
@@ -526,38 +534,8 @@ class mol_site:
         return True
 
 
-def check_intersection(ellipsoid1, ellipsoid2):
-    """
-    Given SymmOp's for 2 ellipsoids, checks whether or not they overlap
 
-    Args:
-        ellipsoid1: a SymmOp representing the first ellipsoid
-        ellipsoid2: a SymmOp representing the second ellipsoid
-
-    Returns:
-        False if the ellipsoids overlap.
-        True if they do not overlap.
-    """
-    # Transform so that one ellipsoid becomes a unit sphere at (0,0,0)
-    Op = ellipsoid1.inverse * ellipsoid2
-    # We define a new ellipsoid by moving the sphere around the old ellipsoid
-    M = Op.rotation_matrix
-    a = 1.0 / (1.0 / np.linalg.norm(M[0]) + 1)
-    M[0] = M[0] / np.linalg.norm(M[0]) * a
-    b = 1.0 / (1.0 / np.linalg.norm(M[1]) + 1)
-    M[1] = M[1] / np.linalg.norm(M[1]) * b
-    c = 1.0 / (1.0 / np.linalg.norm(M[2]) + 1)
-    M[2] = M[2] / np.linalg.norm(M[2]) * c
-    p = Op.translation_vector
-    # Calculate the transformed distance from the sphere's center to the new ellipsoid
-    dsq = np.dot(p, M[0]) ** 2 + np.dot(p, M[1]) ** 2 + np.dot(p, M[2]) ** 2
-    if dsq < 2:
-        return False
-    else:
-        return True
-
-
-def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="molecular")):
+def check_mol_sites(ms1, ms2, factor=1.0, tm=Tol_matrix(prototype="molecular")):
     """
     Checks whether or not the molecules of two mol sites overlap. Uses
     ellipsoid overlapping approximation to check. Takes PBC and lattice
@@ -566,8 +544,6 @@ def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="
     Args:
         ms1: a mol_site object
         ms2: another mol_site object
-        atomic: if True, checks inter-atomic distances. If False, checks
-            overlap between molecular ellipsoids
         factor: the distance factor to pass to check_distances. (only for
             inter-atomic distance checking)
         tm: a Tol_matrix object (or prototype string) for distance checking
@@ -575,62 +551,44 @@ def check_mol_sites(ms1, ms2, atomic=True, factor=1.0, tm=Tol_matrix(prototype="
     Returns:
         False if the Wyckoff positions overlap. True otherwise
     """
-    if atomic is False:
-        es0 = ms1.get_ellipsoids()
-        PBC_vectors = np.dot(create_matrix(PBC=ms1.PBC), ms1.lattice.matrix)
-        PBC_ops = [
-            SymmOp.from_rotation_and_translation(Euclidean_lattice, v)
-            for v in PBC_vectors
-        ]
-        es1 = []
-        for op in PBC_ops:
-            es1.append(np.dot(es0, op))
-        es1 = np.squeeze(es1)
-        truth_values = np.vectorize(check_intersection)(es1, ms2.get_ellipsoid())
-        if np.sum(truth_values) < len(truth_values):
-            return False
-        else:
-            return True
+    # Get coordinates for both mol_sites
+    c1, _ = ms1.get_coords_and_species()
+    c2, _ = ms2.get_coords_and_species()
 
-    elif atomic is True:
-        # Get coordinates for both mol_sites
-        c1, _ = ms1.get_coords_and_species()
-        c2, _ = ms2.get_coords_and_species()
+    # Calculate which distance matrix is smaller/faster
+    m_length1 = len(ms1.numbers)
+    m_length2 = len(ms2.numbers)
+    wp_length1 = len(c1)
+    wp_length2 = len(c2)
+    size1 = m_length1 * wp_length2
+    size2 = m_length2 * wp_length1
 
-        # Calculate which distance matrix is smaller/faster
-        m_length1 = len(ms1.numbers)
-        m_length2 = len(ms2.numbers)
-        wp_length1 = len(c1)
-        wp_length2 = len(c2)
-        size1 = m_length1 * wp_length2
-        size2 = m_length2 * wp_length1
+    # Case 1
+    if size1 <= size2:
+        coords_mol = c1[:m_length1]
+        # Calculate tol matrix for species pairs
+        tols = np.zeros((m_length1, m_length2))
+        for i1, number1 in enumerate(ms1.numbers):
+            for i2, number2 in enumerate(ms2.numbers):
+                tols[i1][i2] = tm.get_tol(number1, number2)
+        tols = np.repeat(tols, ms2.wp.multiplicity, axis=1)
+        d = distance_matrix(coords_mol, c2, ms1.lattice.matrix, PBC=ms1.PBC)
 
-        # Case 1
-        if size1 <= size2:
-            coords_mol = c1[:m_length1]
-            # Calculate tol matrix for species pairs
-            tols = np.zeros((m_length1, m_length2))
-            for i1, number1 in enumerate(ms1.numbers):
-                for i2, number2 in enumerate(ms2.numbers):
-                    tols[i1][i2] = tm.get_tol(number1, number2)
-            tols = np.repeat(tols, ms2.wp.multiplicity, axis=1)
-            d = distance_matrix(coords_mol, c2, ms1.lattice.matrix, PBC=ms1.PBC)
+    # Case 2
+    elif size1 > size2:
+        coords_mol = c2[:m_length2]
+        # Calculate tol matrix for species pairs
+        tols = np.zeros((m_length2, m_length1))
+        for i1, number1 in enumerate(ms2.numbers):
+            for i2, number2 in enumerate(ms1.numbers):
+                tols[i1][i2] = tm.get_tol(number1, number2)
+        tols = np.repeat(tols, ms1.wp.multiplicity, axis=1)
+        d = distance_matrix(coords_mol, c1, ms1.lattice.matrix, PBC=ms1.PBC)
 
-        # Case 2
-        elif size1 > size2:
-            coords_mol = c2[:m_length2]
-            # Calculate tol matrix for species pairs
-            tols = np.zeros((m_length2, m_length1))
-            for i1, number1 in enumerate(ms2.numbers):
-                for i2, number2 in enumerate(ms1.numbers):
-                    tols[i1][i2] = tm.get_tol(number1, number2)
-            tols = np.repeat(tols, ms1.wp.multiplicity, axis=1)
-            d = distance_matrix(coords_mol, c1, ms1.lattice.matrix, PBC=ms1.PBC)
-
-        # Check if distances are smaller than tolerances
-        if (d < tols).any():
-            return False
-        return True
+    # Check if distances are smaller than tolerances
+    if (d < tols).any():
+        return False
+    return True
 
 
 class atom_site:
