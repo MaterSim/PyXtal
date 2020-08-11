@@ -11,6 +11,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
 l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
+l3 = Lattice.from_para(4.08, 7.13, 5.50, 90, 38, 90, ltype='monoclinic')
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_index(36, '4a')
 
@@ -180,6 +181,11 @@ class TestLattice(unittest.TestCase):
         l1.swap_axis(ids=[1,0,2])
         abc = l1.get_para()[:3]
         self.assertTrue(abc, np.array([9.13, 4.08, 5.50]))
+
+    def test_optimize(self):
+        l4, tran = l3.optimize()
+        self.assertTrue(l4.beta==1.4959074686056755)
+
 
 #class TestOperation(unittest.TestCase):
 #class TestIO(unittest.TestCase):

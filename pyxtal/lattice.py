@@ -141,7 +141,52 @@ class Lattice:
         from copy import deepcopy
         return deepcopy(self)
 
+    def optimize(self):
+        """
+        Optimize the lattice's inclination angles
+        """
+        trans = np.zeros([1,3,3])
+        trans[0] = np.eye(3)
+        tmp = None
+        if self.ltype == "monoclinic":
+            tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
+                           [[1,0,0],[0,1,0],[-1,0,1]],
+                           [[1,0,1],[0,1,0],[0,0,1]],
+                           [[1,0,-1],[0,1,0],[0,0,1]]])
 
+        elif self.ltype == "triclinic":
+            angles = np.array([self.alpha, self.beta, self.gamma])
+            diff0s = np.abs(angles - np.pi/2)
+            axis = np.argmax(diff0s)
+            if axis == 1:
+                tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
+                               [[1,0,0],[0,1,0],[-1,0,1]],
+                               [[1,0,1],[0,1,0],[0,0,1]],
+                               [[1,0,-1],[0,1,0],[0,0,1]]])
+            elif axis == 0:
+                tmp = np.array([[[1,0,0],[0,1,0],[0,1,1]],
+                                [[1,0,0],[0,1,1],[0,0,1]],
+                                [[1,0,0],[0,1,0],[0,-1,1]],
+                                [[1,0,0],[0,1,-1],[0,0,1]]])
+            else:
+                tmp = np.array([[[1,1,0],[0,1,0],[0,0,1]],
+                                [[1,-1,0],[0,1,0],[0,0,1]],
+                                [[1,0,0],[1,1,0],[0,0,1]],
+                                [[1,0,0],[-1,1,0],[0,0,1]]])
+        if tmp is not None:
+            trans = np.append(trans, tmp, axis=0)
+            diffs = []
+            for tran in trans:
+                cell_new = np.dot(tran, self.matrix)
+                lat_new = Lattice.from_matrix(cell_new)
+                diffs.append(abs(lat_new.beta-np.pi/2))
+            tran = trans[np.array(diffs).argmin()]
+            cell = np.dot(tran, self.matrix)
+            return Lattice.from_matrix(cell, ltype=self.ltype), tran
+        else:
+            return self, np.eye(3)
+ 
+ 
     def generate_para(self):
         if self.dim == 3:
             return generate_lattice(self.ltype, self.volume, **self.kwargs)
@@ -303,7 +348,8 @@ class Lattice:
             coor: the relative coordinates of the crystal
             vacuum: the amount of space, in Angstroms, to add above and below
             PBC: A periodic boundary condition list,
-                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along                 the z axis    
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along 
+                the z axis    
 
         Returns:
             The transformed lattice and coordinates after the vacuum is added
