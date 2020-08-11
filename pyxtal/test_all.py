@@ -9,6 +9,7 @@ from pyxtal.wyckoff_site import WP_merge
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
+l0 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
 l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
 l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 l3 = Lattice.from_para(4.08, 7.13, 5.50, 90, 38, 90, ltype='monoclinic')
@@ -188,6 +189,9 @@ class TestLattice(unittest.TestCase):
         l4, tran = l3.optimize()
         self.assertTrue(l4.beta==1.4959074686056755)
 
+    def test_setpara(self):
+        l0.set_para([5,5,5,90,90,90])
+        self.assertTrue(l0.a==5)
 
 #class TestOperation(unittest.TestCase):
 #class TestIO(unittest.TestCase):

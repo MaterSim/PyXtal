@@ -263,7 +263,7 @@ class Lattice:
             m = np.array(matrix)
             if np.shape(m) == (3, 3):
                 self.matrix = m
-                self.matrix = np.linalg.inv(m)
+                self.inv_matrix = np.linalg.inv(m)
             else:
                 printx("Error: matrix must be a 3x3 numpy array or list", priority=1)
         elif matrix is None:
@@ -1311,7 +1311,6 @@ def para2matrix(cell_para, radians=True, format="lower"):
     beta = cell_para[4]
     gamma = cell_para[5]
     if radians is not True:
-        rad = np.pi / 180.0
         alpha *= rad
         beta *= rad
         gamma *= rad
@@ -1344,7 +1343,7 @@ def para2matrix(cell_para, radians=True, format="lower"):
         matrix[0][2] = a3
         matrix[0][1] = a2
         matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
-        pass
+        #pass
     return matrix
 
 
