@@ -36,23 +36,14 @@ class mol_site:
 
     Args:
         mol: a `pyxtal_molecule <pyxtal.molecule.pyxtal_molecule.html>`_ object
-        position: the fractional 3-vector representing the generating molecule's position
+        position: the 3-vector representing the generating molecule's position
         orientation: an `Orientation <pyxtal.molecule.Oreintation.html>`_ object 
-        wyckoff_position: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
+        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
         lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object 
-        ellipsoid: an optional binding Ellipsoid object for checking distances.
+        diag: whether or not use the n representation
     """
 
-    def __init__(
-        self,
-        mol,
-        position,
-        orientation,
-        wyckoff_position,
-        lattice,
-        diag = False,
-        ellipsoid=None,
-    ):
+    def __init__(self, mol, position, orientation, wp, lattice, diag=False):
         # describe the molecule
         self.molecule = mol
         self.mol = mol.mol # A Pymatgen molecule object
@@ -60,13 +51,13 @@ class mol_site:
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
-        self.coord0 = self.mol.cart_coords
         self.diag = diag
 
         self.position = position # fractional coordinate of molecular center
         self.orientation = orientation #pyxtal.molecule.orientation object 
-        self.ellipsoid = ellipsoid #A SymmOp representing the minimal ellipsoid 
-        self.wp = wyckoff_position
+        self.wp = wp
+        self.PBC = wp.PBC #The periodic axes
+
         if self.diag:
             self.wp.diagonalize_symops()
 
@@ -74,7 +65,6 @@ class mol_site:
             self.lattice = lattice
         else:
             self.lattice = Lattice.from_matrix(lattice)
-        self.PBC = wyckoff_position.PBC #The periodic axes
 
 
     def __str__(self):
@@ -83,7 +73,6 @@ class mol_site:
             self.site_symm = site_symm(
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
-            #self.rotvec = self.orientation.r.as_rotvec()
             self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
         s = "{:} @ [{:6.4f} {:6.4f} {:6.4f}]  ".format(formula, *self.position)
@@ -104,15 +93,15 @@ class mol_site:
         Args:
             absolute: whether or not to return absolute (Euclidean)
                 coordinates. If false, return relative coordinates instead
-            add_PBC: whether or not to add coordinates in neighboring unit cells, used for
-                distance checking
+            add_PBC: whether or not to add coordinates in neighboring unit cells, 
+                used for distance checking
             first: whether or not to extract the information from only the first site
 
         Returns:
             atomic coords: a numpy array of fractional coordinates for the atoms in the site
             species: a list of atomic species for the atomic coords
         """
-        coord0 = self.coord0.dot(self.orientation.matrix.T)  #
+        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
         wp_atomic_sites = []
         wp_atomic_coords = None
         for point_index, op2 in enumerate(self.wp.generators):
@@ -221,13 +210,13 @@ class mol_site:
         
         # search for the best direction
         if adjust:
-            diffs = coords.dot(matrix) - self.coord0
+            diffs = coords.dot(matrix) - self.mol.cart_coords
             diffs = np.sqrt(np.sum(diffs**2,axis=0))/len(coords)
             for axis in range(3):
                 if diffs[axis] > 0.05: #needs to check
                     matrix[:,axis] *= -1
 
-            diffs = coords.dot(matrix) - self.coord0
+            diffs = coords.dot(matrix) - self.mol.cart_coords
             tol = np.sqrt(np.sum(diffs**2))/len(coords)
             if tol > 0.1:
                 print("warining: molecular geometry changed")
@@ -239,7 +228,7 @@ class mol_site:
         """
         To compute the Euler_angle for the given molecule
         """
-        coord0 = self.coord0.dot(self.orientation.matrix.T)  #
+        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
         coord0 -= np.mean(coord0, axis=0)
         matrix = self.get_principle_axes(coord0, True)
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
@@ -270,7 +259,7 @@ class mol_site:
         """
         p = self.orientation.r
         if type(axis) == int:
-            coord0 = self.coord0.dot(self.orientation.r.as_matrix().T) 
+            coord0 = self.mol.cart_coords.dot(self.orientation.r.as_matrix().T) 
             coord0 -= np.mean(coord0, axis=0)
             ax = self.get_principle_axes(coord0).T[axis]
         elif len(axis) == 3:
@@ -291,7 +280,7 @@ class mol_site:
         Returns:
             a molecule object
         """
-        coord0 = self.coord0.dot(self.orientation.matrix.T)  #
+        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
         # Obtain the center in absolute coords
         if id <= len(self.wp.generators):
             op = self.wp.generators[id]
@@ -312,7 +301,7 @@ class mol_site:
         
 
 
-    def update(self, coords, lattice=None, absolute=False):
+    def update(self, coords, lattice=None, absolute=False, update_mol=True):
         """
         After the geometry relaxation, the returned atomic coordinates
         maybe rescaled to [0, 1] bound. In this case, we need to refind
@@ -322,8 +311,11 @@ class mol_site:
         """
         from pymatgen.core.structure import Structure  
         from pyxtal.io import search_molecule_from_crystal
-        from pyxtal.molecule import compare_mol_connectivity
-        from openbabel import pybel, openbabel
+        from pyxtal.molecule import compare_mol_connectivity, Orientation
+        try:
+            from openbabel import pybel, openbabel
+        except:
+            import pybel, openbabel
 
         if lattice is not None:
             self.lattice = lattice
@@ -338,23 +330,26 @@ class mol_site:
             position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
             position -= np.floor(position)
             self.position = position
-            # orientation
-            m1 = pybel.readstring('xyz', self.mol.to('xyz'))
-            m2 = pybel.readstring('xyz', mol.to('xyz'))
-            aligner = openbabel.OBAlign(True, False)
-            aligner.SetRefMol(m1.OBMol)
-            aligner.SetTargetMol(m2.OBMol)
-            if aligner.Align():
-                print("RMSD: ", aligner.GetRMSD())
-                rot=np.zeros([3,3])
-                for i in range(3):
-                    for j in range(3):
-                        rot[i,j] = aligner.GetRotMatrix().Get(i,j)
-                if abs(np.linalg.det(rot) - 1) < 1e-2:
-                    self.orientation.matrix = rot
-                    self.orientation.r = R.from_matrix(rot)
-                else:
-                    raise ValueError("rotation matrix is wrong")
+            if update_mol:
+                self.orientation = Orientation(np.eye(3))
+                self.mol = mol
+            else:
+                m1 = pybel.readstring('xyz', self.mol.to('xyz'))
+                m2 = pybel.readstring('xyz', mol.to('xyz'))
+                aligner = openbabel.OBAlign(True, False)
+                aligner.SetRefMol(m1.OBMol)
+                aligner.SetTargetMol(m2.OBMol)
+                if aligner.Align():
+                    print("RMSD: ", aligner.GetRMSD())
+                    rot=np.zeros([3,3])
+                    for i in range(3):
+                        for j in range(3):
+                            rot[i,j] = aligner.GetRotMatrix().Get(i,j)
+                    if abs(np.linalg.det(rot) - 1) < 1e-2:
+                        self.orientation.matrix = rot
+                        self.orientation.r = R.from_matrix(rot)
+                    else:
+                        raise ValueError("rotation matrix is wrong")
         else:
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed

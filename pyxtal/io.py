@@ -180,14 +180,7 @@ class structure_from_ext():
             mol = self.molecule
             ori = Orientation(np.eye(3))
         pmol = pyxtal_molecule(mol)
-        # needs to fix coord0
-        site = mol_site(pmol,
-                        self.position, 
-                        ori,
-                        self.wyc, 
-                        self.lattice,
-                        self.diag,
-                        )
+        site = mol_site(pmol, self.position, ori, self.wyc, self.lattice, self.diag)
         return site
 
 
