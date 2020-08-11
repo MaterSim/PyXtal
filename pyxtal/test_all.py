@@ -61,7 +61,7 @@ class TestMolecular(unittest.TestCase):
 
         #test reading structure from external
         mol = struc.molecules[0].mol
-        struc = molecular_crystal(36, ['H2O'], [2], 1.0, pmg_struc)
+        struc = molecular_crystal(36, ['H2O'], [2], seed=pmg_struc)
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
@@ -78,7 +78,7 @@ class TestMolecular(unittest.TestCase):
                 print(mol)
                 print(pair)
             self.assertTrue(len(pair)==0)
- 
+
     def test_c60(self):
         struc = molecular_crystal(36, ['C60'], [2], 1.0)
         self.assertTrue(struc.valid)
@@ -91,7 +91,7 @@ class TestMolecular(unittest.TestCase):
                   [-1.200000,  1.200000,  1.200000],
                   [-1.200000, -1.200000, -1.200000]]
         ps4 = Molecule(['P', 'S', 'S', 'S', 'S'], coords)
-    
+
         for i in range(3):
             struc = molecular_crystal(10, [Li, ps4], [6, 2], 1.2)
             if struc.valid:
@@ -102,7 +102,7 @@ class TestMolecular(unittest.TestCase):
         struc = molecular_crystal_2D(20, ['H2O'], [4], 1.0)
         cif = struc.to_file()
         self.assertTrue(struc.valid)
-        
+
         struc = molecular_crystal_1D(20, ['H2O'], [4], 1.0)
         cif = struc.to_file()
         self.assertTrue(struc.valid)
