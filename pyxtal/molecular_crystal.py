@@ -146,10 +146,14 @@ class molecular_crystal:
                 self.valid = False
                 return
 
+        self.molecules = []  # A pyxtal_molecule objects,
+        for mol in molecules:
+            self.molecules.append(pyxtal_molecule(mol, self.tol_matrix))
+
         # if seeds, directly parse the structure from cif
         # At the moment, we only support one specie
         if self.seed is not None:
-            seed = structure_from_ext(self.seed, molecules[0])
+            seed = structure_from_ext(self.seed, self.molecules[0].mol)
             if seed.match():
                 self.mol_sites = [seed.make_mol_site()]
                 self.group = Group(seed.wyc.number)
@@ -159,11 +163,6 @@ class molecular_crystal:
                 self.valid = True # Need to add a check function
             else:
                 raise ValueError("Cannot extract the structure from cif")
-        else:
-            self.molecules = []  # A pyxtal_molecule objects,
-            for mol in molecules:
-                self.molecules.append(pyxtal_molecule(mol, self.tol_matrix))
-
         """
         The valid orientations for each molecule and Wyckoff position.
         May be copied when generating a new molecular_crystal to save a

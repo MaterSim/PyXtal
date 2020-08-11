@@ -245,7 +245,9 @@ class mol_site:
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
 
     def pertubate(self, magnitude=1.0):
-
+        """
+        Random perturbation of the molecular site
+        """
         disp = np.random.random([1,3])-0.5
         self.translate(self, magnitude*disp, True)
         self.orientation.change_orientation()
@@ -254,7 +256,6 @@ class mol_site:
     def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
         """
         To translate the molecule 
-        symmetry needs to be preserved
         """
         disp = np.array(disp)
         if absolute:
@@ -266,7 +267,6 @@ class mol_site:
     def rotate(self, axis=0, angle=180):
         """
         To rotate the molecule 
-        symmetry needs to be preserved
         """
         p = self.orientation.r
         if type(axis) == int:

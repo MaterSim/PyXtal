@@ -185,7 +185,36 @@ class Lattice:
             return Lattice.from_matrix(cell, ltype=self.ltype), tran
         else:
             return self, np.eye(3)
- 
+
+    def mutate(self, degree=0.20):
+        """
+        mutate the lattice object
+        """
+        rand = 1 + degree*(np.random.sample(6)-0.5)
+        a, b, c, alpha, beta, gamma = self.get_para()
+        a *= rand[0]
+        b *= rand[1]
+        c *= rand[2]
+        alpha = np.degrees(alpha*rand[3])
+        beta = np.degrees(beta*rand[4])
+        gamma = np.degrees(gamma*rand[5])
+        ltype = lat.ltype
+
+        if self.ltype == 'cubic':
+            lat = Lattice.from_para(a, a, a, 90, 90, 90, ltype=ltype)
+        elif ltype in ['hexagonal', 'trigonal']:
+            lat = Lattice.from_para(a, a, a*np.sqrt(3)/2, 90, 90, 120, ltype=ltype)
+        elif ltype == 'rhombohedral':
+            lat = Lattice.from_para(a, a, a, alpha, alpha, alpha, ltype=ltype)
+        elif ltype == 'tetragonal':
+            lat = Lattice.from_para(a, a, c, 90, 90, 90, ltype=ltype)
+        elif ltype == 'orthorhombic':
+            lat = Lattice.from_para(a, b, c, 90, 90, 90, ltype=ltype)
+        elif ltype == 'monoclinic':
+            lat = Lattice.from_para(a, b, c, 90, beta, 90, ltype=ltype)
+        elif ltype == 'triclinic':
+            lat = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+        return lat
  
     def generate_para(self):
         if self.dim == 3:
@@ -220,11 +249,14 @@ class Lattice:
             printx("Error: Lattice matrix undefined.", priority=1)
             return
 
-    def get_para(self):
+    def get_para(self, degree=False):
         """
         Returns a tuple of lattice parameters.
         """
-        return (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
+        if degree:
+            return (self.a, self.b, self.c, deg*self.alpha, deg*self.beta, deg*self.gamma)
+        else:
+            return (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
 
     def set_matrix(self, matrix=None):
         if matrix is not None:

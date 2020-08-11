@@ -195,7 +195,12 @@ class structure_from_ext():
         """
         compute the orientation wrt the reference molecule
         """
-        from openbabel import pybel, openbabel
+        try:
+            from openbabel import pybel, openbabel
+        except:
+            import pybel
+            import openbabel
+
 
         m1 = pybel.readstring('xyz', self.ref_mol.to('xyz'))
         m2 = pybel.readstring('xyz', self.molecule.to('xyz'))
