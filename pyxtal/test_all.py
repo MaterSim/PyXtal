@@ -186,7 +186,7 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(abc, np.array([9.13, 4.08, 5.50]))
 
     def test_optimize(self):
-        l4, tran = l3.optimize()
+        l4, tran, _ = l3.optimize()
         self.assertTrue(l4.beta==1.4959074686056755)
 
     def test_setpara(self):

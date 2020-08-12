@@ -148,6 +148,7 @@ class Lattice:
         trans = np.zeros([1,3,3])
         trans[0] = np.eye(3)
         tmp = None
+        opt = False
         if self.ltype == "monoclinic":
             tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
                            [[1,0,0],[0,1,0],[-1,0,1]],
@@ -180,11 +181,14 @@ class Lattice:
                 cell_new = np.dot(tran, self.matrix)
                 lat_new = Lattice.from_matrix(cell_new)
                 diffs.append(abs(lat_new.beta-np.pi/2))
-            tran = trans[np.array(diffs).argmin()]
+            id = np.array(diffs).argmin()
+            tran = trans[id]
             cell = np.dot(tran, self.matrix)
-            return Lattice.from_matrix(cell, ltype=self.ltype), tran
+            if id > 0:
+                opt = True
+            return Lattice.from_matrix(cell, ltype=self.ltype), tran, opt
         else:
-            return self, np.eye(3)
+            return self, np.eye(3), opt
 
     def mutate(self, degree=0.20):
         """
