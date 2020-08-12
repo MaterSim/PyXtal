@@ -473,12 +473,12 @@ class molecular_crystal:
             lattice, trans, opt = self.lattice.optimize()
             if opt:
                 for site in self.mol_sites:
-                    pos_absolute = np.dot(site.position, self.lattice)
-                    pos_frac = pos_absolute.dot(self.lattice.inv_matrix)
+                    pos_absolute = np.dot(site.position, self.lattice.matrix)
+                    pos_frac = pos_absolute.dot(lattice.inv_matrix)
                     site.position = pos_frac - np.floor(pos_frac)
                     site.lattice = lattice
                     # for P21/c, Pc, C2/c, also needs to check if opt the inclination angle
-                    if self.group.num in [7, 14, 15]:
+                    if self.group.number in [7, 14, 15]:
                         for j, op in enumerate(site.wp.ops):
                             vec = op.translation_vector.dot(trans)
                             vec -= np.floor(vec)
@@ -487,8 +487,6 @@ class molecular_crystal:
                 self.lattice = lattice
             else:
                 break
-        return deepcopy(self)
-
 
     def _get_coords_and_species(self, absolute=False):
         """
