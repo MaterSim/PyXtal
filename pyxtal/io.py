@@ -165,7 +165,7 @@ class structure_from_ext():
                 self.diag = True
 
             coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
-            coords -= np.mean(coords, axis=0)
+            #coords -= np.mean(coords, axis=0)
             self.molecule = Molecule(numbers, coords)
             self.pmg_struc = pmg_struc
             self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)

@@ -1516,7 +1516,10 @@ class Wyckoff_position:
         Wyckoff_position
 
         """
-        str1 = [op.as_xyz_string() for op in ops]
+        if isinstance(ops[0], str):
+            str1 = ops
+        else:
+            str1 = [op.as_xyz_string() for op in ops]
         N_sym = len(str1)
         # sometimes, we allow the permutation
         permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
