@@ -270,6 +270,7 @@ class Lattice:
             self.reset_matrix()
         para = matrix2para(self.matrix)
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
+        self.volume = np.linalg.det(self.matrix)
 
     def set_para(self, para=None, radians=False):
         if para is not None:
