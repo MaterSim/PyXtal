@@ -78,6 +78,7 @@ class pyxtal_molecule:
         if len(mo) > 1:
             pga = PointGroupAnalyzer(mo)
             mo = pga.symmetrize_molecule()["sym_mol"] 
+            mo = self.add_site_props(mo)
 
         self.mol = mo
         self.tm = tm
@@ -101,7 +102,7 @@ class pyxtal_molecule:
     def add_site_props(self, mo):
         if len(self.props) > 0:
             for key in self.props.keys():
-                mo.add_site_property(key, props[key])
+                mo.add_site_property(key, self.props[key])
         return mo
 
     def get_box(self):

@@ -61,7 +61,7 @@ class molecular_crystal:
         numMols,
         volume_factor=1.1,
         select_high=True,
-        allow_inversion=False,
+        allow_inversion=True,
         orientations=None,
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),

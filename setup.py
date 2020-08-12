@@ -45,7 +45,7 @@ setup(
     install_requires=[
         "spglib>=1.10.4",
         "pymatgen>=2020.1.28",
-        "pandas>=0.25.1",
+        "pandas>=0.24.2",
         "networkx>=2.3",
         #"openbabel>=3.0.0",
     ],

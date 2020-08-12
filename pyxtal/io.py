@@ -36,11 +36,10 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         sites = struc.atom_sites
         molecule = False
 
-    change_set = False
+    symbol = struc.group.symbol
     if l_type == 'monoclinic':
-        if G1 != sites[0].wp.generators:
-            symbol = symbol.replace('c','n')
-            change_set = True
+        if hasattr(struc, 'diag') and struc.diag:
+            symbol = struc.group.alias 
     
     lines = logo
     lines += 'data_' + header + '\n'
@@ -50,20 +49,20 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
     lines += "\n_symmetry_space_group_name_H-M '{:s}'\n".format(symbol)
     lines += '_symmetry_Int_Tables_number      {:>15d}\n'.format(number)
     lines += '_symmetry_cell_setting           {:>15s}\n'.format(l_type)
-    lines += '_cell_length_a        {:12.6f}\n'.format(struc.lattice.a)
-    lines += '_cell_length_b        {:12.6f}\n'.format(struc.lattice.b)
-    lines += '_cell_length_c        {:12.6f}\n'.format(struc.lattice.c)
-    lines += '_cell_angle_alpha     {:12.6f}\n'.format(deg*struc.lattice.alpha)
-    lines += '_cell_angle_beta      {:12.6f}\n'.format(deg*struc.lattice.beta)
-    lines += '_cell_angle_gamma     {:12.6f}\n'.format(deg*struc.lattice.gamma)
+
+    a, b, c, alpha, beta, gamma = struc.lattice.get_para(degree=True)
+    lines += '_cell_length_a        {:12.6f}\n'.format(a)
+    lines += '_cell_length_b        {:12.6f}\n'.format(b)
+    lines += '_cell_length_c        {:12.6f}\n'.format(c)
+    lines += '_cell_angle_alpha     {:12.6f}\n'.format(alpha)
+    lines += '_cell_angle_beta      {:12.6f}\n'.format(beta)
+    lines += '_cell_angle_gamma     {:12.6f}\n'.format(gamma)
 
     lines += '\nloop_\n'
     lines += ' _symmetry_equiv_pos_site_id\n'
     lines += ' _symmetry_equiv_pos_as_xyz\n'
-    if not change_set:
-        wps = G1
-    else:
-        wps = sites[0].wp.generators
+
+    wps = sites[0].wp.generators
 
     for i, op in enumerate(wps):
         lines += "{:d} '{:s}'\n".format(i+1, op.as_xyz_string())
@@ -165,6 +164,7 @@ class structure_from_ext():
                 self.diag = True
 
             coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
+            coords -= np.mean(coords, axis=0)
             self.molecule = Molecule(numbers, coords)
             self.pmg_struc = pmg_struc
             self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)

@@ -47,6 +47,7 @@ class mol_site:
         # describe the molecule
         self.molecule = mol
         self.mol = mol.mol # A Pymatgen molecule object
+        self.site_props = mol.props
         self.symbols = mol.symbols #[site.specie.value for site in self.mol.sites]
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
@@ -73,7 +74,7 @@ class mol_site:
             self.site_symm = site_symm(
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
-            self.angles = self.orientation.r.as_euler('zxy', degrees=True)
+        self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
         s = "{:} @ [{:6.4f} {:6.4f} {:6.4f}]  ".format(formula, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
@@ -233,7 +234,7 @@ class mol_site:
         matrix = self.get_principle_axes(coord0, True)
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
 
-    def pertubate(self, magnitude=1.0):
+    def perturbate(self, magnitude=1.0):
         """
         Random perturbation of the molecular site
         """
@@ -310,25 +311,21 @@ class mol_site:
         otherwise, terminate the calculation.
         """
         from pymatgen.core.structure import Structure  
-        from pyxtal.io import search_molecule_from_crystal
+        from pyxtal.io import search_molecule_in_crystal
         from pyxtal.molecule import compare_mol_connectivity, Orientation
         try:
             from openbabel import pybel, openbabel
         except:
             import pybel, openbabel
-
         if lattice is not None:
             self.lattice = lattice
-        if absolute:
-            coords = coords.dot(self.lattice.inv_matrix)
-
-        pmg = Structure(self.symbols, self.lattice.matrix, coords)
-        coords, numbers = search_molecule_from_crystal(pmg, True)
-        mol = Molecule(numbers, coords)
+        if not absolute:
+            coords = coords.dot(self.lattice.matrix)
+        mol = Molecule(self.symbols, coords-np.mean(coords, axis=0))
         match, _ = compare_mol_connectivity(mol, self.mol, True)
         if match:
             position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
-            position -= np.floor(position)
+            #position -= np.floor(position)
             self.position = position
             if update_mol:
                 self.orientation = Orientation(np.eye(3))
