@@ -241,7 +241,7 @@ class structure_from_ext():
                 self.wyc = wp
             self.position = position
             self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
-            self.align()
+            #self.align()
             return True
 
     def show(self, overlay=True):

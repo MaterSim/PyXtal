@@ -61,12 +61,11 @@ class TestMolecular(unittest.TestCase):
         #print(pmg_struc.frac_coords[:3])
 
         #test reading structure from external
-        #mol = struc.molecules[0].mol
-        #struc = molecular_crystal(36, ['H2O'], [2], seed=pmg_struc)
-        #pmg_struc = struc.to_pymatgen()
-        #sga = SpacegroupAnalyzer(pmg_struc)
-        #self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
-        #print(pmg_struc.frac_coords[:3])
+        mol = struc.molecules[0].mol
+        struc = molecular_crystal(36, ['H2O'], [2], seed=pmg_struc)
+        pmg_struc = struc.to_pymatgen()
+        sga = SpacegroupAnalyzer(pmg_struc)
+        self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
 
     def test_big_molecule(self):
         #print("test_big_molecule")
