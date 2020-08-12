@@ -51,15 +51,15 @@ class Lattice:
     def __init__(self, ltype, volume, PBC=[1, 1, 1], **kwargs):
         # Set required parameters
         if ltype in [
-            "triclinic",
-            "monoclinic",
-            "orthorhombic",
-            "tetragonal",
-            "trigonal",
-            "hexagonal",
-            "cubic",
-            "spherical",
-            "ellipsoidal",
+            "triclinic", "Triclinic",
+            "monoclinic", "Monoclinic",
+            "orthorhombic", "Orthorhombic",
+            "tetragonal", "Tetragonal",
+            "trigonal", "Trigonal",
+            "hexagonal", "Hexagonal",
+            "cubic", "Cubic",
+            "spherical", "Spherical",
+            "ellipsoidal", "Ellipsoidal",
         ]:
             self.ltype = ltype
         elif ltype == None:
@@ -114,20 +114,16 @@ class Lattice:
                     self.stress_normalization_matrix = np.array(
                         [[1, 0, 0], [1, 1, 0], [0, 0, 1]]
                     )
-        elif self.ltype in [
-            "orthorhombic",
-            "tetragonal",
-            "trigonal",
-            "hexagonal",
-            "cubic",
-        ]:
+        elif self.ltype in ["orthorhombic", "tetragonal", "trigonal", "hexagonal", "cubic",
+                            "Orthorhombic", "Tetragonal", "Trigonal", "Hexagonal", "Cubic",]:
             self.stress_normalization_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         elif self.ltype in ["spherical", "ellipsoidal"]:
             self.stress_normalization_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
         # Set info for on-diagonal stress symmetrization
-        if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral"]:
+        if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral",
+                          "Tetragonal", "Trigonal", "Hexagonal", "Rhombohedral"]:
             self.stress_indices = [(0, 0), (1, 1)]
-        elif self.ltype == "cubic":
+        elif self.ltype in ["cubic", "Cubic"]:
             self.stress_indices = [(0, 0), (1, 1), (2, 2)]
         else:
             self.stress_indices = []
@@ -149,13 +145,13 @@ class Lattice:
         trans[0] = np.eye(3)
         tmp = None
         opt = False
-        if self.ltype == "monoclinic":
+        if self.ltype in ["monoclinic", "Monoclinic"]:
             tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
                            [[1,0,0],[0,1,0],[-1,0,1]],
                            [[1,0,1],[0,1,0],[0,0,1]],
                            [[1,0,-1],[0,1,0],[0,0,1]]])
 
-        elif self.ltype == "triclinic":
+        elif self.ltype in ["triclinic", "Triclinic"]:
             angles = np.array([self.alpha, self.beta, self.gamma])
             diff0s = np.abs(angles - np.pi/2)
             axis = np.argmax(diff0s)
@@ -202,24 +198,26 @@ class Lattice:
         alpha = np.degrees(alpha*rand[3])
         beta = np.degrees(beta*rand[4])
         gamma = np.degrees(gamma*rand[5])
-        ltype = lat.ltype
+        ltype = self.ltype
 
-        if self.ltype == 'cubic':
+        if self.ltype in ['cubic', 'Cubic']:
             lat = Lattice.from_para(a, a, a, 90, 90, 90, ltype=ltype)
-        elif ltype in ['hexagonal', 'trigonal']:
+        elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
             lat = Lattice.from_para(a, a, a*np.sqrt(3)/2, 90, 90, 120, ltype=ltype)
-        elif ltype == 'rhombohedral':
+        elif ltype in ['rhombohedral', 'Rhombohedral']:
             lat = Lattice.from_para(a, a, a, alpha, alpha, alpha, ltype=ltype)
-        elif ltype == 'tetragonal':
+        elif ltype in ['tetragonal', 'Tetragonal']:
             lat = Lattice.from_para(a, a, c, 90, 90, 90, ltype=ltype)
-        elif ltype == 'orthorhombic':
+        elif ltype in ['orthorhombic', 'Orthorhombic']:
             lat = Lattice.from_para(a, b, c, 90, 90, 90, ltype=ltype)
-        elif ltype == 'monoclinic':
+        elif ltype in ['monoclinic', 'Monoclinic']:
             lat = Lattice.from_para(a, b, c, 90, beta, 90, ltype=ltype)
-        elif ltype == 'triclinic':
+        elif ltype in ['triclinic', 'Triclinic']:
             lat = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+        else:
+            raise ValueError("ltype {:s} is not supported".format(ltype))
         return lat
- 
+
     def generate_para(self):
         if self.dim == 3:
             return generate_lattice(self.ltype, self.volume, **self.kwargs)
@@ -312,7 +310,7 @@ class Lattice:
         For the lattice
         """
         # only applied to triclinic/monoclinic/orthorhombic
-        if self.ltype in ["triclinic", "orthorhombic"]:
+        if self.ltype in ["triclinic", "Triclinic", "orthorhombic", "Orthorhombic"]:
             allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0]]
         elif self.ltype == "monoclinic":
             if abs(self.beta-90*rad) > 1e-3:
@@ -349,9 +347,9 @@ class Lattice:
         If the angle is not 90. There will be two equivalent versions
         e.g., 80 and 100. 
         """
-        if self.ltype == "monoclinic":
+        if self.ltype in ["monoclinic", "Monoclinic"]:
             allowed_ids = ["beta", "No"]
-        elif self.ltype == "triclinic":
+        elif self.ltype in ["triclinic", "Triclinic"]:
             allowed_ids = ["alpha", "beta", "gamma", "No"]
         else:
             allowed_ids = ["No"]
@@ -598,7 +596,6 @@ def generate_lattice(
     maxattempts times.
 
     Args:
-        sg: International number of the space group
         volume: volume of the conventional unit cell
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
@@ -640,8 +637,7 @@ def generate_lattice(
             b = vec[1] * np.cbrt(abc) / np.cbrt(xyz)
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Monoclinic
-        # elif sg <= 15:
-        elif ltype == "monoclinic":
+        elif ltype in ["monoclinic", "Monoclinic"]:
             alpha, gamma = np.pi / 2, np.pi / 2
             beta = gaussian(minangle, maxangle)
             x = np.sin(beta)
@@ -653,7 +649,7 @@ def generate_lattice(
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Orthorhombic
         # elif sg <= 74:
-        elif ltype == "orthorhombic":
+        elif ltype in ["orthorhombic", "Orthorhombic"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
@@ -664,7 +660,7 @@ def generate_lattice(
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Tetragonal
         # elif sg <= 142:
-        elif ltype == "tetragonal":
+        elif ltype in ["tetragonal", "Tetragonal"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
@@ -680,7 +676,7 @@ def generate_lattice(
             a = b = np.sqrt((volume / x) / c)
         # Cubic
         # else:
-        elif ltype == "cubic":
+        elif ltype in ["cubic", "Cubic"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             s = (volume) ** (1.0 / 3.0)
             a, b, c = s, s, s

@@ -477,7 +477,7 @@ class molecular_crystal:
                     pos_frac = pos_absolute.dot(lattice.inv_matrix)
                     site.position = pos_frac - np.floor(pos_frac)
                     site.lattice = lattice
-                    # for P21/c, Pc, C2/c, also needs to check if opt the inclination angle
+                    # for P21/c, Pc, C2/c, check if opt the inclination angle
                     if self.group.number in [7, 14, 15]:
                         for j, op in enumerate(site.wp.ops):
                             vec = op.translation_vector.dot(trans)

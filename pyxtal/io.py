@@ -166,11 +166,20 @@ class structure_from_ext():
 
             coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
             #coords -= np.mean(coords, axis=0)
-            self.molecule = Molecule(numbers, coords)
+            self.molecule = self.addh(Molecule(numbers, coords))
             self.pmg_struc = pmg_struc
             self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
         else:
             raise ValueError("Cannot find the space group matching the symmetry operation")
+
+    def addh(self, mol):
+        if len(mol) < len(self.ref_mol):
+            from pymatgen.io.babel import BabelMolAdaptor
+            ad = BabelMolAdaptor(mol)
+            ad.add_hydrogen()        
+            mol = ad.pymatgen_mol
+        return mol
+
 
     def add_site_props(self, mo):
         if len(self.props) > 0:
