@@ -144,6 +144,7 @@ class structure_from_ext():
             print(type(struc))
             raise NameError("input structure cannot be intepretted")
 
+        self.props = ref_mol.site_properties
         self.ref_mol = ref_mol.get_centered_molecule()
         self.tol = tol
         self.diag = False
@@ -171,7 +172,13 @@ class structure_from_ext():
         else:
             raise ValueError("Cannot find the space group matching the symmetry operation")
 
-    
+    def add_site_props(self, mo):
+        if len(self.props) > 0:
+            for key in self.props.keys():
+                mo.add_site_property(key, self.props[key])
+        return mo
+
+
     def make_mol_site(self, ref=False):
         if ref:
             mol = self.ref_mol
@@ -179,6 +186,7 @@ class structure_from_ext():
         else:
             mol = self.molecule
             ori = Orientation(np.eye(3))
+        mol = self.add_site_props(mol)
         pmol = pyxtal_molecule(mol)
         site = mol_site(pmol, self.position, ori, self.wyc, self.lattice, self.diag)
         return site
@@ -229,7 +237,6 @@ class structure_from_ext():
             position -= np.floor(position)
             # check if molecule is on the special wyckoff position
             if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
-                # todo: Get the subgroup to display
                 position, wp, _ = WP_merge(position, self.lattice.matrix, self.wyc, 2.0)
                 self.wyc = wp
             self.position = position
