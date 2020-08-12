@@ -239,7 +239,7 @@ class mol_site:
         Random perturbation of the molecular site
         """
         disp = np.random.random([1,3])-0.5
-        self.translate(self, magnitude*disp, True)
+        self.translate(magnitude*disp, True)
         self.orientation.change_orientation()
 
     
