@@ -62,7 +62,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
     lines += ' _symmetry_equiv_pos_site_id\n'
     lines += ' _symmetry_equiv_pos_as_xyz\n'
 
-    wps = sites[0].wp.generators
+    wps = sites[0].wp.ops
 
     for i, op in enumerate(wps):
         lines += "{:d} '{:s}'\n".format(i+1, op.as_xyz_string())

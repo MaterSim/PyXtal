@@ -15,7 +15,7 @@ from pyxtal.io import write_cif, structure_from_ext
 from pyxtal.database.element import Element
 from pyxtal.wyckoff_site import mol_site, check_mol_sites, WP_merge
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
-from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular
+from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular, Wyckoff_position
 
 
 
@@ -484,6 +484,12 @@ class molecular_crystal:
                             vec -= np.floor(vec)
                             op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                             site.wp.ops[j] = op1
+                #to do needs to update diag if necessary
+                _, perm = Wyckoff_position.from_symops(site.wp.ops, self.group.number)            
+                if not isinstance(perm, list):                                                    
+                    self.diag = True
+                else:
+                    self.diag = False
                 self.lattice = lattice
             else:
                 break
