@@ -322,7 +322,8 @@ class mol_site:
         if not absolute:
             coords = coords.dot(self.lattice.matrix)
         mol = Molecule(self.symbols, coords-np.mean(coords, axis=0))
-        match, _ = compare_mol_connectivity(mol, self.mol, True)
+        #match, _ = compare_mol_connectivity(mol, self.mol, True)
+        match, _ = compare_mol_connectivity(mol, self.mol)
         if match:
             position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
             #position -= np.floor(position)
@@ -348,6 +349,11 @@ class mol_site:
                     else:
                         raise ValueError("rotation matrix is wrong")
         else:
+            #import pickle
+            #with open('wrong.pkl', "wb") as f:
+            #    pickle.dump([mol, self.mol], f)
+            #print(mol.to(fmt='xyz'))
+            #print(self.mol.to(fmt='xyz'))
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
         

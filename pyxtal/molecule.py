@@ -273,12 +273,12 @@ class Orientation:
         if self.degrees >= 1:
             # choose the axis
             if self.axis is None:
-                axis = np.random.sample(3)
+                axis = np.random.RandomState().rand(3) - 0.5
                 self.axis = axis / np.linalg.norm(axis)
  
             # parse the angle
             if angle == "random":
-                angle = np.random.random() * np.pi * 2
+                angle = np.random.RandomState().rand() * np.pi * 2
             self.angle = angle
     
             # update the matrix
@@ -861,7 +861,13 @@ def make_graph(mol, tol=0.2):
         site1 = mol.sites[i]
         for j in range(i+1, len(mol)):
             site2 = mol.sites[j]
-            if CovalentBond.is_bonded(site1, site2, tol):
+            #remove short X-H distances
+            if "H" in [names[i], names[j]]:
+                factor = 0.3
+            else:
+                factor = 1.0
+
+            if CovalentBond.is_bonded(site1, site2, factor*tol):
                 G.add_edge(i,j)
     nx.set_node_attributes(G, names, 'name')
 

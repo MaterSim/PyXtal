@@ -400,7 +400,7 @@ class Lattice:
 
 
     def generate_point(self):
-        point = np.random.random(3)
+        point = np.random.RandomState().rand(3)
         if self.ltype in ["spherical", "ellipsoidal"]:
             # Choose a point within an octant of the unit sphere
             while point.dot(point) > 1:  # squared
