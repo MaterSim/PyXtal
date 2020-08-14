@@ -358,20 +358,33 @@ class mol_site:
         pos0 = apply_ops(pos, wp0)
 
         if len(wp0) == 2:
-            if groups is None:
-                groups = [4, 3, 6, 7, 2]
-            if 15 < wp0.number < 71:
-                axes = [[0,1,2],[0,2,1],[1,0,2],[2,1,0]]
-            elif wp0.number < 15:
-                axes = [[0,1,2],[2,0,1]]
-            for group in groups:
-                wp1 = Wyckoff_position.from_group_and_index(group, 0)
+            if self.diag: # P21/n -> Pn
+                #print("----------P21n----------")
+                wp1 = Wyckoff_position.from_group_and_index(7, 0)
+                wp1.diagonalize_symops()
+                axes = [[0,1,2],[2,1,0]]
                 for ax in axes:
                     pos1 = apply_ops(pos[ax], wp1)
                     diff = (pos1[:, ax] - pos0)[1]
                     diff -= np.floor(diff)
                     if len(diff[diff==0]) >= 2:
                         return wp1, ax, pos[ax] - 0.5*diff
+                return wp1, ax, pos
+            else:
+                if groups is None:
+                    groups = [4, 3, 6, 7, 2]
+                if 15 < wp0.number < 71:
+                    axes = [[0,1,2],[0,2,1],[1,0,2],[2,1,0]]
+                elif wp0.number < 15:
+                    axes = [[0,1,2],[2,1,0]]
+                for group in groups:
+                    wp1 = Wyckoff_position.from_group_and_index(group, 0)
+                    for ax in axes:
+                        pos1 = apply_ops(pos[ax], wp1)
+                        diff = (pos1[:, ax] - pos0)[1]
+                        diff -= np.floor(diff)
+                        if len(diff[diff==0]) >= 2:
+                            return wp1, ax, pos[ax] - 0.5*diff
 
     def make_gen_wyckoff_site(self):
 
@@ -380,7 +393,7 @@ class mol_site:
             ori = self.orientation.rotate_by_matrix(np.eye(3)[ax])
             lat = self.lattice.swap_axis(ids=ax)
             lat.ltype = Group(wp.number).lattice_type
-            return mol_site(self.molecule, pos, ori, wp, lat)
+            return mol_site(self.molecule, pos, ori, wp, lat, self.diag)
         else:
             print("This is already a general position")
             return self

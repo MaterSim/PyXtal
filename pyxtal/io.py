@@ -152,17 +152,18 @@ class structure_from_ext():
         sga = SpacegroupAnalyzer(pmg_struc)
         ops = sga.get_space_group_operations()
         self.wyc, perm = Wyckoff_position.from_symops(ops, sga.get_space_group_number())
-    
+
         if self.wyc is not None:
             self.group = Group(self.wyc.number)
             if isinstance(perm, list):
                 if perm != [0,1,2]:
                     lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
                     latt = lattice.swap_axis(ids=perm, random=False).get_matrix()
-                    coor = pmg_struc.frac_coords[perm]
+                    coor = pmg_struc.frac_coords[:, perm]
                     pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
             else:
                 self.diag = True
+                self.perm = perm
 
             coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
             #coords -= np.mean(coords, axis=0)
@@ -254,7 +255,13 @@ class structure_from_ext():
             position -= np.floor(position)
             # check if molecule is on the special wyckoff position
             if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
+                if self.diag:
+                    #Transform it to the conventional representation
+                    position = np.dot(self.perm, position).T
                 position, wp, _ = WP_merge(position, self.lattice.matrix, self.wyc, 2.0)
+                #print("After Mergey:---------------")
+                #print(position)
+                #print(wp)
                 self.wyc = wp
             self.position = position
             self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
