@@ -163,21 +163,14 @@ class mol_site:
             species: a list of atomic symbols, e.g. ['H', 'H', 'O', 'H', 'H', 'O']
         """
         if not absolute:
-            # try to avoid repeating the computation
-            try:
-                return self.relative_coords, self.symbols_all
-            except:
-                self.relative_coords, self.symbols_all = self._get_coords_and_species(
-                    absolute=absolute, add_PBC=add_PBC
-                )
+            self.relative_coords, self.symbols_all = self._get_coords_and_species(
+                absolute=absolute, add_PBC=add_PBC
+            )
             return self.relative_coords, self.symbols_all
         else:
-            try:
-                return self.absolute_coords, self.symbols_all
-            except:
-                self.absolute_coords, self.symbols_all = self._get_coords_and_species(
-                    absolute=absolute, add_PBC=add_PBC
-                )
+            self.absolute_coords, self.symbols_all = self._get_coords_and_species(
+                absolute=absolute, add_PBC=add_PBC
+            )
             return self.absolute_coords, self.symbols_all
 
     def get_centers(self, absolute=False):

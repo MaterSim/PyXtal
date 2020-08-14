@@ -22,7 +22,6 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         symbol = struc.group.symbol
         number = struc.group.number
         G1 = struc.group.Wyckoff_positions[0]
-
     else: #P1 symmetry
         l_type = 'triclinic'
         symbol = 'P1'
@@ -36,8 +35,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         sites = struc.atom_sites
         molecule = False
 
-    symbol = struc.group.symbol
-    if l_type == 'monoclinic':
+    if number in [7, 14, 15]:
         if hasattr(struc, 'diag') and struc.diag:
             symbol = struc.group.alias 
     
