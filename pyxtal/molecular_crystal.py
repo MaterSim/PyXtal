@@ -471,7 +471,7 @@ class molecular_crystal:
         """
         optimize the lattice if the cell has a bad inclination angles
         """
-        for i in range(3):
+        for i in range(5):
             lattice, trans, opt = self.lattice.optimize()
             if opt:
                 for site in self.mol_sites:
