@@ -1463,29 +1463,26 @@ class Wyckoff_position:
         return wp
 
     def __str__(self):
-        try:
-            return self.string
-        except:
-            if self.dim not in list(range(4)):
-                return "Error: invalid crystal dimension. Must be a number between 0 and 3."
-            s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
-            if self.dim == 3:
-                s += "space "
-            elif self.dim == 2:
-                s += "layer "
-            elif self.dim == 1:
-                s += "Rod "
-            elif self.dim == 0:
-                s += "Point group " + self.symbol
-            if self.dim != 0:
-                s += "group " + str(self.number)
-            s += " with site symmetry " + ss_string_from_ops(
-                self.symmetry_m[0], self.number, dim=self.dim
-            )
-            for op in self.ops:
-                s += "\n" + op.as_xyz_string()
-            self.string = s
-            return self.string
+        if self.dim not in list(range(4)):
+            return "Error: invalid crystal dimension. Must be a number between 0 and 3."
+        s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
+        if self.dim == 3:
+            s += "space "
+        elif self.dim == 2:
+            s += "layer "
+        elif self.dim == 1:
+            s += "Rod "
+        elif self.dim == 0:
+            s += "Point group " + self.symbol
+        if self.dim != 0:
+            s += "group " + str(self.number)
+        s += " with site symmetry " + ss_string_from_ops(
+            self.symmetry_m[0], self.number, dim=self.dim
+        )
+        for op in self.ops:
+            s += "\n" + op.as_xyz_string()
+        self.string = s
+        return self.string
 
     def __repr__(self):
         return str(self)
@@ -1501,6 +1498,7 @@ class Wyckoff_position:
                 vec -= np.floor(vec) 
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                 self.ops[j] = op1    
+
 
     def from_symops(ops, group=None):
         """
@@ -2843,4 +2841,3 @@ def permutate_xyz_string(xyzs, permutation):
 
         return new
 
-            

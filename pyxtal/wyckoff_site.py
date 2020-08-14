@@ -56,12 +56,12 @@ class mol_site:
 
         self.position = position # fractional coordinate of molecular center
         self.orientation = orientation #pyxtal.molecule.orientation object 
-        self.wp = wp
         self.PBC = wp.PBC #The periodic axes
 
         if self.diag:
-            self.wp.diagonalize_symops()
-            self.position = project_point(self.position, self.wp[0])
+            wp.diagonalize_symops()
+            self.position = project_point(self.position, wp[0])
+        self.wp = wp
 
         if isinstance(lattice, Lattice):
             self.lattice = lattice
@@ -371,8 +371,8 @@ class mol_site:
                     diff = (pos1[:, ax] - pos0)[1]
                     diff -= np.floor(diff)
                     if len(diff[diff==0]) >= 2:
-                        return wp1, ax, pos[ax] - 0.5*diff
-                return wp1, ax, pos
+                        #return wp1, ax, pos[ax] - 0.5*diff
+                        return Wyckoff_position.from_group_and_index(7, 0), ax, pos[ax]-0.5*diff
             else:
                 if groups is None:
                     groups = [4, 3, 6, 7, 2]
@@ -387,7 +387,7 @@ class mol_site:
                         diff = (pos1[:, ax] - pos0)[1]
                         diff -= np.floor(diff)
                         if len(diff[diff==0]) >= 2:
-                            return wp1, ax, pos[ax] - 0.5*diff
+                            return wp1, ax, pos[ax]-0.5*diff
 
     def make_gen_wyckoff_site(self):
 
