@@ -162,16 +162,7 @@ class mol_site:
             coords: a np array of 3-vectors.
             species: a list of atomic symbols, e.g. ['H', 'H', 'O', 'H', 'H', 'O']
         """
-        if not absolute:
-            self.relative_coords, self.symbols_all = self._get_coords_and_species(
-                absolute=absolute, add_PBC=add_PBC
-            )
-            return self.relative_coords, self.symbols_all
-        else:
-            self.absolute_coords, self.symbols_all = self._get_coords_and_species(
-                absolute=absolute, add_PBC=add_PBC
-            )
-            return self.absolute_coords, self.symbols_all
+        return self._get_coords_and_species(absolute, add_PBC)
 
     def get_centers(self, absolute=False):
         """
