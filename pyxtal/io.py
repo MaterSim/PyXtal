@@ -115,7 +115,7 @@ from pyxtal.lattice import Lattice
 
 class structure_from_ext():
     
-    def __init__(self, struc, ref_mol=None, tol=0.2):
+    def __init__(self, struc, ref_mol=None, tol=0.2, relax_h=False):
 
         """
         extract the mol_site information from the give cif file 
@@ -125,6 +125,7 @@ class structure_from_ext():
             struc: cif/poscar file or a Pymatgen Structure object
             ref_mol: xyz file or a reference Pymatgen molecule object
             tol: scale factor for covalent bond distance
+            relax_h: whether or not relax the position for hydrogen atoms in structure
         
     """
         if isinstance(ref_mol, str):
@@ -148,6 +149,7 @@ class structure_from_ext():
         self.ref_mol = ref_mol.get_centered_molecule()
         self.tol = tol
         self.diag = False
+        self.relax_h = relax_h
 
         sga = SpacegroupAnalyzer(pmg_struc)
         ops = sga.get_space_group_operations()
@@ -166,18 +168,22 @@ class structure_from_ext():
 
             coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
             #coords -= np.mean(coords, axis=0)
-            self.molecule = self.addh(Molecule(numbers, coords))
+            if self.relax_h:
+                self.molecule = self.addh(Molecule(numbers, coords))
+            else:
+                self.molecule = Molecule(numbers, coords)
             self.pmg_struc = pmg_struc
             self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
         else:
             raise ValueError("Cannot find the space group matching the symmetry operation")
 
     def addh(self, mol):
-        if len(mol) < len(self.ref_mol):
-            from pymatgen.io.babel import BabelMolAdaptor
-            ad = BabelMolAdaptor(mol)
-            ad.add_hydrogen()        
-            mol = ad.pymatgen_mol
+        #if len(mol) < len(self.ref_mol):
+        from pymatgen.io.babel import BabelMolAdaptor
+        ad = BabelMolAdaptor(mol)
+        ad.add_hydrogen()        
+        ad.localopt()
+        mol = ad.pymatgen_mol
         return mol
 
 
@@ -235,6 +241,10 @@ class structure_from_ext():
         if not match:
             print(self.ref_mol)
             print(self.molecule)
+            import pickle
+            with open('wrong.pkl', "wb") as f:
+                pickle.dump([self.ref_mol, self.molecule], f)
+
             return False
         else:
             # resort the atomic number for molecule 1
