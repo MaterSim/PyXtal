@@ -555,7 +555,7 @@ class molecular_crystal:
     def __str__(self):
         s = "------Random Molecular Crystal------"
         s += "\nDimension: " + str(self.dim)
-        if self.diag and hasattr(self.group, 'alias'):
+        if self.group.number in [7, 14, 15] and self.diag:
             symbol = self.group.alias
         else:
             symbol = self.group.symbol
