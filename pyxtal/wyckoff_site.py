@@ -61,6 +61,7 @@ class mol_site:
 
         if self.diag:
             self.wp.diagonalize_symops()
+            self.position = project_point(self.position, self.wp[0])
 
         if isinstance(lattice, Lattice):
             self.lattice = lattice
@@ -105,15 +106,17 @@ class mol_site:
         coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
         wp_atomic_sites = []
         wp_atomic_coords = None
-        for point_index, op2 in enumerate(self.wp.generators):
+        for point_index, op2 in enumerate(self.wp.ops):
             # Obtain the center in absolute coords
             center_relative = op2.operate(self.position)
             center_absolute = np.dot(center_relative, self.lattice.matrix)
 
             # Rotate the molecule (Euclidean metric)
+            #op2_m = self.wp.generators_m[point_index]
             op2_m = self.wp.generators_m[point_index]
             rot = op2_m.affine_matrix[0:3][:, 0:3].T
-            tau = op2_m.affine_matrix[0:3][:, 3]
+            #tau = op2_m.affine_matrix[0:3][:, 3]
+            tau = op2.translation_vector
             tmp = np.dot(coord0, rot) + tau
             # Add absolute center to molecule
             tmp += center_absolute
@@ -172,7 +175,7 @@ class mol_site:
         Returns:
             A numpy array of fractional 3-vectors
         """
-        centers = apply_ops(self.position, self.wp.generators)
+        centers = apply_ops(self.position, self.wp.ops)
         # centers1 = filtered_coords(centers0, self.PBC)
         if absolute is False:
             return centers

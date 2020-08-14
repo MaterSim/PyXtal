@@ -35,9 +35,12 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         sites = struc.atom_sites
         molecule = False
 
+    change_set = False
     if number in [7, 14, 15]:
         if hasattr(struc, 'diag') and struc.diag:
             symbol = struc.group.alias 
+            G1.diagonalize_symops()
+            change_set = True
     
     lines = logo
     lines += 'data_' + header + '\n'
@@ -60,8 +63,10 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
     lines += ' _symmetry_equiv_pos_site_id\n'
     lines += ' _symmetry_equiv_pos_as_xyz\n'
 
-    wps = sites[0].wp.ops
-
+    if change_set:
+        wps = G1
+    else:
+        wps = sites[0].wp.ops
     for i, op in enumerate(wps):
         lines += "{:d} '{:s}'\n".format(i+1, op.as_xyz_string())
 
