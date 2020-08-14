@@ -1520,6 +1520,9 @@ class Wyckoff_position:
             str1 = ops
         else:
             str1 = [op.as_xyz_string() for op in ops]
+
+        str1 = [st.replace("-1/2","+1/2") for st in str1]
+
         N_sym = len(str1)
         # sometimes, we allow the permutation
         permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
@@ -1535,6 +1538,7 @@ class Wyckoff_position:
                     str2 = [op.as_xyz_string() for op in wyc.ops]
                     for perm in permutations:
                         str_perm = permutate_xyz_string(str1, perm)
+                        # Compare the pure rotation and then 
                         if set(str_perm) == set(str2):
                             return wyc, perm
 
@@ -1546,7 +1550,7 @@ class Wyckoff_position:
                             vec = op.translation_vector.dot(trans)
                             vec -= np.floor(vec) 
                             op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                            str3.append(op3.as_xyz_string())
+                            str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
                             #wyc.ops[j] = op3
                         if set(str3) == set(str1):
                             return wyc, trans
@@ -2824,18 +2828,17 @@ def permutate_xyz_string(xyzs, permutation):
     else:
         new = []
         for xyz in xyzs:
-            tmp = xyz.split(',')
+            tmp = xyz.replace(" ","").split(',')
             tmp = [tmp[it] for it in permutation]
             if permutation == [1,0,2]: #a,b
-                tmp[0].replace('y','x')
-                tmp[1].replace('x','y')
-            elif permutation == [2,1,0]: #a, c
-                tmp[0].replace('z','x')
-                tmp[2].replace('x','z')
-            elif permutation == [0,2,1]: #a, c
-                tmp[1].replace('z','y')
-                tmp[2].replace('y','z')
-
+                tmp[0] = tmp[0].replace('y','x')
+                tmp[1] = tmp[1].replace('x','y')
+            elif permutation == [2,1,0]: #a,c
+                tmp[0] = tmp[0].replace('z','x')
+                tmp[2] = tmp[2].replace('x','z')
+            elif permutation == [0,2,1]: #b,c
+                tmp[1] = tmp[1].replace('z','y')
+                tmp[2] = tmp[2].replace('y','z')
             new.append(tmp[0] + ", " + tmp[1] + ", " + tmp[2])
 
         return new

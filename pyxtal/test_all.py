@@ -192,6 +192,29 @@ class TestLattice(unittest.TestCase):
         l0.set_para([5,5,5,90,90,90])
         self.assertTrue(l0.a==5)
 
+class TestSymmetry(unittest.TestCase):
+
+    def test_P21(self):
+        strs = ['x, y, z', '-x, y+1/2, -z']
+        wyc, perm = Wyckoff_position.from_symops(strs)
+        self.assertTrue(wyc.number==4)
+
+    def test_Pmn21(self):
+        strs = ['x, y, z', '-x+1/2, -y, z+1/2', '-x, y, z', 'x+1/2, -y, z+1/2']
+        wyc, perm = Wyckoff_position.from_symops(strs)
+        self.assertTrue(wyc.number==31)
+
+    def test_P21a(self):
+        strs = ['x, y, z', '-x, -y, -z', '-x+1/2, y+1/2, -z', 'x+1/2, -y+1/2, z']
+        wyc, perm = Wyckoff_position.from_symops(strs)
+        self.assertTrue(wyc.number==14)
+
+    def test_P21n(self):
+        strs = ['x, y, z', '-x, -y, -z', '-x+1/2, y+1/2, -z+1/2', 'x+1/2, -y+1/2, z+1/2']
+        wyc, perm = Wyckoff_position.from_symops(strs)
+        self.assertTrue(wyc.number==14)
+
+
 #class TestOperation(unittest.TestCase):
 #class TestIO(unittest.TestCase):
 
