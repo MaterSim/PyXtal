@@ -67,6 +67,7 @@ class molecular_crystal:
         tm=Tol_matrix(prototype="molecular"),
         seed = None,
         diag = False,
+        relax_h = False,
     ):
 
         self.dim = 3 # The number of periodic dimensions (1,2,3)
@@ -79,6 +80,7 @@ class molecular_crystal:
         self.sg = group.number
         self.selec_high = select_high
         self.seed = seed
+        self.relax_h = relax_h
 
         self.init_common(
             molecules,
@@ -153,7 +155,7 @@ class molecular_crystal:
         # if seeds, directly parse the structure from cif
         # At the moment, we only support one specie
         if self.seed is not None:
-            seed = structure_from_ext(self.seed, self.molecules[0].mol)
+            seed = structure_from_ext(self.seed, self.molecules[0].mol, relax_h=self.relax_h)
             if seed.match():
                 self.mol_sites = [seed.make_mol_site()]
                 self.group = Group(seed.wyc.number)
