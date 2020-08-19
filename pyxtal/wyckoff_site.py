@@ -339,9 +339,9 @@ class mol_site:
                     else:
                         raise ValueError("rotation matrix is wrong")
         else:
-            #import pickle
-            #with open('wrong.pkl', "wb") as f:
-            #    pickle.dump([mol, self.mol], f)
+            import pickle
+            with open('wrong.pkl', "wb") as f:
+                pickle.dump([mol, self.mol], f)
             #print(mol.to(fmt='xyz'))
             #print(self.mol.to(fmt='xyz'))
             raise ValueError("molecular connectivity changes! Exit")

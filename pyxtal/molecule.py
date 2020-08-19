@@ -862,13 +862,18 @@ def make_graph(mol, tol=0.2):
         for j in range(i+1, len(mol)):
             site2 = mol.sites[j]
             #remove short X-H distances
-            if "H" in [names[i], names[j]]:
-                factor = 0.3
+            if names[i] == "H" and names[j]=="H":
+                factor = 0.05
+            elif "H" in [names[i], names[j]]:
+                factor = 0.5
             else:
                 factor = 1.0
-
-            if CovalentBond.is_bonded(site1, site2, factor*tol):
-                G.add_edge(i,j)
+            try:
+                if CovalentBond.is_bonded(site1, site2, factor*tol):
+                    G.add_edge(i,j)
+                    #print(names[i], names[j], mol.get_distance(i, j))
+            except ValueError:
+                pass
     nx.set_node_attributes(G, names, 'name')
 
     return G
