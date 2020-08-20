@@ -1,7 +1,7 @@
 import pubchempy as pcp
 import numpy as np
 import json
-from element import Element
+from pyxtal.database.element import Element
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -11,7 +11,7 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def read_molecule(mol):
+def read_molecule(mol, name):
     x = np.transpose([mol.record["coords"][0]["conformers"][0]["x"]])
     y = np.transpose([mol.record["coords"][0]["conformers"][0]["y"]])
     z = np.transpose([mol.record["coords"][0]["conformers"][0]["z"]])
@@ -122,15 +122,23 @@ molecule = {
     "volume": None,
     "pubchem id": 123591,
 }
+
 molecules.append(molecule)
 for name in names:
     print(name)
     mol = pcp.get_compounds(name, "name", record_type="3d")[0]
-    molecule = read_molecule(mol)
+    molecule = read_molecule(mol,name)
     molecules.append(molecule)
 
+dicts = {"LEFCIK": 812440,
+         "OFIXUX": 102393188,
+        }
+for key in dicts.keys():
+    mol = pcp.get_compounds(dicts[key], "cid", record_type="3d")[0]
+    molecule = read_molecule(mol,key)
+    molecules.append(molecule)
 
-print(molecules)
+#print(molecules)
 dumped = json.dumps(molecules, cls=NumpyEncoder, indent=2)
 with open("molecules.json", "w") as f:
     f.write(dumped)

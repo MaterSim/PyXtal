@@ -157,7 +157,6 @@ class structure_from_ext():
         sga = SpacegroupAnalyzer(pmg_struc)
         ops = sga.get_space_group_operations()
         self.wyc, perm = Wyckoff_position.from_symops(ops, sga.get_space_group_number())
-        print(self.wyc)
 
         if self.wyc is not None:
             self.group = Group(self.wyc.number)

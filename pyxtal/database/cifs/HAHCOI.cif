@@ -1,0 +1,108 @@
+
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge
+# Structural Database, then it will include bibliographic, chemical,
+# crystal, experimental, refinement or atomic coordinate data resulting
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_CSD_CIF_HAHCOI
+_audit_creation_date 1994-03-15
+_audit_creation_method CSD-ConQuest-V1
+_database_code_CSD HAHCOI
+_database_code_depnum_ccdc_archive 'CCDC 1171543'
+_chemical_formula_sum 'C12 H6 S2'
+_chemical_formula_moiety
+;
+C12 H6 S2
+;
+_journal_coden_Cambridge 241
+_journal_year 1993
+_journal_page_first 365
+_journal_name_full 'Chem.Lett. '
+loop_
+_publ_author_name
+"K.Takimiya"
+"F.Yashiki"
+"Y.Aso"
+"T.Otsubo"
+"F.Ogura"
+_chemical_name_systematic
+;
+Naphtho(1,8-bc:4,5-b'c')dithiophene
+;
+_chemical_melting_point 460.15
+_cell_volume    453.272
+_exptl_crystal_colour 'orange'
+_exptl_crystal_density_diffrn 1.571
+_exptl_special_details
+;
+Melts with decomposition.
+
+;
+_exptl_crystal_description 'needle'
+_exptl_crystal_preparation 'chloroform/hexane'
+_diffrn_ambient_temperature ?
+_diffrn_special_details
+;
+The study was carried out at room temperature,in the range 283-303K
+
+;
+#These two values have been output from a single CSD field.
+_refine_ls_R_factor_gt 0.042
+_refine_ls_wR_factor_gt 0.042
+_symmetry_cell_setting monoclinic
+_symmetry_space_group_name_H-M 'P 21'
+_symmetry_Int_Tables_number 4
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 -x,1/2+y,-z
+_cell_length_a 7.837(1)
+_cell_length_b 4.128
+_cell_length_c 14.035(4)
+_cell_angle_alpha 90
+_cell_angle_beta 93.35(6)
+_cell_angle_gamma 90
+_cell_formula_units_Z 2
+loop_
+_atom_type_symbol
+_atom_type_radius_bond
+C 0.68
+H 0.23
+S 1.02
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+S1 S 0.66465(11) 0.58211 0.94070(2)
+C1 C 0.80971(47) 0.3893(12) 0.87202(25)
+C2 C 0.98442(49) 0.3110(14) 0.88645(28)
+C3 C 1.06631(50) 0.1400(14) 0.81872(28)
+C4 C 0.97754(46) 0.0477(13) 0.73275(25)
+S2 S 1.03698(13) -0.16588(44) 0.63204(7)
+C5 C 0.83589(52) -0.1341(17) 0.57602(26)
+C6 C 0.72107(50) 0.0292(13) 0.6313(1)
+C7 C 0.54110(53) 0.1138(16) 0.61855(28)
+C8 C 0.46019(52) 0.2818(13) 0.68467(29)
+C9 C 0.54744(43) 0.3822(13) 0.77512(25)
+C10 C 0.49757(47) 0.5459(15) 0.85512(29)
+C11 C 0.72390(44) 0.2979(13) 0.78703(25)
+C12 C 0.80575(46) 0.1256(13) 0.71884(25)
+H1 H 1.03710 0.38557 0.93674
+H2 H 1.17610 0.09162 0.82903
+H3 H 0.81570 -0.23800 0.52034
+H4 H 0.49091 0.04585 0.56568
+H5 H 0.35434 0.32937 0.66847
+H6 H 0.42053 0.59755 0.86131
+#END

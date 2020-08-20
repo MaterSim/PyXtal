@@ -146,6 +146,11 @@ class pyxtal_molecule:
             if radius > r_max:
                 r_max = radius
         self.radius = r_max
+        # reestimate the radius if it has stick shape
+        rmax = max([self.box.width,self.box.height,self.box.length])
+        rmin = min([self.box.width,self.box.height,self.box.length])
+        if rmax/rmin > 3 and rmax >12:
+            self.radius = rmin
 
     def get_symbols(self):
         self.symbols = [specie.name for specie in self.mol.species]

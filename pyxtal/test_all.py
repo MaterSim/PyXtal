@@ -10,7 +10,7 @@ from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pkg_resources import resource_filename
 
-cif_path = resource_filename("pyxtal", "database/aspirin.cif")
+cif_path = resource_filename("pyxtal", "database/cifs/aspirin.cif")
 l0 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
 l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
 l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
