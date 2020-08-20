@@ -157,6 +157,7 @@ class structure_from_ext():
         sga = SpacegroupAnalyzer(pmg_struc)
         ops = sga.get_space_group_operations()
         self.wyc, perm = Wyckoff_position.from_symops(ops, sga.get_space_group_number())
+        print(self.wyc)
 
         if self.wyc is not None:
             self.group = Group(self.wyc.number)
@@ -257,7 +258,9 @@ class structure_from_ext():
             numbers = numbers[order].tolist()
             coords = self.molecule.cart_coords[order]
             position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
+            print(position)
             position -= np.floor(position)
+            print(position)
             # check if molecule is on the special wyckoff position
             if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
                 if self.diag:
@@ -268,6 +271,7 @@ class structure_from_ext():
                 #print(position)
                 #print(wp)
                 self.wyc = wp
+            print("p-pppppppp", position)
             self.position = position
             self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
             #self.align()

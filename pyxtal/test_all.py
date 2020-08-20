@@ -8,7 +8,9 @@ from pyxtal.symmetry import Wyckoff_position, get_wyckoffs
 from pyxtal.wyckoff_site import WP_merge
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pkg_resources import resource_filename
 
+cif_path = resource_filename("pyxtal", "database/aspirin.cif")
 l0 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
 l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
 l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
@@ -60,12 +62,13 @@ class TestMolecular(unittest.TestCase):
         self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
         #print(pmg_struc.frac_coords[:3])
 
+    def test_read(self):
         #test reading structure from external
-        mol = struc.molecules[0].mol
-        struc = molecular_crystal(36, ['H2O'], [2], seed=pmg_struc)
+        struc = molecular_crystal(14, ['aspirin'], [4], seed=cif_path)
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
-        self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
+        self.assertTrue(sga.get_space_group_symbol()=='P2_1/c')
+        #todo support reading ice
 
     def test_big_molecule(self):
         #print("test_big_molecule")
