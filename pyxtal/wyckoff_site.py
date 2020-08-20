@@ -40,7 +40,7 @@ class mol_site:
         orientation: an `Orientation <pyxtal.molecule.Oreintation.html>`_ object 
         wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
         lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object 
-        diag: whether or not use the n representation
+        diag: whether or not use the `n` representation
     """
 
     def __init__(self, mol, position, orientation, wp, lattice, diag=False):
@@ -597,7 +597,7 @@ class atom_site:
     Class for storing atomic Wyckoff positions with a single coordinate.
 
     Args:
-        wp: a Wyckoff_position object
+        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object 
         coordinate: a fractional 3-vector for the generating atom's coordinate
         specie: an Element, element name or symbol, or atomic number of the atom
     """
@@ -608,7 +608,7 @@ class atom_site:
         self.multiplicity = wp.multiplicity
         self.wp = wp
         self.PBC = wp.PBC
-        self.update_coords(coordinate)
+        self.update(coordinate)
 
     def __str__(self):
         if not hasattr(self, "site_symm"):
@@ -621,7 +621,7 @@ class atom_site:
         s += "Site symmetry: {:s}".format(self.site_symm)
         return s
 
-    def update_coords(self, pos):
+    def update(self, pos):
         """
         Used to generate coords from self.position
         """
@@ -680,85 +680,6 @@ def check_atom_sites(ws1, ws2, lattice, tm, same_group=True):
         else:
             return True
 
-def WP_merge_old(coor, lattice, group, tol):
-    """
-    Given a list of fractional coordinates, merges them within a given
-    tolerance, and checks if the merged coordinates satisfy a Wyckoff
-    position. Used for merging general Wyckoff positions into special Wyckoff
-    positions within the random_crystal (and its derivative) classes.
-
-    Args:
-        coor: a list of fractional coordinates
-        lattice: a 3x3 matrix representing the unit cell
-        group: a pyxtal.symmetry.Group object
-        tol: the cutoff distance for merging coordinates
-
-    Returns:
-        coor: the new list of fractional coordinates after merging. 
-        index: a single index for the Wyckoff position within the sg. 
-        If no matching WP is found, returns False. 
-        point: is a 3-vector when plugged into the Wyckoff position,
-    """
-    coor = np.array(coor)
-
-    # Get index of current Wyckoff position. If not one, return False
-    index, point = check_wyckoff_position(coor, group)
-    if index is False:
-        return coor, False, None
-    if point is None:
-        printx("Error: Could not find generating point.", priority=1)
-        printx("coordinates:")
-        printx(str(coor))
-        printx("Lattice: ")
-        printx(str(lattice))
-        printx("group: ")
-        group.print_all()
-        return coor, False, None
-    PBC = group.PBC
-    # Main loop for merging multiple times
-    while True:
-        # Check distances of current WP. If too small, merge
-        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
-        passed_distance_check = True
-        x = np.argwhere(dm < tol)
-        for y in x:
-            # Ignore distance from atom to itself
-            if y[0] == 0 and y[1] == 0:
-                pass
-            else:
-                passed_distance_check = False
-                break
-
-        if passed_distance_check is False:
-            mult1 = group[index].multiplicity
-            # Find possible wp's to merge into
-            possible = []
-            for i, wp in enumerate(group):
-                mult2 = wp.multiplicity
-                # factor = mult2 / mult1
-                if (mult2 < mult1) and (mult1 % mult2 == 0):
-                    possible.append(i)
-            if possible == []:
-                return coor, False, None
-            # Calculate minimum separation for each WP
-            distances = []
-            for i in possible:
-                wp = group[i]
-                projected_point = project_point(point, wp[0], lattice=lattice, PBC=PBC)
-                d = distance(point - projected_point, lattice, PBC=PBC)
-                distances.append(np.min(d))
-            # Choose wp with shortest translation for generating point
-            tmpindex = np.argmin(distances)
-            index = possible[tmpindex]
-            newwp = group[index]
-            projected_point = project_point(point, newwp[0], lattice=lattice, PBC=PBC)
-            coor = apply_ops(projected_point, newwp)
-            point = coor[0]
-            index = newwp.index
-        # Distances were not too small; return True
-        else:
-            return coor, index, point
-
 def WP_merge(pt, lattice, wp, tol, orientations=None):
     """
     Given a list of fractional coordinates, merges them within a given
@@ -769,7 +690,7 @@ def WP_merge(pt, lattice, wp, tol, orientations=None):
     Args:
         pt: the originl point (3-vector)
         lattice: a 3x3 matrix representing the unit cell
-        wp: a pyxtal.symmetry.Wyckoff_position object after merge
+        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object after merge
         tol: the cutoff distance for merging coordinates
         orientations: the valid orientations for a given molecule. Obtained
             from get_sg_orientations, which is called within molecular_crystal

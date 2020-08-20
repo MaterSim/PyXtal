@@ -444,9 +444,9 @@ class molecular_crystal:
 
         Args:
             filename: the file path
-            fmt: the file type ('cif', 'xyz', etc.)
-            permission: "w" or "a+"
-            sym_num: "w" or "a+"
+            fmt: the file type (`cif`, `xyz`, etc.)
+            permission: `w` or `a+`
+            sym_num: `w` or `a+`
 
         Returns:
             Nothing. Creates a file at the specified path
@@ -750,9 +750,8 @@ class molecular_crystal_2D(molecular_crystal):
     constraints. This crystal is stored as a pymatgen struct via self.struct
 
     Args:
-        group: the layer group number between 1 and 80. NOT equal to the
-            international space group number, which is between 1 and 230
-            OR, a pyxtal.symmetry.Group object
+        group: the layer group number between 1 and 80. 
+            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or the name of molecules from the built_in 
@@ -774,8 +773,10 @@ class molecular_crystal_2D(molecular_crystal):
             stoichiometry has been generated, you may pass its
             valid_orientations attribute here to avoid repeating the
             calculation, but this is not required
-        lattice: an optional Lattice object to use for the unit cell
-        tm: the Tol_matrix object used to generate the crystal
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+            object to define the unit cell
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
+            object to define the distances
     """
 
     def __init__(
@@ -823,9 +824,8 @@ class molecular_crystal_1D(molecular_crystal):
     The crystal is stored as a pymatgen struct via self.struct
 
     Args:
-        group: the Rod group number between 1 and 80. NOT equal to the
-            international space group number, which is between 1 and 230
-            OR, a pyxtal.symmetry.Group object
+        group: the Rod group number between 1 and 75. OR
+            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or the name of molecules from the built_in 
@@ -846,8 +846,10 @@ class molecular_crystal_1D(molecular_crystal):
             stoichiometry has been generated, you may pass its
             valid_orientations attribute here to avoid repeating the
             calculation, but this is not required
-        lattice: an optional Lattice object to use for the unit cell
-        tm: the Tol_matrix object used to generate the crystal
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+            object to define the unit cell
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
+            object to define the distances
     """
 
     def __init__(

@@ -28,7 +28,7 @@ class random_crystal:
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell), e.g., `[4, 2]`
         factor (optional): volume factor used to generate the crystal
-        sites (optional): pre-assigned wyckoff sites (e.g., [["4a"], ["2b"]])
+        sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
         lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
             object to define the unit cell
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
@@ -760,7 +760,7 @@ class random_cluster(random_crystal):
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell), e.g., `[4, 2]`
         factor (optional): volume factor used to generate the crystal
-        sites (optional): pre-assigned wyckoff sites (e.g., [["4a"], ["2b"]])
+        sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
         lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
             object to define the unit cell
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
