@@ -17,7 +17,7 @@ class Collection:
     Site: H (0.2774, 0.8929, 0.2544)
     Site: H (0.6068, -0.2383, -0.7169)
     >>> list(test)
-    ['H2O', 'CH4']
+    ['C60', 'H2O', 'CH4', 'NH3', 'benzene', 'naphthalene', 'anthracene', 'tetracene', 'pentacene', 'coumarin', 'resorcinol', 'benzamide', 'aspirin', 'ddt', 'lindane', 'glycine', 'glucose', 'ROY']
 
     Args:
         name: the type of collection to get. Defaults to "molecules"

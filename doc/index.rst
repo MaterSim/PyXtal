@@ -17,18 +17,21 @@ PyXtal (pronounced ``pie-crystal``) is an open source Python library for the ab-
 
 - Generation of atomic crystals and clusters for a given symmetry and stoichiometry (0D, 1D, 2D and 3D)
 - Generation of molecular crystals (1-3D), with the automatic determination of special Wyckoff positions. 
-- Support of various structural file formats (e.g., ``cif``, ``POSCAR``) via pymatgen.
+- Internal support of ``cif`` file and many other formats (e.g., ``xyz``, ``POSCAR``) via ``pymatgen`` and ``ASE``.
 - Easy access to symmetry group information (e.g., Wyckoff, site symmetry, and point group symbols).
 - Geometry optimization from built-in and external optimization methods.
 
-The current version is ``0.0.3`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license.
-
-Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
+The current version is ``0.0.6`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license. Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
 
 PyXtal is an open source project. You are welcome to contribute it directly via the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your comments and suggestions to the `developer <http://www.physics.unlv.edu/~qzhu/>`_.
 
 
 A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules. 
+
+For an experienced Python user who are familiar with Jupyter notebook, you are also encourged to check out the following examples 
+
+- `Atomic crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb>`_
+- `Molecular crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb>`_
 
 Tutorial
 ========================

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block splash %}
+<div class="jumbotron" title="Image by Magic Creative from Pixabay">
+  <div class="container">
+    <img src="{{ url_for('static', filename='img/logo.png') }}"
+      alt="VXRD: Virtual X-Ray Diffraction" class="center">
+    <div class="cta">
+      <a class="btn btn-primary btn-lg" href="{{ url_for('individual') }}"
+        role="button">
+        <span class="glyphicon glyphicon-chevron-left" aria-hidden="true">
+        </span> Individual
+      </a>
+      <a class="btn btn-primary btn-lg" href="{{ url_for('comparison') }}"
+        role="button">
+        Comparison 
+        <span class="glyphicon glyphicon-chevron-right"
+          aria-hidden="true"></span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block app_content %}
+{% endblock %}

@@ -56,15 +56,6 @@ if __name__ == "__main__":
         metavar="factor",
     )
     parser.add_argument(
-        "-v",
-        "--verbosity",
-        dest="verbosity",
-        default=0,
-        type=int,
-        help="verbosity: default 0; higher values print more information",
-        metavar="verbosity",
-    )
-    parser.add_argument(
         "-a",
         "--attempts",
         dest="attempts",
@@ -139,9 +130,9 @@ if __name__ == "__main__":
         if dimension == 3:
             rand_crystal = random_crystal(sg, system, numIons0, factor)
         elif dimension == 2:
-            rand_crystal = random_crystal_2D(sg, system, numIons0, thickness, factor)
-        elif dimension == 1:
-            rand_crystal = random_crystal_1D(sg, system, numIons0, thickness, factor)
+            rand_crystal = random_crystal_2D(sg, system, numIons0, factor, thickness)
+        elif dimension == 1:                                             
+            rand_crystal = random_crystal_1D(sg, system, numIons0, factor, thickness)
         if dimension == 0:
             rand_crystal = random_cluster(sg, system, numIons0, factor)
         end = time()
@@ -149,47 +140,32 @@ if __name__ == "__main__":
 
         if rand_crystal.valid:
             # Output a cif or xyz file
-            comp = str(rand_crystal.struct.composition)
+            pmg_struc = rand_crystal.to_pymatgen()
+            ase_struc = rand_crystal.to_ase()
+            comp = str(pmg_struc.composition)
             comp = comp.replace(" ", "")
             if dimension > 0:
                 outpath = outdir + "/" + comp + ".cif"
-                CifWriter(rand_crystal.struct, symprec=0.1).write_file(filename=outpath)
+                CifWriter(pmg_struc, symprec=0.1).write_file(filename=outpath)
             else:
                 outpath = outdir + "/" + comp + ".xyz"
                 rand_crystal.to_file(filename=outpath, fmt="xyz")
 
             if dimension > 0:
-                ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)[
+                ans = get_symmetry_dataset(ase_struc, symprec=1e-1)[
                     "international"
                 ]
             else:
-                ans = PointGroupAnalyzer(rand_crystal.molecule).sch_symbol
+                ans = PointGroupAnalyzer(pmg_struc).sch_symbol
 
-            print(
-                "Symmetry requested: {:d}({:s}), generated: {:s}".format(sg, symbol, ans)
-            )
+            print("Symm requested: {:d}({:s}), generated: {:s}".format(sg, symbol, ans))
             print("Output to " + outpath)
 
-            if dimension > 0:
-                try:
-                    from ase import Atoms
+            xyz_path = outdir + "/" + comp + ".xyz"
+            ase_struc.write(xyz_path, format="extxyz")
+            print("Output to " + xyz_path)
 
-                    cell, pos, numbers = rand_crystal.spg_struct
-                    ase_struc = Atoms(
-                        numbers=numbers, positions=pos, cell=cell, pbc=[1, 1, 1]
-                    )
-                    xyz_path = outdir + "/" + comp + ".xyz"
-                    ase_struc.write(xyz_path, format="extxyz")
-                    print("Output to " + xyz_path)
-                except:
-                    print(
-                        "Warning: ASE is required to export the crystal in extxyz format"
-                    )
-
-            # Print additional information about the structure
-            if verbosity > 0:
-                print("Time required for generation: " + str(timespent) + "s")
-                print(rand_crystal.struct)
+            print(rand_crystal)
 
         # If generation fails
         else:

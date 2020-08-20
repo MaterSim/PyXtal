@@ -51,15 +51,15 @@ class Lattice:
     def __init__(self, ltype, volume, PBC=[1, 1, 1], **kwargs):
         # Set required parameters
         if ltype in [
-            "triclinic",
-            "monoclinic",
-            "orthorhombic",
-            "tetragonal",
-            "trigonal",
-            "hexagonal",
-            "cubic",
-            "spherical",
-            "ellipsoidal",
+            "triclinic", "Triclinic",
+            "monoclinic", "Monoclinic",
+            "orthorhombic", "Orthorhombic",
+            "tetragonal", "Tetragonal",
+            "trigonal", "Trigonal",
+            "hexagonal", "Hexagonal",
+            "cubic", "Cubic",
+            "spherical", "Spherical",
+            "ellipsoidal", "Ellipsoidal",
         ]:
             self.ltype = ltype
         elif ltype == None:
@@ -114,25 +114,110 @@ class Lattice:
                     self.stress_normalization_matrix = np.array(
                         [[1, 0, 0], [1, 1, 0], [0, 0, 1]]
                     )
-        elif self.ltype in [
-            "orthorhombic",
-            "tetragonal",
-            "trigonal",
-            "hexagonal",
-            "cubic",
-        ]:
+        elif self.ltype in ["orthorhombic", "tetragonal", "trigonal", "hexagonal", "cubic",
+                            "Orthorhombic", "Tetragonal", "Trigonal", "Hexagonal", "Cubic",]:
             self.stress_normalization_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         elif self.ltype in ["spherical", "ellipsoidal"]:
             self.stress_normalization_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
         # Set info for on-diagonal stress symmetrization
-        if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral"]:
+        if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral",
+                          "Tetragonal", "Trigonal", "Hexagonal", "Rhombohedral"]:
             self.stress_indices = [(0, 0), (1, 1)]
-        elif self.ltype == "cubic":
+        elif self.ltype in ["cubic", "Cubic"]:
             self.stress_indices = [(0, 0), (1, 1), (2, 2)]
         else:
             self.stress_indices = []
         # Set values for the matrix
         self.reset_matrix()
+
+    def copy(self):
+        """
+        simply copy the structure
+        """
+        from copy import deepcopy
+        return deepcopy(self)
+
+    def optimize(self):
+        """
+        Optimize the lattice's inclination angles
+        """
+        trans = np.zeros([1,3,3])
+        trans[0] = np.eye(3)
+        tmp = None
+        opt = False
+        if self.ltype in ["monoclinic", "Monoclinic"]:
+            tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
+                           [[1,0,0],[0,1,0],[-1,0,1]],
+                           [[1,0,1],[0,1,0],[0,0,1]],
+                           [[1,0,-1],[0,1,0],[0,0,1]]])
+
+        elif self.ltype in ["triclinic", "Triclinic"]:
+            angles = np.array([self.alpha, self.beta, self.gamma])
+            diff0s = np.abs(angles - np.pi/2)
+            axis = np.argmax(diff0s)
+            if axis == 1:
+                tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
+                               [[1,0,0],[0,1,0],[-1,0,1]],
+                               [[1,0,1],[0,1,0],[0,0,1]],
+                               [[1,0,-1],[0,1,0],[0,0,1]]])
+            elif axis == 0:
+                tmp = np.array([[[1,0,0],[0,1,0],[0,1,1]],
+                                [[1,0,0],[0,1,1],[0,0,1]],
+                                [[1,0,0],[0,1,0],[0,-1,1]],
+                                [[1,0,0],[0,1,-1],[0,0,1]]])
+            else:
+                tmp = np.array([[[1,1,0],[0,1,0],[0,0,1]],
+                                [[1,-1,0],[0,1,0],[0,0,1]],
+                                [[1,0,0],[1,1,0],[0,0,1]],
+                                [[1,0,0],[-1,1,0],[0,0,1]]])
+        if tmp is not None:
+            trans = np.append(trans, tmp, axis=0)
+            diffs = []
+            for tran in trans:
+                cell_new = np.dot(tran, self.matrix)
+                lat_new = Lattice.from_matrix(cell_new)
+                _, _, _, alpha, beta, gamma = lat_new.get_para()
+                diffs.append(np.max(abs(np.array([alpha, beta, gamma])-np.pi/2)))
+            id = np.array(diffs).argmin()
+            tran = trans[id]
+            cell = np.dot(tran, self.matrix)
+            if id > 0:
+                opt = True
+            return Lattice.from_matrix(cell, ltype=self.ltype), tran, opt
+        else:
+            return self, np.eye(3), opt
+
+    def mutate(self, degree=0.20):
+        """
+        mutate the lattice object
+        """
+        rand = 1 + degree*(np.random.sample(6)-0.5)
+        a, b, c, alpha, beta, gamma = self.get_para()
+        a *= rand[0]
+        b *= rand[1]
+        c *= rand[2]
+        alpha = np.degrees(alpha*rand[3])
+        beta = np.degrees(beta*rand[4])
+        gamma = np.degrees(gamma*rand[5])
+        ltype = self.ltype
+
+        if self.ltype in ['cubic', 'Cubic']:
+            lat = Lattice.from_para(a, a, a, 90, 90, 90, ltype=ltype)
+        elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
+            lat = Lattice.from_para(a, a, a*np.sqrt(3)/2, 90, 90, 120, ltype=ltype)
+        elif ltype in ['rhombohedral', 'Rhombohedral']:
+            lat = Lattice.from_para(a, a, a, alpha, alpha, alpha, ltype=ltype)
+        elif ltype in ['tetragonal', 'Tetragonal']:
+            lat = Lattice.from_para(a, a, c, 90, 90, 90, ltype=ltype)
+        elif ltype in ['orthorhombic', 'Orthorhombic']:
+            lat = Lattice.from_para(a, b, c, 90, 90, 90, ltype=ltype)
+        elif ltype in ['monoclinic', 'Monoclinic']:
+            lat = Lattice.from_para(a, b, c, 90, beta, 90, ltype=ltype)
+        elif ltype in ['triclinic', 'Triclinic']:
+            lat = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+        else:
+            raise ValueError("ltype {:s} is not supported".format(ltype))
+        return lat
 
     def generate_para(self):
         if self.dim == 3:
@@ -167,23 +252,28 @@ class Lattice:
             printx("Error: Lattice matrix undefined.", priority=1)
             return
 
-    def get_para(self):
+    def get_para(self, degree=False):
         """
         Returns a tuple of lattice parameters.
         """
-        return (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
+        if degree:
+            return (self.a, self.b, self.c, deg*self.alpha, deg*self.beta, deg*self.gamma)
+        else:
+            return (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
 
     def set_matrix(self, matrix=None):
         if matrix is not None:
             m = np.array(matrix)
             if np.shape(m) == (3, 3):
                 self.matrix = m
+                self.inv_matrix = np.linalg.inv(m)
             else:
                 printx("Error: matrix must be a 3x3 numpy array or list", priority=1)
         elif matrix is None:
             self.reset_matrix()
         para = matrix2para(self.matrix)
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
+        self.volume = np.linalg.det(self.matrix)
 
     def set_para(self, para=None, radians=False):
         if para is not None:
@@ -201,6 +291,7 @@ class Lattice:
                 m = self.generate_matrix()
                 if m is not None:
                     self.matrix = m
+                    self.inv_matrix = np.linalg.inv(m)
                     [a, b, c, alpha, beta, gamma] = matrix2para(self.matrix)
                     self.a = a
                     self.b = b
@@ -215,17 +306,20 @@ class Lattice:
             self.volume = volume
 
 
-    def swap_axis(self, random=True, ids=None):
+    def swap_axis(self, random=False, ids=None):
+        """
+        For the lattice
+        """
         # only applied to triclinic/monoclinic/orthorhombic
-        if self.ltype in ["triclinic", "orthorhombic"]:
-            allowed_ids = [[0,1],[0,2],[1,2]]
+        if self.ltype in ["triclinic", "Triclinic", "orthorhombic", "Orthorhombic"]:
+            allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0]]
         elif self.ltype == "monoclinic":
             if abs(self.beta-90*rad) > 1e-3:
-                allowed_ids = [[0,2],[0,0]]
+                allowed_ids = [[0,1,2],[2,1,0]]
             else:
-                allowed_ids = [[0,1],[0,2],[1,2],[0,0]]
+                allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0]]
         else:
-            allowed_ids = [[0,0]]
+            allowed_ids = [[0,1,2]]
 
         if random:
             from random import choice
@@ -239,20 +333,24 @@ class Lattice:
         alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
         if ids is None:
             return self
-        elif ids == [0,1]: #a->b
+        elif ids == [1,0,2]: #a->b
             return self.from_para(b, a, c, beta, alpha, gamma, self.ltype)
-        elif ids == [0,2]: #a->c
+        elif ids == [2,1,0]: #a->c
             return self.from_para(c, b, a, gamma, beta, alpha, self.ltype)
-        elif ids == [1,2]: #b-c
+        elif ids == [0,2,1]: #b-c
             return self.from_para(a, c, b, alpha, gamma, beta, self.ltype)
         else:
             return self
     
     def swap_angle(self, random=True, ids=None):
         # only applied to triclinic/monoclinic #/hexagonal
-        if self.ltype == "monoclinic":
+        """
+        If the angle is not 90. There will be two equivalent versions
+        e.g., 80 and 100. 
+        """
+        if self.ltype in ["monoclinic", "Monoclinic"]:
             allowed_ids = ["beta", "No"]
-        elif self.ltype == "triclinic":
+        elif self.ltype in ["triclinic", "Triclinic"]:
             allowed_ids = ["alpha", "beta", "gamma", "No"]
         else:
             allowed_ids = ["No"]
@@ -278,9 +376,32 @@ class Lattice:
         else:
             return self
     
+    def add_vacuum(self, coor, vacuum=10, PBC=[0, 0, 0]):
+        """
+        Adds space above and below a 2D or 1D crystal. 
+    
+        Args:
+            coor: the relative coordinates of the crystal
+            vacuum: the amount of space, in Angstroms, to add above and below
+            PBC: A periodic boundary condition list,
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along 
+                the z axis    
+
+        Returns:
+            The transformed lattice and coordinates after the vacuum is added
+        """
+        matrix = self.matrix
+        absolute_coords = np.dot(coor, matrix)
+        for i, a in enumerate(PBC):
+            if not a:
+                ratio = 1 + vacuum/np.linalg.norm(matrix[i])
+                matrix[i] *= ratio
+        coor = np.dot(absolute_coords, np.linalg.inv(matrix))
+        return matrix, coor
+
 
     def generate_point(self):
-        point = np.random.random(3)
+        point = np.random.RandomState().rand(3)
         if self.ltype in ["spherical", "ellipsoidal"]:
             # Choose a point within an octant of the unit sphere
             while point.dot(point) > 1:  # squared
@@ -320,7 +441,9 @@ class Lattice:
         for generation of random crystals with a specific choice of unit cell.
 
         Args:
-            a, b, c: The length (in Angstroms) of the unit cell vectors
+            a: The length (in Angstroms) of the unit cell vectors
+            b: The length (in Angstroms) of the unit cell vectors
+            c: The length (in Angstroms) of the unit cell vectors
             alpha: the angle (in degrees) between the b and c vectors
             beta: the angle (in degrees) between the a and c vectors
             gamma: the angle (in degrees) between the a and b vectors
@@ -371,6 +494,7 @@ class Lattice:
         l.a, l.b, l.c = a, b, c
         l.alpha, l.beta, l.gamma = alpha * rad, beta * rad, gamma * rad
         l.matrix = cell_matrix
+        l.inv_matrix = np.linalg.inv(cell_matrix)
         l.ltype = ltype
         l.volume = volume
         l.random = False
@@ -426,6 +550,7 @@ class Lattice:
         l.a, l.b, l.c = a, b, c
         l.alpha, l.beta, l.gamma = alpha, beta, gamma
         l.matrix = m
+        l.inv_matrix = np.linalg.inv(m)
         l.ltype = ltype
         l.volume = volume
         l.random = False
@@ -472,7 +597,6 @@ def generate_lattice(
     maxattempts times.
 
     Args:
-        sg: International number of the space group
         volume: volume of the conventional unit cell
         minvec: minimum allowed lattice vector length (among a, b, and c)
         minangle: minimum allowed lattice angle (among alpha, beta, and gamma)
@@ -514,8 +638,7 @@ def generate_lattice(
             b = vec[1] * np.cbrt(abc) / np.cbrt(xyz)
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Monoclinic
-        # elif sg <= 15:
-        elif ltype == "monoclinic":
+        elif ltype in ["monoclinic", "Monoclinic"]:
             alpha, gamma = np.pi / 2, np.pi / 2
             beta = gaussian(minangle, maxangle)
             x = np.sin(beta)
@@ -527,7 +650,7 @@ def generate_lattice(
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Orthorhombic
         # elif sg <= 74:
-        elif ltype == "orthorhombic":
+        elif ltype in ["orthorhombic", "Orthorhombic"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
@@ -538,7 +661,7 @@ def generate_lattice(
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Tetragonal
         # elif sg <= 142:
-        elif ltype == "tetragonal":
+        elif ltype in ["tetragonal", "Tetragonal"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
@@ -554,7 +677,7 @@ def generate_lattice(
             a = b = np.sqrt((volume / x) / c)
         # Cubic
         # else:
-        elif ltype == "cubic":
+        elif ltype in ["cubic", "Cubic"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             s = (volume) ** (1.0 / 3.0)
             a, b, c = s, s, s
@@ -1190,7 +1313,6 @@ def para2matrix(cell_para, radians=True, format="lower"):
     beta = cell_para[4]
     gamma = cell_para[5]
     if radians is not True:
-        rad = np.pi / 180.0
         alpha *= rad
         beta *= rad
         gamma *= rad
@@ -1223,7 +1345,7 @@ def para2matrix(cell_para, radians=True, format="lower"):
         matrix[0][2] = a3
         matrix[0][1] = a2
         matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
-        pass
+        #pass
     return matrix
 
 
@@ -1400,29 +1522,6 @@ def random_vector(minvec=[0.0, 0.0, 0.0], maxvec=[1.0, 1.0, 1.0], width=0.35, un
     else:
         return vec
 
-
-def add_vacuum(lattice, coor, vacuum=10, PBC=[0, 0, 0]):
-    """
-    Adds space above and below a 2D or 1D crystal. This allows for treating the
-    structure as a 3D crystal during energy optimization
-
-    Args:
-        lattice: the lattice matrix of the crystal
-        coor: the relative coordinates of the crystal
-        vacuum: the amount of space, in Angstroms, to add above and below
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-
-    Returns:
-        lattice, coor: The transformed lattice and coordinates after the
-            vacuum space is added
-    """
-    absolute_coords = np.dot(coor, lattice)
-    for i, a in enumerate(PBC):
-        if not a:
-            lattice[i] += (lattice[i] / np.linalg.norm(lattice[i])) * vacuum
-    new_coor = np.dot(absolute_coords, np.linalg.inv(lattice))
-    return lattice, new_coor
 
 
 def random_shear_matrix(width=1.0, unitary=False):

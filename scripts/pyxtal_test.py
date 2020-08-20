@@ -181,13 +181,17 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
         """Given a pymatgen structure, group number, and dimension, return
         whether or not the structure matches the group number."""
         if isinstance(crystal, (random_crystal, molecular_crystal)):
-            lattice = crystal.struct.lattice.matrix
+            pmg_struc = crystal.to_pymatgen()
+            if dim > 0:
+                lattice = pmg_struc.lattice.matrix
+            else:
+                lattice = crystal.lattice.matrix
             if dim != 0:
-                old_coords = deepcopy(crystal.struct.frac_coords)
-                old_species = deepcopy(crystal.struct.atomic_numbers)
+                old_coords = deepcopy(pmg_struc.frac_coords)
+                old_species = deepcopy(pmg_struc.atomic_numbers)
             elif dim == 0:
-                old_coords = deepcopy(crystal.cart_coords)
-                old_species = deepcopy(crystal.species)
+                old_coords = deepcopy(pmg_struc.cart_coords)
+                old_species = deepcopy(pmg_struc.species)
         else:
             lattice = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
             old_coords = np.array(crystal)
@@ -228,6 +232,7 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
         # new_coords = filtered_coords(new_coords,PBC=PBC)
 
         # Check that all points in new list are still in old
+
         failed = False
         i_list = list(range(len(new_coords)))
         for i, point1 in enumerate(new_coords):
@@ -252,6 +257,19 @@ def test_atomic():
     global outstructs
     global outstrings
     fprint("=== Testing generation of atomic 3D crystals. This may take some time. ===")
+    my_crystal1 = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.0, sites=[["1b"], ["1b"], ["2c", "1b"]])
+    print(my_crystal1)
+    my_crystal1.to_file("1.cif")
+    
+    my_crystal2 = random_crystal(225, ['C'], [3], 1.0, sites=[["4a", "8c"]])
+    my_crystal2 = random_crystal(225, ['C'], [3], 1.0)
+    print(my_crystal2)
+    my_crystal2.to_file("2.cif")
+    
+    my_crystal3 = random_crystal(225, ['C','Si'], [3, 1], 1.0, sites=[["4a", "8c"], None])
+    print(my_crystal3)
+    my_crystal3.to_file("3.cif")
+
 
     slow = []
     failed = []
@@ -285,12 +303,13 @@ def test_atomic():
                 slow.append(sg)
             if rand_crystal.valid:
                 check = False
-                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                #ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                ans1 = get_symmetry_dataset(rand_crystal.to_ase(), symprec=1e-1)
                 if ans1 is None:
                     ans1 = "???"
                 else:
                     ans1 = ans1["number"]
-                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                sga = SpacegroupAnalyzer(rand_crystal.to_pymatgen())
                 ans2 = "???"
                 if sga is not None:
                     try:
@@ -339,7 +358,6 @@ def test_atomic():
         for i in failed:
             fprint("     " + str(i))
 
-
 def test_molecular():
     global outstructs
     global outstrings
@@ -380,12 +398,12 @@ def test_molecular():
                 slow.append(sg)
             if rand_crystal.valid:
                 check = False
-                ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                ans1 = get_symmetry_dataset(rand_crystal.to_ase(), symprec=1e-1)
                 if ans1 is None:
                     ans1 = "???"
                 else:
                     ans1 = ans1["number"]
-                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                sga = SpacegroupAnalyzer(rand_crystal.to_pymatgen())
                 ans2 = "???"
                 if sga is not None:
                     try:
@@ -420,7 +438,7 @@ def test_molecular():
                         # rand_crystal.to_file("poscar", "1.vasp")
                         # import sys
                         # sys.exit()
-                        outstructs.append(rand_crystal.struct)
+                        outstructs.append(rand_crystal.to_pymatgen())
                         outstrings.append(str("3D_Molecular_" + str(sg) + ".vasp"))
                 fprint("\t{}\t|\t{}\t|\t{}\t|\t{}".format(sg, ans1, ans2, t))
             else:
@@ -473,7 +491,7 @@ def test_atomic_2D():
                     pass
                 else:
                     t += " xxxxx"
-                    outstructs.append(rand_crystal.struct)
+                    outstructs.append(rand_crystal.to_pymatgen())
                     outstrings.append(str("atomic_2D_" + str(sg) + ".vasp"))
                 symbol = g.symbol
                 fprint("\t{}\t|\t{}\t|\t{}".format(sg, symbol, t))
@@ -529,7 +547,7 @@ def test_molecular_2D():
                     pass
                 else:
                     t += " xxxxx"
-                    outstructs.append(rand_crystal.struct)
+                    outstructs.append(rand_crystal.to_pymatgen())
                     outstrings.append(str("molecular_2D_" + str(sg) + ".vasp"))
                 symbol = g.symbol
                 fprint("\t{}\t|\t{}\t|\t{}".format(sg, symbol, t))
@@ -579,14 +597,14 @@ def test_atomic_1D():
                 slow.append(num)
             if rand_crystal.valid:
                 try:
-                    ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                    ans1 = get_symmetry_dataset(rand_crystal.to_ase(), symprec=1e-1)
                 except:
                     ans1 = "???"
                 if ans1 is None or ans1 == "???":
                     ans1 = "???"
                 else:
                     ans1 = ans1["number"]
-                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                sga = SpacegroupAnalyzer(rand_crystal.to_pymatgen())
                 try:
                     ans2 = sga.get_space_group_number()
                 except:
@@ -602,7 +620,7 @@ def test_atomic_1D():
                         pass
                     else:
                         t += " xxxxx"
-                        outstructs.append(rand_crystal.struct)
+                        outstructs.append(rand_crystal.to_pymatgen)
                         outstrings.append(str("1D_Atomic_" + str(num) + ".vasp"))
                 fprint("\t{}\t|\t{}\t|\t{}\t|\t{}".format(num, ans1, ans2, t))
             else:
@@ -660,14 +678,14 @@ def test_molecular_1D():
                 slow.append(num)
             if rand_crystal.valid:
                 try:
-                    ans1 = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
+                    ans1 = get_symmetry_dataset(rand_crystal.to_ase(), symprec=1e-1)
                 except:
                     ans1 = "???"
                 if ans1 is None or ans1 == "???":
                     ans1 = "???"
                 else:
                     ans1 = ans1["number"]
-                sga = SpacegroupAnalyzer(rand_crystal.struct)
+                sga = SpacegroupAnalyzer(rand_crystal.to_pymatgen())
                 try:
                     ans2 = sga.get_space_group_number()
                 except:
@@ -683,7 +701,7 @@ def test_molecular_1D():
                         pass
                     else:
                         t += " xxxxx"
-                        outstructs.append(rand_crystal.struct)
+                        outstructs.append(rand_crystal.to_pymatgen())
                         outstrings.append(str("1D_Molecular_" + str(num) + ".vasp"))
                 fprint("\t{}\t|\t{}\t|\t{}\t|\t{}".format(num, ans1, ans2, t))
             else:
@@ -711,7 +729,7 @@ def test_cluster():
     slow = []
     failed = []
     fprint("  Point group # |     Symbol    |  Time Elapsed")
-    skip = []  # [32,55,56]#[28,29,30,31,32,55,56]
+    skip = [56]  # [32,55,56]#[28,29,30,31,32,55,56]
     for sg in range(1, 57):
         if sg not in skip:
             multiplicity = len(
@@ -739,7 +757,7 @@ def test_cluster():
                     pass
                 else:
                     t += " xxxxx"
-                    outstructs.append(rand_crystal.struct)
+                    outstructs.append(rand_crystal.to_pymatgen())
                     outstrings.append(str("Cluster_" + str(sg) + ".vasp"))
                 pgsymbol = Group(sg, dim=0).symbol
                 fprint("\t{}\t|\t{}\t|\t{}".format(sg, pgsymbol, t))

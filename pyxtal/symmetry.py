@@ -167,20 +167,18 @@ def get_wyckoffs(sg, organized=False, PBC=[1, 1, 1]):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
     organize the list based on multiplicity (this is used for
-    random_crystal.wyckoffs) For an unorganized list:
+    random_crystal.wyckoffs) 
+    
+    For an unorganized list:
 
-    1st index: index of WP in sg (0 is the WP with largest multiplicity)
-
-    2nd index: a SymmOp object in the WP
+        - 1st index: index of WP in sg (0 is the WP with largest multiplicity)
+        - 2nd index: a SymmOp object in the WP
 
     For an organized list:
 
-    1st index: specifies multiplicity (0 is the largest multiplicity)
-
-    2nd index: corresponds to a Wyckoff position within the group of equal
-        multiplicity.
-
-    3nd index: corresponds to a SymmOp object within the Wyckoff position
+        - 1st index: specifies multiplicity (0 is the largest multiplicity)
+        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
+        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
@@ -241,20 +239,18 @@ def get_layer(num, organized=False):
     """
     Returns a list of Wyckoff positions for a given 2D layer group. Has
     option to organize the list based on multiplicity (this is used for
-    random_crystal_2D.wyckoffs) For an unorganized list:
+    random_crystal_2D.wyckoffs) 
+    
+    For an unorganized list:
 
-    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
-
-    2nd index: a SymmOp object in the WP
+        - 1st index: index of WP in layer group (0 is the WP with largest multiplicity)
+        - 2nd index: a SymmOp object in the WP
 
     For an organized list:
 
-    1st index: specifies multiplicity (0 is the largest multiplicity)
-
-    2nd index: corresponds to a Wyckoff position within the group of equal
-        multiplicity.
-
-    3nd index: corresponds to a SymmOp object within the Wyckoff position
+        - 1st index: specifies multiplicity (0 is the largest multiplicity)
+        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
+        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
@@ -295,20 +291,18 @@ def get_rod(num, organized=False):
     """
     Returns a list of Wyckoff positions for a given 1D Rod group. Has option to
     organize the list based on multiplicity (this is used for
-    random_crystal_1D.wyckoffs) For an unorganized list:
+    random_crystal_1D.wyckoffs) 
+    
+    For an unorganized list:
 
-    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
-
-    2nd index: a SymmOp object in the WP
+        - 1st index: index of WP in layer group (0 is the WP with largest multiplicity)
+        - 2nd index: a SymmOp object in the WP
 
     For an organized list:
 
-    1st index: specifies multiplicity (0 is the largest multiplicity)
-
-    2nd index: corresponds to a Wyckoff position within the group of equal
-        multiplicity.
-
-    3nd index: corresponds to a SymmOp object within the Wyckoff position
+        - 1st index: specifies multiplicity (0 is the largest multiplicity)
+        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
+        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
@@ -395,8 +389,7 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
 
     Args:
         sg: the international spacegroup number
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic. Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
         molecular: whether or not to return the Euclidean point symmetry
             operations. If True, cuts off translational part of operation, and
             converts non-orthogonal operations (3-fold and 6-fold rotations)
@@ -476,9 +469,9 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
 def get_layer_symmetry(num, molecular=False):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
-    1st index: index of WP in group (0 is the WP with largest multiplicity)
-    2nd index: a point within the WP
-    3rd index: a site symmetry SymmOp of the point
+    - 1st index: index of WP in group (0 is the WP with largest multiplicity)
+    - 2nd index: a point within the WP
+    - 3rd index: a site symmetry SymmOp of the point
 
     Args:
         num: the layer group number
@@ -1470,32 +1463,101 @@ class Wyckoff_position:
         return wp
 
     def __str__(self):
-        try:
-            return self.string
-        except:
-            if self.dim not in list(range(4)):
-                return "Error: invalid crystal dimension. Must be a number between 0 and 3."
-            s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
-            if self.dim == 3:
-                s += "space "
-            elif self.dim == 2:
-                s += "layer "
-            elif self.dim == 1:
-                s += "Rod "
-            elif self.dim == 0:
-                s += "Point group " + self.symbol
-            if self.dim != 0:
-                s += "group " + str(self.number)
-            s += " with site symmetry " + ss_string_from_ops(
-                self.symmetry_m[0], self.number, dim=self.dim
-            )
-            for op in self.ops:
-                s += "\n" + op.as_xyz_string()
-            self.string = s
-            return self.string
+        if self.dim not in list(range(4)):
+            return "Error: invalid crystal dimension. Must be a number between 0 and 3."
+        s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
+        if self.dim == 3:
+            s += "space "
+        elif self.dim == 2:
+            s += "layer "
+        elif self.dim == 1:
+            s += "Rod "
+        elif self.dim == 0:
+            s += "Point group " + self.symbol
+        if self.dim != 0:
+            s += "group " + str(self.number)
+        s += " with site symmetry " + ss_string_from_ops(
+            self.symmetry_m[0], self.number, dim=self.dim
+        )
+        for op in self.ops:
+            s += "\n" + op.as_xyz_string()
+        self.string = s
+        return self.string
 
     def __repr__(self):
         return str(self)
+
+    def diagonalize_symops(self):
+        """
+        Obtain the symmetry in n representation for P21/c, Pc, C2/c
+        """
+        if self.number in [7, 14, 15]:
+            trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+            for j, op in enumerate(self.ops):
+                vec = op.translation_vector.dot(trans)
+                vec -= np.floor(vec) 
+                op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                self.ops[j] = op1    
+
+
+    def from_symops(ops, group=None):
+        """
+        search Wyckoff Position by symmetry operations
+        Now only supports space group symmetry
+
+        Args:
+        ops: a list of symmetry operations
+        group: the space group number
+        gen_only: boolean, check general positions only?
+
+        Returns:
+        Wyckoff_position
+
+        """
+        if isinstance(ops[0], str):
+            str1 = ops
+        else:
+            str1 = [op.as_xyz_string() for op in ops]
+
+        str1 = [st.replace("-1/2","+1/2") for st in str1]
+
+        N_sym = len(str1)
+        # sometimes, we allow the permutation
+        permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
+        if group is None:
+            groups = range(1,231)
+        else:
+            groups = [group]
+
+        for i in groups:
+            for wyc in Group(i):
+                if len(wyc) == N_sym:
+                    # Try permutation first
+                    str2 = [op.as_xyz_string() for op in wyc.ops]
+                    for perm in permutations:
+                        str_perm = permutate_xyz_string(str1, perm)
+                        # Compare the pure rotation and then 
+                        if set(str_perm) == set(str2):
+                            return wyc, perm
+
+                    # Try monoclinic space groups (P21/n, Pn, C2/n) 
+                    if i in [7, 14, 15]:
+                        trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+                        str3 = []
+                        for j, op in enumerate(wyc.ops):
+                            vec = op.translation_vector.dot(trans)
+                            vec -= np.floor(vec) 
+                            op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                            str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
+                            #wyc.ops[j] = op3
+                        if set(str3) == set(str1):
+                            return wyc, trans
+                elif len(wyc) < N_sym:
+                    continue #break since it won'
+
+
+        return None, None
+
 
     def from_group_and_index(group, index, dim=3, PBC=None):
         """
@@ -1999,6 +2061,8 @@ class Group:
                 self.lattice_type = "triclinic"
             elif self.number <= 15:
                 self.lattice_type = "monoclinic"
+                if self.number in [7, 14, 15]:
+                    self.alias = self.symbol.replace("c","n")
             elif self.number <= 74:
                 self.lattice_type = "orthorhombic"
             elif self.number <= 142:
@@ -2709,4 +2773,71 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
                 return random.choice(good_wyckoff)
             else:
                 return False
+
+def choose_wyckoff_molecular(group, number, orientations, general_site_only=True):
+    """
+    Choose a Wyckoff position to fill based on the current number of molecules
+    needed to be placed within a unit cell
+
+    Rules:
+
+        1) The new position's multiplicity is equal/less than (number).
+        2) We prefer positions with large multiplicity.
+        3) The site must admit valid orientations for the desired molecule.
+
+    Args:
+        group: a pyxtal.symmetry.Group object
+        number: the number of molecules still needed in the unit cell
+        orientations: the valid orientations for a given molecule. Obtained
+            from get_sg_orientations, which is called within molecular_crystal
+
+    Returns:
+        a single index for the Wyckoff position. If no position is found,
+        returns False
+    """
+    wyckoffs = group.wyckoffs_organized
+
+    if general_site_only or np.random.random() > 0.5:  # choose from high to low
+        for j, wyckoff in enumerate(wyckoffs):
+            if len(wyckoff[0]) <= number:
+                good_wyckoff = []
+                for k, w in enumerate(wyckoff):
+                    if orientations[j][k] != []:
+                        good_wyckoff.append(w)
+                if len(good_wyckoff) > 0:
+                    return random.choice(good_wyckoff)
+        return False
+    else:
+        good_wyckoff = []
+        for j, wyckoff in enumerate(wyckoffs):
+            if len(wyckoff[0]) <= number:
+                for k, w in enumerate(wyckoff):
+                    if orientations[j][k] != []:
+                        good_wyckoff.append(w)
+        if len(good_wyckoff) > 0:
+            return random.choice(good_wyckoff)
+        else:
+            return False
+
+
+def permutate_xyz_string(xyzs, permutation):
+    if permutation == [0,1,2]:
+        return xyzs
+    else:
+        new = []
+        for xyz in xyzs:
+            tmp = xyz.replace(" ","").split(',')
+            tmp = [tmp[it] for it in permutation]
+            if permutation == [1,0,2]: #a,b
+                tmp[0] = tmp[0].replace('y','x')
+                tmp[1] = tmp[1].replace('x','y')
+            elif permutation == [2,1,0]: #a,c
+                tmp[0] = tmp[0].replace('z','x')
+                tmp[2] = tmp[2].replace('x','z')
+            elif permutation == [0,2,1]: #b,c
+                tmp[1] = tmp[1].replace('z','y')
+                tmp[2] = tmp[2].replace('y','z')
+            new.append(tmp[0] + ", " + tmp[1] + ", " + tmp[2])
+
+        return new
 

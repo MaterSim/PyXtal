@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+{% from "_formhelpers.html" import render_field, structure %}
+
+{% block app_content %}
+  <h1>Comparison</h1>
+  <div class="row">
+    <form class="form" method="post" enctype="multipart/form-data" role="form">
+      {{ form.hidden_tag() }}
+      {{ wtf.form_errors(form, hiddens="only") }}
+      <div class="col-md-3">
+        {{ wtf.form_field(form.upload) }}
+        {{ wtf.form_field(form.upload2) }}
+        {{ wtf.form_field(form.wavelength) }}
+        {{ wtf.form_field(form.res) }}
+        <table>
+          <tr>
+            <td>{{ wtf.form_field(form.min2theta) }}</td>
+            <td>{{ wtf.form_field(form.max2theta) }}</td>
+          </tr>            
+        </table>                    
+        {{ wtf.form_field(form.submit, button_map={'submit': 'primary'}) }}
+      </div>
+      <div class="col-md-3">
+        {{ wtf.form_field(form.shift) }}
+        {{ render_field(form.method) }}
+        {{ render_field(form.fwhm, "glpv") }}
+        <table>
+          <tr>
+            <td>{{ render_field(form.u, "modpv") }}</td>
+            <td>{{ render_field(form.v, "modpv") }}</td>
+          </tr>
+          <tr>
+            <td>{{ render_field(form.w, "modpv") }}</td>
+            <td>{{ render_field(form.a, "modpv") }}</td>
+          </tr>
+          <tr>
+            <td>{{ render_field(form.eta_h, "modpv") }}</td>
+            <td>{{ render_field(form.eta_l, "modpv") }}</td>
+          </tr>
+        </table>
+      </div>
+      <div class="col-md-6">
+        {% if jsmol %}
+          {{ structure() }}
+        {% endif %}
+      </div>
+    </form>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      {% if plot %}
+        {{ plot|safe }}
+      {% endif %}
+    </div>
+    <div class="col-md-6">
+      {% if jsmol %}
+        {{ structure(2) }}
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

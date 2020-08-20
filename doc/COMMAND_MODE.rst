@@ -13,50 +13,49 @@ After a successfull `installation <Installation.html>`_, all of them can be acce
 
 ::
 
- $ pyxtal_atom.py -h
+    $ pyxtal_atom.py -h
+    
+                 ______       _    _          _   
+                (_____ \     \ \  / /        | |   
+                 _____) )   _ \ \/ / |_  ____| |  
+                |  ____/ | | | )  (|  _)/ _  | | 
+                | |    | |_| |/ /\ \ |_( (_| | |___
+                |_|     \__  /_/  \_\___)__|_|_____)
+                       (____/      
+    ----------------------(version 0.0.4 )----------------------
+    
+    A Python package for random crystal generation
+    The source code is available at https://github.com/qzhu2017/pyxtal
+    Developed by Zhu's group at University of Nevada Las Vegas
+    
+    
+    usage: pyxtal_atom.py [-h] [-s sg] [-e element] [-n numIons] [-f factor]
+                          [-v verbosity] [-a attempts] [-o outdir] [-d dimension]
+                          [-t thickness]
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      -s sg, --symmetry sg  desired symmetry, number or string, e.g., 36, Pbca, Ih
+      -e element, --element element
+                            desired elements: e.g., Li
+      -n numIons, --numIons numIons
+                            desired numbers of atoms: 16
+      -f factor, --factor factor
+                            volume factor: default 1.0
+      -v verbosity, --verbosity verbosity
+                            verbosity: default 0; higher values print more
+                            information
+      -a attempts, --attempts attempts
+                            number of crystals to generate: default 1
+      -o outdir, --outdir outdir
+                            Directory for storing output cif files: default 'out'
+      -d dimension, --dimension dimension
+                            desired dimension: (3, 2, 1, 0): default 3
+      -t thickness, --thickness thickness
+                            Thickness, in Angstroms, of a 2D crystal, or area of a
+                            1D crystal, None generates a value automatically:
+                            default None
 
-             ______       _    _          _   
-            (_____ \     \ \  / /        | |   
-             _____) )   _ \ \/ / |_  ____| |  
-            |  ____/ | | | )  (|  _)/ _  | | 
-            | |    | |_| |/ /\ \ |_( (_| | |___
-            |_|     \__  /_/  \_\___)__|_|_____)
-                   (____/      
-
-
-----------------------(version 0.0.4 )----------------------
-
-A Python package for random crystal generation
-The source code is available at https://github.com/qzhu2017/pyxtal
-Developed by Zhu's group at University of Nevada Las Vegas
-
-
-usage: pyxtal_atom.py [-h] [-s sg] [-e element] [-n numIons] [-f factor]
-                      [-v verbosity] [-a attempts] [-o outdir] [-d dimension]
-                      [-t thickness]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -s sg, --symmetry sg  desired symmetry, number or string, e.g., 36, Pbca, Ih
-  -e element, --element element
-                        desired elements: e.g., Li
-  -n numIons, --numIons numIons
-                        desired numbers of atoms: 16
-  -f factor, --factor factor
-                        volume factor: default 1.0
-  -v verbosity, --verbosity verbosity
-                        verbosity: default 0; higher values print more
-                        information
-  -a attempts, --attempts attempts
-                        number of crystals to generate: default 1
-  -o outdir, --outdir outdir
-                        Directory for storing output cif files: default 'out'
-  -d dimension, --dimension dimension
-                        desired dimension: (3, 2, 1, 0): default 3
-  -t thickness, --thickness thickness
-                        Thickness, in Angstroms, of a 2D crystal, or area of a
-                        1D crystal, None generates a value automatically:
-                        default None
 
 
 Among them, ``pyxtal_test.py`` is mainly used for the internal test. In the following, we explain the rest utilites in detail.

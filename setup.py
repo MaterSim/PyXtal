@@ -43,10 +43,11 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "numpy>=1.13.3",
-        "scipy>=1.5.0",
         "spglib>=1.10.4",
         "pymatgen>=2020.1.28",
+        "pandas>=0.24.2",
+        "networkx>=2.3",
+        #"openbabel>=3.0.0",
     ],
     python_requires=">=3.6.1",
     license="MIT",

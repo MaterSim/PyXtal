@@ -1,0 +1,119 @@
+<head>
+  <link rel="shortcut icon"
+    href="{{ url_for('static', filename='img/favicon.ico') }}">
+</head>
+{% extends 'bootstrap/base.html' %}
+
+{% block title %}
+  {% if title %}
+    {{ title }} - VXRD
+  {% else %}
+    VXRD
+  {% endif %}
+{% endblock %}
+
+{% block navbar %}
+  <link rel="stylesheet" type="text/css"
+    href="{{ url_for('static', filename='css/custom.css') }}">
+  <nav class="navbar navbar-default">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed"
+          data-toggle="collapse" data-target="#bs-example-navbar-collapse-1"
+          aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="{{ url_for('index') }}">
+          <img src="{{ url_for('static', filename='img/brand.png') }}">
+        </a>
+      </div>
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav">
+          <li><a href="{{ url_for('individual') }}">Individual</a></li>
+          <li><a href="{{ url_for('comparison') }}">Comparison</a></li>
+          <li>
+            <a href="https://github.com/qzhu2017/PyXtal" target="_blank">GitHub</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  <!-- BEGIN JSmol IMPORTS -->
+  <script src="{{ url_for('static', filename='jsmol/JSmol.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='jsmol.js') }}"></script>
+  <!-- END JSmol IMPORTS -->
+
+  <!-- BEGIN PROFILE HIDE/SHOW -->
+  <script>
+    $(document).ready(function() {
+      $('#method').change(function() {
+        if ($(this).val() === 'gaussian' || $(this).val() === 'lorentzian'
+          || $(this).val() === 'pseudo-voigt') {
+            $('.glpv').show();
+            $('.modpv').hide();
+        }
+        if ($(this).val() === 'mod_pseudo-voigt') {
+          $('.glpv').hide();
+          $('.modpv').show();
+        }
+      }).change(); // will trigger when DOM is ready
+    })
+  </script>
+  <!-- END PROFILE HIDE/SHOW -->
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js">
+  </script>
+  {# special full-width block for homepage jumbotron #}
+  {% block splash %}{% endblock %}
+  <div class="container">
+    <!-- BEGIN PROGRESS BAR -->
+    {% if progress %}
+      <div class="progress">
+        <div class="progress-bar progress-bar-danger progress-bar-striped active"
+          role="progressbar" aria-valuenow="{{ progress }}" aria-valuemin="0"
+          aria-valuemax="100" style="min-width: 2em; width: {{ progress }}%;">
+          {{ progress }}%
+        </div>
+      </div>
+    {% endif %}
+    <!-- END PROGRESS BAR -->
+    <!-- BEGIN ALERTS -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}" role="alert">
+          {% if 'success alert-dismissible' == category
+            or 'danger alert-dismissible' == category
+            or 'warning alert-dismissible' == category %}
+          <button type="button" class="close" data-dismiss="alert"
+            aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          {% endif %}
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% endwith %}
+    <!-- END ALERTS -->
+
+    {# application content needs to be provided in the app_content block #}
+    {% block app_content %}{% endblock %}
+  </div>
+
+  <footer>
+    <p style="text-align: center;">
+      &copy; 
+      <script>
+        document.write(new Date().getFullYear())
+      </script>
+      Stanley A. Baronett & Qiang Zhu
+    </p>
+  </footer>
+{% endblock %}

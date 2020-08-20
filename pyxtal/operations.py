@@ -405,6 +405,18 @@ def project_point(point, op, lattice=np.eye(3), PBC=[1, 1, 1]):
     Given a 3-vector and a Wyckoff position operator, returns the projection of that
     point onto the axis, plane, or point.
 
+    >>> from pyxtal.symmetry import Wyckoff_position
+    >>> ops1 = Wyckoff_position.from_group_and_index(14,1)
+    >>> ops0 = Wyckoff_position.from_group_and_index(14,0)
+    >>> print(ops)
+    Wyckoff position 2d in space group 14 with site symmetry -1
+    1/2, 0, 1/2
+    1/2, 1/2, 0
+    >>> project_point([0,0.3,0.1], ops0[0])
+    array([0. , 0.3, 0.1])
+    >>> project_point([0,0.3,0.1], ops1[0])
+    array([0.5, 0. , 0.5])
+
     Args:
         point: a 3-vector (numeric list, tuple, or array)
         op: a SymmOp object representing a symmetry element within a symmetry group
@@ -606,11 +618,13 @@ def rotate_vector(v1, v2):
     elif np.isclose(dot, -1, rtol=0.0001):
         r = [np.random.random(), np.random.random(), np.random.random()]
         v3 = np.cross(v1, r)
-        # return aa2matrix(v3, np.pi)
+        v3 /= np.linalg.norm(v3)
+        #return aa2matrix(v3, np.pi)
         return Rotation.from_rotvec(np.pi * v3).as_matrix()
     theta = angle(v1, v2)
     v3 = np.cross(v1, v2)
-    # return aa2matrix(v3, theta)
+    v3 /= np.linalg.norm(v3)
+    #return aa2matrix(v3, theta)
     return Rotation.from_rotvec(theta * v3).as_matrix()
 
 

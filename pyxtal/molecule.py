@@ -12,11 +12,13 @@ constraints.
 import numpy as np
 from copy import deepcopy
 from scipy.spatial.transform import Rotation
+import networkx as nx
 
 # ------------------------------
 # External Libraries
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
+from pymatgen.core.bonds import CovalentBond
 
 # PyXtal imports
 from pyxtal.msg import printx
@@ -54,6 +56,7 @@ class pyxtal_molecule:
             if len(tmp) > 1:
                 # Load the molecule from the given file
                 if tmp[-1] in ["xyz", "gjf", "g03", "json"]:
+                    import os
                     if os.path.exists(mol):
                         mo = Molecule.from_file(mol)
                     else:
@@ -70,14 +73,13 @@ class pyxtal_molecule:
             msg = "Could not create molecules from given input: {:s}".format(mol)
             raise NameError(msg)
 
-        props = mo.site_properties
+        self.props = mo.site_properties
+
         if len(mo) > 1:
             pga = PointGroupAnalyzer(mo)
-            mo = pga.symmetrize_molecule()["sym_mol"]
+            mo = pga.symmetrize_molecule()["sym_mol"] 
+            mo = self.add_site_props(mo)
 
-        if len(props) > 0:
-            for key in props.keys():
-                mo.add_site_property(key, props[key])
         self.mol = mo
         self.tm = tm
         self.get_box()
@@ -85,6 +87,23 @@ class pyxtal_molecule:
         self.get_radius()
         self.get_symbols()
         self.get_tols_matrix()
+
+    def swap_axis(self, ax):
+        """
+        swap the molecular axis
+        """
+        coords = self.mol.cart_coords[:, ax]
+        mo = Molecule(self.symbols, coords)
+        mo = self.add_site_props(mo)
+
+        return pyxtal_molecule(mo, self.tm)
+
+
+    def add_site_props(self, mo):
+        if len(self.props) > 0:
+            for key in self.props.keys():
+                mo.add_site_property(key, self.props[key])
+        return mo
 
     def get_box(self):
         """
@@ -140,7 +159,15 @@ class pyxtal_molecule:
         for i1, number1 in enumerate(numbers):
             for i2, number2 in enumerate(numbers):
                 tols[i1][i2] = self.tm.get_tol(number1, number2)
+        if len(self.mol)==1:
+            tols *= 0.8 # if only one atom, reduce the tolerance
         self.tols_matrix = tols
+
+    def show(self):
+        from pyxtal.viz import display_molecules
+        return display_molecules([self.mol])
+
+
 
 
 class Box:
@@ -199,14 +226,36 @@ class Orientation:
             if degrees is equal to 1
     """
 
-    def __init__(self, matrix, degrees=0, axis=None):
-        if (degrees == 1) and (axis is None):
-            printx("Error: Constraint vector required for orientation", priority=1)
+    def __init__(self, matrix, degrees=2, axis=None):
         self.matrix = np.array(matrix)
         self.r = Rotation.from_matrix(matrix)  # scipy transform.Rotation class
         self.degrees = degrees  # The number of degrees of freedom.
-        self.axis = axis  # The rotational axis (optional)
+        if degrees == 1:
+            if axis is None:
+                raise ValueError("axis is required for orientation")
+            else:
+                axis /= np.linalg.norm(axis)
+        self.axis = axis
         self.angle = None
+
+    def __str__(self):
+        s = "-------PyXtal.molecule.Orientation class----\n"
+        s += "degree of freedom: {:d}\n".format(self.degrees)
+        s += "Rotation matrix:\n"
+        s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:,0])
+        s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:,1])
+        s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:,2])
+        if self.axis is not None:
+            s += "Rotation axis\n"
+            s += "{:6.2f} {:6.2f} {:6.3f}\n".format(*self.axis)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+
+    def copy(self):
+        return deepcopy(self)
 
     def change_orientation(self, angle="random"):
         """
@@ -221,23 +270,44 @@ class Orientation:
             If self.degrees==0, no change
 
         """
-        if self.degrees == 2:
-            if angle == "random":
-                # randomly generate the axis and angle
-                axis = np.random.sample(3)
+        if self.degrees >= 1:
+            # choose the axis
+            if self.axis is None:
+                axis = np.random.RandomState().rand(3) - 0.5
                 self.axis = axis / np.linalg.norm(axis)
-                self.angle = np.random.random() * np.pi * 2
-            else:
-                self.angle = angle
-            self.r = Rotation.from_rotvec(self.angle * self.axis)
+ 
+            # parse the angle
+            if angle == "random":
+                angle = np.random.RandomState().rand() * np.pi * 2
+            self.angle = angle
+    
+            # update the matrix
+            r1 = Rotation.from_rotvec(self.angle * self.axis)
+            self.r = r1 * self.r
+            #self.r *= r1 
             self.matrix = self.r.as_matrix()
 
-        elif self.degrees == 1:
-            if angle == "random":
-                angle = np.random.random() * np.pi * 2
-            self.angle = angle
-            self.r = Rotation.from_rotvec(self.angle * self.axis)
-            self.matrix = self.r.as_matrix()
+    def rotate_by_matrix(self, matrix, ignore_constraint=True):
+        """
+        rotate
+
+        Args:
+            matrix: 3*3 rotation matrix
+
+        """
+        if not ignore_constraint:
+            if self.degrees == 0:
+                raise ValueError("cannot rotate")
+            elif self.degrees == 1:
+                axis = self.axis
+                vec = Rotation.from_matrix(matrix).as_rotvec()
+                if angle(vec, self.axis) > 1e-2 and angle(vec, -self.axis) > 1e-2:
+                    raise ValueError("must rotate along the given axis")
+        else:
+            axis = None
+            
+        matrix = matrix.dot(self.matrix)
+        return Orientation(matrix, self.degrees, axis)
 
     def get_matrix(self, angle="random"):
         """
@@ -266,6 +336,8 @@ class Orientation:
         elif self.degrees == 1:
             if angle == "random":
                 angle = np.random.random() * np.pi * 2
+            else:
+                angle = self.angle
             return Rotation.from_rotvec(angle * self.axis).as_matrix()
 
         elif self.degrees == 0:
@@ -286,11 +358,8 @@ class Orientation:
         Returns:
             pymatgen.core.structure. SymmOp object
         """
-        # If "random", rotates by a random amount
-
-        if angle is not None:
-            self.change_orientation(angle)
-
+        #if angle is not None:
+        #    self.change_orientation(angle)
         return SymmOp.from_rotation_and_translation(self.matrix, [0, 0, 0])
 
     @classmethod
@@ -352,8 +421,12 @@ class Orientation:
         Returns:
             a new orientation object with a different base rotation matrix
         """
+
         self.change_orientation()
         return self
+
+    def get_Euler_angles(self):
+        return self.r.as_euler('zxy', degrees=True)
 
 
 def get_inertia_tensor(mol):
@@ -372,7 +445,7 @@ def get_inertia_tensor(mol):
     I11 = I22 = I33 = I12 = I13 = I23 = 0.0
     for i in range(len(mo)):
         x, y, z = mo.cart_coords[i]
-        m = mo[i].specie.number
+        m = 1 #mo[i].specie.number
         I11 += m * (y ** 2 + z ** 2)
         I22 += m * (x ** 2 + z ** 2)
         I33 += m * (x ** 2 + y ** 2)
@@ -524,7 +597,8 @@ def orientation_in_wyckoff_position(
     randomize=True,
     exact_orientation=False,
     already_oriented=False,
-    allow_inversion=False,
+    allow_inversion=True,
+    rtol = 1e-2,
 ):
     """
     Tests if a molecule meets the symmetry requirements of a Wyckoff position,
@@ -617,8 +691,8 @@ def orientation_in_wyckoff_position(
             for j, op_w in enumerate(symm_w):
                 if opa_w[j].axis is not None:
                     dot = np.dot(opa_w[i].axis, opa_w[j].axis)
-                    if (not np.isclose(dot, 1, rtol=0.01)) and (
-                        not np.isclose(dot, -1, rtol=0.01)
+                    if (not np.isclose(dot, 1, rtol=rtol)) and (
+                        not np.isclose(dot, -1, rtol=rtol)
                     ):
                         constraint2 = opa_w[j]
                         break
@@ -646,7 +720,7 @@ def orientation_in_wyckoff_position(
             for j, c2 in enumerate(copy):
                 if i > j and j in list_j and j in list_i:
                     # Check if axes are colinear
-                    if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=0.01):
+                    if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=rtol):
                         list_i.remove(j)
                         list_j.remove(j)
                     # Check if axes are symmetrically equivalent
@@ -659,7 +733,7 @@ def orientation_in_wyckoff_position(
                                 if np.isclose(
                                     np.dot(op.operate(c1[0].axis), c2[0].axis),
                                     1,
-                                    rtol=0.05,
+                                    rtol=5*rtol,
                                 ):
                                     cond1 = True
                                     break
@@ -705,33 +779,28 @@ def orientation_in_wyckoff_position(
         v1 = c1[0].axis
         v2 = constraint1.axis
         T = rotate_vector(v1, v2)
-        # Loop over second molecular constraints
-        for opa in c1[1]:
-            phi = angle(constraint1.axis, constraint2.axis)
-            phi2 = angle(constraint1.axis, np.dot(T, opa.axis))
-            if np.isclose(phi, phi2, rtol=0.01):
-                r = np.sin(phi)
-                c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
-                theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
-                # R = aa2matrix(constraint1.axis, theta)
-                R = Rotation.from_rotvec(theta * constraint1.axis).as_matrix()
-                T2 = np.dot(R, T)
-                a = angle(np.dot(T2, opa.axis), constraint2.axis)
-                if not np.isclose(a, 0, rtol=0.01):
-                    T2 = np.dot(np.linalg.inv(R), T)
-                a = angle(np.dot(T2, opa.axis), constraint2.axis)
-                # if not np.isclose(a, 0, rtol=.01):
-                #    msg = "Error: Generated incorrect rotation: "
-                #    msg += str(theta)
-                #    msg += "\n(Within orientation_in_wyckoff_position)"
-                #    printx(msg, priority=0)
-
-                o = Orientation(T2, degrees=0)
-                orientations.append(o)
         # If there is only one constraint
         if c1[1] == []:
             o = Orientation(T, degrees=1, axis=constraint1.axis)
             orientations.append(o)
+        else:
+            # Loop over second molecular constraints
+            for opa in c1[1]:
+                phi = angle(constraint1.axis, constraint2.axis)
+                phi2 = angle(constraint1.axis, np.dot(T, opa.axis))
+                if np.isclose(phi, phi2, rtol=rtol):
+                    r = np.sin(phi)
+                    c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
+                    theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
+                    # R = aa2matrix(constraint1.axis, theta)
+                    R = Rotation.from_rotvec(theta * constraint1.axis).as_matrix()
+                    T2 = np.dot(R, T)
+                    a = angle(np.dot(T2, opa.axis), constraint2.axis)
+                    if not np.isclose(a, 0, rtol=rtol):
+                        T2 = np.dot(np.linalg.inv(R), T)
+                    o = Orientation(T2, degrees=0)
+                    orientations.append(o)
+
     # Ensure the identity orientation is checked if no constraints are found
     if constraints_m == []:
         o = Orientation(np.identity(3), degrees=2)
@@ -761,27 +830,62 @@ def orientation_in_wyckoff_position(
     for i in list_i:
         orientations.append(copy[i])
 
-    # Check each of the found orientations for consistency with the Wyckoff pos.
-    # If consistent, put into an array of valid orientations
+    #Check each of the found orientations for consistency with the Wyckoff pos.
+    #If consistent, put into an array of valid orientations
     allowed = []
     for o in orientations:
         if randomize is True:
-            op = o.get_op()
+            op = o.get_op("random")
         elif randomize is False:
-            op = o.get_op(angle=0)
+            op = o.get_op() #do not change
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(
-            mo,
-            wyckoff_position,
-            exact_orientation=True,
-            randomize=False,
-            allow_inversion=allow_inversion,
-        ):
+        if orientation_in_wyckoff_position(mo, wyckoff_position, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:
             allowed.append(o)
-    # Return the array of allowed orientations. If there are none, return False
+    #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
         return False
     else:
         return allowed
+
+def make_graph(mol, tol=0.2):
+    """
+    make graph object for the input molecule
+    """   
+    G = nx.Graph()
+    names = {}
+    for i, site in enumerate(mol._sites):
+        names[i] = site.specie.value
+
+    for i in range(len(mol)-1):
+        site1 = mol.sites[i]
+        for j in range(i+1, len(mol)):
+            site2 = mol.sites[j]
+            #remove short X-H distances
+            if "H" in [names[i], names[j]]:
+                factor = 0.3
+            else:
+                factor = 1.0
+
+            if CovalentBond.is_bonded(site1, site2, factor*tol):
+                G.add_edge(i,j)
+    nx.set_node_attributes(G, names, 'name')
+
+    return G
+ 
+def compare_mol_connectivity(mol1, mol2, ignore_name=False):
+    """
+    Compare two molecules by connectivity
+    """
+
+    G1 = make_graph(mol1)
+    G2 = make_graph(mol2)
+    if ignore_name:
+        GM = nx.isomorphism.GraphMatcher(G1, G2)
+    else:
+        fun = lambda n1, n2: n1['name'] == n2['name']
+        GM = nx.isomorphism.GraphMatcher(G1, G2, node_match=fun)
+
+    return GM.is_isomorphic(), GM.mapping
+
 

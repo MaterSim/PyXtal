@@ -1,36 +1,45 @@
 <img src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/512px_type1.png" alt="PyXtal" width="300"/>
 
 [![Documentation Status](https://readthedocs.org/projects/pyxtal/badge/?version=latest)](https://pyxtal.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/qzhu2017/PyXtal.svg?branch=master)](https://travis-ci.org/qzhu2017/PyXtal)
 [![Download Status](https://img.shields.io/pypi/dm/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/pyversions/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/v/pyxtal)](https://pypi.org/project/pyxtal/)
 [![DOI](https://zenodo.org/badge/128165891.svg)](https://zenodo.org/badge/latestdoi/128165891)
+<img align="right" width="450" src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/water.gif">
+
+
+## Content
+
+* [Introduction](#introduction)
+* [Current Features](#current-features)
+* [Installation](#installation)
+* [Citation](#citation)
+* [How to contribute?](#how-to-contribute)
+
 
 
 ## Introduction
-PyXtal is an open source Python package for generating random crystal structures based on symmetry constraints. The package allows for generation of both atomic and molecular crystals, with both general and special Wyckoff positions. These structures can be output to cif files for optimization and study. The package also allows users to easily access symmetry group information. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for information about installation and usage.
+PyXtal is an open source Python package which was initiated by [Qiang Zhu](http://qzhu2017.github.io) and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas. The goal of PyXtal project is to develop a fundamental library to allow one to design the material structure with a certain symmetry constraint. So far, the package allows for generation/manipulation of crystals, with both general and special Wyckoff positions. These structures can exported to various structural formats for further study. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for information about installation and usage.
 
-Codeveloped by Qiang Zhu and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas.
-Distributed under the MIT License.
+To contribute to this project, please check [How to contribute?](#how-to-contribute).
 
-## Current Features:
-* Random generation of atomic (3D, 2D, and 1D) crystals and point group clusters for a given symmetry group and stoichiometry
-* Random generation of (rigid) molecular crystals (3D, 2D, and 1D), with special Wyckoff positions. Molecules in special Wyckoff positions are automatically oriented to preserve the space group symmetry
-* Structure output to cif or POSCAR files via pymatgen
-* Easy access to symmetry group information, including Wyckoff positions, site symmetry operations, and point group symbols
+## Quick Start
+Check the folloowing links to quickly understand how pyxtal works
+- [Atomic crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb)
+- [Molecular crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb)
 
-## Dependencies:
-* [SciPy 1.0.1](https://www.scipy.org/install.html)
-* [NumPy 1.14.3](https://www.scipy.org/scipylib/download.html)
-* [Pandas 0.20.3](https://pandas.pydata.org/getpandas.html)
-* [Pymatgen 2017.9.3](http://pymatgen.org/#getting-pymatgen)
-* [SpgLib for Python 1.9.9.44](https://atztogo.github.io/spglib/python-spglib.html#installation)
+## Current Features
+* Random generation of atomic/molecular crystals in 3D, 2D, 1D and 0D crystals for a given symmetry group and stoichiometry
+* Molecules in special Wyckoff positions are automatically oriented to preserve the space group symmetry
+* Interfaces with Pymatgen and ASE for structural manipulation and analysis
+* Easy access to symmetry group information (e.g., Wyckoff positions, site symmetry operations)
+* X-ray diffraction analysis and [its online application](https://vxrd.physics.unlv.edu)
+* Geometry optimization via different exploratory algorithms.
 
-### Optional:
-* [openbabel 2.4.1 (Python bindings)](http://openbabel.org/wiki/Main_Page) (allows for additional molecule file formats)
 
 ## Installation
-
+To install the code, one just needs to do
 ```
 $ pip install pyxtal
 ```
@@ -41,7 +50,7 @@ $ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
 
 ## Citation
 
-Fredericks S, Sayre D, Zhu Q*(2019) 
+Fredericks S, Sayre D, Zhu Q*(2019)
 [PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis](https://arxiv.org/pdf/1911.11123.pdf)
 ```
 @article{pyxtal,
@@ -53,5 +62,17 @@ Fredericks S, Sayre D, Zhu Q*(2019)
     primaryClass={cond-mat.mtrl-sci}
 }
 ```
+## How to contribute? 
 
-## Working branch for BO
+This is an open-source project. Its growth depends on the community. To contribute to PyXtal, you don't necessarily have to write the code. Any contributions from the following list will be helpful.
+
+#### If you just want to use the code:
+- Star the PyXtal project via GitHub and recommend it to your colleagues/friends
+- Open an issue to report the bug or address your wishlist
+- Suggestions to improve our documentation
+
+#### If you want to join the code development
+- Fork the repository
+- Suggest and implement new functions
+- Send us the pull request
+

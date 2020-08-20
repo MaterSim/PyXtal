@@ -1,0 +1,76 @@
+::selection {
+  background:#b10202;
+  color:#fff;
+}
+.navbar {
+  min-height: 65px;
+  margin-bottom: 0px;
+}
+.navbar-nav {
+  padding-top: 8px;
+}
+.navbar-brand>img {
+  height: 33px;
+}
+.navbar-default .navbar-nav>li>a {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+}
+.navbar-default .navbar-nav>li>a:focus-within,
+.navbar-default .navbar-nav>li>a:focus,
+.navbar-default .navbar-nav>li>a:hover,
+.navbar-default .navbar-nav>li>a:active,
+.navbar-default .navbar-nav>li>a:active:focus {
+  font-size: 14px;
+  font-weight: 600;
+  color: #b10202;
+}
+.jumbotron {
+  background-image: url("/static/img/grid.jpg");
+
+  /* Position and center the image to scale nicely on all screens */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+}
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
+}
+.cta {
+  text-align: center;
+  padding-top: 40px;
+}
+.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
+  color:#b10202;
+}
+a {
+  color:#b10202;
+}
+a:hover {
+  color:#222;
+}
+.form-control:focus {
+  border-color: #b10202;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(226, 92, 92, 0.6);
+}
+.btn-primary {
+  background-color: #ca0202;
+  border-color: #ca0202;
+}
+.btn-primary:focus-within, .btn-primary:focus, .btn-primary:hover,
+.btn-primary:active, .btn-primary:active:focus {
+  background-color: #970202;
+  border-color: #970202;
+}
+.btn-link {
+  color: #b10202;
+}
+.btn-link:focus-within, .btn-link:focus, .btn-link:hover,
+.btn-link:active {
+  color:#222;
+}

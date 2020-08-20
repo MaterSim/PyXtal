@@ -24,9 +24,9 @@ copyright = "2018, Qiang Zhu, Scott Fredericks"
 author = "Qiang Zhu, Scott Fredericks"
 
 # The short X.Y version
-version = "0.0.1"
+version = "0.0.6"
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = "0.0.6"
 
 
 # -- General configuration ---------------------------------------------------
@@ -90,6 +90,24 @@ html_theme = "sphinx_rtd_theme"
 # documentation.
 #
 # html_theme_options = {}
+html_theme_options = {
+    'canonical_url': '',
+    'analytics_id': '',
+    'logo_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    'style_nav_header_background': '#5BA887',
+    #'style_nav_header_background': '#067BF8',
+    'vcs_pageview_mode': 'view',
+    # Toc options
+    'collapse_navigation': False,
+    'sticky_navigation': False,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False
+}
+html_logo = '../images/512px_type1.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -143,6 +161,9 @@ latex_documents = [
     ),
 ]
 
+# The name of an image file (relative to this directory) to place at the top of
+# the title page.
+latex_logo = '../images/512px_type1.png'
 
 # -- Options for manual page output ------------------------------------------
 
