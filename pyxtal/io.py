@@ -258,9 +258,7 @@ class structure_from_ext():
             numbers = numbers[order].tolist()
             coords = self.molecule.cart_coords[order]
             position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
-            print(position)
             position -= np.floor(position)
-            print(position)
             # check if molecule is on the special wyckoff position
             if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
                 if self.diag:
@@ -271,7 +269,6 @@ class structure_from_ext():
                 #print(position)
                 #print(wp)
                 self.wyc = wp
-            print("p-pppppppp", position)
             self.position = position
             self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
             #self.align()
