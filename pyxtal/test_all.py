@@ -111,6 +111,11 @@ class TestMolecular(unittest.TestCase):
         self.assertTrue(struc.valid)
         #def test_space_groups(self):
 
+    def test_preassigned_sites(self):
+        sites=[["4a", "4a"]]
+        struc = molecular_crystal(36, ['H2O'], [4], sites=sites)
+        self.assertTrue(struc.valid)
+
 
 class TestAtomic3D(unittest.TestCase):
 

@@ -63,7 +63,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
     lines += ' _symmetry_equiv_pos_site_id\n'
     lines += ' _symmetry_equiv_pos_as_xyz\n'
 
-    if change_set:
+    if not change_set:
         wps = G1
     else:
         wps = sites[0].wp.ops

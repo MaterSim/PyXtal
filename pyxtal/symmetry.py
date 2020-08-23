@@ -2749,8 +2749,7 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
         site: the pre-assigned Wyckoff sites (e.g., 4a)
 
     Returns:
-        a single index for the Wyckoff position. If no position is found,
-        returns False
+        Wyckoff position. If no position is found, returns False
     """
 
     if site is not None:
@@ -2774,7 +2773,7 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
             else:
                 return False
 
-def choose_wyckoff_molecular(group, number, orientations, general_site_only=True):
+def choose_wyckoff_molecular(group, number, site, orientations, general_site=True, dim=3):
     """
     Choose a Wyckoff position to fill based on the current number of molecules
     needed to be placed within a unit cell
@@ -2792,12 +2791,14 @@ def choose_wyckoff_molecular(group, number, orientations, general_site_only=True
             from get_sg_orientations, which is called within molecular_crystal
 
     Returns:
-        a single index for the Wyckoff position. If no position is found,
-        returns False
+        Wyckoff position. If no position is found, returns False
     """
     wyckoffs = group.wyckoffs_organized
 
-    if general_site_only or np.random.random() > 0.5:  # choose from high to low
+    if site is not None:
+        return Wyckoff_position.from_group_and_index(group.number, site, dim)
+
+    elif general_site or np.random.random() > 0.5:  # choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
                 good_wyckoff = []

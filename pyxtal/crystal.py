@@ -179,10 +179,6 @@ class random_crystal:
                 self.sites[specie] = None
         # QZ: needs to check if it is compatible
 
-        self.lattice_attempts=40
-        self.coord_attempts=10
-        #self.wyckoff_attempts=10
-
         self.generate_crystal()
 
     def check_compatible(self, group, numIons):
@@ -443,6 +439,10 @@ class random_crystal:
             self.lattice_attempts = 5
             self.coord_attempts = 5
             #self.wyckoff_attempts = 5
+        else:
+            self.lattice_attempts=40
+            self.coord_attempts=10
+            #self.wyckoff_attempts=10
 
         # Calculate a minimum vector length for generating a lattice
         # NOTE Comprhys: minvector never used?
@@ -489,7 +489,6 @@ class random_crystal:
             if self.valid:
                 return
 
-        self.valid = False
         return
 
     def copy(self):
@@ -589,11 +588,10 @@ class random_crystal:
             numIon: Number of ions to accomodate
             specie: Type of species being placed on wyckoff site
             cell_matrix: Matrix of lattice vectors
+            wyks: current wyckoff sites
 
         Returns:
             Sucess:
-                coordinates_tmp: list of sets of co-ordinates for valid sites
-                species_tmp: list of specie for valid sites
                 wyckoff_sites_tmp: list of wyckoff sites for valid sites
             Failue:
                 None
