@@ -35,51 +35,73 @@ class GULP():
         self.cell = None
         self.cputime = 0
 
+
     def run(self):
         self.write()
         self.execute()
         self.read()
-        self.clean()
+        #self.clean()
+
 
     def execute(self):
         cmd = self.exe + '<' + self.input + '>' + self.output
         os.system(cmd)
 
+
     def clean(self):
         os.remove(self.input)
         os.remove(self.output)
+        os.remove(self.dump)
 
 
     def write(self):
-
-        lat= self.structure.lattice
-        a, b, c = lat.a, lat.b, lat.c
-        alpha, beta, gamma = deg*lat.alpha, deg*lat.beta, deg*lat.gamma
-
+        try:
+            lat = self.structure.lattice
+            a, b, c = lat.a, lat.b, lat.c
+            alpha, beta, gamma = deg*lat.alpha, deg*lat.beta, deg*lat.gamma
+        except:
+            a, b, c, alpha, beta, gamma = self.structure.get_cell_lengths_and_angles()
+        
         with open(self.input, 'w') as f:
             if self.opt == 'conv':
                 f.write('opti {:s} conjugate nosymmetry\n'.format(self.opt))
+            elif self.opt == "single":
+                f.write('gradients noflag\n')
             else:
                 f.write('opti stress {:s} conjugate nosymmetry\n'.format(self.opt))
+
             f.write('\ncell\n')
             f.write('{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'.format(\
                     a, b, c, alpha, beta, gamma))
             f.write('\nfractional\n')
+            
+            try:
+                frac_coords, self.sites = self.structure._get_coords_and_species(absolute=False)
+            except:
+                frac_coords = self.structure.get_scaled_positions()
+                self.sites = self.structure.symbols
 
             symbols = []
-            for coord, site in zip(self.structure.frac_coords, self.structure.sites):
+            for coord, site in zip(frac_coords, self.sites):
                 f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(site, *coord))
+            
+            try:
+                species = self.structure.species
+            except:
+                species = list(set(self.sites))
 
             f.write('\nSpecies\n')
-            for specie in self.structure.species:
+            for specie in species:
                 f.write('{:4s} core {:4s}\n'.format(specie, specie))
 
             f.write('\nlibrary {:s}\n'.format(self.ff))
             f.write('ewald 10.0\n')
             #f.write('switch rfo gnorm 1.0\n')
             #f.write('switch rfo cycle 0.03\n')
-            f.write('maxcycle {:d}\n'.format(self.steps))
+            if self.opt != "single":
+                f.write('maxcycle {:d}\n'.format(self.steps))
             f.write('output cif {:s}\n'.format(self.dump))
+
 
     def read(self):
         with open(self.output, 'r') as f:
