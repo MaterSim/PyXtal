@@ -192,19 +192,17 @@ def distance(xyz, lattice, PBC=[1, 1, 1]):
     matrix = create_matrix(PBC=PBC)
     matrix += xyz
     matrix = np.dot(matrix, lattice)
-    return np.min(cdist(matrix, [[0, 0, 0]]))
+    return np.min(np.linalg.norm(matrix, axis=1))
 
 
-def distance_matrix(
-    points1, points2, lattice, PBC=[1, 1, 1], single=False, metric="euclidean"
-):
+def distance_matrix(pts1, pts2, lattice, PBC=[1, 1, 1], single=False, metric="euclidean"):
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account the lattice metric and periodic boundary conditions.
     
     Args:
-        points1: a list of fractional coordinates
-        points2: another list of fractional coordinates
+        pts1: a list of fractional coordinates
+        pts2: another list of fractional coordinates
         lattice: a 3x3 matrix describing a unit cell's lattice vectors
         PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
@@ -215,51 +213,27 @@ def distance_matrix(
     Returns:
         a scalor or distance matrix
     """
-    if lattice is not None:
-        if (np.array(lattice) == np.eye(3)).all():
-            lattice = None
-
-    if lattice is not None:
-        if PBC != [0, 0, 0]:
-            l1 = filtered_coords(points1, PBC=PBC)
-            l2 = filtered_coords(points2, PBC=PBC)
-            l2 = np.dot(l2, lattice)
-            matrix = create_matrix(PBC=PBC)
-            m1 = np.array([(l1 + v) for v in matrix])
-            m1 = np.dot(m1, lattice)
-            all_distances = np.array([cdist(l, l2, metric) for l in m1])
-            if single:
-                return np.min(all_distances)
-            else:
-                return np.apply_along_axis(np.min, 0, all_distances)
-
+    if PBC != [0, 0, 0]:
+        l1 = filtered_coords(pts1, PBC=PBC)
+        l2 = filtered_coords(pts2, PBC=PBC)
+        l2 = np.dot(l2, lattice)
+        matrix = create_matrix(PBC=PBC)
+        m1 = np.array([(l1 + v) for v in matrix])
+        m1 = np.dot(m1, lattice)
+        all_distances = np.array([cdist(l, l2, metric) for l in m1])
+        if single:
+            return np.min(all_distances)
         else:
-            l1 = np.dot(points1, lattice)
-            l2 = np.dot(points2, lattice)
-            d = cdist(l1, l2, metric)
-            if single:
-                return np.min(d)
-            else:
-                return d
+            return np.apply_along_axis(np.min, 0, all_distances)
+
     else:
-        if PBC != [0, 0, 0]:
-            l1 = filtered_coords(points1, PBC=PBC)
-            l2 = filtered_coords(points2, PBC=PBC)
-            matrix = create_matrix(PBC=PBC)
-            m1 = np.array([(l1 + v) for v in matrix])
-            all_distances = np.array([cdist(l, l2, metric) for l in m1])
-            if single:
-                return all_distances
-            else:
-                return np.apply_along_axis(np.min, 0, all_distances)
+        l1 = np.dot(pts1, lattice)
+        l2 = np.dot(pts2, lattice)
+        d = cdist(l1, l2, metric)
+        if single:
+            return np.min(d)
         else:
-            if single:
-                return np.min(cdist(points1, points2, metric))
-            else:
-                return cdist(points1, points2, metric)
-
-
-# ------------------------------
+            return d
 
 
 def create_matrix(PBC=[1, 1, 1]):
@@ -344,30 +318,6 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
-
-# def euler_from_matrix(m, radians=True):
-#    """
-#    Given a 3x3 rotation matrix, determines the Euler angles
-#
-#    Args:
-#        m: a 3x3 rotation matrix
-#        radians: whether or not to output angles in radians (degrees if False)
-#
-#    Returns:
-#        (phi, theta, psi): psi is the azimuthal angle, theta is the polar angle,
-#            and psi is the angle about the z axis. All angles are in radians
-#            unless radians is False
-#    """
-#    phi = np.arctan2(m[2][0], m[2][1])
-#    theta = np.arccos(m[2][2])
-#    psi = - np.arctan2(m[0][2], m[1][2])
-#    if radians is False:
-#        phi *= deg
-#        theta *= deg
-#        psi *= deg
-#    return (phi, theta, psi)
-
-
 def get_inverse(op):
     """
     Given a SymmOp object, returns its inverse.
@@ -429,19 +379,11 @@ def project_point(point, op, lattice=np.eye(3), PBC=[1, 1, 1]):
     Returns:
         a transformed 3-vector (numpy array)
     """
+    rot = op.rotation_matrix
+    trans = op.translation_vector
+
     if PBC == [0, 0, 0]:
-        # Temporarily move the point in the opposite direction of the translation
-        translation = op.translation_vector
-        point -= translation
-        new_vector = np.array([0.0, 0.0, 0.0])
-        # Loop over basis vectors of the symmetry element
-        for basis_vector in op.rotation_matrix.T:
-            # b = np.linalg.norm(basis_vector)
-            b = np.sqrt(basis_vector.dot(basis_vector))  # a faster version?
-            if not np.isclose(b, 0):
-                new_vector += basis_vector * (np.dot(point, basis_vector) / (b ** 2))
-        new_vector += translation
-        return new_vector
+        return project_point_no_PBC(point, rot, trans, lattice)
     else:
         # With PBC, the point could be projected onto multiple places on the symmetry element
         point = filtered_coords(point)
@@ -451,17 +393,38 @@ def project_point(point, op, lattice=np.eye(3), PBC=[1, 1, 1]):
         new_vectors = []
         distances = []
         for v in m:
-            # Get the direct projection onto each of the new symmetry elements
-            new_op = SymmOp.from_rotation_and_translation(
-                op.rotation_matrix, op.translation_vector + v
-            )
-            # Needs to replace
-            new_vector = project_point(point, new_op, lattice=lattice, PBC=[0, 0, 0])
+            new_vector = project_point_no_PBC(point, rot, trans+v, lattice)
             new_vectors.append(new_vector)
-            distances.append(distance(new_vector - point, lattice=lattice, PBC=[0, 0, 0]))
+            tmp = (new_vector-point).dot(lattice)
+            distances.append(np.linalg.norm(tmp))
         i = np.argmin(distances)
         return filtered_coords(new_vectors[i], PBC=PBC)
 
+
+def project_point_no_PBC(point, rot, trans, lattice=np.eye(3)):
+    """
+    Given a 3-vector and a Wyckoff position operator, returns the projection of that
+    point onto the axis, plane, or point.
+
+    Args:
+        point: a 3-vector (numeric list, tuple, or array)
+        op: a SymmOp object representing a symmetry element within a symmetry group
+        lattice: 3x3 matrix describing the unit cell vectors
+
+    Returns:
+        a transformed 3-vector (numpy array)
+    """
+    # Temporarily move the point in the opposite direction of the translation
+    point -= trans
+    new_vector = np.array([0.0, 0.0, 0.0])
+    # Loop over basis vectors of the symmetry element
+    for basis_vector in rot.T:
+        # b = np.linalg.norm(basis_vector)
+        b = np.sqrt(basis_vector.dot(basis_vector))  # a faster version?
+        if not np.isclose(b, 0):
+            new_vector += basis_vector * (np.dot(point, basis_vector) / (b ** 2))
+    new_vector += trans
+    return new_vector
 
 def apply_ops(coord, ops):
     """
