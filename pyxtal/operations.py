@@ -310,11 +310,21 @@ def filtered_coords(coords, PBC=[1, 1, 1]):
         an array of filtered coords with the same shape as coords
     """
 
-    def filter_vector(vector):
-        f = np.floor(vector)
-        return vector - np.multiply(f, PBC)
+    #def filter_vector(vector):
+    #    f = np.floor(vector)
+    #    return vector - np.multiply(f, PBC)
 
-    return np.apply_along_axis(filter_vector, -1, coords)
+    #return np.apply_along_axis(filter_vector, -1, coords)
+
+    if isinstance(coords, list):
+        coords = np.array(coords)
+    for i in range(3):
+        if PBC[i] > 0:
+            if len(coords.shape)>1:
+                coords[:,i] -= np.floor(coords[:,i])
+            else:
+                coords[i] -= np.floor(coords[i])
+    return coords
 
 
 def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
