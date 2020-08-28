@@ -469,11 +469,13 @@ class mol_site:
         coords = coords[m_length:]
         min_ds = []
 
-        if self.PBC != [0, 0, 0]:
-            # Check periodic images
-            m = self._create_matrix()
-            coords_PBC = np.vstack([coords_mol + v for v in m])
-            d = distance_matrix(coords_mol, coords_PBC, self.lattice.matrix, [0, 0, 0], True)
+        # Check periodic images
+        m = self._create_matrix()
+        coords_PBC = np.vstack([coords_mol + v for v in m])
+        d = distance_matrix(coords_mol, coords_PBC, self.lattice.matrix, [0, 0, 0], True)
+        if d < 0.9:
+            return d
+        else:
             min_ds.append(d)
 
         if self.wp.multiplicity > 1:
