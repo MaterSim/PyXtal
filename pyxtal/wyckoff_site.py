@@ -445,7 +445,8 @@ class mol_site:
         for i in i_list:
             for j in j_list:
                 for k in k_list:
-                    matrix.append([i, j, k])
+                    if [i, j, k] != [0, 0, 0]:
+                        matrix.append([i, j, k])
         return np.array(matrix, dtype=float)
 
     def compute_distances(self):
@@ -455,7 +456,7 @@ class mol_site:
         crystal.check_distance as the base code.
 
         Returns:
-            True if the atoms are not too close together, False otherwise
+            minimum distances
         """
         m_length = len(self.symbols)
         # TODO: Use tm instead of tols lists
@@ -471,16 +472,10 @@ class mol_site:
         if self.PBC != [0, 0, 0]:
             # Check periodic images
             m = self._create_matrix()
-            # Remove original coordinates
-            m2 = []
-            v0 = np.array([0.0, 0.0, 0.0])
-            for v in m:
-                if not (v == v0).all():
-                    m2.append(v)
-            if len(m2) > 0:
-                coords_PBC = np.vstack([coords_mol + v for v in m2])
-                d = distance_matrix(coords_mol, coords_PBC, self.lattice.matrix, [0, 0, 0], True)
-                min_ds.append(d)
+            coords_PBC = np.vstack([coords_mol + v for v in m])
+            d = distance_matrix(coords_mol, coords_PBC, self.lattice.matrix, [0, 0, 0], True)
+            min_ds.append(d)
+
         if self.wp.multiplicity > 1:
             # Check inter-atomic distances
             d = distance_matrix(coords_mol, coords, self.lattice.matrix, self.PBC, True)
@@ -504,23 +499,15 @@ class mol_site:
         # Remove generating molecule's coords from large array
         coords = coords[m_length:]
 
-        if self.PBC != [0, 0, 0]:
-            # Check periodic images
-            m = self._create_matrix()
-            # Remove original coordinates
-            m2 = []
-            v0 = np.array([0.0, 0.0, 0.0])
-            for v in m:
-                if not (v == v0).all():
-                    m2.append(v)
-            if len(m2) > 0:
-                coords_PBC = np.vstack([coords_mol + v for v in m2])
-                d = distance_matrix(coords_PBC, coords_mol, self.lattice.matrix, PBC=[0, 0, 0])
-                # only check if small distance is detected
-                if np.min(d) < np.max(self.tols_matrix):
-                    tols = np.min(d.reshape([len(m2), m_length, m_length]), axis=0)
-                    if (tols < self.tols_matrix).any():
-                        return False
+        # Check periodic images
+        m = self._create_matrix()
+        coords_PBC = np.vstack([coords_mol + v for v in m])
+        d = distance_matrix(coords_PBC, coords_mol, self.lattice.matrix, PBC=[0, 0, 0])
+        # only check if small distance is detected
+        if np.min(d) < np.max(self.tols_matrix):
+            tols = np.min(d.reshape([len(m), m_length, m_length]), axis=0)
+            if (tols < self.tols_matrix).any():
+                return False
 
         if self.wp.multiplicity > 1:
             # Check inter-atomic distances

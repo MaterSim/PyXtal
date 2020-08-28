@@ -216,24 +216,49 @@ def distance_matrix(pts1, pts2, lattice, PBC=[1, 1, 1], single=False, metric="eu
     if PBC != [0, 0, 0]:
         l1 = filtered_coords(pts1, PBC=PBC)
         l2 = filtered_coords(pts2, PBC=PBC)
+        l1 = np.dot(l1, lattice)
         l2 = np.dot(l2, lattice)
         matrix = create_matrix(PBC=PBC)
-        m1 = np.array([(l1 + v) for v in matrix])
-        m1 = np.dot(m1, lattice)
-        all_distances = np.array([cdist(l, l2, metric) for l in m1])
+        matrix = np.dot(matrix, lattice)
+        all_distances = np.zeros([len(matrix), len(l1), len(l2)])
+        for i, v in enumerate(matrix):
+            all_distances[i] += cdist(l1+v, l2, metric)
+        #m1 = np.array([(l1 + v) for v in matrix])
+        #m1 = np.vstack([l1 + v for v in matrix])
+        #all_distances = np.array([cdist(l, l2, metric) for l in m1])
         if single:
             return np.min(all_distances)
         else:
-            return np.apply_along_axis(np.min, 0, all_distances)
+            #return np.apply_along_axis(np.min, 0, all_distances)
+            return np.min(all_distances, axis=0)
 
     else:
-        l1 = np.dot(pts1, lattice)
-        l2 = np.dot(pts2, lattice)
-        d = cdist(l1, l2, metric)
-        if single:
-            return np.min(d)
-        else:
-            return d
+        return distance_matrix_no_PBC(pts1, pts2, lattice, single, metric)
+
+def distance_matrix_no_PBC(pts1, pts2, lattice, single=False, metric="euclidean"):
+    """
+    Returns the distances between two sets of fractional coordinates.
+    Without periodic boundary conditions.
+
+    Args:
+        pts1: a list of fractional coordinates (N1*3)
+        pts2: another list of fractional coordinates (N2*3)
+        lattice: a 3x3 matrix describing a unit cell's lattice vectors
+        single: return the minimum distance or the matrix
+        metric: the metric to use with cdist. e.g. `euclidean`,
+            `sqeuclidean`, `minkowski`, and others
+
+    Returns:
+        a scalor or distance matrix
+    """
+
+    l1 = np.dot(pts1, lattice)
+    l2 = np.dot(pts2, lattice)
+    d = cdist(l1, l2, metric)
+    if single:
+        return np.min(d)
+    else:
+        return d
 
 
 def create_matrix(PBC=[1, 1, 1]):
