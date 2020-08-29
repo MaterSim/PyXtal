@@ -290,7 +290,7 @@ class Orientation:
             r1 = Rotation.from_rotvec(self.angle * self.axis)
             self.r = r1 * self.r
             #self.r *= r1 
-            self.matrix = self.r.as_matrix()
+            #self.matrix = self.r.as_matrix()
 
     def rotate_by_matrix(self, matrix, ignore_constraint=True):
         """

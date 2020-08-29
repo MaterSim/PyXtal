@@ -451,12 +451,14 @@ def project_point_no_PBC(point, rot, trans, lattice=np.eye(3)):
     """
     # Temporarily move the point in the opposite direction of the translation
     point -= trans
-    new_vector = np.array([0.0, 0.0, 0.0])
+    new_vector = np.zeros(3)
     # Loop over basis vectors of the symmetry element
+    # QZ: to optimize
     for basis_vector in rot.T:
         # b = np.linalg.norm(basis_vector)
         b = np.sqrt(basis_vector.dot(basis_vector))  # a faster version?
-        if not np.isclose(b, 0):
+        #if not np.isclose(b, 0):
+        if b > 1e-3:
             new_vector += basis_vector * (np.dot(point, basis_vector) / (b ** 2))
     new_vector += trans
     return new_vector
@@ -511,9 +513,10 @@ def angle(v1, v2, radians=True):
     np.real(v1)
     v2 = np.real(v2)
     dot = np.dot(v1, v2)
-    if np.isclose(dot, 1.0):
+    #if np.isclose(dot, 1.0):
+    if np.abs(dot-1)<1e-3:
         return 0
-    elif np.isclose(dot, -1.0):
+    elif np.abs(dot+1)<1e-3:
         return np.pi
     a = np.arccos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
     if radians is True:
@@ -592,7 +595,7 @@ def aa2matrix(axis, angle, radians=True, random=False):
     return Q
 
 
-def rotate_vector(v1, v2):
+def rotate_vector(v1, v2, rtol=1e-4):
     # TODO: Verify that multiplication order is correct
     # (matrix should come after vector in np.dot)
     """
@@ -611,9 +614,9 @@ def rotate_vector(v1, v2):
     v2 = v2 / np.linalg.norm(v2)
     dot = np.dot(v1, v2)
     # Handle collinear vectors
-    if np.isclose(dot, 1, rtol=0.0001):
+    if np.abs(dot-1) < rtol:
         return np.identity(3)
-    elif np.isclose(dot, -1, rtol=0.0001):
+    elif np.abs(dot+1)< rtol:
         r = [np.random.random(), np.random.random(), np.random.random()]
         v3 = np.cross(v1, r)
         v3 /= np.linalg.norm(v3)
