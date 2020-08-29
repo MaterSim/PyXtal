@@ -86,7 +86,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
                 species = []
                 for id in range(sym_num):
                     mol = site.get_mol_object(id)
-                    tmp = mol.cart_coords.dot(site.inv_lattice)
+                    tmp = mol.cart_coords.dot(site.lattice.inv_matrix)
                     if coords is None:
                         coords = tmp
                     else:

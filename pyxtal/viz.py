@@ -104,7 +104,7 @@ def display_atomic(struc, size=(600,300), scale=0.25, radius=0.10, supercell=(1,
             view.setStyle({'sym':2},{'sphere':{'scale':scale*1.1,'color':'blue'}})
     return view.zoomTo()
 
-def display_molecular(struc, size=(600, 300), supercell=(1,1,1), axis=None, animation=False):
+def display_molecular(struc, size=(600, 300), supercell=(1,1,1), axis=None, animation=False, interval=2000):
     """
     display the molecular crystals generated from pyxtal. If the animation is False, 
     only dump the structure to cif and let py3Dmol display it. If animation is on,
@@ -142,7 +142,7 @@ def display_molecular(struc, size=(600, 300), supercell=(1,1,1), axis=None, anim
         for i in range(len(struc.mol_sites[0].wp)):
             cifs += struc.to_file(sym_num=i+1)
         view.addModelsAsFrames(cifs, 'cif')
-        view.animate({'loop': 'forward','step':205})
+        view.animate({'loop': 'forward', 'interval': interval})
         view.addUnitCell()
         view.setStyle({'model':0},{'stick':{'colorscheme':'greenCarbon'}})
     return view.zoomTo()
@@ -210,7 +210,7 @@ def display_molecules(molecules, size=(400,300), animation=False):
 
     return view.zoomTo()
 
-def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, animation='slider'):
+def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, animation='slider', interval=2000):
     """
     display the molecular crystals generated from pyxtal. 
     two modes of animations are supported: slider or movie
@@ -237,7 +237,7 @@ def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, 
         for struc in strucs:
             cifs += struc.to_file()
         view.addModelsAsFrames(cifs, 'cif')
-        view.animate({'loop': 'forward','step':205})
+        view.animate({'loop': 'forward', 'interval': interval})
         view.addUnitCell()
         view.setStyle({'model':0},{'stick':{'colorscheme':'greenCarbon'}})
         return view.zoomTo()
