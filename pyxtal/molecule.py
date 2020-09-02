@@ -868,7 +868,7 @@ def make_graph(mol, tol=0.2):
             site2 = mol.sites[j]
             #remove short X-H distances
             if names[i] == "H" and names[j]=="H":
-                factor = -0.1
+                factor = -0.5
             elif [names[i], names[j]] in [["S","S"], ["S","O"], ["O","S"], ["F","O"], ["O","F"]]:
                 factor = 0.05
             elif "H" in [names[i], names[j]]:
