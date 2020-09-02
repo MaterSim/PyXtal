@@ -4,7 +4,7 @@ import random
 
 # PyXtal imports
 from pyxtal.msg import printx
-from pyxtal.operations import angle
+from pyxtal.operations import angle, create_matrix
 from pyxtal.constants import deg, rad
 
 class Lattice:
@@ -136,6 +136,10 @@ class Lattice:
         """
         from copy import deepcopy
         return deepcopy(self)
+
+    def get_lengths(self):
+        mat = create_matrix()
+        return np.linalg.norm(mat.dot(self.matrix), axis=1)
 
     def optimize(self):
         """

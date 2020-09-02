@@ -582,6 +582,17 @@ class molecular_crystal:
         from pyxtal.viz import display_molecular
         return display_molecular(self, **kwargs)
 
+    def _check_lattice_vs_shape(self):
+        """
+        Make sure that the shape is compatible with the lattice vectors.
+        Experimental----
+        """
+        min_lat = min(self.lattice.get_para()[:3])
+        for mol in self.molecules:
+            if min_lat < min([mol.box.width, mol.box.height, mol.box.length]):
+                return False
+        return True
+
     def generate_crystal(self):
         """
         The main code to generate a random molecular crystal. If successful,
@@ -614,15 +625,17 @@ class molecular_crystal:
                     self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
 
-                for cycle2 in range(self.coord_attempts):
-                    self.cycle2 = cycle2
-                    output = self._generate_coords()
 
-                    if output:
-                        self.mol_sites = output
-                        break
-                if self.valid:
-                    return
+                if self._check_lattice_vs_shape():
+                    for cycle2 in range(self.coord_attempts):
+                        self.cycle2 = cycle2
+                        output = self._generate_coords()
+
+                        if output:
+                            self.mol_sites = output
+                            break
+                    if self.valid:
+                        return
 
             printx("Couldn't generate crystal after max attempts.", priority=1)
             return
