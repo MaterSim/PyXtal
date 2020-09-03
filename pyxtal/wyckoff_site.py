@@ -137,13 +137,11 @@ class mol_site:
             # Filter PBC of wp_atomic_coords
             wp_atomic_coords = filtered_coords(wp_atomic_coords, PBC=self.PBC)
             # Add PBC copies of coords
-            m = create_matrix(PBC=self.PBC)
+            m = create_matrix(PBC=self.PBC, omit=True)
             # Move [0,0,0] PBC vector to first position in array
             m2 = [[0, 0, 0]]
-            v0 = np.array([0.0, 0.0, 0.0])
             for v in m:
-                if not (v == v0).all():
-                    m2.append(v)
+                m2.append(v)
             new_coords = np.vstack([wp_atomic_coords + v for v in m2])
             wp_atomic_coords = new_coords
 

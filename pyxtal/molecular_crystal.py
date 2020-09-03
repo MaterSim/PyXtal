@@ -15,6 +15,7 @@ from pyxtal.database.element import Element
 from pyxtal.wyckoff_site import mol_site, check_mol_sites, WP_merge
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
 from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular, Wyckoff_position
+from pyxtal.operations import angle
 
 
 
@@ -589,8 +590,14 @@ class molecular_crystal:
         """
         min_lat = min(self.lattice.get_para()[:3])
         for mol in self.molecules:
-            if min_lat < min([mol.box.width, mol.box.height, mol.box.length]):
-                return False
+            
+            if mol.has_stick_shape():
+                if min_lat < 0.7*min([mol.box.width, mol.box.height, mol.box.length]):
+                    msg = "Warning: lattice-shape mismatch: "
+                    msg += "{:6.2f}".format(min_lat) 
+                    msg += " {:6.2f}".format(min([mol.box.width, mol.box.height, mol.box.length]))
+                    print(msg)
+                    return False
         return True
 
     def generate_crystal(self):
@@ -616,15 +623,17 @@ class molecular_crystal:
                 self.coord_attempts = 40
                 self.ori_attempts = 4
 
+            if not self.lattice.allow_volume_reset:
+                self.lattice_attempts = 1
+
             for cycle1 in range(self.lattice_attempts):
                 self.cycle1 = cycle1
-
+                
                 # 1, Generate a lattice
                 if self.lattice.allow_volume_reset:
                     self.volume = self.estimate_volume()
                     self.lattice.volume = self.volume
                 self.lattice.reset_matrix()
-
 
                 if self._check_lattice_vs_shape():
                     for cycle2 in range(self.coord_attempts):
@@ -734,11 +743,33 @@ class molecular_crystal:
 
         return None
 
+
+    def _check_ori_dist(self, ori):
+        for mol in self.molecules:
+            if mol.has_stick_shape():
+                axis = mol.axes[0].dot(ori.matrix.T) #get coords
+                mat, lengths = self.lattice.get_lengths()
+                mol_length = max([mol.box.length, mol.box.width, mol.box.height])
+                mat, lengths = self.lattice.get_lengths()
+                for vec, dist in zip(mat, lengths):
+                    if mol_length/dist > 1.5 and abs(angle(axis, vec, False)-90)>60:
+                        #print("=============> band ori")
+                        return False
+        return True
+
     def _generate_orientation(self, pyxtal_mol, pt, oris, wp): 
         # Use a Wyckoff_site object for the current site
         self.numattempts += 1
-        ori = random.choice(oris).copy()
-        ori.change_orientation()
+        #ensure that the orientation is good
+        count = 0
+        while count < 20:
+            ori = random.choice(oris).copy()
+            ori.change_orientation()
+            #print("===check orientation", self._check_ori_dist(ori))
+            if self._check_ori_dist(ori):
+                break
+            count += 1
+
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice, self.diag)
 
         # Check distances within the WP

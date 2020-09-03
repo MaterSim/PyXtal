@@ -138,8 +138,9 @@ class Lattice:
         return deepcopy(self)
 
     def get_lengths(self):
-        mat = create_matrix()
-        return np.linalg.norm(mat.dot(self.matrix), axis=1)
+        mat = create_matrix(self.PBC, True)
+        mat = np.dot(mat, self.matrix)
+        return mat, np.linalg.norm(mat, axis=1)
 
     def optimize(self):
         """
@@ -436,6 +437,7 @@ class Lattice:
         ltype="triclinic",
         radians=False,
         PBC=[1, 1, 1],
+        factor=1.0,
         **kwargs
     ):
         """
@@ -488,14 +490,14 @@ class Lattice:
             a Lattice object with the specified parameters
         """
         try:
-            cell_matrix = para2matrix((a, b, c, alpha, beta, gamma), radians=radians)
+            cell_matrix = factor*para2matrix((a, b, c, alpha, beta, gamma), radians=radians)
         except:
             printx("Error: invalid cell parameters for lattice.", priority=1)
             return
         volume = np.linalg.det(cell_matrix)
         # Initialize a Lattice instance
         l = Lattice(ltype, volume, PBC=PBC, **kwargs)
-        l.a, l.b, l.c = a, b, c
+        l.a, l.b, l.c = factor*a, factor*b, factor*c
         l.alpha, l.beta, l.gamma = alpha * rad, beta * rad, gamma * rad
         l.matrix = cell_matrix
         l.inv_matrix = np.linalg.inv(cell_matrix)

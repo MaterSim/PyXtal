@@ -139,13 +139,10 @@ def check_images(
         return True
     # Create image coords from given coords and PBC
     coords = np.array(coords)
-    m = create_matrix(PBC=PBC)
+    m = create_matrix(PBC=PBC, omit=True)
     new_coords = []
     new_species = []
     for v in m:
-        # Omit the [0,0,0] vector
-        if (v == [0, 0, 0]).all():
-            continue
         for v2 in coords + v:
             new_coords.append(v2)
     new_coords = np.array(new_coords)
@@ -261,7 +258,7 @@ def distance_matrix_no_PBC(pts1, pts2, lattice, single=False, metric="euclidean"
         return d
 
 
-def create_matrix(PBC=[1, 1, 1]):
+def create_matrix(PBC=[1, 1, 1], omit=False):
     """
     Used for calculating distances in lattices with periodic boundary
     conditions. When multiplied with a set of points, generates additional
@@ -289,7 +286,11 @@ def create_matrix(PBC=[1, 1, 1]):
     for i in i_list:
         for j in j_list:
             for k in k_list:
-                matrix.append([i, j, k])
+                if omit: 
+                    if [i, j, k] != [0,0,0]:
+                        matrix.append([i, j, k])
+                else:
+                    matrix.append([i, j, k])
     return np.array(matrix, dtype=float)
 
 

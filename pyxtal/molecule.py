@@ -118,7 +118,7 @@ class pyxtal_molecule:
         Returns:
             a Box object
         """
-        mol, _ = reoriented_molecule(self.mol)
+        mol, P = reoriented_molecule(self.mol)
         minx, miny, minz, maxx, maxy, maxz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         for p in mol:
             x, y, z = p.coords
@@ -136,6 +136,7 @@ class pyxtal_molecule:
             if z + r > maxz:
                 maxz = z + r
         self.box = Box(minx, maxx, miny, maxy, minz, maxz)
+        self.axes = P
 
     def get_radius(self):
         r_max = 0
@@ -151,6 +152,14 @@ class pyxtal_molecule:
         rmin = min([self.box.width,self.box.height,self.box.length])
         if rmax/rmin > 3 and rmax >12:
             self.radius = rmin
+
+    def has_stick_shape(self):
+        sizes = [self.box.width,self.box.height,self.box.length]
+        sizes.sort()
+        if sizes[2]>15: #and sizes[2]/sizes[0]>2 and sizes[2]/sizes[1]>2:
+            return True
+        else:
+            return False
 
     def get_symbols(self):
         self.symbols = [specie.name for specie in self.mol.species]
@@ -434,30 +443,27 @@ class Orientation:
         return self.r.as_euler('zxy', degrees=True)
 
 
-def get_inertia_tensor(mol):
+def get_inertia_tensor(coords):
     """
-    Calculate the symmetric inertia tensor for a Molecule object. Used to find
+    Calculate the symmetric inertia tensor for a Molecule 
     the principal axes of symmetry.
 
     Args:
-        mol: a Molecule object
+        coords: [N, 3] array of coordinates
 
     Returns:
-        a 3x3 numpy array representing a moment of inertia tensor
+        a 3x3 numpy array representing the inertia tensor
     """
-    mo = mol.get_centered_molecule()
-    # Initialize elements of the inertia tensor
-    I11 = I22 = I33 = I12 = I13 = I23 = 0.0
-    for i in range(len(mo)):
-        x, y, z = mo.cart_coords[i]
-        m = 1 #mo[i].specie.number
-        I11 += m * (y ** 2 + z ** 2)
-        I22 += m * (x ** 2 + z ** 2)
-        I33 += m * (x ** 2 + y ** 2)
-        I12 += -m * x * y
-        I13 += -m * x * z
-        I23 += -m * y * z
-    return np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
+    coords -= np.mean(coords, axis=0)
+    Inertia = np.zeros([3,3])
+    Inertia[0,0] = np.sum(coords[:,1]**2 + coords[:,2]**2)
+    Inertia[1,1] = np.sum(coords[:,0]**2 + coords[:,2]**2)
+    Inertia[2,2] = np.sum(coords[:,0]**2 + coords[:,1]**2)
+    Inertia[0,1] = Inertia[1,0] = -np.sum(coords[:,0]*coords[:,1])
+    Inertia[0,2] = Inertia[2,0] = -np.sum(coords[:,0]*coords[:,2])
+    Inertia[1,2] = Inertia[2,1] = -np.sum(coords[:,1]*coords[:,2])
+ 
+    return Inertia
 
 
 def reoriented_molecule(mol, nested=False):
@@ -467,62 +473,23 @@ def reoriented_molecule(mol, nested=False):
 
     Args:
         mol: a Molecule object
-        nested: internal variable to keep track of how many times the function
+        nested: keep track of how many times the function
             has been called recursively
 
     Returns:
         new_mol: a reoriented copy of the original molecule. 
         P: the 3x3 rotation matrix used to obtain it.
     """
-
-    def reorient(mol):
-        new_mol = mol.get_centered_molecule()
-        A = get_inertia_tensor(new_mol)
-        # Store the eigenvectors of the inertia tensor
-        P = np.transpose(np.linalg.eigh(A)[1])
-        if np.linalg.det(P) < 0:
-            P[0] *= -1
-        # reorient the molecule
-        P = SymmOp.from_rotation_and_translation(P, [0, 0, 0])
-        new_mol.apply_operation(P)
-        # Our molecule should never be inverted during reorientation.
-        if np.linalg.det(P.rotation_matrix) < 0:
-            printx(
-                "Error: inverted reorientation applied.\n"
-                + "(Within reoriented_molecule)",
-                priority=0,
-            )
-        return new_mol, P
-
-    # If needed, recursively apply reorientation (due to numerical errors)
-    iterations = 1
-    max_iterations = 100
-    new_mol, P = reorient(mol)
-    while iterations < max_iterations:
-        is_okay = True
-        for i in range(3):
-            for j in range(3):
-                x = np.linalg.eigh(get_inertia_tensor(new_mol))[1][i][j]
-                okay = True
-                if i == j:
-                    # Check that diagonal elements are 0 or 1
-                    if (not np.isclose(x, 0)) and (not np.isclose(x, 1)):
-                        okay = False
-                else:
-                    # Check that off-diagonal elements are 0
-                    if not np.isclose(x, 0):
-                        okay = False
-        if okay is False:
-            # If matrix is not diagonal with 1's and/or 0's, reorient
-            new_mol, Q = reorient(new_mol)
-            P = Q * P
-            iterations += 1
-        elif okay is True:
-            break
-    if iterations == max_iterations:
-        printx("Error: Could not reorient molecule after ", priority=0)
-        return False
-    return new_mol, P
+    coords = mol.cart_coords
+    numbers = mol.atomic_numbers
+    coords -= np.mean(coords, axis=0)
+    A = get_inertia_tensor(coords)
+    # Store the eigenvectors of the inertia tensor
+    P = np.linalg.eigh(A)[1]
+    if np.linalg.det(P) < 0:
+        P[0] *= -1
+    coords = np.dot(coords, P)
+    return Molecule(numbers, coords), P
 
 
 def get_symmetry(mol, already_oriented=False):
