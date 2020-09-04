@@ -147,7 +147,7 @@ def display_molecular(struc, size=(600, 300), supercell=(1,1,1), axis=None, anim
         view.setStyle({'model':0},{'stick':{'colorscheme':'greenCarbon'}})
     return view.zoomTo()
 
-def display_molecular_site(site, id=None, size=(800, 300), axis=True):
+def display_molecular_site(site, id=None, size=(800, 300), axis=True, ax_id=range(3)):
     """
     display the Wyckoff site in the molecular crystals generated from pyxtal. 
 
@@ -167,7 +167,7 @@ def display_molecular_site(site, id=None, size=(800, 300), axis=True):
     view.setStyle({'stick':{'colorscheme':'blueCarbon'}}, viewer=(0,0))
 
     if id is None:
-        ids = range(site.multiplicity)
+        ids = range(site.wp.multiplicity)
     else:
         ids = [id]
 
@@ -176,7 +176,7 @@ def display_molecular_site(site, id=None, size=(800, 300), axis=True):
         view.addModel(mol.to(fmt='xyz'), 'xyz', viewer=(0,1))
         if axis:
             axes = site.get_principle_axes(mol.cart_coords)
-            addlines(view, mol.cart_coords.mean(axis=0), axes.T*2.5, viewer=(0,1))
+            addlines(view, mol.cart_coords.mean(axis=0), axes.T[ax_id]*5, viewer=(0,1))
     
     addBox(view, site.lattice.matrix, viewer=(0,1))
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})

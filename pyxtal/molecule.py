@@ -271,7 +271,7 @@ class Orientation:
     def copy(self):
         return deepcopy(self)
 
-    def change_orientation(self, angle="random"):
+    def change_orientation(self, angle="random", flip=False):
         """
         Allows for specification of an angle (possibly random) to
         rotate about the constraint axis.
@@ -297,6 +297,12 @@ class Orientation:
     
             # update the matrix
             r1 = Rotation.from_rotvec(self.angle * self.axis)
+
+            if flip:
+                if np.random.random()>0.5:
+                    ax = choice(['x','y','z'])
+                    r2 = Rotation.from_euler(ax, 90, degrees=True)
+                    r1 = r2*r1
             self.r = r1 * self.r
             #self.r *= r1 
             #self.matrix = self.r.as_matrix()

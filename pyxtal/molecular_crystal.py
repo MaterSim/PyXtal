@@ -583,21 +583,21 @@ class molecular_crystal:
         from pyxtal.viz import display_molecular
         return display_molecular(self, **kwargs)
 
-    def _check_lattice_vs_shape(self):
+    def _check_lattice_vs_shape(self, factor=0.95):
         """
         Make sure that the shape is compatible with the lattice vectors.
         Experimental----
         """
-        min_lat = min(self.lattice.get_para()[:3])
-        for mol in self.molecules:
-            
-            if mol.has_stick_shape():
-                if min_lat < 0.7*min([mol.box.width, mol.box.height, mol.box.length]):
-                    msg = "Warning: lattice-shape mismatch: "
-                    msg += "{:6.2f}".format(min_lat) 
-                    msg += " {:6.2f}".format(min([mol.box.width, mol.box.height, mol.box.length]))
-                    print(msg)
-                    return False
+        #min_lat = min(self.lattice.get_para()[:3])
+        #for mol in self.molecules:
+        #    
+        #    if mol.has_stick_shape():
+        #        if min_lat < factor*min([mol.box.width, mol.box.height, mol.box.length]):
+        #            msg = "Warning: lattice-shape mismatch: "
+        #            msg += "{:6.2f}".format(min_lat) 
+        #            msg += " {:6.2f}".format(min([mol.box.width, mol.box.height, mol.box.length]))
+        #            print(msg)
+        #            return False
         return True
 
     def generate_crystal(self):
@@ -620,8 +620,8 @@ class molecular_crystal:
                 self.ori_attempts = 1
             else:
                 self.lattice_attempts = 40
-                self.coord_attempts = 40
-                self.ori_attempts = 4
+                self.coord_attempts = 30
+                self.ori_attempts = 5
 
             if not self.lattice.allow_volume_reset:
                 self.lattice_attempts = 1
@@ -745,16 +745,17 @@ class molecular_crystal:
 
 
     def _check_ori_dist(self, ori):
-        for mol in self.molecules:
-            if mol.has_stick_shape():
-                axis = mol.axes[0].dot(ori.matrix.T) #get coords
-                mat, lengths = self.lattice.get_lengths()
-                mol_length = max([mol.box.length, mol.box.width, mol.box.height])
-                mat, lengths = self.lattice.get_lengths()
-                for vec, dist in zip(mat, lengths):
-                    if mol_length/dist > 1.5 and abs(angle(axis, vec, False)-90)>60:
-                        #print("=============> band ori")
-                        return False
+        #mat, lengths = self.lattice.get_lengths()
+        #for mol in self.molecules:
+        #    if mol.has_stick_shape():
+        #        axis = mol.axes.T[0].dot(ori.r.as_matrix().T) #get coords
+        #        mol_length = max([mol.box.length, mol.box.width, mol.box.height])
+        #        for vec, dist in zip(mat, lengths):
+        #            #print(vec, mol_length, dist, mol_length/dist, angle(axis, vec, False))
+        #            if mol_length/dist < 1.6 and abs(angle(axis, vec, False)-90)>80:
+        #                #print("=============> bad ori", axis)
+        #                return True
+        #return False
         return True
 
     def _generate_orientation(self, pyxtal_mol, pt, oris, wp): 
@@ -762,16 +763,16 @@ class molecular_crystal:
         self.numattempts += 1
         #ensure that the orientation is good
         count = 0
-        while count < 20:
+        while count < 100:
             ori = random.choice(oris).copy()
             ori.change_orientation()
-            #print("===check orientation", self._check_ori_dist(ori))
             if self._check_ori_dist(ori):
+                #print("===good orientation", count, self._check_ori_dist(ori))
                 break
             count += 1
-
+            #print(count, self.molecules[0].axes.T[0].dot(ori.r.as_matrix().T))
+        #print(ori.r.as_matrix())
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice, self.diag)
-
         # Check distances within the WP
         if ms0.check_distances():
             return ms0

@@ -1307,20 +1307,6 @@ def test_modules():
             ch4 = pyxtal_molecule("CH4").mol
         except Exception as e:
             fail(e)
-
-    fprint("  get_inertia_tensor")
-    try:
-        from pyxtal.molecule import get_inertia_tensor
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            get_inertia_tensor(h2o)
-            get_inertia_tensor(ch4)
-        except Exception as e:
-            fail(e)
-
     check()
 
     fprint("  reoriented_molecule")

@@ -445,6 +445,9 @@ class mol_site:
                 for k in k_list:
                     if [i, j, k] != [0, 0, 0]:
                         matrix.append([i, j, k])
+        #In case a,b,c are all greater than 20
+        if len(matrix) == 0:
+            matrix = [[1,0,0]]
         return np.array(matrix, dtype=float)
 
     def compute_distances(self):
