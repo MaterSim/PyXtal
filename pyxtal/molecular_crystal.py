@@ -765,7 +765,7 @@ class molecular_crystal:
         count = 0
         while count < 100:
             ori = random.choice(oris).copy()
-            ori.change_orientation()
+            ori.change_orientation(flip=True)
             if self._check_ori_dist(ori):
                 #print("===good orientation", count, self._check_ori_dist(ori))
                 break

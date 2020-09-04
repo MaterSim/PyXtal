@@ -13,7 +13,7 @@ import numpy as np
 from copy import deepcopy
 from scipy.spatial.transform import Rotation
 import networkx as nx
-
+from random import choice
 # ------------------------------
 # External Libraries
 from pymatgen.core.structure import Molecule
@@ -301,11 +301,12 @@ class Orientation:
             if flip:
                 if np.random.random()>0.5:
                     ax = choice(['x','y','z'])
-                    r2 = Rotation.from_euler(ax, 90, degrees=True)
+                    angle0 = choice([90, 180, 270])
+                    r2 = Rotation.from_euler(ax, angle0, degrees=True)
                     r1 = r2*r1
             self.r = r1 * self.r
             #self.r *= r1 
-            #self.matrix = self.r.as_matrix()
+            self.matrix = self.r.as_matrix()
 
     def rotate_by_matrix(self, matrix, ignore_constraint=True):
         """
