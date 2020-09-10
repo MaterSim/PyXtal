@@ -62,7 +62,6 @@ Fredericks S, Sayre D, Zhu Q*(2019)
     primaryClass={cond-mat.mtrl-sci}
 }
 ```
-
 ## How to contribute? 
 
 This is an open-source project. Its growth depends on the community. To contribute to PyXtal, you don't necessarily have to write the code. Any contributions from the following list will be helpful.
@@ -76,5 +75,4 @@ This is an open-source project. Its growth depends on the community. To contribu
 - Fork the repository
 - Suggest and implement new functions
 - Send us the pull request
-
 
