@@ -55,12 +55,8 @@ class GULP():
 
 
     def write(self):
-        try:
-            lat = self.structure.lattice
-            a, b, c = lat.a, lat.b, lat.c
-            alpha, beta, gamma = deg*lat.alpha, deg*lat.beta, deg*lat.gamma
-        except:
-            a, b, c, alpha, beta, gamma = self.structure.get_cell_lengths_and_angles()
+        lat = self.structure.lattice
+        a, b, c, alpha, beta, gamma = lat.get_para(degree=True)
         
         with open(self.input, 'w') as f:
             if self.opt == 'conv':
@@ -75,20 +71,12 @@ class GULP():
                     a, b, c, alpha, beta, gamma))
             f.write('\nfractional\n')
             
-            try:
-                frac_coords, self.sites = self.structure._get_coords_and_species(absolute=False)
-            except:
-                frac_coords = self.structure.get_scaled_positions()
-                self.sites = self.structure.symbols
+            frac_coords, self.sites = self.structure._get_coords_and_species(absolute=False)
 
             symbols = []
             for coord, site in zip(frac_coords, self.sites):
                 f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(site, *coord))
-            
-            try:
-                species = self.structure.species
-            except:
-                species = list(set(self.sites))
+            species = list(set(self.sites))
 
             f.write('\nSpecies\n')
             for specie in species:

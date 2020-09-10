@@ -13,7 +13,7 @@ for i in range(10):
     if struc.valid:
         calc = GULP(struc, ff="tersoff.lib")
         calc.run()
-        s = Atoms(struc.sites, scaled_positions=calc.positions, cell=calc.cell)
+        s = Atoms(calc.sites, scaled_positions=calc.positions, cell=calc.cell)
         info = get_symmetry_dataset(s, symprec=1e-1)
         s.write("1.vasp", format='vasp', vasp5=True, direct=True)
         os.system("cat 1.vasp >> " + file)
