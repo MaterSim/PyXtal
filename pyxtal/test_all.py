@@ -64,6 +64,18 @@ class TestMolecular(unittest.TestCase):
         self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
         #print(pmg_struc.frac_coords[:3])
 
+    def test_sites(self):
+        struc = molecular_crystal(36, ['H2O'], [2])
+        pmg_struc = struc.to_pymatgen()
+        sga = SpacegroupAnalyzer(pmg_struc)
+        self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
+
+        struc = molecular_crystal(36, ['H2O'], [4], sites=[["4a", "4a"]])
+        pmg_struc = struc.to_pymatgen()
+        sga = SpacegroupAnalyzer(pmg_struc)
+        self.assertTrue(sga.get_space_group_symbol()=='Cmc2_1')
+
+
     def test_read(self):
         #test reading structure from external
         struc = molecular_crystal(14, ['aspirin'], [4], seed=cif_path)

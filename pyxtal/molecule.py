@@ -298,7 +298,7 @@ class Orientation:
             # update the matrix
             r1 = Rotation.from_rotvec(self.angle * self.axis)
 
-            if flip:
+            if self.degrees == 2 and flip:
                 if np.random.random()>0.5:
                     ax = choice(['x','y','z'])
                     angle0 = choice([90, 180, 270])
