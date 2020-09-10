@@ -5,6 +5,7 @@ from pyxtal.constants import deg
 from pyxtal.lattice import Lattice
 from ase import Atoms
 from pyxtal.crystal import random_crystal
+from pyxtal.interface.util import symmetrize_cell
 
 class GULP():
     """
@@ -159,6 +160,19 @@ class GULP():
         #if self.cell is None:
         #    self.cell = self.structure.lattice.matrix
 
+def single_optimize(struc, ff, mode, opt="conp"):
+    struc = symmetrize_cell(struc, mode)
+    calc = GULP(struc, ff=ff, opt=opt)
+    calc.run()
+    return calc.to_ase(), calc.energy, calc.cputime
+
+def optimize(struc, ff, modes=['C', 'C'], optimizations=["conp", "conp"]):
+    time_total = 0
+    for mode, opt in zip(modes, optimizations):
+        struc, energy, time = single_optimize(struc, ff, mode, opt)
+        time_total += time
+    return struc, energy, time_total
+
 
 if __name__ == "__main__":
 
@@ -169,9 +183,7 @@ if __name__ == "__main__":
         struc = random_crystal(19, ["C"], [16], 1.0)
         if struc.valid:
             break
-
-    calc = GULP(struc, ff="tersoff.lib")
-    calc.run()
-    print(calc.energy)
-    print(calc.stress)
-    print(calc.lattice)
+    struc, eng, time = optimize(struc.to_ase(), ff="tersoff.lib")
+    print(struc)
+    print(eng)
+    print(time)

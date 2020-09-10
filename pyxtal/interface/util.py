@@ -11,7 +11,7 @@ def pymatgen2ase(struc):
     return atoms
 
 def ase2pymatgen(struc):
-    lattice = struc._cell
+    lattice = struc.cell
     coordinates = struc.get_scaled_positions()
     species = struc.get_chemical_symbols()
     return Structure(lattice, species, coordinates)
