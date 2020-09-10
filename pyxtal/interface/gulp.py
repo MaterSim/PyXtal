@@ -2,6 +2,9 @@ import os
 import numpy as np
 import re
 from pyxtal.constants import deg
+from pyxtal.lattice import Lattice
+from ase import Atoms
+from pyxtal.crystal import random_crystal
 
 class GULP():
     """
@@ -17,6 +20,14 @@ class GULP():
     def __init__(self, struc, label="_", ff='reax', \
                  opt='conp', steps=1000, exe='gulp',\
                  input='gulp.in', output='gulp.log', dump='opt.cif'):
+        if isinstance(struc, random_crystal):
+            self.lattice = struc.lattice
+            self.frac_coords, self.sites = struc._get_coords_and_species(absolute=False)
+        elif isinstance(struc, Atoms):
+            self.lattice = Lattice.from_matrix(struc.cell)
+            self.frac_coords = struc.get_scaled_positions()
+            self.sites = struc.get_chemical_symbols()
+
         self.structure = struc
         self.label = label
         self.ff = ff
@@ -53,10 +64,13 @@ class GULP():
         os.remove(self.output)
         os.remove(self.dump)
 
+    def to_ase(self):
+        from ase import Atoms
+        return Atoms(self.sites, scaled_positions=self.frac_coords, cell=self.lattice.matrix)
+
 
     def write(self):
-        lat = self.structure.lattice
-        a, b, c, alpha, beta, gamma = lat.get_para(degree=True)
+        a, b, c, alpha, beta, gamma = self.lattice.get_para(degree=True)
         
         with open(self.input, 'w') as f:
             if self.opt == 'conv':
@@ -71,10 +85,8 @@ class GULP():
                     a, b, c, alpha, beta, gamma))
             f.write('\nfractional\n')
             
-            frac_coords, self.sites = self.structure._get_coords_and_species(absolute=False)
-
             symbols = []
-            for coord, site in zip(frac_coords, self.sites):
+            for coord, site in zip(self.frac_coords, self.sites):
                 f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(site, *coord))
             species = list(set(self.sites))
 
@@ -133,8 +145,8 @@ class GULP():
                     XYZ = [float(x) for x in xyz]
                     positions.append(XYZ)
                     species.append(lines[s].split()[1])
-                self.positions = np.array(positions)
-                self.species = species
+                self.frac_coords = np.array(positions)
+                #self.species = species
 
             elif line.find('Final Cartesian lattice vectors') != -1:
                 lattice_vectors = np.zeros((3,3))
@@ -143,9 +155,9 @@ class GULP():
                     temp=lines[j].split()
                     for k in range(3):
                         lattice_vectors[j-s][k]=float(temp[k])
-                self.cell = lattice_vectors
-        if self.cell is None:
-            self.cell = self.structure.lattice.matrix
+                self.lattice = Lattice.from_matrix(lattice_vectors)
+        #if self.cell is None:
+        #    self.cell = self.structure.lattice.matrix
 
 
 if __name__ == "__main__":
@@ -162,4 +174,4 @@ if __name__ == "__main__":
     calc.run()
     print(calc.energy)
     print(calc.stress)
-    print(calc.cell)
+    print(calc.lattice)
