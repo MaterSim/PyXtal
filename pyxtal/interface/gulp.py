@@ -69,6 +69,9 @@ class GULP():
         from ase import Atoms
         return Atoms(self.sites, scaled_positions=self.frac_coords, cell=self.lattice.matrix)
 
+    def to_pymatgen(self):
+        from pymatgen.core.structure import Structure
+        return Structure(self.lattice.matrix, self.sites, self.frac_coords)
 
     def write(self):
         a, b, c, alpha, beta, gamma = self.lattice.get_para(degree=True)
