@@ -722,6 +722,8 @@ class molecular_crystal:
                 pt, wp, oris = WP_merge(pt, self.lattice.matrix, wp, mtol, valid_ori)
 
                 if wp is not False:
+                    if site is not None and mult != wp.multiplicity:
+                        continue
                     ms0 = self._generate_orientation(pyxtal_mol, pt, oris, wp)
                     if ms0 is not None:
                         # Check current WP against existing WP's  

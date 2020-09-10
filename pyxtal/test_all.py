@@ -44,14 +44,14 @@ class TestMolecular(unittest.TestCase):
 
     def test_single_specie(self):
         #print("test_h2o")
-        struc = molecular_crystal(36, ['H2O'], [2], 1.0)
+        struc = molecular_crystal(36, ['H2O'], [4], sites=[["8b"]])
         struc.to_file()
         self.assertTrue(struc.valid)
 
         #test space group
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
-        print(sga.get_space_group_symbol())
+        #print(sga.get_space_group_symbol())
         self.assertTrue(sga.get_space_group_number() >= 36)
         #print(pmg_struc.frac_coords[:3])
 
