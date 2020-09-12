@@ -381,7 +381,7 @@ class Lattice:
         else:
             return self
     
-    def add_vacuum(self, coor, vacuum=10, PBC=[0, 0, 0]):
+    def add_vacuum(self, coor, vacuum=20, PBC=[0, 0, 0]):
         """
         Adds space above and below a 2D or 1D crystal. 
     

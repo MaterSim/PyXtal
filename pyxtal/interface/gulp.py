@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import re
-from pyxtal.constants import deg
 from pyxtal.lattice import Lattice
 from ase import Atoms
 from pyxtal.crystal import random_crystal
@@ -44,16 +43,15 @@ class GULP():
         self.forces = None
         self.positions = None
         self.optimized = False
-        self.cell = None
         self.cputime = 0
+        self.error = False
 
 
     def run(self):
         self.write()
         self.execute()
         self.read()
-        #self.clean()
-
+        self.clean()
 
     def execute(self):
         cmd = self.exe + '<' + self.input + '>' + self.output
@@ -110,71 +108,83 @@ class GULP():
     def read(self):
         with open(self.output, 'r') as f:
             lines = f.readlines()
+        try: 
+            for i, line in enumerate(lines):
+                m = re.match(r'\s*Total lattice energy\s*=\s*(\S+)\s*eV', line)
+                #print(line.find('Final asymmetric unit coord'), line)
+                if m:
+                    self.energy = float(m.group(1))
 
-        for i, line in enumerate(lines):
-            m = re.match(r'\s*Total lattice energy\s*=\s*(\S+)\s*eV', line)
-            #print(line.find('Final asymmetric unit coord'), line)
-            if m:
-                self.energy = float(m.group(1))
+                elif line.find('Job Finished')!= -1:
+                    self.optimized = True
 
-            elif line.find('Job Finished')!= -1:
-                self.optimized = True
+                elif line.find('Total CPU time') != -1:
+                    self.cputime = float(line.split()[-1])
 
-            elif line.find('Total CPU time') != -1:
-                self.cputime = float(line.split()[-1])
+                elif line.find('Final stress tensor components')!= -1:
+                    stress = np.zeros([6])
+                    for j in range(3):
+                        var=lines[i+j+3].split()[1]
+                        stress[j]=float(var)
+                        var=lines[i+j+3].split()[3]
+                        stress[j+3]=float(var)
+                    self.stress = stress
 
-            elif line.find('Final stress tensor components')!= -1:
-                stress = np.zeros([6])
-                for j in range(3):
-                    var=lines[i+j+3].split()[1]
-                    stress[j]=float(var)
-                    var=lines[i+j+3].split()[3]
-                    stress[j+3]=float(var)
-                self.stress = stress
+                elif line.find(' Cycle: ') != -1:
+                    self.iter = int(line.split()[1])
 
-            elif line.find(' Cycle: ') != -1:
-                self.iter = int(line.split()[1])
+                elif line.find('Final fractional coordinates of atoms') != -1:
+                    s = i + 5
+                    positions = []
+                    species = []
+                    while True:
+                        s = s + 1
+                        if lines[s].find("------------") != -1:
+                            break
+                        xyz = lines[s].split()[3:6]
+                        XYZ = [float(x) for x in xyz]
+                        positions.append(XYZ)
+                        species.append(lines[s].split()[1])
+                    self.frac_coords = np.array(positions)
 
-            elif line.find('Final fractional coordinates of atoms') != -1:
-                s = i + 5
-                positions = []
-                species = []
-                while True:
-                    s = s + 1
-                    if lines[s].find("------------") != -1:
-                        break
-                    #if lines[s].find(" s ") != -1:
-                    #    continue
-                    xyz = lines[s].split()[3:6]
-                    XYZ = [float(x) for x in xyz]
-                    positions.append(XYZ)
-                    species.append(lines[s].split()[1])
-                self.frac_coords = np.array(positions)
-                #self.species = species
+                elif line.find('Final Cartesian lattice vectors') != -1:
+                    lattice_vectors = np.zeros((3,3))
+                    s = i + 2
+                    for j in range(s, s+3):
+                        temp=lines[j].split()
+                        for k in range(3):
+                            lattice_vectors[j-s][k]=float(temp[k])
+                    self.lattice = Lattice.from_matrix(lattice_vectors)
+            if np.isnan(self.energy):
+                self.error = True
+                self.energy = 100000
+                print("GULP calculation is wrong, reading------")
+        except:
+            self.error = True
+            self.energy = 100000
+            print("GULP calculation is wrong")
 
-            elif line.find('Final Cartesian lattice vectors') != -1:
-                lattice_vectors = np.zeros((3,3))
-                s = i + 2
-                for j in range(s, s+3):
-                    temp=lines[j].split()
-                    for k in range(3):
-                        lattice_vectors[j-s][k]=float(temp[k])
-                self.lattice = Lattice.from_matrix(lattice_vectors)
-        #if self.cell is None:
-        #    self.cell = self.structure.lattice.matrix
-
-def single_optimize(struc, ff, mode, opt="conp"):
-    struc = symmetrize_cell(struc, mode)
+def single_optimize(struc, ff, mode, opt="conp", exe="gulp"):
+    try:
+        struc = symmetrize_cell(struc, mode)
+    except:
+        pass
     calc = GULP(struc, ff=ff, opt=opt)
     calc.run()
-    return calc.to_ase(), calc.energy, calc.cputime
+    if calc.error:
+        print("GULP error in single optimize")
+        return None, 100000, 0, True
+    else:
+        return calc.to_ase(), calc.energy, calc.cputime, calc.error
 
-def optimize(struc, ff, modes=['C', 'C'], optimizations=["conp", "conp"]):
+def optimize(struc, ff, modes=['C', 'C'], optimizations=["conp", "conp"], exe="gulp"):
     time_total = 0
     for mode, opt in zip(modes, optimizations):
-        struc, energy, time = single_optimize(struc, ff, mode, opt)
+        struc, energy, time, error = single_optimize(struc, ff, mode, opt, exe)
         time_total += time
-    return struc, energy, time_total
+        if error:
+            return None, 100000, 0, True
+    return struc, energy, time_total, False
 
 
 if __name__ == "__main__":

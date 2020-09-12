@@ -611,8 +611,8 @@ class molecular_crystal:
         if degrees is False:
             self.valid = False
             msg = "the space group is incompatible with the number of molecules"
-            raise ValueError(msg)
-            # return
+            #raise ValueError(msg)
+            return
         else:
             if degrees == 0:
                 self.lattice_attempts = 20
