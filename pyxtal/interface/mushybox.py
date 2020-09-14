@@ -69,8 +69,6 @@ class mushybox(Atoms):
             st = st/maxst*0.5
         # apply constrain
         st *= self.fixstrain
-        #print "original stress (no projecton applied):"
-        #print st
         Fc   = np.vstack((f, st/self.jacobian))
         return Fc
     

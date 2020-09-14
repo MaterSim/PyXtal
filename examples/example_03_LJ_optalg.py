@@ -151,10 +151,7 @@ class LJ_prediction:
             )
             if cluster.valid:
                 run = False
-        try:
-            return cluster.cart_coords
-        except:
-            return cluster.coordinates
+        return cluster.to_pymatgen().cart_coords
 
     def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33), method="CG"):
 

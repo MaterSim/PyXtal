@@ -127,7 +127,7 @@ class LJ_prediction():
             cluster = random_cluster(pg, ['Mo'], [self.numIons], 1.0)
             if cluster.valid:
                 run = False
-        return cluster.cart_coords
+        return cluster.to_pymatgen().cart_coords
  
     def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33)):
 

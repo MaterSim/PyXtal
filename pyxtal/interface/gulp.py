@@ -164,11 +164,12 @@ class GULP():
             self.energy = 100000
             print("GULP calculation is wrong")
 
-def single_optimize(struc, ff, mode, opt="conp", exe="gulp"):
-    try:
-        struc = symmetrize_cell(struc, mode)
-    except:
-        pass
+def single_optimize(struc, ff, mode=['C'], opt="conp", exe="gulp", symmetrize=True):
+    if symmetrize:
+        try:
+            struc = symmetrize_cell(struc, mode)
+        except:
+            pass
     calc = GULP(struc, ff=ff, opt=opt)
     calc.run()
     if calc.error:
@@ -177,7 +178,8 @@ def single_optimize(struc, ff, mode, opt="conp", exe="gulp"):
     else:
         return calc.to_ase(), calc.energy, calc.cputime, calc.error
 
-def optimize(struc, ff, modes=['C', 'C'], optimizations=["conp", "conp"], exe="gulp"):
+def optimize(struc, ff, modes=['C', 'C'], optimizations=["conp", "conp"], 
+             exe="gulp", symmetrize=True):
     time_total = 0
     for mode, opt in zip(modes, optimizations):
         struc, energy, time, error = single_optimize(struc, ff, mode, opt, exe)
