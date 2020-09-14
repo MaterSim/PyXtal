@@ -627,7 +627,7 @@ class random_crystal:
                 # Merge coordinates if the atoms are close
                 pt, wp, _ = WP_merge(pt, cell_matrix, wp, tol)
                 # For pure planar structure
-                if self.dim == 2 and self.thickness < 0.1:
+                if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
                     pt[-1] = 0.5
 
                
