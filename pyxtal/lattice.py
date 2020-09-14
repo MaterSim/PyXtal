@@ -381,7 +381,7 @@ class Lattice:
         else:
             return self
     
-    def add_vacuum(self, coor, vacuum=20, PBC=[0, 0, 0]):
+    def add_vacuum(self, coor, frac=True, vacuum=30, PBC=[0, 0, 0]):
         """
         Adds space above and below a 2D or 1D crystal. 
     
@@ -396,12 +396,20 @@ class Lattice:
             The transformed lattice and coordinates after the vacuum is added
         """
         matrix = self.matrix
-        absolute_coords = np.dot(coor, matrix)
+        if frac:
+            absolute_coords = np.dot(coor, matrix)
+        else:
+            absolute_coords = coor
+
         for i, a in enumerate(PBC):
             if not a:
                 ratio = 1 + vacuum/np.linalg.norm(matrix[i])
                 matrix[i] *= ratio
-        coor = np.dot(absolute_coords, np.linalg.inv(matrix))
+                absolute_coords[:, i] += vacuum/2
+        if frac:
+            coor = np.dot(absolute_coords, np.linalg.inv(matrix))
+        else:
+            coor = absolute_coords 
         return matrix, coor
 
 
@@ -810,7 +818,7 @@ def generate_lattice_2D(
             v = random_vector()
             thickness1 = np.cbrt(volume) * (v[0] / (v[0] * v[1] * v[2]))
         else:
-            thickness1 = thickness
+            thickness1 = max([2.0, thickness])
         abc[NPA - 1] = thickness1
         alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
         # Triclinic

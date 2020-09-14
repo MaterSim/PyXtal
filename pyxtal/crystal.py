@@ -531,7 +531,7 @@ class random_crystal:
                 coords, species = self._get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
                 latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
-                return Atoms(species, scaled_positions=coords, cell=latt)
+                return Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
             else:
                 coords, species = self._get_coords_and_species(True)
                 return Atoms(species, positions=coords)
@@ -624,10 +624,13 @@ class random_crystal:
                 # Generate a list of coords from ops
                 mult = wp.multiplicity # remember the original multiplicity
                 pt = self.lattice.generate_point()
-
                 # Merge coordinates if the atoms are close
                 pt, wp, _ = WP_merge(pt, cell_matrix, wp, tol)
-                
+                # For pure planar structure
+                if self.dim == 2 and self.thickness < 0.1:
+                    pt[-1] = 0.5
+
+               
                 # If site the pre-assigned, do not accept merge
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:

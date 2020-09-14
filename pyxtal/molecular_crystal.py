@@ -531,8 +531,8 @@ class molecular_crystal:
         from ase import Atoms
         if self.valid:
             coords, species = self._get_coords_and_species(True)
-            latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
-            atoms = Atoms(species, positions=coords, cell=latt)
+            latt, coords = self.lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
+            atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
             if resort:
                 permutation = np.argsort(atoms.numbers)
                 atoms = atoms[permutation]

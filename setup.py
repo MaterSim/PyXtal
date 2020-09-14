@@ -29,7 +29,7 @@ setup(
     ],
     package_data={
         "pyxtal.database": ["*.csv", "*.json"],
-        #'pyxtal.potentials': ['*'],
+        'pyxtal.potentials': ['*'],
     },
     scripts=[
         "scripts/pyxtal_atom.py",
