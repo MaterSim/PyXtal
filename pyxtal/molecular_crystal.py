@@ -408,7 +408,7 @@ class molecular_crystal:
                     break
                 # All combinations failed: return False
                 if n == n0 and p >= len(l_mult) - 1:
-                    print("All combinations failed: return False")
+                    #print("All combinations failed: return False")
                     return False
                 # Too few atoms
                 if num < numIon:

@@ -1,27 +1,142 @@
+"""ASE LAMMPS Calculator Library Version"""
+from __future__ import print_function
 import numpy as np
-from pyxtal.interface.mushybox import mushybox
 import ase.units
 from ase.calculators.calculator import Calculator
 from lammps import lammps
 import os
 from pkg_resources import resource_filename
-from ase.data import chemical_symbols
+from ase.optimize.fire import FIRE
+from ase.optimize import LBFGS
+from pyxtal.interface.mushybox import mushybox
+#
+def optimize_lammpslib(struc, lmp, parameters=None, 
+                       path='tmp', calc_type=None, lmp_file=None, molecule=False,
+                       strain=np.ones([3,3]), method='FIRE', fmax=0.1):
+    if lmp_file is not None:
+        lammps = LAMMPSlib(lmp=lmp, lmp_file=lmp_file, log_file='lammps.log', molecule=molecule, path=path)
+    elif calc_type is not None:
+        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, calc_type=calc_type, log_file='lammps.log', molecule=molecule, path=path)
+    else:
+        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, log_file='lammps.log', molecule=molecule, path=path)
+    struc.set_calculator(lammps)
+    box = mushybox(struc, fixstrain=strain)
+    if method == 'FIRE':
+        dyn = FIRE(box)
+    else:
+        dyn = LBFGS(box)
+    dyn.run(fmax=fmax, steps=500)
+    return struc
+
+def run_lammpslib(struc, lmp, parameters=None, path='tmp', calc_type=None, lmp_file=None,\
+                  molecule=False, method='opt', temp=300, steps=10000, comp_z=None):
+    if lmp_file is not None:
+        lammps = LAMMPSlib(lmp=lmp, lmp_file=lmp_file, log_file='lammps.log', molecule=molecule, path=path)
+    elif calc_type is not None:
+        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, calc_type=calc_type, \
+                           log_file='lammps.log', molecule=molecule, path=path)
+    else:
+        parameter0 = parameters + \
+                    [
+                    "neighbor 1.0 bin",
+                    "neigh_modify  every 1  delay 1  check yes",
+                    ]
+
+        if method == 'md':
+            parameter0 += [
+                           "fix 1 all nvt temp " + str(temp) + ' '  + str(temp) + " 0.05",
+                           "timestep  0.001",
+                           "thermo 1000",
+                           "run " + str(steps),
+                           "reset_timestep 0",
+                           "min_style cg",
+                           f"minimize 1e-15 1e-15 {steps} {steps}",
+                           "thermo 0",
+                          ]
+        elif method == 'opt':
+            if comp_z is not None:
+                parameter0 += [f'change_box all z scale {comp_z}']
+            parameter0 += [
+                           "min_style cg",
+                           f"minimize 1e-15 1e-15 {steps} {steps}",
+                          ]
+        
+        else:
+            parameter0 += ['run 0']
+        
+        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameter0, molecule=molecule, lmp_file=lmp_file, log_file='lammps.log', path=path)
+    
+    struc.set_calculator(lammps)
+    
+    Eng = struc.get_potential_energy()
+    
+    return struc, Eng
+
+
+def is_upper_triangular(arr, atol=1e-8):
+    """test for upper triangular matrix based on numpy"""
+    # must be (n x n) matrix
+    assert len(arr.shape) == 2
+    assert arr.shape[0] == arr.shape[1]
+    return np.allclose(np.tril(arr, k=-1), 0., atol=atol) and \
+        np.all(np.diag(arr) >= 0.0)
+
+
+def convert_cell(ase_cell):
+    """
+    Convert a parallelepiped (forming right hand basis)
+    to lower triangular matrix LAMMPS can accept. This
+    function transposes cell matrix so the bases are column vectors
+    """
+    cell = ase_cell.T
+    if not is_upper_triangular(cell):
+        # rotate bases into triangular matrix
+        tri_mat = np.zeros((3, 3))
+        A = cell[:, 0]
+        B = cell[:, 1]
+        C = cell[:, 2]
+        tri_mat[0, 0] = np.linalg.norm(A)
+        Ahat = A / np.linalg.norm(A)
+        AxBhat = np.cross(A, B) / np.linalg.norm(np.cross(A, B))
+        tri_mat[0, 1] = np.dot(B, Ahat)
+        tri_mat[1, 1] = np.linalg.norm(np.cross(Ahat, B))
+        tri_mat[0, 2] = np.dot(C, Ahat)
+        tri_mat[1, 2] = np.dot(C, np.cross(AxBhat, Ahat))
+        tri_mat[2, 2] = np.linalg.norm(np.dot(C, AxBhat))
+        # create and save the transformation for coordinates
+        volume = np.linalg.det(ase_cell)
+        trans = np.array([np.cross(B, C), np.cross(C, A), np.cross(A, B)])
+        trans /= volume
+        coord_transform = np.dot(tri_mat, trans)
+        return tri_mat, coord_transform
+    else:
+        return cell, None
+
 
 class LAMMPSlib(Calculator):
 
-    def __init__(self, lmp, lmpcmds, folder='tmp', mol=False, *args, **kwargs):
+    def __init__(self, lmp, lmpcmds=None, path='tmp', molecule=False,
+                lmp_file=None, calc_type='single', *args, **kwargs):
         Calculator.__init__(self, *args, **kwargs)
         self.lmp = lmp
-        self.molecule = mol
-        self.folder = folder
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        self.lammps_data = folder+'/data.lammps'
-        self.lammps_in = folder + '/in.lammps'
-        self.ffpath = resource_filename("pyxtal", "potentials")
+        self.lmp_file = lmp_file
+        self.molecule = molecule
+        self.calc_type = calc_type
+        self.folder = path
+        if not os.path.exists(self.folder):
+            os.makedirs(self.folder)
+        self.lammps_data = self.folder+'/data.lammps'
+        self.lammps_in = self.folder + '/in.lammps'
+        self.ffpath = resource_filename("ff_benchmark", "potentials")
         self.paras = []
-        for para in lmpcmds:
-            self.paras.append(para)
+        if lmpcmds is not None:
+            for para in lmpcmds:
+                if not self.molecule and para.find('pair_coeff') >= 0:
+                    tmp = para.split()
+                    filename = tmp[3]
+                    filename1 = self.ffpath + '/' + filename 
+                    para = para.replace(filename, filename1)
+                self.paras.append(para)
 
 
     def calculate(self, atoms):
@@ -29,7 +144,15 @@ class LAMMPSlib(Calculator):
         prepare lammps .in file and data file
         write_lammps_data(filename, self.atoms, )
         """
-        #self.lmp = lammps()
+        boundary = ''
+        for i in range(3):
+            if atoms.pbc[i]:
+                boundary += 'p ' 
+            else:
+                boundary += 'f '
+        if boundary == 'f f p ':
+            boundary = 'p p p '
+        self.boundary = boundary
         if self.molecule:
             self.write_lammps_data_water(atoms)
         else:
@@ -47,17 +170,37 @@ class LAMMPSlib(Calculator):
         self.lmp.command('variable fy atom fy')
         self.lmp.command('variable fz atom fz')
         self.lmp.command('variable pe equal pe')
+        if self.calc_type.find('GB') >= 0:
+            self.lmp.command('variable Etot equal c_eatoms')
+            self.gb_energy = self.lmp.extract_variable("Etot", None, 0)
+            #print('gb_energy from lammps: ', self.gb_energy)
+            #print('update lammps GB energy')
 
         pos = np.array(
                 [x for x in self.lmp.gather_atoms("x", 1, 3)]).reshape(-1, 3)
-        pos = pos*0.529
         
-        self.energy = self.lmp.extract_variable('pe', None, 0)/27.2114
+        self.energy = self.lmp.extract_variable('pe', None, 0) 
+        #print('update lammps energy')
+
+        xlo = self.lmp.extract_global("boxxlo", 1)
+        xhi = self.lmp.extract_global("boxxhi", 1)
+        ylo = self.lmp.extract_global("boxylo", 1)
+        yhi = self.lmp.extract_global("boxyhi", 1)
+        zlo = self.lmp.extract_global("boxzlo", 1)
+        zhi = self.lmp.extract_global("boxzhi", 1)
+        xy = self.lmp.extract_global("xy", 1)
+        yz = self.lmp.extract_global("yz", 1)
+        xz = self.lmp.extract_global("xz", 1)
+        unitcell = np.array([[xhi-xlo, xy,  xz],
+                               [0,  yhi-ylo,  yz],
+                               [0,   0,  zhi-zlo]]).T
+
         stress = np.empty(6)
         stress_vars = ['pxx', 'pyy', 'pzz', 'pyz', 'pxz', 'pxy']
 
         for i, var in enumerate(stress_vars):
-            stress[i] = self.lmp.extract_variable(var, None, 0)/1e+9
+            stress[i] = self.lmp.extract_variable(var, None, 0)
+        #print('update lammps stress')
 
         stress_mat = np.zeros((3, 3))
         stress_mat[0, 0] = stress[0]
@@ -76,60 +219,91 @@ class LAMMPSlib(Calculator):
         stress[4] = stress_mat[0, 2]
         stress[5] = stress_mat[0, 1]
 
-        self.stress = -stress #* 1e5 * ase.units.Pascal
-        f = (np.array(self.lmp.gather_atoms("f", 1, 3)).reshape(-1,3) /27.2114*0.529)
-                #(ase.units.eV/ase.units.Angstrom))
+        self.stress = -stress * 1e5 * ase.units.Pascal
+        f = (np.array(self.lmp.gather_atoms("f", 1, 3)).reshape(-1,3) *
+                (ase.units.eV/ase.units.Angstrom))
+        #print('update lammps force')
         self.forces = f.copy()
         atoms.positions = pos.copy()
+        atoms.cell = unitcell.copy()
+        if self.molecule:
+            atoms.positions *= 0.529
+            atoms.cell *= 0.529
         self.atoms = atoms.copy()
-        #self.lmp.close()
+        #self.atoms.info['GB_energy'] = self.gb_energy
+        #print('update lammps all')
 
     def write_lammps_in(self):
-        with open(self.lammps_in, 'w') as fh:
-            fh.write('clear\n')
-            if self.molecule:
-                fh.write('units electron\n')
-            else:
-                fh.write('units metal\n')
-            fh.write('boundary p p p\n')
-            fh.write('atom_modify sort 0 0.0\n') 
+        if self.lmp_file is not None:
+            #print('cp ' + self.lmp_file + ' ' + self.folder + '/in.lammps')
+            os.system('cp ' + self.lmp_file + ' ' + self.folder + '/in.lammps')
+        else:
+            with open(self.lammps_in, 'w') as fh:
+                fh.write('clear\n')
+                if self.molecule:
+                    fh.write('units electron\n')
+                else:
+                    fh.write('units metal\n')
+                if self.calc_type.find('GB') >= 0:
+                    fh.write('boundary p p s\n')
+                else:
+                    fh.write('boundary {:s}\n'.format(self.boundary))
+                fh.write('atom_modify sort 0 0.0\n') 
+                if not self.molecule:
+                    fh.write('read_data {:s}\n'.format(self.lammps_data))
+                fh.write('\n### interactions\n')
+                for para in self.paras:
+                    fh.write("{:s}\n".format(para))
+                fh.write('neighbor 1.0 bin\n')
+                fh.write('neigh_modify  every 1  delay 1  check yes\n')
+                if self.calc_type.find('GB') >= 0:
+                    tmp = LAMMPS_collections().dict['GB_group']
+                    for i in tmp:
+                        fh.write(i)
+                if self.calc_type.find('GB_opt') >= 0:
+                    tmp = LAMMPS_collections().dict['GB_opt']
+                    for i in tmp:
+                        fh.write(i)
 
-            fh.write('\n### interactions\n')
-            write = True
-            for para in self.paras:
-                if para.find('read_data')>=0:
-                    write = False
-                    break
-            if write:
-                fh.write('read_data {:s}\n'.format(self.lammps_data))
-            for para in self.paras:
-                fh.write("{:s}\n".format(para))
-            fh.write('thermo_style custom pe pxx\n')
-            fh.write('thermo_modify flush yes\n')
-            fh.write('thermo 1\n')
-            fh.write('run 0\n')
-            #fh.write('print "__end_of_ase_invoked_calculation__"\n') 
+                elif self.calc_type.find('GB_md') >= 0:
+                    tmp = LAMMPS_collections().dict['GB_opt']
+                    tmp += LAMMPS_collections(temp=1000).dict['GB_md']
+                    tmp += LAMMPS_collections().dict['GB_opt']
+                    for i in tmp:
+                        fh.write(i)
+                
+                if self.calc_type.find('GB') >= 0:
+                    fh.write('thermo_style custom pe pxx pyy pzz pyz pxz pxy c_eatoms\n')
+                else:
+                    fh.write('thermo_style custom pe pxx pyy pzz pyz pxz pxy\n')
+                fh.write('thermo_modify flush yes\n')
+                fh.write('thermo 1\n')
+                fh.write('run 1\n')
+
+                #fh.write('print "__end_of_ase_invoked_calculation__"\n') 
 
     def write_lammps_data(self, atoms):
-        atom_types = [1]*len(atoms)
-        n_types = np.unique(atoms.numbers)
-        lmp_types = np.zeros(len(atoms))
-        for i, typ in enumerate(n_types):
-            lmp_types[atoms.numbers==typ] = i+1
+        atom_types = np.array(atoms.get_tags()) #[1]*len(atoms)
+        if sum(atom_types) == 0:
+            atom_types = np.array([1]*len(atoms))
         with open(self.lammps_data, 'w') as fh:
             comment = 'lammpslib autogenerated data file'
             fh.write(comment.strip() + '\n\n')
-            fh.write('{0} atoms\n'.format(len(atoms)))
-            fh.write('{0} atom types\n'.format(len(n_types)))
+            fh.write('{:d} atoms\n'.format(len(atoms)))
+            fh.write('{:d} atom types\n'.format(len(np.unique(atom_types))))
             cell = atoms.get_cell()
+            #cell = 
             fh.write('\n')
             fh.write('{0:16.8e} {1:16.8e} xlo xhi\n'.format(0.0, cell[0, 0]))
             fh.write('{0:16.8e} {1:16.8e} ylo yhi\n'.format(0.0, cell[1, 1]))
             fh.write('{0:16.8e} {1:16.8e} zlo zhi\n'.format(0.0, cell[2, 2]))
+            fh.write('{0:16.8e} {1:16.8e} {2:16.8e} xy xz yz\n'
+                             ''.format(cell[0, 1], cell[0, 2], cell[1, 2]))
+
             fh.write('\n\nAtoms \n\n')
             for i, (typ, pos) in enumerate(
-                    zip(lmp_types, atoms.get_positions())):
-                fh.write('{0:d} {1:d} {2:16.8e} {3:16.8e} {4:16.8e}\n'
+                    zip(atom_types, atoms.get_positions())):
+                fh.write('{:4d} {:4d} {:16.8e} {:16.8e} {:16.8e}\n'
                          .format(i + 1, typ, pos[0], pos[1], pos[2]))
 
     def write_lammps_data_water(self, atoms):
@@ -203,7 +377,10 @@ class LAMMPSlib(Calculator):
 
     def get_potential_energy(self, atoms):
         self.update(atoms)
-        return self.energy
+        if self.calc_type.find('GB') >= 0:
+            return self.gb_energy
+        else:
+            return self.energy
 
     def get_forces(self, atoms):
         self.update(atoms)
@@ -213,56 +390,55 @@ class LAMMPSlib(Calculator):
         self.update(atoms)
         return self.stress.copy()
 
-def run_lammpslib(pbcgb, lmp, parameters, path, method='opt', temp=300, steps=10000):
-    if method == 'md':
-        parameter += [
-                       "fix 1 all nvt temp " + str(temp) + ' '  + str(temp) + " 0.05",
-                       "timestep  0.001",
-                       "thermo 1000",
-                       "run " + str(steps),
-                       "reset_timestep 0",
-                       "min_style cg",
-                       "minimize 1e-15 1e-15 10000 10000",
-                       "thermo 0",
-                      ]
-    elif method == 'opt':
-        parameter += [
-                       "min_style cg",
-                       "minimize 1e-15 1e-15 10000 10000",
-                      ]
-    else:
-        parameter += ['run 0']
 
-    lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameter0, log_file='lammps.log', path=path)
-    pbcgb.set_calculator(lammps)
-    Eng = pbcgb.get_potential_energy()
-    return pbcgb, Eng
 
-def optimize_lammpslib(pbcgb, lmp, parameters, path, method='FIRE', fmax=0.1):
-    lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, log_file='lammps.log', path=path)
-    pbcgb.set_calculator(lammps)
-    cell0=pbcgb.cell
-    fixstrain = np.zeros((3,3))
-    fixstrain[2][2] = 1
-    box = mushybox(pbcgb, fixstrain=fixstrain)
-    if method == 'FIRE':
-        dyn = FIRE(box)
-    else:
-        dyn = BFGS(box)
-    dyn.run(fmax=fmax, steps=500)
-    return pbcgb
+class LAMMPS_collections():
+    """
+    A class to provide the lammps input file
+    """
+    def __init__(self, temp=500):
+        self.dict = {}
+
+        self.dict['GB_group'] = [
+        "# ---------GB--------\n",
+        "group lowlayer type 1\n",
+        "group gbregion type 2\n",
+        "group uplayer type 3\n",
+        "#----Define compute quantities-----\n",
+        "compute eng all pe/atom \n",
+        "compute eatoms gbregion reduce sum c_eng\n"
+
+        ]
+
+        self.dict['GB_opt'] = [
+        "# ---------- Run GB Minimization -----\n",
+        "fix f1 lowlayer setforce 0.0 0.0 0.0\n",
+        "fix f2 uplayer aveforce 0.0 0.0 0.0\n",
+        "min_style cg\n",
+        "#dump   dump_all all custom 100000 dump.xyz element x y z\n",
+        "minimize 1e-15 1e-15 10000 10000\n",
+        "run 0\n",
+        "thermo 0\n",
+        "thermo_style custom pe pxx c_eatoms\n",
+        "thermo_modify flush yes\n",
+        "unfix f1\n",
+        "unfix f2\n",
+        ]
+        
+        self.dict['GB_md'] = [
+        "# ---------- Run GB MD ---------\n",
+        "thermo 100\n",
+        "velocity gbregion create {:d} {:d}\n".format(temp, temp),
+        "fix 1 gbregion nvt temp {:d} {:d} 0.05\n".format(temp, temp),
+        "timestep 0.001\n",
+        "run 5000\n",
+        "unfix 1\n",
+        ]
 
 
 if __name__ == '__main__':
-    from pyxtal.crystal import Lattice
-    from pyxtal.molecular_crystal import molecular_crystal
-    from spglib import get_symmetry_dataset
-    from ase.optimize.fire import FIRE
-    from ase import Atoms
-    from ase.optimize import BFGS
-    from ase.build import sort
-    import logging
-
+    from ase.io import read
+    from ase.build import bulk
     lammps_name=''
     comm=None
     log_file='lammps.log'
@@ -270,45 +446,26 @@ if __name__ == '__main__':
                 '-screen', 'none', '-nocite']
     lmp = lammps(lammps_name, cmd_args, comm)
 
-    logging.basicConfig(format='%(asctime)s :: %(message)s', filename='results.log', level=logging.INFO)
+    struc = bulk('Si', 'diamond', cubic=True)
+    struc.set_tags([1]*len(struc))
+    parameters = ["mass * 1.0",
+                  "pair_style tersoff",
+                  "pair_coeff * * Si.tersoff Si",
+                  "neighbor 1.0 bin",
+                  "neigh_modify  every 1  delay 1  check yes",
+                  ]
+    lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters)
+    struc.set_calculator(lammps)
+    print('positions: ')
+    print(struc.get_positions())
+    print('energy: ')
+    print(struc.get_potential_energy())
+    print('force: ')
+    print(struc.get_forces())
+    print('stress: ')
+    print(struc.get_stress())
 
-
-    parameters = ["atom_style full",
-                  "pair_style      lj/cut/tip4p/long 1 2 1 1 0.278072379 17.007",
-                  "bond_style      class2 ",
-                  "angle_style     harmonic",
-                  "kspace_style pppm/tip4p 0.0001",
-                  "read_data tmp/data.lammps",
-                  "pair_coeff  * * 0 0",
-                  "pair_coeff  1  1  0.000295147 5.96946",
-                  "neighbor 2.0 bin",
-                  "min_style cg",
-                  "minimize 1e-6 1e-6 10000 10000",
-                 ]
-    para = Lattice.from_para(4.45, 7.70, 7.28, 90, 90, 90)
-    strucs = []
-    for i in range(10):
-        crystal = molecular_crystal(36, ['H2O'], [2], 1.0, lattice=para)
-        struc = Atoms(crystal.spg_struct[2], 
-                    cell=crystal.spg_struct[0], 
-                    scaled_positions=crystal.spg_struct[1],
-                   )
-        struc.write('0.vasp', format='vasp', vasp5=True)
-        #struc = optimize_lammpslib(pbcgb, lmp, method='FIRE', fmax=0.1, path=tmp)
-        #struc = struc.repeat((2,2,2))
-        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, mol=True)
-        struc.set_calculator(lammps)
-        box = mushybox(struc)
-        dyn = FIRE(box)
-        dyn.run(fmax=0.01, steps=500)
-        dyn = BFGS(box)
-        dyn.run(fmax=0.01, steps=500)
-        fmax = np.max(struc.get_forces())
-        #print('stress:', struc.get_stress())
-        eng = struc.get_potential_energy()*96/len(struc)*3
-        vol = np.linalg.det(struc.cell)
-        struc = struc.repeat((2,2,2))
-        struc=sort(struc)
-        spg = get_symmetry_dataset(struc, symprec=1e-1)['number']
-        struc.write(str(i)+'out.vasp', format='vasp', vasp5=True)
-        logging.info('{:d} Spg: {:4d} Eng: {:8.4f} Vol: {:8.4f} fmax: {:4.2f}'.format(i, spg, eng, vol, fmax))
+    #dict = LAMMPS_collections().dict
+    #for key in dict.keys():
+    #    for string in dict[key]:
+    #        print(string)
