@@ -12,13 +12,18 @@ from pyxtal.interface.mushybox import mushybox
 #
 def optimize_lammpslib(struc, lmp, parameters=None, 
                        path='tmp', calc_type=None, lmp_file=None, molecule=False,
-                       strain=np.ones([3,3]), method='FIRE', fmax=0.1):
+                       strain=np.ones([3,3]), method='FIRE', fmax=0.01):
+
     if lmp_file is not None:
-        lammps = LAMMPSlib(lmp=lmp, lmp_file=lmp_file, log_file='lammps.log', molecule=molecule, path=path)
+        lammps = LAMMPSlib(lmp=lmp, lmp_file=lmp_file, log_file='lammps.log', \
+                           molecule=molecule, path=path)
     elif calc_type is not None:
-        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, calc_type=calc_type, log_file='lammps.log', molecule=molecule, path=path)
+        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, calc_type=calc_type, \
+                           log_file='lammps.log', molecule=molecule, path=path)
     else:
-        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, log_file='lammps.log', molecule=molecule, path=path)
+        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, log_file='lammps.log', \
+                           molecule=molecule, path=path)
+
     struc.set_calculator(lammps)
     box = mushybox(struc, fixstrain=strain)
     if method == 'FIRE':
@@ -28,10 +33,14 @@ def optimize_lammpslib(struc, lmp, parameters=None,
     dyn.run(fmax=fmax, steps=500)
     return struc
 
-def run_lammpslib(struc, lmp, parameters=None, path='tmp', calc_type=None, lmp_file=None,\
-                  molecule=False, method='opt', temp=300, steps=10000, comp_z=None):
+def run_lammpslib(struc, lmp, parameters=None, path='tmp', \
+                  calc_type=None, lmp_file=None, molecule=False, \
+                  method='opt', temp=300, steps=10000, comp_z=None, min_style='cg'):
+
     if lmp_file is not None:
-        lammps = LAMMPSlib(lmp=lmp, lmp_file=lmp_file, log_file='lammps.log', molecule=molecule, path=path)
+        lammps = LAMMPSlib(lmp=lmp, lmp_file=lmp_file, log_file='lammps.log', \
+                           molecule=molecule, path=path)
+
     elif calc_type is not None:
         lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, calc_type=calc_type, \
                            log_file='lammps.log', molecule=molecule, path=path)
@@ -49,7 +58,7 @@ def run_lammpslib(struc, lmp, parameters=None, path='tmp', calc_type=None, lmp_f
                            "thermo 1000",
                            "run " + str(steps),
                            "reset_timestep 0",
-                           "min_style cg",
+                           f"min_style {min_style}",
                            f"minimize 1e-15 1e-15 {steps} {steps}",
                            "thermo 0",
                           ]
@@ -57,14 +66,16 @@ def run_lammpslib(struc, lmp, parameters=None, path='tmp', calc_type=None, lmp_f
             if comp_z is not None:
                 parameter0 += [f'change_box all z scale {comp_z}']
             parameter0 += [
-                           "min_style cg",
+                           "timestep  0.001",
+                           f"min_style {min_style}",
                            f"minimize 1e-15 1e-15 {steps} {steps}",
                           ]
         
         else:
             parameter0 += ['run 0']
         
-        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameter0, molecule=molecule, lmp_file=lmp_file, log_file='lammps.log', path=path)
+        lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameter0, molecule=molecule, \
+                           lmp_file=lmp_file, log_file='lammps.log', path=path)
     
     struc.set_calculator(lammps)
     
@@ -150,7 +161,7 @@ class LAMMPSlib(Calculator):
                 boundary += 'p ' 
             else:
                 boundary += 'f '
-        if boundary == 'f f p ':
+        if boundary in ['f f p ', 'p p f ']: #needs some work later
             boundary = 'p p p '
         self.boundary = boundary
         if self.molecule:

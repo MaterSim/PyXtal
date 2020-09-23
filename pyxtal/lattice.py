@@ -818,7 +818,7 @@ def generate_lattice_2D(
             v = random_vector()
             thickness1 = np.cbrt(volume) * (v[0] / (v[0] * v[1] * v[2]))
         else:
-            thickness1 = max([2.0, thickness])
+            thickness1 = max([3.0, thickness])
         abc[NPA - 1] = thickness1
         alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
         # Triclinic

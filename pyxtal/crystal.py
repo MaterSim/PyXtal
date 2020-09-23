@@ -528,9 +528,10 @@ class random_crystal:
         from ase import Atoms
         if self.valid:
             if self.dim > 0:
+                lattice = self.lattice.copy()
                 coords, species = self._get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
-                latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
+                latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
                 return Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
             else:
                 coords, species = self._get_coords_and_species(True)
@@ -546,9 +547,10 @@ class random_crystal:
 
         if self.valid:
             if self.dim > 0:
+                lattice = self.lattice.copy()
                 coords, species = self._get_coords_and_species()
                 # Add space above and below a 2D or 1D crystals
-                latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
+                latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
                 return Structure(latt, species, coords)
             else:
                 # Clusters are handled as large molecules

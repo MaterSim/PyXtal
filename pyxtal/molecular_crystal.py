@@ -530,8 +530,9 @@ class molecular_crystal:
         """
         from ase import Atoms
         if self.valid:
+            lattice = self.lattice.copy()
             coords, species = self._get_coords_and_species(True)
-            latt, coords = self.lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
+            latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
             atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
             if resort:
                 permutation = np.argsort(atoms.numbers)
@@ -547,9 +548,10 @@ class molecular_crystal:
         from pymatgen.core.structure import Structure  
 
         if self.valid:
+            lattice = self.lattice.copy()
             coords, species = self._get_coords_and_species()
             # Add space above and below a 2D or 1D crystals
-            latt, coords = self.lattice.add_vacuum(coords, PBC=self.PBC)
+            latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
             return Structure(latt, species, coords)
         else:
             printx("No valid structure can be converted to pymatgen.", priority=1)
@@ -724,6 +726,9 @@ class molecular_crystal:
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:
                         continue
+                    if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
+                        pt[-1] = 0.5 
+
                     ms0 = self._generate_orientation(pyxtal_mol, pt, oris, wp)
                     if ms0 is not None:
                         # Check current WP against existing WP's  
