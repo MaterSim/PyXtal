@@ -384,8 +384,12 @@ class random_crystal:
                     fmt = 'cif'
 
             if fmt == "cif":
-                from pyxtal.io import write_cif
-                return write_cif(self, filename, "from_pyxtal", permission)
+                if self.dim == 3:
+                    from pyxtal.io import write_cif
+                    return write_cif(self, filename, "from_pyxtal", permission)
+                else:
+                    pmg_struc = self.to_pymatgen()
+                return pmg_struc.to(fmt=fmt, filename=filename)
             else:
                 pmg_struc = self.to_pymatgen()
                 return pmg_struc.to(fmt=fmt, filename=filename)

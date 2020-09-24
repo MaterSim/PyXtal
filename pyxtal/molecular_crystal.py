@@ -456,7 +456,12 @@ class molecular_crystal:
         """
         if self.valid:
             if fmt == "cif":
-                return write_cif(self, filename, "from_pyxtal", permission, **kwargs)
+                if self.dim == 3:
+                    return write_cif(self, filename, "from_pyxtal", permission, **kwargs)
+                else:
+                    pmg_struc = self.to_pymatgen()
+                    pmg_struc.sort()
+                    return pmg_struc.to(fmt=fmt, filename=filename)
             else:
                 pmg_struc = self.to_pymatgen()
                 pmg_struc.sort()
