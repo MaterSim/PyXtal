@@ -2,9 +2,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/pyxtal/badge/?version=latest)](https://pyxtal.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/qzhu2017/PyXtal.svg?branch=master)](https://travis-ci.org/qzhu2017/PyXtal)
-[![Download Status](https://img.shields.io/pypi/dm/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/pyversions/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/v/pyxtal)](https://pypi.org/project/pyxtal/)
+[![Downloads](https://pepy.tech/badge/pyxtal)](https://pepy.tech/project/pyxtal)
 [![DOI](https://zenodo.org/badge/128165891.svg)](https://zenodo.org/badge/latestdoi/128165891)
 <img align="right" width="450" src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/water.gif">
 
