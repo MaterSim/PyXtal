@@ -261,53 +261,16 @@ Suppose we generated a carbon structure as follows,
 
     >>> from pyxtal.crystal import random_crystal
     >>> c = random_crystal(225, ['C'], [4], 1)
-
-Extended Pymatgen Structure Object 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-`c.struct` belongs to the Pymatgen structure class, `pymatgen.core.structure.Structure <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure>`_. In addition, pyxtal itself also provide an extended class containing the symmetry information.
+    
+The `pyxtal` structure object can be conveniently converted to `Pymatgen` or `ASE Atoms` object.
 
 .. code-block:: Python
 
-    >>> from pyxtal.structure import Xstruct
-    >>> xstruc = Xstruct.from_random_crystal(c)
-    >>> xstruc.group
-    -- Space group --# 225 (Fm-3m)--
-      192l	site symm: 1
-      96k	site symm: . . m
-      96j	site symm: m . .
-      48i	site symm: m . m2
-      48h	site symm: m . m2
-      48g	site symm: 2 . mm
-      32f	site symm: . 3 m
-      24e	site symm: 4m . m
-      24d	site symm: 2/m . 2/m2/m
-      8c	site symm: -4 3 m
-      4b	site symm: 4/m -3 2/m
-      4a	site symm: 4/m -3 2/m
-    >>> xstruc.wyckoff_sites
-    [C: [0.25 0.25 0.25] 8c, site symmetry -4 3 m, C: [0. 0. 0.] 4a, site symmetry 4/m -3 2/m, C: [0.5 0.5 0.5] 4b, site symmetry 4/m -3 2/m]
+    >>> ase_struc = c.to_ase()
+    >>> pmg_struc = c.to_pymatgen()
 
-One can also save the structure to different structure formats such as ``poscar`` and ``cif``.
 
-.. code-block:: Python
-
-    >>> xstruc.to(fmt='cif', filename='1.cif')
-    >>> xstruc.to(fmt='poscar', filename='1.vasp')
-
-ASE Atoms Object
-~~~~~~~~~~~~~~~~
-`c.spg_struct` is a tuple storing the information about cell, positions and atomic numbers. One can easily transform it to another popular ASE `atoms class <https://wiki.fysik.dtu.dk/ase/ase/atoms.html>`_
-
-.. code-block:: Python
-
-    >>> from ase import Atoms
-    >>> cell, pos, numbers = c.spg_struct
-    >>> ase_struc = Atoms(numbers=numbers, positions=pos, cell=cell, pbc=[1,1,1])
-    >>> ase_struc 
-    Atoms(symbols='C16', pbc=True, cell=[[5.868582551554081, 0.0, 0.0], [3.593470418646356e-16, 5.868582551554081, 0.0], [3.593470418646356e-16, 3.593470418646356e-16, 5.868582551554081]])
-
-Similarly, `ASE Atoms` object supports a lot of methods for structural manipulation and file formats (`cif`, `poscar`, `extxyz`, .etc).
+`ASE Atoms` object supports a lot of methods for structural manipulation and file formats (`cif`, `poscar`, `extxyz`, .etc).
 
 .. code-block:: Python
 
