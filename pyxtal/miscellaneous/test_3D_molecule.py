@@ -1,8 +1,9 @@
-from pyxtal.molecular_crystal import molecular_crystal
+import os
 from random import randint
 from time import time
+
 from pymatgen.io.cif import CifWriter
-import os
+from pyxtal.molecular_crystal import molecular_crystal
 
 mols = ["CH4", "H2O", "NH3", "urea", "benzene", "roy", "aspirin", "pentacene", "C60"]
 filename = "out.cif"
