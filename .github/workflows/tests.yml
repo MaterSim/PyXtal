@@ -1,12 +1,12 @@
-name: Python package
+name: tests
 
 on:
   push:
     paths:
-      - '*.py' # only run workflow when source files changed
+      - '**.py' # only run workflow when source files changed
   pull_request:
     paths:
-      - '*.py'
+      - '**.py'
 
 jobs:
   tests:
@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -U pip
-          pip install flake8 pytest
+          pip install pytest # flake8
           pip install -r requirements.txt
       # - name: Lint with flake8
       #   run: |

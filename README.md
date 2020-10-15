@@ -2,6 +2,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/pyxtal/badge/?version=latest)](https://pyxtal.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/qzhu2017/PyXtal.svg?branch=master)](https://travis-ci.org/qzhu2017/PyXtal)
+[![Test Status](https://github.com/qzhu2017/PyXtal/workflows/tests/badge.svg)](https://github.com/qzhu2017/PyXtal/actions)
 [![Download Status](https://img.shields.io/pypi/pyversions/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/v/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Downloads](https://pepy.tech/badge/pyxtal)](https://pepy.tech/project/pyxtal)
@@ -17,7 +18,7 @@
 - [Installation](#installation)
 - [Citation](#citation)
 - [How to contribute?](#how-to-contribute)
-  - [If you just want to use the code:](#if-you-just-want-to-use-the-code)
+  - [If you just want to use the code](#if-you-just-want-to-use-the-code)
   - [If you want to join the code development](#if-you-want-to-join-the-code-development)
 
 ## Introduction
@@ -76,7 +77,7 @@ Fredericks S, Sayre D, Zhu Q\*(2019)
 
 This is an open-source project. Its growth depends on the community. To contribute to PyXtal, you don't necessarily have to write the code. Any contributions from the following list will be helpful.
 
-### If you just want to use the code:
+### If you just want to use the code
 
 - Star the PyXtal project via GitHub and recommend it to your colleagues/friends
 - Open an issue to report the bug or address your wishlist
