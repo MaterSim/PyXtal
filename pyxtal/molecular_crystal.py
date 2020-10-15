@@ -504,7 +504,7 @@ class molecular_crystal:
             else:
                 break
 
-    def _get_coords_and_species(self, absolute=False):
+    def _get_coords_and_species(self, absolute=False, unitcell=True):
         """
         extract the coordinates and species information 
 
@@ -519,7 +519,7 @@ class molecular_crystal:
         species = []
         total_coords = None
         for site in self.mol_sites:
-            coords, site_species = site.get_coords_and_species(absolute)
+            coords, site_species = site.get_coords_and_species(absolute, unitcell=unitcell)
             species.extend(site_species)
             if total_coords is None:
                 total_coords = coords

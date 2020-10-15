@@ -88,7 +88,7 @@ class mol_site:
         from pyxtal.viz import display_molecular_site
         return display_molecular_site(self, id, **kwargs)
 
-    def _get_coords_and_species(self, absolute=False, add_PBC=False, first=False):
+    def _get_coords_and_species(self, absolute=False, add_PBC=False, first=False, unitcell=False):
         """
         Used to generate coords and species for get_coords_and_species
 
@@ -98,6 +98,7 @@ class mol_site:
             add_PBC: whether or not to add coordinates in neighboring unit cells, 
                 used for distance checking
             first: whether or not to extract the information from only the first site
+            unitcell: whether or not to move the molecular center to the unit cell
 
         Returns:
             atomic coords: a numpy array of fractional coordinates for the atoms in the site
@@ -110,6 +111,8 @@ class mol_site:
         for point_index, op2 in enumerate(self.wp.ops):
             # Obtain the center in absolute coords
             center_relative = op2.operate(self.position)
+            if unitcell:
+                center_relative -= np.floor(center_relative)
             center_absolute = np.dot(center_relative, self.lattice.matrix)
 
             # Rotate the molecule (Euclidean metric)
@@ -150,7 +153,7 @@ class mol_site:
 
         return wp_atomic_coords, wp_atomic_sites
 
-    def get_coords_and_species(self, absolute=False, add_PBC=False):
+    def get_coords_and_species(self, absolute=False, add_PBC=False, unitcell=False):
         """
         Lazily generates and returns the atomic coordinate and species for the
         Wyckoff position. Plugs the molecule into the provided orientation
@@ -161,12 +164,13 @@ class mol_site:
                 coordinates. If false, return relative coordinates instead
             add_PBC: whether or not to add coordinates in neighboring unit cells, used for
                 distance checking
+            unitcell: whether or not to move the molecular center to the unit cell
 
         Returns:
             coords: a np array of 3-vectors.
             species: a list of atomic symbols, e.g. ['H', 'H', 'O', 'H', 'H', 'O']
         """
-        return self._get_coords_and_species(absolute, add_PBC)
+        return self._get_coords_and_species(absolute, add_PBC, unitcell=unitcell)
 
     def get_centers(self, absolute=False):
         """
