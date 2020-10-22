@@ -115,7 +115,7 @@ if __name__ == "__main__":
     if factor < 0:
         raise ValueError("Volume factor {:.2f} must be greater than 0.".format(factor))
 
-    verbosity = options.verbosity
+    #verbosity = options.verbosity
     attempts = options.attempts
     outdir = options.outdir
     dimension = options.dimension
@@ -159,7 +159,7 @@ if __name__ == "__main__":
                 ans = PointGroupAnalyzer(pmg_struc).sch_symbol
 
             print("Symm requested: {:d}({:s}), generated: {:s}".format(sg, symbol, ans))
-            print("Output to " + outpath)
+            #print("Output to " + outpath)
 
             xyz_path = outdir + "/" + comp + ".xyz"
             ase_struc.write(xyz_path, format="extxyz")
