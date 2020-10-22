@@ -48,6 +48,14 @@ or make a copy of the source code, and then install it manually.
     $ cd pyxtal
     $ python setup.py install
 
+
+or update the code to our developing version
+
+::
+
+    $ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
+
+
 This will install the module. You can check the installation of the code by a simple test run as follows,
 
 ::
