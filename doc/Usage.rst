@@ -281,3 +281,19 @@ The `pyxtal` structure object can be conveniently converted to `Pymatgen` or `AS
     >>> ase_struc.write('1.vasp', format='vasp', vasp5=True, direct=True)
     >>> ase_struc.write('1.xyz', format='extxyz')
     
+    
+For the molecular crytals, the atomic order will automatically adjusted when converting when the structure is converted to `ASE Atoms` object. If you want to keep the original order, just set ``resort=False`` when you call the ``to_ase()`` function.
+
+.. code-block:: Python
+
+    >>> from pyxtal.molecular_crystal import molecular_crystal
+    >>> my_crystal = molecular_crystal(36, ['H2O'], [2], 1.0)
+    >>> xtal = my_crystal.to_ase(resort=False)
+    >>> print(xtal)
+        Atoms(symbols='OH2OH2OH2OH2', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
+    >>> ordered_xtal = my_crystal.to_ase()
+    >>> print(ordered_xtal)
+        Atoms(symbols='H8O4', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
+    
+ 
+    
