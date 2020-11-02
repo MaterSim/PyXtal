@@ -17,21 +17,29 @@ class wyckoff_split:
     """
 
 
-    def __init__(self, G=197, H=146, wp1=1):
+    def __init__(self, G=197, H=146, wp1=[0, 1]):
         
         self.G = sym.Group(G)  # Group object
         self.H = sym.Group(H)  # Group object
-        if type(wp1) == int:
-            id = wp1
-        else:
-            id = sym.index_from_letter(wp1[-1], self.H)
-        self.wp1 = self.G[id] # a WP object
-        self.query()
-        #print(str(self.wp1)) 
-        #print(self.wp2_lists) 
-        self.split()
-    
-    def query(self):
+           
+        id_lists = []
+        for wp in wp1:
+            if type(wp) == int:
+                id_lists.append(wp)
+            else:
+                id_lists.append(sym.index_from_letter(wp[-1], self.G))
+        self.wp1_indices = id_lists
+        self.wp1_lists = [self.G[id] for id in id_lists] # a WP object
+        self.query_wp2()
+
+        self.G_orbits = []
+        self.H_orbits = []
+        for i, wp1 in enumerate(self.wp1_lists):
+            G_orbits, H_orbits = self.split(wp1, self.wp2_lists[i])
+            self.G_orbits.append(G_orbits)
+            self.H_orbits.append(H_orbits)
+
+    def query_wp2(self):
         """
         query the wp2 and transformation matrix from the given {G, H, wp1}
         """
@@ -44,19 +52,23 @@ class wyckoff_split:
                               ['9b'],
                               ['3a']]
         
-        wp1_index = self.wp1.index
         wp2_lists = []
-        for letter in subgroup_relations[wp1_index]:
-            id = sym.index_from_letter(letter[-1], self.H)
-            wp2_lists.append(self.H[id])
+        for wp1_index in self.wp1_indices:
+            wp2_list = []
+            for letter in subgroup_relations[wp1_index]:
+                id = sym.index_from_letter(letter[-1], self.H)
+                wp2_list.append(self.H[id])
+            wp2_lists.append(wp2_list)
         self.wp2_lists = wp2_lists
-
     
-    def split(self):
+    def split(self, wp1, wp2_lists):
+        """
+        split the generators in w1 to different w2s
+        """
                 
         # wyckoff objects
         wp1_generators_visited = []
-        wp1_generators = [wp.as_dict()['matrix'] for wp in self.wp1]
+        wp1_generators = [wp.as_dict()['matrix'] for wp in wp1]
         
         # convert them to numpy array
         for generator in wp1_generators:
@@ -64,10 +76,9 @@ class wyckoff_split:
             generator[:,3] -= np.floor(generator[:,3])
 
         G_orbits = []
-        # split the generators in w1 to different w2s
-        
-        
-        for wp2 in self.wp2_lists:
+        H_orbits = []
+
+        for wp2 in wp2_lists:
             # try all generators here
             for gen in wp1_generators:
                 
@@ -75,6 +86,7 @@ class wyckoff_split:
                 trans_generator = np.matmul(self.inv_T, gen)
                 
                 G1_orbits = []
+                H1_orbits = []
                 strs = []
                 for i, wp in enumerate(wp2):
                     new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
@@ -91,6 +103,7 @@ class wyckoff_split:
                     #str2 = SymmOp(old_basis_orbit).as_xyz_string()
                     #print("{:32s} --> {:32s}".format(str2, str1))
                     G1_orbits.append(old_basis_orbit)        
+                    H1_orbits.append(new_basis_orbit)        
                 
                 # remove duplicates due to peridoic boundary conditions
                 if good_generator:
@@ -103,21 +116,23 @@ class wyckoff_split:
             
                     wp1_generators_visited.extend(temp)
                     G1_orbits = [SymmOp(orbit) for orbit in G1_orbits]
+                    H1_orbits = [SymmOp(orbit) for orbit in H1_orbits]
                     G_orbits.append(G1_orbits)
+                    H_orbits.append(H1_orbits)
                     break
                     
-        self.G_orbits = G_orbits
+        return G_orbits, H_orbits
         
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
-        s += "Origin: {:d}{:s}\n".format(self.wp1.multiplicity, self.wp1.letter)
-        s += "After spliting\n"
+        for i, wp1 in enumerate(self.wp1_lists):
+            s += "Origin: {:d}{:s}\n".format(wp1.multiplicity, wp1.letter)
+            s += "After spliting\n"
         
-        for i, wp2 in enumerate(self.wp2_lists):
-            s += "{:d}{:s}\n".format(wp2.multiplicity, wp2.letter)
-        
-            for orbit in self.G_orbits[i]:
-                s += orbit.as_xyz_string() + '\n'
+            for j, wp2 in enumerate(self.wp2_lists[i]):
+                s += "{:d}{:s}\n".format(wp2.multiplicity, wp2.letter)
+                for g_orbit, h_orbit in zip(self.G_orbits[i][j], self.H_orbits[i][j]):
+                    s += "{:30s} -> {:30s}\n".format(g_orbit.as_xyz_string(), h_orbit.as_xyz_string())
         return s
         
     def __repr__(self):
@@ -125,6 +140,39 @@ class wyckoff_split:
 
         
 if __name__ == "__main__":
-    
-    splitter = wyckoff_split()
+
+    from pyxtal.crystal import random_crystal
+    from pyxtal.operations import apply_ops
+    from ase import Atoms
+    import pymatgen.analysis.structure_matcher as sm
+    from spglib import get_symmetry_dataset
+    from pymatgen.io.ase import AseAtomsAdaptor
+
+    sites = ['8c','6b']
+    #sites = ['6b']
+    numIons = int(sum([int(i[:-1]) for i in sites])/2)
+    print(numIons)
+    C = random_crystal(197, ['C'], [numIons], sites=[sites])
+    splitter = wyckoff_split(wp1=sites)
     print(splitter)
+    lat1 = np.dot(C.lattice.matrix, splitter.T[:3,:3].T)
+    pos1 = None
+    for i, site in enumerate(C.atom_sites):
+        pos = site.position
+        for ops in splitter.H_orbits[i]:
+            pos0 = pos + 0.005*(np.random.sample(3) - 0.5)
+            pos_tmp = apply_ops(pos0, ops)
+            if pos1 is None:
+                pos1 = pos_tmp
+            else:
+                pos1 = np.vstack((pos1, pos_tmp))
+
+    C1 = Atoms(["C"]*len(pos1), scaled_positions=pos1, cell=lat1, pbc=[1,1,1])
+    C1.write("1.vasp", format='vasp', vasp5=True, direct=True)
+    C.to_ase().write("0.vasp", format='vasp', vasp5=True, direct=True)
+    pmg_s1 = AseAtomsAdaptor.get_structure(C1)
+    print(sm.StructureMatcher().fit(pmg_s1, C.to_pymatgen()))
+    spg = get_symmetry_dataset(C1, symprec=1e-1)['international']
+    print(spg)
+    spg = get_symmetry_dataset(C1, symprec=1e-3)['international']
+    print(spg)
