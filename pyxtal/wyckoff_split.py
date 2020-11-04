@@ -2,6 +2,52 @@ import numpy as np
 import pyxtal.symmetry as sym
 from copy import copy
 from pymatgen.core.operations import SymmOp
+from random import choice
+
+Wyc = {}
+Wyc[197] = {"subgroup":[146, 146, 146, 146, 23], 
+            "type": ['t', 't', 't', 't', 't'],
+            "transformation": [
+                               [[-1,0,1/2,0],[1,-1,1/2,0],[0,1,1/2,0]],
+                               [[1,0,-1/2,0],[1,-1,1/2,0],[0,-1,-1/2,0]],
+                               [[-1,0,1/2,0],[-1,1,-1/2,0],[0,-1,-1/2,0]],
+                               [[1,0,-1/2,0],[-1,1,-1/2,0],[0,1,1/2,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                              ],
+            "relations": [
+                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
+                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
+                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
+                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
+                        [['2a'], ['2b','2c','2d'], ['8k'], ['4e','4g','4i'], ['4f','4h','4j'], ['8k','8k','8k']]
+                        ],
+            }
+
+Wyc[227] = {"subgroup":[216, 210, 203, 166, 166, 166, 166, 141, 141, 141, 227], 
+            "type": ['t', 't', 't', 't', 't', 't', 't', 't', 't', 't', 'k'],
+            "transformation": [[[1,0,0,1/8],[0,1,0,1/8],[0,0,1,1/8]], 
+                               [[1,0,0,1/8],[0,1,0,1/8],[0,0,1,1/8]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                               [[-1/2,0,1,0],[1/2,-1/2,1,0],[0,1/2,1,0]],
+                               [[1/2,0,-1,1/4],[1/2,-1/2,1,0],[0,-1/2,-1,1/4]],
+                               [[-1/2,0,1,0],[-1/2,1/2,-1,1/4],[0,-1/2,-1,1/4]],
+                               [[1/2,0,-1,1/4],[-1/2,1/2,-1,1/4],[0,-1/2,-1,0]],
+                               [[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4],[0,0,1,0]],
+                               [[0,0,1,0],[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4]],
+                               [[-1/2,1/2,0,1/4],[0,0,1,0],[1/2,1/2,0,1/4]],
+                              ],
+            "relations": [[['4a','4d'], ['4b','4c'], ['16e'], ['16e'], ['16e','16e'], ['24f','24g'], ['48h','48h'], ['96i'], ['96i','96i']],
+                         [['8a'], ['8b'], ['16c'], ['16d'], ['32e'], ['48f'], ['96h'], ['48g', '48g'], ['96h', '96h']],
+                         [['8a'], ['8b'], ['16c'], ['16d'], ['32e'], ['48f'], ['96g'], ['96g'], ['96g', '96g']],
+                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
+                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
+                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
+                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
+                         [['4a'], ['4b'], ['8c'], ['8d'], ['16h'], ['8e','16g'], ['16h','32i'], ['16f','32i'], ['32i','32i','32i']],
+                         [['4a'], ['4b'], ['8c'], ['8d'], ['16h'], ['8e','16g'], ['16h','32i'], ['16f','32i'], ['32i','32i','32i']],
+                         [['4a'], ['4b'], ['8c'], ['8d'], ['16h'], ['8e','16g'], ['16h','32i'], ['16f','32i'], ['32i','32i','32i']]],
+            }
+
 
 class wyckoff_split:
     """
@@ -43,15 +89,25 @@ class wyckoff_split:
         """
         query the wp2 and transformation matrix from the given {G, H, wp1}
         """
-        self.T = np.array([[-1.,0.,.5,0.],[1.,-1.,.5,0.],[0.,1.,.5,0.],[0.,0.,0.,1.]])
-        self.inv_T = np.linalg.inv(self.T)
-        subgroup_relations = [['9b','9b','9b','9b'],
-                              ['9b','9b'],
-                              ['9b','9b'],
-                              ['3a','9b'],
-                              ['9b'],
-                              ['3a']]
-        
+        ids = []
+        wyc = Wyc[self.G.number]
+        ids = [id for id in range(len(wyc['subgroup'])) if wyc['subgroup'][id]==self.H.number]
+        id = choice(ids)
+        trans = np.array(wyc['transformation'][id])  #np.array([[-1.,0.,.5,0.],[1.,-1.,.5,0.],[0.,1.,.5,0.],[0.,0.,0.,1.]])
+        self.R = np.zeros([4,4])
+        self.R[:3,:3] += trans[:3,:3]
+        self.R[3,3] = 1
+        self.inv_R = np.linalg.inv(self.R)
+        self.t = trans[:,3]
+        subgroup_relations = wyc['relations'][id]
+        subgroup_relations.reverse()
+        #subgroup_relations = [['9b','9b','9b','9b'],
+        #                      ['9b','9b'],
+        #                      ['9b','9b'],
+        #                      ['3a','9b'],
+        #                      ['9b'],
+        #                      ['3a']]
+        print(self.wp1_indices)
         wp2_lists = []
         for wp1_index in self.wp1_indices:
             wp2_list = []
@@ -77,31 +133,30 @@ class wyckoff_split:
 
         G_orbits = []
         H_orbits = []
+        factor = np.linalg.det(self.R)
 
         for wp2 in wp2_lists:
             # try all generators here
             for gen in wp1_generators:
-                
                 good_generator = True
-                trans_generator = np.matmul(self.inv_T, gen)
+                trans_generator = np.matmul(self.inv_R, gen)
                 
                 G1_orbits = []
                 H1_orbits = []
                 strs = []
                 for i, wp in enumerate(wp2):
                     new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
-                    old_basis_orbit = np.matmul(self.T, new_basis_orbit).round(3)
+                    old_basis_orbit = np.matmul(self.R, new_basis_orbit).round(3)
                     
                     tmp = copy(old_basis_orbit)
                     tmp[:,3] -= np.floor(tmp[:,3])
-                    
-                    if i==0 and tmp.tolist() in wp1_generators_visited:
+                    if i==0 and (tmp.tolist() in wp1_generators_visited):
                         good_generator = False
                         break
-                        
                     #str1 = SymmOp(new_basis_orbit).as_xyz_string()
                     #str2 = SymmOp(old_basis_orbit).as_xyz_string()
                     #print("{:32s} --> {:32s}".format(str2, str1))
+                    new_basis_orbit[3,:3] += self.t
                     G1_orbits.append(old_basis_orbit)        
                     H1_orbits.append(new_basis_orbit)        
                 
@@ -113,14 +168,13 @@ class wyckoff_split:
                         gen_list = gen.tolist()
                         if gen.tolist() not in temp:
                             temp.append(gen_list)
-            
-                    wp1_generators_visited.extend(temp)
-                    G1_orbits = [SymmOp(orbit) for orbit in G1_orbits]
-                    H1_orbits = [SymmOp(orbit) for orbit in H1_orbits]
-                    G_orbits.append(G1_orbits)
-                    H_orbits.append(H1_orbits)
-                    break
-                    
+                    if len(temp)*factor == len(wp2):           
+                        wp1_generators_visited.extend(temp)
+                        G1_orbits = [SymmOp(orbit) for orbit in G1_orbits]
+                        H1_orbits = [SymmOp(orbit) for orbit in H1_orbits]
+                        G_orbits.append(G1_orbits)
+                        H_orbits.append(H1_orbits)
+                        break
         return G_orbits, H_orbits
         
     def __str__(self):
@@ -147,20 +201,24 @@ if __name__ == "__main__":
     import pymatgen.analysis.structure_matcher as sm
     from spglib import get_symmetry_dataset
     from pymatgen.io.ase import AseAtomsAdaptor
-
-    sites = ['8c','6b']
-    #sites = ['6b']
-    numIons = int(sum([int(i[:-1]) for i in sites])/2)
+    #sites = ['24f','6b']
+    #G, H, fac = 197, 23, 2
+    sites = ['8a', '32e']
+    G, H, fac = 227, 216, 4
+    numIons = int(sum([int(i[:-1]) for i in sites])/fac)
     print(numIons)
-    C = random_crystal(197, ['C'], [numIons], sites=[sites])
-    splitter = wyckoff_split(wp1=sites)
+    C = random_crystal(G, ['C'], [numIons], sites=[sites])
+    spg1 = get_symmetry_dataset(C.to_ase(), symprec=1e-4)['international']
+
+    splitter = wyckoff_split(G=G,H=H,wp1=sites)
     print(splitter)
-    lat1 = np.dot(C.lattice.matrix, splitter.T[:3,:3].T)
+    lat1 = np.dot(C.lattice.matrix, splitter.R[:3,:3].T)
     pos1 = None
     for i, site in enumerate(C.atom_sites):
         pos = site.position
         for ops in splitter.H_orbits[i]:
-            pos0 = pos + 0.005*(np.random.sample(3) - 0.5)
+            pos0 = pos + 0.05*(np.random.sample(3) - 0.5)
+            #print(pos0)
             pos_tmp = apply_ops(pos0, ops)
             if pos1 is None:
                 pos1 = pos_tmp
@@ -171,8 +229,5 @@ if __name__ == "__main__":
     C1.write("1.vasp", format='vasp', vasp5=True, direct=True)
     C.to_ase().write("0.vasp", format='vasp', vasp5=True, direct=True)
     pmg_s1 = AseAtomsAdaptor.get_structure(C1)
-    print(sm.StructureMatcher().fit(pmg_s1, C.to_pymatgen()))
-    spg = get_symmetry_dataset(C1, symprec=1e-1)['international']
-    print(spg)
-    spg = get_symmetry_dataset(C1, symprec=1e-3)['international']
-    print(spg)
+    spg2 = get_symmetry_dataset(C1, symprec=1e-4)['international']
+    print(spg1, spg2, sm.StructureMatcher().fit(pmg_s1, C.to_pymatgen()))
