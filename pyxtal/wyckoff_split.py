@@ -5,6 +5,120 @@ from pymatgen.core.operations import SymmOp
 from random import choice
 
 Wyc = {}
+Wyc[1] = {"subgroup":[1]*20, 
+            "type": ['k']*20,
+            "transformation": [
+                               [[2,0,0,1/2],[0,1,0,0],[0,0,1,0]],
+                               [[1,0,0,0],[0,1/2,0,1/2],[0,0,1,0]],
+                               [[2,0,0,0],[0,1,0,1/2],[0,0,1,1/2]],
+                               [[2,0,0,1/2],[0,1,0,0],[0,0,1,1/2]],
+                              ],
+            "relations": ['1a','1a']*7 + ['1a','1a']*13,
+            }
+
+Wyc[14] = {"subgroup":[7, 4, 2, 2, 2, 14, 14], 
+            "type": ['t','t','t','t','t''k','k'],
+            "transformation": [
+                               [[1,0,0,0],[0,1,0,1/4],[0,0,1,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                               [[1,0,0,0],[0,3,0,1/3],[0,0,1,0]],
+                               [[2,0,0,1/2],[0,1,0,0],[0,0,1,0]],
+                              ],
+            "relations":  [
+                          [['2a'],['2a'],['2a'],['2a'],['2a','2a']],
+                          [['2a'],['2a'],['2a'],['2a'],['2a','2a']],
+                          [['1a','1g'],['1d','1h'],['1b','1c'],['1e','1f'],['2i','2i']],
+                          [['1a','1h'],['1b','1e'],['1c','1f'],['1d','1g'],['2i','2i']],
+                          [['1a','1e'],['1f','1g'],['1b','1c'],['1b','1h'],['2i','2i']],
+                          [['2a','4e'],['2b','4e'],['2c','4e'],['2d','4e'],['4e','4e','4e']],
+                          [['2a','2b'],['4e'],['2c','2d'],['4e'],['4e','4e']]
+                          ]
+            }
+
+
+Wyc[17] = {"subgroup":[4, 3, 3], 
+            "type": ['t','t','t'],
+            "transformation": [
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                               [[0,0,1,0],[1,0,0,0],[0,1,0,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
+                              ],
+            "relations":  [
+                          [['2a'],['2a'],['2a'],['2a'],['2a','2a']],
+                          [['1a','1c'],['1b','1d'],['2e'],['2e','2e']],
+                          [['1a','1c'],['1b','1d'],['2e'],['2e','2e']],
+                          [['2e'],['2e'],['1a','1b'],['1c','1d'],['2e','2e']],
+                          ]
+            }
+
+Wyc[18] = {"subgroup":[4, 4, 4, 3], 
+            "type": ['t','t','t','t'],
+            "transformation": [
+                               [[1,0,0,0],[0,1,0,1/4],[0,0,1,0]],
+                               [[0,0,1,0],[1,0,0,0],[0,1,0,1/4]],
+                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                              ],
+            "relations":  [
+                          [['2a'],['2a'],['2a','2a']],
+                          [['2a'],['2a'],['2a','2a']],
+                          [['2a'],['2a'],['2a','2a']],
+                          [['1a','1d'],['1b','1c'],['2e','2e']],
+                          ]
+            }
+
+Wyc[19] = {"subgroup":[4, 4, 4, 4], 
+            "type": ['t','t','t','t'],
+            "transformation": [
+                               [[1,0,0,0],[0,1,0,1/4],[0,0,1,0]],
+                               [[0,0,1,0],[1,0,0,0],[0,1,0,1/4]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
+                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
+                              ],
+            "relations":  [
+                          [['2a','2a']],
+                          [['2a','2a']],
+                          [['2a','2a']],
+                          [['2a','2a']],
+                          ]
+            }
+
+
+Wyc[20] = {"subgroup":[5, 5, 5, 4, 19, 18, 18, 18, 18, 17], 
+            "type": ['t','t','t','t','k','k','k','k','k','k'],
+            "transformation": [
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                               [[0,-1,0,0],[1,0,0,0],[0,0,1,0]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
+                               [[1/2,-1/2,0,0],[1/2,1/2,0,0],[0,0,1,0]],
+                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
+                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
+                               [[0,1,0,0],[0,0,1,0],[1,0,0,1/4]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
+                               [[0,0,1,1/4],[1,0,0,0],[0,1,0,1/4]],
+                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+                              ],
+            "relations":  [
+                          [['2a','2b'],['4c'],['4c','4c']],
+                          [['2a','2b'],['4c'],['4c','4c']],
+                          [['4c'],['2a','2b'],['4c','4c']],
+                          [['2a'],['2a'],['2a','2a']],
+                          [['4a'],['4a'],['4a','4a']],
+                          [['2a','2b'],['4c'],['4c','4c']],
+                          [['2a','2b'],['4c'],['4c','4c']],
+                          [['4c'],['2a','2b'],['4c','4c']],
+                          [['4c'],['2a','2b'],['4c','4c']],
+                          [['2a','2b'],['2c','2d'],['4e','4e']],
+                          ]
+            }
+
+
+
+
 Wyc[197] = {"subgroup":[146, 146, 146, 146, 23], 
             "type": ['t', 't', 't', 't', 't'],
             "transformation": [
@@ -78,12 +192,14 @@ class wyckoff_split:
         self.wp1_lists = [self.G[id] for id in id_lists] # a WP object
         self.query_wp2()
 
-        self.G_orbits = []
+        self.G1_orbits = []
+        self.G2_orbits = []
         self.H_orbits = []
         for i, wp1 in enumerate(self.wp1_lists):
-            G_orbits, H_orbits = self.split(wp1, self.wp2_lists[i])
-            self.G_orbits.append(G_orbits)
-            self.H_orbits.append(H_orbits)
+            G1_orbits, G2_orbits = self.split(wp1, self.wp2_lists[i])
+            self.G1_orbits.append(G1_orbits)
+            self.G2_orbits.append(G2_orbits)
+            self.H_orbits.append([wp2.ops for wp2 in self.wp2_lists[i]])
 
     def query_wp2(self):
         """
@@ -96,9 +212,11 @@ class wyckoff_split:
         trans = np.array(wyc['transformation'][id])  #np.array([[-1.,0.,.5,0.],[1.,-1.,.5,0.],[0.,1.,.5,0.],[0.,0.,0.,1.]])
         self.R = np.zeros([4,4])
         self.R[:3,:3] += trans[:3,:3]
+        self.R[:3,3] = trans[:,3]
         self.R[3,3] = 1
         self.inv_R = np.linalg.inv(self.R)
-        self.t = trans[:,3]
+        self.inv_R[:3,3] = -trans[:,3]
+        #self.t = trans[:,3]
         subgroup_relations = wyc['relations'][id]
         subgroup_relations.reverse()
         #subgroup_relations = [['9b','9b','9b','9b'],
@@ -107,7 +225,6 @@ class wyckoff_split:
         #                      ['3a','9b'],
         #                      ['9b'],
         #                      ['3a']]
-        print(self.wp1_indices)
         wp2_lists = []
         for wp1_index in self.wp1_indices:
             wp2_list = []
@@ -131,51 +248,55 @@ class wyckoff_split:
             generator = np.array(generator)
             generator[:,3] -= np.floor(generator[:,3])
 
-        G_orbits = []
-        H_orbits = []
+        G1_orbits = []
+        G2_orbits = []
         factor = np.linalg.det(self.R)
 
         for wp2 in wp2_lists:
+
+            #import sys; sys.exit()
             # try all generators here
             for gen in wp1_generators:
-                good_generator = True
+                good_generator = False
                 trans_generator = np.matmul(self.inv_R, gen)
                 
-                G1_orbits = []
-                H1_orbits = []
+                g1_orbits = []
+                g2_orbits = []
                 strs = []
                 for i, wp in enumerate(wp2):
                     new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
                     old_basis_orbit = np.matmul(self.R, new_basis_orbit).round(3)
-                    
+                    old_basis_orbit[3,:] = [0, 0, 0, 1]
                     tmp = copy(old_basis_orbit)
                     tmp[:,3] -= np.floor(tmp[:,3])
-                    if i==0 and (tmp.tolist() in wp1_generators_visited):
-                        good_generator = False
-                        break
-                    #str1 = SymmOp(new_basis_orbit).as_xyz_string()
-                    #str2 = SymmOp(old_basis_orbit).as_xyz_string()
-                    #print("{:32s} --> {:32s}".format(str2, str1))
-                    new_basis_orbit[3,:3] += self.t
-                    G1_orbits.append(old_basis_orbit)        
-                    H1_orbits.append(new_basis_orbit)        
+                    tmp[3,:] = [0, 0, 0, 1]
+                    if i==0: 
+                        tmp_list = tmp.tolist() 
+                        if (tmp_list not in wp1_generators_visited) and (tmp_list in wp1_generators):
+                            good_generator = True
+                        else:
+                            break
+
+                    # to consider PBC
+                    g1_orbits.append(old_basis_orbit)        
+                    g2_orbits.append(new_basis_orbit)        
                 
                 # remove duplicates due to peridoic boundary conditions
                 if good_generator:
                     temp=[]
-                    for gen in G1_orbits:
-                        gen[:,3] -= np.floor(gen[:,3])
+                    for gen in g1_orbits:
+                        gen[:3,3] -= np.floor(gen[:3,3])
                         gen_list = gen.tolist()
                         if gen.tolist() not in temp:
                             temp.append(gen_list)
                     if len(temp)*factor == len(wp2):           
                         wp1_generators_visited.extend(temp)
-                        G1_orbits = [SymmOp(orbit) for orbit in G1_orbits]
-                        H1_orbits = [SymmOp(orbit) for orbit in H1_orbits]
-                        G_orbits.append(G1_orbits)
-                        H_orbits.append(H1_orbits)
+                        g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
+                        g2_orbits = [SymmOp(orbit) for orbit in g2_orbits]
+                        G1_orbits.append(g1_orbits)
+                        G2_orbits.append(g2_orbits)
                         break
-        return G_orbits, H_orbits
+        return G1_orbits, G2_orbits
         
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
@@ -184,9 +305,14 @@ class wyckoff_split:
             s += "After spliting\n"
         
             for j, wp2 in enumerate(self.wp2_lists[i]):
+                print(i, j, len(self.H_orbits), len(self.H_orbits[i]))
+                print(i, j, len(self.G1_orbits), len(self.G1_orbits[i]))
+                print(i, j, len(self.G2_orbits), len(self.G2_orbits[i]))
                 s += "{:d}{:s}\n".format(wp2.multiplicity, wp2.letter)
-                for g_orbit, h_orbit in zip(self.G_orbits[i][j], self.H_orbits[i][j]):
-                    s += "{:30s} -> {:30s}\n".format(g_orbit.as_xyz_string(), h_orbit.as_xyz_string())
+                for g1_orbit, g2_orbit, h_orbit in zip(self.G1_orbits[i][j], self.G2_orbits[i][j], self.H_orbits[i][j]):
+                    s += "{:30s} -> {:30s} -> {:30s}\n".format(g1_orbit.as_xyz_string(), \
+                                                               g2_orbit.as_xyz_string(), \
+                                                               h_orbit.as_xyz_string())
         return s
         
     def __repr__(self):
@@ -204,6 +330,7 @@ if __name__ == "__main__":
     #sites = ['24f','6b']
     #G, H, fac = 197, 23, 2
     sites = ['8a', '32e']
+    #sites = ['8a']
     G, H, fac = 227, 216, 4
     numIons = int(sum([int(i[:-1]) for i in sites])/fac)
     print(numIons)
@@ -216,10 +343,11 @@ if __name__ == "__main__":
     pos1 = None
     for i, site in enumerate(C.atom_sites):
         pos = site.position
-        for ops in splitter.H_orbits[i]:
+        for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
             pos0 = pos + 0.05*(np.random.sample(3) - 0.5)
             #print(pos0)
-            pos_tmp = apply_ops(pos0, ops)
+            pos_tmp = apply_ops(pos0, ops1)
+            pos_tmp = apply_ops(pos_tmp[0], ops2)
             if pos1 is None:
                 pos1 = pos_tmp
             else:

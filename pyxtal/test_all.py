@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 from pkg_resources import resource_filename
 from pymatgen.core.structure import Molecule
+import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pyxtal.crystal import (
@@ -252,6 +253,19 @@ class TestSymmetry(unittest.TestCase):
         ]
         wyc, perm = Wyckoff_position.from_symops(strs)
         self.assertTrue(wyc.number == 14)
+
+class TestSubgroup(unittest.TestCase):
+    def test_cubic_cubic(self):
+        sites = ['8a', '32e']
+        G, H, fac = 227, 216, 4
+        numIons = int(sum([int(i[:-1]) for i in sites])/fac)
+        C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+        C2 = C1.subgroup(H=H)
+        pmg_s1 = C1.to_pymatgen()
+        pmg_s2 = C2.to_pymatgen()
+        sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
+        sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
 
 # class TestOperation(unittest.TestCase):
