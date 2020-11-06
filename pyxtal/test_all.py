@@ -259,7 +259,10 @@ class TestSubgroup(unittest.TestCase):
         sites = ['8a', '32e']
         G, fac = 227, 4
         numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-        C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+        while True:
+            C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+            if C1.valid:
+                break
 
         H = 216
         C2 = C1.subgroup(H=H)
@@ -273,7 +276,10 @@ class TestSubgroup(unittest.TestCase):
         sites = ['8a', '32e']
         G, fac = 227, 4
         numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-        C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+        while True:
+            C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+            if C1.valid:
+                break
 
         H = 141
         C2 = C1.subgroup(H=H)
@@ -287,7 +293,10 @@ class TestSubgroup(unittest.TestCase):
         sites = ['8a', '32e']
         G, fac = 227, 4
         numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-        C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+        while True:
+            C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+            if C1.valid:
+                break
 
         H = 166
         C2 = C1.subgroup(H=H)
