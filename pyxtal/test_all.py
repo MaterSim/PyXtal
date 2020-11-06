@@ -257,9 +257,39 @@ class TestSymmetry(unittest.TestCase):
 class TestSubgroup(unittest.TestCase):
     def test_cubic_cubic(self):
         sites = ['8a', '32e']
-        G, H, fac = 227, 216, 4
+        G, fac = 227, 4
         numIons = int(sum([int(i[:-1]) for i in sites])/fac)
         C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+
+        H = 216
+        C2 = C1.subgroup(H=H)
+        pmg_s1 = C1.to_pymatgen()
+        pmg_s2 = C2.to_pymatgen()
+        sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
+        sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+
+    def test_cubic_tetra(self):
+        sites = ['8a', '32e']
+        G, fac = 227, 4
+        numIons = int(sum([int(i[:-1]) for i in sites])/fac)
+        C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+
+        H = 141
+        C2 = C1.subgroup(H=H)
+        pmg_s1 = C1.to_pymatgen()
+        pmg_s2 = C2.to_pymatgen()
+        sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
+        sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+
+    def test_cubic_Rhom(self):
+        sites = ['8a', '32e']
+        G, fac = 227, 4
+        numIons = int(sum([int(i[:-1]) for i in sites])/fac)
+        C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
+
+        H = 166
         C2 = C1.subgroup(H=H)
         pmg_s1 = C1.to_pymatgen()
         pmg_s2 = C2.to_pymatgen()

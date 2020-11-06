@@ -140,18 +140,18 @@ Wyc[197] = {"subgroup":[146, 146, 146, 146, 23],
 Wyc[227] = {"subgroup":[216, 210, 203, 166, 166, 166, 166, 141, 141, 141, 227], 
             "type": ['t', 't', 't', 't', 't', 't', 't', 't', 't', 't', 'k'],
             "transformation": [[[1,0,0,1/8],[0,1,0,1/8],[0,0,1,1/8]], 
-                               [[1,0,0,1/8],[0,1,0,1/8],[0,0,1,1/8]],
+                               [[1,0,0,3/8],[0,1,0,3/8],[0,0,1,3/8]],
                                [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
                                [[-1/2,0,1,0],[1/2,-1/2,1,0],[0,1/2,1,0]],
                                [[1/2,0,-1,1/4],[1/2,-1/2,1,0],[0,-1/2,-1,1/4]],
                                [[-1/2,0,1,0],[-1/2,1/2,-1,1/4],[0,-1/2,-1,1/4]],
-                               [[1/2,0,-1,1/4],[-1/2,1/2,-1,1/4],[0,-1/2,-1,0]],
+                               [[1/2,0,-1,1/4],[-1/2,1/2,-1,1/4],[0,1/2,-1,0]],
                                [[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4],[0,0,1,0]],
                                [[0,0,1,0],[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4]],
                                [[-1/2,1/2,0,1/4],[0,0,1,0],[1/2,1/2,0,1/4]],
                               ],
             "relations": [[['4a','4d'], ['4b','4c'], ['16e'], ['16e'], ['16e','16e'], ['24f','24g'], ['48h','48h'], ['96i'], ['96i','96i']],
-                         [['8a'], ['8b'], ['16c'], ['16d'], ['32e'], ['48f'], ['96h'], ['48g', '48g'], ['96h', '96h']],
+                         [['8b'], ['8a'], ['16d'], ['16c'], ['32e'], ['48f'], ['96h'], ['48g', '48g'], ['96h', '96h']],
                          [['8a'], ['8b'], ['16c'], ['16d'], ['32e'], ['48f'], ['96g'], ['96g'], ['96g', '96g']],
                          [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
                          [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
@@ -209,22 +209,16 @@ class wyckoff_split:
         wyc = Wyc[self.G.number]
         ids = [id for id in range(len(wyc['subgroup'])) if wyc['subgroup'][id]==self.H.number]
         id = choice(ids)
-        trans = np.array(wyc['transformation'][id])  #np.array([[-1.,0.,.5,0.],[1.,-1.,.5,0.],[0.,1.,.5,0.],[0.,0.,0.,1.]])
+        trans = np.array(wyc['transformation'][id])  
         self.R = np.zeros([4,4])
         self.R[:3,:3] += trans[:3,:3]
-        self.R[:3,3] = trans[:,3]
         self.R[3,3] = 1
         self.inv_R = np.linalg.inv(self.R)
-        self.inv_R[:3,3] = -trans[:,3]
-        #self.t = trans[:,3]
+        inv_t = np.dot(self.inv_R[:3,:3], trans[:,3].T)
+        self.inv_R[:3,3] = -inv_t.T
+        self.R[:3,3] = trans[:3,3]
         subgroup_relations = wyc['relations'][id]
         subgroup_relations.reverse()
-        #subgroup_relations = [['9b','9b','9b','9b'],
-        #                      ['9b','9b'],
-        #                      ['9b','9b'],
-        #                      ['3a','9b'],
-        #                      ['9b'],
-        #                      ['3a']]
         wp2_lists = []
         for wp1_index in self.wp1_indices:
             wp2_list = []
@@ -238,45 +232,49 @@ class wyckoff_split:
         """
         split the generators in w1 to different w2s
         """
-                
+        #print(self.inv_R)
+        #print(wp1)
         # wyckoff objects
         wp1_generators_visited = []
-        wp1_generators = [wp.as_dict()['matrix'] for wp in wp1]
+        wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
         
         # convert them to numpy array
         for generator in wp1_generators:
             generator = np.array(generator)
-            generator[:,3] -= np.floor(generator[:,3])
 
         G1_orbits = []
         G2_orbits = []
-        factor = np.linalg.det(self.R)
+        factor = max([1,np.linalg.det(self.R)])
 
         for wp2 in wp2_lists:
-
+            #print(wp2)
             #import sys; sys.exit()
             # try all generators here
             for gen in wp1_generators:
                 good_generator = False
                 trans_generator = np.matmul(self.inv_R, gen)
+                #print(trans_generator)
                 
                 g1_orbits = []
                 g2_orbits = []
                 strs = []
                 for i, wp in enumerate(wp2):
                     new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
+                    #print(wp.as_dict()['matrix'])
+                    #print(new_basis_orbit)
+                    #import sys; sys.exit()
                     old_basis_orbit = np.matmul(self.R, new_basis_orbit).round(3)
                     old_basis_orbit[3,:] = [0, 0, 0, 1]
                     tmp = copy(old_basis_orbit)
-                    tmp[:,3] -= np.floor(tmp[:,3])
                     tmp[3,:] = [0, 0, 0, 1]
                     if i==0: 
-                        tmp_list = tmp.tolist() 
-                        if (tmp_list not in wp1_generators_visited) and (tmp_list in wp1_generators):
+                        #print(SymmOp(tmp).as_xyz_string(), '->', SymmOp(gen).as_xyz_string(), '->', SymmOp(new_basis_orbit).as_xyz_string())
+                        #import sys; sys.exit()
+                        if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators):
                             good_generator = True
+                            #print("good_gener")
                         else:
                             break
-
                     # to consider PBC
                     g1_orbits.append(old_basis_orbit)        
                     g2_orbits.append(new_basis_orbit)        
@@ -285,11 +283,10 @@ class wyckoff_split:
                 if good_generator:
                     temp=[]
                     for gen in g1_orbits:
-                        gen[:3,3] -= np.floor(gen[:3,3])
-                        gen_list = gen.tolist()
-                        if gen.tolist() not in temp:
-                            temp.append(gen_list)
-                    if len(temp)*factor == len(wp2):           
+                        if not in_lists(gen, temp):
+                            temp.append(gen)
+
+                    if int(len(temp)*factor) == len(wp2):           
                         wp1_generators_visited.extend(temp)
                         g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
                         g2_orbits = [SymmOp(orbit) for orbit in g2_orbits]
@@ -305,9 +302,6 @@ class wyckoff_split:
             s += "After spliting\n"
         
             for j, wp2 in enumerate(self.wp2_lists[i]):
-                print(i, j, len(self.H_orbits), len(self.H_orbits[i]))
-                print(i, j, len(self.G1_orbits), len(self.G1_orbits[i]))
-                print(i, j, len(self.G2_orbits), len(self.G2_orbits[i]))
                 s += "{:d}{:s}\n".format(wp2.multiplicity, wp2.letter)
                 for g1_orbit, g2_orbit, h_orbit in zip(self.G1_orbits[i][j], self.G2_orbits[i][j], self.H_orbits[i][j]):
                     s += "{:30s} -> {:30s} -> {:30s}\n".format(g1_orbit.as_xyz_string(), \
@@ -317,6 +311,19 @@ class wyckoff_split:
         
     def __repr__(self):
         return str(self)
+
+
+def in_lists(mat1, mat2, eps=1e-4):
+    if len(mat2) == 0:
+        return False
+    else:
+        for mat in mat2:
+            if np.array_equal(mat[:3,:3], mat1[:3,:3]):
+                diff = mat[:3,3] - mat1[:3,3]
+                diff -= np.floor(diff)
+                if (diff*diff).sum() < 1e-4:
+                    return True
+        return False
 
         
 if __name__ == "__main__":
@@ -329,9 +336,9 @@ if __name__ == "__main__":
     from pymatgen.io.ase import AseAtomsAdaptor
     #sites = ['24f','6b']
     #G, H, fac = 197, 23, 2
-    sites = ['8a', '32e']
+    sites = ['32e']
     #sites = ['8a']
-    G, H, fac = 227, 216, 4
+    G, H, fac = 227, 166, 4
     numIons = int(sum([int(i[:-1]) for i in sites])/fac)
     print(numIons)
     C = random_crystal(G, ['C'], [numIons], sites=[sites])

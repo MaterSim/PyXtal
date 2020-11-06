@@ -423,10 +423,21 @@ class random_crystal:
         from pyxtal.viz import display_atomic
         return display_atomic(self, **kwargs)
 
-    def subgroup(self, H, eps=0.05):
+    def subgroup(self, H=None, eps=0.05):
         """
         generate a structure with lower symmetry
+
+        Args:
+            H: space group number (int)
+            eps: pertubation term (float)
+
+        Returns:
+            a pyxtal structure with lower symmetry
         """
+
+        #if H is None:
+        #randomly choose a subgroup from the available list
+        #    H = choice()
         sites = [str(site.wp.multiplicity)+site.wp.letter for site in self.atom_sites]
         splitter = wyckoff_split(G=self.group.number, H=H, wp1=sites)
         lat1 = np.dot(self.lattice.matrix, splitter.R[:3,:3].T)
@@ -435,7 +446,7 @@ class random_crystal:
         for i, site in enumerate(self.atom_sites):
             pos = site.position
             for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
-                pos0 = pos + 0.05*(np.random.sample(3) - 0.5)
+                pos0 = pos + eps*(np.random.sample(3) - 0.5)
                 pos0 = apply_ops(pos0, ops1)[0]
                 pos0 -= np.floor(pos0)
                 wp, _ = Wyckoff_position.from_symops(ops2, group=H)
@@ -444,6 +455,8 @@ class random_crystal:
         new_struc.group = Group(H)
         new_struc.lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
         new_struc.atom_sites = split_sites
+        #print(split_sites)
+        #print(splitter)
         new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
         return new_struc
 
