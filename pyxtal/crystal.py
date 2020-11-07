@@ -446,10 +446,10 @@ class random_crystal:
         for i, site in enumerate(self.atom_sites):
             pos = site.position
             for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
-                pos0 = pos + eps*(np.random.sample(3) - 0.5)
-                pos0 = apply_ops(pos0, ops1)[0]
+                pos0 = apply_ops(pos, ops1)[0]
                 pos0 -= np.floor(pos0)
-                wp, _ = Wyckoff_position.from_symops(ops2, group=H)
+                pos0 += eps*(np.random.sample(3) - 0.5)
+                wp, _ = Wyckoff_position.from_symops(ops2, group=H, permutation=False)
                 split_sites.append(atom_site(wp, pos0, site.specie))
         new_struc = deepcopy(self)
         new_struc.group = Group(H)

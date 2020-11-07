@@ -1500,7 +1500,7 @@ class Wyckoff_position:
                 self.ops[j] = op1    
 
 
-    def from_symops(ops, group=None):
+    def from_symops(ops, group=None, permutation=True):
         """
         search Wyckoff Position by symmetry operations
         Now only supports space group symmetry
@@ -1523,7 +1523,11 @@ class Wyckoff_position:
 
         N_sym = len(str1)
         # sometimes, we allow the permutation
-        permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
+        if permutation:
+            permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
+        else:
+            permutations = [[0,1,2]]
+
         if group is None:
             groups = range(1,231)
         else:

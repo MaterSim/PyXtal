@@ -137,7 +137,7 @@ Wyc[197] = {"subgroup":[146, 146, 146, 146, 23],
                         ],
             }
 
-Wyc[227] = {"subgroup":[216, 210, 203, 166, 166, 166, 166, 141, 141, 141, 227], 
+Wyc[227] = {"subgroup":[216, 210, 203, 166, 166, 166, 166, 141, 141, 141], 
             "type": ['t', 't', 't', 't', 't', 't', 't', 't', 't', 't', 'k'],
             "transformation": [[[1,0,0,1/8],[0,1,0,1/8],[0,0,1,1/8]], 
                                [[1,0,0,3/8],[0,1,0,3/8],[0,0,1,3/8]],
@@ -145,7 +145,7 @@ Wyc[227] = {"subgroup":[216, 210, 203, 166, 166, 166, 166, 141, 141, 141, 227],
                                [[-1/2,0,1,0],[1/2,-1/2,1,0],[0,1/2,1,0]],
                                [[1/2,0,-1,1/4],[1/2,-1/2,1,0],[0,-1/2,-1,1/4]],
                                [[-1/2,0,1,0],[-1/2,1/2,-1,1/4],[0,-1/2,-1,1/4]],
-                               [[1/2,0,-1,1/4],[-1/2,1/2,-1,1/4],[0,1/2,-1,0]],
+                               [[1/2,0,-1,1/4],[-1/2,1/2,-1,1/4],[0,1/2,1,0]],
                                [[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4],[0,0,1,0]],
                                [[0,0,1,0],[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4]],
                                [[-1/2,1/2,0,1/4],[0,0,1,0],[1/2,1/2,0,1/4]],
@@ -217,7 +217,7 @@ class wyckoff_split:
         inv_t = np.dot(self.inv_R[:3,:3], trans[:,3].T)
         self.inv_R[:3,3] = -inv_t.T
         self.R[:3,3] = trans[:3,3]
-        subgroup_relations = wyc['relations'][id]
+        subgroup_relations = copy(wyc['relations'][id])
         subgroup_relations.reverse()
         wp2_lists = []
         for wp1_index in self.wp1_indices:
@@ -227,12 +227,12 @@ class wyckoff_split:
                 wp2_list.append(self.H[id])
             wp2_lists.append(wp2_list)
         self.wp2_lists = wp2_lists
+        #import sys; sys.exit()
     
     def split(self, wp1, wp2_lists):
         """
         split the generators in w1 to different w2s
         """
-        #print(self.inv_R)
         #print(wp1)
         # wyckoff objects
         wp1_generators_visited = []
@@ -293,6 +293,10 @@ class wyckoff_split:
                         G1_orbits.append(g1_orbits)
                         G2_orbits.append(g2_orbits)
                         break
+            #print(wp2)
+            #print("===========", len(wp2), len(g1_orbits))
+            if len(g1_orbits) < len(wp2):
+                raise ValueError("Cannot find the generator for wp2")
         return G1_orbits, G2_orbits
         
     def __str__(self):
@@ -340,7 +344,6 @@ if __name__ == "__main__":
     #sites = ['8a']
     G, H, fac = 227, 166, 4
     numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-    print(numIons)
     C = random_crystal(G, ['C'], [numIons], sites=[sites])
     spg1 = get_symmetry_dataset(C.to_ase(), symprec=1e-4)['international']
 
