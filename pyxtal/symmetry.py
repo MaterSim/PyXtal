@@ -2624,6 +2624,18 @@ class Group:
         """
         return self.get_wyckoff_symmetry(index, molecular=True)
 
+    def get_max_subgroup(self):
+        """
+        Returns the list of maximal subgroup
+        """
+        pass
+
+    def get_min_supergroup(self):
+        """
+        Returns the list of minimal supergroup
+        """
+        pass
+
     def __iter__(self):
         yield from self.Wyckoff_positions
 
