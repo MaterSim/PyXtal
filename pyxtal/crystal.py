@@ -423,7 +423,7 @@ class random_crystal:
         from pyxtal.viz import display_atomic
         return display_atomic(self, **kwargs)
 
-    def subgroup(self, H=None, eps=0.05):
+    def subgroup(self, H=None, eps=0.05, idx=None):
         """
         generate a structure with lower symmetry
 
@@ -437,8 +437,11 @@ class random_crystal:
 
         #randomly choose a subgroup from the available list
         sites = [str(site.wp.multiplicity)+site.wp.letter for site in self.atom_sites]
-        splitter = wyckoff_split(G=self.group.number, H=H, wp1=sites)
-        lat1 = np.dot(self.lattice.matrix, splitter.R[:3,:3].T)
+        splitter = wyckoff_split(G=self.group.number, H=H, wp1=sites, idx=idx)
+        lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
+        #lat1 = np.dot(self.lattice.matrix, splitter.R[:3,:3])
+        #print(splitter.R)
+        #print(lat1)
         multiples = np.linalg.det(splitter.R[:3,:3])
         split_sites = []
         for i, site in enumerate(self.atom_sites):

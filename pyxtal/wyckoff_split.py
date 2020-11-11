@@ -18,14 +18,13 @@ class wyckoff_split:
     """
 
 
-    def __init__(self, G=197, H=None, wp1=[0, 1]):
+    def __init__(self, G=197, H=None, wp1=[0, 1], idx=None):
         
         self.G = sym.Group(G)  # Group object
         self.wyc = self.G.get_max_t_subgroup()
         if H is None:
             H = choice(self.wyc['subgroup'])
         self.H = sym.Group(H)  # Group object
-        print(G, H)          
         id_lists = []
         for wp in wp1:
             if type(wp) == int:
@@ -36,9 +35,10 @@ class wyckoff_split:
         self.wp1_lists = [self.G[id] for id in id_lists] # a WP object
 
         # choose 
-        ids = []
-        ids = [id for id in range(len(self.wyc['subgroup'])) if self.wyc['subgroup'][id]==self.H.number]
-        idx = choice(ids)
+        if idx is None:
+            ids = []
+            ids = [id for id in range(len(self.wyc['subgroup'])) if self.wyc['subgroup'][id]==self.H.number]
+            idx = choice(ids)
 
         self.parse_wp2(idx)
 
@@ -58,7 +58,6 @@ class wyckoff_split:
         trans = self.wyc['transformation'][idx]
         subgroup_relations = self.wyc['relations'][idx]
         subgroup_relations = [ele for ele in reversed(subgroup_relations)] 
-        print(subgroup_relations)
 
         self.R = np.zeros([4,4])
         self.R[:3,:3] += trans[:3,:3]
@@ -74,7 +73,6 @@ class wyckoff_split:
             wp2_list = []
             for letter in subgroup_relations[wp1_index]:
                 id = sym.index_from_letter(letter[-1], self.H)
-                print(wp1_index, id, letter)
                 wp2_list.append(self.H[id])
             wp2_lists.append(wp2_list)
         self.wp2_lists = wp2_lists
@@ -147,6 +145,10 @@ class wyckoff_split:
             #print(wp2)
             #print("===========", len(wp2), len(g1_orbits))
             if len(g1_orbits) < len(wp2):
+                print(self.G)
+                print(self.H)
+                print(self.wp1_lists)
+                print(wp2)
                 raise ValueError("Cannot find the generator for wp2")
         return G1_orbits, G2_orbits
         
