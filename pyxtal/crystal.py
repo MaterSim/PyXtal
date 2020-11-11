@@ -681,6 +681,7 @@ class random_crystal:
                 # If site the pre-assigned, do not accept merge
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:
+                        cycle += 1
                         continue 
                     # Use a Wyckoff_site object for the current site
                     new_site = atom_site(wp, pt, specie)
