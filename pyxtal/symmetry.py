@@ -14,6 +14,7 @@ import random
 from pymatgen.symmetry.analyzer import generate_full_symmops
 from pandas import read_csv
 from monty.serialization import loadfn
+import pickle
 
 # PyXtal imports
 from pyxtal.msg import printx
@@ -52,6 +53,8 @@ point_generators_df = read_csv(
     resource_filename("pyxtal", "database/point_generators.csv")
 )
 symbols = loadfn(resource_filename("pyxtal", "database/symbols.json"))
+
+t_subgroup = loadfn(resource_filename("pyxtal",'database/t_subgroup.json'))
 
 Identity = SymmOp.from_xyz_string("x,y,z")
 Inversion = SymmOp.from_xyz_string("-x,-y,-z")
@@ -2624,17 +2627,27 @@ class Group:
         """
         return self.get_wyckoff_symmetry(index, molecular=True)
 
-    def get_max_subgroup(self):
+    def get_max_t_subgroup(self):
         """
         Returns the list of maximal subgroup
         """
-        pass
+        if self.dim == 3:
+            return t_subgroup[str(self.number)]
+        else:
+            raise NotImplementedError("Now we only support the subgroups for space group")
+
+    def get_max_k_subgroup(self):
+        """
+        Returns the list of maximal subgroup
+        """
+        raise NotImplementedError()
+
 
     def get_min_supergroup(self):
         """
         Returns the list of minimal supergroup
         """
-        pass
+        raise NotImplementedError()
 
     def __iter__(self):
         yield from self.Wyckoff_positions

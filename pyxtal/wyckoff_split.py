@@ -1,167 +1,8 @@
 import numpy as np
 import pyxtal.symmetry as sym
-from copy import copy
+from copy import deepcopy
 from pymatgen.core.operations import SymmOp
 from random import choice
-
-Wyc = {}
-Wyc[1] = {"subgroup":[1]*20, 
-            "type": ['k']*20,
-            "transformation": [
-                               [[2,0,0,1/2],[0,1,0,0],[0,0,1,0]],
-                               [[1,0,0,0],[0,1/2,0,1/2],[0,0,1,0]],
-                               [[2,0,0,0],[0,1,0,1/2],[0,0,1,1/2]],
-                               [[2,0,0,1/2],[0,1,0,0],[0,0,1,1/2]],
-                              ],
-            "relations": ['1a','1a']*7 + ['1a','1a']*13,
-            }
-
-Wyc[14] = {"subgroup":[7, 4, 2, 2, 2, 14, 14], 
-            "type": ['t','t','t','t','t''k','k'],
-            "transformation": [
-                               [[1,0,0,0],[0,1,0,1/4],[0,0,1,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                               [[1,0,0,0],[0,3,0,1/3],[0,0,1,0]],
-                               [[2,0,0,1/2],[0,1,0,0],[0,0,1,0]],
-                              ],
-            "relations":  [
-                          [['2a'],['2a'],['2a'],['2a'],['2a','2a']],
-                          [['2a'],['2a'],['2a'],['2a'],['2a','2a']],
-                          [['1a','1g'],['1d','1h'],['1b','1c'],['1e','1f'],['2i','2i']],
-                          [['1a','1h'],['1b','1e'],['1c','1f'],['1d','1g'],['2i','2i']],
-                          [['1a','1e'],['1f','1g'],['1b','1c'],['1b','1h'],['2i','2i']],
-                          [['2a','4e'],['2b','4e'],['2c','4e'],['2d','4e'],['4e','4e','4e']],
-                          [['2a','2b'],['4e'],['2c','2d'],['4e'],['4e','4e']]
-                          ]
-            }
-
-
-Wyc[17] = {"subgroup":[4, 3, 3], 
-            "type": ['t','t','t'],
-            "transformation": [
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                               [[0,0,1,0],[1,0,0,0],[0,1,0,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
-                              ],
-            "relations":  [
-                          [['2a'],['2a'],['2a'],['2a'],['2a','2a']],
-                          [['1a','1c'],['1b','1d'],['2e'],['2e','2e']],
-                          [['1a','1c'],['1b','1d'],['2e'],['2e','2e']],
-                          [['2e'],['2e'],['1a','1b'],['1c','1d'],['2e','2e']],
-                          ]
-            }
-
-Wyc[18] = {"subgroup":[4, 4, 4, 3], 
-            "type": ['t','t','t','t'],
-            "transformation": [
-                               [[1,0,0,0],[0,1,0,1/4],[0,0,1,0]],
-                               [[0,0,1,0],[1,0,0,0],[0,1,0,1/4]],
-                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                              ],
-            "relations":  [
-                          [['2a'],['2a'],['2a','2a']],
-                          [['2a'],['2a'],['2a','2a']],
-                          [['2a'],['2a'],['2a','2a']],
-                          [['1a','1d'],['1b','1c'],['2e','2e']],
-                          ]
-            }
-
-Wyc[19] = {"subgroup":[4, 4, 4, 4], 
-            "type": ['t','t','t','t'],
-            "transformation": [
-                               [[1,0,0,0],[0,1,0,1/4],[0,0,1,0]],
-                               [[0,0,1,0],[1,0,0,0],[0,1,0,1/4]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
-                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
-                              ],
-            "relations":  [
-                          [['2a','2a']],
-                          [['2a','2a']],
-                          [['2a','2a']],
-                          [['2a','2a']],
-                          ]
-            }
-
-
-Wyc[20] = {"subgroup":[5, 5, 5, 4, 19, 18, 18, 18, 18, 17], 
-            "type": ['t','t','t','t','k','k','k','k','k','k'],
-            "transformation": [
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                               [[0,-1,0,0],[1,0,0,0],[0,0,1,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
-                               [[1/2,-1/2,0,0],[1/2,1/2,0,0],[0,0,1,0]],
-                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
-                               [[1,0,0,1/4],[0,1,0,0],[0,0,1,0]],
-                               [[0,1,0,0],[0,0,1,0],[1,0,0,1/4]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,1/4]],
-                               [[0,0,1,1/4],[1,0,0,0],[0,1,0,1/4]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                              ],
-            "relations":  [
-                          [['2a','2b'],['4c'],['4c','4c']],
-                          [['2a','2b'],['4c'],['4c','4c']],
-                          [['4c'],['2a','2b'],['4c','4c']],
-                          [['2a'],['2a'],['2a','2a']],
-                          [['4a'],['4a'],['4a','4a']],
-                          [['2a','2b'],['4c'],['4c','4c']],
-                          [['2a','2b'],['4c'],['4c','4c']],
-                          [['4c'],['2a','2b'],['4c','4c']],
-                          [['4c'],['2a','2b'],['4c','4c']],
-                          [['2a','2b'],['2c','2d'],['4e','4e']],
-                          ]
-            }
-
-
-
-
-Wyc[197] = {"subgroup":[146, 146, 146, 146, 23], 
-            "type": ['t', 't', 't', 't', 't'],
-            "transformation": [
-                               [[-1,0,1/2,0],[1,-1,1/2,0],[0,1,1/2,0]],
-                               [[1,0,-1/2,0],[1,-1,1/2,0],[0,-1,-1/2,0]],
-                               [[-1,0,1/2,0],[-1,1,-1/2,0],[0,-1,-1/2,0]],
-                               [[1,0,-1/2,0],[-1,1,-1/2,0],[0,1,1/2,0]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                              ],
-            "relations": [
-                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
-                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
-                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
-                        [['3a'], ['9b'], ['3a','9b'], ['9b','9b'], ['9b','9b'], ['9b','9b','9b','9b']],
-                        [['2a'], ['2b','2c','2d'], ['8k'], ['4e','4g','4i'], ['4f','4h','4j'], ['8k','8k','8k']]
-                        ],
-            }
-
-Wyc[227] = {"subgroup":[216, 210, 203, 166, 166, 166, 166, 141, 141, 141], 
-            "type": ['t', 't', 't', 't', 't', 't', 't', 't', 't', 't', 'k'],
-            "transformation": [[[1,0,0,1/8],[0,1,0,1/8],[0,0,1,1/8]], 
-                               [[1,0,0,3/8],[0,1,0,3/8],[0,0,1,3/8]],
-                               [[1,0,0,0],[0,1,0,0],[0,0,1,0]],
-                               [[-1/2,0,1,0],[1/2,-1/2,1,0],[0,1/2,1,0]],
-                               [[1/2,0,-1,1/4],[1/2,-1/2,1,0],[0,-1/2,-1,1/4]],
-                               [[-1/2,0,1,0],[-1/2,1/2,-1,1/4],[0,-1/2,-1,1/4]],
-                               [[1/2,0,-1,1/4],[-1/2,1/2,-1,1/4],[0,1/2,1,0]],
-                               [[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4],[0,0,1,0]],
-                               [[0,0,1,0],[1/2,1/2,0,1/4],[-1/2,1/2,0,1/4]],
-                               [[-1/2,1/2,0,1/4],[0,0,1,0],[1/2,1/2,0,1/4]],
-                              ],
-            "relations": [[['4a','4d'], ['4b','4c'], ['16e'], ['16e'], ['16e','16e'], ['24f','24g'], ['48h','48h'], ['96i'], ['96i','96i']],
-                         [['8b'], ['8a'], ['16d'], ['16c'], ['32e'], ['48f'], ['96h'], ['48g', '48g'], ['96h', '96h']],
-                         [['8a'], ['8b'], ['16c'], ['16d'], ['32e'], ['48f'], ['96g'], ['96g'], ['96g', '96g']],
-                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
-                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
-                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
-                         [['6c'], ['6c'], ['3a','9d'], ['3b','9e'], ['6c','18h'], ['18h','18h'], ['18h','18h','36i'], ['18f','18g','36i'], ['36i','36i','36i','36i']],
-                         [['4a'], ['4b'], ['8c'], ['8d'], ['16h'], ['8e','16g'], ['16h','32i'], ['16f','32i'], ['32i','32i','32i']],
-                         [['4a'], ['4b'], ['8c'], ['8d'], ['16h'], ['8e','16g'], ['16h','32i'], ['16f','32i'], ['32i','32i','32i']],
-                         [['4a'], ['4b'], ['8c'], ['8d'], ['16h'], ['8e','16g'], ['16h','32i'], ['16f','32i'], ['32i','32i','32i']]],
-            }
-
 
 class wyckoff_split:
     """
@@ -177,11 +18,14 @@ class wyckoff_split:
     """
 
 
-    def __init__(self, G=197, H=146, wp1=[0, 1]):
+    def __init__(self, G=197, H=None, wp1=[0, 1]):
         
         self.G = sym.Group(G)  # Group object
+        self.wyc = self.G.get_max_t_subgroup()
+        if H is None:
+            H = choice(self.wyc['subgroup'])
         self.H = sym.Group(H)  # Group object
-           
+        print(G, H)          
         id_lists = []
         for wp in wp1:
             if type(wp) == int:
@@ -190,7 +34,13 @@ class wyckoff_split:
                 id_lists.append(sym.index_from_letter(wp[-1], self.G))
         self.wp1_indices = id_lists
         self.wp1_lists = [self.G[id] for id in id_lists] # a WP object
-        self.query_wp2()
+
+        # choose 
+        ids = []
+        ids = [id for id in range(len(self.wyc['subgroup'])) if self.wyc['subgroup'][id]==self.H.number]
+        idx = choice(ids)
+
+        self.parse_wp2(idx)
 
         self.G1_orbits = []
         self.G2_orbits = []
@@ -201,15 +51,15 @@ class wyckoff_split:
             self.G2_orbits.append(G2_orbits)
             self.H_orbits.append([wp2.ops for wp2 in self.wp2_lists[i]])
 
-    def query_wp2(self):
+    def parse_wp2(self, idx):
         """
         query the wp2 and transformation matrix from the given {G, H, wp1}
         """
-        ids = []
-        wyc = Wyc[self.G.number]
-        ids = [id for id in range(len(wyc['subgroup'])) if wyc['subgroup'][id]==self.H.number]
-        id = choice(ids)
-        trans = np.array(wyc['transformation'][id])  
+        trans = self.wyc['transformation'][idx]
+        subgroup_relations = self.wyc['relations'][idx]
+        subgroup_relations = [ele for ele in reversed(subgroup_relations)] 
+        print(subgroup_relations)
+
         self.R = np.zeros([4,4])
         self.R[:3,:3] += trans[:3,:3]
         self.R[3,3] = 1
@@ -217,13 +67,14 @@ class wyckoff_split:
         inv_t = np.dot(self.inv_R[:3,:3], trans[:,3].T)
         self.inv_R[:3,3] = -inv_t.T
         self.R[:3,3] = trans[:3,3]
-        subgroup_relations = copy(wyc['relations'][id])
-        subgroup_relations.reverse()
+
+
         wp2_lists = []
         for wp1_index in self.wp1_indices:
             wp2_list = []
             for letter in subgroup_relations[wp1_index]:
                 id = sym.index_from_letter(letter[-1], self.H)
+                print(wp1_index, id, letter)
                 wp2_list.append(self.H[id])
             wp2_lists.append(wp2_list)
         self.wp2_lists = wp2_lists
@@ -265,7 +116,7 @@ class wyckoff_split:
                     #import sys; sys.exit()
                     old_basis_orbit = np.matmul(self.R, new_basis_orbit).round(3)
                     old_basis_orbit[3,:] = [0, 0, 0, 1]
-                    tmp = copy(old_basis_orbit)
+                    tmp = deepcopy(old_basis_orbit)
                     tmp[3,:] = [0, 0, 0, 1]
                     if i==0: 
                         #print(SymmOp(tmp).as_xyz_string(), '->', SymmOp(gen).as_xyz_string(), '->', SymmOp(new_basis_orbit).as_xyz_string())

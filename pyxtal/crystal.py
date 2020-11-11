@@ -435,9 +435,7 @@ class random_crystal:
             a pyxtal structure with lower symmetry
         """
 
-        #if H is None:
         #randomly choose a subgroup from the available list
-        #    H = choice()
         sites = [str(site.wp.multiplicity)+site.wp.letter for site in self.atom_sites]
         splitter = wyckoff_split(G=self.group.number, H=H, wp1=sites)
         lat1 = np.dot(self.lattice.matrix, splitter.R[:3,:3].T)
