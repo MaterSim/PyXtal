@@ -48,6 +48,7 @@ setup(
         "pandas>=0.24.2",
         "networkx>=2.3",
         "py3Dmol>=0.8.0",
+        'ase>=3.18.0',
         #"openbabel>=3.0.0",
     ],
     python_requires=">=3.6.1",
