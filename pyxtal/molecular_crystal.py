@@ -4,8 +4,6 @@ import random
 import numpy as np
 from copy import deepcopy
 
-# External Libraries
-
 # PyXtal imports
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
@@ -17,8 +15,8 @@ from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
 from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular, Wyckoff_position
 from pyxtal.operations import angle
 
-
-
+# Define functions
+# ------------------------------
 class molecular_crystal:
     """
     Class for storing and generating molecular crystals based on symmetry

@@ -285,8 +285,8 @@ class TestSubgroup(unittest.TestCase):
         C2 = C1.subgroup(H=H)
         pmg_s1 = C1.to_pymatgen()
         pmg_s2 = C2.to_pymatgen()
-        sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
-        sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
+        #sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
+        #sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
     def test_cubic_Rhom(self):
@@ -302,10 +302,24 @@ class TestSubgroup(unittest.TestCase):
         C2 = C1.subgroup(H=H)
         pmg_s1 = C1.to_pymatgen()
         pmg_s2 = C2.to_pymatgen()
-        sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
-        sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
+        #sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
+        #sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
+    def test_from_seed(self):
+        from pymatgen import Lattice, Structure
+        coords = [[0, 0, 0], [0.75,0.5,0.75]]
+        lattice = Lattice.from_parameters(a=3.84, b=3.84, c=3.84, alpha=120,
+                                  beta=90, gamma=60)
+        struct = Structure(lattice, ["Si", "C"], coords)
+        s1 = random_crystal(seed=struct)
+        s2 = s1.subgroup()
+        pmg_s1 = s1.to_pymatgen()
+        pmg_s2 = s2.to_pymatgen()
+        #sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
+        #sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+ 
 
 # class TestOperation(unittest.TestCase):
 # class TestIO(unittest.TestCase):

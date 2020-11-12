@@ -3,6 +3,7 @@ import os
 import random
 import numpy as np
 from copy import deepcopy
+from random import choice
 
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff, Wyckoff_position
@@ -35,31 +36,100 @@ class random_crystal:
             object to define the unit cell
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
             object to define the distances
+        seed (optional): the cif/POSCAR file from user
     """
 
     def __init__(
         self,
-        group,
-        species,
-        numIons,
+        group=None,
+        species=None,
+        numIons=None,
         factor=1.1,
         lattice=None,
         sites = None,
         tm=Tol_matrix(prototype="atomic"),
+        seed = None,
     ):
 
         self.dim = 3 #periodic dimensions of the crystal
-        if type(group) != Group:
-            group = Group(group, self.dim)
-        self.sg = group.number #The international spacegroup number 
-        self.PBC = [1, 1, 1]
-        """The periodic boundary axes of the crystal"""
-        self.init_common(species, numIons, factor, group, lattice, sites, tm)
+        self.PBC = [1, 1, 1] #The periodic boundary axes of the crystal
+        if seed is None:
+            if type(group) != Group:
+                group = Group(group, self.dim)
+            self.sg = group.number #The international spacegroup number 
+            self.seed = None
+            self.init_common(species, numIons, factor, group, lattice, sites, tm)
+        else:
+            self.seed = seed
+            self.from_seed()
+
+
+    def from_seed(self):
+        """
+        Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
+        Internally they will be handled by Pymatgen
+        """
+        self.valid = True
+        from ase import Atoms
+        from pymatgen import Structure
+        if isinstance(self.seed, Atoms): #ASE atoms
+            from pymatgen.io.ase import AseAtomsAdaptor
+            pmg_struc = AseAtomsAdaptor.get_structure(self.seed)
+            self.from_pymatgen(pmg_struc)
+        elif isinstance(self.seed, Structure): #Pymatgen
+            self.from_pymatgen(self.seed)
+        elif isinstance(self.seed, str):
+            pmg_struc = Structure.from_file(self.seed)
+            self.from_pymatgen(pmg_struc)
+
+        formula = ""
+        for i, s in zip(self.numIons, self.species):
+            formula += "{:s}{:d}".format(s, int(i))
+        self.formula = formula
+        self.factor = 1.0
+        self.number = self.group.number
+        self.source = 'Seed'
+
+    def from_pymatgen(self, structure):
+        """
+        Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
+        """
+        from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
+        try:
+            # needs to do it twice in order to get the conventional cell
+            s = sga(structure)
+            structure = s.get_refined_structure()
+            s = sga(structure)
+            sym_struc = s.get_symmetrized_structure()
+            number = s.get_space_group_number()
+        except:
+            print("Failed to load the Pymatgen structure")
+            self.valid = False
+
+        if self.valid:
+            d = sym_struc.composition.as_dict()
+            species = [key for key in d.keys()]
+            numIons = []
+            for ele in species:
+                numIons.append(int(d[ele]))
+            self.numIons = numIons
+            self.species = species
+            self.group = Group(number)
+            atom_sites = []
+            for i, site in enumerate(sym_struc.equivalent_sites):
+                pos = site[0].frac_coords
+                wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
+                specie = site[0].specie.number
+                atom_sites.append(atom_site(wp, pos, specie))
+            self.atom_sites = atom_sites
+            self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=self.group.lattice_type)
+
 
     def init_common(self, species, numIons, factor, group, lattice, sites, tm):
         """
         Common init functionality for 0D-3D cases of random_crystal.
         """
+        self.source = 'Random'
         self.valid = False
         # Check that numIons are integers greater than 0
         for num in numIons:
@@ -399,7 +469,7 @@ class random_crystal:
             printx("Cannot create file: structure did not generate.", priority=1)
 
     def __str__(self):
-        s = "------Random Crystal------"
+        s = "------Crystal from {:s}------".format(self.source)
         s += "\nComposition: {}".format(self.formula)
         s += "\nDimension: {}".format(self.dim)
         s += "\nGroup: {} ({})".format(self.group.symbol, self.group.number)
@@ -436,11 +506,16 @@ class random_crystal:
         """
 
         #randomly choose a subgroup from the available list
+        if idx is not None:
+            H = self.group.get_max_t_subgroup()['subgroup'][idx]
+        else:
+            if H is None:
+                H = choice(self.group.get_max_t_subgroup()['subgroup'])
         sites = [str(site.wp.multiplicity)+site.wp.letter for site in self.atom_sites]
         splitter = wyckoff_split(G=self.group.number, H=H, wp1=sites, idx=idx)
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
         #lat1 = np.dot(self.lattice.matrix, splitter.R[:3,:3])
-        #print(splitter.R)
+        #print(splitter)
         #print(lat1)
         multiples = np.linalg.det(splitter.R[:3,:3])
         split_sites = []
@@ -459,6 +534,7 @@ class random_crystal:
         #print(split_sites)
         #print(splitter)
         new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
+        new_struc.source = 'Wyckoff Split'
         return new_struc
 
 

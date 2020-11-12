@@ -22,9 +22,6 @@ class wyckoff_split:
         
         self.G = sym.Group(G)  # Group object
         self.wyc = self.G.get_max_t_subgroup()
-        if H is None:
-            H = choice(self.wyc['subgroup'])
-        self.H = sym.Group(H)  # Group object
         id_lists = []
         for wp in wp1:
             if type(wp) == int:
@@ -36,9 +33,15 @@ class wyckoff_split:
 
         # choose 
         if idx is None:
+            if H is None:
+                H = choice(self.wyc['subgroup'])
+            self.H = sym.Group(H)  # Group object
             ids = []
             ids = [id for id in range(len(self.wyc['subgroup'])) if self.wyc['subgroup'][id]==self.H.number]
             idx = choice(ids)
+        else:
+            H = self.wyc['subgroup'][idx]
+            self.H = sym.Group(H)  # Group object
 
         self.parse_wp2(idx)
 
@@ -55,6 +58,8 @@ class wyckoff_split:
         """
         query the wp2 and transformation matrix from the given {G, H, wp1}
         """
+        #print("trans", idx)
+        #print(self.wyc['transformation'])
         trans = self.wyc['transformation'][idx]
         subgroup_relations = self.wyc['relations'][idx]
         subgroup_relations = [ele for ele in reversed(subgroup_relations)] 
@@ -101,6 +106,8 @@ class wyckoff_split:
             # try all generators here
             for gen in wp1_generators:
                 good_generator = False
+                if gen[0,3] == 1/4 and gen[1,3] == 3/4:
+                    gen[0,3] -=1
                 trans_generator = np.matmul(self.inv_R, gen)
                 #print(trans_generator)
                 
@@ -113,12 +120,16 @@ class wyckoff_split:
                     #print(new_basis_orbit)
                     #import sys; sys.exit()
                     old_basis_orbit = np.matmul(self.R, new_basis_orbit).round(3)
-                    old_basis_orbit[3,:] = [0, 0, 0, 1]
+                    #old_basis_orbit[3,:] = [0, 0, 0, 1]
                     tmp = deepcopy(old_basis_orbit)
                     tmp[3,:] = [0, 0, 0, 1]
                     if i==0: 
-                        #print(SymmOp(tmp).as_xyz_string(), '->', SymmOp(gen).as_xyz_string(), '->', SymmOp(new_basis_orbit).as_xyz_string())
-                        #import sys; sys.exit()
+                        #print("wp1", SymmOp(gen).as_xyz_string())
+                        #print("sgb", SymmOp(new_basis_orbit).as_xyz_string())
+                        #print("gb", SymmOp(tmp).as_xyz_string())
+                        #for w in wp1_generators:
+                        #    print(SymmOp(w).as_xyz_string())
+                        #print(in_lists(tmp, wp1_generators_visited), in_lists(tmp, wp1_generators))
                         if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators):
                             good_generator = True
                             #print("good_gener")
@@ -127,14 +138,14 @@ class wyckoff_split:
                     # to consider PBC
                     g1_orbits.append(old_basis_orbit)        
                     g2_orbits.append(new_basis_orbit)        
-                
-                # remove duplicates due to peridoic boundary conditions
+                #print(g1_orbits)
                 if good_generator:
                     temp=[]
+                    # remove duplicates due to peridoic boundary conditions
                     for gen in g1_orbits:
                         if not in_lists(gen, temp):
                             temp.append(gen)
-
+                    #print("adding unique generators", len(temp))
                     if int(len(temp)*factor) == len(wp2):           
                         wp1_generators_visited.extend(temp)
                         g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
@@ -142,13 +153,16 @@ class wyckoff_split:
                         G1_orbits.append(g1_orbits)
                         G2_orbits.append(g2_orbits)
                         break
-            #print(wp2)
-            #print("===========", len(wp2), len(g1_orbits))
+
             if len(g1_orbits) < len(wp2):
-                print(self.G)
-                print(self.H)
-                print(self.wp1_lists)
-                print(wp2)
+                s1 = str(wp1.multiplicity)+wp1.letter
+                s2 = ""
+                for wp2 in wp2_lists:
+                    s2 += str(wp2.multiplicity)+wp2.letter
+                    s2 += ', '
+                print("Error in split between {:d}[{:s}] -> {:d}[{:s}]".format(self.G.number, s1, self.H.number, s2))
+                print(self.R)
+                print(g1_orbits)
                 raise ValueError("Cannot find the generator for wp2")
         return G1_orbits, G2_orbits
         
@@ -176,9 +190,10 @@ def in_lists(mat1, mat2, eps=1e-4):
     else:
         for mat in mat2:
             if np.array_equal(mat[:3,:3], mat1[:3,:3]):
-                diff = mat[:3,3] - mat1[:3,3]
-                diff -= np.floor(diff)
-                if (diff*diff).sum() < 1e-4:
+                diffs = np.abs(mat[:3,3] - mat1[:3,3])
+                diffs -= np.floor(diffs)
+                #print("diffs", diffs)
+                if (diffs*diffs).sum() < 1e-2:
                     return True
         return False
 

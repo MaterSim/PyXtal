@@ -619,8 +619,8 @@ class atom_site:
         """
         Used to generate coords from self.position
         """
-        self.position = pos
         self.coords = apply_ops(pos, self.wp) 
+        self.position = self.coords[0]
 
     def __repr__(self):
         return str(self)
