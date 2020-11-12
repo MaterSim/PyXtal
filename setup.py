@@ -26,9 +26,11 @@ setup(
         "pyxtal.interface",
         "pyxtal.optimize",
         "pyxtal.potentials",
+        "pyxtal.database.cifs",
     ],
     package_data={
         "pyxtal.database": ["*.csv", "*.json"],
+        "pyxtal.database.cifs": ["*.cif"],
         'pyxtal.potentials': ['*'],
     },
     scripts=[
