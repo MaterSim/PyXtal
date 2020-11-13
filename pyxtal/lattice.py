@@ -192,28 +192,40 @@ class Lattice:
         else:
             return self, np.eye(3), opt
 
-    def mutate(self, degree=0.20):
+    def mutate(self, degree=0.20, frozen=False):
         """
         mutate the lattice object
         """
         rand = 1 + degree*(np.random.sample(6)-0.5)
-        a, b, c, alpha, beta, gamma = self.get_para()
-        a *= rand[0]
-        b *= rand[1]
-        c *= rand[2]
-        alpha = np.degrees(alpha*rand[3])
-        beta = np.degrees(beta*rand[4])
-        gamma = np.degrees(gamma*rand[5])
+        a0, b0, c0, alpha0, beta0, gamma0 = self.get_para()
+        a = a0*rand[0]
+        b = b0*rand[1]
+        c = c0*rand[2]
+        alpha = np.degrees(alpha0*rand[3])
+        beta = np.degrees(beta0*rand[4])
+        gamma = np.degrees(gamma0*rand[5])
         ltype = self.ltype
 
         if self.ltype in ['cubic', 'Cubic']:
-            lat = Lattice.from_para(a, a, a, 90, 90, 90, ltype=ltype)
+            if frozen:
+                lat = Lattice.from_para(a0, a0, a0, 90, 90, 90, ltype=ltype)
+            else:
+                lat = Lattice.from_para(a, a, a, 90, 90, 90, ltype=ltype)
         elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
-            lat = Lattice.from_para(a, a, a*np.sqrt(3)/2, 90, 90, 120, ltype=ltype)
-        elif ltype in ['rhombohedral', 'Rhombohedral']:
-            lat = Lattice.from_para(a, a, a, alpha, alpha, alpha, ltype=ltype)
+            if frozen:
+                lat = Lattice.from_para(a0, a0, c, 90, 90, 120, ltype=ltype)
+            else:
+                lat = Lattice.from_para(a, a, c, 90, 90, 120, ltype=ltype)
+        #elif ltype in ['rhombohedral', 'Rhombohedral']:
+        #    if forzen:
+        #        lat = Lattice.from_para(a0, a0, a0, alpha0, alpha0, alpha0, ltype=ltype)
+        #    else:
+        #        lat = Lattice.from_para(a, a, a, alpha, alpha, alpha, ltype=ltype)
         elif ltype in ['tetragonal', 'Tetragonal']:
-            lat = Lattice.from_para(a, a, c, 90, 90, 90, ltype=ltype)
+            if frozen:
+                lat = Lattice.from_para(a0, a0, c, 90, 90, 90, ltype=ltype)
+            else:
+                lat = Lattice.from_para(a, a, c, 90, 90, 90, ltype=ltype)
         elif ltype in ['orthorhombic', 'Orthorhombic']:
             lat = Lattice.from_para(a, b, c, 90, 90, 90, ltype=ltype)
         elif ltype in ['monoclinic', 'Monoclinic']:

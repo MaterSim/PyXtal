@@ -13,12 +13,11 @@ class wyckoff_split:
 
     Args:
         G: int (1-230), number of super space group
-        H: int (1-230), number of super space group
         w1: string ("4a") or integer (1)
     """
 
 
-    def __init__(self, G=197, H=None, wp1=[0, 1], idx=None):
+    def __init__(self, G=197, idx=None, wp1=[0, 1]):
         
         self.G = sym.Group(G)  # Group object
         self.wyc = self.G.get_max_t_subgroup()
@@ -31,28 +30,37 @@ class wyckoff_split:
         self.wp1_indices = id_lists
         self.wp1_lists = [self.G[id] for id in id_lists] # a WP object
 
-        # choose 
+        # choose a random spliting option if idx is not specified
         if idx is None:
-            if H is None:
-                H = choice(self.wyc['subgroup'])
-            self.H = sym.Group(H)  # Group object
-            ids = []
-            ids = [id for id in range(len(self.wyc['subgroup'])) if self.wyc['subgroup'][id]==self.H.number]
+            ids = [id for id in range(len(self.wyc['subgroup']))]
             idx = choice(ids)
-        else:
-            H = self.wyc['subgroup'][idx]
-            self.H = sym.Group(H)  # Group object
+
+        H = self.wyc['subgroup'][idx]
+        self.H = sym.Group(H)  # Group object
 
         self.parse_wp2(idx)
 
+        if (self.G.lattice_type == self.H.lattice_type):
+            self.valid_split = False
+            for wps in self.wp2_lists:
+                for wp in wps:
+                    rotation = np.array(wp[0].as_dict()['matrix'])[:3,:3]
+                    if np.linalg.matrix_rank(rotation) > 0:
+                        self.valid_split = True
+                        break
+        else:
+            self.valid_split = True
+        
+        #if self.valid_split:
         self.G1_orbits = []
         self.G2_orbits = []
         self.H_orbits = []
         for i, wp1 in enumerate(self.wp1_lists):
+            self.H_orbits.append([wp2.ops for wp2 in self.wp2_lists[i]])
             G1_orbits, G2_orbits = self.split(wp1, self.wp2_lists[i])
             self.G1_orbits.append(G1_orbits)
             self.G2_orbits.append(G2_orbits)
-            self.H_orbits.append([wp2.ops for wp2 in self.wp2_lists[i]])
+
 
     def parse_wp2(self, idx):
         """
@@ -106,6 +114,7 @@ class wyckoff_split:
             # try all generators here
             for gen in wp1_generators:
                 good_generator = False
+                #QZ: temporary solution, Needs to be fixed later
                 if gen[0,3] == 1/4 and gen[1,3] == 3/4:
                     gen[0,3] -=1
                 trans_generator = np.matmul(self.inv_R, gen)

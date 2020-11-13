@@ -263,48 +263,14 @@ class TestSubgroup(unittest.TestCase):
             C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
             if C1.valid:
                 break
-
-        H = 216
-        C2 = C1.subgroup(H=H)
         pmg_s1 = C1.to_pymatgen()
-        pmg_s2 = C2.to_pymatgen()
         sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
-        sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
-        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
-    def test_cubic_tetra(self):
-        sites = ['8a', '32e']
-        G, fac = 227, 4
-        numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-        while True:
-            C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
-            if C1.valid:
-                break
-
-        H = 141
-        C2 = C1.subgroup(H=H)
-        pmg_s1 = C1.to_pymatgen()
-        pmg_s2 = C2.to_pymatgen()
-        #sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
-        #sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
-        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
-
-    def test_cubic_Rhom(self):
-        sites = ['8a', '32e']
-        G, fac = 227, 4
-        numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-        while True:
-            C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
-            if C1.valid:
-                break
-
-        H = 166
-        C2 = C1.subgroup(H=H)
-        pmg_s1 = C1.to_pymatgen()
-        pmg_s2 = C2.to_pymatgen()
-        #sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
-        #sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
-        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+        C2s = C1.subgroup()
+        for C2 in C2s:
+            pmg_s2 = C2.to_pymatgen()
+            sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
+            self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
     def test_from_seed(self):
         from pymatgen import Lattice, Structure
@@ -313,7 +279,7 @@ class TestSubgroup(unittest.TestCase):
                                   beta=90, gamma=60)
         struct = Structure(lattice, ["Si", "C"], coords)
         s1 = random_crystal(seed=struct)
-        s2 = s1.subgroup()
+        s2 = s1.subgroup(once=True)
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
         #sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()

@@ -493,30 +493,63 @@ class random_crystal:
         from pyxtal.viz import display_atomic
         return display_atomic(self, **kwargs)
 
-    def subgroup(self, H=None, eps=0.05, idx=None):
+    def subgroup(self, H=None, eps=0.05, idx=None, once=False):
         """
         generate a structure with lower symmetry
 
         Args:
             H: space group number (int)
             eps: pertubation term (float)
+            idx: list
+            once: generate only one structure, otherwise output all
 
         Returns:
-            a pyxtal structure with lower symmetry
+            a list of pyxtal structures with lower symmetries
         """
 
         #randomly choose a subgroup from the available list
-        if idx is not None:
-            H = self.group.get_max_t_subgroup()['subgroup'][idx]
+        Hs = self.group.get_max_t_subgroup()['subgroup']
+        if idx is None:
+            idx = range(len(Hs))
         else:
-            if H is None:
-                H = choice(self.group.get_max_t_subgroup()['subgroup'])
+            for id in idx:
+                if id >= len(Hs):
+                    raise ValueError("The idx exceeds the number of possible splits")
+        
+        if H is not None: 
+            idx = [id for id in idx if Hs[idx] == H]
+
+        if len(idx) == 0:
+            raise ValueError("The space group H is incompatible with idx")
+
         sites = [str(site.wp.multiplicity)+site.wp.letter for site in self.atom_sites]
-        splitter = wyckoff_split(G=self.group.number, H=H, wp1=sites, idx=idx)
+        valid_splitters = []
+        bad_splitters = []
+        for id in idx:
+            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id)
+            if splitter.valid_split:
+                valid_splitters.append(splitter)
+            else:
+                bad_splitters.append(splitter)
+
+        if len(valid_splitters) == 0:
+            # do one more step
+            new_strucs = []
+            for splitter in bad_splitters:
+                trail_struc = self.subgroup_by_splitter(splitter)
+                new_strucs.append(trail_struc.subgroup(once=True))
+            return new_strucs
+        else:
+            if once:
+                return self.subgroup_by_splitter(choice(valid_splitters), eps=eps)
+            else:
+                new_strucs = []
+                for splitter in valid_splitters:
+                    new_strucs.append(self.subgroup_by_splitter(splitter, eps=eps))
+            return new_strucs
+
+    def subgroup_by_splitter(self, splitter, eps=0.05):
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
-        #lat1 = np.dot(self.lattice.matrix, splitter.R[:3,:3])
-        #print(splitter)
-        #print(lat1)
         multiples = np.linalg.det(splitter.R[:3,:3])
         split_sites = []
         for i, site in enumerate(self.atom_sites):
@@ -525,17 +558,18 @@ class random_crystal:
                 pos0 = apply_ops(pos, ops1)[0]
                 pos0 -= np.floor(pos0)
                 pos0 += eps*(np.random.sample(3) - 0.5)
-                wp, _ = Wyckoff_position.from_symops(ops2, group=H, permutation=False)
+                wp, _ = Wyckoff_position.from_symops(ops2, group=splitter.H.number, permutation=False)
                 split_sites.append(atom_site(wp, pos0, site.specie))
         new_struc = deepcopy(self)
-        new_struc.group = Group(H)
-        new_struc.lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+        new_struc.group = splitter.H
+        lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+        new_struc.lattice=lattice.mutate(degree=0.01, frozen=True)
         new_struc.atom_sites = split_sites
-        #print(split_sites)
-        #print(splitter)
         new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
         new_struc.source = 'Wyckoff Split'
+        
         return new_struc
+
 
 
     def generate_crystal(self):
