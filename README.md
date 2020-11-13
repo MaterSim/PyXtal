@@ -18,8 +18,8 @@
 - [Installation](#installation)
 - [Citation](#citation)
 - [How to contribute?](#how-to-contribute)
-  - [If you just want to use the code](#if-you-just-want-to-use-the-code)
-  - [If you want to join the code development](#if-you-want-to-join-the-code-development)
+  - [user](#if-you-just-want-to-use-the-code)
+  - [developer](#if-you-want-to-join-the-code-development)
 
 ## Introduction
 
