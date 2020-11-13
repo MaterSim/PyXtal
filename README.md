@@ -6,6 +6,7 @@
 [![Download Status](https://img.shields.io/pypi/v/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Downloads](https://pepy.tech/badge/pyxtal)](https://pepy.tech/project/pyxtal)
 [![DOI](https://zenodo.org/badge/128165891.svg)](https://zenodo.org/badge/latestdoi/128165891)
+[![Gitter](https://badges.gitter.im/PyXtal/community.svg)](https://gitter.im/PyXtal/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 <img align="right" width="450" src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/water.gif">
 
 ## Content
