@@ -508,7 +508,7 @@ class random_crystal:
         """
 
         #randomly choose a subgroup from the available list
-        if type == 't':
+        if group_type == 't':
             Hs = self.group.get_max_t_subgroup()['subgroup']
         else:
             Hs = self.group.get_max_k_subgroup()['subgroup']
