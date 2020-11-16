@@ -493,7 +493,7 @@ class random_crystal:
         from pyxtal.viz import display_atomic
         return display_atomic(self, **kwargs)
 
-    def subgroup(self, H=None, eps=0.05, idx=None, once=False):
+    def subgroup(self, H=None, eps=0.05, idx=None, once=False, group_type='t'):
         """
         generate a structure with lower symmetry
 
@@ -508,7 +508,11 @@ class random_crystal:
         """
 
         #randomly choose a subgroup from the available list
-        Hs = self.group.get_max_t_subgroup()['subgroup']
+        if type == 't':
+            Hs = self.group.get_max_t_subgroup()['subgroup']
+        else:
+            Hs = self.group.get_max_k_subgroup()['subgroup']
+
         if idx is None:
             idx = range(len(Hs))
         else:
@@ -526,7 +530,7 @@ class random_crystal:
         valid_splitters = []
         bad_splitters = []
         for id in idx:
-            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id)
+            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=group_type)
             if splitter.valid_split:
                 valid_splitters.append(splitter)
             else:
@@ -537,7 +541,7 @@ class random_crystal:
             new_strucs = []
             for splitter in bad_splitters:
                 trail_struc = self.subgroup_by_splitter(splitter)
-                new_strucs.append(trail_struc.subgroup(once=True))
+                new_strucs.append(trail_struc.subgroup(once=True, group_type=group_type))
             return new_strucs
         else:
             if once:

@@ -55,6 +55,7 @@ point_generators_df = read_csv(
 symbols = loadfn(resource_filename("pyxtal", "database/symbols.json"))
 
 t_subgroup = loadfn(resource_filename("pyxtal",'database/t_subgroup.json'))
+k_subgroup = loadfn(resource_filename("pyxtal",'database/k_subgroup.json'))
 
 Identity = SymmOp.from_xyz_string("x,y,z")
 Inversion = SymmOp.from_xyz_string("-x,-y,-z")
@@ -2629,7 +2630,7 @@ class Group:
 
     def get_max_t_subgroup(self):
         """
-        Returns the list of maximal subgroup
+        Returns the list of maximal t-subgroup
         """
         if self.dim == 3:
             return t_subgroup[str(self.number)]
@@ -2638,10 +2639,12 @@ class Group:
 
     def get_max_k_subgroup(self):
         """
-        Returns the list of maximal subgroup
+        Returns the list of maximal k-subgroup
         """
-        raise NotImplementedError()
-
+        if self.dim == 3:
+            return k_subgroup[str(self.number)]
+        else:
+            raise NotImplementedError("Now we only support the subgroups for space group")
 
     def get_min_supergroup(self):
         """

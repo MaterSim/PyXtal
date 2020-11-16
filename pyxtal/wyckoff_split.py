@@ -17,10 +17,13 @@ class wyckoff_split:
     """
 
 
-    def __init__(self, G=197, idx=None, wp1=[0, 1]):
+    def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t'):
         
         self.G = sym.Group(G)  # Group object
-        self.wyc = self.G.get_max_t_subgroup()
+        if group_type == 't':
+            self.wyc = self.G.get_max_t_subgroup()
+        else:
+            self.wyc = self.G.get_max_k_subgroup()
         id_lists = []
         for wp in wp1:
             if type(wp) == int:
@@ -34,7 +37,7 @@ class wyckoff_split:
         if idx is None:
             ids = [id for id in range(len(self.wyc['subgroup']))]
             idx = choice(ids)
-
+        #print(G, idx, len(self.wyc['subgroup']))
         H = self.wyc['subgroup'][idx]
         self.H = sym.Group(H)  # Group object
 
