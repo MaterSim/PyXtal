@@ -567,7 +567,7 @@ class random_crystal:
         new_struc = deepcopy(self)
         new_struc.group = splitter.H
         lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
-        new_struc.lattice=lattice.mutate(degree=0.01, frozen=True)
+        new_struc.lattice=lattice.mutate(degree=eps, frozen=True)
         new_struc.atom_sites = split_sites
         new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
         new_struc.source = 'Wyckoff Split'

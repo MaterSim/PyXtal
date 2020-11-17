@@ -60,7 +60,10 @@ class wyckoff_split:
         self.H_orbits = []
         for i, wp1 in enumerate(self.wp1_lists):
             self.H_orbits.append([wp2.ops for wp2 in self.wp2_lists[i]])
-            G1_orbits, G2_orbits = self.split(wp1, self.wp2_lists[i])
+            if group_type == 't':
+                G1_orbits, G2_orbits = self.split_t(wp1, self.wp2_lists[i])
+            else:
+                G1_orbits, G2_orbits = self.split_k(wp1, self.wp2_lists[i])
             self.G1_orbits.append(G1_orbits)
             self.G2_orbits.append(G2_orbits)
 
@@ -94,7 +97,7 @@ class wyckoff_split:
         self.wp2_lists = wp2_lists
         #import sys; sys.exit()
     
-    def split(self, wp1, wp2_lists):
+    def split_t(self, wp1, wp2_lists):
         """
         split the generators in w1 to different w2s
         """
@@ -136,13 +139,13 @@ class wyckoff_split:
                     tmp = deepcopy(old_basis_orbit)
                     tmp[3,:] = [0, 0, 0, 1]
                     if i==0: 
-                        #print("wp1", SymmOp(gen).as_xyz_string())
+                        #print("wp1", SymmOp(gen).as_xyz_string(), in_lists(tmp, wp1_generators_visited), in_lists(tmp, wp1_generators))
                         #print("sgb", SymmOp(new_basis_orbit).as_xyz_string())
                         #print("gb", SymmOp(tmp).as_xyz_string())
                         #for w in wp1_generators:
                         #    print(SymmOp(w).as_xyz_string())
-                        #print(in_lists(tmp, wp1_generators_visited), in_lists(tmp, wp1_generators))
                         if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators):
+                        #if in_lists(tmp, wp1_generators):
                             good_generator = True
                             #print("good_gener")
                         else:
@@ -157,27 +160,84 @@ class wyckoff_split:
                     for gen in g1_orbits:
                         if not in_lists(gen, temp):
                             temp.append(gen)
-                    #print("adding unique generators", len(temp))
-                    if int(len(temp)*factor) == len(wp2):           
+                    if int(len(temp)*factor) >= len(wp2):           
                         wp1_generators_visited.extend(temp)
                         g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
                         g2_orbits = [SymmOp(orbit) for orbit in g2_orbits]
                         G1_orbits.append(g1_orbits)
                         G2_orbits.append(g2_orbits)
+                        #print("adding unique generators", len(g1_orbits), len(wp2), int(len(temp)*factor))
                         break
+            #print("EEEEEE", len(g1_orbits), len(wp2))
+            self.check_orbits(g1_orbits, wp1, wp2, wp2_lists)
 
-            if len(g1_orbits) < len(wp2):
-                s1 = str(wp1.multiplicity)+wp1.letter
-                s2 = ""
-                for wp2 in wp2_lists:
-                    s2 += str(wp2.multiplicity)+wp2.letter
-                    s2 += ', '
-                print("Error in split between {:d}[{:s}] -> {:d}[{:s}]".format(self.G.number, s1, self.H.number, s2))
-                print(self.R)
-                print(g1_orbits)
-                raise ValueError("Cannot find the generator for wp2")
         return G1_orbits, G2_orbits
         
+    def split_k(self, wp1, wp2_lists):
+        """
+        split the generators in w1 to different w2s for k_subgroups
+        """
+        wp1_generators_visited = []
+        wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
+        
+        # convert them to numpy array
+        for generator in wp1_generators:
+            generator = np.array(generator)
+
+        G1_orbits = []
+        G2_orbits = []
+        factor = max([1,np.linalg.det(self.R)])
+
+        for wp2 in wp2_lists:
+            #print(wp2)
+            #import sys; sys.exit()
+            # try all generators here
+            for gen in wp1_generators:
+                good_generator = False
+                trans_generator = np.matmul(self.inv_R, gen)
+                
+                g1_orbits = []
+                g2_orbits = []
+                strs = []
+                for i, wp in enumerate(wp2):
+                    new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
+                    old_basis_orbit = np.matmul(self.R, new_basis_orbit).round(3)
+                    tmp = deepcopy(old_basis_orbit)
+                    tmp[3,:] = [0, 0, 0, 1]
+                    if factor <= 4:
+                        if i==0: 
+                            if not in_lists(tmp, wp1_generators_visited, PBC=False):
+                                good_generator = True
+                            else:
+                                break
+                    else:
+                        good_generator = True
+                    g1_orbits.append(old_basis_orbit)        
+                    g2_orbits.append(new_basis_orbit)        
+                if good_generator:
+                    if len(g1_orbits) >= len(wp2):           
+                        wp1_generators_visited.extend(g1_orbits)
+                        g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
+                        g2_orbits = [SymmOp(orbit) for orbit in g2_orbits]
+                        G1_orbits.append(g1_orbits)
+                        G2_orbits.append(g2_orbits)
+                        break
+            self.check_orbits(g1_orbits, wp1, wp2, wp2_lists)
+        return G1_orbits, G2_orbits
+ 
+    def check_orbits(self, g1_orbits, wp1, wp2, wp2_lists):
+        if len(g1_orbits) < len(wp2):
+            s1 = str(wp1.multiplicity)+wp1.letter
+            s2 = ""
+            for wp2 in wp2_lists:
+                s2 += str(wp2.multiplicity)+wp2.letter
+                s2 += ', '
+            g, h = self.G.number, self.H.number
+            print("Error between {:d}[{:s}] -> {:d}[{:s}]".format(g, s1, h, s2))
+            print(self.R)
+            print(g1_orbits)
+            raise ValueError("Cannot find the generator for wp2")
+
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
         for i, wp1 in enumerate(self.wp1_lists):
@@ -186,7 +246,8 @@ class wyckoff_split:
         
             for j, wp2 in enumerate(self.wp2_lists[i]):
                 s += "{:d}{:s}\n".format(wp2.multiplicity, wp2.letter)
-                for g1_orbit, g2_orbit, h_orbit in zip(self.G1_orbits[i][j], self.G2_orbits[i][j], self.H_orbits[i][j]):
+                g1s, g2s, Hs = self.G1_orbits[i][j], self.G2_orbits[i][j], self.H_orbits[i][j]
+                for g1_orbit, g2_orbit, h_orbit in zip(g1s, g2s, Hs):
                     s += "{:30s} -> {:30s} -> {:30s}\n".format(g1_orbit.as_xyz_string(), \
                                                                g2_orbit.as_xyz_string(), \
                                                                h_orbit.as_xyz_string())
@@ -196,14 +257,15 @@ class wyckoff_split:
         return str(self)
 
 
-def in_lists(mat1, mat2, eps=1e-4):
+def in_lists(mat1, mat2, eps=1e-4, PBC=True):
     if len(mat2) == 0:
         return False
     else:
         for mat in mat2:
             if np.array_equal(mat[:3,:3], mat1[:3,:3]):
                 diffs = np.abs(mat[:3,3] - mat1[:3,3])
-                diffs -= np.floor(diffs)
+                if PBC:
+                    diffs -= np.floor(diffs)
                 #print("diffs", diffs)
                 if (diffs*diffs).sum() < 1e-2:
                     return True
@@ -211,41 +273,29 @@ def in_lists(mat1, mat2, eps=1e-4):
 
         
 if __name__ == "__main__":
-
-    from pyxtal.crystal import random_crystal
-    from pyxtal.operations import apply_ops
-    from ase import Atoms
     import pymatgen.analysis.structure_matcher as sm
-    from spglib import get_symmetry_dataset
-    from pymatgen.io.ase import AseAtomsAdaptor
-    #sites = ['24f','6b']
-    #G, H, fac = 197, 23, 2
-    sites = ['32e']
-    #sites = ['8a']
-    G, H, fac = 227, 166, 4
-    numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-    C = random_crystal(G, ['C'], [numIons], sites=[sites])
-    spg1 = get_symmetry_dataset(C.to_ase(), symprec=1e-4)['international']
+    from random import choice
+    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    from pyxtal.crystal import random_crystal
+    
+    while True:
+        sg = 21 #choice(range(141,231))
+        s1 = random_crystal(sg, ['B'], [3], sites=[['4f','2d']])
+        if s1.valid:
+            break
+    print(s1)
+    pmg_s1 = s1.to_pymatgen()
+    sga1 = SpacegroupAnalyzer(pmg_s1, symprec=1e-4).get_space_group_symbol()
+    #s2s = s1.subgroup(group_type='k', eps=0)
+    s2s = s1.subgroup(group_type='k', eps=0)#, idx=[5])
+    for i, s2 in enumerate(s2s):
+        pmg_s2 = s2.to_pymatgen()
+        try:
+            sga2 = SpacegroupAnalyzer(pmg_s2, symprec=1e-4).get_space_group_symbol()
+            print(i, sga1, sga2, sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+        except:
+            print("something is wrong here")
+            print(s2)
+            import sys; sys.exit()
+#s1 = s2
 
-    splitter = wyckoff_split(G=G,H=H,wp1=sites)
-    print(splitter)
-    lat1 = np.dot(C.lattice.matrix, splitter.R[:3,:3].T)
-    pos1 = None
-    for i, site in enumerate(C.atom_sites):
-        pos = site.position
-        for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
-            pos0 = pos + 0.05*(np.random.sample(3) - 0.5)
-            #print(pos0)
-            pos_tmp = apply_ops(pos0, ops1)
-            pos_tmp = apply_ops(pos_tmp[0], ops2)
-            if pos1 is None:
-                pos1 = pos_tmp
-            else:
-                pos1 = np.vstack((pos1, pos_tmp))
-
-    C1 = Atoms(["C"]*len(pos1), scaled_positions=pos1, cell=lat1, pbc=[1,1,1])
-    C1.write("1.vasp", format='vasp', vasp5=True, direct=True)
-    C.to_ase().write("0.vasp", format='vasp', vasp5=True, direct=True)
-    pmg_s1 = AseAtomsAdaptor.get_structure(C1)
-    spg2 = get_symmetry_dataset(C1, symprec=1e-4)['international']
-    print(spg1, spg2, sm.StructureMatcher().fit(pmg_s1, C.to_pymatgen()))
