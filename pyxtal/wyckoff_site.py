@@ -530,60 +530,60 @@ class mol_site:
 
 
 
-def check_mol_sites(ms1, ms2, factor=1.0, tm=Tol_matrix(prototype="molecular")):
-    """
-    Checks whether or not the molecules of two mol sites overlap. Uses
-    ellipsoid overlapping approximation to check. Takes PBC and lattice
-    into consideration.
-
-    Args:
-        ms1: a mol_site object
-        ms2: another mol_site object
-        factor: the distance factor to pass to check_distances. (only for
-            inter-atomic distance checking)
-        tm: a Tol_matrix object (or prototype string) for distance checking
-
-    Returns:
-        False if the Wyckoff positions overlap. True otherwise
-    """
-    # Get coordinates for both mol_sites
-    c1, _ = ms1.get_coords_and_species()
-    c2, _ = ms2.get_coords_and_species()
-
-    # Calculate which distance matrix is smaller/faster
-    m_length1 = len(ms1.numbers)
-    m_length2 = len(ms2.numbers)
-    wp_length1 = len(c1)
-    wp_length2 = len(c2)
-    size1 = m_length1 * wp_length2
-    size2 = m_length2 * wp_length1
-
-    # Case 1
-    if size1 <= size2:
-        coords_mol = c1[:m_length1]
-        # Calculate tol matrix for species pairs
-        tols = np.zeros((m_length1, m_length2))
-        for i1, number1 in enumerate(ms1.numbers):
-            for i2, number2 in enumerate(ms2.numbers):
-                tols[i1][i2] = tm.get_tol(number1, number2)
-        tols = np.repeat(tols, ms2.wp.multiplicity, axis=1)
-        d = distance_matrix(coords_mol, c2, ms1.lattice.matrix, PBC=ms1.PBC)
-
-    # Case 2
-    elif size1 > size2:
-        coords_mol = c2[:m_length2]
-        # Calculate tol matrix for species pairs
-        tols = np.zeros((m_length2, m_length1))
-        for i1, number1 in enumerate(ms2.numbers):
-            for i2, number2 in enumerate(ms1.numbers):
-                tols[i1][i2] = tm.get_tol(number1, number2)
-        tols = np.repeat(tols, ms1.wp.multiplicity, axis=1)
-        d = distance_matrix(coords_mol, c1, ms1.lattice.matrix, PBC=ms1.PBC)
-
-    # Check if distances are smaller than tolerances
-    if (d < tols).any():
-        return False
-    return True
+    def check_with_ms2(self, ms2, factor=1.0, tm=Tol_matrix(prototype="molecular")):
+        """
+        Checks whether or not the molecules of two mol sites overlap. Uses
+        ellipsoid overlapping approximation to check. Takes PBC and lattice
+        into consideration.
+    
+        Args:
+            ms1: a mol_site object
+            ms2: another mol_site object
+            factor: the distance factor to pass to check_distances. (only for
+                inter-atomic distance checking)
+            tm: a Tol_matrix object (or prototype string) for distance checking
+    
+        Returns:
+            False if the Wyckoff positions overlap. True otherwise
+        """
+        # Get coordinates for both mol_sites
+        c1, _ = self.get_coords_and_species()
+        c2, _ = ms2.get_coords_and_species()
+    
+        # Calculate which distance matrix is smaller/faster
+        m_length1 = len(self.numbers)
+        m_length2 = len(ms2.numbers)
+        wp_length1 = len(c1)
+        wp_length2 = len(c2)
+        size1 = m_length1 * wp_length2
+        size2 = m_length2 * wp_length1
+    
+        # Case 1
+        if size1 <= size2:
+            coords_mol = c1[:m_length1]
+            # Calculate tol matrix for species pairs
+            tols = np.zeros((m_length1, m_length2))
+            for i1, number1 in enumerate(self.numbers):
+                for i2, number2 in enumerate(ms2.numbers):
+                    tols[i1][i2] = tm.get_tol(number1, number2)
+            tols = np.repeat(tols, ms2.wp.multiplicity, axis=1)
+            d = distance_matrix(coords_mol, c2, self.lattice.matrix, PBC=self.PBC)
+    
+        # Case 2
+        elif size1 > size2:
+            coords_mol = c2[:m_length2]
+            # Calculate tol matrix for species pairs
+            tols = np.zeros((m_length2, m_length1))
+            for i1, number1 in enumerate(ms2.numbers):
+                for i2, number2 in enumerate(self.numbers):
+                    tols[i1][i2] = tm.get_tol(number1, number2)
+            tols = np.repeat(tols, self.wp.multiplicity, axis=1)
+            d = distance_matrix(coords_mol, c1, self.lattice.matrix, PBC=self.PBC)
+    
+        # Check if distances are smaller than tolerances
+        if (d < tols).any():
+            return False
+        return True
 
 
 class atom_site:
@@ -626,53 +626,51 @@ class atom_site:
         return str(self)
 
 
-def check_atom_sites(ws1, ws2, lattice, tm, same_group=True):
-    """
-    Given two Wyckoff sites, checks the inter-atomic distances between them.
+    def check_with_ws2(self, ws2, lattice, tm, same_group=True):
+        """
+        Given two Wyckoff sites, checks the inter-atomic distances between them.
 
-    Args:
-        ws1: a Wyckoff_site object
-        ws2: a different Wyckoff_site object (will always return False if
+        Args:
+            ws2: a different Wyckoff_site object (will always return False if
             two identical WS's are provided)
-        lattice: a 3x3 cell matrix
-        same_group: whether or not the two WS's are in the same structure.
+            lattice: a 3x3 cell matrix
+            same_group: whether or not the two WS's are in the same structure.
             Default value True reduces the calculation cost
-
-    Returns:
-        True if all distances are greater than the allowed tolerances.
-        False if any distance is smaller than the allowed tolerance
-    """
-    # Ensure the PBC values are valid
-    if ws1.PBC != ws2.PBC:
-        printx("Error: PBC values do not match between Wyckoff sites")
-        return
-    # Get tolerance
-    tol = tm.get_tol(ws1.specie, ws2.specie)
-    # Symmetry shortcut method: check only some atoms
-    if same_group is True:
-        # We can either check one atom in WS1 against all WS2, or vice-versa
-        # Check which option is faster
-        if ws1.multiplicity > ws2.multiplicity:
-            coords1 = [ws1.coords[0]]
-            coords2 = ws2.coords
+        Returns:
+            True if all distances are greater than the allowed tolerances.
+            False if any distance is smaller than the allowed tolerance
+        """
+        # Ensure the PBC values are valid
+        if self.PBC != ws2.PBC:
+            printx("Error: PBC values do not match between Wyckoff sites")
+            return
+        # Get tolerance
+        tol = tm.get_tol(self.specie, ws2.specie)
+        # Symmetry shortcut method: check only some atoms
+        if same_group is True:
+            # We can either check one atom in WS1 against all WS2, or vice-versa
+            # Check which option is faster
+            if self.multiplicity > ws2.multiplicity:
+                coords1 = [self.coords[0]]
+                coords2 = ws2.coords
+            else:
+                coords1 = [ws2.coords[0]]
+                coords2 = self.coords
+            # Calculate distances
+            dm = distance_matrix(coords1, coords2, lattice, PBC=self.PBC)
+            # Check if any distances are less than the tolerance
+            if (dm < tol).any():
+                return False
+            else:
+                return True
+        # No symmetry method: check all atomic pairs
         else:
-            coords1 = [ws2.coords[0]]
-            coords2 = ws1.coords
-        # Calculate distances
-        dm = distance_matrix(coords1, coords2, lattice, PBC=ws1.PBC)
-        # Check if any distances are less than the tolerance
-        if (dm < tol).any():
-            return False
-        else:
-            return True
-    # No symmetry method: check all atomic pairs
-    else:
-        dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
-        # Check if any distances are less than the tolerance
-        if (dm < tol).any():
-            return False
-        else:
-            return True
+            dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
+            # Check if any distances are less than the tolerance
+            if (dm < tol).any():
+                return False
+            else:
+                return True
 
 def WP_merge(pt, lattice, wp, tol, orientations=None):
     """

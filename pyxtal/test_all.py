@@ -13,6 +13,7 @@ from pyxtal.crystal import (
     random_crystal_1D,
     random_crystal_2D,
 )
+from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
 from pyxtal.molecular_crystal import (
     molecular_crystal,
@@ -148,7 +149,7 @@ class TestMolecular(unittest.TestCase):
 class TestAtomic3D(unittest.TestCase):
     def test_single_specie(self):
         struc = random_crystal(225, ["C"], [4], 1.2)
-        struc.to_file()
+        #struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_mutiple_species(self):
@@ -169,7 +170,7 @@ class TestAtomic3D(unittest.TestCase):
 class TestAtomic2D(unittest.TestCase):
     def test_single_specie(self):
         struc = random_crystal_2D(20, ["C"], [4], 1.0, thickness=2.0)
-        struc.to_file()
+        #struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_mutiple_species(self):
@@ -182,7 +183,7 @@ class TestAtomic2D(unittest.TestCase):
 class TestAtomic1D(unittest.TestCase):
     def test_single_specie(self):
         struc = random_crystal_1D(20, ["C"], [4], 1.0)
-        struc.to_file()
+        #struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_mutiple_species(self):
@@ -193,16 +194,16 @@ class TestAtomic1D(unittest.TestCase):
 class TestCluster(unittest.TestCase):
     def test_multi_sites(self):
         struc = random_cluster(1, ["C"], [60], 1.0)
-        struc.to_file()
+        #struc.to_file()
         self.assertTrue(struc.valid)
 
         struc = random_cluster(3, ["C"], [60], 1.0)
-        struc.to_file()
+        #struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_single_specie(self):
         struc = random_cluster("Ih", ["C"], [60], 1.0)
-        struc.to_file()
+        #struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_mutiple_species(self):
@@ -259,10 +260,8 @@ class TestSubgroup(unittest.TestCase):
         sites = ['8a', '32e']
         G, fac = 227, 4
         numIons = int(sum([int(i[:-1]) for i in sites])/fac)
-        while True:
-            C1 = random_crystal(G, ['C'], [numIons], sites=[sites])
-            if C1.valid:
-                break
+        C1 = pyxtal()
+        C1.from_random(3, G, ['C'], [numIons], sites=[sites])
         pmg_s1 = C1.to_pymatgen()
         sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
 
@@ -278,7 +277,8 @@ class TestSubgroup(unittest.TestCase):
         lattice = Lattice.from_parameters(a=3.84, b=3.84, c=3.84, alpha=120,
                                   beta=90, gamma=60)
         struct = Structure(lattice, ["Si", "C"], coords)
-        s1 = random_crystal(seed=struct)
+        s1 = pyxtal()
+        s1.from_seed(struct)
         s2 = s1.subgroup(once=True)
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()

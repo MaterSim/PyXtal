@@ -20,13 +20,9 @@ from pyxtal.symmetry import (
     get_rod,
     get_point,
 )
-from pyxtal.crystal import (
-    random_crystal,
-    random_crystal_2D,
-    random_crystal_1D,
-    random_cluster,
-    cellsize,
-)
+from pyxtal import pyxtal
+from pyxtal.lattice import cellsize
+
 from pyxtal.molecular_crystal import (
     molecular_crystal,
     molecular_crystal_2D,
@@ -180,7 +176,7 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
 
         """Given a pymatgen structure, group number, and dimension, return
         whether or not the structure matches the group number."""
-        if isinstance(crystal, (random_crystal, molecular_crystal)):
+        if isinstance(crystal, (pyxtal, molecular_crystal)):
             pmg_struc = crystal.to_pymatgen()
             if dim > 0:
                 lattice = pmg_struc.lattice.matrix
@@ -257,18 +253,20 @@ def test_atomic():
     global outstructs
     global outstrings
     fprint("=== Testing generation of atomic 3D crystals. This may take some time. ===")
-    my_crystal1 = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.0, sites=[["1b"], ["1b"], ["2c", "1b"]])
+    my_crystal1 = pyxtal()
+    my_crystal1.from_random(3, 99, ['Ba','Ti','O'], [1,1,3], 1.0, sites=[["1b"], ["1b"], ["2c", "1b"]])
     print(my_crystal1)
-    my_crystal1.to_file("1.cif")
+    #my_crystal1.to_file("1.cif")
     
-    my_crystal2 = random_crystal(225, ['C'], [3], 1.0, sites=[["4a", "8c"]])
-    my_crystal2 = random_crystal(225, ['C'], [3], 1.0)
+    my_crystal2 = pyxtal()
+    my_crystal2.from_random(3, 225, ['C'], [3], 1.0, sites=[["4a", "8c"]])
     print(my_crystal2)
-    my_crystal2.to_file("2.cif")
+    #my_crystal2.to_file("2.cif")
     
-    my_crystal3 = random_crystal(225, ['C','Si'], [3, 1], 1.0, sites=[["4a", "8c"], None])
+    my_crystal3 = pyxtal()
+    my_crystal3.from_random(3, 225, ['C','Si'], [3, 1], 1.0, sites=[["4a", "8c"], None])
     print(my_crystal3)
-    my_crystal3.to_file("3.cif")
+    #my_crystal3.to_file("3.cif")
 
 
     slow = []
@@ -285,7 +283,8 @@ def test_atomic():
                 sg
             )  # multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal(sg, ["C"], [multiplicity], 1.0)
+            rand_crystal = pyxtal()
+            rand_crystal.from_random(3, sg, ["C"], [multiplicity], 1.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -470,7 +469,8 @@ def test_atomic_2D():
             g = Group(sg, dim=2)
             multiplicity = len(g[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_2D(sg, ["C"], [multiplicity], 4.0)
+            rand_crystal = pyxtal()
+            rand_crystal.from_random(2, sg, ["C"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -579,7 +579,8 @@ def test_atomic_1D():
         if num not in skip:
             multiplicity = len(get_rod(num)[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = random_crystal_1D(num, ["H"], [multiplicity], 4.0)
+            rand_crystal = pyxtal()
+            rand_crystal.from_random(1, num, ["H"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -736,7 +737,8 @@ def test_cluster():
                 Group(sg, dim=0)[0]
             )  # multiplicity of the general position
             start = time()
-            rand_crystal = random_cluster(sg, ["C"], [multiplicity], 1.0)
+            rand_crystal = pyxtal()
+            rand_crystal.from_random(0, sg, ["C"], [multiplicity], 1.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)

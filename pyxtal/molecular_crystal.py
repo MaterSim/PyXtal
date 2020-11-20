@@ -10,7 +10,7 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.io import write_cif, structure_from_ext
 from pyxtal.database.element import Element
-from pyxtal.wyckoff_site import mol_site, check_mol_sites, WP_merge
+from pyxtal.wyckoff_site import mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
 from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular, Wyckoff_position
 from pyxtal.operations import angle
@@ -737,7 +737,7 @@ class molecular_crystal:
                         # Check current WP against existing WP's  
                         passed_wp_check = True
                         for ms1 in mol_sites_tmp + mol_wyks:
-                            if not check_mol_sites(ms0, ms1, tm=self.tol_matrix):
+                            if not ms0.check_with_ms2(ms1, tm=self.tol_matrix):
                                 passed_wp_check = False
                         
                         if passed_wp_check:
