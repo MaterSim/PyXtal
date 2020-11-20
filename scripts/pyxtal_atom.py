@@ -2,13 +2,7 @@
 # encoding: utf-8
 
 import os
-from pyxtal import print_logo
-from pyxtal.crystal import (
-    random_crystal,
-    random_crystal_1D,
-    random_crystal_2D,
-    random_cluster,
-)
+from pyxtal import print_logo, pyxtal
 from pyxtal.symmetry import get_symbol_and_number
 from pymatgen.io.cif import CifWriter
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
@@ -127,14 +121,15 @@ if __name__ == "__main__":
     for i in range(attempts):
         numIons0 = np.array(numIons)
         start = time()
+        rand_crystal = pyxtal()
         if dimension == 3:
-            rand_crystal = random_crystal(sg, system, numIons0, factor)
+            rand_crystal.from_random(3, sg, system, numIons0, factor)
         elif dimension == 2:
-            rand_crystal = random_crystal_2D(sg, system, numIons0, factor, thickness)
+            rand_crystal.from_random(2, sg, system, numIons0, factor, thickness)
         elif dimension == 1:                                             
-            rand_crystal = random_crystal_1D(sg, system, numIons0, factor, thickness)
+            rand_crystal.from_random(1, sg, system, numIons0, factor, thickness)
         if dimension == 0:
-            rand_crystal = random_cluster(sg, system, numIons0, factor)
+            rand_crystal.from_random(0, sg, system, numIons0, factor)
         end = time()
         timespent = np.around((end - start), decimals=2)
 

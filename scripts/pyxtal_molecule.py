@@ -120,7 +120,6 @@ if __name__ == "__main__":
         start = time()
         numMols0 = np.array(numMols)
         if dimension == 3:
-            print(sg, system, numMols0, factor)
             rand_crystal = molecular_crystal(
                 sg,
                 system,
