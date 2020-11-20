@@ -1,7 +1,7 @@
 #!/usr/bin/env  python
 # encoding: utf-8
 
-# Test script for pyXtal version 0.1dev. Tests core functions for all modules.
+# Test script for pyXtal v-0.1.4. Tests core functions for all modules.
 
 
 import sys
@@ -22,11 +22,6 @@ from pyxtal.symmetry import (
 )
 from pyxtal import pyxtal
 from pyxtal.lattice import cellsize
-
-from pyxtal.molecular_crystal import (
-    molecular_crystal,
-    molecular_crystal_2D,
-)
 from pyxtal.operations import distance, filtered_coords
 
 
@@ -176,7 +171,7 @@ def check_struct_group(crystal, group, dim=3, tol=1e-2):
 
         """Given a pymatgen structure, group number, and dimension, return
         whether or not the structure matches the group number."""
-        if isinstance(crystal, (pyxtal, molecular_crystal)):
+        if isinstance(crystal, pyxtal):
             pmg_struc = crystal.to_pymatgen()
             if dim > 0:
                 lattice = pmg_struc.lattice.matrix
@@ -379,7 +374,8 @@ def test_molecular():
                 sg
             )  # multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal(sg, ["H2O"], [multiplicity], 2.5)
+            rand_crystal = pyxtal(molecular=True)
+            rand_crystal.from_random(3, sg, ["H2O"], [multiplicity], 2.5)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -526,7 +522,8 @@ def test_molecular_2D():
             g = Group(sg, dim=2)
             multiplicity = len(g[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_2D(sg, ["H2O"], [multiplicity], 4.0)
+            rand_crystal = pyxtal(molecular=True)
+            rand_crystal.from_random(2, sg, ["H2O"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -647,11 +644,6 @@ def test_molecular_1D():
     fprint(
         "=== Testing generation of molecular 1D crystals. This may take some time. ==="
     )
-    from time import time
-    from spglib import get_symmetry_dataset
-    from pyxtal.symmetry import get_rod
-    from pyxtal.molecular_crystal import molecular_crystal_1D
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
     slow = []
     failed = []
@@ -661,7 +653,8 @@ def test_molecular_1D():
         if num not in skip:
             multiplicity = len(get_rod(num)[0])  # multiplicity of the general position
             start = time()
-            rand_crystal = molecular_crystal_1D(num, ["H2O"], [multiplicity], 4.0)
+            rand_crystal = pyxtal(molecular=True)
+            rand_crystal.from_random(1, num, ["H2O"], [multiplicity], 4.0)
             end = time()
             timespent = np.around((end - start), decimals=2)
             t = str(timespent)
@@ -837,22 +830,13 @@ def test_modules():
         fail(e)
         sys.exit(0)
 
-    fprint("Importing openbabel...")
+    fprint("Importing ase...")
     try:
         import ase
 
         fprint("Success!")
     except:
         fprint("Error: could not import openbabel. Try reinstalling the package.")
-
-    fprint("Importing pyxtal...")
-    try:
-        import pyxtal
-
-        fprint("Success!")
-    except Exception as e:
-        fail(e)
-        sys.exit(0)
 
     fprint("=== Testing modules ===")
 
@@ -1243,61 +1227,9 @@ def test_modules():
 
     check()
 
-    # =====crystal=====
-    fprint("pyxtal.crystal")
-    reset()
-    try:
-        import pyxtal.crystal
-    except Exception as e:
-        fail(e)
-
-    fprint("  random_crystal")
-    try:
-        from pyxtal.crystal import random_crystal
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            c = random_crystal(1, ["H"], [1], 10.0)
-            if c.valid is True:
-                pass
-            else:
-                fail()
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    fprint("  random_crystal_2D")
-    try:
-        from pyxtal.crystal import random_crystal_2D
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            c = random_crystal_2D(1, ["H"], [1], 10.0)
-            if c.valid is True:
-                pass
-            else:
-                fail()
-        except Exception as e:
-            fail(e)
-
-    check()
-
     # =====molecule=====
     fprint("pyxtal.molecule")
     reset()
-    try:
-        import pyxtal.molecule
-    except Exception as e:
-        fail(e)
-
-    check()
-
-    fprint("pyxtal_molecule")
     try:
         from pyxtal.molecule import pyxtal_molecule
     except Exception as e:
@@ -1339,50 +1271,6 @@ def test_modules():
             wp = Wyckoff_position.from_group_and_index(20, 1)
             orientation_in_wyckoff_position(h2o, wp)
             orientation_in_wyckoff_position(ch4, wp)
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    # =====molecular_crystal=====
-    fprint("pyxtal.molecular_crystal")
-    reset()
-    try:
-        import pyxtal.crystal
-    except Exception as e:
-        fail(e)
-
-    fprint("  molecular_crystal")
-    try:
-        from pyxtal.molecular_crystal import molecular_crystal
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            c = molecular_crystal(1, ["H2O"], [1], 10.0)
-            if c.valid is True:
-                pass
-            else:
-                fail()
-        except Exception as e:
-            fail(e)
-
-    check()
-
-    fprint("  molecular_crystal_2D")
-    try:
-        from pyxtal.molecular_crystal import molecular_crystal_2D
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            c = molecular_crystal_2D(1, ["H2O"], [1], 10.0)
-            if c.valid is True:
-                pass
-            else:
-                fail()
         except Exception as e:
             fail(e)
 

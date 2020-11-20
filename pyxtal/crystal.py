@@ -113,7 +113,6 @@ class random_crystal:
         self.formula = formula
 
         self.species = species
-        self.Msgs()
 
         # Use the provided lattice
         if lattice is not None:
@@ -317,23 +316,6 @@ class random_crystal:
             msg += "\nfrom Wyckoff list: {:d}".format(num)
             raise ValueError(msg)
 
-    def Msgs(self):
-        """
-        Define a set of error and warning message if generation fails.
-
-        Returns:
-            nothing
-        """
-        self.Msg1 = (
-            "Error: the stoichiometry is incompatible with the wyckoff sites choice"
-        )
-        self.Msg2 = "Error: failed in the cycle of generating structures"
-        self.Msg3 = "Warning: failed in the cycle of adding species"
-        self.Msg4 = "Warning: failed in the cycle of choosing wyckoff sites"
-        self.Msg5 = "Finishing: added the specie"
-        self.Msg6 = "Finishing: added the whole structure"
-        self.Msg7 = "Error: invalid paramaters for initialization"
-
     def estimate_volume(self):
         """
         Estimates the volume of a unit cell based on the number and types of ions.
@@ -363,7 +345,8 @@ class random_crystal:
         self.numattempts = 1
         degrees = self.check_compatible(self.group, self.numIons)
         if degrees is False:
-            printx(self.Msg1, priority=1)
+            msg = "Error: the stoichiometry is incompatible with wyckoff choice"
+            printx(msg, priority=1)
             self.valid = False
             return
 

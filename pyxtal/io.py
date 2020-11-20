@@ -157,7 +157,6 @@ class structure_from_ext():
         sga = SpacegroupAnalyzer(pmg_struc)
         ops = sga.get_space_group_operations()
         self.wyc, perm = Wyckoff_position.from_symops(ops, sga.get_space_group_number())
-
         if self.wyc is not None:
             self.group = Group(self.wyc.number)
             if isinstance(perm, list):
@@ -178,6 +177,7 @@ class structure_from_ext():
                 self.molecule = Molecule(numbers, coords)
             self.pmg_struc = pmg_struc
             self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
+            self.numMols = [len(self.wyc)]
         else:
             raise ValueError("Cannot find the space group matching the symmetry operation")
 

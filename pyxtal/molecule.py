@@ -53,6 +53,7 @@ class pyxtal_molecule:
         if type(mol) == str:
             # Parse molecules: either file or molecule name
             tmp = mol.split(".")
+            self.name = tmp[0]
             if len(tmp) > 1:
                 # Load the molecule from the given file
                 if tmp[-1] in ["xyz", "gjf", "g03", "json"]:
@@ -67,6 +68,7 @@ class pyxtal_molecule:
                 # print('\nLoad the molecule {:s} from collections'.format(mol))
                 mo = molecule_collection[mol]
         elif hasattr(mol, "sites"):  # pymatgen molecule
+            self.name = str(mol.formula)
             mo = mol
 
         if mo is None:
@@ -87,6 +89,10 @@ class pyxtal_molecule:
         self.get_radius()
         self.get_symbols()
         self.get_tols_matrix()
+
+    def __str__(self):
+        return '[' + self.name + ']'
+
 
     def swap_axis(self, ax):
         """

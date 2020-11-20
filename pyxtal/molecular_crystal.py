@@ -1,5 +1,4 @@
 # Standard Libraries
-import os
 import random
 import numpy as np
 from copy import deepcopy
@@ -8,8 +7,6 @@ from copy import deepcopy
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
-from pyxtal.io import write_cif, structure_from_ext
-from pyxtal.database.element import Element
 from pyxtal.wyckoff_site import mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
 from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular, Wyckoff_position
@@ -49,7 +46,6 @@ class molecular_crystal:
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
             object to define the distances
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        seed (optional): the cif file from user
         diag (optional): if use the nonstandart setting (P21/n, Pn, C2/n)?
     """
 
@@ -65,9 +61,7 @@ class molecular_crystal:
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),
         sites = None,
-        seed = None,
         diag = False,
-        relax_h = False,
     ):
 
         self.dim = 3 # The number of periodic dimensions (1,2,3)
@@ -77,10 +71,7 @@ class molecular_crystal:
         if type(group) != Group:
             group = Group(group, self.dim)
 
-        self.sg = group.number
         self.selec_high = select_high
-        self.seed = seed
-        self.relax_h = relax_h
 
         self.init_common(
             molecules,
@@ -113,8 +104,6 @@ class molecular_crystal:
         self.numattempts = 0 # number of attempts to generate the crystal.
         if type(group) == Group:
             self.group = group
-            """A pyxtal.symmetry.Group object storing information about the space/layer
-            /Rod/point group, and its Wyckoff positions."""
         else:
             self.group = Group(group, dim=self.dim)
         self.number = self.group.number
@@ -126,7 +115,6 @@ class molecular_crystal:
         1-32 for crystallographic point groups
         None otherwise
         """
-        self.Msgs()
         self.factor = volume_factor  # volume factor for the unit cell.
         numMols = np.array(numMols)  # must convert it to np.array
         self.numMols0 = numMols  # in the PRIMITIVE cell
@@ -162,20 +150,6 @@ class molecular_crystal:
             else:
                 self.sites[i] = None
 
-        # if seeds, directly parse the structure from cif
-        # At the moment, we only support one specie
-        if self.seed is not None:
-            seed = structure_from_ext(self.seed, self.molecules[0].mol, relax_h=self.relax_h)
-            if seed.match():
-                self.mol_sites = [seed.make_mol_site()]
-                self.group = Group(seed.wyc.number)
-                self.lattice = seed.lattice
-                self.molecules = [pyxtal_molecule(seed.molecule)]
-                self.diag = seed.diag
-                self.valid = True # Need to add a check function
-            else:
-                raise ValueError("Cannot extract the structure from cif")
-
         # The valid orientations for each molecule and Wyckoff position.
         # May be copied when generating a new molecular_crystal to save a
         # small amount of time
@@ -185,59 +159,58 @@ class molecular_crystal:
         else:
             self.valid_orientations = orientations
 
-        if self.seed is None:
-            if lattice is not None:
-                # Use the provided lattice
-                self.lattice = lattice
-                self.volume = lattice.volume
-                # Make sure the custom lattice PBC axes are correct.
-                if lattice.PBC != self.PBC:
-                    self.lattice.PBC = self.PBC
-                    printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
-            else:
-                # Determine the unique axis
-                if self.dim == 2:
-                    if self.number in range(3, 8):
-                        unique_axis = "c"
-                    else:
-                        unique_axis = "a"
-                elif self.dim == 1:
-                    if self.number in range(3, 8):
-                        unique_axis = "a"
-                    else:
-                        unique_axis = "c"
+        if lattice is not None:
+            # Use the provided lattice
+            self.lattice = lattice
+            self.volume = lattice.volume
+            # Make sure the custom lattice PBC axes are correct.
+            if lattice.PBC != self.PBC:
+                self.lattice.PBC = self.PBC
+                printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
+        else:
+            # Determine the unique axis
+            if self.dim == 2:
+                if self.number in range(3, 8):
+                    unique_axis = "c"
+                else:
+                    unique_axis = "a"
+            elif self.dim == 1:
+                if self.number in range(3, 8):
+                    unique_axis = "a"
                 else:
                     unique_axis = "c"
+            else:
+                unique_axis = "c"
 
-                # Generate a Lattice instance
-                self.volume = self.estimate_volume()
-                # The Lattice object used to generate lattice matrices
-                if self.dim == 3 or self.dim == 0:
-                    self.lattice = Lattice(
-                        self.group.lattice_type,
-                        self.volume,
-                        PBC=self.PBC,
-                        unique_axis=unique_axis,
-                    )
-                elif self.dim == 2:
-                    self.lattice = Lattice(
-                        self.group.lattice_type,
-                        self.volume,
-                        PBC=self.PBC,
-                        unique_axis=unique_axis,
-                        thickness=self.thickness,
-                    )
-                elif self.dim == 1:
-                    self.lattice = Lattice(
-                        self.group.lattice_type,
-                        self.volume,
-                        PBC=self.PBC,
-                        unique_axis=unique_axis,
-                        area=self.area,
-                    )
+            # Generate a Lattice instance
+            self.volume = self.estimate_volume()
+            # The Lattice object used to generate lattice matrices
+            if self.dim == 3 or self.dim == 0:
+                self.lattice = Lattice(
+                    self.group.lattice_type,
+                    self.volume,
+                    PBC=self.PBC,
+                    unique_axis=unique_axis,
+                )
+            elif self.dim == 2:
+                self.lattice = Lattice(
+                    self.group.lattice_type,
+                    self.volume,
+                    PBC=self.PBC,
+                    unique_axis=unique_axis,
+                    thickness=self.thickness,
+                )
+            elif self.dim == 1:
+                self.lattice = Lattice(
+                    self.group.lattice_type,
+                    self.volume,
+                    PBC=self.PBC,
+                    unique_axis=unique_axis,
+                    area=self.area,
+                )
 
 
-            self.generate_crystal()
+        self.generate_crystal()
 
     def check_consistency(self, site, numMol):
         num = 0
@@ -262,40 +235,6 @@ class molecular_crystal:
         for numMol, mol in zip(self.numMols, self.molecules):
             volume += numMol * mol.volume
         return abs(self.factor * volume)
-
-    def check_short_distances(self, r=1.0, exclude_H = True):
-        """
-        A function to check short distance pairs
-        Mainly used for debug, powered by pymatgen
-
-        Args:
-            r: the given cutoff distances
-            exclude_H: whether or not ignore the H atoms
-
-        Returns:
-            a list of pairs within the cutoff
-        """
-        pairs = []
-        pmg_struc = self.to_pymatgen()
-        if exclude_H:
-            pmg_struc.remove_species('H')
-        res = pmg_struc.get_all_neighbors(r)
-        for i, neighs in enumerate(res):
-            for n in neighs:
-                pairs.append([pmg_struc.sites[i].specie, n.specie, n.nn_distance])
-        return pairs
-
-
-    def Msgs(self):
-        self.Msg1 = (
-            "Error: the stoichiometry is incompatible with the wyckoff sites choice"
-        )
-        self.Msg2 = "Error: failed in the cycle of generating structures"
-        self.Msg3 = "Warning: failed in the cycle of adding species"
-        self.Msg4 = "Warning: failed in the cycle of choosing wyckoff sites"
-        self.Msg5 = "Finishing: added the specie"
-        self.Msg6 = "Finishing: added the whole structure"
-        self.Msg7 = "Error: invalid paramaters for initialization"
 
     def get_orientations(self):
         """
@@ -437,42 +376,6 @@ class molecular_crystal:
         elif has_freedom is False:
             return 0
 
-    def to_file(self, filename=None, fmt="cif", permission='w', **kwargs):
-        """
-        Creates a file with the given filename and file type to store the structure.
-        By default, creates cif files for crystals and xyz files for clusters.
-        By default, the filename is based on the stoichiometry.
-
-        Args:
-            filename: the file path
-            fmt: the file type (`cif`, `xyz`, etc.)
-            permission: `w` or `a+`
-            sym_num: `w` or `a+`
-
-        Returns:
-            Nothing. Creates a file at the specified path
-        """
-        if self.valid:
-            if fmt == "cif":
-                if self.dim == 3:
-                    return write_cif(self, filename, "from_pyxtal", permission, **kwargs)
-                else:
-                    pmg_struc = self.to_pymatgen()
-                    pmg_struc.sort()
-                    return pmg_struc.to(fmt=fmt, filename=filename)
-            else:
-                pmg_struc = self.to_pymatgen()
-                pmg_struc.sort()
-                return pmg_struc.to(fmt=fmt, filename=filename)
-        else:
-            printx("Cannot create file: structure did not generate.", priority=1)
-
-    def copy(self):
-        """
-        simply copy the structure
-        """
-        return deepcopy(self)
-
     def optimize_lattice(self):
         """
         optimize the lattice if the cell has a bad inclination angles
@@ -494,71 +397,13 @@ class molecular_crystal:
                             site.wp.ops[j] = op1
                 #to do needs to update diag if necessary
                 _, perm = Wyckoff_position.from_symops(site.wp.ops, self.group.number)            
-                if not isinstance(perm, list):                                                    
+                if not isinstance(perm, list): 
                     self.diag = True
                 else:
                     self.diag = False
                 self.lattice = lattice
             else:
                 break
-
-    def _get_coords_and_species(self, absolute=False, unitcell=True):
-        """
-        extract the coordinates and species information 
-
-        Args:
-            abosulte: if True, return the cartesian coords otherwise fractional
-
-        Returns:
-            total_coords: N*3 numpy array 
-            species: N-length list, e.g. ["C", "C", ...]
-        """
-
-        species = []
-        total_coords = None
-        for site in self.mol_sites:
-            coords, site_species = site.get_coords_and_species(absolute, unitcell=unitcell)
-            species.extend(site_species)
-            if total_coords is None:
-                total_coords = coords
-            else:
-                total_coords = np.append(total_coords, coords, axis=0)
-
-        return total_coords, species
-
-
-    def to_ase(self, resort=True):
-        """
-        export to ase Atoms object
-        """
-        from ase import Atoms
-        if self.valid:
-            lattice = self.lattice.copy()
-            coords, species = self._get_coords_and_species(True)
-            latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
-            atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
-            if resort:
-                permutation = np.argsort(atoms.numbers)
-                atoms = atoms[permutation]
-            return atoms
-        else:
-            printx("No valid structure can be converted to ase.", priority=1)
-
-    def to_pymatgen(self):
-        """
-        export to Pymatgen structure object
-        """
-        from pymatgen.core.structure import Structure  
-
-        if self.valid:
-            lattice = self.lattice.copy()
-            coords, species = self._get_coords_and_species()
-            # Add space above and below a 2D or 1D crystals
-            latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
-            return Structure(latt, species, coords)
-        else:
-            printx("No valid structure can be converted to pymatgen.", priority=1)
-
 
     def __str__(self):
         s = "------Random Molecular Crystal------"
@@ -580,13 +425,6 @@ class molecular_crystal:
 
     def __repr__(self):
         return str(self)
-
-    def show(self, **kwargs):
-        """
-        display the crystal structure
-        """
-        from pyxtal.viz import display_molecular
-        return display_molecular(self, **kwargs)
 
     def _check_lattice_vs_shape(self, factor=0.95):
         """
@@ -873,13 +711,11 @@ class molecular_crystal_2D(molecular_crystal):
         thickness=None,
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),
-        seed = None,
         sites = None,
     ):
 
         self.dim = 2
         self.numattempts = 0
-        self.seed = None
         if type(group) != Group:
             group = Group(group, self.dim)
         number = group.number  # The layer group number of the crystal."""
@@ -948,15 +784,12 @@ class molecular_crystal_1D(molecular_crystal):
         area=None,
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),
-        seed = None,
         sites = None,
     ):
         self.dim = 1
         self.area = area  # the effective cross-sectional area in A^2
         self.diag = False
         self.PBC = [0, 0, 1]  # The periodic axes of the crystal (1,2,3)->(x,y,z)
-        self.sg = None  # The international space group number, not rod groups
-        self.seed = None
         self.init_common(
             molecules,
             numMols,

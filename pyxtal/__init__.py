@@ -5,6 +5,11 @@ import numpy as np
 
 # PyXtal imports #avoid *
 from pyxtal.version import __version__
+from pyxtal.molecular_crystal import (
+    molecular_crystal,
+    molecular_crystal_2D,
+    molecular_crystal_1D,
+)
 from pyxtal.crystal import (
     random_cluster,
     random_crystal,
@@ -17,6 +22,7 @@ from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.lattice import Lattice
 from pyxtal.operations import apply_ops
 from pyxtal.tolerance import Tol_matrix
+from pyxtal.io import write_cif, structure_from_ext
 
 name = "pyxtal"
 
@@ -46,19 +52,29 @@ class pyxtal:
     Class for handling atomic crystals based on symmetry constraints. 
     """
 
-    def __init__(self):
+    def __init__(self, molecular=False):
         self.valid = False
+        self.molecular = molecular
+        self.diag = False
 
     def __str__(self):
         if self.valid:
             s = "------Crystal from {:s}------".format(self.source)
-            s += "\nComposition: {}".format(self.formula)
             s += "\nDimension: {}".format(self.dim)
-            s += "\nGroup: {} ({})".format(self.group.symbol, self.group.number)
+            s += "\nComposition: {}".format(self.formula)
+            if self.group.number in [7, 14, 15] and self.diag:
+                symbol = self.group.alias
+            else:
+                symbol = self.group.symbol
+            s += "\nGroup: {} ({})".format(symbol, self.group.number)
             s += "\n{}".format(self.lattice)
             s += "\nWyckoff sites:"
-            for wyc in self.atom_sites:
-                s += "\n\t{}".format(wyc)
+            if self.molecular:
+                for wyc in self.mol_sites:
+                    s += "\n\t{}".format(wyc)
+            else:
+                for wyc in self.atom_sites:
+                    s += "\n\t{}".format(wyc)
         else:
             s += "\nStructure not available."
         return s
@@ -82,32 +98,54 @@ class pyxtal:
         count = 0
         while True:
             count += 1
-            if dim == 3:
-                struc = random_crystal(group, species, numIons, factor, lattice, sites, tm)
-            elif dim == 2:
-                struc = random_crystal_2D(group, species, numIons, factor, thickness, lattice, sites, tm)
-            elif dim == 1:
-                struc = random_crystal_1D(group, species, numIons, factor, area, lattice, sites, tm)
+            if self.molecular:
+                if dim == 3:
+                    struc = molecular_crystal(group, species, numIons, factor, 
+                                            lattice=lattice, sites=sites, tm=tm)
+                elif dim == 2:
+                    struc = molecular_crystal_2D(group, species, numIons, factor, 
+                                            thickness=thickness, tm=tm)
+                elif dim == 1:
+                    struc = molecular_crystal_1D(group, species, numIons, factor, 
+                                                 area=area, sites=sites, tm=tm)
             else:
-                struc = random_cluster(group, species, numIons, factor, lattice, sites, tm)
+                if dim == 3:
+                    struc = random_crystal(group, species, numIons, factor, 
+                                           lattice, sites, tm)
+                elif dim == 2:
+                    struc = random_crystal_2D(group, species, numIons, factor, 
+                                              thickness, lattice, sites, tm)
+                elif dim == 1:
+                    struc = random_crystal_1D(group, species, numIons, factor, 
+                                              area, lattice, sites, tm)
+                else:
+                    struc = random_cluster(group, species, numIons, factor, 
+                                           lattice, sites, tm)
 
             if struc.valid:
                 self.valid = True
                 self.dim = dim
                 self.lattice = struc.lattice
-                self.numIons = struc.numIons
+                if self.molecular:
+                    self.numMols = struc.numMols
+                    self.molecules = struc.molecules
+                    self.mol_sites = struc.mol_sites
+                    self.diag = struc.diag
+                else:
+                    self.numIons = struc.numIons
+                    self.species = struc.species
+                    self.atom_sites = struc.atom_sites
                 self.group = struc.group
-                self.atom_sites = struc.atom_sites
                 self.PBC = struc.PBC
                 self.source = 'random'
-                self.formula = struc.formula
                 self.factor = struc.factor
                 self.number = struc.number
+                self.get_formula()
                 break
             if count >= 10:
                 raise RuntimeError("It takes long time to generate the structure, check inputs")
 
-    def from_seed(self, seed):
+    def from_seed(self, seed, molecule=None, relax_h=False):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
@@ -115,33 +153,58 @@ class pyxtal:
         from ase import Atoms
         from pymatgen import Structure
 
-        if isinstance(seed, dict):
-            self.from_dict()
-        elif isinstance(seed, Atoms): #ASE atoms
-            from pymatgen.io.ase import AseAtomsAdaptor
-            pmg_struc = AseAtomsAdaptor.get_structure(seed)
-            self.from_pymatgen(pmg_struc)
-        elif isinstance(seed, Structure): #Pymatgen
-            self.from_pymatgen(seed)
-        elif isinstance(seed, str):
-            pmg_struc = Structure.from_file(seed)
-            self.from_pymatgen(pmg_struc)
+        if self.molecular:
+            from pyxtal.molecule import pyxtal_molecule
+            pmol = pyxtal_molecule(molecule).mol
+            struc = structure_from_ext(seed, pmol, relax_h=relax_h)
+            if struc.match():
+                self.mol_sites = [struc.make_mol_site()]
+                self.group = Group(struc.wyc.number)
+                self.lattice = struc.lattice
+                self.molecules = [pyxtal_molecule(struc.molecule)]
+                self.numMols = struc.numMols
+                self.diag = struc.diag
+                self.valid = True # Need to add a check function
+            else:
+                raise ValueError("Cannot extract the molecular crystal from cif")
+        else:
+            if isinstance(seed, dict):
+                self.from_dict()
+            elif isinstance(seed, Atoms): #ASE atoms
+                from pymatgen.io.ase import AseAtomsAdaptor
+                pmg_struc = AseAtomsAdaptor.get_structure(seed)
+                self.from_pymatgen(pmg_struc)
+            elif isinstance(seed, Structure): #Pymatgen
+                self.from_pymatgen(seed)
+            elif isinstance(seed, str):
+                pmg_struc = Structure.from_file(seed)
+                self.from_pymatgen(pmg_struc)
 
-        formula = ""
-        for i, s in zip(self.numIons, self.species):
-            formula += "{:s}{:d}".format(s, int(i))
-        self.formula = formula
         self.factor = 1.0
         self.number = self.group.number
         self.source = 'Seed'
         self.dim = 3
         self.PBC = [1, 1, 1]
+        self.get_formula()
+
+    def get_formula(self):
+        formula = ""
+        if self.molecular:
+            numspecies = self.numMols
+            species = [str(mol) for mol in self.molecules]
+        else:
+            numspecies = self.numIons
+            species = self.species
+        for i, s in zip(numspecies, species):
+            formula += "{:s}{:d}".format(s, int(i))
+        self.formula = formula
 
     def from_pymatgen(self, structure):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         """
         from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
+
         self.valid = True
         try:
             # needs to do it twice in order to get the conventional cell
@@ -170,7 +233,8 @@ class pyxtal:
                 specie = site[0].specie.number
                 atom_sites.append(atom_site(wp, pos, specie))
             self.atom_sites = atom_sites
-            self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=self.group.lattice_type)
+            matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
+            self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
 
     def check_short_distances(self, r=0.7, exclude_H = True):
         """
@@ -220,13 +284,16 @@ class pyxtal:
 
             if fmt == "cif":
                 if self.dim == 3:
-                    from pyxtal.io import write_cif
                     return write_cif(self, filename, "from_pyxtal", permission)
                 else:
                     pmg_struc = self.to_pymatgen()
+                    if self.molecular:
+                        pmg_struc.sort()
                 return pmg_struc.to(fmt=fmt, filename=filename)
             else:
                 pmg_struc = self.to_pymatgen()
+                if self.molecular:
+                    pmg_struc.sort()
                 return pmg_struc.to(fmt=fmt, filename=filename)
         else:
             raise RuntimeError("Cannot create file: structure did not generate")
@@ -317,8 +384,12 @@ class pyxtal:
         """
         display the crystal structure
         """
-        from pyxtal.viz import display_atomic
-        return display_atomic(self, **kwargs)
+        if self.molecular:
+            from pyxtal.viz import display_molecular
+            return display_molecular(self, **kwargs)
+        else:
+            from pyxtal.viz import display_atomic
+            return display_atomic(self, **kwargs)
 
     def copy(self):
         """
@@ -326,7 +397,7 @@ class pyxtal:
         """
         return deepcopy(self)
 
-    def _get_coords_and_species(self, absolute=False):
+    def _get_coords_and_species(self, absolute=False, unitcell=True):
         """
         extract the coordinates and species information 
 
@@ -338,19 +409,28 @@ class pyxtal:
         """
         species = []
         total_coords = None
-        for site in self.atom_sites:
-            species.extend([site.specie]*site.multiplicity)
-            if total_coords is None:
-                total_coords = site.coords
-            else:
-                total_coords = np.append(total_coords, site.coords, axis=0)
-
-        if absolute:
-            return total_coords.dot(self.lattice.matrix), species
+        if self.molecular:
+            for site in self.mol_sites:
+                coords, site_species = site.get_coords_and_species(absolute, unitcell=unitcell)
+                species.extend(site_species)
+                if total_coords is None:
+                    total_coords = coords
+                else:
+                    total_coords = np.append(total_coords, coords, axis=0)
         else:
-            return total_coords, species
+            for site in self.atom_sites:
+                species.extend([site.specie]*site.multiplicity)
+                if total_coords is None:
+                    total_coords = site.coords
+                else:
+                    total_coords = np.append(total_coords, site.coords, axis=0)
 
-    def to_ase(self):
+            if absolute:
+                total_coords = total_coords.dot(self.lattice.matrix)
+        
+        return total_coords, species
+
+    def to_ase(self, resort=True):
         """
         export to ase Atoms object
         """
@@ -358,10 +438,18 @@ class pyxtal:
         if self.valid:
             if self.dim > 0:
                 lattice = self.lattice.copy()
-                coords, species = self._get_coords_and_species()
-                # Add space above and below a 2D or 1D crystals
-                latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
-                return Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
+                if self.molecular:
+                    coords, species = self._get_coords_and_species(True)
+                    latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
+                    atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
+                    if resort:
+                        permutation = np.argsort(atoms.numbers)
+                        atoms = atoms[permutation]
+                    return atoms
+                else:
+                    coords, species = self._get_coords_and_species()
+                    latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
+                    return Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
             else:
                 coords, species = self._get_coords_and_species(True)
                 return Atoms(species, positions=coords)
@@ -388,4 +476,9 @@ class pyxtal:
         else:
             raise RuntimeError("No valid structure can be converted to pymatgen.")
 
+    def get_XRD(self):
+        """
+        compute the PXRD
+        """
 
+        raise NotImplementedError
