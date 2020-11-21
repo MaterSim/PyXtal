@@ -297,11 +297,11 @@ class random_crystal:
                             if n[p] == 0 and p == p2:
                                 p2 = p + 1
                             break
-        # All species passed: return True
-        if has_freedom is True:
+        if has_freedom:
+            # All species passed: return True
             return True
-        # All species passed, but no degrees of freedom: return 0
-        elif has_freedom is False:
+        else:
+            # All species passed, but no degrees of freedom: return 0
             return 0
     
     def check_consistency(self, site, numIon):

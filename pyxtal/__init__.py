@@ -23,6 +23,7 @@ from pyxtal.lattice import Lattice
 from pyxtal.operations import apply_ops
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.io import write_cif, structure_from_ext
+from pyxtal.XRD import XRD
 
 name = "pyxtal"
 
@@ -380,17 +381,6 @@ class pyxtal:
         
         return new_struc
 
-    def show(self, **kwargs):
-        """
-        display the crystal structure
-        """
-        if self.molecular:
-            from pyxtal.viz import display_molecular
-            return display_molecular(self, **kwargs)
-        else:
-            from pyxtal.viz import display_atomic
-            return display_atomic(self, **kwargs)
-
     def copy(self):
         """
         simply copy the structure
@@ -476,9 +466,27 @@ class pyxtal:
         else:
             raise RuntimeError("No valid structure can be converted to pymatgen.")
 
-    def get_XRD(self):
+    def get_XRD(self, **kwargs):
         """
-        compute the PXRD
+        compute the PXRD object
+        ** kwargs include
+            - wavelength (1.54184)
+            - thetas [0, 180]
+            - preferred_orientation: False
+            - march_parameter: None
         """
 
-        raise NotImplementedError
+        return XRD(self.to_ase(), **kwargs)
+
+    def show(self, **kwargs):
+        """
+        display the crystal structure
+        """
+        if self.molecular:
+            from pyxtal.viz import display_molecular
+            return display_molecular(self, **kwargs)
+        else:
+            from pyxtal.viz import display_atomic
+            return display_atomic(self, **kwargs)
+
+

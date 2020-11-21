@@ -1,22 +1,16 @@
+"""
+Module for XRD simulation (experimental stage)
+"""
 import numpy as np
 import numba as nb
-import matplotlib.pyplot as plt
-import json
 import os
 import collections
-from pyxtal.database.element import Element
 from scipy import interpolate
+from monty.serialization import loadfn
+from pkg_resources import resource_filename
+from pyxtal.database.element import Element
 
-def create_index():
-    hkl_index = []
-    for i in [-1,0,1]:
-        for j in [-1,0,1]:
-            for k in [-1,0,1]:
-                hkl = np.array([i,j,k])
-                if sum(hkl*hkl)>0:
-                    hkl_index.append(hkl)
-    hkl_index = np.array(hkl_index).reshape([len(hkl_index), 3])
-    return hkl_index           
+ATOMIC_SCATTERING_PARAMS = loadfn(resource_filename("pyxtal", "database/atomic_scattering_params.json"))
 
 class XRD(object):
 
@@ -24,17 +18,17 @@ class XRD(object):
                  thetas = [0, 180], 
                  preferred_orientation = False, march_parameter = None):
        
-        """ a class to compute the powder XRD.
+        """ 
+        a class to compute the powder XRD.
         
         Args:
-        ----------
-        crystal: ase atoms object
-        wavelength: float 
-        max2theta: float
-        preferred_orientation: boolean
-        march_parameter: float
+            crystal: ase atoms object
+            wavelength: float 
+            max2theta: float
+            preferred_orientation: boolean
+            march_parameter: float
         """
-        self.profiling = None
+
         self.wavelength = wavelength
         self.min2theta = np.radians(thetas[0])
         self.max2theta = np.radians(thetas[1])
@@ -45,17 +39,17 @@ class XRD(object):
         self.intensity(crystal)
         self.pxrdf()     
         
+    def __str__(self):
+        return self.by_hkl()
 
-    def get_profile(self, method='gaussian', res=0.01, user_kwargs=None):
-        self.spectra = Profile(method, res, user_kwargs).get_profile(self.theta2, \
-                        self.xrd_intensity, \
-                        np.degrees(self.min2theta), np.degrees(self.max2theta))
+    def __repr__(self):
+        return str(self)
 
     def by_hkl(self, hkl=None):
-        
-        # this is a simple print statement, does not need to be optimized
-
-        """ d for any give abitray [h,k,l] index """
+        """ 
+        d for any give abitray [h,k,l] index 
+        """
+        s = ""
         if hkl is None:
             id1 = self.hkl_labels
             seqs = range(len(id1))
@@ -67,25 +61,28 @@ class XRD(object):
                     seqs = [id]
 
         if seqs is not None:
-           print('  2theta     d_hkl     hkl       Intensity  Multi')
+           s += '  2theta     d_hkl     hkl       Intensity  Multi\n'
            for i in seqs:
-               print('{:8.3f}  {:8.3f}   [{:2d} {:2d} {:2d}] {:8.2f} {:8d}'.format(\
-                       self.theta2[i], self.d_hkls[i], \
-                       self.hkl_labels[i][0]["hkl"][0], \
-                       self.hkl_labels[i][0]["hkl"][1], \
-                       self.hkl_labels[i][0]["hkl"][2], \
-                       100*self.xrd_intensity[i]/max(self.xrd_intensity),
-                       self.hkl_labels[i][0]["multiplicity"]))
+               s += "{:8.3f}  {:8.3f}   ".format(self.theta2[i], self.d_hkls[i])
+               s += "[{:2d} {:2d} {:2d}]".format(*self.hkl_labels[i][0]["hkl"])
+               s += " {:8.2f} ".format(100*self.xrd_intensity[i]/max(self.xrd_intensity))
+               s += "{:8d}\n".format(self.hkl_labels[i][0]["multiplicity"])
         else:
-            print('This hkl is not in the given 2theta range')
+            s += 'This hkl is not in the given 2theta range'
+
+        return s
     
     def all_dhkl(self, crystal):
-        """ 3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)"""
+        """ 
+        3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)
+        """
+
         rec_matrix = crystal.get_reciprocal_cell()
         d_min = self.wavelength/np.sin(self.max2theta/2)/2
 
         # This block is to find the shortest d_hkl, 
         # for all basic directions (1,0,0), (0,1,0), (1,1,0), (1,-1,0) 
+
         hkl_index = create_index()
         hkl_max = np.array([1,1,1])
 
@@ -123,9 +120,6 @@ class XRD(object):
         This scheme is based off of pymatgen
         Needs improvement from different correction factors.
         """
-        fp = os.path.join(os.path.dirname(__file__), "database/atomic_scattering_params.json")
-        with open(fp, 'r') as f:
-            ATOMIC_SCATTERING_PARAMS = json.load(f)
 
         d0 = (1/2/self.d_hkl)**2
 
@@ -148,7 +142,6 @@ class XRD(object):
         # self.march_parameter = 1
         TWO_THETA_TOL = 1e-5 # tolerance to find repeating angles
         SCALED_INTENSITY_TOL = 1e-5 # threshold for intensities
-        
 
         for hkl, s2, theta, d_hkl in zip(self.hkl_list, d0, self.theta, self.d_hkl):
             
@@ -188,7 +181,7 @@ class XRD(object):
 
         # obtain important intensities (defined by SCALED_INTENSITY_TOL)
         # and corresponding 2*theta, hkl plane + multiplicity, and d_hkl
-        # print(peaks.keys())
+        
         max_intensity = max([v[0] for v in self.peaks.values()])
         x = []
         y = []
@@ -237,34 +230,7 @@ class XRD(object):
         PL = (np.array(PL))
         PL[:,-1] = PL[:,-1]/max(PL[:,-1])
         self.pxrd = PL
-        # print(PL[0],PL[-1])
     
-    def plot_pxrd(self, filename=None, minimum_I = 0.01, show_hkl=True):
-        """ plot PXRD """
-
-        plt.figure(figsize=(20,10))
-
-        dx = np.degrees(self.max2theta)
-        for i in self.pxrd:
-            plt.bar(i[0],i[-1], color='b', width=dx/180)
-            if i[-1] > minimum_I:
-               if show_hkl:
-                  label = self.draw_hkl(i[2:5])
-                  plt.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
-        
-        ax=plt.gca()
-        plt.grid()
-        plt.xlim(0,dx)
-        plt.xlabel('2θ')
-        plt.ylabel('Intensity')
-        plt.title('PXRD of '+self.name+ ', $\lambda$='+str(self.wavelength)+'$\AA$')
-        
-        if filename is None:
-           plt.show()
-        else:
-           plt.savefig(filename)
-           plt.close()
-
     def get_unique_families(self,hkls):
         """
         Returns unique families of Miller indices. Families must be permutations
@@ -300,7 +266,10 @@ class XRD(object):
 
     @staticmethod
     def draw_hkl(hkl):
-        """turn negative numbers in hkl to overbar"""
+        """
+        turn negative numbers in hkl to overbar
+        """
+
         hkl_str= []
         for i in hkl:
             if i<0:
@@ -312,7 +281,37 @@ class XRD(object):
 
         return hkl_str
 
-    def plotly_pxrd(self, minimum_I = 0.01, html=None):
+    def plot_pxrd(self, filename=None, minimum_I = 0.01, show_hkl=True):
+        """ 
+        plot PXRD 
+        """
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=(20,10))
+
+        dx = np.degrees(self.max2theta)
+        for i in self.pxrd:
+            plt.bar(i[0],i[-1], color='b', width=dx/180)
+            if i[-1] > minimum_I:
+               if show_hkl:
+                  label = self.draw_hkl(i[2:5])
+                  plt.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
+        
+        ax=plt.gca()
+        plt.grid()
+        plt.xlim(0,dx)
+        plt.xlabel('2θ')
+        plt.ylabel('Intensity')
+        plt.title('PXRD of '+self.name+ ', $\lambda$='+str(self.wavelength)+'$\AA$')
+        
+        if filename is None:
+           plt.show()
+        else:
+           plt.savefig(filename)
+           plt.close()
+
+
+    def plotly_pxrd(self, profile=None, minimum_I = 0.01, html=None):
         import plotly.graph_objects as go
         from plotly.subplots import make_subplots
 
@@ -323,23 +322,27 @@ class XRD(object):
         html: html filename (str)
         """
 
-        
         x, y, labels = [], [], []
         for i in range(len(self.pxrd)):
             theta2, d, h, k, l, I = self.pxrd[i]
             h, k, l = int(h), int(k), int(l)
             if I > minimum_I:
-                label = '<br>2&#952;: {:6.2f}<br>d: {:6.4f}<br>I: {:6.4f}</br>hkl: ({:d}{:d}{:d})'.format(theta2, d, I, h, k, l)
+                label = '<br>2&#952;: {:6.2f}<br>d: {:6.4f}<br>'.format(theta2, d)
+                label += 'I: {:6.4f}</br>hkl: ({:d}{:d}{:d})'.format(I, h, k, l)
                 x.append(theta2)
                 y.append(-0.1)
                 labels.append(label)
 
         trace1 = go.Bar(x=x, y=y, text=labels,
                         hovertemplate = "%{text}",
-                        width=0.2, name='Index')
-        trace2 = go.Scatter(x=self.spectra[0], y=self.spectra[1], name='Profile')
+                        width=0.5, name='hkl indices')
+        if profile is None:
+            fig = go.Figure(data=[trace1])
+        else:
+            spectra = self.get_profile(method=profile)
+            trace2 = go.Scatter(x=spectra[0], y=spectra[1], name='Profile: ' + profile)
+            fig = go.Figure(data=[trace2, trace1])
 
-        fig = go.Figure(data=[trace2, trace1])
         fig.update_layout(xaxis_title = '2&#952; ({:.4f} &#8491;)'.format(self.wavelength),
                           yaxis_title = 'Intensity',
                           title = 'PXRD of '+self.name)
@@ -354,68 +357,13 @@ class XRD(object):
             return fig
 
 
-"""
-Profile functions
-"""
+    def get_profile(self, method='gaussian', res=0.01, user_kwargs=None):
 
-@nb.njit(nb.f8[:](nb.f8[:], nb.f8, nb.f8, nb.f8, nb.f8, nb.i8), cache = True)
-def mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N):
-    
-    """
-    A modified split-type pseudo-Voigt function for profiling peaks
-    - Izumi, F., & Ikeda, T. (2000). 
-    """
-    
-    tmp = np.zeros((N))
-    for xi, dx in enumerate(x):
-        if dx < 0:
-            A = A
-            eta_l = eta_l
-            eta_h = eta_h
-        else:
-            A = 1/A
-            eta_l = eta_h
-            eta_h = eta_l
-
-        tmp[xi] = ((1+A)*(eta_h + np.sqrt(np.pi*np.log(2))*(1-eta_h))) /\
-            (eta_l + np.sqrt(np.pi*np.log(2)) * (1-eta_l) + A*(eta_h +\
-            np.sqrt(np.pi*np.log(2))*(1-eta_h))) * (eta_l*2/(np.pi*fwhm) *\
-            (1+((1+A)/A)**2 * (dx/fwhm)**2)**(-1) + (1-eta_l)*np.sqrt(np.log(2)/np.pi) *\
-            2/fwhm *np.exp(-np.log(2) * ((1+A)/A)**2 * (dx/fwhm)**2))
-    return tmp
-
-@nb.njit(nb.f8[:](nb.f8, nb.f8[:], nb.f8), cache = True)
-def gaussian(theta2, alpha, fwhm):
-
-    """
-    Gaussian function for profiling peaks
-    """
-
-    tmp = ((alpha - theta2)/fwhm)**2
-    return np.exp(-4*np.log(2)*tmp)
-
-@nb.njit(nb.f8[:](nb.f8, nb.f8[:], nb.f8), cache = True)
-def lorentzian(theta2, alpha, fwhm):
-
-    """
-    Lorentzian function for profiling peaks
-    """
-
-    tmp = 1 + 4*((alpha - theta2)/fwhm)**2
-    return 1/tmp
-
-def pseudo_voigt(theta2, alpha, fwhm, eta):
-
-    """
-    Original Pseudo-Voigt function for profiling peaks
-    - Thompson, D. E. Cox & J. B. Hastings (1986). 
-    """
-    
-    L = lorentzian(theta2, alpha, fwhm)
-    G = gaussian(theta2, alpha, fwhm)
-    return eta * L + (1 - eta) * G
+        return Profile(method, res, user_kwargs).get_profile(self.theta2, \
+                self.xrd_intensity, np.degrees(self.min2theta), np.degrees(self.max2theta))
 
 
+# ----------------------------- Profile functions ------------------------------
 
 class Profile:
 
@@ -526,14 +474,13 @@ class Profile:
         return self.spectra
 
 
+# ------------------------------ Similarity between two XRDs ---------------------------------
 class Similarity(object):
-    """
-    Class to compute the similarity between two diffraction patterns
-    """
 
     def __init__(self, f, g, N = None, x_range = None, l = 2.0, weight = 'cosine'):
         
         """
+        Class to compute the similarity between two diffraction patterns
         Args:
 
         f: spectra1 (2D array)
@@ -543,104 +490,58 @@ class Similarity(object):
         l: cutoff value for shift (real)
         weight: weight function 'triangle' or 'cosine' (str)
         """
-        self.fx, self.fy = f[0], f[1]
-        self.gx, self.gy = g[0], g[1]
+
+        fx, fy = f[0], f[1]
+        gx, gy = g[0], g[1]
         self.x_range = x_range
         self.l = abs(l)
-        res1 = (self.fx[-1] - self.fx[0])/len(self.fx)
-        res2 = (self.gx[-1] - self.gx[0])/len(self.gx)
+        res1 = (fx[-1] - fx[0])/len(fx)
+        res2 = (gx[-1] - gx[0])/len(gx)
         self.resolution = min([res1, res2])/3 # improve the resolution
+
         if N is None:
             self.N = int(2*self.l/self.resolution)
         else: 
             self.N = N
         self.r = np.linspace(-self.l, self.l, self.N)
 
-        self.preprocess()
-        self.weight = weight
-        if self.weight == 'triangle':
-            self.triangleFunction()
-        elif self.weight == 'cosine':
-            self.cosineFunction()
-        else:
-            msg = function + 'is not supported'
-            raise NotImplementedError(msg)
-
-
-    def calculate(self):
-        self.S = self._calculate(self.r,self.w,self.d,self.Npts,self.fy,self.gy)
-
-        return self.S
-    
-    @staticmethod
-    @nb.njit(nb.f8(nb.f8[:], nb.f8[:], nb.f8, nb.i8, nb.f8[:], nb.f8[:]), nopython=True)
-    def _calculate(r,w,d,Npts,fy,gy):
-        
-        """
-        Compute the similarity between the pair of spectra f, g
-        with an approximated Simpson rule
-        """
-
-        xCorrfg_w = 0
-        aCorrff_w = 0
-        aCorrgg_w = 0
-        count0 = 0
-        count = 0
-        for r0, w0 in zip(r, w):
-            Corrfg, Corrff, Corrgg = 0, 0, 0
-            for i in range(Npts):
-                shift = int(round(r0/d))
-                if 0 <= i + shift <= Npts-1:
-                    if count == 0:
-                        coef = 1/3
-                    elif count %2 == 1:
-                        coef = 4/3
-                    else:
-                        coef = 2/3
-
-                    count += 1
-                    Corrfg += coef*fy[i]*gy[i+shift]
-                    Corrff += coef*fy[i]*fy[i+shift]
-                    Corrgg += coef*gy[i]*gy[i+shift]
-
-
-            if count0 == 0:
-                 coef = 1/3
-            elif count0 %2 == 1:
-                 coef = 4/3
-            else:
-                 coef = 2/3
-
-            count0 += 1
-            xCorrfg_w += coef*w0*Corrfg 
-            aCorrff_w += coef*w0*Corrff
-            aCorrgg_w += coef*w0*Corrgg
-
-        return np.abs(xCorrfg_w / np.sqrt(aCorrff_w * aCorrgg_w))
-
-
-    def preprocess(self):
-
-        """
-        Preprocess the input spectra f and g
-        """
-        if self.x_range == None:
-            x_min = max(np.min(self.fx), np.min(self.gx))
-            x_max = min(np.max(self.fx), np.max(self.gx))
+        #self.preprocess(fx, fy, gx, gy)
+        if self.x_range == None: #get the overlap
+            x_min = max(np.min(fx), np.min(gx))
+            x_max = min(np.max(fx), np.max(gx))
             self.x_range = [x_min,x_max]
         else:
             x_min, x_max = self.x_range[0], self.x_range[1]
 
-        f_inter = interpolate.interp1d(self.fx, self.fy, 'cubic', fill_value = 'extrapolate')
-        g_inter = interpolate.interp1d(self.gx, self.gy, 'cubic', fill_value = 'extrapolate')
+        f_inter = interpolate.interp1d(fx, fy, 'cubic', fill_value = 'extrapolate')
+        g_inter = interpolate.interp1d(gx, gy, 'cubic', fill_value = 'extrapolate')
 
         fgx_new = np.linspace(x_min, x_max, int((x_max-x_min)/self.resolution)+1)
         fy_new = f_inter(fgx_new)
         gy_new = g_inter(fgx_new)
 
-        self.fx, self.fy, self.gy = fgx_new, fy_new, gy_new
-        self.Npts = len(self.fx)
-        self.d = (self.fx[-1] - self.fx[0])/self.Npts
+        self.fx, self.gx, self.fy, self.gy = fgx_new, fgx_new, fy_new, gy_new
+        self.weight = weight
+        if self.weight == 'triangle':
+            w = self.triangleFunction()
+        elif self.weight == 'cosine':
+            w = self.cosineFunction()
+        else:
+            msg = function + 'is not supported'
+            raise NotImplementedError(msg)
+
+        Npts = len(self.fx)
+        d = (self.fx[-1] - self.fx[0])/Npts
+
+        self.S = similarity_calculate(self.r, w, d, Npts, self.fy, self.gy)
+    
+
+    def __str__(self):
+        s = "The similarity between two PXRDs is {:.f}".format(self.S)
+        return s
+
+    def __repr__(self):
+        return str(self)
 
     def triangleFunction(self):
         
@@ -657,7 +558,7 @@ class Similarity(object):
                 w[i] = tf(r,l)
             else:
                 w[i] = 0
-        self.w = w
+        return w
 
     def cosineFunction(self):
 
@@ -674,19 +575,146 @@ class Similarity(object):
                 w[i] = tf(r,l)
             else:
                 w[i] = 0
-        self.w = w
+        return w
 
-    def showPlot(self):
+    def show(self, filename=None, labels=["struc1", "struc2"]):
+
+        """
+        show the comparison plot
+        """
+        import matplotlib.pyplot as plt
+
         fig1 = plt.figure(1,figsize=(15,6))
-        frame1=fig1.add_axes((.1,.3,.8,.6))
+        frame1 = fig1.add_axes((.1,.3,.8,.6))
     
-        plt.plot(self.fx,self.fy,label='pxrd')
-        plt.plot(self.gx,-self.gy,label='vesta')
+        plt.plot(self.fx, self.fy, label=labels[0])
+        plt.plot(self.fx, -self.gy, label=labels[1])
         plt.legend()
-        #Residual plot
+
+        # Residual plot
         residuals = self.gy-self.fy
-        frame2=fig1.add_axes((.1,.1,.8,.2))        
-        plt.plot(self.gx,residuals,'.r', markersize = 0.5)
+        frame2 = fig1.add_axes((.1,.1,.8,.2))        
+        plt.plot(self.gx, residuals, '.r', markersize = 0.5)
         plt.title("{:6f}".format(self.S))
-        plt.show()
+
+        if filename is None:
+           plt.show()
+        else:
+           plt.savefig(filename)
+           plt.close()
+
+@nb.njit(nb.f8[:](nb.f8[:], nb.f8, nb.f8, nb.f8, nb.f8, nb.i8), cache = True)
+def mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N):
+    
+    """
+    A modified split-type pseudo-Voigt function for profiling peaks
+    - Izumi, F., & Ikeda, T. (2000). 
+    """
+    
+    tmp = np.zeros((N))
+    for xi, dx in enumerate(x):
+        if dx < 0:
+            A = A
+            eta_l = eta_l
+            eta_h = eta_h
+        else:
+            A = 1/A
+            eta_l = eta_h
+            eta_h = eta_l
+
+        tmp[xi] = ((1+A)*(eta_h + np.sqrt(np.pi*np.log(2))*(1-eta_h))) /\
+            (eta_l + np.sqrt(np.pi*np.log(2)) * (1-eta_l) + A*(eta_h +\
+            np.sqrt(np.pi*np.log(2))*(1-eta_h))) * (eta_l*2/(np.pi*fwhm) *\
+            (1+((1+A)/A)**2 * (dx/fwhm)**2)**(-1) + (1-eta_l)*np.sqrt(np.log(2)/np.pi) *\
+            2/fwhm *np.exp(-np.log(2) * ((1+A)/A)**2 * (dx/fwhm)**2))
+    return tmp
+
+@nb.njit(nb.f8[:](nb.f8, nb.f8[:], nb.f8), cache = True)
+def gaussian(theta2, alpha, fwhm):
+
+    """
+    Gaussian function for profiling peaks
+    """
+
+    tmp = ((alpha - theta2)/fwhm)**2
+    return np.exp(-4*np.log(2)*tmp)
+
+@nb.njit(nb.f8[:](nb.f8, nb.f8[:], nb.f8), cache = True)
+def lorentzian(theta2, alpha, fwhm):
+
+    """
+    Lorentzian function for profiling peaks
+    """
+
+    tmp = 1 + 4*((alpha - theta2)/fwhm)**2
+    return 1/tmp
+
+def pseudo_voigt(theta2, alpha, fwhm, eta):
+
+    """
+    Original Pseudo-Voigt function for profiling peaks
+    - Thompson, D. E. Cox & J. B. Hastings (1986). 
+    """
+    
+    L = lorentzian(theta2, alpha, fwhm)
+    G = gaussian(theta2, alpha, fwhm)
+    return eta * L + (1 - eta) * G
+
+@nb.njit(nb.f8(nb.f8[:], nb.f8[:], nb.f8, nb.i8, nb.f8[:], nb.f8[:]))
+def similarity_calculate(r, w, d, Npts, fy, gy):
+
+    """
+    Compute the similarity between the pair of spectra f, g
+    with an approximated Simpson rule
+    """
+
+    xCorrfg_w = 0
+    aCorrff_w = 0
+    aCorrgg_w = 0
+    count0 = 0
+    count = 0
+    for r0, w0 in zip(r, w):
+        Corrfg, Corrff, Corrgg = 0, 0, 0
+        for i in range(Npts):
+            shift = int(round(r0/d))
+            if 0 <= i + shift <= Npts-1:
+                if count == 0:
+                    coef = 1/3
+                elif count %2 == 1:
+                    coef = 4/3
+                else:
+                    coef = 2/3
+
+                count += 1
+                Corrfg += coef*fy[i]*gy[i+shift]
+                Corrff += coef*fy[i]*fy[i+shift]
+                Corrgg += coef*gy[i]*gy[i+shift]
+
+
+        if count0 == 0:
+             coef = 1/3
+        elif count0 %2 == 1:
+             coef = 4/3
+        else:
+             coef = 2/3
+
+        count0 += 1
+        xCorrfg_w += coef*w0*Corrfg 
+        aCorrff_w += coef*w0*Corrff
+        aCorrgg_w += coef*w0*Corrgg
+
+    return np.abs(xCorrfg_w / np.sqrt(aCorrff_w * aCorrgg_w))
+
+
+def create_index():
+    hkl_index = []
+    for i in [-1,0,1]:
+        for j in [-1,0,1]:
+            for k in [-1,0,1]:
+                hkl = np.array([i,j,k])
+                if sum(hkl*hkl)>0:
+                    hkl_index.append(hkl)
+    hkl_index = np.array(hkl_index).reshape([len(hkl_index), 3])
+    return hkl_index           
+
 
