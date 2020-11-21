@@ -51,6 +51,7 @@ setup(
         "networkx>=2.3",
         "py3Dmol>=0.8.0",
         'ase>=3.18.0',
+        'numba>=0.50.1',
         #"openbabel>=3.0.0",
     ],
     python_requires=">=3.6.1",
