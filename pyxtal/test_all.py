@@ -299,7 +299,14 @@ class TestPXRD(unittest.TestCase):
         p2 = xrd2.get_profile()
         s = Similarity(p1, p2, x_range=[15, 90])
         self.assertTrue( 0.9 <s.S <1.001)
-        
+     
+
+        C2.apply_perturbation(1e-3, 1e-3)
+        xrd3 = C2.get_XRD()
+        p3 = xrd3.get_profile()
+        s = Similarity(p1, p2, x_range=[15, 90])
+        self.assertTrue( 0.95 <s.S <1.001)
+
 # class TestOperation(unittest.TestCase):
 # class TestIO(unittest.TestCase):
 

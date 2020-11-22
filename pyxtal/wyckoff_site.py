@@ -226,7 +226,7 @@ class mol_site:
         matrix = self.get_principle_axes(coord0, True)
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
 
-    def perturbate(self, eps=1.0):
+    def perturbate(self, eps=1e-3):
         """
         Random perturbation of the molecular site
         """
@@ -616,11 +616,11 @@ class atom_site:
     def __repr__(self):
         return str(self)
 
-    def perturbate(self, eps=0.05):
+    def perturbate(self, eps=1e-2):
         """
         Random perturbation of the site
         """
-        pos = site.position + eps*(np.random.sample(3) - 0.5)
+        pos = self.position + eps*(np.random.sample(3) - 0.5)
         self.update(pos)
  
     def update(self, pos):

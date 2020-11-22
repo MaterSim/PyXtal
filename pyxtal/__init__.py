@@ -381,6 +381,25 @@ class pyxtal:
         
         return new_struc
 
+    def apply_perturbation(self, d_coor=0.05, d_lat=0.05):
+        """
+        perturb the structure without breaking the symmetry
+
+        Args:
+            d_coor: magnitude of perturbation on atomic coordinates
+            d_lat: magnitude of perturbation on lattice
+        """
+
+        if self.molecular:
+            for i, site in enumerate(self.mol_sites):
+                site.perturbate(eps=d_coor)
+        else:
+            for i, site in enumerate(self.atom_sites):
+                site.perturbate(eps=d_coor)
+
+        self.lattice = self.lattice.mutate(degree=d_lat)
+        self.source = 'Perturbation'
+
     def copy(self):
         """
         simply copy the structure
@@ -489,4 +508,37 @@ class pyxtal:
             from pyxtal.viz import display_atomic
             return display_atomic(self, **kwargs)
 
-
+#    def save(self, filename=None):
+#        """
+#        Save the structure
+#        Args:
+#            filename: the file to save txt information
+#        """
+#        dict0 = self.save_dict(db_filename)
+#        with open(filename, "w") as fp:
+#            json.dump(dict0, fp)
+#
+#        print("save the GP model to", filename, "and database to", db_filename)
+#
+#    def load(self, filename=None):
+#        """
+#        load the structure
+#        Args:
+#            filename: the file to save txt information
+#        """
+#        #print(filename)
+#        with open(filename, "r") as fp:
+#            dict0 = json.load(fp)
+#        self.load_from_dict(dict0, N_max=N_max, device=device)
+#        self.fit(opt=opt)
+#        print("load the GP model from ", filename)
+#
+#    def save_dict(self):
+#        """
+#        save the model as a dictionary in json
+#        """
+#        return dict0
+#
+#
+#    def load_dict(self, dict0):
+        
