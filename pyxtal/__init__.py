@@ -17,7 +17,7 @@ from pyxtal.crystal import (
     random_crystal_2D,
 )
 from pyxtal.symmetry import Group, Wyckoff_position
-from pyxtal.wyckoff_site import atom_site
+from pyxtal.wyckoff_site import atom_site, mol_site
 from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.lattice import Lattice
 from pyxtal.operations import apply_ops
@@ -109,6 +109,8 @@ class pyxtal:
         self.valid = False
         self.molecular = molecular
         self.diag = False
+        self.numIons = None
+        self.numMols = None
 
     def __str__(self):
         if self.valid:
@@ -129,7 +131,7 @@ class pyxtal:
                 for wyc in self.atom_sites:
                     s += "\n\t{}".format(wyc)
         else:
-            s += "\nStructure not available."
+            s = "\nStructure not available."
         return s
 
     def __repr__(self):
@@ -146,8 +148,13 @@ class pyxtal:
         area = None,
         lattice=None,
         sites = None,
-        tm=Tol_matrix(prototype="atomic"),
     ):
+        if self.molecular:
+            prototype = "molecular"
+        else:
+            prototype = "atomic"
+        tm = Tol_matrix(prototype=prototype)
+
         count = 0
         while True:
             count += 1
@@ -584,12 +591,58 @@ class pyxtal:
 #        self.fit(opt=opt)
 #        print("load the GP model from ", filename)
 #
-#    def save_dict(self):
-#        """
-#        save the model as a dictionary in json
-#        """
-#        return dict0
-#
-#
-#    def load_dict(self, dict0):
-        
+    def save_dict(self):
+        """
+        save the model as a dictionary
+        """
+        sites = []
+        if self.molecular:
+            pass
+            #for site in self.mol_sites:
+            #    sites.append(site.save_dict())
+        else:
+            for site in self.atom_sites:
+                sites.append(site.save_dict())
+
+        dict0 = {"lattice": self.lattice.matrix,
+                 "sites": sites,
+                 "group": self.group.number,
+                 "molecular": self.molecular,
+                 "numIons": self.numIons,
+                 "numMols": self.numMols,
+                 "factor": self.factor,
+                 "PBC": self.PBC,
+                 "formula": self.formula,
+                 "source": self.source,
+                 "dim": self.dim,
+                 "valid": self.valid,
+                }
+       
+        return dict0
+
+    def load_dict(self, dict0):
+        """
+        load the structure from a dictionary
+        """
+        self.group = Group(dict0["group"])
+        self.lattice = Lattice.from_matrix(dict0["lattice"], ltype=self.group.lattice_type)
+        self.molecular = dict0["molecular"]
+        self.number = self.group.number
+        self.factor = dict0["factor"]
+        self.source = dict0["source"]
+        self.dim = dict0["dim"]
+        self.PBC = dict0["PBC"]
+        self.numIons = dict0["numIons"]
+        self.numMols = dict0["numMols"]
+        self.valid = dict0["valid"]
+        self.formula = dict0["formula"]
+        sites = []
+        if dict0["molecular"]:
+            pass
+            #for site in dict0["sites"]:
+            #    sites.append(mol_sites(site_dict=site))
+        else:
+            for site in dict0["sites"]:
+                sites.append(atom_site(site_dict=site))
+            self.atom_sites = sites
+

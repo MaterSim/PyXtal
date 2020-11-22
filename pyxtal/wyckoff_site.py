@@ -20,7 +20,7 @@ from pyxtal.operations import (
     filtered_coords, 
     create_matrix,
 )
-from pyxtal.symmetry import Group, jk_from_i
+from pyxtal.symmetry import Group, jk_from_i, Wyckoff_position
 from pyxtal.symmetry import ss_string_from_ops as site_symm
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg
@@ -346,7 +346,6 @@ class mol_site:
             #print(self.mol.to(fmt='xyz'))
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
-        
    
     def _find_gen_wyckoff_in_subgroup(self, groups=None):
         """
@@ -594,13 +593,17 @@ class atom_site:
         specie: an Element, element name or symbol, or atomic number of the atom
     """
 
-    def __init__(self, wp, coordinate, specie=1):
-        self.position = np.array(coordinate)
-        self.specie = Element(specie).short_name
-        self.multiplicity = wp.multiplicity
-        self.wp = wp
-        self.PBC = wp.PBC
-        self.update(coordinate)
+    def __init__(self, wp=None, coordinate=None, specie=1, site_dict=None):
+        if site_dict is None:
+            self.position = np.array(coordinate)
+            self.specie = Element(specie).short_name
+            self.wp = wp
+        else:
+            self.load_dict(site_dict)
+
+        self.PBC = self.wp.PBC
+        self.multiplicity = self.wp.multiplicity
+        self.update()
 
     def __str__(self):
         if not hasattr(self, "site_symm"):
@@ -616,6 +619,29 @@ class atom_site:
     def __repr__(self):
         return str(self)
 
+    def save_dict(self):
+        dict0 = {"position": self.position,
+                 "specie": self.specie,
+                 "number": self.wp.number,
+                 "dim": self.wp.dim,
+                 "index": self.wp.index,
+                 "PBC": self.wp.PBC,
+                }
+        return dict0
+
+    def load_dict(self, dicts):
+        """
+        load the sites from a dictionary
+        """
+        g = dicts["number"]
+        index = dicts["index"]
+        dim = dicts["dim"]
+        PBC = dicts["PBC"]
+        self.position = dicts["position"]
+        self.specie = dicts["specie"]
+        self.wp = Wyckoff_position.from_group_and_index(g, index, dim, PBC)
+
+
     def perturbate(self, eps=1e-2):
         """
         Random perturbation of the site
@@ -623,10 +649,12 @@ class atom_site:
         pos = self.position + eps*(np.random.sample(3) - 0.5)
         self.update(pos)
  
-    def update(self, pos):
+    def update(self, pos=None):
         """
         Used to generate coords from self.position
         """
+        if pos is None:
+            pos = self.position
         self.coords = apply_ops(pos, self.wp) 
         self.position = self.coords[0]
 
@@ -693,7 +721,7 @@ def WP_merge(pt, lattice, wp, tol, orientations=None):
 
     Returns:
         pt: 3-vector after merge
-        wp: a pyxtal.symmetry.Wyckoff_position object, If no matching WP, returns False. 
+        wp: a `pyxtal.symmetry.Wyckoff_position` object, If no matching WP, returns False. 
         valid_ori: the valid orientations after merge
 
     """
