@@ -51,6 +51,58 @@ def print_logo():
 class pyxtal:
     """
     Class for handling atomic crystals based on symmetry constraints. 
+
+    Examples
+    --------
+    >>> from pyxtal import pyxtal
+    >>> struc = pyxtal()
+    >>> struc.from_random(3, 227, ['C'], [2])
+    >>> struc
+    ------Crystal from random------
+    Dimension: 3
+    Composition: C8
+    Group: Fd-3m (227)
+    cubic lattice:   4.3529   4.3529   4.3529  90.0000  90.0000  90.0000
+    Wyckoff sites:
+	 C @ [0.1250 0.1250 0.1250], WP:  8a, Site symmetry: -4 3 m
+
+    The structure object can be easily manipulated via `apply_perturbtation`
+    or `subgroup` function
+
+    >>> struc2 = struc.subgroup(H=141, once=True)
+    >>> struc2
+    ------Crystal from Wyckoff Split------
+    Dimension: 3
+    Composition: C8
+    Group: I41/amd (141)
+    tetragonal lattice:   3.3535   3.3535   4.6461  90.0000  90.0000  90.0000
+    Wyckoff sites:
+    	 C @ [0.0000 0.2500 0.3750], WP:  4b, Site symmetry: -4 m 2
+
+    Alternatively, one can also easily compute its XRD via the `pyxtal.XRD` class
+
+    >>> xrd = struc.get_XRD()
+    >>> xrd
+      2theta     d_hkl     hkl       Intensity  Multi
+      32.706     2.738   [ 1  1  1]   100.00        8
+      54.745     1.677   [ 2  2  0]    40.95       12
+      65.249     1.430   [ 3  1  1]    20.65       24
+      81.116     1.186   [ 4  0  0]     5.15        6
+      90.236     1.088   [ 3  3  1]     8.24       24
+     105.566     0.968   [ 4  2  2]    14.44       24
+     115.271     0.913   [ 5  1  1]    10.03       24
+     133.720     0.838   [ 4  4  0]     9.80       12
+     148.177     0.802   [ 5  3  1]    28.27       48
+
+    Finally, the structure can be saved to different formats
+
+    >>> struc.to_file('my.cif')
+    >>> struc.to_file('my_poscar', fmt='poscar')
+
+    or to Pymatgen/ASE structure object
+
+    >>> pmg_struc = struc.to_pymatgen()
+    >>> ase_struc = struc.to_ase()
     """
 
     def __init__(self, molecular=False):
@@ -326,9 +378,8 @@ class pyxtal:
             for id in idx:
                 if id >= len(Hs):
                     raise ValueError("The idx exceeds the number of possible splits")
-        
         if H is not None: 
-            idx = [id for id in idx if Hs[idx] == H]
+            idx = [id for id in idx if Hs[id] == H]
 
         if len(idx) == 0:
             raise ValueError("The space group H is incompatible with idx")

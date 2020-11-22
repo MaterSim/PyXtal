@@ -27,7 +27,7 @@ class TestGroup(unittest.TestCase):
         g = Group(64)
         a1, _ = g.list_wyckoff_combinations([4, 2])
         self.assertTrue(a1 is None)
-        a2, _ = g.list_wyckoff_combinations([4, 8]) 
+        a2, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
 
 class TestWP(unittest.TestCase):

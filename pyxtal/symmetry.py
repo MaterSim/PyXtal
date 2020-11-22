@@ -165,9 +165,11 @@ class Group:
     def __len__(self):
         return len(self.wyckoffs)
 
-    def list_wyckoff_combinations(self, numIons):
+    def list_wyckoff_combinations(self, numIons, quick=False):
         """
         List all possible wyckoff combinations for the given formula
+        Note this is really design for a light weight calculation
+        if the solution space is big, set quick as True
 
         >>> from pyxtal.symmetry import Group
         >>> g = Group(64)
@@ -187,6 +189,7 @@ class Group:
 
         Args:
             numIons: [12, 8]
+            quick: Boolean, quickly generate some solutions
 
         Returns:
             Combinations: list of possible sites
@@ -205,11 +208,30 @@ class Group:
             letter = wp.letter
             freedom = np.trace(wp.ops[0].rotation_matrix) > 0
             if mul <= max(numIons):
-                basis.append(mul)
-                letters.append(letter)
-                freedoms.append(freedom)
-        
+                if quick:
+                    if mul in basis and freedom:
+                        pass
+                    #elif mul in basis and basis.count(mul) >= 3:
+                    #    pass
+                    else:
+                        basis.append(mul)
+                        letters.append(letter)
+                        freedoms.append(freedom)
+                else:
+                    basis.append(mul)
+                    letters.append(letter)
+                    freedoms.append(freedom)
+
         basis = np.array(basis)
+
+        # quickly exit
+        if np.min(numIons) < np.min(basis):
+            #print(numIons, basis)
+            return None, False
+        # odd and even
+        elif np.mod(numIons, 2).sum()>0 and np.mod(basis, 2).sum()==0:
+            #print("odd-even", numIons, basis)
+            return None, False
         
         # obtain the maximum numbers for each basis
         max_solutions = np.floor(numIons[:,None]/basis)
@@ -224,7 +246,9 @@ class Group:
         for a in max_arrays:
             d = int(a) + 1
             lists.append(list(range(d)))
-        
+        if len(lists) > 20:
+            raise RuntimeError("Solution space is big, rerun it by setting quick as True")
+
         solutions = np.array(list(itertools.product(*lists)))
         big_basis = np.tile(basis, len(numIons))
         
@@ -421,12 +445,12 @@ class Wyckoff_position:
         Now only supports space group symmetry
 
         Args:
-        ops: a list of symmetry operations
-        group: the space group number
-        gen_only: boolean, check general positions only?
+            ops: a list of symmetry operations
+            group: the space group number
+            gen_only: boolean, check general positions only?
 
         Returns:
-        Wyckoff_position
+            `Wyckoff_position`
 
         """
         if isinstance(ops[0], str):
@@ -952,7 +976,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
             are present. If False, we generate the rest
 
     Returns:
-        a string representing the site symmetry. Ex: "2mm"
+        a string representing the site symmetry. Ex: ``2mm``
     """
     # TODO: Automatically detect which symm_type to use based on ops
     # Determine which notation to use
