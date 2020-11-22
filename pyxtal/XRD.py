@@ -5,7 +5,7 @@ import numpy as np
 import numba as nb
 import os
 import collections
-from scipy import interpolate
+from scipy.interpolate import interp1d
 from monty.serialization import loadfn
 from pkg_resources import resource_filename
 from pyxtal.database.element import Element
@@ -281,28 +281,44 @@ class XRD(object):
 
         return hkl_str
 
-    def plot_pxrd(self, filename=None, minimum_I = 0.01, show_hkl=True):
+    def plot_pxrd(self, filename=None, minimum_I=0.01, show_hkl=True,\
+                    fontsize=None, figsize=(20,10), xlim=None):
         """ 
         plot PXRD 
+
+        Args:
+            filename (None): name of the xrd plot. If None, show the plot
+            minimum_I (0.01): the minimum intensity to include in the plot
+            show_hkl (True): whether or not show hkl labels
+            fontsize (None): fontsize of text in the plot
+            figsize ((20, 10)): figsize 
+            xlim (None): the 2theta range [x_min, x_max]
         """
+        import matplotlib
         import matplotlib.pyplot as plt
+        if fontsize is not None:
+            matplotlib.rcParams.update({'font.size': fontsize})
 
-        plt.figure(figsize=(20,10))
+        plt.figure(figsize=figsize)
 
-        dx = np.degrees(self.max2theta)
+        if xlim is None:
+            x_min, x_max = 0, np.degrees(self.max2theta)
+        else:
+            x_min, x_max = xlim[0], xlim[1]
+        dx = x_max-x_min
         for i in self.pxrd:
             plt.bar(i[0],i[-1], color='b', width=dx/180)
-            if i[-1] > minimum_I:
+            if i[-1] > minimum_I and x_min <= i[0] <= x_max: 
                if show_hkl:
                   label = self.draw_hkl(i[2:5])
                   plt.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
         
         ax=plt.gca()
         plt.grid()
-        plt.xlim(0,dx)
-        plt.xlabel('2θ')
+        plt.xlim([x_min, x_max])
+        plt.xlabel('2$\Theta$ ($\lambda$=' + str(self.wavelength) + ' $\AA$)')
         plt.ylabel('Intensity')
-        plt.title('PXRD of '+self.name+ ', $\lambda$='+str(self.wavelength)+'$\AA$')
+        plt.title('PXRD of ' + self.name)
         
         if filename is None:
            plt.show()
@@ -318,8 +334,8 @@ class XRD(object):
         """
         interactive plot for pxrd powered by plotly
         Args:
-        xrd: xrd object
-        html: html filename (str)
+            xrd: xrd object
+            html: html filename (str)
         """
 
         x, y, labels = [], [], []
@@ -420,10 +436,8 @@ class Profile:
        
         Parameters
         ----------
-        two_thetas: 1d float array 
-           simulated/measured 2 theta values
-        intensities: 
-           simulated/measures peaks
+            two_thetas: 1d float array simulated/measured 2 theta values
+            intensities: simulated/measures peaks
         """
     
         N = int((max2theta-min2theta)/self.res)
@@ -483,17 +497,16 @@ class Similarity(object):
         Class to compute the similarity between two diffraction patterns
         Args:
 
-        f: spectra1 (2D array)
-        g: spectra2 (2D array)
-        N: number of sampling points for the processed spectra
-        x_range: the range of x values used to compute similarity ([x_min, x_max])
-        l: cutoff value for shift (real)
-        weight: weight function 'triangle' or 'cosine' (str)
+            f: spectra1 (2D array)
+            g: spectra2 (2D array)
+            N: number of sampling points for the processed spectra
+            x_range: the range of x values used to compute similarity ([x_min, x_max])
+            l: cutoff value for shift (real)
+            weight: weight function 'triangle' or 'cosine' (str)
         """
 
         fx, fy = f[0], f[1]
         gx, gy = g[0], g[1]
-        self.x_range = x_range
         self.l = abs(l)
         res1 = (fx[-1] - fx[0])/len(fx)
         res2 = (gx[-1] - gx[0])/len(gx)
@@ -505,16 +518,16 @@ class Similarity(object):
             self.N = N
         self.r = np.linspace(-self.l, self.l, self.N)
 
-        #self.preprocess(fx, fy, gx, gy)
-        if self.x_range == None: #get the overlap
+        if x_range == None: #get the overlap
             x_min = max(np.min(fx), np.min(gx))
             x_max = min(np.max(fx), np.max(gx))
-            self.x_range = [x_min,x_max]
         else:
-            x_min, x_max = self.x_range[0], self.x_range[1]
+            x_min, x_max = x_range[0], x_range[1]
 
-        f_inter = interpolate.interp1d(fx, fy, 'cubic', fill_value = 'extrapolate')
-        g_inter = interpolate.interp1d(gx, gy, 'cubic', fill_value = 'extrapolate')
+        self.x_range = [x_min,x_max]
+
+        f_inter = interp1d(fx, fy, 'cubic', fill_value = 'extrapolate')
+        g_inter = interp1d(gx, gy, 'cubic', fill_value = 'extrapolate')
 
         fgx_new = np.linspace(x_min, x_max, int((x_max-x_min)/self.resolution)+1)
         fy_new = f_inter(fgx_new)
@@ -531,13 +544,13 @@ class Similarity(object):
             raise NotImplementedError(msg)
 
         Npts = len(self.fx)
-        d = (self.fx[-1] - self.fx[0])/Npts
+        d = self.fx[1] - self.fx[0]
 
         self.S = similarity_calculate(self.r, w, d, Npts, self.fy, self.gy)
     
 
     def __str__(self):
-        s = "The similarity between two PXRDs is {:.f}".format(self.S)
+        s = "The similarity between two PXRDs is {:.4f}".format(self.S)
         return s
 
     def __repr__(self):
@@ -548,16 +561,10 @@ class Similarity(object):
         """
         Triangle function to weight correlations
         """
-        
-        w = np.zeros((self.N))
-        l = self.l
-        for i in range(self.r.shape[0]):
-            r = np.abs(self.r[i])
-            if r <= l:
-                tf = lambda r,l : 1 - r/l
-                w[i] = tf(r,l)
-            else:
-                w[i] = 0
+        w = 1 - np.abs(self.r/self.l)
+        ids = (np.abs(self.r) > self.l)
+        w[ids] = 0
+
         return w
 
     def cosineFunction(self):
@@ -566,25 +573,24 @@ class Similarity(object):
         cosine function to weight correlations
         """
         
-        w = np.zeros((self.N))
-        l = self.l
-        for i in range(self.r.shape[0]):
-            r = np.abs(self.r[i])
-            if r <= l:
-                tf = lambda r,l : 0.5 * (np.cos(np.pi * r/l) + 1)
-                w[i] = tf(r,l)
-            else:
-                w[i] = 0
+        w = 0.5 * (np.cos(np.pi * self.r/self.l) + 1.)
+        ids = (np.abs(self.r) > self.l)
+        w[ids] = 0
+
         return w
 
-    def show(self, filename=None, labels=["struc1", "struc2"]):
+    def show(self, filename=None, labels=["profile 1", "profile 2"]):
 
         """
         show the comparison plot
+
+        Args:
+            filename (None): name of the xrd plot. If None, show the plot
+            labels [A, B]: labels of each plot
         """
         import matplotlib.pyplot as plt
 
-        fig1 = plt.figure(1,figsize=(15,6))
+        fig1 = plt.figure(1, figsize=(15, 6))
         frame1 = fig1.add_axes((.1,.3,.8,.6))
     
         plt.plot(self.fx, self.fy, label=labels[0])
@@ -592,7 +598,7 @@ class Similarity(object):
         plt.legend()
 
         # Residual plot
-        residuals = self.gy-self.fy
+        residuals = self.gy - self.fy
         frame2 = fig1.add_axes((.1,.1,.8,.2))        
         plt.plot(self.gx, residuals, '.r', markersize = 0.5)
         plt.title("{:6f}".format(self.S))
@@ -665,44 +671,22 @@ def similarity_calculate(r, w, d, Npts, fy, gy):
 
     """
     Compute the similarity between the pair of spectra f, g
-    with an approximated Simpson rule
     """
 
-    xCorrfg_w = 0
-    aCorrff_w = 0
-    aCorrgg_w = 0
-    count0 = 0
-    count = 0
+    xCorrfg_w, aCorrff_w, aCorrgg_w = 0, 0, 0
     for r0, w0 in zip(r, w):
         Corrfg, Corrff, Corrgg = 0, 0, 0
+        shift = int(r0/d)
         for i in range(Npts):
-            shift = int(round(r0/d))
             if 0 <= i + shift <= Npts-1:
-                if count == 0:
-                    coef = 1/3
-                elif count %2 == 1:
-                    coef = 4/3
-                else:
-                    coef = 2/3
+                Corrfg += fy[i]*gy[i+shift]*d
+                Corrff += fy[i]*fy[i+shift]*d
+                Corrgg += gy[i]*gy[i+shift]*d
 
-                count += 1
-                Corrfg += coef*fy[i]*gy[i+shift]
-                Corrff += coef*fy[i]*fy[i+shift]
-                Corrgg += coef*gy[i]*gy[i+shift]
-
-
-        if count0 == 0:
-             coef = 1/3
-        elif count0 %2 == 1:
-             coef = 4/3
-        else:
-             coef = 2/3
-
-        count0 += 1
-        xCorrfg_w += coef*w0*Corrfg 
-        aCorrff_w += coef*w0*Corrff
-        aCorrgg_w += coef*w0*Corrgg
-
+        xCorrfg_w += w0*Corrfg*d
+        aCorrff_w += w0*Corrff*d
+        aCorrgg_w += w0*Corrgg*d
+    
     return np.abs(xCorrfg_w / np.sqrt(aCorrff_w * aCorrgg_w))
 
 

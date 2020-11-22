@@ -226,14 +226,13 @@ class mol_site:
         matrix = self.get_principle_axes(coord0, True)
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
 
-    def perturbate(self, magnitude=1.0):
+    def perturbate(self, eps=1.0):
         """
         Random perturbation of the molecular site
         """
-        disp = np.random.random([1,3])-0.5
-        self.translate(magnitude*disp, True)
+        disp = eps*(np.random.random([1,3])-0.5)
+        self.translate(disp, True)
         self.orientation.change_orientation()
-
     
     def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
         """
@@ -244,7 +243,6 @@ class mol_site:
             disp = disp.dot(self.lattice.inv_matrix)
         position = self.position + disp
         self.position = project_point(position, self.wp[0])
-
 
     def rotate(self, axis=0, angle=180):
         """
@@ -615,16 +613,22 @@ class atom_site:
         s += "Site symmetry: {:s}".format(self.site_symm)
         return s
 
+    def __repr__(self):
+        return str(self)
+
+    def perturbate(self, eps=0.05):
+        """
+        Random perturbation of the site
+        """
+        pos = site.position + eps*(np.random.sample(3) - 0.5)
+        self.update(pos)
+ 
     def update(self, pos):
         """
         Used to generate coords from self.position
         """
         self.coords = apply_ops(pos, self.wp) 
         self.position = self.coords[0]
-
-    def __repr__(self):
-        return str(self)
-
 
     def check_with_ws2(self, ws2, lattice, tm, same_group=True):
         """

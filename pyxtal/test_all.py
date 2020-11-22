@@ -11,6 +11,7 @@ from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Wyckoff_position, get_wyckoffs
 from pyxtal.wyckoff_site import WP_merge
+from pyxtal.XRD import Similarity
 
 cif_path = resource_filename("pyxtal", "database/cifs/aspirin.cif")
 l0 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
@@ -284,11 +285,21 @@ class TestSubgroup(unittest.TestCase):
         s2 = s1.subgroup(once=True)
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
-        #sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
-        #sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
  
-
+class TestPXRD(unittest.TestCase):
+    def test_similarity(self):
+        sites = ['8a']
+        C1 = pyxtal()
+        C1.from_random(3, 227, ['C'], [2], sites=[['8a']])
+        xrd1 = C1.get_XRD()
+        C2 = C1.subgroup(once=True, eps=1e-3)
+        xrd2 = C1.get_XRD()
+        p1 = xrd1.get_profile()
+        p2 = xrd2.get_profile()
+        s = Similarity(p1, p2, x_range=[15, 90])
+        self.assertTrue( 0.9 <s.S <1.001)
+        
 # class TestOperation(unittest.TestCase):
 # class TestIO(unittest.TestCase):
 
