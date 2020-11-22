@@ -9,6 +9,7 @@ import numpy as np
 from pkg_resources import resource_filename
 from copy import deepcopy
 import random
+import itertools
 
 # External Libraries
 from pymatgen.symmetry.analyzer import generate_full_symmops
@@ -163,6 +164,113 @@ class Group:
 
     def __len__(self):
         return len(self.wyckoffs)
+
+    def list_wyckoff_combinations(self, numIons):
+        """
+        List all possible wyckoff combinations for the given formula
+
+        >>> from pyxtal.symmetry import Group
+        >>> g = Group(64)
+        >>> g.list_wyckoff_combinations([4, 2])
+        No solution is available
+        (None, False)
+        >>> g.list_wyckoff_combinations([4, 8])
+        ([[['4a'], ['8c']],
+        [['4a'], ['8d']],
+        [['4a'], ['8e']],
+        [['4a'], ['8f']],
+        [['4b'], ['8c']],
+        [['4b'], ['8d']],
+        [['4b'], ['8e']],
+        [['4b'], ['8f']]],
+        [False, True, True, True, False, True, True, True])
+
+        Args:
+            numIons: [12, 8]
+
+        Returns:
+            Combinations: list of possible sites
+            has_freedom: list of boolean numbers
+        """
+
+        numIons = np.array(numIons)
+
+        basis = [] # [8, 4, 4]
+        letters = [] # ['c', 'b', 'a']
+        freedoms = [] # [False, False, False]
+
+        # obtain the basis
+        for i, wp in enumerate(self):
+            mul = wp.multiplicity
+            letter = wp.letter
+            freedom = np.trace(wp.ops[0].rotation_matrix) > 0
+            if mul <= max(numIons):
+                basis.append(mul)
+                letters.append(letter)
+                freedoms.append(freedom)
+        
+        basis = np.array(basis)
+        
+        # obtain the maximum numbers for each basis
+        max_solutions = np.floor(numIons[:,None]/basis)
+        # reset the maximum to 1 if there is no freedom
+        for i in range(len(freedoms)):
+            if not freedoms[i]:
+                max_solutions[:,i] = 1
+        
+        # find the integer solutions
+        max_arrays = max_solutions.flatten()
+        lists = []
+        for a in max_arrays:
+            d = int(a) + 1
+            lists.append(list(range(d)))
+        
+        solutions = np.array(list(itertools.product(*lists)))
+        big_basis = np.tile(basis, len(numIons))
+        
+        for i in range(len(numIons)):
+            N = solutions[:,i*len(basis):(i+1)*len(basis)].dot(basis)
+            solutions = solutions[N == numIons[i]]
+            if len(solutions) == 0:
+                #print("No solution is available")
+                return None, False
+
+        # convert the results to list
+        combinations = []
+        has_freedom = []
+        for solution in solutions:
+            res = solution.reshape([len(numIons), len(basis)])
+            _com = []
+            _free = []
+            for i, numIon in enumerate(numIons):
+                tmp = []
+                bad_resolution = False
+                frozen = []
+                for j, b in enumerate(basis):
+                    if not freedoms[j] and (res[:, j]).sum() > 1:
+                        bad_resolution = True
+                        break
+                    else:
+                        if res[i, j] > 0:
+                            symbols = [str(b) + letters[j]] * res[i,j]
+                            tmp.extend(symbols)
+                            frozen.extend([freedoms[j]])
+                if not bad_resolution:
+                    _com.append(tmp)
+                    _free.extend(frozen)
+                       
+            if len(_com) == len(numIons):
+                combinations.append(_com)
+                if True in _free:
+                    has_freedom.append(True)
+                else:
+                    has_freedom.append(False)
+ 
+        if len(combinations) == 0:
+            #print("No solution is available")
+            return None, False
+        else:
+            return combinations, has_freedom
 
     def get_wyckoff_position(self, index):
         """
@@ -2101,85 +2209,3 @@ def get_pbc_and_lattice(number, dim):
             lattice_type = "ellipsoidal"
     return PBC, lattice_type
 
-def get_wyckoff_combinations(numIons, group_number, dim=3):
-    """
-    from a given formula and space group
-    generate the list of all possible Wyckoff combination
-
-    Args:
-        - numIons: list, e.g. [4, 8]
-        - group_number: int, e.g. 19
-        - dim: int, 0, 1, 2, 3
-    """
-    import itertools
-
-    group = Group(group_number)
-    numIons = np.array(numIons)
-
-    basis = [] # [8, 4, 4]
-    letters = [] # ['c', 'b', 'a']
-    freedoms = [] # [False, False, False]
-
-    # obtain the basis
-    for i, wp in enumerate(group):
-        mul = wp.multiplicity
-        letter = wp.letter
-        freedom = np.trace(wp.ops[0].rotation_matrix) > 0
-        if mul <= max(numIons):
-            basis.append(mul)
-            letters.append(letter)
-            freedoms.append(freedom)
-    
-    basis = np.array(basis)
-    
-    # obtain the maximum numbers for each basis
-    max_solutions = np.floor(numIons[:,None]/basis)
-    # reset the maximum to 1 if there is no freedom
-    for i in range(len(freedoms)):
-        if not freedoms[i]:
-            max_solutions[:,i] = 1
-    
-    # find the integer solutions
-    max_arrays = max_solutions.flatten()
-    lists = []
-    for a in max_arrays:
-        d = int(a) + 1
-        lists.append(list(range(d)))
-    
-    solutions = np.array(list(itertools.product(*lists)))
-    big_basis = np.tile(basis, len(numIons))
-    
-    for i in range(len(numIons)):
-        N = solutions[:,i*len(basis):(i+1)*len(basis)].dot(basis)
-        solutions = solutions[N == numIons[i]]
-        if len(solutions) == 0:
-            print("No solution is available")
-            return None
-    
-    # convert the results to list
-    results = []
-    for solution in solutions:
-        res = solution.reshape([len(numIons), len(basis)])
-        com = []
-        for i, numIon in enumerate(numIons):
-            tmp = []
-            bad_resolution = False
-            for j, b in enumerate(basis):
-                if not freedoms[j] and (res[:, j]).sum() > 1:
-                    bad_resolution = True
-                    break
-                else:
-                    if res[i, j] > 0:
-                        symbols = [str(b) + letters[j]] * res[i,j]
-                        tmp.extend(symbols)
-            if not bad_resolution:
-                com.append(tmp)
-    
-        if len(com) == len(numIons):
-            results.append(com)
-
-    if len(results) == 0:
-        print("No solution is available")
-        return None
-    else:
-        return results

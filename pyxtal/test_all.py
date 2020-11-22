@@ -9,7 +9,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
-from pyxtal.symmetry import Wyckoff_position, get_wyckoffs
+from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
 from pyxtal.wyckoff_site import WP_merge
 from pyxtal.XRD import Similarity
 
@@ -21,6 +21,14 @@ l3 = Lattice.from_para(4.08, 7.13, 5.50, 90, 38, 90, ltype="monoclinic")
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_index(36, "4a")
 
+
+class TestGroup(unittest.TestCase):
+    def test_list_wyckoff_combinations(self):
+        g = Group(64)
+        a1, _ = g.list_wyckoff_combinations([4, 2])
+        self.assertTrue(a1 is None)
+        a2, _ = g.list_wyckoff_combinations([4, 8]) 
+        self.assertTrue(len(a2) == 8)
 
 class TestWP(unittest.TestCase):
     def test_wp(self):
@@ -268,7 +276,7 @@ class TestSubgroup(unittest.TestCase):
         pmg_s1 = C1.to_pymatgen()
         sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
 
-        C2s = C1.subgroup()
+        C2s = C1.subgroup(eps=1e-4)
         for C2 in C2s:
             pmg_s2 = C2.to_pymatgen()
             sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
