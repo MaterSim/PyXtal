@@ -15,7 +15,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         header: additional information
         permission: write('w') or append('a+') to the given file
         sym_num: the number of symmetry operations, None means writing all symops
-    
+
     """
     if sym_num is None:
         l_type = struc.group.lattice_type
@@ -72,12 +72,16 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
 
     lines += '\nloop_\n'
     lines += ' _atom_site_label\n'
+    lines += ' _atom_site_symmetry_multiplicity\n'
+    lines += ' _atom_site_Wyckoff_symbol\n'
     lines += ' _atom_site_fract_x\n'
     lines += ' _atom_site_fract_y\n'
     lines += ' _atom_site_fract_z\n'
     lines += ' _atom_site_occupancy\n'
 
     for site in sites:
+        mul = site.wp.multiplicity
+        letter = site.wp.letter
         if molecule:
             if sym_num is None:
                 coords, species = site._get_coords_and_species(first=True)
@@ -96,7 +100,8 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         else:
             coords, species = [site.position], [site.specie]
         for specie, coord in zip(species, coords):
-            lines += '{:6s}  {:12.6f}{:12.6f}{:12.6f} 1\n'.format(specie, *coord)
+            lines += '{:6s} {:3d} {:s} {:12.6f}{:12.6f}{:12.6f} 1\n'.format(\
+                    specie, mul, letter, *coord)
     lines +='#END\n\n'
     
 
