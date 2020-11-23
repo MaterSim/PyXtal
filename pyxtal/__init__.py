@@ -56,7 +56,7 @@ class pyxtal:
     --------
     >>> from pyxtal import pyxtal
     >>> struc = pyxtal()
-    >>> struc.from_random(3, 227, ['C'], [2])
+    >>> struc.from_random(3, 227, ['C'], [8])
     >>> struc
     ------Crystal from random------
     Dimension: 3
@@ -148,6 +148,7 @@ class pyxtal:
         area = None,
         lattice=None,
         sites = None,
+        conventional = True,
     ):
         if self.molecular:
             prototype = "molecular"
@@ -161,26 +162,26 @@ class pyxtal:
             if self.molecular:
                 if dim == 3:
                     struc = molecular_crystal(group, species, numIons, factor, 
-                                            lattice=lattice, sites=sites, tm=tm)
+                    lattice=lattice, sites=sites, conventional=conventional, tm=tm)
                 elif dim == 2:
                     struc = molecular_crystal_2D(group, species, numIons, factor, 
-                                            thickness=thickness, tm=tm)
+                    thickness=thickness, sites=sites, conventional=conventional, tm=tm)
                 elif dim == 1:
                     struc = molecular_crystal_1D(group, species, numIons, factor, 
-                                                 area=area, sites=sites, tm=tm)
+                    area=area, sites=sites, conventional=conventional, tm=tm)
             else:
                 if dim == 3:
                     struc = random_crystal(group, species, numIons, factor, 
-                                           lattice, sites, tm)
+                            lattice, sites, conventional, tm)
                 elif dim == 2:
                     struc = random_crystal_2D(group, species, numIons, factor, 
-                                              thickness, lattice, sites, tm)
+                            thickness, lattice, sites, conventional, tm)
                 elif dim == 1:
                     struc = random_crystal_1D(group, species, numIons, factor, 
-                                              area, lattice, sites, tm)
+                            area, lattice, sites, conventional, tm)
                 else:
                     struc = random_cluster(group, species, numIons, factor, 
-                                           lattice, sites, tm)
+                            lattice, sites, tm)
 
             if struc.valid:
                 self.valid = True
@@ -597,9 +598,8 @@ class pyxtal:
         """
         sites = []
         if self.molecular:
-            pass
-            #for site in self.mol_sites:
-            #    sites.append(site.save_dict())
+            for site in self.mol_sites:
+                sites.append(site.save_dict())
         else:
             for site in self.atom_sites:
                 sites.append(site.save_dict())
@@ -638,11 +638,10 @@ class pyxtal:
         self.formula = dict0["formula"]
         sites = []
         if dict0["molecular"]:
-            pass
-            #for site in dict0["sites"]:
-            #    sites.append(mol_sites(site_dict=site))
+            for site in dict0["sites"]:
+                sites.append(mol_site.load_dict(site))
+            self.mol_sites = sites
         else:
             for site in dict0["sites"]:
-                sites.append(atom_site(site_dict=site))
+                sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
-

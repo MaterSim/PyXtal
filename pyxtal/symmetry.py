@@ -69,6 +69,66 @@ class Group:
     Class for storing a set of Wyckoff positions for a symmetry group. See the documentation
     for details about settings.
 
+    Examples
+    --------
+    >>> from pyxtal.symmetry import Group
+    >>> g = Group(64)
+    >>> g
+    -- Spacegroup --# 64 (Cmce)--
+    16g	site symm: 1
+    8f	site symm: m..
+    8e	site symm: .2.
+    8d	site symm: 2..
+    8c	site symm: -1
+    4b	site symm: 2/m..
+    4a	site symm: 2/m..
+
+    one can access data with its attributes such as `symbol`, `number` and `Wyckoff_positions`
+
+    >>> g.symbol
+    'Cmce'
+    >>> g.number
+    64
+    >>> g.Wyckoff_positions[0]
+    Wyckoff position 16g in space group 64 with site symmetry 1
+    x, y, z
+    -x, -y+1/2, z+1/2
+    -x, y+1/2, -z+1/2
+    x, -y, -z
+    -x, -y, -z
+    x, y+1/2, -z+1/2
+    x, -y+1/2, z+1/2
+    -x, y, z
+    x+1/2, y+1/2, z
+    -x+1/2, -y+1, z+1/2
+    -x+1/2, y+1, -z+1/2
+    x+1/2, -y+1/2, -z
+    -x+1/2, -y+1/2, -z
+    x+1/2, y+1, -z+1/2
+    x+1/2, -y+1, z+1/2
+    -x+1/2, y+1/2, z
+
+    We also provide several utilities functions, e.g.,
+    one can search the possible wyckoff_combinations by a formula
+
+    >>> g.list_wyckoff_combinations([4, 2])
+    (None, False)
+    >>> g.list_wyckoff_combinations([4, 8])
+    ([[['4a'], ['8c']],
+    [['4a'], ['8d']],
+    [['4a'], ['8e']],
+    [['4a'], ['8f']],
+    [['4b'], ['8c']],
+    [['4b'], ['8d']],
+    [['4b'], ['8e']],
+    [['4b'], ['8f']]],
+    [False, True, True, True, False, True, True, True])
+
+    or search the subgroup information
+
+    >>> g.get_max_t_subgroup()['subgroup']
+    [12, 14, 15, 20, 36, 39, 41]
+
     Args:
         group: the group symbol or international number
         dim: the periodic dimension of the group
@@ -170,22 +230,6 @@ class Group:
         List all possible wyckoff combinations for the given formula
         Note this is really design for a light weight calculation
         if the solution space is big, set quick as True
-
-        >>> from pyxtal.symmetry import Group
-        >>> g = Group(64)
-        >>> g.list_wyckoff_combinations([4, 2])
-        No solution is available
-        (None, False)
-        >>> g.list_wyckoff_combinations([4, 8])
-        ([[['4a'], ['8c']],
-        [['4a'], ['8d']],
-        [['4a'], ['8e']],
-        [['4a'], ['8f']],
-        [['4b'], ['8c']],
-        [['4b'], ['8d']],
-        [['4b'], ['8e']],
-        [['4b'], ['8f']]],
-        [False, True, True, True, False, True, True, True])
 
         Args:
             numIons: [12, 8]
@@ -363,7 +407,8 @@ class Group:
         """
         raise NotImplementedError()
 
-    def list_groups(self):
+    @classmethod
+    def list_groups(cls, dim=3):
         """
         Function for quick print of groups and symbols
     
@@ -380,7 +425,7 @@ class Group:
             1: "rod_group",
             0: "point_group",
         }
-        data = symbols[keys[self.dim]]
+        data = symbols[keys[dim]]
         df = pd.DataFrame(index=range(1, len(data) + 1), data=data, columns=[keys[dim]])
         pd.set_option("display.max_rows", len(df))
         print(df)
@@ -390,6 +435,17 @@ class Group:
 class Wyckoff_position:
     """
     Class for a single Wyckoff position within a symmetry group
+
+    Examples
+    --------
+    >>> from pyxtal.symmetry import Wyckoff_position as wp
+    >>> wp.from_group_and_index(19, 0)
+    Wyckoff position 4a in space group 19 with site symmetry 1
+    x, y, z
+    -x+1/2, -y, z+1/2
+    -x, y+1/2, -z+1/2
+    x+1/2, -y+1/2, -z
+
     """
 
     def from_dict(dictionary):

@@ -23,8 +23,7 @@ class molecular_crystal:
     constraints. 
 
     Args:
-        group: the spacegroup number (1-230), or a 
-            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
+        group: the spacegroup number (1-230)
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or the name of molecules from the built_in 
@@ -43,6 +42,7 @@ class molecular_crystal:
             calculation, but this is not required
         lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
             object to define the unit cell
+        conventional (optional): count the number of atoms in the conventional cell
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
             object to define the distances
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
@@ -61,16 +61,13 @@ class molecular_crystal:
         lattice=None,
         tm=Tol_matrix(prototype="molecular"),
         sites = None,
+        conventional = True,
         diag = False,
     ):
 
         self.dim = 3 # The number of periodic dimensions (1,2,3)
         self.PBC = [1, 1, 1]
         self.diag = diag
-
-        if type(group) != Group:
-            group = Group(group, self.dim)
-
         self.selec_high = select_high
 
         self.init_common(
@@ -82,8 +79,9 @@ class molecular_crystal:
             orientations,
             group,
             lattice,
-            tm,
             sites,
+            conventional,
+            tm,
         )
 
     def init_common(
@@ -96,8 +94,9 @@ class molecular_crystal:
         orientations,
         group,
         lattice,
-        tm,
         sites,
+        conventional,
+        tm,
     ):
         # init functionality which is shared by 3D, 2D, and 1D crystals
         self.valid = False
@@ -117,8 +116,11 @@ class molecular_crystal:
         """
         self.factor = volume_factor  # volume factor for the unit cell.
         numMols = np.array(numMols)  # must convert it to np.array
-        self.numMols0 = numMols  # in the PRIMITIVE cell
-        self.numMols = self.numMols0 * cellsize(self.group)  # in the CONVENTIONAL cell
+        if not conventional:
+            mul = cellsize(self.group)
+        else:
+            mul = 1
+        self.numMols = numMols * mul
 
         # boolean numbers
         self.allow_inversion = allow_inversion
@@ -671,7 +673,6 @@ class molecular_crystal_2D(molecular_crystal):
 
     Args:
         group: the layer group number between 1 and 80. 
-            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or the name of molecules from the built_in 
@@ -710,15 +711,13 @@ class molecular_crystal_2D(molecular_crystal):
         orientations=None,
         thickness=None,
         lattice=None,
-        tm=Tol_matrix(prototype="molecular"),
         sites = None,
+        conventional = True,
+        tm=Tol_matrix(prototype="molecular"),
     ):
 
         self.dim = 2
         self.numattempts = 0
-        if type(group) != Group:
-            group = Group(group, self.dim)
-        number = group.number  # The layer group number of the crystal."""
         self.diag = False
         self.thickness = thickness  # the thickness in Angstroms
         self.PBC = [1, 1, 0]
@@ -731,8 +730,9 @@ class molecular_crystal_2D(molecular_crystal):
             orientations,
             group,
             lattice,
-            tm,
             sites,
+            conventional,
+            tm,
         )
 
 
@@ -783,8 +783,9 @@ class molecular_crystal_1D(molecular_crystal):
         orientations=None,
         area=None,
         lattice=None,
-        tm=Tol_matrix(prototype="molecular"),
         sites = None,
+        conventional = True,
+        tm=Tol_matrix(prototype="molecular"),
     ):
         self.dim = 1
         self.area = area  # the effective cross-sectional area in A^2
@@ -799,6 +800,7 @@ class molecular_crystal_1D(molecular_crystal):
             orientations,
             group,
             lattice,
-            tm,
             sites,
+            conventional,
+            tm,
         )

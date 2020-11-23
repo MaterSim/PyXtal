@@ -42,6 +42,7 @@ class random_crystal:
         factor=1.1,
         lattice=None,
         sites = None,
+        conventional = True,
         tm=Tol_matrix(prototype="atomic"),
     ):
 
@@ -49,7 +50,7 @@ class random_crystal:
         self.PBC = [1, 1, 1] #The periodic boundary axes of the crystal
         if type(group) != Group:
             group = Group(group, self.dim)
-        self.init_common(species, numIons, factor, group, lattice, sites, tm)
+        self.init_common(species, numIons, factor, group, lattice, sites, conventional, tm)
 
     def __str__(self):
         if self.valid:
@@ -69,7 +70,7 @@ class random_crystal:
         return str(self)
 
 
-    def init_common(self, species, numIons, factor, group, lattice, sites, tm):
+    def init_common(self, species, numIons, factor, group, lattice, sites, conventional, tm):
         """
         Common init functionality for 0D-3D cases of random_crystal.
         """
@@ -105,8 +106,12 @@ class random_crystal:
         self.numattempts = 0
         numIons = np.array(numIons)
         self.factor = factor
-        self.numIons0 = numIons
-        self.numIons = self.numIons0 * cellsize(self.group)
+        if not conventional:
+            mul = cellsize(self.group)
+        else:
+            mul = 1
+        self.numIons = numIons * mul
+
         formula = ""
         for i, s in zip(self.numIons, species):
             formula += "{:s}{:d}".format(s, int(i))
@@ -544,6 +549,7 @@ class random_crystal_2D(random_crystal):
         thickness=None,
         lattice=None,
         sites = None,
+        conventional = True,
         tm=Tol_matrix(prototype="atomic"),
     ):
         self.dim = 2
@@ -553,7 +559,7 @@ class random_crystal_2D(random_crystal):
             group = Group(group, self.dim)
         number = group.number  # The layer group number of the crystal
         self.thickness = thickness  # in Angstroms, in the 3rd dimenion of unit cell
-        self.init_common(species, numIons, factor, number, lattice, sites, tm)
+        self.init_common(species, numIons, factor, number, lattice, sites, conventional, tm)
 
 
 class random_crystal_1D(random_crystal):
@@ -587,12 +593,13 @@ class random_crystal_1D(random_crystal):
         area=None,
         lattice=None,
         sites = None,
+        conventional = True,
         tm=Tol_matrix(prototype="atomic"),
     ):
         self.dim = 1
         self.PBC = [0, 0, 1]
         self.area = area  # the effective cross-sectional area, in A^2, of the unit cell.
-        self.init_common(species, numIons, factor, group, lattice, sites, tm)
+        self.init_common(species, numIons, factor, group, lattice, sites, conventional, tm)
 
 
 class random_cluster(random_crystal):
@@ -630,4 +637,4 @@ class random_cluster(random_crystal):
     ):
         self.dim = 0
         self.PBC = [0, 0, 0]
-        self.init_common(species, numIons, factor, group, lattice, sites, tm)
+        self.init_common(species, numIons, factor, group, lattice, sites, False, tm)

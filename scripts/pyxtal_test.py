@@ -21,7 +21,6 @@ from pyxtal.symmetry import (
     get_point,
 )
 from pyxtal import pyxtal
-from pyxtal.lattice import cellsize
 from pyxtal.operations import distance, filtered_coords
 
 
@@ -254,12 +253,12 @@ def test_atomic():
     #my_crystal1.to_file("1.cif")
     
     my_crystal2 = pyxtal()
-    my_crystal2.from_random(3, 225, ['C'], [3], 1.0, sites=[["4a", "8c"]])
+    my_crystal2.from_random(3, 225, ['C'], [12], 1.0, sites=[["4a", "8c"]])
     print(my_crystal2)
     #my_crystal2.to_file("2.cif")
     
     my_crystal3 = pyxtal()
-    my_crystal3.from_random(3, 225, ['C','Si'], [3, 1], 1.0, sites=[["4a", "8c"], None])
+    my_crystal3.from_random(3, 225, ['C','Si'], [12, 4], 1.0, sites=[["4a", "8c"], None])
     print(my_crystal3)
     #my_crystal3.to_file("3.cif")
 
@@ -274,9 +273,7 @@ def test_atomic():
     # )
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(
-                sg
-            )  # multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0]) 
             start = time()
             rand_crystal = pyxtal()
             rand_crystal.from_random(3, sg, ["C"], [multiplicity], 1.0)
@@ -370,9 +367,7 @@ def test_molecular():
     ]  # [24, 183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(
-                sg
-            )  # multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0])
             start = time()
             rand_crystal = pyxtal(molecular=True)
             rand_crystal.from_random(3, sg, ["H2O"], [multiplicity], 2.5)

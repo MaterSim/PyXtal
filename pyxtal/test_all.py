@@ -57,7 +57,7 @@ class TestMolecular(unittest.TestCase):
     def test_single_specie(self):
         # print("test_h2o")
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 36, ["H2O"], [4], sites=[["8b"]])
+        struc.from_random(3, 36, ["H2O"], [8], sites=[["8b"]])
         struc.to_file()
         self.assertTrue(struc.valid)
 
@@ -79,13 +79,13 @@ class TestMolecular(unittest.TestCase):
 
     def test_sites(self):
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 36, ["H2O"], [2])
+        struc.from_random(3, 36, ["H2O"], [4])
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol() == "Cmc2_1")
 
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 36, ["H2O"], [4], sites=[["4a", "4a"]])
+        struc.from_random(3, 36, ["H2O"], [8], sites=[["4a", "4a"]])
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol() == "Cmc2_1")
@@ -114,7 +114,7 @@ class TestMolecular(unittest.TestCase):
 
     def test_c60(self):
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 36, ["C60"], [2], 1.0)
+        struc.from_random(3, 36, ["C60"], [4], 1.0)
         self.assertTrue(struc.valid)
 
     def test_mutiple_species(self):
@@ -130,20 +130,20 @@ class TestMolecular(unittest.TestCase):
 
         for i in range(3):
             struc = pyxtal(molecular=True)
-            struc.from_random(3, 10, [Li, ps4], [6, 2], 1.2)
+            struc.from_random(3, 10, [Li, ps4], [6, 2], 1.2, conventional=False)
             if struc.valid:
                 self.assertTrue(len(struc.to_pymatgen()) == 16)
 
     def test_molecular_2d(self):
         # print("test_molecular_2d")
         struc = pyxtal(molecular=True)
-        struc.from_random(2, 20, ["H2O"], [4], 1.0)
+        struc.from_random(2, 20, ["H2O"], [4], 1.0, conventional=False)
         cif = struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_molecular_1d(self):
         struc = pyxtal(molecular=True)
-        struc.from_random(1, 20, ["H2O"], [4], 1.0)
+        struc.from_random(1, 20, ["H2O"], [4], 1.0, conventional=False)
         cif = struc.to_file()
         self.assertTrue(struc.valid)
         # def test_space_groups(self):
@@ -151,13 +151,13 @@ class TestMolecular(unittest.TestCase):
     def test_preassigned_sites(self):
         sites = [["4a", "4a"]]
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 36, ["H2O"], [4], sites=sites)
+        struc.from_random(3, 36, ["H2O"], [8], sites=sites)
         self.assertTrue(struc.valid)
 
 class TestAtomic3D(unittest.TestCase):
     def test_single_specie(self):
         struc = pyxtal()
-        struc.from_random(3, 225, ["C"], [4], 1.2)
+        struc.from_random(3, 225, ["C"], [4], 1.2, conventional=False)
         struc.to_file()
         self.assertTrue(struc.valid)
 
@@ -173,7 +173,7 @@ class TestAtomic3D(unittest.TestCase):
         self.assertTrue(struc.valid)
 
         struc = pyxtal()
-        struc.from_random(3, 225, ["C"], [3], 1.0, sites=[["4a", "8c"]])
+        struc.from_random(3, 225, ["C"], [12], 1.0, sites=[["4a", "8c"]])
         self.assertTrue(struc.valid)
 
 class TestAtomic2D(unittest.TestCase):
@@ -269,10 +269,9 @@ class TestSymmetry(unittest.TestCase):
 class TestSubgroup(unittest.TestCase):
     def test_cubic_cubic(self):
         sites = ['8a', '32e']
-        G, fac = 227, 4
-        numIons = int(sum([int(i[:-1]) for i in sites])/fac)
+        numIons = int(sum([int(i[:-1]) for i in sites]))
         C1 = pyxtal()
-        C1.from_random(3, G, ['C'], [numIons], sites=[sites])
+        C1.from_random(3, 227, ['C'], [numIons], sites=[sites])
         pmg_s1 = C1.to_pymatgen()
         sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
 
@@ -299,7 +298,7 @@ class TestPXRD(unittest.TestCase):
     def test_similarity(self):
         sites = ['8a']
         C1 = pyxtal()
-        C1.from_random(3, 227, ['C'], [2], sites=[['8a']])
+        C1.from_random(3, 227, ['C'], [8], sites=[['8a']])
         xrd1 = C1.get_XRD()
         C2 = C1.subgroup(once=True, eps=1e-3)
         xrd2 = C1.get_XRD()
@@ -315,7 +314,26 @@ class TestPXRD(unittest.TestCase):
         s = Similarity(p1, p2, x_range=[15, 90])
         self.assertTrue( 0.95 <s.S <1.001)
 
-# class TestOperation(unittest.TestCase):
+class TestLoad(unittest.TestCase):
+    def test_atomic(self):
+        s1 = pyxtal()
+        s1.from_random(3, 36, ['C', 'Si'], [4, 8])
+        s2 = pyxtal()
+        s2.load_dict(s1.save_dict())
+        pmg_s1 = s1.to_pymatgen()
+        pmg_s2 = s2.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+
+    def test_molecular(self):
+        s1 = pyxtal(molecular=True)
+        s1.from_random(3, 36, ['H2O'], [4])
+        s2 = pyxtal()
+        s2.load_dict(s1.save_dict())
+        pmg_s1 = s1.to_pymatgen()
+        pmg_s2 = s2.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+ 
+
 # class TestIO(unittest.TestCase):
 
 if __name__ == "__main__":

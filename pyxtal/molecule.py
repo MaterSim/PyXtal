@@ -48,7 +48,7 @@ class pyxtal_molecule:
    
     """
 
-    def __init__(self, mol, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, mol=None, tm=Tol_matrix(prototype="molecular")):
         mo = None
         if type(mol) == str:
             # Parse molecules: either file or molecule name
@@ -93,6 +93,16 @@ class pyxtal_molecule:
     def __str__(self):
         return '[' + self.name + ']'
 
+    def save_dict(self):
+        return self.mol.as_dict()
+
+    @classmethod
+    def load_dict(cls, dicts):
+        """
+        load the molecule from a dictionary
+        """
+        mol = Molecule.from_dict(dicts)
+        return cls(mol)
 
     def swap_axis(self, ax):
         """
@@ -246,9 +256,8 @@ class Orientation:
             if degrees is equal to 1
     """
 
-    def __init__(self, matrix, degrees=2, axis=None):
+    def __init__(self, matrix=None, degrees=2, axis=None):
         self.matrix = np.array(matrix)
-        self.r = Rotation.from_matrix(matrix)  # scipy transform.Rotation class
         self.degrees = degrees  # The number of degrees of freedom.
         if degrees == 1:
             if axis is None:
@@ -256,6 +265,8 @@ class Orientation:
             else:
                 axis /= np.linalg.norm(axis)
         self.axis = axis
+
+        self.r = Rotation.from_matrix(self.matrix)  # scipy transform.Rotation class
         self.angle = None
 
     def __str__(self):
@@ -273,9 +284,22 @@ class Orientation:
     def __repr__(self):
         return str(self)
 
-
     def copy(self):
         return deepcopy(self)
+
+    def save_dict(self):
+        dict0 = {"matrix": self.matrix,
+                 "degrees": self.degrees,
+                 "axis": self.axis
+                }
+        return dict0
+    
+    @classmethod
+    def load_dict(cls, dicts):
+        matrix = dicts['matrix']
+        degrees = dicts['degrees']
+        axis = dicts['axis']
+        return cls(matrix, degrees, axis)
 
     def change_orientation(self, angle="random", flip=False):
         """

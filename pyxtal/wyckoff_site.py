@@ -43,31 +43,28 @@ class mol_site:
         diag: whether or not use the `n` representation
     """
 
-    def __init__(self, mol, position, orientation, wp, lattice, diag=False):
+    def __init__(self, mol, position, orientation, wp, lattice=None, diag=False):
         # describe the molecule
         self.molecule = mol
+        self.diag = diag
+        self.wp = wp
+        self.position = position # fractional coordinate of molecular center
+        self.orientation = orientation #pyxtal.molecule.orientation object 
+        if isinstance(lattice, Lattice):
+            self.lattice = lattice
+        else:
+            self.lattice = Lattice.from_matrix(lattice)
+        self.PBC = self.wp.PBC
         self.mol = mol.mol # A Pymatgen molecule object
         self.site_props = mol.props
         self.symbols = mol.symbols #[site.specie.value for site in self.mol.sites]
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
-        self.diag = diag
-
-        self.position = position # fractional coordinate of molecular center
-        self.orientation = orientation #pyxtal.molecule.orientation object 
-        self.PBC = wp.PBC #The periodic axes
 
         if self.diag:
-            wp.diagonalize_symops()
+            self.wp.diagonalize_symops()
             self.position = project_point(self.position, wp[0])
-        self.wp = wp
-
-        if isinstance(lattice, Lattice):
-            self.lattice = lattice
-        else:
-            self.lattice = Lattice.from_matrix(lattice)
-
 
     def __str__(self):
 
@@ -82,6 +79,36 @@ class mol_site:
         s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
         s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
         return s
+
+    def save_dict(self):
+        dict0 = {"position": self.position,
+                 "number": self.wp.number,
+                 "dim": self.wp.dim,
+                 "index": self.wp.index,
+                 "diag": self.diag,
+                 "molecule": self.molecule.save_dict(),
+                 "orientation": self.orientation.save_dict(),
+                 "lattice": self.lattice.matrix,
+                }
+        return dict0
+
+    @classmethod
+    def load_dict(cls, dicts):
+        """
+        load the sites from a dictionary
+        """
+        from pyxtal.molecule import pyxtal_molecule, Orientation
+
+        g = dicts["number"]
+        index = dicts["index"]
+        dim = dicts["dim"]
+        mol = pyxtal_molecule.load_dict(dicts["molecule"])
+        position = dicts["position"]
+        orientation = Orientation.load_dict(dicts['orientation'])
+        wp = Wyckoff_position.from_group_and_index(g, index, dim)
+        diag = dicts["diag"]
+        lattice = Lattice.from_matrix(dicts["lattice"])
+        return cls(mol, position, orientation, wp, lattice, diag)
 
 
     def show(self, id=None, **kwargs):
@@ -290,7 +317,6 @@ class mol_site:
         else:
             raise ValueError("id is greater than the number of molecules")
         
-
 
     def update(self, coords, lattice=None, absolute=False, update_mol=True):
         """
@@ -593,13 +619,10 @@ class atom_site:
         specie: an Element, element name or symbol, or atomic number of the atom
     """
 
-    def __init__(self, wp=None, coordinate=None, specie=1, site_dict=None):
-        if site_dict is None:
-            self.position = np.array(coordinate)
-            self.specie = Element(specie).short_name
-            self.wp = wp
-        else:
-            self.load_dict(site_dict)
+    def __init__(self, wp=None, coordinate=None, specie=1):
+        self.position = np.array(coordinate)
+        self.specie = Element(specie).short_name
+        self.wp = wp
 
         self.PBC = self.wp.PBC
         self.multiplicity = self.wp.multiplicity
@@ -629,7 +652,8 @@ class atom_site:
                 }
         return dict0
 
-    def load_dict(self, dicts):
+    @classmethod
+    def load_dict(cls, dicts):
         """
         load the sites from a dictionary
         """
@@ -637,10 +661,10 @@ class atom_site:
         index = dicts["index"]
         dim = dicts["dim"]
         PBC = dicts["PBC"]
-        self.position = dicts["position"]
-        self.specie = dicts["specie"]
-        self.wp = Wyckoff_position.from_group_and_index(g, index, dim, PBC)
-
+        position = dicts["position"]
+        specie = dicts["specie"]
+        wp = Wyckoff_position.from_group_and_index(g, index, dim, PBC)
+        return cls(wp, position, specie)
 
     def perturbate(self, eps=1e-2):
         """
