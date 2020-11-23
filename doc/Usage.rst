@@ -17,22 +17,17 @@ Here is a simple example of a 3D carbon crystal:
 
 .. code-block:: Python
 
-    from pyxtal.crystal import random_crystal
-    my_crystal = random_crystal(225, ['C'], [3], 1.0)
+    from pyxtal import pyxtal
+    my_crystal = pyxtal()
+    my_crystal.from_random(3, 225, ['C'], [3])
 
-This would create a crystal structure with space group 225, 3 carbon atoms in the primitive cell, and a volume factor of 1.0. For stoichiometries with more than one type of atom, replace ``[‘C’]`` with a list of atomic symbols, and replace ``[3]`` with a list of numbers. For example,
-
-.. code-block:: Python
-
-    my_crystal = random_crystal(99, ['Ba','Ti','O'], [1,1,3], 1.0)
-
-would create a random BaTiO3 crystal.
-
-If the generation is successful, the value ``my_crystal.valid`` will be set to True; otherwise, it will be False. The geometric properties of the crystal are stored in ``my_crystal.struct``, which is a `pymatgen.core.structure.Structure <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.Structure>`_ object. You can print most of the useful information using the `print_all <pyxtal.crystal.html#pyxtal.crystal.random_crystal.print_all>`_ function:
+This would create a crystal structure with 3D structure with space group 225, 12 carbon atoms in the conventional cell. For stoichiometries with more than one type of atom, replace ``[‘C’]`` with a list of atomic symbols, and replace ``[12]`` with a list of numbers. For example,
 
 .. code-block:: Python
 
-    >>> print(my_crystal)
+    my_crystal = pyxtal()
+    my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3])
+    my_crystal
     ------Random Crystal------
     Composition: Ba1 Ti1 O3
     Dimension: 3
@@ -45,6 +40,9 @@ If the generation is successful, the value ``my_crystal.valid`` will be set to T
     	 O @ [0.5000 0.0000 0.0823], Wyckoff letter:  2c, Site symmetry: 2 mm .
     	 O @ [0.5000 0.5000 0.8177], Wyckoff letter:  1b, Site symmetry: 4 m m
 
+would create a random BaTiO3 crystal.
+
+If the generation is successful, the value ``my_crystal.valid`` will be set to ``True``; otherwise, it will be ``False``. 
 
 2D Crystals
 ~~~~~~~~~~~
@@ -53,14 +51,13 @@ PyXtal can also generate subperiodic crystals. To generate a 2d crystal, use the
 
 .. code-block:: Python
 
-    from pyxtal.crystal import random_crystal_2D
-    my_crystal = random_crystal_2D(20, ['C'], [4], 1.0, thickness=2.0)
+    my_crystal = pyxtal()
+    my_crystal.from_random(2, 20, ['C'], [4], thickness=2.0)
 
 would generate a 2d crystal with 
 
 - layer group ``P2_122 (20)``, 
-- 4 carbon atoms in the primitive cell, 
-- a volume factor of 1.0,
+- 4 carbon atoms in the conventional cell, 
 - a thickness of 2.0 Angstroms. 
   
 As with the 3d case, for crystals with multiple atom types, you may replace ``[‘C’]`` and ``[4]`` with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. PyXtal adds ``10 Angstroms of vacuum`` on each side of the 2D lattice, so that optimization may be performed without altering the structure file. However, care should be taken when using the cif file for applications designed for 3D crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; each axis will either be 1 or 0, representing either periodicity or non-periodicity. For example, PBC = [1,1,0] means that the x and y axes are periodic, while the z axis is non-periodic.
@@ -83,11 +80,9 @@ PyXtal also supports generation of atomic clusters with point group symmetry. Th
 
 .. code-block:: Python
 
-  from pyxtal.crystal import random_cluster
-  my_cluster = molecular_crystal_2D('Ih', ['C'], [60], 1.0)
+  my_cluster = pyxtal()
+  my_cluster.from_random(0, 'Ih', ['C'], [60])
 
-The parameters are the same as those for `random_crystal
-<pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D>`_. The resulting structure can be accessed either via a pymatgen Molecule object (my_cluster.molecule) or via a boxed pymatgen Structure object (my_cluster.struct)
 
 The point group may be specified either by a number (only for the crystallographic point groups), or by a `Schoenflies symbol <https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups>`_ (ex: ``Ih``, ``C*``, ``D6h``).
 
@@ -96,10 +91,30 @@ One can conveniently access the list of crystallographic point groups via the `G
 .. code-block:: Python
 
     >>> from pyxtal.symmetry import Group
-    >>> Group.pglist
-    ['C1', 'Ci', 'C2', 'Cs', 'C2h', 'D2', 'C2v', 'D2h', 'C4', 'S4', 'C4h', 'D4', 'C4v', 'D2d', 'D4h', 'C3', 'C3i', 'D3', 'C3v', 'D3d', 'C6', 'C3h', 'C6h', 'D6', 'C6v', 'D3h', 'D6h', 'T', 'Th', 'O', 'Td', 'Oh']
-    >>> Group.pgdict
-    {1: 'C1', 2: 'Ci', 3: 'C2', 4: 'Cs', 5: 'C2h', 6: 'D2', 7: 'C2v', 8: 'D2h', 9: 'C4', 10: 'S4', 11: 'C4h', 12: 'D4', 13: 'C4v', 14: 'D2d', 15: 'D4h', 16: 'C3', 17: 'C3i', 18: 'D3', 19: 'C3v', 20: 'D3d', 21: 'C6', 22: 'C3h', 23: 'C6h', 24: 'D6', 25: 'C6v', 26: 'D3h', 27: 'D6h', 28: 'T', 29: 'Th', 30: 'O', 31: 'Td', 32: 'Oh'}
+    >>> g=Group(3, dim=0).list_groups()
+   point_group
+    1           C1
+    2           Ci
+    3           C2
+    4           Cs
+    5          C2h
+    6           D2
+    ...
+    45         D8h
+    46         D4d
+    47         D5d
+    48         D6d
+    49         D7d
+    50         D8d
+    51          S6
+    52          S8
+    53         S10
+    54         S12
+    55           I
+    56          Ih
+    57          C*
+    58         C*h
+
 
 For a list of Wyckoff positions, see the `Bilbao 3D WYCKPOS utility <http://www.cryst.ehu.es/cryst/point_wp.html>`_. The following finite noncrystallographic point groups are also available:
 
@@ -121,16 +136,9 @@ The generating class is `molecular_crystal.molecular_crystal <pyxtal.molecular_c
 
 .. code-block:: Python
  
-    from pyxtal.molecular_crystal import molecular_crystal
-    my_crystal = molecular_crystal(36, ['H2O'], [2], 1.0)
+    my_crystal = pyxtal(molecular=True)
+    my_crystal.from_random(3, 36, ['H2O'], [4])
 
-This would give a crystal with spacegroup 36, 4 molecules in the conventional cell (2 in the primitive cell), and a volume factor of 1.0. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
-
-As with the random_crystal class, the molecular_crystal class has a `print_all <pyxtal.crystal.html#pyxtal.crystal.random_crystal.print_all>`_ function which shows useful information about the structure. In addition to the Wyckoff position and location, you can view the orientation angles for each molecule:
-
-.. code-block:: Python
-
-    >>> print(my_crystal)
     ------Random Molecular Crystal------
     Dimension: 3
     Group: Cmc21
@@ -138,33 +146,26 @@ As with the random_crystal class, the molecular_crystal class has a `print_all <
     orthorhombic lattice:   5.6448   6.3389   4.4262  90.0000  90.0000  90.0000
     Wyckoff sites:
     	H2 O1 @ [ 0.000  0.596  0.986]  Wyckoff letter:  4a, Site symmetry m.. ==> Rotvec: -0.343  0.000  0.000
+      
+This would give a crystal with spacegroup 36, 4 molecules in the conventional cell. As with atomic crystals, you may use lists as input for the (molecular) stoichiometry.
+
+As with the random_crystal class, the molecular_crystal class has a `print_all <pyxtal.crystal.html#pyxtal.crystal.random_crystal.print_all>`_ function which shows useful information about the structure. In addition to the Wyckoff position and location, you can view the orientation angles for each molecule.
 
 
 There are a few other parameters which may be passed to the class. See the `module documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one of the imput molecules is chiral.
 
 The user may also define which orientations are allowed for each molecule in each Wyckoff position. This is done by setting the orientations parameter. By default, PyXtal will determine the valid orientations automatically using the `get_orientations <pyxtal.molecular_crystal.html#molecular_crystal.get_orientations>`_ function, which in turn calls the `orientation_in_wyckoff_position <pyxtal.molecule.html#orientation_in_wyckoff_position>`_ function. Setting custom orientations will typically not be necessary, but may be used to save time during generation; see the source code for more information.
 
-2D Molecular Crystals  
+2D/1D Molecular Crystals  
 ~~~~~~~~~~~~~~~~~~~~~
 
 2d Molecular crystals are generated using the class `molecular_crystal.molecular_crystal_2D <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D>`_:
 
 .. code-block:: Python
 
-    from pyxtal.molecular_crystal import molecular_crystal_2D
-    my_crystal = molecular_crystal_2D(20, ['H2O'], [4], 1.0)
-
-Here, the parameters correspond to those for `random_crystal_2D <pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D>`_, except the atoms are again replaced with molecules. The additional options available for `molecular_crystal <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_ are also available for `molecular_crystal_2D <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D>`_.
-
-Because molecules have a certain thickness of their own, care should be used when choosing a thickness value. Currently, the thickness parameter only determines where the molecular centers of mass can be, so the final crystal may have individual atoms outside of this range.
-
-1D Molecular Crystals
-~~~~~~~~~~~~~~~~~~~~~
-
-PyXtal also supports generation of 1D crystals using Rod groups (between 1 and 75). The corresponding classes are `crystal.random_crystal_1D
-<pyxtal.crystal.html#pyxtal.crystal.random_crystal_1D>`_ and `molecular_crystal_1D
-<pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_1D>`_. The parameters for these functions are the same as those for `random_crystal_2D
-<pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D>`_ and `molecular_crystal_2D <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal_2D>`_. However, in place of the thickness of the unit cell, you should use the cross-sectional area of the unit cell (in Angstroms squared). Again, PyXtal will determine this value automatically if none is specified.
+    my_crystal = pyxtal()
+    my_crystal.from_random(2, 20, ['H2O'], [4])
+    my_crystal.from_random(1, 20, ['H2O'], [4])
 
 Optional Parameters
 -------------------
@@ -194,8 +195,8 @@ Here, both ``l1`` and ``l2`` describe the same lattice. In this case, it is an o
 
 .. code-block:: Python
  
-    from pyxtal.molecular_crystal import molecular_crystal
-    my_crystal = molecular_crystal(36, ['H2O'], [2], 1.0, lattice=l1)
+    my_crystal = pyxtal()
+    my_crystal.from_random(3, 36, ['H2O'], [4], lattice=l1)
 
 This would generate a random water ice crystal, with 
 
@@ -241,13 +242,8 @@ The Tol_matrix can now be passed to a random_crystal object:
 
 .. code-block:: Python
 
-    custom_tolerance_crystal = random_crystal(12, ['C','N'], [2,4], 1.0, tm=tol_m_1)
-
-Alternatively, you can specify one of the preset tolerance matrices by passing a string to random_crystal or molecular_crystal. Possible values include ``atomic``, ``molecular``, or ``metallic``:
-
-.. code-block:: Python
-
-    metallic_crystal = random_crystal(12, ['Cu', 'Pd'], [2, 4], 1.0, tm="metallic")
+    crystal = pyxtal()
+    crystal.from_random(3, 12, ['C','N'], [2,4], tm=tol_m_1)
 
 By default, atomic crystals will use the average of the covalent radii between two atoms. Molecular crystals will use 1.2 times the sum of the covalent radii between two atoms. Using ``metallic`` will use the average of the metallic radius for metals, and the covalent radius for other atom types.
 
@@ -259,41 +255,48 @@ Suppose we generated a carbon structure as follows,
 
 .. code-block:: Python
 
-    >>> from pyxtal.crystal import random_crystal
-    >>> c = random_crystal(225, ['C'], [4], 1)
+    from pyxtal import pyxtal
+    c = pyxtal()
+    c.from_random(3, 225, ['C'], [16])
     
 The `pyxtal` structure object can be conveniently converted to `Pymatgen` or `ASE Atoms` object.
 
 .. code-block:: Python
 
-    >>> ase_struc = c.to_ase()
-    >>> pmg_struc = c.to_pymatgen()
+    ase_struc = c.to_ase()
+    pmg_struc = c.to_pymatgen()
 
 
 `ASE Atoms` object supports a lot of methods for structural manipulation and file formats (`cif`, `poscar`, `extxyz`, .etc).
 
 .. code-block:: Python
 
-    >>> ase_struc * 2
+    ase_struc * 2
     Atoms(symbols='C128', pbc=True, cell=[[13.312249674597792, 0.0, 0.0], [8.151401976723291e-16, 13.312249674597792, 0.0], [8.151401976723291e-16, 8.151401976723291e-16, 13.312249674597792]])
-    >>> ase_struc * [1, 2, 2]
+    
+    
+    ase_struc * [1, 2, 2]
     Atoms(symbols='C64', pbc=True, cell=[[6.656124837298896, 0.0, 0.0], [8.151401976723291e-16, 13.312249674597792, 0.0], [8.151401976723291e-16, 8.151401976723291e-16, 13.312249674597792]])
-    >>> ase_struc.write('1.vasp', format='vasp', vasp5=True, direct=True)
-    >>> ase_struc.write('1.xyz', format='extxyz')
+    
+    
+    ase_struc.write('1.vasp', format='vasp', vasp5=True, direct=True)
+    ase_struc.write('1.xyz', format='extxyz')
     
     
 For the molecular crytals, the atomic order will automatically adjusted when converting when the structure is converted to `ASE Atoms` object. If you want to keep the original order, just set ``resort=False`` when you call the ``to_ase()`` function.
 
 .. code-block:: Python
 
-    >>> from pyxtal.molecular_crystal import molecular_crystal
-    >>> my_crystal = molecular_crystal(36, ['H2O'], [2], 1.0)
-    >>> xtal = my_crystal.to_ase(resort=False)
-    >>> print(xtal)
-        Atoms(symbols='OH2OH2OH2OH2', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
-    >>> ordered_xtal = my_crystal.to_ase()
-    >>> print(ordered_xtal)
-        Atoms(symbols='H8O4', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
+    my_crystal = pyxtal()
+    my_crystal.from_random(3, 36, ['H2O'], [4], 1.0)
+    xtal = my_crystal.to_ase(resort=False)
+    print(xtal)
+    
+    Atoms(symbols='OH2OH2OH2OH2', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
+    
+    ordered_xtal = my_crystal.to_ase()
+    print(ordered_xtal)
+    Atoms(symbols='H8O4', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
     
  
     
