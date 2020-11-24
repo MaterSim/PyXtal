@@ -5,9 +5,10 @@ from pyxtal.constants import deg, logo
 import numpy as np
 from pyxtal.symmetry import Group
 
-def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
+def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
     Export the structure in cif format
+    The default setting for _atom_site follows the materials project cif 
 
     Args:
         struc: pyxtal structure object
@@ -15,6 +16,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         header: additional information
         permission: write('w') or append('a+') to the given file
         sym_num: the number of symmetry operations, None means writing all symops
+        style: "icsd" or "mp" (used in pymatgen)
 
     """
     if sym_num is None:
@@ -72,8 +74,10 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
 
     lines += '\nloop_\n'
     lines += ' _atom_site_label\n'
+    lines += ' _atom_site_type_symbol\n'
     lines += ' _atom_site_symmetry_multiplicity\n'
-    lines += ' _atom_site_Wyckoff_symbol\n'
+    if style == 'icsd':
+        lines += ' _atom_site_Wyckoff_symbol\n'
     lines += ' _atom_site_fract_x\n'
     lines += ' _atom_site_fract_y\n'
     lines += ' _atom_site_fract_z\n'
@@ -100,8 +104,12 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None):
         else:
             coords, species = [site.position], [site.specie]
         for specie, coord in zip(species, coords):
-            lines += '{:6s} {:3d} {:s} {:12.6f}{:12.6f}{:12.6f} 1\n'.format(\
-                    specie, mul, letter, *coord)
+            if style == 'mp':
+                lines += '{:6s} {:6s} {:3d} {:12.6f}{:12.6f}{:12.6f} 1\n'.format(\
+                    specie, specie, mul, *coord)
+            else:
+                lines += '{:6s} {:6s} {:3d} {:s} {:12.6f}{:12.6f}{:12.6f} 1\n'.format(\
+                    specie, specie, mul, letter, *coord)
     lines +='#END\n\n'
     
 

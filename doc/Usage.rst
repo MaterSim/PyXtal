@@ -91,7 +91,7 @@ One can conveniently access the list of crystallographic point groups via the `G
 .. code-block:: Python
 
     >>> from pyxtal.symmetry import Group
-    >>> g=Group(3, dim=0).list_groups()
+    >>> g=Group.list_groups(dim=0)
    point_group
     1           C1
     2           Ci

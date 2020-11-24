@@ -149,12 +149,13 @@ class pyxtal:
         lattice=None,
         sites = None,
         conventional = True,
+        t_factor = 1.0,
     ):
         if self.molecular:
             prototype = "molecular"
         else:
             prototype = "atomic"
-        tm = Tol_matrix(prototype=prototype)
+        tm = Tol_matrix(prototype=prototype, factor=t_factor)
 
         count = 0
         while True:
@@ -322,7 +323,7 @@ class pyxtal:
             raise NotImplementedError("Does not support cluster for now")
         return pairs
 
-    def to_file(self, filename=None, fmt=None, permission='w'):
+    def to_file(self, filename=None, fmt=None, permission='w', sym_num=None):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
@@ -345,7 +346,7 @@ class pyxtal:
 
             if fmt == "cif":
                 if self.dim == 3:
-                    return write_cif(self, filename, "from_pyxtal", permission)
+                    return write_cif(self, filename, "from_pyxtal", permission, sym_num=sym_num)
                 else:
                     pmg_struc = self.to_pymatgen()
                     if self.molecular:
