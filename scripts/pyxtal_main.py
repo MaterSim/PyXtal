@@ -4,10 +4,6 @@
 import os
 from pyxtal import print_logo, pyxtal
 from pyxtal.symmetry import get_symbol_and_number
-from pymatgen.io.cif import CifWriter
-from pymatgen.symmetry.analyzer import PointGroupAnalyzer
-from time import time
-from spglib import get_symmetry_dataset
 import numpy as np
 
 from argparse import ArgumentParser
@@ -83,7 +79,16 @@ if __name__ == "__main__":
         metavar="thickness",
         default=None,
         type=float,
-        help="Thickness, in Angstroms, of a 2D crystal, or area of a 1D crystal, None generates a value automatically: default None",
+        help="Thickness of a 2D crystal, or area of a 1D crystal, None generates a value automatically: default None",
+    )
+
+    parser.add_argument(
+        "-m",
+        "--molecular",
+        dest="molecular",
+        action = 'store_true',
+        default = False,
+        help="molecular? default: False",
     )
 
     print_logo()
@@ -109,19 +114,18 @@ if __name__ == "__main__":
     if factor < 0:
         raise ValueError("Volume factor {:.2f} must be greater than 0.".format(factor))
 
-    #verbosity = options.verbosity
     attempts = options.attempts
     outdir = options.outdir
     dimension = options.dimension
     thickness = options.thickness
+    molecular = options.molecular
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     for i in range(attempts):
         numIons0 = np.array(numIons)
-        start = time()
-        rand_crystal = pyxtal()
+        rand_crystal = pyxtal(molecular=options.molecular)
         if dimension == 3:
             rand_crystal.from_random(3, sg, system, numIons0, factor)
         elif dimension == 2:
@@ -130,39 +134,12 @@ if __name__ == "__main__":
             rand_crystal.from_random(1, sg, system, numIons0, factor, thickness)
         if dimension == 0:
             rand_crystal.from_random(0, sg, system, numIons0, factor)
-        end = time()
-        timespent = np.around((end - start), decimals=2)
-
-        if rand_crystal.valid:
-            # Output a cif or xyz file
-            pmg_struc = rand_crystal.to_pymatgen()
-            ase_struc = rand_crystal.to_ase()
-            comp = str(pmg_struc.composition)
-            comp = comp.replace(" ", "")
-            if dimension > 0:
-                outpath = outdir + "/" + comp + ".cif"
-                CifWriter(pmg_struc, symprec=0.1).write_file(filename=outpath)
-            else:
-                outpath = outdir + "/" + comp + ".xyz"
-                rand_crystal.to_file(filename=outpath, fmt="xyz")
-
-            if dimension > 0:
-                ans = get_symmetry_dataset(ase_struc, symprec=1e-1)[
-                    "international"
-                ]
-            else:
-                ans = PointGroupAnalyzer(pmg_struc).sch_symbol
-
-            print("Symm requested: {:d}({:s}), generated: {:s}".format(sg, symbol, ans))
-            #print("Output to " + outpath)
-
-            xyz_path = outdir + "/" + comp + ".xyz"
-            ase_struc.write(xyz_path, format="extxyz")
-            print("Output to " + xyz_path)
-
-            print(rand_crystal)
-
-        # If generation fails
+        # Output a cif or xyz file
+        if dimension > 0:
+            outpath = options.outdir + '/' + str(i) + '.cif'
         else:
-            print("something is wrong")
-            print("Time spent during generation attempt: " + str(timespent) + "s")
+            outpath = options.outdir + '/' + str(i) + '.xyz'
+        rand_crystal.to_file(filename=outpath)
+
+
+        print(rand_crystal)

@@ -34,10 +34,9 @@ setup(
         'pyxtal.potentials': ['*'],
     },
     scripts=[
-        "scripts/pyxtal_atom.py",
+        "scripts/pyxtal_main.py",
         "scripts/pyxtal_test.py",
         "scripts/pyxtal_symmetry.py",
-        "scripts/pyxtal_molecule.py",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from pyxtal import print_logo
-from pyxtal.symmetry import Group, list_groups
+from pyxtal.symmetry import Group
 from argparse import ArgumentParser
 
 if __name__ == "__main__":
@@ -33,6 +33,6 @@ if __name__ == "__main__":
         sg = options.sg
         if sg.isnumeric():
             sg = int(sg)
-        Group(sg, dimension).print_all()
+        print(Group(sg, dimension))
     else:
-        list_groups(dimension)
+        Group.list_groups(dimension)
