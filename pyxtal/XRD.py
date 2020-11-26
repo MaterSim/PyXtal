@@ -282,7 +282,7 @@ class XRD(object):
         return hkl_str
 
     def plot_pxrd(self, filename=None, minimum_I=0.01, show_hkl=True,\
-                    fontsize=None, figsize=(20,10), xlim=None):
+                fontsize=None, figsize=(20,10), xlim=None, width=1.0):
         """ 
         plot PXRD 
 
@@ -307,7 +307,7 @@ class XRD(object):
             x_min, x_max = xlim[0], xlim[1]
         dx = x_max-x_min
         for i in self.pxrd:
-            plt.bar(i[0],i[-1], color='b', width=dx/180)
+            plt.bar(i[0],i[-1], color='b', width=width*dx/180)
             if i[-1] > minimum_I and x_min <= i[0] <= x_max: 
                if show_hkl:
                   label = self.draw_hkl(i[2:5])
@@ -397,7 +397,7 @@ class Profile:
         The parameters for the profiling method.
     """
 
-    def __init__(self, method='mod_pseudo-voigt', res = 0.01, user_kwargs=None):
+    def __init__(self, method='mod_pseudo-voigt', res = 0.02, user_kwargs=None):
         
         self.method = method
         self.user_kwargs = user_kwargs
@@ -413,9 +413,9 @@ class Profile:
                         'eta_h': 0.504656,
                         'eta_l': 0.611844,
                      }
-        elif method == 'gaussian' or method == 'lorentzian' or method == 'pseudo-voigt':
+        elif method in ['gaussian', 'lorentzian', 'pseudo-voigt']:
            _kwargs = {
-                        'FWHM': 0.02
+                        'FWHM': 0.05,
                      }
         
         else:
