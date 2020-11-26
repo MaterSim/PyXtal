@@ -223,7 +223,7 @@ class pyxtal:
                 self.mol_sites = [struc.make_mol_site()]
                 self.group = Group(struc.wyc.number)
                 self.lattice = struc.lattice
-                self.molecules = [pyxtal_molecule(struc.molecule)]
+                self.molecules = [pyxtal_molecule(struc.molecule, symmetrize=False)]
                 self.numMols = struc.numMols
                 self.diag = struc.diag
                 self.valid = True # Need to add a check function
@@ -441,23 +441,24 @@ class pyxtal:
         
         return new_struc
 
-    def apply_perturbation(self, d_coor=0.05, d_lat=0.05):
+    def apply_perturbation(self, d_lat=0.05, d_coor=0.05, d_rot=1):
         """
         perturb the structure without breaking the symmetry
 
         Args:
-            d_coor: magnitude of perturbation on atomic coordinates
-            d_lat: magnitude of perturbation on lattice
+            d_coor: magnitude of perturbation on atomic coordinates (in A)
+            d_lat: magnitude of perturbation on lattice (in percentage)
         """
+
+        self.lattice = self.lattice.mutate(degree=d_lat)
 
         if self.molecular:
             for i, site in enumerate(self.mol_sites):
-                site.perturbate(eps=d_coor)
+                site.perturbate(lattice=self.lattice.matrix, trans=d_coor, rot=d_rot)
         else:
             for i, site in enumerate(self.atom_sites):
-                site.perturbate(eps=d_coor)
+                site.perturbate(lattice=self.lattice.matrix, magnitude=d_coor)
 
-        self.lattice = self.lattice.mutate(degree=d_lat)
         self.source = 'Perturbation'
 
     def copy(self):

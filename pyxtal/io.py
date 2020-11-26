@@ -219,7 +219,7 @@ class structure_from_ext():
             mol = self.molecule
             ori = Orientation(np.eye(3))
         mol = self.add_site_props(mol)
-        pmol = pyxtal_molecule(mol)
+        pmol = pyxtal_molecule(mol, symmetrize=False)
         site = mol_site(pmol, self.position, ori, self.wyc, self.lattice, self.diag)
         return site
 
@@ -347,6 +347,7 @@ def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
             break
     
     coords = [s.coords for s in visited]
+    coords = np.array(coords)
     numbers = [s.specie.number for s in visited]
     
     if keep_order:
@@ -356,7 +357,7 @@ def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
         numbers = numbers[seq]
 
     if not absolute:
-        coords = coords.dot(struc.lattice.inv)
+        coords = coords.dot(struc.lattice.inv_matrix)
     return coords, numbers
 
 #seed = structure_from_cif("254385.cif", "1.xyz")

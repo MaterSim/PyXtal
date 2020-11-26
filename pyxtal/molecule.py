@@ -48,7 +48,7 @@ class pyxtal_molecule:
    
     """
 
-    def __init__(self, mol=None, tm=Tol_matrix(prototype="molecular")):
+    def __init__(self, mol=None, symmetrize=True, tm=Tol_matrix(prototype="molecular")):
         mo = None
         if type(mol) == str:
             # Parse molecules: either file or molecule name
@@ -78,8 +78,9 @@ class pyxtal_molecule:
         self.props = mo.site_properties
 
         if len(mo) > 1:
-            pga = PointGroupAnalyzer(mo)
-            mo = pga.symmetrize_molecule()["sym_mol"] 
+            if symmetrize:
+                pga = PointGroupAnalyzer(mo)
+                mo = pga.symmetrize_molecule()["sym_mol"] 
             mo = self.add_site_props(mo)
 
         self.mol = mo

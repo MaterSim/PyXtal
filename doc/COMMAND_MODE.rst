@@ -38,7 +38,7 @@ After a successfull `installation <Installation.html>`_, all of them can be acce
       -s sg, --symmetry sg  desired symmetry, number or string, e.g., 36, Pbca, Ih
       -e element, --element element
                             desired elements: e.g., Li
-      -n numIons, --numIons numIons
+      -n numIons, --numIons numIons/numMols
                             desired numbers of atoms: 16
       -f factor, --factor factor
                             volume factor: default 1.0
@@ -254,7 +254,7 @@ This is very useful for molecules with high internal symmetry. During crystalliz
 
 ::
 
-    $ pyxtal_main.py -m -e H2O -n 2 -s 36
+    $ pyxtal_main.py -m -e C60 -n 2 -s 36
 
 
 .. image:: ../images/C60-x.png

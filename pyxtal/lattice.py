@@ -1312,7 +1312,8 @@ def matrix2para(matrix, radians=True):
     return cell_para
 
 
-def para2matrix(cell_para, radians=True, format="lower"):
+#def para2matrix(cell_para, radians=True, format="lower"):
+def para2matrix(cell_para, radians=True, format="upper"):
     """
     Given a set of lattic parameters, generates a matrix representing the
     lattice vectors

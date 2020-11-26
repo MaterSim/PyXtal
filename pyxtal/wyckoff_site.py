@@ -253,13 +253,20 @@ class mol_site:
         matrix = self.get_principle_axes(coord0, True)
         return R.from_matrix(matrix).as_euler('zxy', degrees=True)
 
-    def perturbate(self, eps=1e-3):
+    def perturbate(self, lattice, trans=0.1, rot=5):
         """
         Random perturbation of the molecular site
+        
+        Args:
+            lattice: lattice vectors
+            trans: magnitude of tranlation vectors (default: 0.1 A)
+            rot: magnitude of rotation degree (default: 5.0)
         """
-        disp = eps*(np.random.random([1,3])-0.5)
-        self.translate(disp, True)
-        self.orientation.change_orientation()
+        dis = (np.random.sample(3) - 0.5).dot(lattice)
+        dis /= np.linalg.norm(dis)
+        dis *= trans
+        self.translate(dis, True)
+        self.orientation.change_orientation(angle=rot/180*np.pi)
     
     def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
         """
@@ -666,11 +673,18 @@ class atom_site:
         wp = Wyckoff_position.from_group_and_index(g, index, dim, PBC)
         return cls(wp, position, specie)
 
-    def perturbate(self, eps=1e-2):
+    def perturbate(self, lattice, magnitude=0.1):
         """
         Random perturbation of the site
+        
+        Args:
+            lattice: lattice vectors
+            magnitude: the magnitude of displacement (default: 0.1 A)
         """
-        pos = self.position + eps*(np.random.sample(3) - 0.5)
+        dis = (np.random.sample(3) - 0.5).dot(lattice)
+        dis /= np.linalg.norm(dis)
+        dis *= magnitude
+        pos = self.position + dis.dot(np.linalg.inv(lattice))
         self.update(pos)
  
     def update(self, pos=None):
