@@ -33,6 +33,7 @@ Check the folloowing links to quickly understand how pyxtal works
 
 - [Atomic crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb)
 - [Molecular crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb)
+- [XRD](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb)
 
 ## Current Features
 
