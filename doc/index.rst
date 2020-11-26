@@ -15,10 +15,12 @@ PyXtal
 
 PyXtal (pronounced ``pie-crystal``) is an open source Python library for the ab-initio generation of random crystal structures. It has the following features:
 
-- Generation of atomic crystals and clusters for a given symmetry and stoichiometry (0D, 1D, 2D and 3D)
-- Generation of molecular crystals (1-3D), with the automatic determination of special Wyckoff positions. 
-- Internal support of ``cif`` file and many other formats (e.g., ``xyz``, ``POSCAR``) via ``pymatgen`` and ``ASE``.
-- Easy access to symmetry group information (e.g., Wyckoff, site symmetry, and point group symbols).
+- Generation of atomic structures for a given symmetry and stoichiometry (0-3D)
+- Generation of molecular crystals (1-3D) with the support of special Wyckoff positions. 
+- Internal support of ``cif`` file and many other formats via ``pymatgen`` or ``ASE``.
+- Easy access to symmetry information (e.g., Wyckoff, site symmetry and international symbols).
+- X-ray diffraction analysis and [its online application](https://vxrd.physics.unlv.edu)
+- Structural manipulation via symmetry constraint (group-subgroup relation)
 - Geometry optimization from built-in and external optimization methods.
 
 The current version is ``0.1.4`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license. Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
@@ -32,6 +34,7 @@ For an experienced Python user who are familiar with Jupyter notebook, you are a
 
 - `Atomic crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb>`_
 - `Molecular crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb>`_
+- `XRD <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb>`_
 
 Tutorial
 ========================

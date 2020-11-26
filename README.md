@@ -37,12 +37,13 @@ Check the folloowing links to quickly understand how pyxtal works
 
 ## Current Features
 
-- Random generation of atomic/molecular crystals in 3D, 2D, 1D and 0D crystals for a given symmetry group and stoichiometry
-- Molecules in special Wyckoff positions are automatically oriented to preserve the space group symmetry
-- Interfaces with Pymatgen and ASE for structural manipulation and analysis
-- Easy access to symmetry group information (e.g., Wyckoff positions, site symmetry operations)
+- Generation of atomic structures for a given symmetry and stoichiometry (0-3D)
+- Generation of molecular crystals (1-3D) with the support of special Wyckoff positions. 
+- Internal support of ``cif`` file and many other formats via ``pymatgen`` or ``ASE``.
+- Easy access to symmetry information (e.g., Wyckoff, site symmetry and international symbols).
 - X-ray diffraction analysis and [its online application](https://vxrd.physics.unlv.edu)
-- Geometry optimization via different exploratory algorithms.
+- Structural manipulation via symmetry constraint (group-subgroup relation)
+- Geometry optimization from built-in and external optimization methods.
 
 ## Installation
 

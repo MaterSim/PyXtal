@@ -378,35 +378,6 @@ class molecular_crystal:
         elif has_freedom is False:
             return 0
 
-    def optimize_lattice(self):
-        """
-        optimize the lattice if the cell has a bad inclination angles
-        """
-        for i in range(5):
-            lattice, trans, opt = self.lattice.optimize()
-            if opt:
-                for site in self.mol_sites:
-                    pos_absolute = np.dot(site.position, self.lattice.matrix)
-                    pos_frac = pos_absolute.dot(lattice.inv_matrix)
-                    site.position = pos_frac - np.floor(pos_frac)
-                    site.lattice = lattice
-                    # for P21/c, Pc, C2/c, check if opt the inclination angle
-                    if self.group.number in [7, 14, 15]:
-                        for j, op in enumerate(site.wp.ops):
-                            vec = op.translation_vector.dot(trans)
-                            vec -= np.floor(vec)
-                            op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                            site.wp.ops[j] = op1
-                #to do needs to update diag if necessary
-                _, perm = Wyckoff_position.from_symops(site.wp.ops, self.group.number)            
-                if not isinstance(perm, list): 
-                    self.diag = True
-                else:
-                    self.diag = False
-                self.lattice = lattice
-            else:
-                break
-
     def __str__(self):
         s = "------Random Molecular Crystal------"
         s += "\nDimension: " + str(self.dim)
