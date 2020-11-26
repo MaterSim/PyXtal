@@ -266,7 +266,10 @@ class mol_site:
         dis /= np.linalg.norm(dis)
         dis *= trans
         self.translate(dis, True)
-        self.orientation.change_orientation(angle=rot/180*np.pi)
+        if rot == 'random':
+            self.orientation.change_orientation()
+        else:
+            self.orientation.change_orientation(angle=rot/180*np.pi)
     
     def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
         """

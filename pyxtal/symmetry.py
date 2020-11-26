@@ -141,10 +141,12 @@ class Group:
         self.header = "-- " + names[dim] + 'group --'
         self.symbol, self.number = get_symbol_and_number(group, dim)
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
-
+        self.alias = None
         # Wyckoff positions, site_symmetry, generators, inverse
         # QZ: check if we can just use the get_wyckoff_symmetry function
         if dim == 3:
+            if self.number in [7, 4, 15]:
+                self.alias = self.symbol.replace("c","n")
             self.wyckoffs = get_wyckoffs(self.number) 
             self.w_symm = get_wyckoff_symmetry(self.number)
             self.wyckoff_generators = get_wyckoff_generators(self.number)

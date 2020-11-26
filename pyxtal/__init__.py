@@ -149,7 +149,10 @@ class pyxtal:
         lattice=None,
         sites = None,
         conventional = True,
+        diag = False,
         t_factor = 1.0,
+        max_count = 10,
+        force_pass = False,
     ):
         if self.molecular:
             prototype = "molecular"
@@ -158,12 +161,14 @@ class pyxtal:
         tm = Tol_matrix(prototype=prototype, factor=t_factor)
 
         count = 0
+        quit = False
+
         while True:
             count += 1
             if self.molecular:
                 if dim == 3:
                     struc = molecular_crystal(group, species, numIons, factor, 
-                    lattice=lattice, sites=sites, conventional=conventional, tm=tm)
+                    lattice=lattice, sites=sites, conventional=conventional, diag=diag, tm=tm)
                 elif dim == 2:
                     struc = molecular_crystal_2D(group, species, numIons, factor, 
                     thickness=thickness, sites=sites, conventional=conventional, tm=tm)
@@ -183,10 +188,20 @@ class pyxtal:
                 else:
                     struc = random_cluster(group, species, numIons, factor, 
                             lattice, sites, tm)
+            if force_pass:
+                quit = True
+                break
+            elif struc.valid:
+                quit = True
+                break
 
-            if struc.valid:
-                self.valid = True
-                self.dim = dim
+            if count >= max_count:
+                raise RuntimeError("It takes long time to generate the structure, check inputs")
+
+        if quit:
+            self.valid = struc.valid
+            self.dim = dim
+            try:
                 self.lattice = struc.lattice
                 if self.molecular:
                     self.numMols = struc.numMols
@@ -203,9 +218,9 @@ class pyxtal:
                 self.factor = struc.factor
                 self.number = struc.number
                 self.get_formula()
-                break
-            if count >= 10:
-                raise RuntimeError("It takes long time to generate the structure, check inputs")
+            except:
+                pass
+
 
     def from_seed(self, seed, molecule=None, relax_h=False):
         """
