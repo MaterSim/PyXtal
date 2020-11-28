@@ -25,7 +25,7 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.io import write_cif, structure_from_ext
 from pyxtal.XRD import XRD
 
-name = "pyxtal"
+# name = "pyxtal"
 
 def print_logo():
     """
@@ -57,6 +57,9 @@ class pyxtal:
     >>> from pyxtal import pyxtal
     >>> struc = pyxtal()
     >>> struc.from_random(3, 227, ['C'], [8])
+    >>> struc.get_site_labels()
+    >>> s.get_site_labels() 
+    {'C': ['8a']}
     >>> struc
     ------Crystal from random------
     Dimension: 3
@@ -136,6 +139,27 @@ class pyxtal:
 
     def __repr__(self):
         return str(self)
+
+    def get_site_labels(self):
+        """
+        quick function to get the site_labels as a dictionary
+        """
+        if self.molecular:
+            sites = self.mol_sites
+            names = [site.molecule.name for site in sites]
+        else:
+            sites = self.atom_sites
+            names = [site.specie for site in sites]
+
+        dicts = {}
+        for name, site in zip(names, sites):
+            label = str(site.wp.multiplicity) + site.wp.letter
+            if name not in dicts.keys():
+                dicts[name] = [label]
+            else:
+                dicts[name].append(label)
+        return dicts
+
 
     def from_random(
         self,
@@ -217,7 +241,7 @@ class pyxtal:
                 self.source = 'random'
                 self.factor = struc.factor
                 self.number = struc.number
-                self.get_formula()
+                self._get_formula()
             except:
                 pass
 
@@ -262,19 +286,7 @@ class pyxtal:
         self.source = 'Seed'
         self.dim = 3
         self.PBC = [1, 1, 1]
-        self.get_formula()
-
-    def get_formula(self):
-        formula = ""
-        if self.molecular:
-            numspecies = self.numMols
-            species = [str(mol) for mol in self.molecules]
-        else:
-            numspecies = self.numIons
-            species = self.species
-        for i, s in zip(numspecies, species):
-            formula += "{:s}{:d}".format(s, int(i))
-        self.formula = formula
+        self._get_formula()
 
     def from_pymatgen(self, structure):
         """
@@ -515,9 +527,25 @@ class pyxtal:
         
         return total_coords, species
 
+    def _get_formula(self):
+        """
+        A quick function to get the formula.
+        """
+
+        formula = ""
+        if self.molecular:
+            numspecies = self.numMols
+            species = [str(mol) for mol in self.molecules]
+        else:
+            numspecies = self.numIons
+            species = self.species
+        for i, s in zip(numspecies, species):
+            formula += "{:s}{:d}".format(s, int(i))
+        self.formula = formula
+
     def to_ase(self, resort=True):
         """
-        export to ase Atoms object
+        export to ase Atoms object.
         """
         from ase import Atoms
         if self.valid:
@@ -543,7 +571,7 @@ class pyxtal:
 
     def to_pymatgen(self):
         """
-        export to Pymatgen structure object
+        export to Pymatgen structure object.
         """
         from pymatgen.core.structure import Structure, Molecule
 
@@ -563,7 +591,8 @@ class pyxtal:
 
     def get_XRD(self, **kwargs):
         """
-        compute the PXRD object
+        compute the PXRD object.
+
         ** kwargs include
             - wavelength (1.54184)
             - thetas [0, 180]
