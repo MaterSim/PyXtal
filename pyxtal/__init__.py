@@ -58,7 +58,6 @@ class pyxtal:
     >>> struc = pyxtal()
     >>> struc.from_random(3, 227, ['C'], [8])
     >>> struc.get_site_labels()
-    >>> s.get_site_labels() 
     {'C': ['8a']}
     >>> struc
     ------Crystal from random------
@@ -274,12 +273,12 @@ class pyxtal:
             elif isinstance(seed, Atoms): #ASE atoms
                 from pymatgen.io.ase import AseAtomsAdaptor
                 pmg_struc = AseAtomsAdaptor.get_structure(seed)
-                self.from_pymatgen(pmg_struc)
+                self._from_pymatgen(pmg_struc)
             elif isinstance(seed, Structure): #Pymatgen
-                self.from_pymatgen(seed)
+                self._from_pymatgen(seed)
             elif isinstance(seed, str):
                 pmg_struc = Structure.from_file(seed)
-                self.from_pymatgen(pmg_struc)
+                self._from_pymatgen(pmg_struc)
 
         self.factor = 1.0
         self.number = self.group.number
@@ -288,9 +287,10 @@ class pyxtal:
         self.PBC = [1, 1, 1]
         self._get_formula()
 
-    def from_pymatgen(self, structure):
+    def _from_pymatgen(self, structure):
         """
-        Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
+        Load structure from Pymatgen
+        should not be used directly
         """
         from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
 
