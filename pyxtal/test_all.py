@@ -79,10 +79,10 @@ class TestMolecular(unittest.TestCase):
 
     def test_sites(self):
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 36, ["H2O"], [4])
+        struc.from_random(3, 19, ["H2O"], [4])
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
-        self.assertTrue(sga.get_space_group_symbol() == "Cmc2_1")
+        self.assertTrue(sga.get_space_group_symbol() == "P2_12_12_1")
 
         struc = pyxtal(molecular=True)
         struc.from_random(3, 36, ["H2O"], [8], sites=[["4a", "4a"]])
