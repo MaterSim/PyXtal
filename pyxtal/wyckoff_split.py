@@ -273,29 +273,6 @@ def in_lists(mat1, mat2, eps=1e-4, PBC=True):
 
         
 if __name__ == "__main__":
-    import pymatgen.analysis.structure_matcher as sm
-    from random import choice
-    from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-    from pyxtal.crystal import random_crystal
-    
-    while True:
-        sg = 21 #choice(range(141,231))
-        s1 = random_crystal(sg, ['B'], [3], sites=[['4f','2d']])
-        if s1.valid:
-            break
-    print(s1)
-    pmg_s1 = s1.to_pymatgen()
-    sga1 = SpacegroupAnalyzer(pmg_s1, symprec=1e-4).get_space_group_symbol()
-    #s2s = s1.subgroup(group_type='k', eps=0)
-    s2s = s1.subgroup(group_type='k', eps=0)#, idx=[5])
-    for i, s2 in enumerate(s2s):
-        pmg_s2 = s2.to_pymatgen()
-        try:
-            sga2 = SpacegroupAnalyzer(pmg_s2, symprec=1e-4).get_space_group_symbol()
-            print(i, sga1, sga2, sm.StructureMatcher().fit(pmg_s1, pmg_s2))
-        except:
-            print("something is wrong here")
-            print(s2)
-            import sys; sys.exit()
-#s1 = s2
-
+    sites = ['4f','2d']
+    sp = wyckoff_split(G=21, wp1=sites, idx=0, group_type='t')
+    print(sp)
