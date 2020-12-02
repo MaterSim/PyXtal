@@ -51,7 +51,13 @@ class TestWP(unittest.TestCase):
             get_wyckoffs(i, organized=True)
 
     # to add test from string
-
+class TestDof(unittest.TestCase):
+    def test_atomic(self):
+        s = pyxtal() 
+        s.from_random(3, 225, ['C'], [8])
+        ans = s.get_dof()
+        self.assertTrue(s.lattice.dof == 1)
+        self.assertTrue(ans == 1)
 
 class TestMolecular(unittest.TestCase):
     def test_single_specie(self):

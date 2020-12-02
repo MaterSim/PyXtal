@@ -139,6 +139,20 @@ class pyxtal:
     def __repr__(self):
         return str(self)
 
+    def get_dof(self):
+        """
+        get the number of dof for the given structures:
+        """
+        if self.molecular:
+            sites = self.mol_sites
+        else:
+            sites = self.atom_sites
+        dof = 0
+        for site in sites:
+            dof += site.dof
+
+        return self.lattice.dof + dof
+
     def get_site_labels(self):
         """
         quick function to get the site_labels as a dictionary

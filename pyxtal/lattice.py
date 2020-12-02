@@ -129,6 +129,23 @@ class Lattice:
             self.stress_indices = []
         # Set values for the matrix
         self.reset_matrix()
+        self._get_dof()
+
+    def _get_dof(self):
+        """
+        get the number of degree of freedom
+        """
+        if self.ltype in ["triclinic", "Triclinic"]:
+            self.dof = 6
+        elif self.ltype in ["monoclinic", "Monoclinic"]:
+            self.dof = 4
+        elif self.ltype in ['orthorhombic', 'Orthorhombic']:
+            self.dof = 3
+        elif self.ltype in ['tetragonal', 'Tetragonal', 
+            'hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:        
+            self.dof = 2
+        else:
+            self.dof = 1
 
     def copy(self):
         """

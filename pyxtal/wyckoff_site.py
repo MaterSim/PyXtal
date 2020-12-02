@@ -80,6 +80,14 @@ class mol_site:
         s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
         return s
 
+    def _get_dof(self):
+        """
+        get the number of dof for the given structures:
+        """
+        freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
+        self.dof = len(freedom[freedom==True])
+
+
     def save_dict(self):
         dict0 = {"position": self.position,
                  "number": self.wp.number,
@@ -633,7 +641,7 @@ class atom_site:
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
         self.wp = wp
-
+        self._get_dof()
         self.PBC = self.wp.PBC
         self.multiplicity = self.wp.multiplicity
         self.update()
@@ -661,6 +669,13 @@ class atom_site:
                  "PBC": self.wp.PBC,
                 }
         return dict0
+
+    def _get_dof(self):
+        """
+        get the number of dof for the given structures:
+        """
+        freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
+        self.dof = len(freedom[freedom==True])
 
     @classmethod
     def load_dict(cls, dicts):
