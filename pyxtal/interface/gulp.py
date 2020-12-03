@@ -3,8 +3,6 @@ import numpy as np
 import re
 from pyxtal.lattice import Lattice
 from ase import Atoms
-from pyxtal.crystal import random_crystal
-from pyxtal.interface.util import symmetrize_cell
 from ase.units import eV, Ang
 
 class GULP():
@@ -18,16 +16,16 @@ class GULP():
     opt: `conv`, `conp`, `single`
     """
 
-    def __init__(self, struc, label="_", ff='reax', \
+    def __init__(self, struc, label="_", path='tmp', ff='reax', \
                  opt='conp', steps=1000, exe='gulp',\
-                 input='gulp.in', output='gulp.log', dump='opt.cif'):
-        if isinstance(struc, random_crystal):
-            self.lattice = struc.lattice
-            self.frac_coords, self.sites = struc._get_coords_and_species(absolute=False)
-        elif isinstance(struc, Atoms):
+                 input='gulp.in', output='gulp.log', dump=None):
+
+        if isinstance(struc, Atoms):
             self.lattice = Lattice.from_matrix(struc.cell)
             self.frac_coords = struc.get_scaled_positions()
             self.sites = struc.get_chemical_symbols()
+        else:
+            raise NotImplementedError("only support ASE atoms object")
 
         self.structure = struc
         self.label = label
@@ -35,8 +33,11 @@ class GULP():
         self.opt = opt
         self.exe = exe
         self.steps = steps
-        self.input = self.label + input
-        self.output = self.label + output
+        self.folder = path  
+        if not os.path.exists(self.folder):
+            os.makedirs(self.folder)
+        self.input = self.folder + '/' + self.label + input
+        self.output = self.folder + '/' + self.label + output
         self.dump = dump
         self.iter = 0
         self.energy = None
@@ -46,13 +47,12 @@ class GULP():
         self.optimized = False
         self.cputime = 0
         self.error = False
-        self.clean_up = False #True
 
-    def run(self):
+    def run(self, clean=True):
         self.write()
         self.execute()
         self.read()
-        if self.clean_up:
+        if clean:
             self.clean()
 
     def execute(self):
@@ -63,10 +63,10 @@ class GULP():
     def clean(self):
         os.remove(self.input)
         os.remove(self.output)
-        os.remove(self.dump)
+        if self.dump is not None:
+            os.remove(self.dump)
 
     def to_ase(self):
-        from ase import Atoms
         return Atoms(self.sites, scaled_positions=self.frac_coords, cell=self.lattice.matrix)
 
     def to_pymatgen(self):
@@ -104,7 +104,8 @@ class GULP():
             #f.write('switch rfo cycle 0.03\n')
             if self.opt != "single":
                 f.write('maxcycle {:d}\n'.format(self.steps))
-            f.write('output cif {:s}\n'.format(self.dump))
+            if self.dump is not None:
+                f.write('output cif {:s}\n'.format(self.dump))
 
 
     def read(self):
@@ -199,25 +200,21 @@ class GULP():
             self.energy = 100000
             print("GULP calculation is wrong")
 
-def single_optimize(struc, ff, mode=['C'], opt="conp", exe="gulp", path="", symmetrize=True):
-    if symmetrize:
-        try:
-            struc = symmetrize_cell(struc, mode)
-        except:
-            pass
-    calc = GULP(struc, label=path, ff=ff, opt=opt)
-    calc.run()
+def single_optimize(struc, ff, opt="conp", exe="gulp", path="tmp", label="_", clean=True):
+    calc = GULP(struc, label=label, path=path, ff=ff, opt=opt)
+    calc.run(clean=clean)
     if calc.error:
         print("GULP error in single optimize")
         return None, 100000, 0, True
     else:
         return calc.to_ase(), calc.energy, calc.cputime, calc.error
 
-def optimize(struc, ff, modes=['C', 'C'], optimizations=["conp", "conp"], 
-             exe="gulp", path="", symmetrize=True):
+def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 
+            path="tmp", label="_", clean=True):
+
     time_total = 0
-    for mode, opt in zip(modes, optimizations):
-        struc, energy, time, error = single_optimize(struc, ff, mode, opt, exe)
+    for opt in optimizations:
+        struc, energy, time, error = single_optimize(struc, ff, opt, exe, path, label)
         time_total += time
         if error:
             return None, 100000, 0, True

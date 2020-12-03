@@ -1,4 +1,4 @@
-from pyxtal.crystal import random_cluster
+from pyxtal import pyxtal
 from copy import deepcopy
 from optparse import OptionParser
 from random import randint, choice
@@ -131,10 +131,11 @@ class LJ_prediction:
         run = True
         while run:
             pg = choice(pgs)
-            cluster = random_cluster(pg, ["Mo"], [self.numIons], 1.0)
+            cluster = pyxtal()
+            cluster.from_random(0, pg, ["H"], [self.numIons], 0.6)
             if cluster.valid:
                 run = False
-        return cluster.coordinates
+        return cluster._get_coords_and_species(absolute=True)[0]
 
     def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33)):
 

@@ -1,4 +1,4 @@
-from pyxtal.crystal import random_cluster
+from pyxtal import pyxtal
 from copy import deepcopy
 from optparse import OptionParser
 from random import randint, choice

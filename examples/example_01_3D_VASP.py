@@ -1,4 +1,4 @@
-from pyxtal.crystal import random_crystal
+from pyxtal import pyxtal
 from pyxtal.interface.vasp import optimize
 
 # from vasp import optimize
@@ -71,8 +71,7 @@ dir0 = os.getcwd()
 t0 = time()
 
 for i in range(N):
-    run = True
-    while run:
+    while True:
         sg = randint(2, 230)
         species = []
         numIons = []
@@ -83,14 +82,14 @@ for i in range(N):
             else:
                 numIons.append(elements[ele])
 
-        crystal = random_crystal(sg, species, numIons, factor)
+        crystal = pyxtal()
+        crystal.from_random(3, sg, species, numIons, factor)
 
         if crystal.valid:
-            struc = crystal.struct
-            run = False
+            break
 
     print(
-        "SG requested: {0:3d} Vol: {1:6.2f} Time: {2:6.1f} mins".format(
+        "SG: {0:3d} Vol: {1:6.2f} Time: {2:6.1f} mins".format(
             sg, struc.volume, (time() - t0) / 60.0
         )
     )

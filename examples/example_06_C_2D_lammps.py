@@ -1,8 +1,7 @@
-from pyxtal.crystal import random_crystal_2D
+from pyxtal import pyxtal
 from pyxtal.interface.lammpslib import run_lammpslib as lmp_run 
-from pyxtal.interface.lammpslib import optimize_lammpslib as lmp_opt
+from pyxtal.interface.lammpslib import opt_lammpslib as lmp_opt
 from pyxtal.interface.gulp import single_optimize as gulp_opt
-from spglib import get_symmetry_dataset
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.io.ase import AseAtomsAdaptor
 from random import choice
@@ -45,29 +44,35 @@ parameters = ["mass * 1.",
               "pair_coeff * * SiCGe.tersoff C",
              ]
 
-strain = np.zeros([3,3]) 
-strain[:2,:2] += 1
+mask = [1, 1, 0, 0, 0, 1]
 # Here we do plane groups
-pgs = [3, 11, 12, 13, 23, 24, 25, 26, 49, 55, 56, 65, 69, 70, 73, 75]
+#pgs = [3, 11, 12, 13, 23, 24, 25, 26, 49, 55, 56, 65, 69, 70, 73, 75]
+pgs = [75] #[23, 24, 25, 26, 49, 55, 56]
 
 filename = '06.db'
 with connect(filename) as db:
     for i in range(100):
         while True:
             sg, numIons = choice(pgs), choice(range(4,24))
-            struc = random_crystal_2D(sg, ["C"], [numIons], thickness=0)
+            struc = pyxtal()
+            struc.from_random(2, sg, ["C"], [numIons], thickness=0, force_pass=True)
             if struc.valid:
                 ase_struc = struc.to_ase()
                 break
+        print(struc.lattice)
         s, eng = lmp_run(ase_struc, lmp, parameters, method='opt', path=calc_folder)
+        
         # relax the structure with multiple steps
         for m in range(2):
-            s = lmp_opt(s, lmp, parameters, strain=strain, fmax=0.01, path=calc_folder)
+            s = lmp_opt(s, lmp, parameters, mask=mask, logfile='opt', fmax=0.01, path=calc_folder)
             s, eng = lmp_run(s, lmp, parameters, method='opt', path=calc_folder)
-
-        s, eng, _, error = gulp_opt(s, ff='tersoff.lib', path=calc_folder, symmetrize=False)
-        if error:
-            spg = get_symmetry_dataset(s, symprec=1e-1)['international']
+        s, eng, _, error = gulp_opt(s, ff='tersoff.lib', path=calc_folder)
+        if not error:
+            #spg = get_symmetry_dataset(s, symprec=1e-1)['international']
+            struc1 = pyxtal()
+            struc1.from_seed(s)
+            spg = struc1.group.symbol
+            print(struc1.lattice)
             pos = s.get_positions()[:,2]
             thickness = max(pos) - min(pos) 
             new = new_struc(db, s, eng)
@@ -75,6 +80,7 @@ with connect(filename) as db:
                     i, eng/len(s), len(s), thickness, struc.group.symbol, spg, new)
             logging.info(strs)
             print(strs)
+
             if new_struc(db, s, eng/len(s)):
                 area = np.linalg.det(s.get_cell()[:2,:2])/len(s)
                 kvp = {"spg": spg, 

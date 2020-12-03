@@ -1,6 +1,6 @@
-from pyxtal.molecular_crystal import molecular_crystal
+from pyxtal import pyxtal
 from pyxtal.interface.lammpslib import run_lammpslib as lmp_run 
-from pyxtal.interface.lammpslib import optimize_lammpslib as lmp_opt
+from pyxtal.interface.lammpslib import opt_lammpslib as lmp_opt
 from spglib import get_symmetry_dataset
 from random import choice
 from ase.db import connect
@@ -43,13 +43,14 @@ filename = '07.db'
 with connect(filename) as db:
     for i in range(100):
         while True:
-            sg, numIons = choice(range(3,231)), choice(range(4,6))
-            struc = molecular_crystal(19, ["H2O"], [8]) 
+            sg, numIons = choice(range(3,231)), choice(range(4,12))
+            struc = pyxtal(molecular=True)
+            struc.from_random(3, sg, ["H2O"], [numIons], force_pass=True) 
             if struc.valid:
                 break
         s = struc.to_ase(resort=False)
         s, _ = lmp_run(s, lmp, parameters, molecule=True, method='opt', path=calc_folder)
-        s = lmp_opt(s, lmp, parameters, molecule=True, fmax=0.01, path=calc_folder)
+        s = lmp_opt(s, lmp, parameters, logfile='07-tmp/log', molecule=True, fmax=0.01, path=calc_folder)
         s, _ = lmp_run(s, lmp, parameters, molecule=True, method='opt', path=calc_folder)
 
         Eng = s.get_potential_energy() * 96 / len(s) * 3
@@ -58,8 +59,8 @@ with connect(filename) as db:
             spg = get_symmetry_dataset(s, symprec=1e-1)['international']
         except:
             spg = 1
-        strs = "{:4d} {:6.3f} eV/atom {:6.3f} A^3 {:10s}-->{:10s}".format(\
-                i, Eng, Vol, struc.group.symbol, spg)
+        strs = "{:4d} {:6.3f} eV/atom {:2d} {:6.3f} A^3 {:10s}-->{:10s}".format(\
+                i, Eng, Vol, numIons[0], struc.group.symbol, spg)
         logging.info(strs)
         print(strs)
         permutation = np.argsort(s.numbers)

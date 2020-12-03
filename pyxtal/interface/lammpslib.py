@@ -8,11 +8,17 @@ import os
 from pkg_resources import resource_filename
 from ase.optimize.fire import FIRE
 from ase.optimize import LBFGS
-from pyxtal.interface.mushybox import mushybox
+from ase.constraints import ExpCellFilter
+from ase.spacegroup.symmetrize import FixSymmetry, check_symmetry
 #
-def optimize_lammpslib(struc, lmp, parameters=None, 
-                       path='tmp', calc_type=None, lmp_file=None, molecule=False,
-                       strain=np.ones([3,3]), method='FIRE', fmax=0.01):
+def opt_lammpslib(struc, lmp, parameters=None, mask=None, logfile='-',
+                  path='tmp', calc_type=None, lmp_file=None, molecule=False,
+                  method='FIRE', fmax=0.01):
+
+    """
+    mask: [1, 1, 1, 1, 1, 1], a, b, c, alpha, beta, gamma
+          [1, 1, 0, 0, 0, 1]
+    """
 
     if lmp_file is not None:
         lammps = LAMMPSlib(lmp=lmp, lmp_file=lmp_file, log_file='lammps.log', \
@@ -24,12 +30,14 @@ def optimize_lammpslib(struc, lmp, parameters=None,
         lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameters, log_file='lammps.log', \
                            molecule=molecule, path=path)
 
+    #check_symmetry(si, 1.0e-6, verbose=True)
     struc.set_calculator(lammps)
-    box = mushybox(struc, fixstrain=strain)
+    struc.set_constraint(FixSymmetry(struc)) 
+    ecf = ExpCellFilter(struc, mask)
     if method == 'FIRE':
-        dyn = FIRE(box)
+        dyn = FIRE(ecf, logfile=logfile)
     else:
-        dyn = LBFGS(box)
+        dyn = LBFGS(ecf, logfile=logfile)
     dyn.run(fmax=fmax, steps=500)
     return struc
 
@@ -138,7 +146,7 @@ class LAMMPSlib(Calculator):
             os.makedirs(self.folder)
         self.lammps_data = self.folder+'/data.lammps'
         self.lammps_in = self.folder + '/in.lammps'
-        self.ffpath = resource_filename("ff_benchmark", "potentials")
+        self.ffpath = resource_filename("pyxtal", "potentials")
         self.paras = []
         if lmpcmds is not None:
             for para in lmpcmds:
@@ -386,7 +394,7 @@ class LAMMPSlib(Calculator):
         if not hasattr(self, 'atoms') or self.atoms != atoms:
             self.calculate(atoms)
 
-    def get_potential_energy(self, atoms):
+    def get_potential_energy(self, atoms, force_consistent=False):
         self.update(atoms)
         if self.calc_type.find('GB') >= 0:
             return self.gb_energy

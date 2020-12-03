@@ -330,7 +330,7 @@ class molecular_crystal:
             p2 = p
 
             if n == n0:
-                print("n == n0", n, n0)
+                #print("n == n0", n, n0)
                 return False
             while True:
                 num = np.dot(n, l_mult)

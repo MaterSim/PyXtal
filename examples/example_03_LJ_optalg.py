@@ -1,5 +1,4 @@
-from pyxtal.crystal import random_cluster
-from pyxtal.crystal import Tol_matrix
+from pyxtal import pyxtal
 from copy import deepcopy
 from optparse import OptionParser
 from random import randint, choice
@@ -23,7 +22,6 @@ logging.basicConfig(
 plt.style.use("bmh")
 
 cluster_factor = 0.7
-volume_factor = 1.0
 
 """
 This is a script to 
@@ -142,16 +140,11 @@ class LJ_prediction:
         run = True
         while run:
             pg = choice(pgs)
-            cluster = random_cluster(
-                pg,
-                ["Mo"],
-                [self.numIons],
-                volume_factor,
-                tm=Tol_matrix(prototype="atomic", factor=cluster_factor),
-            )
+            cluster = pyxtal()
+            cluster.from_random(0, pg, ["Mo"], [self.numIons], factor=cluster_factor)
             if cluster.valid:
                 run = False
-        return cluster.to_pymatgen().cart_coords
+        return cluster._get_coords_and_species(absolute=True)[0]
 
     def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33), method="CG"):
 
