@@ -13,7 +13,7 @@ from ase.spacegroup.symmetrize import FixSymmetry, check_symmetry
 #
 def opt_lammpslib(struc, lmp, parameters=None, mask=None, logfile='-',
                   path='tmp', calc_type=None, lmp_file=None, molecule=False,
-                  method='FIRE', fmax=0.01):
+                  method='FIRE', fmax=0.01, opt_cell=False, a=0.1, steps=500):
 
     """
     mask: [1, 1, 1, 1, 1, 1], a, b, c, alpha, beta, gamma
@@ -33,12 +33,18 @@ def opt_lammpslib(struc, lmp, parameters=None, mask=None, logfile='-',
     #check_symmetry(si, 1.0e-6, verbose=True)
     struc.set_calculator(lammps)
     struc.set_constraint(FixSymmetry(struc)) 
-    ecf = ExpCellFilter(struc, mask)
-    if method == 'FIRE':
-        dyn = FIRE(ecf, logfile=logfile)
+    if opt_cell:
+        ecf = ExpCellFilter(struc, mask)
+        if method == 'FIRE':
+            dyn = FIRE(ecf, logfile=logfile, a=a)
+        else:
+            dyn = LBFGS(ecf, logfile=logfile)
     else:
-        dyn = LBFGS(ecf, logfile=logfile)
-    dyn.run(fmax=fmax, steps=500)
+        if method == 'FIRE':
+            dyn = FIRE(struc, logfile=logfile)
+        else:
+            dyn = LBFGS(struc, logfile=logfile)
+    dyn.run(fmax=fmax, steps=steps)
     return struc
 
 def run_lammpslib(struc, lmp, parameters=None, path='tmp', \
@@ -109,7 +115,6 @@ def convert_cell(ase_cell):
     """
     cell = ase_cell.T
     if not is_upper_triangular(cell):
-        # rotate bases into triangular matrix
         tri_mat = np.zeros((3, 3))
         A = cell[:, 0]
         B = cell[:, 1]
@@ -147,6 +152,7 @@ class LAMMPSlib(Calculator):
         self.lammps_data = self.folder+'/data.lammps'
         self.lammps_in = self.folder + '/in.lammps'
         self.ffpath = resource_filename("pyxtal", "potentials")
+        self.lmpcmds = lmpcmds
         self.paras = []
         if lmpcmds is not None:
             for para in lmpcmds:
@@ -259,6 +265,7 @@ class LAMMPSlib(Calculator):
         else:
             with open(self.lammps_in, 'w') as fh:
                 fh.write('clear\n')
+                fh.write('box  tilt large\n')
                 if self.molecule:
                     fh.write('units electron\n')
                 else:
@@ -310,8 +317,8 @@ class LAMMPSlib(Calculator):
             fh.write(comment.strip() + '\n\n')
             fh.write('{:d} atoms\n'.format(len(atoms)))
             fh.write('{:d} atom types\n'.format(len(np.unique(atom_types))))
-            cell = atoms.get_cell()
-            #cell = 
+            cell, coord_transform = convert_cell(atoms.get_cell())
+            #cell = atoms.get_cell()
             fh.write('\n')
             fh.write('{0:16.8e} {1:16.8e} xlo xhi\n'.format(0.0, cell[0, 0]))
             fh.write('{0:16.8e} {1:16.8e} ylo yhi\n'.format(0.0, cell[1, 1]))
@@ -322,6 +329,8 @@ class LAMMPSlib(Calculator):
             fh.write('\n\nAtoms \n\n')
             for i, (typ, pos) in enumerate(
                     zip(atom_types, atoms.get_positions())):
+                if coord_transform is not None:
+                    pos = np.dot(coord_transform, pos.transpose())
                 fh.write('{:4d} {:4d} {:16.8e} {:16.8e} {:16.8e}\n'
                          .format(i + 1, typ, pos[0], pos[1], pos[2]))
 
@@ -354,11 +363,15 @@ class LAMMPSlib(Calculator):
             fh.write('1 bond types\n')
             fh.write('1 angle types\n')
 
-            cell = atoms.get_cell()/0.529
+            #cell = atoms.get_cell()/0.529
+            cell, coord_transform = convert_cell(atoms.get_cell())
+            cell /= 0.529
             fh.write('\n')
             fh.write('{0:16.8e} {1:16.8e} xlo xhi\n'.format(0.0, cell[0, 0]))
             fh.write('{0:16.8e} {1:16.8e} ylo yhi\n'.format(0.0, cell[1, 1]))
             fh.write('{0:16.8e} {1:16.8e} zlo zhi\n'.format(0.0, cell[2, 2]))
+            fh.write('{0:16.8e} {1:16.8e} {2:16.8e} xy xz yz\n'
+                             ''.format(cell[0, 1], cell[0, 2], cell[1, 2]))
 
             fh.write('\n\nMasses \n\n')
             fh.write('  1 15.9994\n')
@@ -372,6 +385,8 @@ class LAMMPSlib(Calculator):
             fh.write('\n\nAtoms \n\n')
             for i, (typ, mtyp, pos) in enumerate(
                     zip(lmp_types, mol_types, atoms.get_positions()/0.529)):
+                if coord_transform is not None:
+                    pos = np.dot(coord_transform, pos.transpose())
                 #print(i, mtyp, typ)
                 if typ==2:
                     fh.write('{0:4d} {1:4d} {2:4d}   0.5564 {3:16.8f} {4:16.8f} {5:16.8f}\n'
