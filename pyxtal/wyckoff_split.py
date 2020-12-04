@@ -18,7 +18,6 @@ class wyckoff_split:
 
 
     def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t'):
-        
         self.G = sym.Group(G)  # Group object
         if group_type == 't':
             self.wyc = self.G.get_max_t_subgroup()
@@ -95,6 +94,7 @@ class wyckoff_split:
                 wp2_list.append(self.H[id])
             wp2_lists.append(wp2_list)
         self.wp2_lists = wp2_lists
+        self.index=self.wyc['index'][idx]
         #import sys; sys.exit()
     
     def split_t(self, wp1, wp2_lists):
@@ -177,6 +177,7 @@ class wyckoff_split:
         """
         split the generators in w1 to different w2s
         """
+        wp2_lists=deepcopy(self.wp2_lists[0])
         wp1_generators_visited = []
         wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
     
@@ -193,14 +194,56 @@ class wyckoff_split:
         for translation in translations:
             translated_wp1 = []
             for gen in wp1_generators:
-                gen[:3,3] += np.array(translation)
-                translated_wp1.append(gen)
-            all_g2_orbits.extend(translated_wp1)
-        print(all_g2_orbits)
+                orbit=deepcopy(np.matmul(self.inv_R,gen))
+                for i in range(3):
+                    if orbit[i][3]>=0:
+                        orbit[i][3]+=translation[i]
+                        orbit[i][3]=orbit[i][3]%1
+                    else:
+                        orbit[i][3]-=translation[i]
+                        orbit[i][3]=orbit[i][3]%-1##
+                all_g2_orbits.append(orbit)
+                
+#         all_g2_orbits=all_g2_orbits[0]
+        #########################################################################
+        n1=len(wp2_lists)
+        final_G2=[]
+        for i in range(n1):
+            temp=np.array(deepcopy(all_g2_orbits))#.round(3)).tolist()
+            for orbit in range(len(temp)):
+                for row in range(3):
+                    temp[orbit][row][3]=temp[orbit][row][3]%1
+            temp=temp.round(3).tolist()
+
+            n2=len(temp)
+            n3=len(wp2_lists[i])
+            for j in range(n2):
+                try_match=np.array([np.matmul(wp2_lists[i][x].as_dict()['matrix'],temp[j]) for x in range(n3)]) 
+
+                for position in range(len(try_match)):
+                    for row in range(3):
+                        try_match[position][row][3]=try_match[position][row][3]%1
+
+
+                try_match=(try_match.round(3)).tolist()
+                try:
+                    corresponding_positions=[temp.index(x) for x in try_match]
+                except:
+                    continue
+                for index in sorted(corresponding_positions,reverse=True):
+                    final_G2.append(all_g2_orbits[index])
+                    del all_g2_orbits[index]
+                break
+        final_G1=[]
+        for position in final_G2:
+            final_G1.append(SymmOp(np.matmul(self.R,position).round(3)))
+        for i,position in enumerate(final_G2):
+            final_G2[i]=SymmOp(position)
         
-        #all_g2_orbits is now the entire middle column. 
-        #wp2_lists is the whole right column. 
-        #Just need to pair together the orbits, then apply self.R to the middle
+        
+        return final_G1, final_G2
+        
+
 
     def translation_generator(self):
         """
@@ -212,10 +255,11 @@ class wyckoff_split:
     
         # remove the [0,0,0] vectors
         translations=[x for x in subgroup_basis_vectors if x!=[0,0,0]]
-        print(translations, len(translations))
     
         #find the independent vectors
-        if len(translations)==1:
+        if len(translations)==0:
+            independent_vectors=[[0,0,0]]
+        elif len(translations)==1:
             independent_vectors=translations
         elif len(translations)==2:
             norm=round(np.linalg.norm(translations[0])*np.linalg.norm(translations[1]))
@@ -256,7 +300,7 @@ class wyckoff_split:
             vector=(vector%modulo/modulo).tolist()
             if vector not in final_translation_list:
                 final_translation_list.append(vector)
-    
+                
         return final_translation_list
 
     def check_orbits(self, g1_orbits, wp1, wp2, wp2_lists):
