@@ -50,6 +50,7 @@ mask = [1, 1, 0, 0, 0, 1]
 pgs = [3, 11, 12, 13, 23, 24, 25, 26, 49, 55, 56, 65, 69, 70, 73, 75]
 #pgs = [65, 69, 70, 73, 75] #[23, 24, 25, 26, 49, 55, 56]
 
+logfile = calc_folder + '/log'
 filename = '06.db'
 with connect(filename) as db:
     for i in range(100):
@@ -64,8 +65,8 @@ with connect(filename) as db:
         #print(struc)
         # relax the structure with multiple steps
         s, eng = lmp_run(ase_struc, lmp, parameters, method='opt', path=calc_folder)
-        s = lmp_opt(s, lmp, parameters, mask=mask, logfile='opt', fmax=0.01, path=calc_folder, opt_cell=False, steps=100)
-        s = lmp_opt(s, lmp, parameters, mask=mask, logfile='opt', fmax=0.01, path=calc_folder, opt_cell=True, steps=100)
+        s = lmp_opt(s, lmp, parameters, mask=mask, logfile=logfile, fmax=0.01, path=calc_folder, opt_cell=False, steps=100)
+        s = lmp_opt(s, lmp, parameters, mask=mask, logfile=logfile, fmax=0.01, path=calc_folder, opt_cell=True, steps=100)
         s, eng = lmp_run(s, lmp, parameters, method='opt', path=calc_folder)
         s, eng, _, error = gulp_opt(s, ff='tersoff.lib', path=calc_folder)
         if not error:

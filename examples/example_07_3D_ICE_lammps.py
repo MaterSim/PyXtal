@@ -9,10 +9,7 @@ import numpy as np
 import os
 import logging
 
-log_file = "07-results.log"
-if os.path.exists(log_file):
-    os.remove(log_file)
-
+log_file= '07-results.log'
 logging.basicConfig(format="%(asctime)s| %(message)s", filename=log_file, level=logging.INFO)
 
 calc_folder = '07-tmp' #store tmp files for lammps and lasp
@@ -32,7 +29,7 @@ parameters = [
     "pair_style      lj/cut/tip4p/long 1 2 1 1 0.278072379 17.007",
     "bond_style      class2 ",
     "angle_style     harmonic",
-    "read_data 07-tmp/data.lammps",
+    "read_data " + calc_folder + "/data.lammps",
     "kspace_style pppm/tip4p 0.0001",
     "pair_coeff  2  2 0 0",
     "pair_coeff  1  2 0 0",
@@ -40,6 +37,7 @@ parameters = [
 ]
 
 filename = '07.db'
+logfile = calc_folder + '/log'
 with connect(filename) as db:
     for i in range(100):
         while True:
@@ -50,9 +48,9 @@ with connect(filename) as db:
                 break
         s = struc.to_ase(resort=False)
         #s, _ = lmp_run(s, lmp, parameters, molecule=True, method='opt', path=calc_folder)
-        s = lmp_opt(s, lmp, parameters, logfile='07-tmp/log', molecule=True, fmax=0.01, path=calc_folder, opt_cell=False, a=0, steps=100)
-        s = lmp_opt(s, lmp, parameters, logfile='07-tmp/log', molecule=True, fmax=0.01, path=calc_folder, opt_cell=True, a=0, steps=100)
-        s = lmp_opt(s, lmp, parameters, logfile='07-tmp/log', molecule=True, fmax=0.01, path=calc_folder, opt_cell=True)
+        s = lmp_opt(s, lmp, parameters, logfile=logfile, molecule=True, fmax=0.01, path=calc_folder, opt_cell=False, a=0, steps=100)
+        s = lmp_opt(s, lmp, parameters, logfile=logfile, molecule=True, fmax=0.01, path=calc_folder, opt_cell=True, a=0, steps=100)
+        s = lmp_opt(s, lmp, parameters, logfile=logfile, molecule=True, fmax=0.01, path=calc_folder, opt_cell=True)
         s, _ = lmp_run(s, lmp, parameters, molecule=True, method='opt', path=calc_folder)
 
         Eng = s.get_potential_energy() * 96 / len(s) * 3

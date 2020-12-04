@@ -19,9 +19,9 @@ Here is a simple example of a 3D carbon crystal:
 
     from pyxtal import pyxtal
     my_crystal = pyxtal()
-    my_crystal.from_random(3, 225, ['C'], [3])
+    my_crystal.from_random(3, 225, ['C'], [12])
 
-This would create a crystal structure with 3D structure with space group 225, 12 carbon atoms in the conventional cell. For stoichiometries with more than one type of atom, replace ``[‘C’]`` with a list of atomic symbols, and replace ``[12]`` with a list of numbers. For example,
+This would create a crystal structure with 3D structure with space group 225, 12 carbon atoms in the conventional cell. For stoichiometries with more than one type of atom, replace ``[C]`` with a list of atomic symbols, and replace ``[12]`` with a list of numbers. For example,
 
 .. code-block:: Python
 
@@ -60,7 +60,7 @@ would generate a 2d crystal with
 - 4 carbon atoms in the conventional cell, 
 - a thickness of 2.0 Angstroms. 
   
-As with the 3d case, for crystals with multiple atom types, you may replace ``[‘C’]`` and ``[4]`` with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. PyXtal adds ``10 Angstroms of vacuum`` on each side of the 2D lattice, so that optimization may be performed without altering the structure file. However, care should be taken when using the cif file for applications designed for 3D crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; each axis will either be 1 or 0, representing either periodicity or non-periodicity. For example, PBC = [1,1,0] means that the x and y axes are periodic, while the z axis is non-periodic.
+As with the 3d case, for crystals with multiple atom types, you may replace ``[C]`` and ``[4]`` with lists of the atomic symbols and amounts, respectively. The crystal will be periodic in two directions instead of 3. PyXtal adds ``10 Angstroms of vacuum`` on each side of the 2D lattice, so that optimization may be performed without altering the structure file. However, care should be taken when using the cif file for applications designed for 3D crystals. The axis of non-periodicity can be accessed via my_crystal.PBC; each axis will either be 1 or 0, representing either periodicity or non-periodicity. For example, PBC = [1,1,0] means that the x and y axes are periodic, while the z axis is non-periodic.
 
 Note that the layer group number is different from the international space group number, and ranges between 1 and 80. For a list of the layer groups and their symmetry operations, see `the International Tables of Crystallography, Volume E, part 4 <https://it.iucr.org/Eb/ch4o1v0001/contents/>`_ or use the `pyxtal_symmetry utility <COMMAND_MODE.html#pyxtal-symmetry-utility>`_.
 
@@ -152,7 +152,7 @@ This would give a crystal with spacegroup 36, 4 molecules in the conventional ce
 As with the random_crystal class, the molecular_crystal class has a `print_all <pyxtal.crystal.html#pyxtal.crystal.random_crystal.print_all>`_ function which shows useful information about the structure. In addition to the Wyckoff position and location, you can view the orientation angles for each molecule.
 
 
-There are a few other parameters which may be passed to the class. See the `module documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule’s mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one of the imput molecules is chiral.
+There are a few other parameters which may be passed to the class. See the `module documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular importance is the variable allow_inversion=False. By default, chiral molecules will not be flipped or inverted while generating the crystal. This is because a chiral molecule's mirror image may have different chemical properties, especially in a biological setting. But if the mirror images are acceptable for your application, you may use allow_inversion=True, which will allow more spacegroups to be generated. Note that this is only relevant if at least one of the imput molecules is chiral.
 
 The user may also define which orientations are allowed for each molecule in each Wyckoff position. This is done by setting the orientations parameter. By default, PyXtal will determine the valid orientations automatically using the `get_orientations <pyxtal.molecular_crystal.html#molecular_crystal.get_orientations>`_ function, which in turn calls the `orientation_in_wyckoff_position <pyxtal.molecule.html#orientation_in_wyckoff_position>`_ function. Setting custom orientations will typically not be necessary, but may be used to save time during generation; see the source code for more information.
 
