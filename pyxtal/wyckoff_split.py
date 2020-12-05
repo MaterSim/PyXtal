@@ -52,7 +52,7 @@ class wyckoff_split:
                         break
         else:
             self.valid_split = True
-        
+
         #if self.valid_split:
         self.G1_orbits = []
         self.G2_orbits = []
@@ -348,8 +348,10 @@ def in_lists(mat1, mat2, eps=1e-4, PBC=True):
 
         
 if __name__ == "__main__":
-    sites = ['4f','2d']
-    sp = wyckoff_split(G=21, wp1=sites, idx=0, group_type='t')
-    print(sp)
-    sp = wyckoff_split(G=21, wp1=sites, idx=0, group_type='k')
-    print(sp)
+    sites = ['8c']
+    sp = wyckoff_split(G=79, wp1=sites, idx=0, group_type='t'); print(sp)
+    sp = wyckoff_split(G=79, wp1=sites, idx=0, group_type='k'); print(sp)
+    sp = wyckoff_split(G=79, wp1=sites, idx=1, group_type='k'); print(sp)
+    sp = wyckoff_split(G=79, wp1=sites, idx=2, group_type='k'); print(sp)
+    sp = wyckoff_split(G=79, wp1=sites, idx=3, group_type='k'); print(sp)
+    sp = wyckoff_split(G=79, wp1=sites, idx=4, group_type='k'); print(sp)

@@ -1,47 +1,39 @@
-from pyxtal.crystal import random_crystal
+from pyxtal import pyxtal
 from pyxtal.symmetry import Group
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import numpy as np
 from pyxtal.lattice import cellsize
 
-for G in range(1, 231):
-#for G in [90, 99, 105, 107, 203, 210, 224, 226, 227, 228]:
+for G in range(2, 231):
     g = Group(G)
-    subs = g.get_max_t_subgroup()
-    indices = subs['index']
-    hs = subs['subgroup']
-    relations = subs['relations']
-    tran = subs['transformation']
     letter = str(g[0].multiplicity) + g[0].letter
-    print(G)
-    C1 = random_crystal(G, ['C'], [int(g[0].multiplicity/cellsize(g))], sites=[[letter]])
+    C1 = pyxtal()
+    C1.from_random(3, G, ['C'], [g[0].multiplicity], sites=[[letter]])
+    #print(C1)
     pmg_s1 = C1.to_pymatgen()
     sga1 = SpacegroupAnalyzer(pmg_s1).get_space_group_symbol()
+
     # each subgroup
-    for i in range(len(relations)):
-        C2 = C1.subgroup(eps=0, idx=[i], once=True)
-        pmg_s2 = C2.to_pymatgen()
-        try:
-            sga2 = SpacegroupAnalyzer(pmg_s2, symprec=1e-4).get_space_group_symbol()
-        except:
-            #print("unable to find the space group")
-            sga2 = None
-        print(G, hs[i], g.symbol, sga1, Group(hs[i]).symbol, sga2, i)
-        if not sm.StructureMatcher().fit(pmg_s1, pmg_s2):
-            print('WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW')
-            print(C1)
-            print(C2)
+    #C2s = C1.subgroup(eps=0, group_type='t')
+    try: 
+        C2s = C1.subgroup(eps=0, group_type='k', max_index=2)
+        for C2 in C2s:
+            #print(C2)
+            pmg_s2 = C2.to_pymatgen()
+            try:
+                sga2 = SpacegroupAnalyzer(pmg_s2, symprec=1e-4).get_space_group_symbol()
+            except:
+                #print("unable to find the space group")
+                sga2 = None
+            print(G, C2.group.number, g.symbol, C2.group.symbol, sga1, sga2)
+            if not sm.StructureMatcher().fit(pmg_s1, pmg_s2):
+                print('WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW')
+                print(C1)
+                print(C2)
+    except RuntimeError:
+        pass
             #print(pmg_s1)
             #print(pmg_s2)
             #print(tran[i])
             #import sys; sys.exit()
-    #    # each site
-    #    wps.reverse()
-    #    for j, wp in enumerate(wps):
-    #        N_G = int(g[j].multiplicity * np.linalg.det(tran[i][:3,:3]))
-    #        N_H = sum([int(w[:-1]) for w in wp])
-
-    #        if abs(N_G - N_H)>0:
-    #            strs = "problem in G:{:d} [{:d}] -> H:{:d} [{:d}]".format(G, N_G, H, N_H)
-    #            print(strs, wp)

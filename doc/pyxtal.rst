@@ -21,6 +21,7 @@ Submodules
    pyxtal.crystal
    pyxtal.molecular_crystal
    pyxtal.wyckoff_site
+   pyxtal.wyckoff_split
    pyxtal.molecule
    pyxtal.operations
    pyxtal.symmetry

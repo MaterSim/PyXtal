@@ -402,7 +402,7 @@ class pyxtal:
             raise RuntimeError("Cannot create file: structure did not generate")
 
 
-    def subgroup(self, H=None, eps=0.05, idx=None, once=False, group_type='t'):
+    def subgroup(self, H=None, eps=0.05, idx=None, once=False, group_type='t', max_index=4):
         """
         generate a structure with lower symmetry
 
@@ -418,12 +418,14 @@ class pyxtal:
 
         #randomly choose a subgroup from the available list
         if group_type == 't':
-            Hs = self.group.get_max_t_subgroup()['subgroup']
+            dicts = self.group.get_max_t_subgroup()#['subgroup']
         else:
-            Hs = self.group.get_max_k_subgroup()['subgroup']
-
+            dicts = self.group.get_max_k_subgroup()#['subgroup']
+        Hs = dicts['subgroup']
+        indices = dicts['index']
         if idx is None:
-            idx = range(len(Hs))
+            idx = [i for i, id in enumerate(indices) if id<=max_index]
+            #idx = range(len(Hs))
         else:
             for id in idx:
                 if id >= len(Hs):
@@ -432,7 +434,7 @@ class pyxtal:
             idx = [id for id in idx if Hs[id] == H]
 
         if len(idx) == 0:
-            raise ValueError("The space group H is incompatible with idx")
+            raise RuntimeError("No subgroup to perform the split")
 
         sites = [str(site.wp.multiplicity)+site.wp.letter for site in self.atom_sites]
         valid_splitters = []
