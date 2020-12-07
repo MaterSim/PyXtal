@@ -579,7 +579,7 @@ class Similarity(object):
 
         return w
 
-    def show(self, filename=None, labels=["profile 1", "profile 2"]):
+    def show(self, filename=None, fontsize=None, labels=["profile 1", "profile 2"]):
 
         """
         show the comparison plot
@@ -589,6 +589,9 @@ class Similarity(object):
             labels [A, B]: labels of each plot
         """
         import matplotlib.pyplot as plt
+        import matplotlib
+        if fontsize is not None:
+            matplotlib.rcParams.update({'font.size': fontsize})
 
         fig1 = plt.figure(1, figsize=(15, 6))
         frame1 = fig1.add_axes((.1,.3,.8,.6))

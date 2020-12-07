@@ -435,8 +435,12 @@ class pyxtal:
 
         if len(idx) == 0:
             raise RuntimeError("No subgroup to perform the split")
+        if self.molecular:
+            struc_sites = self.mol_sites
+        else:
+            struc_sites = self.atom_sites
 
-        sites = [str(site.wp.multiplicity)+site.wp.letter for site in self.atom_sites]
+        sites = [str(site.wp.multiplicity)+site.wp.letter for site in struc_sites]
         valid_splitters = []
         bad_splitters = []
         for id in idx:
@@ -463,23 +467,55 @@ class pyxtal:
             return new_strucs
 
     def subgroup_by_splitter(self, splitter, eps=0.05):
+        """
+        transform the crystal to subgroup symmetry from a splitter object
+        """
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
         multiples = np.linalg.det(splitter.R[:3,:3])
-        split_sites = []
-        for i, site in enumerate(self.atom_sites):
-            pos = site.position
-            for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
-                pos0 = apply_ops(pos, ops1)[0]
-                pos0 -= np.floor(pos0)
-                pos0 += eps*(np.random.sample(3) - 0.5)
-                wp, _ = Wyckoff_position.from_symops(ops2, group=splitter.H.number, permutation=False)
-                split_sites.append(atom_site(wp, pos0, site.specie))
         new_struc = deepcopy(self)
         new_struc.group = splitter.H
         lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
-        new_struc.lattice=lattice.mutate(degree=eps, frozen=True)
-        new_struc.atom_sites = split_sites
-        new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
+        lattice=lattice.mutate(degree=eps, frozen=True)
+
+        h = splitter.H.number
+        split_sites = []
+        if self.molecular:
+            # below only works when the cell does not change
+            for i, site in enumerate(self.mol_sites):
+                pos = site.position
+                mol = site.molecule
+                ori = site.orientation
+                coord0 = mol.mol.cart_coords.dot(ori.matrix.T)
+                wp1 = site.wp
+                ori.reset_matrix(np.eye(3))
+                for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
+                    #reset molecule
+                    coord1 = np.dot(coord0, ops1[0].affine_matrix[:3,:3].T)
+                    _mol = mol.copy()
+                    _mol.reset_positions(coord1)
+
+                    pos0 = apply_ops(pos, ops1)[0]
+                    pos0 -= np.floor(pos0)
+                    pos0 += eps*(np.random.sample(3) - 0.5)
+
+                    wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
+                    split_sites.append(mol_site(_mol, pos0, ori, wp, lattice))
+            new_struc.mol_sites = split_sites
+            new_struc.numMols = [int(multiples*numMol) for numMol in self.numMols]
+
+        else:
+            for i, site in enumerate(self.atom_sites):
+                pos = site.position
+                for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
+                    pos0 = apply_ops(pos, ops1)[0]
+                    pos0 -= np.floor(pos0)
+                    pos0 += eps*(np.random.sample(3) - 0.5)
+                    wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
+                    split_sites.append(atom_site(wp, pos0, site.specie))
+
+            new_struc.atom_sites = split_sites
+            new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
+        new_struc.lattice = lattice
         new_struc.source = 'Wyckoff Split'
         
         return new_struc

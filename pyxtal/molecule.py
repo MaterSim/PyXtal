@@ -97,6 +97,25 @@ class pyxtal_molecule:
     def save_dict(self):
         return self.mol.as_dict()
 
+    def copy(self):
+        """
+        simply copy the structure
+        """
+        return deepcopy(self)
+
+    def reset_positions(self, coors):
+        """
+        reset the coordinates
+        """
+        from pymatgen.core.sites import Site
+        if len(coors) != len(self.mol._sites):
+            raise ValueError("number of atoms is inconsistent!")
+        else:
+            for i, coor in enumerate(coors):
+                _site = self.mol._sites[i]
+                new_site = Site(_site.species, coor, properties=_site.properties)
+                self.mol._sites[i] = new_site
+
     @classmethod
     def load_dict(cls, dicts):
         """
@@ -114,7 +133,6 @@ class pyxtal_molecule:
         mo = self.add_site_props(mo)
 
         return pyxtal_molecule(mo, self.tm)
-
 
     def add_site_props(self, mo):
         if len(self.props) > 0:
@@ -281,6 +299,10 @@ class Orientation:
             s += "Rotation axis\n"
             s += "{:6.2f} {:6.2f} {:6.3f}\n".format(*self.axis)
         return s
+
+    def reset_matrix(self, matrix):
+        self.matrix = matrix
+        self.r = Rotation.from_matrix(self.matrix)
 
     def __repr__(self):
         return str(self)

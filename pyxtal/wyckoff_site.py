@@ -153,11 +153,11 @@ class mol_site:
             # Rotate the molecule (Euclidean metric)
             #op2_m = self.wp.generators_m[point_index]
             op2_m = self.wp.generators_m[point_index]
-            rot = op2_m.affine_matrix[0:3][:, 0:3].T
+            rot = op2_m.affine_matrix[:3, :3].T
             if self.diag and self.wp.index > 0:
                 tau = op2.translation_vector
             else:
-                tau = op2_m.affine_matrix[0:3][:, 3]
+                tau = op2_m.affine_matrix[:3, 3]
             tmp = np.dot(coord0, rot) + tau
             # Add absolute center to molecule
             tmp += center_absolute

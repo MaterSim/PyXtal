@@ -103,6 +103,10 @@ class TestMolecular(unittest.TestCase):
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol() == "P2_1/c")
+        C = struc.subgroup(H=4, eps=1e-3, once=True)
+        pmg_s2 = C.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
+
         # todo support reading ice
 
     def test_big_molecule(self):
