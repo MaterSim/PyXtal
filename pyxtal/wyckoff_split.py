@@ -189,42 +189,64 @@ class wyckoff_split:
         for translation in translations:
             for gen in wp1_generators:
                 orbit=np.matmul(self.inv_R,gen)
+                orbit[np.abs(orbit)<1e-5]=0
                 for i in range(3):
-                    if orbit[i][3]>=0:
+                    if orbit[i][3]>=0.:
                         orbit[i][3]+=translation[i]
                         orbit[i][3]=orbit[i][3]%1
                     else:
-                        orbit[i][3]-=translation[i]
+                        orbit[i][3]+=(translation[i])%-1
                         if orbit[i][3]!=-1:
                             orbit[i][3]=orbit[i][3]%-1
+
                 all_g2_orbits.append(orbit)
+
 
         for i in range(len(wp2_lists)):
             final_G2=[]
             temp=np.array(deepcopy(all_g2_orbits))
-
+            temp[np.abs(temp) <1e-5] =0
             for j in range(len(temp)):
-                temp[j][:3,3]=np.abs(temp[j][:3,3])
-
                 temp[j][:3,3]=temp[j][:3,3]%1
+#             for j,x in enumerate(temp):
+#                 for k in range(3):
+#                     temp[j,k,3]=round(temp[j,k,3],3)
+#                 temp[j]=np.around(x,3)
 
-            temp=temp.round(3).tolist()
+            temp=temp.tolist()
+            for j,x in enumerate(temp):
+                temp[j]=SymmOp(x)
+
 
 
 
             for orbit in temp:
-                try_match=np.array([np.matmul(x.as_dict()['matrix'], orbit) for x in wp2_lists[i]])
+                try_match=np.array([np.matmul(x.as_dict()['matrix'], orbit.as_dict()['matrix']) for x in wp2_lists[i]])
+                try_match[np.abs(try_match) <1e-5] =0
+
                 for j in range(len(try_match)):
                     try_match[j][:3,3]=try_match[j][:3,3]%1
-
-                try_match=try_match.round(3).tolist()
-
+#                 for j,x in enumerate(try_match):
+#                     for k in range(3):
+#                         try_match[j,k,3]=round(try_match[j,k,3],3)
+#                     try_match[j]=np.around(x,3)
+                try_match=try_match.tolist()
+                for j,x in enumerate(try_match):
+                    try_match[j]=SymmOp(x)
+#                 try_match=try_match.round(10).tolist()
+#                 for x in [0,7,5]:
+#                     print(temp[x])
+#                 print('done')
+#                 for x in try_match:
+#                     print(x)
+#                 print('tempdone')
                 duplicates=[]
                 for x in try_match:
                     if x not in duplicates:
                         duplicates.append(x)
                 if len(duplicates)!=len(try_match):
                     continue
+
 
                 try:
                     corresponding_positions=[temp.index(x) for x in try_match]
@@ -264,13 +286,14 @@ class wyckoff_split:
             new_g2=[]
             for translation in translations:
                 pos=deepcopy(orbit)
-                for p in range(3):
+                pos[np.abs(pos)<1e-5]=0
 
+                for p in range(3):
                     if pos[p][3]>=0:
                         pos[p][3]+=translation[p]
                         pos[p][3]=pos[p][3]%1
                     else:
-                        pos[p][3]-=translation[p]
+                        pos[p][3]+=(translation[p])%-1
                         if pos[p][3]!=-1:
                             pos[p][3]=pos[p][3]%-1
 
@@ -289,13 +312,15 @@ class wyckoff_split:
         for translation in translations:
             for gen in wp1_generators:
                 orbit=np.matmul(self.inv_R,gen)
+                orbit[np.abs(orbit)<1e-5]=0
                 for i in range(3):
-                    if orbit[i][3]>=0:
+                    if orbit[i][3]>=0.:
                         orbit[i][3]+=translation[i]
                         orbit[i][3]=orbit[i][3]%1
                     else:
-                        orbit[i][3]-=translation[i]
-                        orbit[i][3]=orbit[i][3]%-1
+                        orbit[i][3]+=(translation[i])%-1
+                        if orbit[i][3]!=-1:
+                            orbit[i][3]=orbit[i][3]%-1
                 all_g2_orbits.append(orbit)
 
         for i in range(len(wp2_lists)):
