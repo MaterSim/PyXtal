@@ -402,7 +402,7 @@ class pyxtal:
             raise RuntimeError("Cannot create file: structure did not generate")
 
 
-    def subgroup(self, H=None, eps=0.05, idx=None, once=False, group_type='t', max_index=4):
+    def subgroup(self, H=None, eps=0.05, idx=None, once=False, group_type='t', max_cell=4):
         """
         generate a structure with lower symmetry
 
@@ -422,9 +422,9 @@ class pyxtal:
         else:
             dicts = self.group.get_max_k_subgroup()#['subgroup']
         Hs = dicts['subgroup']
-        indices = dicts['index']
+        trans = dicts['transformation']
         if idx is None:
-            idx = [i for i, id in enumerate(indices) if id<=max_index]
+            idx = [i for i, tran in enumerate(trans) if np.linalg.det(tran[:3,:3])<=max_cell]
             #idx = range(len(Hs))
         else:
             for id in idx:
@@ -488,9 +488,11 @@ class pyxtal:
                 coord0 = mol.mol.cart_coords.dot(ori.matrix.T)
                 wp1 = site.wp
                 ori.reset_matrix(np.eye(3))
+                id = 0
                 for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
                     #reset molecule
-                    coord1 = np.dot(coord0, ops1[0].affine_matrix[:3,:3].T)
+                    rot = wp1.generators_m[id].affine_matrix[:3,:3].T
+                    coord1 = np.dot(coord0, rot)
                     _mol = mol.copy()
                     _mol.reset_positions(coord1)
 
@@ -500,6 +502,7 @@ class pyxtal:
 
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
                     split_sites.append(mol_site(_mol, pos0, ori, wp, lattice))
+                    id += wp.multiplicity
             new_struc.mol_sites = split_sites
             new_struc.numMols = [int(multiples*numMol) for numMol in self.numMols]
 
