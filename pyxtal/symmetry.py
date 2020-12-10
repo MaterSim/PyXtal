@@ -145,7 +145,7 @@ class Group:
         # Wyckoff positions, site_symmetry, generators, inverse
         # QZ: check if we can just use the get_wyckoff_symmetry function
         if dim == 3:
-            if self.number in [7, 4, 15]:
+            if self.number in [7, 14, 15]:
                 self.alias = self.symbol.replace("c","n")
             self.wyckoffs = get_wyckoffs(self.number) 
             self.w_symm = get_wyckoff_symmetry(self.number)
@@ -1849,7 +1849,7 @@ def get_wyckoff_generators(sg, PBC=[1, 1, 1], molecular=False):
     generator_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
     convert = False
-    if molecular is True:
+    if molecular:
         if sg >= 143 and sg <= 194:
             convert = True
     # Loop over Wyckoff positions
@@ -1867,12 +1867,12 @@ def get_wyckoff_generators(sg, PBC=[1, 1, 1], molecular=False):
                 # Loop over ops
                 for y in x:
                     op = SymmOp.from_xyz_string(y)
-                    if convert is True:
+                    if convert:
                         # Convert non-orthogonal trigonal/hexagonal operations
                         op = P * op * P.inverse
-                    if molecular is False:
+                    if not molecular:
                         generators[-1].append(op)
-                    elif molecular is True:
+                    else:
                         op = SymmOp.from_rotation_and_translation(
                             op.rotation_matrix, [0, 0, 0]
                         )
@@ -1881,12 +1881,12 @@ def get_wyckoff_generators(sg, PBC=[1, 1, 1], molecular=False):
             generators.append([])
             for y in x:
                 op = SymmOp.from_xyz_string(y)
-                if convert is True:
+                if convert:
                     # Convert non-orthogonal trigonal/hexagonal operations
                     op = P * op * P.inverse
-                if molecular is False:
+                if not molecular:
                     generators[-1].append(op)
-                elif molecular is True:
+                else:
                     op = SymmOp.from_rotation_and_translation(
                         op.rotation_matrix, [0, 0, 0]
                     )
