@@ -13,7 +13,7 @@ from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
 from pyxtal.wyckoff_site import WP_merge
 from pyxtal.XRD import Similarity
 
-cif_path = resource_filename("pyxtal", "database/cifs/aspirin.cif")
+cif_path = resource_filename("pyxtal", "database/cifs/")
 l0 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
 l1 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
 l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
@@ -99,7 +99,7 @@ class TestMolecular(unittest.TestCase):
     def test_read(self):
         # test reading structure from external
         struc = pyxtal(molecular=True)
-        struc.from_seed(seed=cif_path, molecule="aspirin")
+        struc.from_seed(seed=cif_path+"aspirin.cif", molecule="aspirin")
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol() == "P2_1/c")
@@ -303,6 +303,19 @@ class TestSubgroup(unittest.TestCase):
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+
+
+    def test_molecules(self):
+        for name in ["HAHCOI", "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", "JAPWIH"]:
+            cif = cif_path + name + ".cif"
+            struc = pyxtal(molecular=True)
+            struc.from_seed(seed=cif, molecule=name)
+            pmg_struc = struc.to_pymatgen()
+            Cs = struc.subgroup(eps=0, max_cell=1)
+            for C in Cs:
+                pmg_s2 = C.to_pymatgen()
+                self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
+ 
  
 class TestPXRD(unittest.TestCase):
     def test_similarity(self):

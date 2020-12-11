@@ -3,9 +3,8 @@ from pyxtal.symmetry import Group
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import numpy as np
-from pyxtal.lattice import cellsize
 
-for G in range(2, 231):
+for G in range(143, 195):
     g = Group(G)
     letter = str(g[0].multiplicity) + g[0].letter
     C1 = pyxtal()
@@ -17,7 +16,7 @@ for G in range(2, 231):
     # each subgroup
     #C2s = C1.subgroup(eps=0, group_type='t')
     try: 
-        C2s = C1.subgroup(eps=0, group_type='k', max_index=2)
+        C2s = C1.subgroup(eps=0, group_type='k', max_cell=4)
         for C2 in C2s:
             #print(C2)
             pmg_s2 = C2.to_pymatgen()

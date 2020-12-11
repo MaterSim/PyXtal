@@ -424,8 +424,24 @@ class pyxtal:
         Hs = dicts['subgroup']
         trans = dicts['transformation']
         if idx is None:
-            idx = [i for i, tran in enumerate(trans) if np.linalg.det(tran[:3,:3])<=max_cell]
-            #idx = range(len(Hs))
+            idx = []
+            if not self.molecular:
+                for i, tran in enumerate(trans):
+                    if np.linalg.det(tran[:3,:3])<=max_cell:
+                        idx.append(i)
+            else:
+                # for molecular crystals, assume the cell does not change
+                for i, tran in enumerate(trans):
+                    good = True
+                    # QZ: This loop needs a generalization!
+                    if abs(np.linalg.det(tran[:3,:3])-1)>1e-3:
+                        good = False
+                    elif self.group.number in [7, 14, 15] and self.diag and Hs[i]==4:
+                        good = False
+                    elif self.group.number in [31] and Hs[i]==7:
+                        good = False
+                    if good:
+                        idx.append(i)
         else:
             for id in idx:
                 if id >= len(Hs):
@@ -446,7 +462,17 @@ class pyxtal:
         for id in idx:
             splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=group_type)
             if splitter.valid_split:
-                valid_splitters.append(splitter)
+                special = False
+                if self.molecular:
+                    for i, site in enumerate(self.mol_sites):
+                        for ops in splitter.H_orbits[i]:
+                            if len(ops) < len(splitter.H[0]):
+                                special = True
+                                break
+                if not special:
+                    valid_splitters.append(splitter)
+                else:
+                    bad_splitters.append(splitter)
             else:
                 bad_splitters.append(splitter)
 
@@ -458,6 +484,7 @@ class pyxtal:
                 new_strucs.append(trail_struc.subgroup(once=True, group_type=group_type))
             return new_strucs
         else:
+            #print(valid_splitters)
             if once:
                 return self.subgroup_by_splitter(choice(valid_splitters), eps=eps)
             else:
@@ -470,6 +497,7 @@ class pyxtal:
         """
         transform the crystal to subgroup symmetry from a splitter object
         """
+        from pyxtal.molecule import Orientation
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
         multiples = np.linalg.det(splitter.R[:3,:3])
         new_struc = deepcopy(self)
@@ -486,8 +514,11 @@ class pyxtal:
                 mol = site.molecule
                 ori = site.orientation
                 coord0 = mol.mol.cart_coords.dot(ori.matrix.T)
+                coord0 = np.dot(coord0, splitter.R[:3,:3])
+
                 wp1 = site.wp
                 ori.reset_matrix(np.eye(3))
+                #ori = Orientation(np.eye(3))
                 id = 0
                 for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
                     #reset molecule
@@ -499,9 +530,15 @@ class pyxtal:
                     pos0 = apply_ops(pos, ops1)[0]
                     pos0 -= np.floor(pos0)
                     pos0 += eps*(np.random.sample(3) - 0.5)
-
+                    #if np.allclose(splitter.R[:3,:3], np.eye(3)):
+                    #print(splitter.R[:3,:3])
+                    #ori.reset_matrix(splitter.R[:3,:3])
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
-                    split_sites.append(mol_site(_mol, pos0, ori, wp, lattice))
+                    if h in [7, 14] and self.group.number == 31:
+                        diag = True
+                    else:
+                        diag = self.diag
+                    split_sites.append(mol_site(_mol, pos0, ori, wp, lattice, diag))
                     id += wp.multiplicity
             new_struc.mol_sites = split_sites
             new_struc.numMols = [int(multiples*numMol) for numMol in self.numMols]

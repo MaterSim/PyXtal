@@ -302,7 +302,7 @@ class Orientation:
 
     def reset_matrix(self, matrix):
         self.matrix = matrix
-        self.r = Rotation.from_matrix(self.matrix)
+        self.r = Rotation.from_matrix(matrix)
 
     def __repr__(self):
         return str(self)

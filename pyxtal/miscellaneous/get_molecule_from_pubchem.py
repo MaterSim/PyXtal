@@ -2,6 +2,9 @@ import pubchempy as pcp
 import numpy as np
 import json
 from pyxtal.database.element import Element
+from rdkit import Chem
+from rdkit.Chem import AllChem
+import pymatgen as mg
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -122,8 +125,28 @@ molecule = {
     "volume": None,
     "pubchem id": 123591,
 }
-
 molecules.append(molecule)
+
+data = {}
+data["YICMOP"] = "s1cccc1c1c(F)c(OC)c(c2sccc2)c(F)c1OC"
+data["MERQIM"] = "s1c2c(c3c1SCCC3)cc1sc3SCCCc3c1c2"
+for name in data.keys():
+    smi = data[name]
+    m = Chem.MolFromSmiles(smi)
+    m2 = Chem.AddHs(m)
+    AllChem.EmbedMolecule(m2)
+    cids = AllChem.EmbedMultipleConfs(m2, numConfs=1)
+    xyz = Chem.rdmolfiles.MolToXYZBlock(m2, 0)
+    mol = mg.Molecule.from_str(xyz, fmt="xyz")
+    molecule = {
+        "name": name,
+        "elements": [site.specie.name for site in mol],
+        "xyz": mol.cart_coords,
+        "volume": None,
+        "pubchem id": None,
+    }
+    molecules.append(molecule)
+
 for name in names:
     print(name)
     mol = pcp.get_compounds(name, "name", record_type="3d")[0]
@@ -132,6 +155,11 @@ for name in names:
 
 dicts = {"LEFCIK": 812440,
          "OFIXUX": 102393188,
+         "HAHCOI": 10910901,
+         "JAPWIH": 11449344,
+         "WEXBOS": 12232323,
+         "LAGNAL": 139087974,
+         "LUFHAW": 102382626,
         }
 for key in dicts.keys():
     mol = pcp.get_compounds(dicts[key], "cid", record_type="3d")[0]
