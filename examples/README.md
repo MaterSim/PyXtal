@@ -32,7 +32,7 @@ $ make yes-user-misc
 $ make mpi
 $ make mpi mode=shlib
 ```
-
+It works up to `LAMMPS (3 Mar 2020)`
 This should create the file `liblammps_mpi.so` in the src directory, as well as a soft link liblammps.so, which is what the Python wrapper will load by default.
 Then one just need to add the path of src to the `.bashrc` file as follows,
 

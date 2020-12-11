@@ -151,7 +151,6 @@ class mol_site:
             center_absolute = np.dot(center_relative, self.lattice.matrix)
 
             # Rotate the molecule (Euclidean metric)
-            #op2_m = self.wp.generators_m[point_index]
             op2_m = self.wp.generators_m[point_index]
             rot = op2_m.affine_matrix[:3, :3].T
             if self.diag and self.wp.index > 0:

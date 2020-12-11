@@ -13,6 +13,9 @@ print("Convert PyXtal structure to ASE")
 ase_struc = struc.to_ase()
 
 calc_folder = 'tmp'
+import os
+if not os.path.exists(calc_folder):
+    os.mkdir(calc_folder)
 
 print("launch the LAMMPS calculator")
 # Set up lammps
@@ -29,6 +32,7 @@ parameters = ["mass * 1.",
               "pair_style tersoff",
               "pair_coeff * * SiCGe.tersoff C",
              ]
+
 s = opt_lammpslib(ase_struc, lmp, parameters, path=calc_folder, opt_cell=True)
 if abs(s.get_potential_energy())<1e-8:
     cell=s.get_cell()
