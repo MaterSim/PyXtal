@@ -1,0 +1,51 @@
+#############################################################
+#             ______       _    _          _   	            #
+#            (_____ \     \ \  / /        | |               #
+#             _____) )   _ \ \/ / |_  ____| |  	            #
+#            |  ____/ | | | )  (|  _)/ _  | | 	            #
+#            | |    | |_| |/ /\ \ |_( (_| | |___            #
+#            |_|     \__  /_/  \_\___)__|_|_____)           #
+#                   (____/                                  #
+#---------------------(version    0.1.6)--------------------#
+#       A Python package for random crystal generation      #
+#       url: https://github.com/qzhu2017/pyxtal             #
+#       @Zhu's group at University of Nevada Las Vegas      #
+#############################################################
+data_from_pyxtal
+
+_symmetry_space_group_name_H-M 'Pc'
+_symmetry_Int_Tables_number                    7
+_symmetry_cell_setting                monoclinic
+_cell_length_a            4.805546
+_cell_length_b            6.765981
+_cell_length_c            8.043214
+_cell_angle_alpha        90.000000
+_cell_angle_beta        151.317203
+_cell_angle_gamma        90.000000
+
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+1 'x, y, z'
+2 'x, -y, z+1/2'
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+Cs     Cs       2     0.055653    0.477892    0.612204 1
+Cs     Cs       2     0.073133    0.026548    0.428173 1
+Li     Li       2     0.446473    0.882359    0.525852 1
+Li     Li       2     0.479772    0.575346    0.968157 1
+Cs     Cs       2     0.623667    0.263436    0.942333 1
+Cs     Cs       2     0.624587    0.232741    0.725793 1
+Li     Li       2     0.196982    0.376045   -0.009698 1
+Cs     Cs       2     0.201161    0.133393    0.211244 1
+Li     Li       2     0.812269    0.821504    0.018980 1
+Li     Li       2     0.795451    0.652229    0.806644 1
+#END
+
