@@ -636,10 +636,15 @@ class atom_site:
         specie: an Element, element name or symbol, or atomic number of the atom
     """
 
-    def __init__(self, wp=None, coordinate=None, specie=1):
+    def __init__(self, wp=None, coordinate=None, specie=1, diag=False):
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
+        self.diag = diag
         self.wp = wp
+        if self.diag:
+            self.wp.diagonalize_symops()
+            self.position = project_point(self.position, wp[0])
+
         self._get_dof()
         self.PBC = self.wp.PBC
         self.multiplicity = self.wp.multiplicity

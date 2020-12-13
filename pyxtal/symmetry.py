@@ -489,9 +489,10 @@ class Wyckoff_position:
         """
         Obtain the symmetry in n representation for P21/c, Pc, C2/c
         """
+        ops = Group(self.number)[self.index]
         if self.number in [7, 14, 15]:
             trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
-            for j, op in enumerate(self.ops):
+            for j, op in enumerate(ops):
                 vec = op.translation_vector.dot(trans)
                 vec -= np.floor(vec) 
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)

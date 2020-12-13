@@ -722,8 +722,16 @@ class pyxtal:
             numspecies = self.numMols
             species = [str(mol) for mol in self.molecules]
         else:
+            specie_list = []
+            for site in self.atom_sites:
+                specie_list.extend([site.specie]*site.wp.multiplicity) 
+            species = list(set(specie_list))
+            numIons = np.zeros(len(species), dtype=int)
+            for i, sp in enumerate(species):
+                numIons[i] = specie_list.count(sp)
+            self.numIons = numIons
+            self.species = species
             numspecies = self.numIons
-            species = self.species
         for i, s in zip(numspecies, species):
             formula += "{:s}{:d}".format(s, int(i))
         self.formula = formula
@@ -740,21 +748,22 @@ class pyxtal:
                     coords, species = self._get_coords_and_species(True)
                     latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
                     atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
-                    if resort:
-                        permutation = np.argsort(atoms.numbers)
-                        atoms = atoms[permutation]
-                    return atoms
                 else:
                     coords, species = self._get_coords_and_species()
                     latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
-                    return Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
+                    atoms = Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
+                if resort:
+                    permutation = np.argsort(atoms.numbers)
+                    atoms = atoms[permutation]
+                return atoms
+
             else:
                 coords, species = self._get_coords_and_species(True)
                 return Atoms(species, positions=coords)
         else:
             raise RuntimeError("No valid structure can be converted to ase.")
 
-    def to_pymatgen(self):
+    def to_pymatgen(self, resort=True):
         """
         export to Pymatgen structure object.
         """
@@ -764,6 +773,11 @@ class pyxtal:
             if self.dim > 0:
                 lattice = self.lattice.copy()
                 coords, species = self._get_coords_and_species()
+                if resort:
+                    permutation = sorted(range(len(species)),key=species.__getitem__)
+                    #permutation = np.argsort(species)
+                    species = [species[id] for id in permutation]
+                    coords = coords[permutation]
                 # Add space above and below a 2D or 1D crystals
                 latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
                 return Structure(latt, species, coords)
@@ -802,31 +816,42 @@ class pyxtal:
         """
         optimize the lattice if the cell has a bad inclination angles
         """
-        if self.molecular:
-            for i in range(5):
-                lattice, trans, opt = self.lattice.optimize()
-                if opt:
-                    for site in self.mol_sites:
-                        pos_abs = np.dot(site.position, self.lattice.matrix)
-                        pos_frac = pos_abs.dot(lattice.inv_matrix)
-                        site.position = pos_frac - np.floor(pos_frac)
-                        site.lattice = lattice
-                        # for P21/c, Pc, C2/c, check if opt the inclination angle
-                        if self.group.number in [7, 14, 15]:
-                            for j, op in enumerate(site.wp.ops):
-                                vec = op.translation_vector.dot(trans)
-                                vec -= np.floor(vec)
-                                op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                                site.wp.ops[j] = op1
-                    _, perm = Wyckoff_position.from_symops(site.wp.ops, self.group.number)            
-                    if not isinstance(perm, list): 
-                        self.diag = True
-                    else:
-                        self.diag = False
-                    self.lattice = lattice
+        #if self.molecular:
+        count = 0
+        for i in range(5):
+            lattice, trans, opt = self.lattice.optimize()
+            print(self.lattice, opt, lattice)
+            print(trans)
+            if opt:
+                if self.molecular:
+                    sites = self.mol_sites
                 else:
-                    break
+                    sites = self.atom_sites
 
+                for site in sites:
+                    pos_abs = np.dot(site.position, self.lattice.matrix)
+                    pos_frac = pos_abs.dot(lattice.inv_matrix)
+                    site.position = pos_frac - np.floor(pos_frac)
+                    if self.molecular:
+                        site.lattice = lattice
+                    # for P21/c, Pc, C2/c, check if opt the inclination angle
+                    if self.group.number in [7, 14, 15]:
+                        for j, op in enumerate(site.wp.ops):
+                            vec = op.translation_vector.dot(trans)
+                            vec -= np.floor(vec)
+                            op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                            site.wp.ops[j] = op1
+                        #print(site.wp)
+                        _, perm = Wyckoff_position.from_symops(site.wp.ops, self.group.number)            
+                        if not isinstance(perm, list): 
+                            site.diag = True
+                            site.update()
+                            count += 1
+                            print('resettttttttttttttttttttttttt', count)       
+                self.lattice = lattice
+                self.diag = site.diag
+            else:
+                break
 
 #    def save(self, filename=None):
 #        """
