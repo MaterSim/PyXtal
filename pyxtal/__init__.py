@@ -1,6 +1,6 @@
 # Standard Libraries
 from copy import deepcopy
-from random import choice
+from random import choice, sample
 import numpy as np
 
 # PyXtal imports #avoid *
@@ -432,6 +432,67 @@ class pyxtal:
             raise RuntimeError("Cannot create file: structure did not generate")
 
 
+    def subgroup_with_substitution(self, permutations, H=None, idx=None, once=False, group_type='t', max_cell=4):
+        """
+        generate a structure with lower symmetry (for atomic crystals only)
+
+        Args:
+            permutations: e.g., {"Si": "C"}
+            H: space group number (int)
+            idx: list
+            once: generate only one structure, otherwise output all
+            group_type: `t` or `k`
+            max_cell: maximum cell reconstruction (float)
+
+        Returns:
+            a list of pyxtal structures with lower symmetries
+        """
+
+        if group_type == 't':
+            dicts = self.group.get_max_t_subgroup()#['subgroup']
+        else:
+            dicts = self.group.get_max_k_subgroup()#['subgroup']
+        Hs = dicts['subgroup']
+        trans = dicts['transformation']
+
+        if idx is None:
+            idx = []
+            for i, tran in enumerate(trans):
+                if np.linalg.det(tran[:3,:3])<=max_cell:
+                    idx.append(i)
+        else:
+            for id in idx:
+                if id >= len(Hs):
+                    raise ValueError("The idx exceeds the number of possible splits")
+        if H is not None: 
+            idx = [id for id in idx if Hs[id] == H]
+            if len(idx) == 0:
+                raise ValueError("H is incompatible with the idx")
+
+        struc_sites = self.atom_sites
+        sites = [str(site.wp.multiplicity)+site.wp.letter for site in struc_sites]
+
+        new_strucs = []
+        for id in idx:
+            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=group_type)
+            new_struc = self.subgroup_by_splitter(splitter)
+            site_ids = []
+            for site_id, site in enumerate(new_struc.atom_sites):
+                if site.specie in permutations.keys():
+                    site_ids.append(site_id)
+            if len(site_ids) > 1:
+                sub_ids = sample(site_ids, int(len(site_ids)/2))
+                for sub_id in sub_ids:
+                    key = new_struc.atom_sites[sub_id].specie
+                    new_struc.atom_sites[sub_id].specie = permutations[key]
+                new_struc._get_formula()
+                if once:
+                    return new_struc
+                else:
+                    new_strucs.append(new_struc)
+
+        return new_strucs
+
     def subgroup(self, H=None, eps=0.05, idx=None, once=False, group_type='t', max_cell=4):
         """
         generate a structure with lower symmetry
@@ -441,6 +502,8 @@ class pyxtal:
             eps: pertubation term (float)
             idx: list
             once: generate only one structure, otherwise output all
+            group_type: `t` or `k`
+            max_cell: maximum cell reconstruction (float)
 
         Returns:
             a list of pyxtal structures with lower symmetries
