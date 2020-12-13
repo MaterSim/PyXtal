@@ -107,7 +107,11 @@ class TestMolecular(unittest.TestCase):
         pmg_s2 = C.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
 
-        # todo support reading ice
+    def test_ice(self):
+        struc = pyxtal(molecular=True)
+        struc.from_seed(seed=cif_path+"ice.cif", molecule='H2O')
+        N = struc.check_short_distances_by_dict({"H-H": 1.0, "O-O": 2.0})
+        self.assertTrue(N==0)
 
     def test_big_molecule(self):
         # print("test_big_molecule")
@@ -355,7 +359,6 @@ class TestLoad(unittest.TestCase):
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
- 
 
 # class TestIO(unittest.TestCase):
 

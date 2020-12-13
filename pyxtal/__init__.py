@@ -364,6 +364,36 @@ class pyxtal:
             raise NotImplementedError("Does not support cluster for now")
         return pairs
 
+    def check_short_distances_by_dict(self, dicts):
+        """
+        A function to check short distance pairs
+        Mainly used for debug, powered by pymatgen
+
+        Args:
+            dicts: e.g., {"H-H": 1.0, "O-O": 2.0}
+
+        Returns:
+            N_pairs: number of atomic pairs within the cutoff
+        """
+        if self.dim > 0:
+            N_pairs = 0
+            r_cut = max([dicts[key] for key in dicts.keys()])
+            pmg_struc = self.to_pymatgen()
+            res = pmg_struc.get_all_neighbors(r_cut)
+            for i, neighs in enumerate(res):
+                ele1 = pmg_struc.sites[i].specie.value
+                for n in neighs:
+                    ele2 = n.specie.value
+                    key1 = ele1 + '-' + ele2
+                    key2 = ele2 + '-' + ele1
+                    if key1 in dicts.keys() and n.nn_distance < dicts[key1]:
+                        N_pairs += 1
+                    elif key1 != key2 and key2 in dicts.keys() and n.nn_distance < dicts[key2]:
+                        N_pairs += 1
+        else:
+            raise NotImplementedError("Does not support cluster for now")
+        return N_pairs
+
     def to_file(self, filename=None, fmt=None, permission='w', sym_num=None):
         """
         Creates a file with the given filename and file type to store the structure.
