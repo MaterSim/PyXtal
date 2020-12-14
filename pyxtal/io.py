@@ -3,7 +3,13 @@ This module handles reading and write crystal files.
 """
 from pyxtal.constants import deg, logo
 import numpy as np
-from pyxtal.symmetry import Group
+from pymatgen.core.structure import Structure, Molecule
+from pymatgen.core.bonds import CovalentBond
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
+from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
+from pyxtal.symmetry import Wyckoff_position, Group
+from pyxtal.lattice import Lattice
 
 def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
@@ -105,14 +111,11 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         else:
             coords, species = [site.position], [site.specie]
         for specie, coord in zip(species, coords):
-            if style == 'mp':
-                lines += '{:6s} {:6s} {:3d} {:12.6f}{:12.6f}{:12.6f} 1\n'.format(\
-                    specie, specie, mul, *coord)
-            else:
-                lines += '{:6s} {:6s} {:3d} {:s} {:12.6f}{:12.6f}{:12.6f} 1\n'.format(\
-                    specie, specie, mul, letter, *coord)
+            lines += '{:6s} {:6s} {:3d} '.format(specie, specie, mul)
+            if style != 'mp':
+                lines += '{:s} '.format(letter)
+            lines += '{:12.6f}{:12.6f}{:12.6f} 1\n'.format(*coord)
     lines +='#END\n\n'
-    
 
     if filename is None:
         return lines
@@ -121,13 +124,62 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
             f.write(lines)
         return
 
-from pymatgen.core.structure import Structure, Molecule
-from pymatgen.core.bonds import CovalentBond
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pyxtal.wyckoff_site import mol_site, WP_merge
-from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
-from pyxtal.symmetry import Wyckoff_position, Group
-from pyxtal.lattice import Lattice
+def read_cif(filename):
+    """
+    read the cif, mainly for pyxtal cif output
+    Be cautious in using it to read other cif files
+
+    Args:
+        filename: path of the structure file 
+
+    Return:
+        pyxtal structure
+    """
+    species = []
+    coords = []
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        for i, line in enumerate(lines):
+            if line.startswith('_symmetry_Int_Tables_number'):
+                sg = int(line.split()[-1])
+            elif line.startswith('_cell_length_a'):
+                a = float(lines[i].split()[-1])
+                b = float(lines[i+1].split()[-1])
+                c = float(lines[i+2].split()[-1])
+                alpha = float(lines[i+3].split()[-1])
+                beta = float(lines[i+4].split()[-1])
+                gamma = float(lines[i+5].split()[-1])
+            elif line.startswith('_symmetry_cell_setting'):
+                lat_type = line.split()[-1]
+            elif line.startswith('_symmetry_space_group_name_H-M '):
+                symbol = line.split()[-1]
+                if symbol in ["Pn", "P21/n", "C2/n"]:
+                    diag = True
+                else:
+                    diag = False
+
+            elif line.find('_atom_site') >= 0:
+                s = i
+                while True:
+                    s += 1
+                    if lines[s].find('_atom_site') >= 0:
+                        pass
+                    elif len(lines[s].split()) <= 3:
+                        break
+                    else:
+                        tmp = lines[s].split()
+                        pos = [float(tmp[-4]), float(tmp[-3]), float(tmp[-2])]
+                        species.append(tmp[0])
+                        coords.append(pos)
+                break
+
+    wp0 = Group(sg)[0]
+    lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, lat_type)
+    sites = []
+    for specie, coord in zip(species, coords):
+        pt, wp, _ = WP_merge(coord, lattice.matrix, wp0, tol=0.1)
+        sites.append(atom_site(wp, pt, specie, diag))
+    return lattice, sites
 
 
 class structure_from_ext():

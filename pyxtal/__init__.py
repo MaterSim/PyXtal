@@ -22,7 +22,7 @@ from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.lattice import Lattice
 from pyxtal.operations import apply_ops
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.io import write_cif, structure_from_ext
+from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.XRD import XRD
 
 # name = "pyxtal"
@@ -259,7 +259,7 @@ class pyxtal:
                 pass
 
 
-    def from_seed(self, seed, molecule=None, relax_h=False):
+    def from_seed(self, seed, molecule=None, relax_h=False, backend='pymatgen'):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
@@ -291,9 +291,14 @@ class pyxtal:
             elif isinstance(seed, Structure): #Pymatgen
                 self._from_pymatgen(seed)
             elif isinstance(seed, str):
-                pmg_struc = Structure.from_file(seed)
-                self._from_pymatgen(pmg_struc)
-
+                if backend=='pymatgen':
+                    pmg_struc = Structure.from_file(seed)
+                    self._from_pymatgen(pmg_struc)
+                else:
+                    self.lattice, self.atom_sites = read_cif(seed)
+                    self.group = Group(self.atom_sites[0].wp.number)
+                    self.diag = self.atom_sites[0].diag
+                    self.valid = True
         self.factor = 1.0
         self.number = self.group.number
         self.source = 'Seed'
@@ -820,8 +825,8 @@ class pyxtal:
         count = 0
         for i in range(5):
             lattice, trans, opt = self.lattice.optimize()
-            print(self.lattice, opt, lattice)
-            print(trans)
+            #print(self.lattice, opt, lattice)
+            #print(trans)
             if opt:
                 if self.molecular:
                     sites = self.mol_sites
@@ -847,7 +852,7 @@ class pyxtal:
                             site.diag = True
                             site.update()
                             count += 1
-                            print('resettttttttttttttttttttttttt', count)       
+                            #print('resettttttttttttttttttttttttt', count)       
                 self.lattice = lattice
                 self.diag = site.diag
             else:
