@@ -643,7 +643,7 @@ class atom_site:
         self.wp = wp
         if self.diag:
             self.wp.diagonalize_symops()
-            self.position = project_point(self.position, wp[0])
+            #self.position = project_point(self.position, wp[0])
 
         self._get_dof()
         self.PBC = self.wp.PBC
