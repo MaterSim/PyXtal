@@ -30,6 +30,26 @@ class TestGroup(unittest.TestCase):
         a2, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
 
+class TestOptLat(unittest.TestCase):
+    def test_atomic(self):
+        c1 = pyxtal()
+        c1.from_seed(cif_path+"LiCs.cif", backend='pyxtal')
+        pmg1 = c1.to_pymatgen()
+
+        c2 = c1.copy()
+        c2.optimize_lattice(1)
+        pmg2 = c2.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
+
+        c2.optimize_lattice(1)
+        pmg2 = c2.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
+        
+        c3 = pyxtal()
+        c3.from_seed("pyxtal/database/cifs/LiCs.cif")
+        pmg3 = c3.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg3))
+
 class TestWP(unittest.TestCase):
     def test_wp(self):
         symbol = str(wp1.multiplicity) + wp1.letter

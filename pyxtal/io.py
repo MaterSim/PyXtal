@@ -153,7 +153,7 @@ def read_cif(filename):
                 lat_type = line.split()[-1]
             elif line.startswith('_symmetry_space_group_name_H-M '):
                 symbol = line.split()[-1]
-                if symbol in ["Pn", "P21/n", "C2/n"]:
+                if eval(symbol) in ["Pn", "P21/n", "C2/n"]:
                     diag = True
                 else:
                     diag = False

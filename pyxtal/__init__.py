@@ -852,11 +852,12 @@ class pyxtal:
                             op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                             ops[k] = op1
                         wp, perm = Wyckoff_position.from_symops(ops, self.group.number)            
-                        #print('perm', perm)
+                    
                         if not isinstance(perm, list): 
                             diag = True
                         else:
                             diag = False
+                            pos_frac = pos_frac[perm]
                         sites[j] = atom_site(wp, pos_frac, site.specie, diag)
                         #print(sites[j].wp)
                     #site.update()
