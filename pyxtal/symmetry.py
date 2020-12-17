@@ -387,7 +387,7 @@ class Group:
 
     def get_max_t_subgroup(self):
         """
-        Returns the list of maximal t-subgroup
+        Returns the maximal t-subgroups as a dictionary
         """
         if self.dim == 3:
             return t_subgroup[str(self.number)]
@@ -396,18 +396,38 @@ class Group:
 
     def get_max_k_subgroup(self):
         """
-        Returns the list of maximal k-subgroup
+        Returns the maximal k-subgroups as a dictionary
         """
         if self.dim == 3:
             return k_subgroup[str(self.number)]
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
 
-    def get_min_supergroup(self):
+    def get_min_supergroup(self, group_type='t'):
         """
-        Returns the list of minimal supergroup
+        Returns the minimal supergroups as a dictionary
         """
-        raise NotImplementedError()
+        if self.dim == 3:
+            dicts = {'supergroup': [],
+                     'transformation': [],
+                     'relations': [],
+                    }
+            for sg in range(1, 231):
+                if group_type == 't':
+                    subgroups = Group(sg).get_max_t_subgroup()
+                else:
+                    subgroups = Group(sg).get_max_k_subgroup()
+
+                for i, sub in enumerate(subgroups['subgroup']): 
+                    if sub == self.number:
+                        trans = subgroups['transformation'][i]
+                        relation = subgroups['relations'][i]
+                        dicts['supergroup'].append(sg)
+                        dicts['transformation'].append(trans)
+                        dicts['relations'].append(relation)
+            return dicts
+        else:
+            raise NotImplementedError("Now we only support the supergroups for space group")
 
     @classmethod
     def list_groups(cls, dim=3):
