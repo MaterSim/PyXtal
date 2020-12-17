@@ -8,7 +8,7 @@ class wyckoff_split:
     """
     Class for performing wyckoff split between two space groups.
     Essentially, this code is to look for the database from the
-    internationally crystallographic table and find the group-subgroup
+    international crystallographic table and find the group-subgroup
     relations
 
     Args:
@@ -364,7 +364,6 @@ class wyckoff_split:
     def k_split2(self,wp1,wp2_lists):
         """
         split the generators in w1 to different w2
-
         """
         def add_g2_orbits(orbit,translations):
 
