@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
 
     pyxtal.database
+    pyxtal.interface
 
 Submodules
 ==========
