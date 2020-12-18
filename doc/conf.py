@@ -24,9 +24,9 @@ copyright = "2018-2021, Qiang Zhu, Scott Fredericks"
 author = "Qiang Zhu, Scott Fredericks"
 
 # The short X.Y version
-version = "0.1.5"
+version = "0.1.6"
 # The full version, including alpha/beta/rc tags
-release = "0.1.5"
+release = "0.1.6"
 
 
 # -- General configuration ---------------------------------------------------

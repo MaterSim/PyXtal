@@ -85,6 +85,9 @@ def single_optimize(struc, level, pstress, setup, dir0=None):
         pstress: external pressure
         setup: vasp setup 
         dir0: calculation directory
+
+    Returns:
+        the structure, energy and time costs
     """
     cwd = os.getcwd()
     if dir0 is not None:
@@ -113,6 +116,9 @@ def single_point(struc, setup=None, dir0=None):
         pstress: external pressure
         setup: vasp setup 
         dir0: calculation directory
+
+    Returns:
+        the energy and forces
     """
     cwd = os.getcwd()
     if dir0 is not None:
@@ -138,6 +144,9 @@ def optimize(struc, dir0, levels=[0,2,3], pstress=0, setup=None):
         levels: list of vasp calc levels
         pstress: external pressure
         setup: vasp setup 
+
+    Returns:
+        list of structures, energies and time costs
     """
 
     times = []
