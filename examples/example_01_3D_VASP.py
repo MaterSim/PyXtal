@@ -1,76 +1,29 @@
 from pyxtal import pyxtal
 from pyxtal.interface.vasp import optimize
-
-# from vasp import optimize
-import json
-from monty.serialization import MontyEncoder, MontyDecoder, loadfn
+from ase.db import connect
 import os
 from random import randint
 from time import time
-import shutil
-import pandas as pd
-from tabulate import tabulate
 import warnings
 
 warnings.filterwarnings("ignore")
-
-pyxtal_verbosity = 0
 
 """
 This is a script to 
 1, generate random structures
 2, perform multiple steps of optmization with ASE-VASP
-3, optionally, you can also save the configuration to json file for other purposes
 
 Requirement:
 You must have ASE installed and can call vasp from ASE
 """
-
-
-def dump_json(strucs, energies, times, json_file1, json_file2):
-    struc_info = []
-    for struc, energy, time in zip(strucs, energies, times):
-        dic = {
-            "formula": struc.get_chemical_formula(),
-            "coords": struc.get_scaled_positions(),
-            "lattice": struc.cell,
-            "elements": struc.get_chemical_symbols(),
-            "energy": energy,
-            "time": time,
-        }
-        struc_info.append(dic)
-    with open(json_file1, "a+") as f:
-        json.dump(struc_info, f, cls=MontyEncoder, indent=2)
-    with open(json_file2, "a+") as f:
-        json.dump(struc_info[-1], f, cls=MontyEncoder, indent=2)
-
-
-def write_summary(file1):
-    content = loadfn(file1, cls=MontyDecoder)
-    col_name = {
-        "Formula": formula,
-        "Energy": energy,
-        "Time": time,
-    }
-    for dct in content:
-        formula.append(dct["formula"])
-        energy.append(dct["energy"] / len(dct["elements"]))
-        time.append(dct["time"])
-    df = pd.DataFrame(col_name)
-    print(tabulate(df, headers="keys", tablefmt="psql"))
-
-
-N = 2
+N = 10
 elements = {"C": [4, 6]}
-factor = 1.1
-json1 = "train.json"
-json2 = "csp.json"
-modes = ["C", "P"]
-
-dir0 = os.getcwd()
-t0 = time()
+levels = [0, 2, 3]
+dir1 = "Calc"
+filename = "C-VASP.db"
 
 for i in range(N):
+    t0 = time()
     while True:
         sg = randint(2, 230)
         species = []
@@ -78,27 +31,37 @@ for i in range(N):
         for ele in elements.keys():
             species.append(ele)
             if len(elements[ele]) == 2:
-                numIons.append(randint(elements[ele][0], elements[ele][1]))
+                num = randint(elements[ele][0], elements[ele][1])
+                numIons.append(num)
             else:
                 numIons.append(elements[ele])
 
         crystal = pyxtal()
-        crystal.from_random(3, sg, species, numIons, factor)
+        crystal.from_random(3, sg, species, numIons, force_pass=True)
 
         if crystal.valid:
             break
 
-    print(
-        "SG: {0:3d} Vol: {1:6.2f} Time: {2:6.1f} mins".format(
-            sg, struc.volume, (time() - t0) / 60.0
-        )
-    )
-    dir1 = str(i) + "-" + str(struc.formula).replace(" ", "")
-    [strucs, energies, times] = optimize(struc, dir1, modes=modes)
+    try:
+        # relax the structures with levels 0, 2, 3
+        strucs, energies, times = optimize(crystal, dir1, levels)
 
-    os.chdir(dir0)
-    if len(strucs) == len(modes):
-        dump_json(strucs, energies, times, json1, json2)
-    shutil.rmtree(dir1)
+        if len(strucs) == len(levels): # successful calculation
+            s = strucs[-1].to_ase()
+            with connect(filename) as db:
+                kvp = {"spg": strucs[-1].group.symbol, 
+                       "dft_energy": energies[-1], 
+                       "energy": energies[-1], 
+                      }
+                db.write(s, key_value_pairs=kvp)
+            t = (time() - t0) / 60.0
+            strs = "{:3d}".format(i)
+            strs += " {:12s} -> {:12s}".format(crystal.group.symbol, strucs[-1].group.symbol)
+            strs += " {:6.3f} eV/atom".format(energies[-1])
+            strs += " {:6.2f} min".format(t)
+            print(strs)
 
-# write_summary(json2)
+            #from pyxtal.interface.vasp import single_point
+            #print(single_point(strucs[-1], dir0=dir1))
+    except:
+        print("vasp calculation is wrong")

@@ -1,7 +1,6 @@
-from ase.io import read
-from ase import Atoms
+from pyxtal import pyxtal
+from pyxtal.interface.util import good_lattice
 from ase.calculators.vasp import Vasp
-from pyxtal.interface.util import symmetrize_cell, good_lattice, pymatgen2ase
 import os, time
 
 """
@@ -76,31 +75,82 @@ def read_OUTCAR(path='OUTCAR'):
 
     return time, ncore
 
-def single_optimize(struc, level, pstress, mode, setup):
-    """single optmization"""
-    struc = symmetrize_cell(struc, mode)
-    struc.set_calculator(set_vasp(level, pstress, setup))
-    energy = struc.get_potential_energy()
-    print(energy)
+def single_optimize(struc, level, pstress, setup, dir0=None):
+    """
+    single optmization
+
+    Args: 
+        struc: pyxtal structure
+        level: vasp calc level
+        pstress: external pressure
+        setup: vasp setup 
+        dir0: calculation directory
+    """
+    cwd = os.getcwd()
+    if dir0 is not None:
+        if not os.path.exists(dir0):
+            os.makedirs(dir0)
+        os.chdir(dir0)
+
+    ase_atoms = struc.to_ase()
+    ase_atoms.set_calculator(set_vasp(level, pstress, setup))
+    energy = ase_atoms.get_potential_energy()/len(ase_atoms)
     time, ncore = read_OUTCAR()
-    struc = read('CONTCAR',format='vasp')
+    struc = pyxtal()
+    struc.from_seed('CONTCAR')
+    struc.optimize_lattice()
+
+    os.chdir(cwd)
     return struc, energy, time
 
-def optimize(struc, dir0, modes=['C','C','C','P','P'], pstress=0, setup=None):
-    """multi optimization"""
-    struc = pymatgen2ase(struc)
-    os.mkdir(dir0)
-    os.chdir(dir0)
-    time0 = []
-    struc0 = []
-    energy0 = []
-    for i, mode in enumerate(modes):
-        struc, energy, time = single_optimize(struc, i, pstress, mode, setup)
-        time0.append(time)
-        struc0.append(struc)
-        energy0.append(energy)
+def single_point(struc, setup=None, dir0=None):
+    """
+    single optmization
+
+    Args: 
+        struc: pyxtal structure
+        level: vasp calc level
+        pstress: external pressure
+        setup: vasp setup 
+        dir0: calculation directory
+    """
+    cwd = os.getcwd()
+    if dir0 is not None:
+        if not os.path.exists(dir0):
+            os.makedirs(dir0)
+        os.chdir(dir0)
+
+    ase_atoms = struc.to_ase()
+    ase_atoms.set_calculator(set_vasp(level=4, setup=setup))
+    energy = ase_atoms.get_potential_energy()
+    forces = ase_atoms.get_forces()
+    os.chdir(cwd)
+    return energy, forces
+
+
+def optimize(struc, dir0, levels=[0,2,3], pstress=0, setup=None):
+    """
+    multi optimization
+
+    Args:
+        struc: pyxtal structure
+        dir0: calculation directory
+        levels: list of vasp calc levels
+        pstress: external pressure
+        setup: vasp setup 
+    """
+
+    times = []
+    strucs = []
+    engs = []
+    for level in levels:
+        struc, e, t = single_optimize(struc, level, pstress, setup, dir0)
+        times.append(t)
+        strucs.append(struc)
+        engs.append(e)
+        # skip the structures with bad lattices
         if not good_lattice(struc):
             break
-    return struc0, energy0, time0
+    return strucs, engs, times
 
 
