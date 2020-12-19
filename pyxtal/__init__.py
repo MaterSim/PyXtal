@@ -54,9 +54,24 @@ class pyxtal:
 
     Examples
     --------
+
+    To create a new structure instance, 
+
     >>> from pyxtal import pyxtal
     >>> struc = pyxtal()
+
+    one can either use pyxtal to generate a random symmetric structure
+
     >>> struc.from_random(3, 227, ['C'], [8])
+
+    or load a structure from a file or ASE atoms or Pymatgen structure object
+
+    >>> struc.from_seed('diamond.cif')     # as a string
+    >>> struc.from_seed(diamond_ase)       # as a ase atoms object
+    >>> struc.from_seed(diamond_pymatgen)  # as a pymatgen structure object
+
+    as long as the struc is created, you can check their symmetry as follows
+
     >>> struc.get_site_labels()
     {'C': ['8a']}
     >>> struc

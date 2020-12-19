@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import re
+from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
 from ase import Atoms
 from ase.units import eV, Ang
@@ -19,6 +20,9 @@ class GULP():
     def __init__(self, struc, label="_", path='tmp', ff='reax', \
                  opt='conp', steps=1000, exe='gulp',\
                  input='gulp.in', output='gulp.log', dump=None):
+
+        if isinstance(struc, pyxtal):
+            struc = struc.to_ase()
 
         if isinstance(struc, Atoms):
             self.lattice = Lattice.from_matrix(struc.cell)
@@ -72,6 +76,12 @@ class GULP():
     def to_pymatgen(self):
         from pymatgen.core.structure import Structure
         return Structure(self.lattice.matrix, self.sites, self.frac_coords)
+
+    def to_pyxtal(self):
+        pmg = self.to_pymatgen()
+        struc = pyxtal()
+        struc.from_seed(pmg)
+        return struc
 
     def write(self):
         a, b, c, alpha, beta, gamma = self.lattice.get_para(degree=True)
@@ -207,7 +217,7 @@ def single_optimize(struc, ff, opt="conp", exe="gulp", path="tmp", label="_", cl
         print("GULP error in single optimize")
         return None, 100000, 0, True
     else:
-        return calc.to_ase(), calc.energy, calc.cputime, calc.error
+        return calc.to_pyxtal(), calc.energy, calc.cputime, calc.error
 
 def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 
             path="tmp", label="_", clean=True):

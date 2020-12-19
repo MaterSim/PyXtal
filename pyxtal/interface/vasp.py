@@ -134,7 +134,7 @@ def single_point(struc, setup=None, dir0=None):
     return energy, forces
 
 
-def optimize(struc, dir0, levels=[0,2,3], pstress=0, setup=None):
+def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None):
     """
     multi optimization
 
@@ -152,6 +152,7 @@ def optimize(struc, dir0, levels=[0,2,3], pstress=0, setup=None):
     times = []
     strucs = []
     engs = []
+    error = False
     for level in levels:
         struc, e, t = single_optimize(struc, level, pstress, setup, dir0)
         times.append(t)
@@ -159,6 +160,7 @@ def optimize(struc, dir0, levels=[0,2,3], pstress=0, setup=None):
         engs.append(e)
         # skip the structures with bad lattices
         if not good_lattice(struc):
+            error = True
             break
     return strucs, engs, times
 
