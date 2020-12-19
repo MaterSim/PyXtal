@@ -33,11 +33,12 @@ class VASP():
             os.makedirs(self.folder)
 
         self.energy = None
+        self.energy_per_atom = None
         self.stress = None
         self.forces = None
         self.gap = None
         self.cputime = 0
-        self.error = False
+        self.error = True
     
     def set_vasp(self, level=0, pstress=0.0000, setup=None):
         default0 = {'xc': 'pbe',
@@ -127,9 +128,9 @@ class VASP():
                 self.read_bandgap()
             if clean:
                 self.clean()
+            self.error = False
         except:
             print("VASP calculation goes wrong")
-            self.error = True
         os.chdir(cwd)
 
     def clean(self):
@@ -165,8 +166,7 @@ def single_optimize(struc, level, pstress, setup, path):
     calc.run(setup, pstress, level)
     struc = calc.to_pyxtal()
     struc.optimize_lattice()
-    eng = calc.energy * sum(struc.numIons)/len(calc.structure)
-    return calc.to_pyxtal(), calc.energy, calc.cputime, calc.error
+    return struc, calc.energy_per_atom, calc.cputime, calc.error
 
 def single_point(struc, setup=None, path=None):
     """

@@ -467,11 +467,22 @@ class pyxtal:
         Returns:
             a list of pyxtal structures with lower symmetries
         """
-
+        t_types = []
+        k_types = []
         if group_type == 't':
             dicts = self.group.get_max_t_subgroup()#['subgroup']
-        else:
+            t_types = ['t']*len(dicts['subgroup'])
+        elif group_type == 'k':
             dicts = self.group.get_max_k_subgroup()#['subgroup']
+            k_types = ['k']*len(dicts['subgroup'])
+        else:
+            dicts = self.group.get_max_t_subgroup()#['subgroup']
+            dict2 = self.group.get_max_k_subgroup()#['subgroup']
+            t_types = ['t']*len(dicts['subgroup'])
+            k_types = ['k']*len(dict2['subgroup'])
+            for key in dicts.keys():
+                dicts[key].extend(dict2[key])
+ 
         Hs = dicts['subgroup']
         trans = dicts['transformation']
 
@@ -494,7 +505,11 @@ class pyxtal:
 
         new_strucs = []
         for id in idx:
-            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=group_type)
+            gtype = (t_types+k_types)[id]
+            if gtype == 'k':
+                id -= len(t_types)
+
+            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
             new_struc = self.subgroup_by_splitter(splitter)
             site_ids = []
             for site_id, site in enumerate(new_struc.atom_sites):
@@ -530,12 +545,25 @@ class pyxtal:
         """
 
         #randomly choose a subgroup from the available list
+        t_types = []
+        k_types = []
         if group_type == 't':
             dicts = self.group.get_max_t_subgroup()#['subgroup']
-        else:
+            t_types = ['t']*len(dicts['subgroup'])
+        elif group_type == 'k':
             dicts = self.group.get_max_k_subgroup()#['subgroup']
+            k_types = ['k']*len(dicts['subgroup'])
+        else:
+            dicts = self.group.get_max_t_subgroup()#['subgroup']
+            dict2 = self.group.get_max_k_subgroup()#['subgroup']
+            t_types = ['t']*len(dicts['subgroup'])
+            k_types = ['k']*len(dict2['subgroup'])
+            for key in dicts.keys():
+                dicts[key].extend(dict2[key])
+                
         Hs = dicts['subgroup']
         trans = dicts['transformation']
+        
         if idx is None:
             idx = []
             if not self.molecular:
@@ -573,7 +601,10 @@ class pyxtal:
         valid_splitters = []
         bad_splitters = []
         for id in idx:
-            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=group_type)
+            gtype = (t_types+k_types)[id]
+            if gtype == 'k':
+                id -= len(t_types)
+            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
             if splitter.valid_split:
                 special = False
                 if self.molecular:
@@ -631,7 +662,6 @@ class pyxtal:
 
                 wp1 = site.wp
                 ori.reset_matrix(np.eye(3))
-                #ori = Orientation(np.eye(3))
                 id = 0
                 for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
                     #reset molecule
@@ -642,10 +672,9 @@ class pyxtal:
 
                     pos0 = apply_ops(pos, ops1)[0]
                     pos0 -= np.floor(pos0)
-                    pos0 += eps*(np.random.sample(3) - 0.5)
-                    #if np.allclose(splitter.R[:3,:3], np.eye(3)):
-                    #print(splitter.R[:3,:3])
-                    #ori.reset_matrix(splitter.R[:3,:3])
+                    dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
+                    dis /= np.linalg.norm(dis)
+                    pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
                     if h in [7, 14] and self.group.number == 31:
                         diag = True
@@ -662,7 +691,9 @@ class pyxtal:
                 for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
                     pos0 = apply_ops(pos, ops1)[0]
                     pos0 -= np.floor(pos0)
-                    pos0 += eps*(np.random.sample(3) - 0.5)
+                    dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
+                    dis /= np.linalg.norm(dis)
+                    pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
                     split_sites.append(atom_site(wp, pos0, site.specie))
 
