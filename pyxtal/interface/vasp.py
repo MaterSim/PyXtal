@@ -75,7 +75,7 @@ def read_OUTCAR(path='OUTCAR'):
 
     return time, ncore
 
-def single_optimize(struc, level, pstress, setup, dir0=None):
+def single_optimize(struc, level, pstress, setup, path=None):
     """
     single optmization
 
@@ -84,16 +84,16 @@ def single_optimize(struc, level, pstress, setup, dir0=None):
         level: vasp calc level
         pstress: external pressure
         setup: vasp setup 
-        dir0: calculation directory
+        path: calculation directory
 
     Returns:
         the structure, energy and time costs
     """
     cwd = os.getcwd()
-    if dir0 is not None:
-        if not os.path.exists(dir0):
-            os.makedirs(dir0)
-        os.chdir(dir0)
+    if path is not None:
+        if not os.path.exists(path):
+            os.makedirs(path)
+        os.chdir(path)
 
     ase_atoms = struc.to_ase()
     ase_atoms.set_calculator(set_vasp(level, pstress, setup))
@@ -106,7 +106,7 @@ def single_optimize(struc, level, pstress, setup, dir0=None):
     os.chdir(cwd)
     return struc, energy, time
 
-def single_point(struc, setup=None, dir0=None):
+def single_point(struc, setup=None, path=None):
     """
     single optmization
 
@@ -115,16 +115,16 @@ def single_point(struc, setup=None, dir0=None):
         level: vasp calc level
         pstress: external pressure
         setup: vasp setup 
-        dir0: calculation directory
+        path: calculation directory
 
     Returns:
         the energy and forces
     """
     cwd = os.getcwd()
-    if dir0 is not None:
-        if not os.path.exists(dir0):
-            os.makedirs(dir0)
-        os.chdir(dir0)
+    if path is not None:
+        if not os.path.exists(path):
+            os.makedirs(path)
+        os.chdir(path)
 
     ase_atoms = struc.to_ase()
     ase_atoms.set_calculator(set_vasp(level=4, setup=setup))
@@ -140,7 +140,7 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None):
 
     Args:
         struc: pyxtal structure
-        dir0: calculation directory
+        path: calculation directory
         levels: list of vasp calc levels
         pstress: external pressure
         setup: vasp setup 
@@ -154,7 +154,7 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None):
     engs = []
     error = False
     for level in levels:
-        struc, e, t = single_optimize(struc, level, pstress, setup, dir0)
+        struc, e, t = single_optimize(struc, level, pstress, setup, path)
         times.append(t)
         strucs.append(struc)
         engs.append(e)
@@ -162,6 +162,6 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None):
         if not good_lattice(struc):
             error = True
             break
-    return strucs, engs, times
+    return strucs, engs, times, error
 
 

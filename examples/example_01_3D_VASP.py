@@ -17,8 +17,8 @@ Requirement:
 You must have ASE installed and can call vasp from ASE
 """
 N = 10
-elements = {"C": [4, 6]}
-levels = [0, 2, 3]
+elements = {"C": [2, 4]}
+levels = [0, 2] #, 3]
 dir1 = "Calc"
 filename = "C-VASP.db"
 
@@ -42,26 +42,25 @@ for i in range(N):
         if crystal.valid:
             break
 
-    try:
-        # relax the structures with levels 0, 2, 3
-        strucs, energies, times = optimize(crystal, dir1, levels)
+    #try:
+    # relax the structures with levels 0, 2, 3
+    strucs, energies, times, error = optimize(crystal, dir1, levels)
 
-        if len(strucs) == len(levels): # successful calculation
-            s = strucs[-1].to_ase()
-            with connect(filename) as db:
-                kvp = {"spg": strucs[-1].group.symbol, 
-                       "dft_energy": energies[-1], 
-                       "energy": energies[-1], 
-                      }
-                db.write(s, key_value_pairs=kvp)
-            t = (time() - t0) / 60.0
-            strs = "{:3d}".format(i)
-            strs += " {:12s} -> {:12s}".format(crystal.group.symbol, strucs[-1].group.symbol)
-            strs += " {:6.3f} eV/atom".format(energies[-1])
-            strs += " {:6.2f} min".format(t)
-            print(strs)
+    if not error: # successful calculation
+        s = strucs[-1].to_ase()
+        with connect(filename) as db:
+            kvp = {"spg": strucs[-1].group.symbol, 
+                   "dft_energy": energies[-1], 
+                  }
+            db.write(s, key_value_pairs=kvp)
+        t = (time() - t0) / 60.0
+        strs = "{:3d}".format(i)
+        strs += " {:12s} -> {:12s}".format(crystal.group.symbol, strucs[-1].group.symbol)
+        strs += " {:6.3f} eV/atom".format(energies[-1])
+        strs += " {:6.2f} min".format(t)
+        print(strs)
 
-            #from pyxtal.interface.vasp import single_point
-            #print(single_point(strucs[-1], dir0=dir1))
-    except:
-        print("vasp calculation is wrong")
+        #from pyxtal.interface.vasp import single_point
+        #print(single_point(strucs[-1], dir0=dir1))
+    #except:
+    #    print("vasp calculation is wrong")
