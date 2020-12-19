@@ -46,6 +46,7 @@ class GULP():
         self.dump = dump
         self.iter = 0
         self.energy = None
+        self.energy_per_atom = None
         self.stress = None
         self.forces = None
         self.positions = None
@@ -128,6 +129,7 @@ class GULP():
                 #print(line.find('Final asymmetric unit coord'), line)
                 if m:
                     self.energy = float(m.group(1))
+                    self.energy_per_atom = self.energy/len(self.frac_coords)
 
                 elif line.find('Job Finished')!= -1:
                     self.optimized = True
@@ -218,17 +220,20 @@ def single_optimize(struc, ff, opt="conp", exe="gulp", path="tmp", label="_", cl
         print("GULP error in single optimize")
         return None, 100000, 0, True
     else:
-        return calc.to_pyxtal(), calc.energy, calc.cputime, calc.error
+        return calc.to_pyxtal(), calc.energy_per_atom, calc.cputime, calc.error
 
 def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 
-            path="tmp", label="_", clean=True):
-
+            path="tmp", label="_", clean=True, adjust=False):
     time_total = 0
     for opt in optimizations:
         struc, energy, time, error = single_optimize(struc, ff, opt, exe, path, label)
         time_total += time
         if error:
             return None, 100000, 0, True
+        elif adjust and abs(energy)<1e-8:
+            matrix = struc.lattice.matrix
+            struc.lattice.set_matrix(matrix*0.8)
+            
     return struc, energy, time_total, False
 
 

@@ -164,9 +164,15 @@ def single_optimize(struc, level, pstress, setup, path):
     """
     calc = VASP(struc, path)
     calc.run(setup, pstress, level)
-    struc = calc.to_pyxtal()
-    struc.optimize_lattice()
-    return struc, calc.energy_per_atom, calc.cputime, calc.error
+    if calc.error:
+        return None, 100000, 0, True
+    else:
+        try:
+            struc = calc.to_pyxtal()
+            struc.optimize_lattice()
+            return struc, calc.energy_per_atom, calc.cputime, calc.error
+        except:
+            return None, 100000, 0, True
 
 def single_point(struc, setup=None, path=None):
     """
