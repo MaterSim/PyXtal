@@ -118,19 +118,19 @@ class VASP():
         cwd = os.getcwd()
         setups = self.set_vasp(level, pstress, setup)
         self.structure.set_calculator(setups)
-        try:
-            os.chdir(self.folder)
-            self.energy = self.structure.get_potential_energy()
-            self.energy_per_atom = self.energy/len(self.structure)
-            self.forces = self.structure.get_forces()
-            self.read_OUTCAR()
-            if read_gap:
-                self.read_bandgap()
-            if clean:
-                self.clean()
-            self.error = False
-        except:
-            print("VASP calculation goes wrong")
+        #try:
+        os.chdir(self.folder)
+        self.energy = self.structure.get_potential_energy()
+        self.energy_per_atom = self.energy/len(self.structure)
+        self.forces = self.structure.get_forces()
+        self.read_OUTCAR()
+        if read_gap:
+            self.read_bandgap()
+        if clean:
+            self.clean()
+        self.error = False
+        #except:
+        #    print("VASP calculation goes wrong")
         os.chdir(cwd)
 
     def clean(self):
@@ -148,7 +148,7 @@ class VASP():
         struc.from_seed(self.structure)
         return struc
 
-def single_optimize(struc, level, pstress, setup, path):
+def single_optimize(struc, level, pstress, setup, path, clean):
     """
     single optmization
 
@@ -163,7 +163,7 @@ def single_optimize(struc, level, pstress, setup, path):
         the structure, energy and time costs
     """
     calc = VASP(struc, path)
-    calc.run(setup, pstress, level)
+    calc.run(setup, pstress, level, clean=clean)
     if calc.error:
         return None, 100000, 0, True
     else:
@@ -174,7 +174,7 @@ def single_optimize(struc, level, pstress, setup, path):
         except:
             return None, 100000, 0, True
 
-def single_point(struc, setup=None, path=None):
+def single_point(struc, setup=None, path=None, clean=True):
     """
     single optmization
 
@@ -189,10 +189,10 @@ def single_point(struc, setup=None, path=None):
         the energy and forces
     """
     calc = VASP(struc, path)
-    calc.run(setup, level=4)
+    calc.run(setup, level=4, clean=clean)
     return calc.energy, calc.forces, calc.error
 
-def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None):
+def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None, clean=True):
     """
     multi optimization
 
@@ -209,9 +209,9 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None):
 
     time_total = 0
     for i, level in enumerate(levels):
-        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path)
+        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path, clean)
         time_total += time
-        #print(eng, time, '++++++++++++++++++++++++++++++')
+        print(eng, time, time_total, '++++++++++++++++++++++++++++++')
         if error or not good_lattice(struc):
             return None, 100000, 0, True
     return struc, eng, time_total, error

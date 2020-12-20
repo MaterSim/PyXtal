@@ -274,7 +274,7 @@ class pyxtal:
                 pass
 
 
-    def from_seed(self, seed, molecule=None, relax_h=False, backend='pymatgen'):
+    def from_seed(self, seed, molecule=None, tol=1e-4, relax_h=False, backend='pymatgen'):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
@@ -302,13 +302,13 @@ class pyxtal:
             elif isinstance(seed, Atoms): #ASE atoms
                 from pymatgen.io.ase import AseAtomsAdaptor
                 pmg_struc = AseAtomsAdaptor.get_structure(seed)
-                self._from_pymatgen(pmg_struc)
+                self._from_pymatgen(pmg_struc, tol)
             elif isinstance(seed, Structure): #Pymatgen
-                self._from_pymatgen(seed)
+                self._from_pymatgen(seed, tol)
             elif isinstance(seed, str):
                 if backend=='pymatgen':
                     pmg_struc = Structure.from_file(seed)
-                    self._from_pymatgen(pmg_struc)
+                    self._from_pymatgen(pmg_struc, tol)
                 else:
                     self.lattice, self.atom_sites = read_cif(seed)
                     self.group = Group(self.atom_sites[0].wp.number)
@@ -321,19 +321,20 @@ class pyxtal:
         self.PBC = [1, 1, 1]
         self._get_formula()
 
-    def _from_pymatgen(self, structure):
+    def _from_pymatgen(self, struc, tol=1e-4):
         """
         Load structure from Pymatgen
         should not be used directly
         """
         from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
+        #import pymatgen.analysis.structure_matcher as sm
 
         self.valid = True
         try:
             # needs to do it twice in order to get the conventional cell
-            s = sga(structure)
+            s = sga(struc, symprec=tol)
             structure = s.get_refined_structure()
-            s = sga(structure)
+            s = sga(structure, symprec=tol)
             sym_struc = s.get_symmetrized_structure()
             number = s.get_space_group_number()
         except:
@@ -354,10 +355,15 @@ class pyxtal:
                 pos = site[0].frac_coords
                 wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
                 specie = site[0].specie.number
-                atom_sites.append(atom_site(wp, pos, specie))
+                atom_sites.append(atom_site(wp, pos, specie, search=True))
             self.atom_sites = atom_sites
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
+            #self.dim = 3
+            #self.PBC = [1, 1, 1]
+            #pmg1 = self.to_pymatgen()
+            #if not sm.StructureMatcher().fit(struc, pmg1):
+            #    raise RuntimeError("The structure is inconsistent after conversion")
 
     def check_short_distances(self, r=0.7, exclude_H = True):
         """

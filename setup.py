@@ -30,7 +30,7 @@ setup(
     ],
     package_data={
         "pyxtal.database": ["*.csv", "*.json"],
-        "pyxtal.database.cifs": ["*.cif"],
+        "pyxtal.database.cifs": ["*.cif", "*.vasp"],
         'pyxtal.potentials': ['*'],
     },
     scripts=[

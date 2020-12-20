@@ -634,9 +634,10 @@ class atom_site:
         wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object 
         coordinate: a fractional 3-vector for the generating atom's coordinate
         specie: an Element, element name or symbol, or atomic number of the atom
+        search: to search for the optimum position for special wyckoff site
     """
 
-    def __init__(self, wp=None, coordinate=None, specie=1, diag=False):
+    def __init__(self, wp=None, coordinate=None, specie=1, diag=False, search=False):
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
         self.diag = diag
@@ -648,6 +649,8 @@ class atom_site:
         self._get_dof()
         self.PBC = self.wp.PBC
         self.multiplicity = self.wp.multiplicity
+        if search:
+            self.search_position()
         self.update()
 
     def __str__(self):
@@ -681,6 +684,7 @@ class atom_site:
         freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
         self.dof = len(freedom[freedom==True])
 
+
     @classmethod
     def load_dict(cls, dicts):
         """
@@ -709,6 +713,22 @@ class atom_site:
         pos = self.position + dis.dot(np.linalg.inv(lattice))
         self.update(pos)
  
+    def search_position(self):
+        """
+        Sometimes, the initial posiition is not the proper generator
+        Needs to find the proper generator
+        """
+        if self.wp.index > 0:
+            pos = self.position
+            coords = apply_ops(pos, Group(self.wp.number, self.wp.dim)[0])
+            for coord in coords:
+                ans = apply_ops(coord, [self.wp.ops[0]])[0]
+                diff = coord - ans
+                diff -= np.floor(diff)
+                if np.sum(diff**2)<1e-4:
+                    self.position = coord - np.floor(coord)
+                    break
+
     def update(self, pos=None):
         """
         Used to generate coords from self.position

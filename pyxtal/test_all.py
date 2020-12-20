@@ -327,7 +327,12 @@ class TestSubgroup(unittest.TestCase):
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
-
+    
+        pmg_s1 = Structure.from_file(cif_path + "B28.vasp")
+        struc = pyxtal()
+        struc.from_seed(seed=cif_path + "B28.vasp")
+        pmg_s2 = struc.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
     def test_molecules(self):
         for name in ["HAHCOI", "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", "JAPWIH"]:
