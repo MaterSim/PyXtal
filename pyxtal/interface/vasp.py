@@ -31,7 +31,7 @@ class VASP():
         self.folder = path  
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
-
+        self.pstress = 0.0
         self.energy = None
         self.energy_per_atom = None
         self.stress = None
@@ -41,13 +41,14 @@ class VASP():
         self.error = True
     
     def set_vasp(self, level=0, pstress=0.0000, setup=None):
+        self.pstress = pstress 
         default0 = {'xc': 'pbe',
                 'npar': 8,
                 'kgamma': True,
                 'lcharg': False,
                 'lwave': False,
                 'ibrion': 2,
-                'pstress': pstress,
+                'pstress': pstress*10,
                 'setups': setup,
                 }
         if level==0:
@@ -118,19 +119,22 @@ class VASP():
         cwd = os.getcwd()
         setups = self.set_vasp(level, pstress, setup)
         self.structure.set_calculator(setups)
-        #try:
-        os.chdir(self.folder)
-        self.energy = self.structure.get_potential_energy()
-        self.energy_per_atom = self.energy/len(self.structure)
-        self.forces = self.structure.get_forces()
-        self.read_OUTCAR()
-        if read_gap:
-            self.read_bandgap()
-        if clean:
-            self.clean()
-        self.error = False
-        #except:
-        #    print("VASP calculation goes wrong")
+        try:
+            os.chdir(self.folder)
+            self.energy = self.structure.get_potential_energy()
+            if self.pstress > 0:
+                self.energy += self.pstress * self.structure.get_volume()/160.21766
+            self.energy_per_atom = self.energy/len(self.structure)
+            self.forces = self.structure.get_forces()
+            self.read_OUTCAR()
+            if read_gap:
+                self.read_bandgap()
+            if clean:
+                self.clean()
+            self.error = False
+        except (ValueError, UnboundLocalError):
+            print("Error in parsing vasp output or VASP calc is wrong")
+            os.system("cp OUTCAR Error-OUTCAR")
         os.chdir(cwd)
 
     def clean(self):
@@ -211,7 +215,7 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None, clean=True):
     for i, level in enumerate(levels):
         struc, eng, time, error = single_optimize(struc, level, pstress, setup, path, clean)
         time_total += time
-        print(eng, time, time_total, '++++++++++++++++++++++++++++++')
+        #print(eng, time, time_total, '++++++++++++++++++++++++++++++')
         if error or not good_lattice(struc):
             return None, 100000, 0, True
     return struc, eng, time_total, error

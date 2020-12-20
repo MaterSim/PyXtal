@@ -19,7 +19,7 @@ class GULP():
     """
 
     def __init__(self, struc, label="_", path='tmp', ff='reax', \
-                 opt='conp', steps=1000, exe='gulp',\
+                 pstress=None, opt='conp', steps=1000, exe='gulp',\
                  input='gulp.in', output='gulp.log', dump=None):
 
         if isinstance(struc, pyxtal):
@@ -33,6 +33,7 @@ class GULP():
             raise NotImplementedError("only support ASE atoms object")
 
         self.structure = struc
+        self.pstress= pstress
         self.label = label
         self.ff = ff
         self.opt = opt
@@ -116,6 +117,8 @@ class GULP():
             #f.write('switch rfo cycle 0.03\n')
             if self.opt != "single":
                 f.write('maxcycle {:d}\n'.format(self.steps))
+            if self.pstress is not None:
+                f.write("pressure {:6.3f}\n".format(self.pstress))
             if self.dump is not None:
                 f.write('output cif {:s}\n'.format(self.dump))
 
@@ -125,7 +128,10 @@ class GULP():
             lines = f.readlines()
         try: 
             for i, line in enumerate(lines):
-                m = re.match(r'\s*Total lattice energy\s*=\s*(\S+)\s*eV', line)
+                if self.pstress is None or self.pstress == 0:
+                    m = re.match(r'\s*Total lattice energy\s*=\s*(\S+)\s*eV', line)
+                else:
+                    m = re.match(r'\s*Total lattice enthalpy\s*=\s*(\S+)\s*eV', line)
                 #print(line.find('Final asymmetric unit coord'), line)
                 if m:
                     self.energy = float(m.group(1))
@@ -213,8 +219,8 @@ class GULP():
             self.energy = 100000
             print("GULP calculation is wrong")
 
-def single_optimize(struc, ff, opt="conp", exe="gulp", path="tmp", label="_", clean=True):
-    calc = GULP(struc, label=label, path=path, ff=ff, opt=opt)
+def single_optimize(struc, ff, pstress=None, opt="conp", exe="gulp", path="tmp", label="_", clean=True):
+    calc = GULP(struc, label=label, path=path, pstress=pstress, ff=ff, opt=opt)
     calc.run(clean=clean)
     if calc.error:
         print("GULP error in single optimize")
@@ -223,10 +229,10 @@ def single_optimize(struc, ff, opt="conp", exe="gulp", path="tmp", label="_", cl
         return calc.to_pyxtal(), calc.energy_per_atom, calc.cputime, calc.error
 
 def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 
-            path="tmp", label="_", clean=True, adjust=False):
+            pstress=None, path="tmp", label="_", clean=True, adjust=False):
     time_total = 0
     for opt in optimizations:
-        struc, energy, time, error = single_optimize(struc, ff, opt, exe, path, label)
+        struc, energy, time, error = single_optimize(struc, ff, pstress, opt, exe, path, label, clean)
         time_total += time
         if error:
             return None, 100000, 0, True
