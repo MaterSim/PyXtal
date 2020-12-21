@@ -212,11 +212,11 @@ class GULP():
                     self.lattice = Lattice.from_matrix(lattice_vectors)
             if np.isnan(self.energy):
                 self.error = True
-                self.energy = 100000
+                self.energy = None
                 print("GULP calculation is wrong, reading------")
         except:
             self.error = True
-            self.energy = 100000
+            self.energy = None
             print("GULP calculation is wrong")
 
 def single_optimize(struc, ff, pstress=None, opt="conp", exe="gulp", path="tmp", label="_", clean=True):
@@ -224,7 +224,7 @@ def single_optimize(struc, ff, pstress=None, opt="conp", exe="gulp", path="tmp",
     calc.run(clean=clean)
     if calc.error:
         print("GULP error in single optimize")
-        return None, 100000, 0, True
+        return None, None, 0, True
     else:
         return calc.to_pyxtal(), calc.energy_per_atom, calc.cputime, calc.error
 
@@ -235,7 +235,7 @@ def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp",
         struc, energy, time, error = single_optimize(struc, ff, pstress, opt, exe, path, label, clean)
         time_total += time
         if error:
-            return None, 100000, 0, True
+            return None, None, 0, True
         elif adjust and abs(energy)<1e-8:
             matrix = struc.lattice.matrix
             struc.lattice.set_matrix(matrix*0.8)
