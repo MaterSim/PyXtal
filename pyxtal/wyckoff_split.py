@@ -18,6 +18,7 @@ class wyckoff_split:
 
 
     def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t'):
+        self.error = False
         self.G = sym.Group(G)  # Group object
         if group_type == 't':
             self.wyc = self.G.get_max_t_subgroup()
@@ -116,12 +117,8 @@ class wyckoff_split:
                 self.proper_wp1[k][:3,3]=self.original_tau_list[k]
                 self.proper_wp1[k]=SymmOp(self.proper_wp1[k])
 
-
-
         wp1_generators_visited = []
         wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
-
-
 
         G1_orbits = []
         G2_orbits = []
@@ -152,13 +149,9 @@ class wyckoff_split:
                     if trans_generator[i][3]==0 and quadrant[i]==-1:
                         trans_generator[i][3]=-1
 
-
                 g1_orbits = []
                 g2_orbits = []
                 strs = []
-
-
-
 
                 for i, wp in enumerate(wp2):
 
@@ -265,12 +258,13 @@ class wyckoff_split:
 
                             if orbit not in new_wp1:
                                 new_wp1.append(orbit)
-                self.counter+=1
-                return self.split_t(new_wp1, wp2_lists,quadrant=quadrant)
+                self.counter += 1
+                if self.counter == 5:
+                    self.valid_split = False
+                    self.error = True
+                    return None, None
+                return self.split_t(new_wp1, wp2_lists, quadrant=quadrant)
         return G1_orbits, G2_orbits
-
-
-
 
     def split_k(self, wp1, wp2_lists):
         """
@@ -573,9 +567,10 @@ class wyckoff_split:
                 s2 += str(wp2.multiplicity)+wp2.letter
                 s2 += ', '
             g, h = self.G.number, self.H.number
-#             print("Error between {:d}[{:s}] -> {:d}[{:s}]".format(g, s1, h, s2))
-#             print(self.R)
-#             print(g1_orbits)
+            # print("Error between {:d}[{:s}] -> {:d}[{:s}]".format(g, s1, h, s2))
+            # print(self.R)
+            # print(g1_orbits)
+            # import sys; sys.exit()
             raise ValueError("Cannot find the generator for wp2")
 
 

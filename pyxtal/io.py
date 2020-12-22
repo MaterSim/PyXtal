@@ -53,7 +53,11 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
     lines = logo
     lines += 'data_' + header + '\n'
     if hasattr(struc, "energy"):
-        lines += '#Energy: {:} eV/cell\n'.format(struc.energy/sum(struc.numMols))
+        if struc.molecular:
+            eng = struc.energy/sum(struc.numMols)
+        else:
+            eng = struc.energy/sum(struc.numIons)
+        lines += '#Energy: {:} eV/cell\n'.format(eng)
 
     lines += "\n_symmetry_space_group_name_H-M '{:s}'\n".format(symbol)
     lines += '_symmetry_Int_Tables_number      {:>15d}\n'.format(number)
