@@ -125,12 +125,10 @@ class wyckoff_split:
         factor = max([1,np.linalg.det(self.R)])
 
         if quadrant is None:
-            quadrant=[0,0,0]
-            trial=np.matmul(self.inv_R,wp1_generators[0])
-            trial[np.abs(trial)<1e-5]=0
-
+            quadrant=deepcopy(self.inv_R[:3,3])
+            quadrant[np.abs(quadrant)<1e-5]=0
             for i in range(3):
-                if trial[i,3]>=0:
+                if quadrant[i]>=0:
                     quadrant[i]=1
                 else:
                     quadrant[i]=-1
