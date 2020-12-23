@@ -87,6 +87,7 @@ class wyckoff_compatibility():
                 combo_storage=holder
 
             if len(good_list)==0:
+                good_list=[None]
                 compatible_split=False
             species_list.append(species)
             atom_number_list.append(atoms.count(species))
@@ -112,13 +113,16 @@ class wyckoff_compatibility():
 
 
 if __name__ == "__main__":
-
     H=173
     atoms=['Sb','Na','F','F','F','F']
     positions=['6c','2b','6c','6c','6c','2b']
-    wc=wyckoff_compatibility(H,atoms=atoms,positions=positions)
-    print('MATERIAL: Na-Sb3-F10', "Atomic Species:",wc.results[176]['species'], 'Group Number:',H)
-    print("Atomic multiplicities of", wc.results[176]['species_number']," and with wyckoff positions ", wc.results[176]['species_positions'])
+    wc=wyckoff_compatibility(H,group_type='t',atoms=atoms,positions=positions)
+
+
+
+    s=wc.supergroups[0]
+    print('MATERIAL: Na-Sb3-F10', "Atomic Species:",wc.results[s]['species'], 'Group Number:',H)
+    print("Atomic multiplicities of", wc.results[s]['species_number']," and with wyckoff positions ", wc.results[s]['species_positions'])
 
 
 
