@@ -1,6 +1,6 @@
 from pyxtal import pyxtal
 from ase import Atoms
-from pyxtal.interface.util import good_lattice
+from pyxtal.util import good_lattice
 from ase.calculators.vasp import Vasp
 import os, time
 

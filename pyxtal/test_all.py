@@ -123,7 +123,7 @@ class TestMolecular(unittest.TestCase):
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol() == "P2_1/c")
-        C = struc.subgroup(H=4, eps=0, once=True)
+        C = struc.subgroup_once(eps=0, H=4)
         pmg_s2 = C.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
 
@@ -315,6 +315,8 @@ class TestSubgroup(unittest.TestCase):
             sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
             self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
+        C3s = C1.subgroup(permutations={"C":"Si"}, H=216)
+
     def test_from_seed(self):
         from pymatgen import Lattice, Structure
         coords = [[0, 0, 0], [0.75,0.5,0.75]]
@@ -323,7 +325,7 @@ class TestSubgroup(unittest.TestCase):
         struct = Structure(lattice, ["Si", "C"], coords)
         s1 = pyxtal()
         s1.from_seed(struct)
-        s2 = s1.subgroup(once=True)
+        s2 = s1.subgroup_once(eps=0)
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
@@ -352,7 +354,7 @@ class TestPXRD(unittest.TestCase):
         C1 = pyxtal()
         C1.from_random(3, 227, ['C'], [8], sites=[['8a']])
         xrd1 = C1.get_XRD()
-        C2 = C1.subgroup(once=True, eps=1e-3)
+        C2 = C1.subgroup_once(eps=1e-3)
         xrd2 = C1.get_XRD()
         p1 = xrd1.get_profile()
         p2 = xrd2.get_profile()

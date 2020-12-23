@@ -66,7 +66,6 @@ class GULP():
         cmd = self.exe + '<' + self.input + '>' + self.output
         os.system(cmd)
 
-
     def clean(self):
         os.remove(self.input)
         os.remove(self.output)
@@ -81,9 +80,12 @@ class GULP():
         return Structure(self.lattice.matrix, self.sites, self.frac_coords)
 
     def to_pyxtal(self):
-        pmg = self.to_pymatgen()
+        #print(self.sites)
+        #print(self.frac_coords)
+        #print(self.lattice.matrix)
+        ase_atoms = self.to_ase()
         struc = pyxtal()
-        struc.from_seed(pmg)
+        struc.from_seed(ase_atoms)
         return struc
 
     def write(self):
@@ -200,6 +202,8 @@ class GULP():
                         XYZ = [float(x) for x in xyz]
                         positions.append(XYZ)
                         species.append(lines[s].split()[1])
+                    #if len(species) != len(self.sites):
+                    #    print("Warning", len(species), len(self.sites))
                     self.frac_coords = np.array(positions)
 
                 elif line.find('Final Cartesian lattice vectors') != -1:
@@ -226,6 +230,10 @@ def single_optimize(struc, ff, pstress=None, opt="conp", exe="gulp", path="tmp",
         print("GULP error in single optimize")
         return None, None, 0, True
     else:
+        struc = calc.to_pyxtal()
+        #if sum(struc.numIons) == 42:
+        #    print("SSSSSSSSSSSSSS")
+        #    import sys; sys.exit()   
         return calc.to_pyxtal(), calc.energy_per_atom, calc.cputime, calc.error
 
 def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 

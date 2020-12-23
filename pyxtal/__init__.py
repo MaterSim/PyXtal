@@ -86,7 +86,7 @@ class pyxtal:
     The structure object can be easily manipulated via `apply_perturbtation`
     or `subgroup` function
 
-    >>> struc2 = struc.subgroup(H=141, once=True)
+    >>> struc2 = struc.subgroup_once(H=141)
     >>> struc2
     ------Crystal from Wyckoff Split------
     Dimension: 3
@@ -315,28 +315,29 @@ class pyxtal:
                     self.diag = self.atom_sites[0].diag
                     self.valid = True
         self.factor = 1.0
-        self.number = self.group.number
         self.source = 'Seed'
         self.dim = 3
         self.PBC = [1, 1, 1]
         self._get_formula()
 
-    def _from_pymatgen(self, struc, tol=1e-4):
+    def _from_pymatgen(self, struc, tol=1e-3):
         """
         Load structure from Pymatgen
         should not be used directly
         """
         from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
+        from pyxtal.util import symmetrize
         #import pymatgen.analysis.structure_matcher as sm
 
         self.valid = True
         try:
             # needs to do it twice in order to get the conventional cell
-            s = sga(struc, symprec=tol)
-            structure = s.get_refined_structure()
-            s = sga(structure, symprec=tol)
+            pmg = symmetrize(struc, tol)
+            s = sga(pmg, symprec=tol)
             sym_struc = s.get_symmetrized_structure()
             number = s.get_space_group_number()
+            #print(sym_struc)
+            
         except:
             print("Failed to load the Pymatgen structure")
             self.valid = False
@@ -457,126 +458,24 @@ class pyxtal:
         else:
             raise RuntimeError("Cannot create file: structure did not generate")
 
-    def subgroup_once(self, eps=0.1, permutations=None, group_type='t', max_cell=4):
+    def subgroup(self, permutations=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4):
         """
-        generate a structure with lower symmetry (for atomic crystals only)
+        generate a structure with lower symmetry
 
         Args:
             permutations: e.g., {"Si": "C"}
             H: space group number (int)
+            eps: pertubation term (float)
             idx: list
-            once: generate only one structure, otherwise output all
-            group_type: `t` or `k`
+            group_type: `t`, `k` or `t+k`
             max_cell: maximum cell reconstruction (float)
 
         Returns:
             a list of pyxtal structures with lower symmetries
         """
-        t_types = []
-        k_types = []
-        if group_type == 't':
-            dicts = self.group.get_max_t_subgroup()#['subgroup']
-            t_types = ['t']*len(dicts['subgroup'])
-        elif group_type == 'k':
-            dicts = self.group.get_max_k_subgroup()#['subgroup']
-            k_types = ['k']*len(dicts['subgroup'])
-        else:
-            dicts = self.group.get_max_t_subgroup()#['subgroup']
-            dict2 = self.group.get_max_k_subgroup()#['subgroup']
-            t_types = ['t']*len(dicts['subgroup'])
-            k_types = ['k']*len(dict2['subgroup'])
-            for key in dicts.keys():
-                dicts[key].extend(dict2[key])
- 
-        trans = dicts['transformation']
-        struc_sites = self.atom_sites
-        sites = [str(site.wp.multiplicity)+site.wp.letter for site in struc_sites]
-        count = 0
-        while count < 50:
-            id = choice(range(len(trans)))
-            tran = trans[id]
-            multiple = np.linalg.det(tran[:3,:3])
-            if multiple<=max_cell:
-                gtype = (t_types+k_types)[id]
-                if gtype == 'k':
-                    id -= len(t_types)
-                #print(self.group.number, sites, id, gtype)
-                splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
-                if not splitter.error:
-                    if permutations is not None:
-                        if len(splitter.H_orbits) == 1:
-                            if len(splitter.H_orbits[0]) > 1:
-                                return self._apply_substitution(splitter, permutations)
-                            else:
-                                #print("try to find the next subgroup")
-                                trail_struc = self.subgroup_by_splitter(splitter, eps=eps)
-                                ans = trail_struc.subgroup_once(eps, permutations, group_type, max_cell/multiple)
-                                if ans.group.number > 1:
-                                    return ans
-                        else:
-                            return self._apply_substitution(splitter, permutations)
-                    else:
-                        if splitter.valid_split:
-                            return self.subgroup_by_splitter(splitter)
-                        else:
-                            #print("try to find the next subgroup")
-                            trail_struc = self.subgroup_by_splitter(splitter, eps=eps)
-                            ans = trail_struc.subgroup_once(eps, None, group_type, max_cell/multiple)
-                            if ans.group.number > 1:
-                                return ans
-            count += 1
-        raise RuntimeError("Cannot find the splitter")
 
-    def subgroup_with_substitution(self, permutations, H=None, idx=None, once=False, group_type='t', max_cell=4):
-        """
-        generate a structure with lower symmetry (for atomic crystals only)
-
-        Args:
-            permutations: e.g., {"Si": "C"}
-            H: space group number (int)
-            idx: list
-            once: generate only one structure, otherwise output all
-            group_type: `t` or `k`
-            max_cell: maximum cell reconstruction (float)
-
-        Returns:
-            a list of pyxtal structures with lower symmetries
-        """
-        t_types = []
-        k_types = []
-        if group_type == 't':
-            dicts = self.group.get_max_t_subgroup()#['subgroup']
-            t_types = ['t']*len(dicts['subgroup'])
-        elif group_type == 'k':
-            dicts = self.group.get_max_k_subgroup()#['subgroup']
-            k_types = ['k']*len(dicts['subgroup'])
-        else:
-            dicts = self.group.get_max_t_subgroup()#['subgroup']
-            dict2 = self.group.get_max_k_subgroup()#['subgroup']
-            t_types = ['t']*len(dicts['subgroup'])
-            k_types = ['k']*len(dict2['subgroup'])
-            for key in dicts.keys():
-                dicts[key].extend(dict2[key])
- 
-        Hs = dicts['subgroup']
-        trans = dicts['transformation']
-
-        if idx is None:
-            idx = []
-            for i, tran in enumerate(trans):
-                if np.linalg.det(tran[:3,:3])<=max_cell:
-                    idx.append(i)
-        else:
-            for id in idx:
-                if id >= len(Hs):
-                    raise ValueError("The idx exceeds the number of possible splits")
-        if H is not None: 
-            idx = [id for id in idx if Hs[id] == H]
-            if len(idx) == 0:
-                raise ValueError("H is incompatible with the idx")
-
-        struc_sites = self.atom_sites
-        sites = [str(site.wp.multiplicity)+site.wp.letter for site in struc_sites]
+        #randomly choose a subgroup from the available list
+        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell)
 
         valid_splitters = []
         bad_splitters = []
@@ -585,47 +484,125 @@ class pyxtal:
             if gtype == 'k':
                 id -= len(t_types)
             splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
+
             if not splitter.error:
-                if len(splitter.H_orbits) == 1:
-                    if len(splitter.H_orbits[0]) > 1:
-                        valid_splitters.append(splitter)
+                if permutations is None:
+                    if splitter.valid_split:
+                        special = False
+                        if self.molecular:
+                            for i, site in enumerate(self.mol_sites):
+                                for ops in splitter.H_orbits[i]:
+                                    if len(ops) < len(splitter.H[0]):
+                                        special = True
+                                        break
+                        if not special:
+                            valid_splitters.append(splitter)
+                        else:
+                            bad_splitters.append(splitter)
                     else:
                         bad_splitters.append(splitter)
                 else:
-                    valid_splitters.append(splitter)
+                    # apply permuation
+                    if len(splitter.H_orbits) == 1:
+                        if len(splitter.H_orbits[0]) > 1:
+                            valid_splitters.append(splitter)
+                        else:
+                            bad_splitters.append(splitter)
+                    else:
+                        valid_splitters.append(splitter)
 
         if len(valid_splitters) == 0:
-            print("try do one more step")
-            if once:
-                trail_struc = self.subgroup_by_splitter(choice(bad_splitters))
-                return trail_struc.subgroup_with_substitution(once=True, group_type=group_type)
-            else:
-                new_strucs = []
-                for splitter in bad_splitters:
-                    trail_struc = self.subgroup_by_splitter(splitter)
-                    new_strucs.append(trail_struc.subgroup_with_substitution(once=True, group_type=group_type))
-                return new_strucs
+            #print("try do one more step")
+            new_strucs = []
+            for splitter in bad_splitters:
+                trail_struc = self._subgroup_by_splitter(splitter)
+                new_strucs.extend(trail_struc.subgroup(permutations, group_type=group_type))
+            return new_strucs
         else:
-            if once:
-                return self._apply_substitution(choice(valid_splitters), permutations)
-            else:
-                new_strucs = []
-                for splitter in valid_splitters:
-                    new_strucs.append(self._apply_substitution(splitter, permutations))
-                return new_strucs
+            #print(len(valid_splitters), "valid_splitters are present")
+            new_strucs = []
+            for splitter in valid_splitters:
+                if permutations is None:
+                    new_struc = self._subgroup_by_splitter(splitter, eps=eps)
+                else:
+                    new_struc = self._apply_substitution(splitter, permutations)
+                new_strucs.append(new_struc)
+            return new_strucs
 
+
+    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', max_cell=4):
+        """
+        generate a structure with lower symmetry (for atomic crystals only)
+
+        Args:
+            permutations: e.g., {"Si": "C"}
+            H: space group number (int)
+            idx: list
+            group_type: `t` or `k`
+            max_cell: maximum cell reconstruction (float)
+
+        Returns:
+            a list of pyxtal structures with lower symmetries
+        """
+        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell)
+
+        # Try 100 times to see if a valid split can be found
+        count = 0
+        while count < 100:
+            id = choice(idx)
+            gtype = (t_types+k_types)[id]
+            if gtype == 'k':
+                id -= len(t_types)
+            #print(self.group.number, sites, id, gtype)
+            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
+            if not splitter.error:
+                if permutations is not None:
+                    if len(splitter.H_orbits) == 1:
+                        if len(splitter.H_orbits[0]) > 1:
+                            return self._apply_substitution(splitter, permutations)
+                        else:
+                            #print("try to find the next subgroup")
+                            trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
+                            multiple = sum(trail_struc.numIons)/sum(self.numIons)
+                            max_cell = max([1, max_cell/multiple])
+                            ans = trail_struc.subgroup_once(eps, permutations, group_type, max_cell)
+                            if ans.group.number > 1:
+                                return ans
+                    else:
+                        return self._apply_substitution(splitter, permutations)
+                else:
+                    if splitter.valid_split:
+                        special = False
+                        if self.molecular:
+                            for i, site in enumerate(self.mol_sites):
+                                for ops in splitter.H_orbits[i]:
+                                    if len(ops) < len(splitter.H[0]):
+                                        special = True
+                                        break
+                        if not special:
+                            return self._subgroup_by_splitter(splitter)
+                    else:
+                        #print("try to find the next subgroup")
+                        trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
+                        multiple = sum(trail_struc.numIons)/sum(self.numIons)
+                        max_cell = max([1, max_cell/multiple])
+                        ans = trail_struc.subgroup_once(eps, H, None, group_type, max_cell)
+                        if ans.group.number > 1:
+                            return ans
+            count += 1
+        raise RuntimeError("Cannot find the splitter")
 
     def _apply_substitution(self, splitter, permutations, single=False):
         """
         dummy function to apply the substitution
         """
         try:
-            new_struc = self.subgroup_by_splitter(splitter)
+            new_struc = self._subgroup_by_splitter(splitter)
         except:
             print(self)
             print(splitter)
             print("---------------", len(splitter.H_orbits), len(splitter.G2_orbits), len(self.atom_sites))
-            self.subgroup_by_splitter(splitter)
+            self._subgroup_by_splitter(splitter)
 
         site_ids = []
         for site_id, site in enumerate(new_struc.atom_sites):
@@ -642,23 +619,10 @@ class pyxtal:
         new_struc._get_formula()
         return new_struc
 
-    def subgroup(self, H=None, eps=0.05, idx=None, once=False, group_type='t', max_cell=4):
+    def _get_subgroup_ids(self, H, group_type, idx, max_cell):
         """
-        generate a structure with lower symmetry
-
-        Args:
-            H: space group number (int)
-            eps: pertubation term (float)
-            idx: list
-            once: generate only one structure, otherwise output all
-            group_type: `t` or `k`
-            max_cell: maximum cell reconstruction (float)
-
-        Returns:
-            a list of pyxtal structures with lower symmetries
+        generate the subgroup dictionary
         """
-
-        #randomly choose a subgroup from the available list
         t_types = []
         k_types = []
         if group_type == 't':
@@ -674,7 +638,7 @@ class pyxtal:
             k_types = ['k']*len(dict2['subgroup'])
             for key in dicts.keys():
                 dicts[key].extend(dict2[key])
-                
+
         Hs = dicts['subgroup']
         trans = dicts['transformation']
         
@@ -701,57 +665,23 @@ class pyxtal:
             for id in idx:
                 if id >= len(Hs):
                     raise ValueError("The idx exceeds the number of possible splits")
+
         if H is not None: 
             idx = [id for id in idx if Hs[id] == H]
-
+        
         if len(idx) == 0:
-            raise RuntimeError("No subgroup to perform the split")
+            raise RuntimeError("Cannot find the splitter")
+
         if self.molecular:
             struc_sites = self.mol_sites
         else:
             struc_sites = self.atom_sites
 
         sites = [str(site.wp.multiplicity)+site.wp.letter for site in struc_sites]
-        valid_splitters = []
-        bad_splitters = []
-        for id in idx:
-            gtype = (t_types+k_types)[id]
-            if gtype == 'k':
-                id -= len(t_types)
-            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
-            if splitter.valid_split:
-                special = False
-                if self.molecular:
-                    for i, site in enumerate(self.mol_sites):
-                        for ops in splitter.H_orbits[i]:
-                            if len(ops) < len(splitter.H[0]):
-                                special = True
-                                break
-                if not special:
-                    valid_splitters.append(splitter)
-                else:
-                    bad_splitters.append(splitter)
-            else:
-                bad_splitters.append(splitter)
 
-        if len(valid_splitters) == 0:
-            print("try do one more step")
-            new_strucs = []
-            for splitter in bad_splitters:
-                trail_struc = self.subgroup_by_splitter(splitter)
-                new_strucs.append(trail_struc.subgroup(once=True, group_type=group_type))
-            return new_strucs
-        else:
-            #print(len(valid_splitters), "valid_splitters are present")
-            if once:
-                return self.subgroup_by_splitter(choice(valid_splitters), eps=eps)
-            else:
-                new_strucs = []
-                for splitter in valid_splitters:
-                    new_strucs.append(self.subgroup_by_splitter(splitter, eps=eps))
-            return new_strucs
+        return idx, sites, t_types, k_types
 
-    def subgroup_by_splitter(self, splitter, eps=0.05):
+    def _subgroup_by_splitter(self, splitter, eps=0.05):
         """
         transform the crystal to subgroup symmetry from a splitter object
         """
