@@ -41,6 +41,7 @@ class wyckoff_split:
         H = self.wyc['subgroup'][idx]
         self.H = sym.Group(H)  # Group object
 
+        print(G, H)
         self.parse_wp2(idx)
 
         if (self.G.lattice_type == self.H.lattice_type):
@@ -105,6 +106,8 @@ class wyckoff_split:
         """
         split the generators in w1 to different w2s
         """
+        print("split t")
+        print(wp1)
         #This functionality uses wyckoff relations in order to create a coordinate mapping between subgroups
         # of type t. It uses the known wyckoff orbits of the supergroup, converts the orbits of these positions
         #into the basis of the subgroup, then generates the entire subgroup mapping through applying all of the known
@@ -211,7 +214,7 @@ class wyckoff_split:
             try:
                 self.check_orbits(g1_orbits, wp1, wp2, wp2_lists)
 
-            except:# This portion is more computationally expensive, and is only called when the more lightweight
+            except ValueError:# This portion is more computationally expensive, and is only called when the more lightweight
                     #methods above don't work. This is typically ran when there is a splitting that requires a collection
                     #of starting orbits that are oriented in differet directions than the ones pulled from
                     #pyxtal. THis causes complications where quite a few splittings schemes cannot be completed
@@ -222,6 +225,7 @@ class wyckoff_split:
                     #that will will fit the splitting better than random sampling. This collection of subgroup_positions
                     #are then oriented and converted back to group_basis positions, where they are sent back into the t-type
                     #splitter again written in a way that fits better with the splitting scheme.
+                print("restart search on generators")
                 wp2_translations=[]
                 new_wp1=[]
                 for wp2 in wp2_lists:
@@ -259,7 +263,7 @@ class wyckoff_split:
                             if orbit not in new_wp1:
                                 new_wp1.append(orbit)
                 self.counter+=1
-                return self.split_t(new_wp1,wp2_lists)
+                return self.split_t(new_wp1, wp2_lists)
         return G1_orbits, G2_orbits
 
     def split_k(self, wp1, wp2_lists):
