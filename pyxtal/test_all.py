@@ -347,6 +347,12 @@ class TestSubgroup(unittest.TestCase):
                 pmg_s2 = C.to_pymatgen()
                 self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
  
+    def test_special(self):
+        cif = cif_path + '191.vasp'
+        struc = pyxtal()
+        struc.from_seed(seed=cif)
+        for i in range(100):
+            s = struc.subgroup_once(0.2, None, None, 't+k', 2)
  
 class TestPXRD(unittest.TestCase):
     def test_similarity(self):
