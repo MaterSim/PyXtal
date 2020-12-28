@@ -10,6 +10,7 @@ from pkg_resources import resource_filename
 from copy import deepcopy
 import random
 import itertools
+import re
 
 # External Libraries
 from pymatgen.symmetry.analyzer import generate_full_symmops
@@ -227,6 +228,50 @@ class Group:
     def __len__(self):
         return len(self.wyckoffs)
 
+    def get_site_dof(self, sites):
+        """
+        compute the degree of freedom for each site
+        Args:
+            sites: list, e.g. ['4a', '8b'] or ['a', 'b']
+
+        Returns:
+            True or False
+        """
+        dof = np.zeros(len(sites))
+        for i, site in enumerate(sites):
+            if len(site) > 1:
+                site = site[-1]
+            id = len(self) - letters.index(site) - 1
+            string = self[id].ops[0].as_xyz_string()
+            dof[i] = len(set(re.sub('[^a-z]+', '', string)))
+
+        return dof
+
+    def is_valid_combination(self, sites):
+        """
+        check if the solutions are valid
+        e.g., if a special WP with zero freedom (0,0,0) cannot be occupied twice
+
+        Args:
+            sites: list, e.g. ['4a', '8b'] or ['a', 'b']
+
+        Returns:
+            True or False
+        """
+        # remove the multiplicity:
+        for site in sites:
+            if len(site) > 1:
+                site = site[-1]
+
+        for wp in self:
+            letter = wp.letter
+            if sites.count(letter)>1:
+                freedom = np.trace(wp.ops[0].rotation_matrix) > 0
+                if not freedom:
+                    return False
+        return True
+
+
     def list_wyckoff_combinations(self, numIons, quick=False):
         """
         List all possible wyckoff combinations for the given formula
@@ -411,6 +456,7 @@ class Group:
             dicts = {'supergroup': [],
                      'transformation': [],
                      'relations': [],
+                     'idx': [],
                     }
             for sg in range(1, 231):
                 if group_type == 't':
@@ -425,6 +471,7 @@ class Group:
                         dicts['supergroup'].append(sg)
                         dicts['transformation'].append(trans)
                         dicts['relations'].append(relation)
+                        dicts['idx'].append(i)
             return dicts
         else:
             raise NotImplementedError("Now we only support the supergroups for space group")

@@ -1,0 +1,43 @@
+#======================================================================
+
+# CRYSTAL DATA
+
+#----------------------------------------------------------------------
+
+data_VESTA_phase_1
+
+
+_chemical_name_common                  'New structure'
+_cell_length_a                         8.28500
+_cell_length_b                         8.28500
+_cell_length_c                         7.60000
+_cell_angle_alpha                      90
+_cell_angle_beta                       90
+_cell_angle_gamma                      120
+_space_group_name_H-M_alt              'P 63'
+_space_group_IT_number                 173
+
+loop_
+_space_group_symop_operation_xyz
+   'x, y, z'
+   '-y, x-y, z'
+   '-x+y, -x, z'
+   '-x, -y, z+1/2'
+   'y, -x+y, z+1/2'
+   'x-y, x, z+1/2'
+
+loop_
+   _atom_site_label
+   _atom_site_occupancy
+   _atom_site_fract_x
+   _atom_site_fract_y
+   _atom_site_fract_z
+   _atom_site_adp_type
+   _atom_site_B_iso_or_equiv
+   _atom_site_type_symbol
+   Sb         1.0    -0.116300      0.224300      0.550000     Biso  1.000000 Sb
+   Na         1.0     0.333333      0.666667      0.467000     Biso  1.000000 Na
+   F          1.0     0.035000      0.491000      0.581000     Biso  1.000000 F
+   F          1.0     0.204000      0.393000      0.294000     Biso  1.000000 F
+   F          1.0     0.111000      0.229000      0.640000     Biso  1.000000 F
+   F          1.0     0.666667      0.333333      0.545000     Biso  1.000000 F
