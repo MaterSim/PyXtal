@@ -2,6 +2,7 @@
 from copy import deepcopy
 from random import choice, sample
 import numpy as np
+import itertools
 
 # PyXtal imports #avoid *
 from pyxtal.version import __version__
@@ -458,6 +459,7 @@ class pyxtal:
         else:
             raise RuntimeError("Cannot create file: structure did not generate")
 
+
     def subgroup(self, permutations=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4):
         """
         generate a structure with lower symmetry
@@ -688,7 +690,7 @@ class pyxtal:
         from pyxtal.molecule import Orientation
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
         multiples = np.linalg.det(splitter.R[:3,:3])
-        new_struc = deepcopy(self)
+        new_struc = self.copy()
         new_struc.group = splitter.H
         lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
         lattice=lattice.mutate(degree=eps, frozen=True)
@@ -744,7 +746,7 @@ class pyxtal:
             new_struc.atom_sites = split_sites
             new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
         new_struc.lattice = lattice
-        new_struc.source = 'Wyckoff Split'
+        new_struc.source = 'subgroup'
         
         return new_struc
 

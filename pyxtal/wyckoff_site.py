@@ -74,7 +74,7 @@ class mol_site:
             )
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
-        s = "{:} @ [{:6.4f} {:6.4f} {:6.4f}]  ".format(formula, *self.position)
+        s = "{:} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
         s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
@@ -659,7 +659,7 @@ class atom_site:
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
 
-        s = "{:>2s} @ [{:6.4f} {:6.4f} {:6.4f}], ".format(self.specie, *self.position)
+        s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry: {:s}".format(self.site_symm)
         return s

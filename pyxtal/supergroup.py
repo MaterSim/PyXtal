@@ -1,6 +1,8 @@
 import pyxtal.symmetry as sym
+from pyxtal.wyckoff_site import atom_site
 from pyxtal.operations import apply_ops
 from pyxtal.wyckoff_split import wyckoff_split
+import pymatgen.analysis.structure_matcher as sm
 import numpy as np
 from copy import deepcopy
 import itertools
@@ -22,31 +24,44 @@ def new_solution(A, refs):
             return False
     return True
 
+def new_structure(struc, refs):
+    """
+    check if struc is already in the reference solutions
+    """
+    g1 = struc.group.number
+    pmg1 = struc.to_pymatgen()
+    for ref in refs:
+        g2 = ref.group.number
+        if g1 == g2:
+            pmg2 = ref.to_pymatgen()
+            if sm.StructureMatcher().fit(pmg1, pmg2):
+                return False
+    return True
+
+
 class supergroup():
     """
     Class to find the structure with supergroup symmetry
 
     Args:
-        H: int (1-230), number of subgroup
-        elements: list of elements ["Na", "Sb", "F", "F", "F", "F"]
-        sites: the correpsonding wyckoff symbols ["2b", "6c", "6c", "6c", "6c", "2b"]
-        idxs: index of which transformation to pick
+        struc: pyxtal structure
         group_type: `t` or `k`
     """
-    def __init__(self, struc, group_type='t'):
+    def __init__(self, struc, group_type='t', solution=None):
 
         # initilize the necesary parameters
         self.struc = struc
         self.wyc_supergroups = struc.group.get_min_supergroup(group_type)
         self.cell = struc.lattice.matrix
         self.group_type = group_type
+        self.error = False
 
         # group the elements, sites, positions
         self.elements = []
         self.sites = [] 
-        for i, atom_site in enumerate(struc.atom_sites):
-            e = atom_site.specie
-            site = str(atom_site.wp.multiplicity) + atom_site.wp.letter
+        for i, at_site in enumerate(struc.atom_sites):
+            e = at_site.specie
+            site = str(at_site.wp.multiplicity) + at_site.wp.letter
             if e not in self.elements:
                 self.elements.append(e)
                 self.sites.append([site])
@@ -54,30 +69,101 @@ class supergroup():
                 id = self.elements.index(e)
                 self.sites[id].append(site)
         
-        # perform actual search
-        for idx in range(len(self.wyc_supergroups['supergroup'])):
-            G = self.wyc_supergroups['supergroup'][idx]
-            relation = self.wyc_supergroups['relations'][idx]
-            id = self.wyc_supergroups['idx'][idx]
-            results = self.check_compatibility(G, relation)
-            if results is not None:
-                solutions = list(itertools.product(*results))
-                valid_solutions = self.check_freedom(G, solutions)
-                for solution in valid_solutions:
-                    print(G, solution)
-                    self.make_supergroup(G, solution, id)
+        # search for the compatible solutions
+        if solution is None:
+            self.solutions = []
+            for idx in range(len(self.wyc_supergroups['supergroup'])):
+                G = self.wyc_supergroups['supergroup'][idx]
+                relation = self.wyc_supergroups['relations'][idx]
+                id = self.wyc_supergroups['idx'][idx]
+                results = self.check_compatibility(G, relation)
+                if results is not None:
+                    solutions = list(itertools.product(*results))
+                    trials = self.check_freedom(G, solutions)
+                    sol = {'group': G, 'id': id, 'splits': trials}
+                    self.solutions.append(sol)
+        else: # load the solution
+            raise NotImplementedError
 
-    def make_supergroup(self, G, solution, split_id):
+        if len(self.solutions) == 0:
+            self.error = True
+            print("No compatible solution exists")
+
+    def search_supergroup(self, d_tol=1.0):
+        """
+        search for valid supergroup transition
+        
+        Args:
+            d_tol (float): tolerance
+
+        Returns:
+            valid_solutions: dictionary
+        """
+        self.d_tol = d_tol
+        # extract the valid 
+        valid_solutions = []
+        for sols in self.solutions:
+            G, id, sols = sols['group'], sols['id'], sols['splits']
+            for sol in sols:
+                mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
+                if mae < d_tol:
+                    valid_solutions.append((sp, mapping, disp, mae))
+        return valid_solutions
+
+    def make_supergroup(self, solutions, show_detail=True):
+        """
+        create supergroup structures based on the list of solutions
+
+        Args: 
+            solutions: list of tuples (splitter, mapping, disp)
+
+        Returns:
+            list of pyxtal structures
+        """
+        G_strucs = []
+        for solution in solutions:
+            (sp, mapping, disp, mae) = solution
+            G = sp.G.number
+            details = self.symmetrize(sp, mapping, disp)
+            coords_G1, coords_G2, coords_H1, elements, mults = details
+
+            G_struc = self.struc.copy()
+            G_struc.group = sp.G
+
+            G_sites = []
+            for i, wp in enumerate(sp.wp1_lists):
+                site = atom_site(wp, coords_G1[i], sp.elements[i])
+                G_sites.append(site)
+
+            G_struc.atom_sites = G_sites
+            G_struc.source = 'supergroup {:6.3f}'.format(mae) 
+            #G_struc.numIons = 
+            #G_struc.lattice = 
+            #G_struc._get_formula()
+
+            if new_structure(G_struc, G_strucs):
+                G_strucs.append(G_struc)
+                if show_detail:
+                    details = self.symmetrize(sp, mapping, disp)
+                    _, coords_G2, coords_H1, elements, mults = details
+                    self.print_detail(G, coords_H1, coords_G2, elements, mults, disp)
+                    print(G_struc)
+
+        return G_strucs
+            
+    def get_displacement(self, G, split_id, solution, d_tol):
         """
         For a given solution, search for the possbile supergroup structure
 
         Args: 
-            - solution: e.g., [['2d'], ['6h'], ['2c', '6h', '12i']]
-            - split_id: integer
+            G: supergroup number 
+            split_id: integer
+            solution: e.g., [['2d'], ['6h'], ['2c', '6h', '12i']]
+            d_tol: 
         Returns:
-            structure + displacement
+            mae: mean absolute atomic displcement
+            disp: overall cell translation
         """
-        # move it to the symmetrize function
         sites_G = []
         elements = []
         muls = []
@@ -93,30 +179,25 @@ class supergroup():
 
         splitter = wyckoff_split(G, split_id, sites_G, self.group_type, elements)
         mappings = self.find_mapping(splitter)
-        for maping in mappings:
-            #disp = np.array([0.0, 0.0, 0.222222])
-            res = self.symmetrize(splitter, mapping, disp=None)
-            if res is not None:
-                print("Valid structure in ", G)
-                total_num = 0
-                total_disp = 0
-                for l, id in enumerate(ids):
-                    ele = self.elements[l]
-                    sites = np.array(self.sites[l])
-                    for x, y, site in zip(coords_H1[l], coords_G[l], sites[id]):
-                        num = int(site[:-1])
-                        dis = y-(x+disp)
-                        dis -= np.round(dis)
-                        dis_abs = np.linalg.norm(dis.dot(self.cell))
-                        output = "{:2s} {:7.3f}{:7.3f}{:7.3f}".format(ele, *x)
-                        output += " -> {:7.3f}{:7.3f}{:7.3f}".format(*y)
-                        output += " -> {:7.3f}{:7.3f}{:7.3f} {:7.3f}".format(*dis, dis_abs)
-                        print(output)
-                        total_disp += dis_abs*num
-                        total_num += num
-                mae = total_disp/total_num
-                print("cell: {:7.3f}{:7.3f}{:7.3f}, disp (A): {:7.3f}".format(*disp, mae))
-                #import sys; sys.exit()
+        dists = []
+        disps = []
+        for mapping in mappings:
+            disp = None #np.array([0.0, 0.0, 0.222222])
+            dist, disp = self.symmetrize_dist(splitter, mapping, disp)
+            dists.append(dist)
+            disps.append(disp)
+        dists = np.array(dists)
+        mae = np.min(dists)
+        id = np.argmin(dists)
+        if mae < d_tol:
+            # optimize further
+            def fun(disp, mapping, splitter):
+                return self.symmetrize_dist(splitter, mapping, disp)[0]
+            res = minimize(fun, disps[id], args=(mappings[id], splitter),
+                    method='Nelder-Mead', options={'maxiter': 20})
+            mae = res.fun
+            disp = res.x
+        return mae, disp, mappings[id], splitter
 
     def find_mapping(self, splitter):
         """
@@ -164,19 +245,21 @@ class supergroup():
                 unique_solutions.append(solution)
         return unique_solutions
         
-    def symmetrize(self, splitter, solution, disp=None, d_tol=0.75):
+    def symmetrize_dist(self, splitter, solution, disp=None, d_tol=1.2):
         """
         For a given solution, search for the possbile supergroup structure
 
         Args: 
             - splitter: splitter object to specify the relation between G and H
             - disp: an overall shift from H to G, None or 3 vector
-            - d_tol: the tolerance
+            - d_tol: the tolerance in angstrom
         Returns:
             atom_site_G1 with the minimum displacements
             atom_site_G2 
         """
+        total_disp = 0
         atom_sites_H = self.struc.atom_sites
+        n_atoms = sum([site.wp.multiplicity for site in atom_sites_H])
 
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
@@ -218,6 +301,7 @@ class supergroup():
                             y = op.operate(pt)
                             diff = y - ref
                             diff -= np.round(diff)
+                            diff = np.dot(diff, self.cell)
                             return np.linalg.norm(diff)
 
                         # optimize the distance by changing coord1
@@ -226,7 +310,13 @@ class supergroup():
                         coord1[0] = res.x[0]
                         coord1 = ops_G2[0].operate(coord1)
                 else:
-                    return None
+                    return 10000, None
+                
+                diff = coord1-(coord2+disp)
+                diff -= np.round(diff)
+                total_disp += np.linalg.norm(np.dot(diff, self.cell))*len(ops_H)
+                #coords_H1.append(coord2)
+                #coords_G.append(coord1)
                         
             else: 
                 # site symmetry does not change
@@ -236,7 +326,7 @@ class supergroup():
                 ops_G22 = splitter.G2_orbits[i][1]
 
                 coord1 = atom_sites_H[solution[i][0]].position.copy()
-                coord2 = atom_sites_H[solution[i][0]].position.copy()
+                coord2 = atom_sites_H[solution[i][1]].position.copy()
                 # refine coord1 to find the best match on coord2
                 if disp is not None:
                     coord11 = coord1 + disp
@@ -253,25 +343,145 @@ class supergroup():
                     coords11[m] = op.operate(coord11)
                 tmp, dist = get_best_match(coords11, coord22, self.cell)
                 if dist > np.sqrt(2)*d_tol:
-                    return None
-                else:
-                    # recover the original position
-                    coord1 = inv_op.operate(tmp)
-                    if disp is not None:
-                        coord1 -= disp
-                    d = coord22 - tmp
-                    d -= np.round(d)
+                    return 10000, None
 
-                    coord22 -= d/2 #final coord2 after disp
-                    # recover the displaced position
-                    coord11 = inv_op.operate(coord22) 
+                # recover the original position
+                coord1 = inv_op.operate(tmp)
+                if disp is not None:
+                    coord1 -= disp
+                d = coord22 - tmp
+                d -= np.round(d)
 
-                    coords_H1.append(coord1)
-                    coords_H1.append(coord2)
-                    coords_G.append(coord11)
-                    coords_G.append(coord22)
-                    
-        return disp, coords_G, coords_H1, selected_ids
+                coord22 -= d/2 #final coord2 after disp
+                # recover the displaced position
+                coord11 = inv_op.operate(coord22) 
+
+                total_disp += np.linalg.norm(np.dot(d/2, self.cell))*len(ops_H1)*2
+
+        return total_disp/n_atoms, disp
+
+    def symmetrize(self, splitter, solution, disp):
+        """
+        For a given solution, search for the possbile supergroup structure
+
+        Args: 
+            - splitter: splitter object to specify the relation between G and H
+            - disp: an overall shift from H to G, None or 3 vector
+            - d_tol: the tolerance in angstrom
+        Returns:
+            atom_site_G1 with the minimum displacements
+            atom_site_G2 
+        """
+
+        atom_sites_H = self.struc.atom_sites
+        coords_G1 = [] # position in G
+        coords_G2 = [] # position in G on the subgroup bais
+        coords_H1 = [] # position in H
+        elements = []
+        mults = []
+        
+        # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
+        for i, wp1 in enumerate(splitter.wp1_lists):
+
+            if len(splitter.wp2_lists[i]) == 1:
+                # symmetry info
+                ops_H = splitter.H_orbits[i][0]  # ops for H
+                ops_G2 = splitter.G2_orbits[i][0] # ops for G2
+                
+                # refine coord1 to find the best match on coord2
+                coord = atom_sites_H[solution[i][0]].position
+                coord0s = apply_ops(coord, ops_H) # possible coords in H
+                dists = []
+                for coord0 in coord0s:
+                    coord2 = coord0.copy()
+                    coord2 += disp 
+                    coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
+                    dist = coord1 - coord2
+                    dist -= np.round(dist)
+                    dist = np.dot(dist, self.cell)
+                    dists.append(np.linalg.norm(dist))
+                min_ID = np.argmin(np.array(dists))
+
+                coord2 = coord0s[min_ID].copy()
+                coord1 = ops_G2[0].operate(coord2+disp)
+                if round(np.trace(ops_G2[0].rotation_matrix)) in [1, 2]:
+                    def fun(x, pt, ref, op):
+                        pt[0] = x[0]
+                        y = op.operate(pt)
+                        diff = y - ref
+                        diff -= np.round(diff)
+                        diff = np.dot(diff, self.cell)
+                        return np.linalg.norm(diff)
+
+                    # optimize the distance by changing coord1
+                    res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]), 
+                            method='Nelder-Mead', options={'maxiter': 20})
+                    coord1[0] = res.x[0]
+                    coord1 = ops_G2[0].operate(coord1)
+                
+                coords_G1.append(coord1)
+                coords_G2.append(coord1)
+                coords_H1.append(coord2)
+                elements.append(splitter.elements[i])
+                mults.append(len(ops_G2))
+                        
+            else: 
+                # symmetry operations
+                ops_H1 = splitter.H_orbits[i][0]
+                ops_G22 = splitter.G2_orbits[i][1]
+
+                coord1 = atom_sites_H[solution[i][0]].position.copy()
+                coord2 = atom_sites_H[solution[i][1]].position.copy()
+                # refine coord1 to find the best match on coord2
+                coord11 = coord1 + disp
+                coord22 = coord2 + disp
+                coords11 = apply_ops(coord11, ops_H1)
+            
+                # transform coords1 by symmetry operation
+                op = ops_G22[0]
+                inv_op = op.inverse
+                for m, coord11 in enumerate(coords11):
+                    coords11[m] = op.operate(coord11)
+                tmp, dist = get_best_match(coords11, coord22, self.cell)
+
+                # recover the original position
+                coord1 = inv_op.operate(tmp)
+                coord1 -= disp
+                d = coord22 - tmp
+                d -= np.round(d)
+
+                coord22 -= d/2 #final coord2 after disp
+                # recover the displaced position
+                coord11 = inv_op.operate(coord22) 
+
+                coords_G1.append(coord11)
+                coords_G2.append(coord11)
+                coords_G2.append(coord22)
+                coords_H1.append(coord1)
+                coords_H1.append(coord2)
+                elements.extend([splitter.elements[i]]*2)
+                mults.append(len(ops_H1))
+                mults.append(len(ops_G22))
+        return coords_G1, coords_G2, coords_H1, elements, mults
+
+    def print_detail(self, G, coords_H1, coords_G1, elements, mults, disp):
+        """
+        print out the details of tranformation
+        """
+        print("Valid structure", G)
+        total_disp = 0
+        for x, y, ele, n in zip(coords_H1, coords_G1, elements, mults):
+            dis = y-(x+disp)
+            dis -= np.round(dis)
+            dis_abs = np.linalg.norm(dis.dot(self.cell))
+            output = "{:2s} {:7.3f}{:7.3f}{:7.3f}".format(ele, *x)
+            output += " -> {:7.3f}{:7.3f}{:7.3f}".format(*y)
+            output += " -> {:7.3f}{:7.3f}{:7.3f} {:7.3f}".format(*dis, dis_abs)
+            total_disp += dis_abs*n
+            print(output)
+        mae = total_disp/sum(mults)
+        print("cell: {:7.3f}{:7.3f}{:7.3f}, disp (A): {:7.3f}".format(*disp, mae))
+
 
     def check_freedom(self, G, solutions):
         """
@@ -288,6 +498,9 @@ class supergroup():
                 valid_solutions.append(solution)
                 #if 'g' not in sites:
                 #    print(sites)
+            #else:
+            #    print(solution)
+            #    import sys; sys.exit()
         return valid_solutions
 
     def check_compatibility(self, G, relation):
@@ -403,7 +616,7 @@ def get_best_match(positions, ref, cell):
         id: matched id
     """
 
-    diffs = positions - ref)
+    diffs = positions - ref
     diffs -= np.round(diffs)
     diffs = np.dot(diffs, cell)
     dists = np.linalg.norm(diffs, axis=1)
@@ -418,6 +631,6 @@ if __name__ == "__main__":
     #s.from_seed("pyxtal/database/cifs/BTO.cif")
     s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
     print(s)
-    supergroup(s)
- 
-    
+    my = supergroup(s)
+    solutions = my.search_supergroup(d_tol=0.60)
+    G_strucs = my.make_supergroup(solutions)
