@@ -17,8 +17,9 @@ class wyckoff_split:
     """
 
 
-    def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t'):
+    def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t', elements=None):
         self.error = False
+        self.elements = elements
         self.G = sym.Group(G)  # Group object
         if group_type == 't':
             self.wyc = self.G.get_max_t_subgroup()
@@ -41,7 +42,7 @@ class wyckoff_split:
         H = self.wyc['subgroup'][idx]
         self.H = sym.Group(H)  # Group object
 
-        print(G, H)
+        #print(G, H)
         self.parse_wp2(idx)
 
         if (self.G.lattice_type == self.H.lattice_type):
@@ -70,6 +71,19 @@ class wyckoff_split:
             self.G1_orbits.append(G1_orbits)
             self.G2_orbits.append(G2_orbits)
 
+    def sort(self):
+        """
+        sort the orbits by multiplicity
+        """
+        muls = np.array([wp1.multiplicity for wp1 in self.wp1_lists])
+        ids = np.argsort(muls)
+        self.wp1_lists = [self.wp1_lists[id] for id in ids]
+        self.wp2_lists = [self.wp2_lists[id] for id in ids]
+        self.G1_orbits = [self.G1_orbits[id] for id in ids]
+        self.G2_orbits = [self.G2_orbits[id] for id in ids]
+        self.H_orbits  = [self.H_orbits[id] for id in ids]
+        self.elements = [self.elements[id] for id in ids]
+        
 
     def parse_wp2(self, idx):
         """
@@ -106,8 +120,8 @@ class wyckoff_split:
         """
         split the generators in w1 to different w2s
         """
-        print("split t")
-        print(wp1)
+        #print("split t")
+        #print(wp1)
         #This functionality uses wyckoff relations in order to create a coordinate mapping between subgroups
         # of type t. It uses the known wyckoff orbits of the supergroup, converts the orbits of these positions
         #into the basis of the subgroup, then generates the entire subgroup mapping through applying all of the known

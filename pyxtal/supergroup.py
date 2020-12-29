@@ -1,10 +1,26 @@
 import pyxtal.symmetry as sym
-from pyxtal.operations import apply_ops, get_inverse
+from pyxtal.operations import apply_ops
 from pyxtal.wyckoff_split import wyckoff_split
 import numpy as np
 from copy import deepcopy
 import itertools
 from scipy.optimize import minimize
+
+def new_solution(A, refs):
+    """
+    check if A is already in the reference solutions
+    """
+    for B in refs:
+        match = True
+        for a, b in zip(A, B):
+            a.sort()
+            b.sort()
+            if a != b:
+                match = False
+                break
+        if match:
+            return False
+    return True
 
 class supergroup():
     """
@@ -17,29 +33,26 @@ class supergroup():
         idxs: index of which transformation to pick
         group_type: `t` or `k`
     """
-    def __init__(self, H, elements, sites, positions, cell, group_type='t'):
+    def __init__(self, struc, group_type='t'):
 
         # initilize the necesary parameters
-        self.H = sym.Group(H)
-        self.cell = cell
+        self.struc = struc
+        self.wyc_supergroups = struc.group.get_min_supergroup(group_type)
+        self.cell = struc.lattice.matrix
         self.group_type = group_type
-        self.wyc_supergroups=self.H.get_min_supergroup(group_type)
-        if len(elements) != len(sites):
-            raise ValueError("The lengths of elements and sites should be equal")
 
         # group the elements, sites, positions
         self.elements = []
         self.sites = [] 
-        self.positions = [] 
-        for i, e in enumerate(elements):
+        for i, atom_site in enumerate(struc.atom_sites):
+            e = atom_site.specie
+            site = str(atom_site.wp.multiplicity) + atom_site.wp.letter
             if e not in self.elements:
                 self.elements.append(e)
-                self.sites.append([sites[i]])
-                self.positions.append([positions[i]])
+                self.sites.append([site])
             else:
                 id = self.elements.index(e)
-                self.sites[id].append(sites[i])
-                self.positions[id].append(positions[i])
+                self.sites[id].append(site)
         
         # perform actual search
         for idx in range(len(self.wyc_supergroups['supergroup'])):
@@ -64,239 +77,200 @@ class supergroup():
         Returns:
             structure + displacement
         """
-        # find the mapping for each element
-        coords_G = []
-        coords_H1 = []
-        ids = []
-        #disp = np.array([0.0, 0.0, 0.222222])
-        disp = None
+        # move it to the symmetrize function
+        sites_G = []
+        elements = []
+        muls = []
+        for i, e in enumerate(self.elements):
+            sites_G.extend(solution[i]) 
+            elements.extend([e]*len(solution[i]))
+            muls.extend([int(sol[:-1]) for sol in solution[i]])
 
-        valid = True
-        # loop over each site for the given elements
-        for i in range(len(self.elements)):
-            coords_H, sites_G, sites_H = self.positions[i], solution[i], self.sites[i]
-            sites_G.reverse()
-            splitter = wyckoff_split(G, split_id, sites_G, self.group_type)
-            res = self.symmetrize(sites_G, sites_H, coords_H, splitter, disp)
+        # resort the sites_G by multiplicity
+        ids = np.argsort(np.array(muls))
+        elements = [elements[id] for id in ids]
+        sites_G = [sites_G[id] for id in ids]
 
-            #if sites_G == ['i', 'h', 'c'] or sites_G == ['c', 'h', 'i']:
-            #    import sys; sys.exit()
-
+        splitter = wyckoff_split(G, split_id, sites_G, self.group_type, elements)
+        mappings = self.find_mapping(splitter)
+        for maping in mappings:
+            #disp = np.array([0.0, 0.0, 0.222222])
+            res = self.symmetrize(splitter, mapping, disp=None)
             if res is not None:
-                (disp, coord_G, coord_H1, id) = res
-                coords_G.append(coord_G)
-                coords_H1.append(coord_H1)
-                ids.append(id)
-            else:
-                #print("Skip this solution")
-                valid = False
-                break
+                print("Valid structure in ", G)
+                total_num = 0
+                total_disp = 0
+                for l, id in enumerate(ids):
+                    ele = self.elements[l]
+                    sites = np.array(self.sites[l])
+                    for x, y, site in zip(coords_H1[l], coords_G[l], sites[id]):
+                        num = int(site[:-1])
+                        dis = y-(x+disp)
+                        dis -= np.round(dis)
+                        dis_abs = np.linalg.norm(dis.dot(self.cell))
+                        output = "{:2s} {:7.3f}{:7.3f}{:7.3f}".format(ele, *x)
+                        output += " -> {:7.3f}{:7.3f}{:7.3f}".format(*y)
+                        output += " -> {:7.3f}{:7.3f}{:7.3f} {:7.3f}".format(*dis, dis_abs)
+                        print(output)
+                        total_disp += dis_abs*num
+                        total_num += num
+                mae = total_disp/total_num
+                print("cell: {:7.3f}{:7.3f}{:7.3f}, disp (A): {:7.3f}".format(*disp, mae))
+                #import sys; sys.exit()
 
-        if valid:
-            #disp = np.array(disps).mean(axis=0)
-            #print(disp)
-            print("Valid structure in ", G)
-            total_num = 0
-            total_disp = 0
-            for l, id in enumerate(ids):
-                ele = self.elements[l]
-                sites = np.array(self.sites[l])
-                for x, y, site in zip(coords_H1[l], coords_G[l], sites[id]):
-                    num = int(site[:-1])
-                    dis = y-(x+disp)
-                    dis -= np.round(dis)
-                    dis_abs = np.linalg.norm(dis.dot(self.cell))
-                    output = "{:2s} {:7.3f}{:7.3f}{:7.3f}".format(ele, *x)
-                    output += " -> {:7.3f}{:7.3f}{:7.3f}".format(*y)
-                    output += " -> {:7.3f}{:7.3f}{:7.3f} {:7.3f}".format(*dis, dis_abs)
-                    print(output)
-                    total_disp += dis_abs*num
-                    total_num += num
-            mae = total_disp/total_num
-            print("cell: {:7.3f}{:7.3f}{:7.3f}, disp (A): {:7.3f}".format(*disp, mae))
-            #import sys; sys.exit()
-            #break
+    def find_mapping(self, splitter):
+        """
+        search for all mappings for a given splitter
+        """
+        solution_template = [[None]*len(wp2) for wp2 in splitter.wp2_lists]
+        atom_sites_H = self.struc.atom_sites
+        assigned_ids = []
+        # look for unique assignment from sites_H to sites_G
+        for i, wp2 in enumerate(splitter.wp2_lists):
+            # choose the sites belong to the same element
+            ele = splitter.elements[i]
+            e_ids = [id for id, site in enumerate(atom_sites_H) if site.specie==ele]
 
-    def symmetrize(self, sites_G, sites_H, coords_H, splitter, disp=None, d_tol=0.15):
+            if len(wp2) == 1:
+                ids = [id for id in e_ids if atom_sites_H[id].wp.letter == wp2[0].letter]  
+                if len(ids) == 1:
+                    solution_template[i] = ids
+                    assigned_ids.append(ids[0])
+
+        # consider all permutations for to assign the rest atoms from H to G
+        # https://stackoverflow.com/questions/65484940
+
+        remaining_ids = [id for id in range(len(atom_sites_H)) if id not in assigned_ids]
+        all_permutations = list(itertools.permutations(remaining_ids))
+        unique_solutions = []
+
+        for permutation in all_permutations:
+            permutation = list(permutation)
+            solution = deepcopy(solution_template)
+            for i, sol in enumerate(solution):
+                valid = True
+                if None in sol:
+                    for j, id in enumerate(permutation[:len(sol)]):
+                        if atom_sites_H[id].wp.letter == splitter.wp2_lists[i][j].letter:
+                            solution[i][j] = id                    
+                        else:
+                            valid = False
+                            break
+                    if not valid:
+                        break
+                    else:
+                        del permutation[:len(sol)] 
+            if valid and new_solution(solution, unique_solutions):
+                unique_solutions.append(solution)
+        return unique_solutions
+        
+    def symmetrize(self, splitter, solution, disp=None, d_tol=0.75):
         """
         For a given solution, search for the possbile supergroup structure
 
         Args: 
-            - sites_G: e.g., ['2c', '6h', '12i']
-            - sites_H: e.g., ['2b', '6c', '6c', '6c']
-            - coords_H: e.g., N*3 array, where N is the length of sites_H
+            - splitter: splitter object to specify the relation between G and H
+            - disp: an overall shift from H to G, None or 3 vector
+            - d_tol: the tolerance
         Returns:
-            coords_G with a minimum displacement
+            atom_site_G1 with the minimum displacements
+            atom_site_G2 
         """
+        atom_sites_H = self.struc.atom_sites
 
-        # search for the mapping between sites_G and sites_H
-        selected_ids = []
-        coords_G = []
-        coords_H1 = []
-        axis = 2 # special axis
-
+        # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
-            # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
-            mult_G = wp1.multiplicity
-            mult_Hs = [int(site[:-1]) for site in sites_H]
-
-            valid = False                  
-            remaining_ids = [id for id in range(len(coords_H)) if id not in selected_ids]
 
             if len(splitter.wp2_lists[i]) == 1:
                 # one to one splitting, e.g., 2c->2d
                 # this usually involves increase of site symmetry
-                # therefore, some position has to fixed
-                # e.g. from 173 (P63) to 176 (P63/m), 
-                # 1, x, y, z (1) -> x, y, 1/4 (m..)
-                # 2, x, y, z (1) -> 1/2, 0, 0 (-1)
-                # for 1, the translation on x, y is always 0
-                # z can be moved to either 1/4 or -1/4
-                # for 2, needs to consider all displacement
                
                 # symmetry info
                 ops_H = splitter.H_orbits[i][0]  # ops for H
                 ops_G2 = splitter.G2_orbits[i][0] # ops for G2
-                xyz1 = ops_H[0].as_xyz_string().split(',')
-                xyz2 = ops_G2[0].as_xyz_string().split(',')
-                # mask is a vector to control the freedom of x, y, z       
-                mask = [False if xyz1[m]==xyz2[m] else True for m in range(3)]
+                
+                # refine coord1 to find the best match on coord2
+                coord = atom_sites_H[solution[i][0]].position
+                coord0s = apply_ops(coord, ops_H) # possible coords in H
+                dists = []
+                for coord0 in coord0s:
+                    coord2 = coord0.copy()
+                    if disp is not None:
+                        coord2 += disp 
+                    coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
+                    dist = coord1 - coord2
+                    dist -= np.round(dist)
+                    dist = np.dot(dist, self.cell)
+                    dists.append(np.linalg.norm(dist))
+                min_ID = np.argmin(np.array(dists))
 
-                # chose the site with same multiplicity
-                possible_ids = [j for j in remaining_ids if mult_G == mult_Hs[j]]
-                for j in possible_ids:
-                    coord = coords_H[j]
-                    
-                    # refine coord1 to find the best match on coord2
-                    # coord1 = apply_ops(coord, ops_G2)[0] # coord in G
-                    coord0s = apply_ops(coord, ops_H) # possible coords in H
-                    
-                    dists = []
-                    for coord0 in coord0s:
-                        coord2 = coord0.copy()
-                        if disp is not None:
-                            coord2 += disp 
-                        coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
-                        dist = coord1 - coord2
-                        dist -= np.round(dist)
-                        dists.append(np.linalg.norm(dist))
-                    min_ID = np.argmin(np.array(dists))
+                dist = dists[min_ID]
+                coord2 = coord0s[min_ID].copy()
+                
+                if disp is None:
+                    coord1 = apply_ops(coord2, ops_G2)[0]
+                    disp = (coord1 - coord2).copy()
+                elif dist < d_tol:
+                    coord1 = ops_G2[0].operate(coord2+disp)
+                    if round(np.trace(ops_G2[0].rotation_matrix)) in [1, 2]:
+                        def fun(x, pt, ref, op):
+                            pt[0] = x[0]
+                            y = op.operate(pt)
+                            diff = y - ref
+                            diff -= np.round(diff)
+                            return np.linalg.norm(diff)
 
-                    dist = dists[min_ID]
-                    coord2 = coord0s[min_ID].copy()
-                    
-                    if disp is None:
-                        coord1 = apply_ops(coord2, ops_G2)[0]
-                        disp = (coord1 - coord2).copy()
-                        valid = True
-                    elif dist < d_tol:
-                        coord1 = ops_G2[0].operate(coord2+disp)
-                        if round(np.trace(ops_G2[0].rotation_matrix)) in [1, 2]:
-                            # optimize the distance by changing coord1
-                            
-                            def fun(x, pt, ref, op):
-                                pt[0] = x[0]
-                                y = op.operate(pt)
-                                diff = y - ref
-                                diff -= np.round(diff)
-                                #print("dddddddddd", y, diff)
-                                return np.linalg.norm(diff)
-
-                            res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]), 
-                                    method='Nelder-Mead', options={'maxiter': 20})
-                            coord1[0] = res.x[0]
-                            coord1 = ops_G2[0].operate(coord1)
-                        valid = True
-                            
-                    #if disp is None:
-                    #    # create cell translation
-                    #    coord2 = coord0s[0]
-                    #    disp = (coord1 - coord2).copy()
-                    #    valid = True
-                    #else:
-                    #    dists = coord1 - disp - coord0s
-                    #    dists -= np.round(dists)
-                    #    for k, dist in enumerate(dists):
-                    #        if np.sqrt((dist[mask]**2).sum()) < d_tol:
-                    #            valid = True
-                    #            coord2 = coord0s[k]
-                    #            for ax in range(3):
-                    #                if not mask[ax]:
-                    #                    coord2[ax] = coord1[ax]
-                    #            #print("break out---------------", np.sqrt((dist[mask]**2).sum()), wp1.letter)
-                    #            break
-                    if valid:
-                        selected_ids.append(j)
-                        coords_G.append(coord1)
-                        coords_H1.append(coord2)
-                        #print("=============pass", coord2)
-                        break
+                        # optimize the distance by changing coord1
+                        res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]), 
+                                method='Nelder-Mead', options={'maxiter': 20})
+                        coord1[0] = res.x[0]
+                        coord1 = ops_G2[0].operate(coord1)
+                else:
+                    return None
+                        
             else: 
                 # site symmetry does not change
                 # if merge is to let two clusters gain additional symmetry (m, -1)
-
                 # symmetry operations
                 ops_H1 = splitter.H_orbits[i][0]
-                ops_H2 = splitter.H_orbits[i][1]
-                ops_G21 = splitter.G2_orbits[i][0]
                 ops_G22 = splitter.G2_orbits[i][1]
 
-                # choose two coords which satisfy the mutiplicity constraints
-                sub_ids = list(itertools.combinations(remaining_ids, 2))
-                possible_ids = [id for id in sub_ids if mult_Hs[id[0]]==len(ops_H1) \
-                             and mult_Hs[id[1]]==len(ops_H2)]
-                # search for the solution with minimum disp
-                dists = []
-                for ids in possible_ids: 
-                    coord1, coord2 = coords_H[ids[0]], coords_H[ids[1]]
-                    # refine coord1 to find the best match on coord2
-                    coords1 = apply_ops(coord1, ops_H2)
-                    tmp, match_id = get_best_match(coords1, coord2, axis)
-                    diffs = (tmp - coord2)/2
-                    diffs -= np.round(diffs)
-                    diffs[axis] = 0
-                    dists.append(np.sqrt(np.sum(diffs**2)))
-                min_id = np.argmin(np.array(dists))
+                coord1 = atom_sites_H[solution[i][0]].position.copy()
+                coord2 = atom_sites_H[solution[i][0]].position.copy()
+                # refine coord1 to find the best match on coord2
+                if disp is not None:
+                    coord11 = coord1 + disp
+                    coord22 = coord2 + disp
+                else:
+                    coord11 = coord1
+                    coord22 = coord2
+                coords11 = apply_ops(coord11, ops_H1)
+            
+                # transform coords1 by symmetry operation
+                op = ops_G22[0]
+                inv_op = op.inverse
+                for m, coord11 in enumerate(coords11):
+                    coords11[m] = op.operate(coord11)
+                tmp, dist = get_best_match(coords11, coord22, self.cell)
+                if dist > np.sqrt(2)*d_tol:
+                    return None
+                else:
+                    # recover the original position
+                    coord1 = inv_op.operate(tmp)
+                    if disp is not None:
+                        coord1 -= disp
+                    d = coord22 - tmp
+                    d -= np.round(d)
 
-                if dists[min_id] < d_tol:
-                    ids = possible_ids[min_id]
-                    coord1, coord2 = coords_H[ids[0]], coords_H[ids[1]]
-                    coords1 = apply_ops(coord1, ops_H2)
-                    tmp, match_id = get_best_match(coords1, coord2, axis)
-                    coord1 = coords1[match_id]
-                    avg = (coord1+coord2)/2
-                    # compute the overall shift along the special axis
-                    
-                    #print(np.sum(diffs**2), disp[axis],  avg[axis], "CCCCCCCCCCCCCCCCCCCC")
-                    if disp is None:
-                        shift = 0.75 - avg[axis]
-                        disp = np.zeros(3)
-                        disp[axis] = shift
-                        valid = True
-                    else:
-                        # [x, y, z] -> [x, y, 1/2-z]
-                        for pt in [0.25, 0.75]:
-                            if abs(avg[axis]+disp[axis]-pt) < d_tol:
-                                valid = True
-                                shift = pt - avg[axis]
-                                break
-                if valid:
-                    d2 = np.zeros(3)
-                    mydisp = np.zeros(3)
-
-                    d2[axis] = (coord1[axis]-coord2[axis])/2
-                    mydisp[axis] = shift
-
-                    coords_G.append(avg + mydisp + d2) 
-                    coords_G.append(avg + mydisp - d2) 
+                    coord22 -= d/2 #final coord2 after disp
+                    # recover the displaced position
+                    coord11 = inv_op.operate(coord22) 
 
                     coords_H1.append(coord1)
                     coords_H1.append(coord2)
-                    selected_ids.extend(ids)
-
-            if not valid:
-                #print("Cannot make it, skip")
-                return None   
+                    coords_G.append(coord11)
+                    coords_G.append(coord22)
+                    
         return disp, coords_G, coords_H1, selected_ids
 
     def check_freedom(self, G, solutions):
@@ -356,7 +330,6 @@ class supergroup():
                 # print(j, split)
                 if np.all([x in site for x in split]):
                     possible_wyc_indices.append(j)
-
             # for the case of 173 ['2b'] -> 176 
             # print(possible_wyc_indices) [2, 3, 5]
 
@@ -401,13 +374,12 @@ class supergroup():
                                     if number==0:
                                         continue
                                     elif number==1:
-                                        G_sites.append(possible_wycs[l][-1])
+                                        G_sites.append(possible_wycs[l])
                                     else:
                                         for i in range(int(number)):
-                                            G_sites.append(possible_wycs[l][-1])
+                                            G_sites.append(possible_wycs[l])
                                 if G_sites not in good_list:
                                     good_list.append(G_sites)
-
                 combo_storage=holder
 
             if len(good_list)==0:
@@ -418,7 +390,7 @@ class supergroup():
 
         return good_splittings_list
 
-def get_best_match(positions, ref, axis):
+def get_best_match(positions, ref, cell):
     """
     find the best match with the reference from a set of positions
 
@@ -431,12 +403,12 @@ def get_best_match(positions, ref, axis):
         id: matched id
     """
 
-    diffs = positions - ref
+    diffs = positions - ref)
     diffs -= np.round(diffs)
-    diffs[:, axis] = 0
+    diffs = np.dot(diffs, cell)
     dists = np.linalg.norm(diffs, axis=1)
     id = np.argmin(dists)
-    return positions[id], id
+    return positions[id], dists[id]
 
 if __name__ == "__main__":
 
@@ -446,15 +418,6 @@ if __name__ == "__main__":
     #s.from_seed("pyxtal/database/cifs/BTO.cif")
     s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
     print(s)
-    species = []
-    sites = []
-    coords = []
-    for site in s.atom_sites:
-        sites.append(str(site.multiplicity)+site.wp.letter)
-        coords.append(site.position)
-        species.append(site.specie)
-    print(sites)
-    H = s.group.number
-    supergroup(H, species, sites, coords, s.lattice.matrix)
+    supergroup(s)
  
     
