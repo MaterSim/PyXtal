@@ -1,4 +1,5 @@
 import pyxtal.symmetry as sym
+from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import atom_site
 from pyxtal.operations import apply_ops, get_inverse
 from pyxtal.wyckoff_split import wyckoff_split
@@ -105,7 +106,6 @@ class supergroup():
         for sols in self.solutions:
             G, id, sols = sols['group'], sols['id'], sols['splits']
             for sol in sols:
-                #print(sol)
                 mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
                 if mae < d_tol:
                     valid_solutions.append((sp, mapping, disp, mae))
@@ -138,9 +138,14 @@ class supergroup():
 
             G_struc.atom_sites = G_sites
             G_struc.source = 'supergroup {:6.3f}'.format(mae) 
-            #G_struc.numIons = 
-            G_struc.lattice = self.struc.lattice.supergroup(sp.G.lattice_type)
-            #G_struc._get_formula()
+
+            lat1 = np.dot(sp.inv_R[:3,:3].T, self.struc.lattice.matrix)
+            lattice = Lattice.from_matrix(lat1, ltype=sp.G.lattice_type)
+            #lattice.reset_matrix() #make it has a regular shape
+            #G_struc.lattice = self.struc.lattice.supergroup(sp.G.lattice_type)
+            G_struc.lattice = lattice
+            G_struc.numIons *= round(np.abs(np.linalg.det(sp.R[:3,:3])))
+            G_struc._get_formula()
 
             if new_structure(G_struc, G_strucs):
                 G_strucs.append(G_struc)
@@ -149,6 +154,7 @@ class supergroup():
                     _, coords_G2, coords_H1, elements, mults = details
                     self.print_detail(G, coords_H1, coords_G2, elements, mults, disp)
                     print(G_struc)
+                    #print(sp.R)
 
         return G_strucs
             
@@ -190,7 +196,7 @@ class supergroup():
         dists = np.array(dists)
         mae = np.min(dists)
         id = np.argmin(dists)
-        if mae < d_tol:
+        if (mae > 0.2) and (mae < d_tol):
             # optimize further
             def fun(disp, mapping, splitter):
                 return self.symmetrize_dist(splitter, mapping, disp)[0]
@@ -251,17 +257,18 @@ class supergroup():
         For a given solution, search for the possbile supergroup structure
 
         Args: 
-            - splitter: splitter object to specify the relation between G and H
-            - disp: an overall shift from H to G, None or 3 vector
-            - d_tol: the tolerance in angstrom
+            splitter: splitter object to specify the relation between G and H
+            solution: list of sites in H, e.g., ['4a', '8b']
+            disp: an overall shift from H to G, None or 3 vector
+            d_tol: the tolerance in angstrom
         Returns:
-            atom_site_G1 with the minimum displacements
-            atom_site_G2 
+            distortion
+            cell translation
         """
         total_disp = 0
         atom_sites_H = self.struc.atom_sites
         n_atoms = sum([site.wp.multiplicity for site in atom_sites_H])
-
+        #print("checking solution-----------------", solution)
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
 
@@ -316,12 +323,8 @@ class supergroup():
                 diff = coord1-(coord2+disp)
                 diff -= np.round(diff)
                 total_disp += np.linalg.norm(np.dot(diff, self.cell))*len(ops_H)
-                #coords_H1.append(coord2)
-                #coords_G.append(coord1)
                         
             else: 
-                # site symmetry does not change
-                # if merge is to let two clusters gain additional symmetry (m, -1)
                 # symmetry operations
                 ops_H1 = splitter.H_orbits[i][0]
                 ops_G22 = splitter.G2_orbits[i][1]
@@ -338,17 +341,15 @@ class supergroup():
                 coords11 = apply_ops(coord11, ops_H1)
             
                 # transform coords1 by symmetry operation
-                op = ops_G22[0]
+                op = deepcopy(ops_G22[0])
                 for m, coord11 in enumerate(coords11):
                     coords11[m] = op.operate(coord11)
                 tmp, dist = get_best_match(coords11, coord22, self.cell)
                 if dist > np.sqrt(2)*d_tol:
                     return 10000, None
 
-                #inv_op = op.inverse
-                inv_op = get_inverse(op)
-
                 # recover the original position
+                inv_op = get_inverse(op)
                 coord1 = inv_op.operate(tmp)
                 if disp is not None:
                     coord1 -= disp
@@ -368,12 +369,16 @@ class supergroup():
         For a given solution, search for the possbile supergroup structure
 
         Args: 
-            - splitter: splitter object to specify the relation between G and H
-            - disp: an overall shift from H to G, None or 3 vector
-            - d_tol: the tolerance in angstrom
+            splitter: splitter object to specify the relation between G and H
+            disp: an overall shift from H to G, None or 3 vector
+            d_tol: the tolerance in angstrom
+
         Returns:
-            atom_site_G1 with the minimum displacements
-            atom_site_G2 
+            coords_G1
+            coords_G2
+            coords_H1
+            elements
+            mults
         """
 
         atom_sites_H = self.struc.atom_sites
@@ -382,7 +387,7 @@ class supergroup():
         coords_H1 = [] # position in H
         elements = []
         mults = []
-        
+        inv_R = splitter.inv_R # inverse coordinate transformation
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
 
@@ -421,8 +426,9 @@ class supergroup():
                             method='Nelder-Mead', options={'maxiter': 20})
                     coord1[0] = res.x[0]
                     coord1 = ops_G2[0].operate(coord1)
-                
-                coords_G1.append(coord1)
+
+                coords_G1.append(np.dot(inv_R[:3,:3], coord1).T+inv_R[:3,3].T)
+                #coords_G1.append(coord1)
                 coords_G2.append(coord1)
                 coords_H1.append(coord2)
                 elements.append(splitter.elements[i])
@@ -439,15 +445,15 @@ class supergroup():
                 coord11 = coord1 + disp
                 coord22 = coord2 + disp
                 coords11 = apply_ops(coord11, ops_H1)
-            
+
                 # transform coords1 by symmetry operation
-                op = ops_G22[0]
-                inv_op = op.inverse
+                op = deepcopy(ops_G22[0])
                 for m, coord11 in enumerate(coords11):
                     coords11[m] = op.operate(coord11)
                 tmp, dist = get_best_match(coords11, coord22, self.cell)
 
                 # recover the original position
+                inv_op = get_inverse(op)
                 coord1 = inv_op.operate(tmp)
                 coord1 -= disp
                 d = coord22 - tmp
@@ -457,7 +463,7 @@ class supergroup():
                 # recover the displaced position
                 coord11 = inv_op.operate(coord22) 
 
-                coords_G1.append(coord11)
+                coords_G1.append(np.dot(inv_R[:3,:3], coord11).T+inv_R[:3,3].T)
                 coords_G2.append(coord11)
                 coords_G2.append(coord22)
                 coords_H1.append(coord1)
@@ -631,11 +637,22 @@ if __name__ == "__main__":
     from pyxtal import pyxtal
     
     s = pyxtal()
-    #s.from_seed("pyxtal/database/cifs/BTO.cif")
+    #s.from_seed("pyxtal/database/cifs/BTO-P4mm.cif")
     #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
-    s.from_seed("B.cif")
+    s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif")
     print(s)
     my = supergroup(s)
     solutions = my.search_supergroup(d_tol=0.60)
     G_strucs = my.make_supergroup(solutions)
     G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
+
+    my = supergroup(G_strucs[-1])
+    solutions = my.search_supergroup(d_tol=0.60)
+    G_strucs = my.make_supergroup(solutions)
+    G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
+
+    my = supergroup(G_strucs[-1])
+    solutions = my.search_supergroup(d_tol=0.60)
+    G_strucs = my.make_supergroup(solutions)
+    G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
+

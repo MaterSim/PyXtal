@@ -209,33 +209,6 @@ class Lattice:
         else:
             return self, np.eye(3), opt
 
-    def supergroup(self, ltype):
-        """
-        convert the lattice to satisfy the supergroup symmetry
-        Experimental
-        """
-        a0, b0, c0, alpha0, beta0, gamma0 = self.get_para()
-
-        if ltype in ['cubic', 'Cubic']:
-            a = (a0+b0+c0)/3
-            lat = Lattice.from_para(a, a, a0, 90, 90, 90, ltype=ltype)
-        elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
-            a = (a0+b0)/2
-            lat = Lattice.from_para(a, a, c0, 90, 90, 120, ltype=ltype)
-        elif ltype in ['tetragonal', 'Tetragonal']:
-            a = (a0+b0)/2
-            lat = Lattice.from_para(a, a, c0, 90, 90, 90, ltype=ltype)
-        elif ltype in ['orthorhombic', 'Orthorhombic']:
-            lat = Lattice.from_para(a0, b0, c0, 90, 90, 90, ltype=ltype)
-        elif ltype in ['monoclinic', 'Monoclinic']:
-            lat = Lattice.from_para(a0, b0, c0, 90, beta0, 90, ltype=ltype)
-        elif ltype in ['triclinic', 'Triclinic']:
-            lat = Lattice.from_para(a0, b0, c0, alpha0, beta0, gamma0, ltype=ltype)
-        else:
-            raise ValueError("ltype {:s} is not supported".format(ltype))
-
-        return lat
-
 
     def mutate(self, degree=0.20, frozen=False):
         """
@@ -331,7 +304,7 @@ class Lattice:
                 self.inv_matrix = np.linalg.inv(m)
             else:
                 printx("Error: matrix must be a 3x3 numpy array or list", priority=1)
-        elif matrix is None:
+        else:
             self.reset_matrix()
         para = matrix2para(self.matrix)
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
@@ -362,6 +335,10 @@ class Lattice:
                     self.beta = beta
                     self.gamma = gamma
                     break
+        else:
+            # a small utility to convert the cell shape
+            para = matrix2para(self.matrix)
+            self.matrix = para2matrix(para)
 
     def set_volume(self, volume):
         if self.allow_volume_reset is True:
@@ -615,8 +592,27 @@ class Lattice:
             printx("Error: Lattice matrix must be 3x3", priority=1)
             return
         [a, b, c, alpha, beta, gamma] = matrix2para(m)
-        volume = np.linalg.det(m)
+
+        if ltype in ['cubic', 'Cubic']:
+            a = b = c = (a+b+c)/3
+            alpha = beta = gamma = np.pi/2
+        elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
+            a = b = (a+b)/2
+            alpha = beta = np.pi/2
+            gamma = np.pi*2/3
+        elif ltype in ['tetragonal', 'Tetragonal']:
+            a = b = (a+b)/2
+            alpha = beta = gamma = np.pi/2
+        elif ltype in ['orthorhombic', 'Orthorhombic']:
+            alpha = beta = gamma = np.pi/2
+        elif ltype in ['monoclinic', 'Monoclinic']:
+            alpha = gamma = np.pi/2
+        
+        # reset matrix according to the symmetry
+        m = para2matrix([a, b, c, alpha, beta, gamma])
+        
         # Initialize a Lattice instance
+        volume = np.linalg.det(m)
         l = Lattice(ltype, volume, PBC=PBC, **kwargs)
         l.a, l.b, l.c = a, b, c
         l.alpha, l.beta, l.gamma = alpha, beta, gamma

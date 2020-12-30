@@ -369,9 +369,10 @@ def get_inverse(op):
     # experimental
     if np.trace(matrix) < 3:
         for row in range(3):
-            if np.sum(matrix[row]**2) < 1e-3:
+            if np.sum(matrix[row,:3]**2) < 1e-3:
                 matrix[row, row] = 1
-    return SymmOp(np.linalg.inv(op.affine_matrix))
+                matrix[row, 3] = 0
+    return SymmOp(np.linalg.inv(matrix))
 
 
 def get_inverse_ops(ops):
