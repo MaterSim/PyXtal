@@ -1,6 +1,6 @@
 import pyxtal.symmetry as sym
 from pyxtal.wyckoff_site import atom_site
-from pyxtal.operations import apply_ops
+from pyxtal.operations import apply_ops, get_inverse
 from pyxtal.wyckoff_split import wyckoff_split
 import pymatgen.analysis.structure_matcher as sm
 import numpy as np
@@ -105,6 +105,7 @@ class supergroup():
         for sols in self.solutions:
             G, id, sols = sols['group'], sols['id'], sols['splits']
             for sol in sols:
+                #print(sol)
                 mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
                 if mae < d_tol:
                     valid_solutions.append((sp, mapping, disp, mae))
@@ -138,7 +139,7 @@ class supergroup():
             G_struc.atom_sites = G_sites
             G_struc.source = 'supergroup {:6.3f}'.format(mae) 
             #G_struc.numIons = 
-            #G_struc.lattice = 
+            G_struc.lattice = self.struc.lattice.supergroup(sp.G.lattice_type)
             #G_struc._get_formula()
 
             if new_structure(G_struc, G_strucs):
@@ -338,12 +339,14 @@ class supergroup():
             
                 # transform coords1 by symmetry operation
                 op = ops_G22[0]
-                inv_op = op.inverse
                 for m, coord11 in enumerate(coords11):
                     coords11[m] = op.operate(coord11)
                 tmp, dist = get_best_match(coords11, coord22, self.cell)
                 if dist > np.sqrt(2)*d_tol:
                     return 10000, None
+
+                #inv_op = op.inverse
+                inv_op = get_inverse(op)
 
                 # recover the original position
                 coord1 = inv_op.operate(tmp)
@@ -629,8 +632,10 @@ if __name__ == "__main__":
     
     s = pyxtal()
     #s.from_seed("pyxtal/database/cifs/BTO.cif")
-    s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
+    #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
+    s.from_seed("B.cif")
     print(s)
     my = supergroup(s)
     solutions = my.search_supergroup(d_tol=0.60)
     G_strucs = my.make_supergroup(solutions)
+    G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)

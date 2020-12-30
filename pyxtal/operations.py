@@ -364,6 +364,13 @@ def get_inverse(op):
     Returns:
         the inverse
     """
+    matrix = op.affine_matrix
+    # fill the matrix if it is ill conditioned
+    # experimental
+    if np.trace(matrix) < 3:
+        for row in range(3):
+            if np.sum(matrix[row]**2) < 1e-3:
+                matrix[row, row] = 1
     return SymmOp(np.linalg.inv(op.affine_matrix))
 
 

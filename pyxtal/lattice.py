@@ -209,6 +209,34 @@ class Lattice:
         else:
             return self, np.eye(3), opt
 
+    def supergroup(self, ltype):
+        """
+        convert the lattice to satisfy the supergroup symmetry
+        Experimental
+        """
+        a0, b0, c0, alpha0, beta0, gamma0 = self.get_para()
+
+        if ltype in ['cubic', 'Cubic']:
+            a = (a0+b0+c0)/3
+            lat = Lattice.from_para(a, a, a0, 90, 90, 90, ltype=ltype)
+        elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
+            a = (a0+b0)/2
+            lat = Lattice.from_para(a, a, c0, 90, 90, 120, ltype=ltype)
+        elif ltype in ['tetragonal', 'Tetragonal']:
+            a = (a0+b0)/2
+            lat = Lattice.from_para(a, a, c0, 90, 90, 90, ltype=ltype)
+        elif ltype in ['orthorhombic', 'Orthorhombic']:
+            lat = Lattice.from_para(a0, b0, c0, 90, 90, 90, ltype=ltype)
+        elif ltype in ['monoclinic', 'Monoclinic']:
+            lat = Lattice.from_para(a0, b0, c0, 90, beta0, 90, ltype=ltype)
+        elif ltype in ['triclinic', 'Triclinic']:
+            lat = Lattice.from_para(a0, b0, c0, alpha0, beta0, gamma0, ltype=ltype)
+        else:
+            raise ValueError("ltype {:s} is not supported".format(ltype))
+
+        return lat
+
+
     def mutate(self, degree=0.20, frozen=False):
         """
         mutate the lattice object
