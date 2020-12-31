@@ -46,16 +46,29 @@ class supergroup():
 
     Args:
         struc: pyxtal structure
+        G: list of possible supergroup numbers, default is None 
         group_type: `t` or `k`
     """
-    def __init__(self, struc, group_type='t', solution=None):
+    def __init__(self, struc, G=None, group_type='t', solution=None):
 
         # initilize the necesary parameters
         self.struc = struc
-        self.wyc_supergroups = struc.group.get_min_supergroup(group_type)
         self.cell = struc.lattice.matrix
         self.group_type = group_type
         self.error = False
+        
+        # extract the supergroup information
+        wyc_supergroups = struc.group.get_min_supergroup(group_type)
+        if G is not None:
+            self.wyc_supergroups = {}
+            ids = [id for id, group in enumerate(wyc_supergroups['supergroup']) if group in G]
+            if len(ids) == 0:
+                self.error = True
+            else:
+                for key in wyc_supergroups:
+                    self.wyc_supergroups[key] = [wyc_supergroups[key][id] for id in ids]
+        else:
+            self.wyc_supergroups = wyc_supergroups
 
         # group the elements, sites, positions
         self.elements = []
@@ -183,14 +196,14 @@ class supergroup():
         ids = np.argsort(np.array(muls))
         elements = [elements[id] for id in ids]
         sites_G = [sites_G[id] for id in ids]
-
+        #print(G, self.struc.group.number, sites_G)
         splitter = wyckoff_split(G, split_id, sites_G, self.group_type, elements)
         mappings = self.find_mapping(splitter)
         dists = []
         disps = []
         for mapping in mappings:
             disp = None #np.array([0.0, 0.0, 0.222222])
-            dist, disp = self.symmetrize_dist(splitter, mapping, disp)
+            dist, disp = self.symmetrize_dist(splitter, mapping, disp, d_tol)
             dists.append(dist)
             disps.append(disp)
         dists = np.array(dists)
@@ -202,8 +215,9 @@ class supergroup():
                 return self.symmetrize_dist(splitter, mapping, disp)[0]
             res = minimize(fun, disps[id], args=(mappings[id], splitter),
                     method='Nelder-Mead', options={'maxiter': 20})
-            mae = res.fun
-            disp = res.x
+            if res.fun < mae:
+                mae = res.fun
+                disp = res.x
         return mae, disp, mappings[id], splitter
 
     def find_mapping(self, splitter):
@@ -341,7 +355,7 @@ class supergroup():
                 coords11 = apply_ops(coord11, ops_H1)
             
                 # transform coords1 by symmetry operation
-                op = deepcopy(ops_G22[0])
+                op = ops_G22[0]
                 for m, coord11 in enumerate(coords11):
                     coords11[m] = op.operate(coord11)
                 tmp, dist = get_best_match(coords11, coord22, self.cell)
@@ -349,6 +363,8 @@ class supergroup():
                     return 10000, None
 
                 # recover the original position
+                #print(op)
+                #print(op.as_xyz_string())
                 inv_op = get_inverse(op)
                 coord1 = inv_op.operate(tmp)
                 if disp is not None:
@@ -447,7 +463,7 @@ class supergroup():
                 coords11 = apply_ops(coord11, ops_H1)
 
                 # transform coords1 by symmetry operation
-                op = deepcopy(ops_G22[0])
+                op = ops_G22[0]
                 for m, coord11 in enumerate(coords11):
                     coords11[m] = op.operate(coord11)
                 tmp, dist = get_best_match(coords11, coord22, self.cell)
@@ -639,10 +655,16 @@ if __name__ == "__main__":
     s = pyxtal()
     #s.from_seed("pyxtal/database/cifs/BTO-P4mm.cif")
     #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
+    #s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif")
+    #s.from_seed("pyxtal/database/cifs/lt_quartz.cif")
+    #s.from_seed("pyxtal/database/cifs/GeF2.cif")
+    #s.from_seed("pyxtal/database/cifs/B28.cif")
+    #s.from_seed("pyxtal/database/cifs/PPO.cif")
     s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif")
     print(s)
+    #my = supergroup(s, G=[165, 167])
     my = supergroup(s)
-    solutions = my.search_supergroup(d_tol=0.60)
+    solutions = my.search_supergroup(d_tol=0.8)
     G_strucs = my.make_supergroup(solutions)
     G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
 

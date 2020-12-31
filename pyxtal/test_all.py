@@ -6,12 +6,14 @@ from pkg_resources import resource_filename
 from pymatgen.core.structure import Molecule
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pymatgen.core.operations import SymmOp
 
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
 from pyxtal.wyckoff_site import WP_merge
 from pyxtal.XRD import Similarity
+from pyxtal.operations import get_inverse
 
 cif_path = resource_filename("pyxtal", "database/cifs/")
 l0 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
@@ -392,6 +394,45 @@ class TestLoad(unittest.TestCase):
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+
+class Test_operations(unittest.TestCase):
+    def test_inverse(self):
+        coord0 = [0.35, 0.1, 0.4]
+        coords = np.array([
+			   [0.350,  0.100,  0.400],
+			   [0.350,  0.100,  0.000],
+			   [0.350,  0.100,  0.000],
+			   [0.350,  0.000,  0.667],
+			   [0.350,  0.000,  0.250],
+			   [0.350,  0.350,  0.400],
+			   [0.350,  0.350,  0.500],
+			   [0.350,  0.350,  0.000],
+			   [0.350,  0.350,  0.350]
+			 ])
+        xyzs = ['x,y,z',
+                'x,y,0',
+                'y,x,0',
+                'x,0,2/3',
+                '0,x,1/4',
+                'x,x,z',
+                'x,-x,1/2',
+                '2x,x,0',
+                '-2x, -0.5x, -x+1/4',
+                ]
+        
+        for i, xyz in enumerate(xyzs):
+            op = SymmOp.from_xyz_string(xyz)
+            inv_op = get_inverse(op)
+            coord1 = op.operate(coord0)
+            coord2 = inv_op.operate(coord1)
+            #print(coord2, coords[i])
+            self.assertTrue(np.allclose(coord2, coords[i], rtol=1e-2))
+            #strs = "{:6.3f} {:6.3f} {:6.3f}".format(*coord0)
+            #strs += "  {:12s}  ".format(op.as_xyz_string())
+            #strs += "{:6.3f} {:6.3f} {:6.3f}".format(*coord1)
+            #strs += "  {:12s}  ".format(inv_op.as_xyz_string())
+            #strs += "{:6.3f} {:6.3f} {:6.3f}".format(*coord2)
+            #print(strs)
 
 # class TestIO(unittest.TestCase):
 

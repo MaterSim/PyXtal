@@ -354,6 +354,7 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
+
 def get_inverse(op):
     """
     Given a SymmOp object, returns its inverse.
@@ -364,14 +365,33 @@ def get_inverse(op):
     Returns:
         the inverse
     """
-    matrix = op.affine_matrix
+    matrix = op.affine_matrix.copy()
     # fill the matrix if it is ill conditioned
     # experimental
-    if np.trace(matrix) < 3:
+    if np.linalg.matrix_rank(matrix) < 4:
         for row in range(3):
+            # fixed value
             if np.sum(matrix[row,:3]**2) < 1e-3:
                 matrix[row, row] = 1
                 matrix[row, 3] = 0
+
+        if np.linalg.matrix_rank(matrix) == 3:
+            # [-3x/2, -x/2, 1/4]
+            # [0, x, 1/4]
+            for rows in [[0,1],[1,2],[0,2]]:
+                m = (matrix[rows,:])[:,rows] 
+                if np.linalg.matrix_rank(m) != 2:
+                    break
+            id0, id1 = rows[0], rows[1]
+
+            if matrix[id0, id1] == 0:
+                matrix[id0, id1], matrix[id0, id0] = matrix[id0, id0], matrix[id0, id1]
+            else:
+                matrix[id1, id0], matrix[id1, id1] = matrix[id1, id1], matrix[id1, id0]
+        elif np.linalg.matrix_rank(matrix) == 2:
+            # -3x/2, -x/2, -x+1/4 always x, x, x?
+            matrix[1,0], matrix[1,1] = matrix[1,1], matrix[1,0]
+            matrix[2,0], matrix[2,2] = matrix[2,2], matrix[2,0]
     return SymmOp(np.linalg.inv(matrix))
 
 
