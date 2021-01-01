@@ -90,11 +90,13 @@ class supergroup():
                 G = self.wyc_supergroups['supergroup'][idx]
                 relation = self.wyc_supergroups['relations'][idx]
                 id = self.wyc_supergroups['idx'][idx]
+                #print(G, relation)
                 results = self.check_compatibility(G, relation)
                 if results is not None:
                     solutions = list(itertools.product(*results))
                     trials = self.check_freedom(G, solutions)
                     sol = {'group': G, 'id': id, 'splits': trials}
+                    #print(sol)
                     self.solutions.append(sol)
         else: # load the solution
             raise NotImplementedError
@@ -120,6 +122,7 @@ class supergroup():
             G, id, sols = sols['group'], sols['id'], sols['splits']
             for sol in sols:
                 mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
+                #print(G, sol, mae, disp)
                 if mae < d_tol:
                     valid_solutions.append((sp, mapping, disp, mae))
         return valid_solutions
@@ -138,6 +141,7 @@ class supergroup():
         for solution in solutions:
             (sp, mapping, disp, mae) = solution
             G = sp.G.number
+            #print(disp)
             details = self.symmetrize(sp, mapping, disp)
             coords_G1, coords_G2, coords_H1, elements, mults = details
 
@@ -202,13 +206,14 @@ class supergroup():
         dists = []
         disps = []
         for mapping in mappings:
-            disp = None #np.array([0.0, 0.0, 0.222222])
-            dist, disp = self.symmetrize_dist(splitter, mapping, disp, d_tol)
+            #disp = None #np.array([0.0, 0.0, 0.222222])
+            dist, disp = self.symmetrize_dist(splitter, mapping, None, d_tol)
             dists.append(dist)
             disps.append(disp)
         dists = np.array(dists)
         mae = np.min(dists)
         id = np.argmin(dists)
+        disp = disps[id]
         if (mae > 0.2) and (mae < d_tol):
             # optimize further
             def fun(disp, mapping, splitter):
@@ -279,7 +284,7 @@ class supergroup():
             distortion
             cell translation
         """
-        total_disp = 0
+        max_disps = []
         atom_sites_H = self.struc.atom_sites
         n_atoms = sum([site.wp.multiplicity for site in atom_sites_H])
         #print("checking solution-----------------", solution)
@@ -336,7 +341,7 @@ class supergroup():
                 
                 diff = coord1-(coord2+disp)
                 diff -= np.round(diff)
-                total_disp += np.linalg.norm(np.dot(diff, self.cell))*len(ops_H)
+                max_disps.append(np.linalg.norm(np.dot(diff, self.cell)))
                         
             else: 
                 # symmetry operations
@@ -376,9 +381,9 @@ class supergroup():
                 # recover the displaced position
                 coord11 = inv_op.operate(coord22) 
 
-                total_disp += np.linalg.norm(np.dot(d/2, self.cell))*len(ops_H1)*2
+                max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
 
-        return total_disp/n_atoms, disp
+        return max(max_disps), disp
 
     def symmetrize(self, splitter, solution, disp):
         """
@@ -494,7 +499,7 @@ class supergroup():
         print out the details of tranformation
         """
         print("Valid structure", G)
-        total_disp = 0
+        disps = []
         for x, y, ele, n in zip(coords_H1, coords_G1, elements, mults):
             dis = y-(x+disp)
             dis -= np.round(dis)
@@ -502,10 +507,9 @@ class supergroup():
             output = "{:2s} {:7.3f}{:7.3f}{:7.3f}".format(ele, *x)
             output += " -> {:7.3f}{:7.3f}{:7.3f}".format(*y)
             output += " -> {:7.3f}{:7.3f}{:7.3f} {:7.3f}".format(*dis, dis_abs)
-            total_disp += dis_abs*n
+            disps.append(dis_abs)
             print(output)
-        mae = total_disp/sum(mults)
-        print("cell: {:7.3f}{:7.3f}{:7.3f}, disp (A): {:7.3f}".format(*disp, mae))
+        print("cell: {:7.3f}{:7.3f}{:7.3f}, disp (A): {:7.3f}".format(*disp, max(disps)))
 
 
     def check_freedom(self, G, solutions):
@@ -661,20 +665,26 @@ if __name__ == "__main__":
     #s.from_seed("pyxtal/database/cifs/B28.cif")
     #s.from_seed("pyxtal/database/cifs/PPO.cif")
     s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif")
+    #s.from_seed("pyxtal/database/cifs/PVO.cif")
+    #s.from_seed("pyxtal/database/cifs/MPWO.cif")
+    #s.from_seed("test2.cif")
     print(s)
+    strucs = s.get_alternatives()
+    print(strucs)
+    #for i, struc in enumerate(strucs):
     #my = supergroup(s, G=[165, 167])
     my = supergroup(s)
-    solutions = my.search_supergroup(d_tol=0.8)
+    solutions = my.search_supergroup(d_tol=0.90)
     G_strucs = my.make_supergroup(solutions)
-    G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
-
-    my = supergroup(G_strucs[-1])
-    solutions = my.search_supergroup(d_tol=0.60)
-    G_strucs = my.make_supergroup(solutions)
-    G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
-
-    my = supergroup(G_strucs[-1])
-    solutions = my.search_supergroup(d_tol=0.60)
-    G_strucs = my.make_supergroup(solutions)
-    G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
+    if len(G_strucs)>0:
+        G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
+        my = supergroup(G_strucs[0])
+        solutions = my.search_supergroup(d_tol=0.90)
+        G_strucs = my.make_supergroup(solutions)
+        G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
+        if len(G_strucs)>0:
+            my = supergroup(G_strucs[-1])
+            solutions = my.search_supergroup(d_tol=0.60)
+            G_strucs = my.make_supergroup(solutions)
+            G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
 

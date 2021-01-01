@@ -439,6 +439,28 @@ class Group:
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
 
+    def get_alternatives(self):
+        """
+        Get the alternative settings as a dictionary
+        """
+        dicts = {"permutation": [],
+                 #"origin": [],
+                 #"diagonal": [],
+                }
+        if self.dim == 3:
+            if self.number in [17, 18, 25, 27, 34, 35, 
+                               37, 38, 42, 43, 44, 49, 
+                               51, 52, 54, 56, 58, 59, 
+                               68, 74]:
+                dicts["permutation"] = [[1,0,2]] # like Pmm2
+            elif self.number in [16, 19, 21, 22, 23, 24, 
+                                 47, 48, 65, 69, 70, 71]:
+                dicts["permutation"] = [[1,0,2],[1,2,0],[0,2,1],[2,1,0],[2,0,1]] # like Pmmm
+        else:
+            raise NotImplementedError("Now we only support the subgroups for space group")
+
+        return dicts
+
     def get_max_k_subgroup(self):
         """
         Returns the maximal k-subgroups as a dictionary
@@ -525,6 +547,7 @@ class Wyckoff_position:
         wp = Wyckoff_position()
         for key in dictionary:
             setattr(wp, key, dictionary[key])
+        #wp.get_site_symmetry()
         return wp
 
     def __str__(self):
@@ -541,9 +564,7 @@ class Wyckoff_position:
             s += "Point group " + self.symbol
         if self.dim != 0:
             s += "group " + str(self.number)
-        s += " with site symmetry " + ss_string_from_ops(
-            self.symmetry_m[0], self.number, dim=self.dim
-        )
+        s += " with site symmetry " + self.site_symm
         for op in self.ops:
             s += "\n" + op.as_xyz_string()
         self.string = s
@@ -565,6 +586,45 @@ class Wyckoff_position:
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                 self.ops[j] = op1    
 
+
+    def swap_axis(self, swap_id):
+        """
+        swap the axis may result in a new wp
+        """
+        if self.index > 0:
+            perm_id = None
+            _ops = [self.ops[0]]
+            trans = [np.zeros(3)]
+            if self.symbol[0] == "F":
+                trans.append(np.array([0,0.5,0.5]))
+                trans.append(np.array([0.5,0,0.5]))
+                trans.append(np.array([0.5,0.5,0]))
+            elif self.symbol[0] == "I":
+                trans.append(np.array([0.5,0.5,0.5]))
+            elif self.symbol[0] == "A":
+                trans.append(np.array([0,0.5,0.5]))
+            elif self.symbol[0] == "B":
+                trans.append(np.array([0.5,0,0.5]))
+            elif self.symbol[0] == "C":
+                trans.append(np.array([0.5,0.5,0]))
+
+            op_perm = swap_xyz_ops(_ops, swap_id)[0]
+            for id, ops in enumerate(Group(self.number)):
+                if len(ops) == len(self.ops):
+                    for i, tran in enumerate(trans):
+                        if i > 0:
+                            # apply tran
+                            op = op_translation(op_perm, tran)
+                        else:
+                            op = op_perm
+                        #print(id, op.as_xyz_string(),tran)
+                        if are_equivalent_ops(op, ops[0]):
+                            perm_id = id
+                            return Group(self.number)[id], tran
+            if perm_id is None:
+                raise ValueError("cannot swap", swap_id, self)
+        return self, np.zeros(3)
+
     def from_symops(ops, group=None, permutation=True):
         """
         search Wyckoff Position by symmetry operations
@@ -573,7 +633,6 @@ class Wyckoff_position:
         Args:
             ops: a list of symmetry operations
             group: the space group number
-            gen_only: boolean, check general positions only?
 
         Returns:
             `Wyckoff_position`
@@ -604,7 +663,7 @@ class Wyckoff_position:
                     # Try permutation first
                     str2 = [op.as_xyz_string() for op in wyc.ops]
                     for perm in permutations:
-                        str_perm = permutate_xyz_string(str1, perm)
+                        str_perm = swap_xyz_string(str1, perm)
                         # Compare the pure rotation and then 
                         if set(str_perm) == set(str2):
                             return wyc, perm
@@ -721,6 +780,8 @@ class Wyckoff_position:
             # Generate a Group and retrieve Wyckoff position from it
             g = Group(group, dim=0)
             wp = g[index]
+        #wp.get_site_symmetry()
+        wp.symbol, _ = get_symbol_and_number(wp.number, wp.dim)
         return wp
 
     def wyckoff_from_generating_op(gen_op, gen_pos):
@@ -847,7 +908,7 @@ class Wyckoff_position:
         return self.multiplicity
 
     def get_site_symmetry(self):
-        return ss_string_from_ops(self.symmetry_m[0], self.number, dim=self.dim)
+        self.site_symm = ss_string_from_ops(self.symmetry_m[0], self.number, dim=self.dim)
 
     def gen_pos(self):
         """
@@ -945,7 +1006,7 @@ def choose_wyckoff_molecular(group, number, site, orientations, general_site=Tru
             return False
 
 # -------------------- quick utilities for symmetry conversion ----------------
-def permutate_xyz_string(xyzs, permutation):
+def swap_xyz_string(xyzs, permutation):
     if permutation == [0,1,2]:
         return xyzs
     else:
@@ -962,9 +1023,55 @@ def permutate_xyz_string(xyzs, permutation):
             elif permutation == [0,2,1]: #b,c
                 tmp[1] = tmp[1].replace('z','y')
                 tmp[2] = tmp[2].replace('y','z')
+            elif permutation == [1,2,0]: #b,c
+                tmp[0] = tmp[0].replace('y','x')
+                tmp[1] = tmp[1].replace('z','y')
+                tmp[2] = tmp[2].replace('x','z')
+            elif permutation == [2,0,1]: #b,c
+                tmp[0] = tmp[0].replace('z','x')
+                tmp[1] = tmp[1].replace('x','y')
+                tmp[2] = tmp[2].replace('y','z')
             new.append(tmp[0] + ", " + tmp[1] + ", " + tmp[2])
 
         return new
+
+def swap_xyz_ops(ops, permutation):
+    if permutation == [0,1,2]:
+        return ops
+    else:
+        new = []
+        for op in ops:
+            m = op.affine_matrix.copy()
+            m[:3,:] = m[permutation, :]
+            for row in range(3):
+                # [0, y+1/2, 1/2] -> (0, y, 1/2)
+                if np.abs(m[row,:3]).sum()>0:
+                    m[row, 3] = 0
+            m[:3,:3] = m[:3, permutation]
+            new.append(SymmOp(m))
+        return new
+
+def op_translation(op, tran):
+    m = op.affine_matrix.copy()
+    m[:3,3] += tran
+    for row in range(3):
+        # [0, y+1/2, 1/2] -> (0, y, 1/2)
+        if np.abs(m[row,:3]).sum()>0:
+            m[row, 3] = 0
+    return SymmOp(m)
+
+def are_equivalent_ops(op1, op2, tol=1e-2):
+    diff = op1.affine_matrix - op2.affine_matrix
+    diff[:,3] -= np.round(diff[:,3])
+    diff = np.abs(diff.flatten())
+    if np.sum(diff) < tol:
+        return True
+    else:
+        return False
+        
+
+
+#
 
 # TODO: Use Group object instead of organized array
 def letter_from_index(index, group, dim=3):

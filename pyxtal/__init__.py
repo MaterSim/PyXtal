@@ -459,6 +459,24 @@ class pyxtal:
         else:
             raise RuntimeError("Cannot create file: structure did not generate")
 
+    def supergroup(self, G=None, group_type='t', d_tol=1.0):
+        """
+        generate a structure with lower symmetry
+
+        Args:
+            G: super space group number (list of integers)
+            group_type: `t`, `k` or `t+k`
+            d_tol: maximum tolerance
+
+        Returns:
+            a list of pyxtal structures with minimum super group symmetries
+        """
+
+        from pyxtal.supergroup import supergroup
+
+        my_super = supergroup(self, G=G, group_type=group_type)
+        solutions = my_super.search_supergroup(d_tol=d_tol)
+        return my_super.make_supergroup(solutions)
 
     def subgroup(self, permutations=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4):
         """
@@ -1037,3 +1055,36 @@ class pyxtal:
             for site in dict0["sites"]:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
+
+    def get_alternatives(self, key='permutation'):
+        """
+        get alternative structure representations
+
+        Args:
+            key: string, now supports only permutation
+
+        Return:
+            
+        """
+        new_strucs = []
+        # search if the 
+        res = self.group.get_alternatives()[key]
+        if len(res) > 0:
+            if key == 'permutation':
+                for swap in res:
+                    new_struc = self.copy()
+                    # swap lattice and atom_sites
+                    new_struc.lattice = self.lattice.swap_axis(ids=swap)
+                    # check if a shift is required
+                    for atom_site in new_struc.atom_sites:
+                        shift = atom_site.shift_by_swap(swap)
+                        if np.sum(shift) > 0:
+                            break
+                    # perform a swap by considering the shift
+                    for atom_site in new_struc.atom_sites:
+                        atom_site.swap_axis(swap, shift)
+
+                    new_struc.source = key
+                    new_strucs.append(new_struc)
+        return new_strucs
+

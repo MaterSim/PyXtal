@@ -351,12 +351,13 @@ class Lattice:
         """
         # only applied to triclinic/monoclinic/orthorhombic
         if self.ltype in ["triclinic", "Triclinic", "orthorhombic", "Orthorhombic"]:
-            allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0]]
+            allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0],[1,2,0],[2,0,1]]
         elif self.ltype == "monoclinic":
             if abs(self.beta-90*rad) > 1e-3:
                 allowed_ids = [[0,1,2],[2,1,0]]
             else:
-                allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0]]
+                allowed_ids = [[0,1,2],[1,0,2],[0,2,1],
+                               [2,1,0],[1,2,0],[2,0,1]]
         else:
             allowed_ids = [[0,1,2]]
 
@@ -378,6 +379,10 @@ class Lattice:
             return self.from_para(c, b, a, gamma, beta, alpha, self.ltype)
         elif ids == [0,2,1]: #b-c
             return self.from_para(a, c, b, alpha, gamma, beta, self.ltype)
+        elif ids == [2,0,1]:
+            return self.from_para(c, a, b, gamma, alpha, beta, self.ltype)
+        elif ids == [1,2,0]:
+            return self.from_para(b, c, a, beta, gamma, alpha, self.ltype)
         else:
             return self
     

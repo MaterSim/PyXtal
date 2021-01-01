@@ -654,14 +654,16 @@ class atom_site:
         self.update()
 
     def __str__(self):
+        #number, dim = self.wp.number, self.wp.dim
+        #self.site_symm = site_symm(self.wp.symmetry_m[0], number, dim=dim)
+
         if not hasattr(self, "site_symm"):
             self.site_symm = site_symm(
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
-
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site symmetry: {:s}".format(self.site_symm)
+        s += "Site symmetry: {:s}".format(self.wp.site_symm)
         return s
 
     def __repr__(self):
@@ -728,6 +730,30 @@ class atom_site:
                 if np.sum(diff**2)<1e-4:
                     self.position = coord - np.floor(coord)
                     break
+    def swap_axis(self, swap_id, shift=np.zeros(3)):
+        """
+        sometimes space groups like Pmm2 allows one to swap the a,b axes
+        to get an alternative representation
+        """
+        self.position += shift
+        self.position = self.position[swap_id]
+        self.position -= np.floor(self.position)
+        self.wp, _ = self.wp.swap_axis(swap_id)
+        self.site_symm = site_symm(
+            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
+        )
+        self.update()
+
+    def shift_by_swap(self, swap_id):
+        """
+        check if a shift is needed during swap
+        May occur for special WP in the I/A/B/C/F cases
+        e.g., in space group 71 (Immm), the permutation
+        4j(1/2,0,0.2) -> (0.2,0,1/2) -> 4f(0.7,1/2,0)
+        it requires a shift of (0.5,0.5,0.5)
+        """
+        wp, shift = self.wp.swap_axis(swap_id)
+        return shift
 
     def update(self, pos=None):
         """

@@ -247,10 +247,10 @@ class TestCluster(unittest.TestCase):
         struc.from_random(0, 3, ["C"], [60], 1.0)
         self.assertTrue(struc.valid)
 
-    def test_single_specie(self):
-        struc = pyxtal()
-        struc.from_random(0, "Ih", ["C"], [60], 1.0)
-        self.assertTrue(struc.valid)
+    #def test_single_specie(self):
+    #    struc = pyxtal()
+    #    struc.from_random(0, "Ih", ["C"], [60], 1.0)
+    #    self.assertTrue(struc.valid)
 
     def test_mutiple_species(self):
         struc = pyxtal()
@@ -433,6 +433,26 @@ class Test_operations(unittest.TestCase):
             #strs += "  {:12s}  ".format(inv_op.as_xyz_string())
             #strs += "{:6.3f} {:6.3f} {:6.3f}".format(*coord2)
             #print(strs)
+
+    def test_swap_wp(self):
+        g = Group(38)
+        wp = g[4]
+        wp1, trans = wp.swap_axis([1,0,2])
+        
+        g = Group(71)
+        wp = g[5]
+        wp1, trans = wp.swap_axis([0,2,1])
+        wp1, trans = wp.swap_axis([1,2,0])
+        wp1, trans = wp.swap_axis([2,1,0])
+
+    def test_swap_xtal(self):
+        s = pyxtal()
+        s.from_seed(cif_path+"BTO-Amm2.cif")
+        strucs = s.get_alternatives()
+        self.assertTrue(len(strucs)==1)
+        #s.from_seed(cif_path+"BTO-Amm2.cif")
+        #strucs = s.get_alternatives()
+        #self.assertTrue(len(strucs)==5)
 
 # class TestIO(unittest.TestCase):
 
