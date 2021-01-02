@@ -564,7 +564,10 @@ class Wyckoff_position:
             s += "Point group " + self.symbol
         if self.dim != 0:
             s += "group " + str(self.number)
-        s += " with site symmetry " + self.site_symm
+        #s += " with site symmetry " + self.site_symm
+        s += " with site symmetry " + ss_string_from_ops(
+                self.symmetry_m[0], self.number, dim=self.dim
+        )
         for op in self.ops:
             s += "\n" + op.as_xyz_string()
         self.string = s

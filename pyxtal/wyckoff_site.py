@@ -663,7 +663,7 @@ class atom_site:
             )
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site symmetry: {:s}".format(self.wp.site_symm)
+        s += "Site symmetry: {:s}".format(self.site_symm)
         return s
 
     def __repr__(self):

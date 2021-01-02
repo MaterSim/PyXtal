@@ -591,8 +591,7 @@ class wyckoff_split:
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
         for i, wp1 in enumerate(self.wp1_lists):
-            s += "Origin: {:d}{:s}\n".format(wp1.multiplicity, wp1.letter)
-            s += "After spliting\n"
+            s += "{:d}{:s} -> ".format(wp1.multiplicity, wp1.letter)
 
             for j, wp2 in enumerate(self.wp2_lists[i]):
                 s += "{:d}{:s}\n".format(wp2.multiplicity, wp2.letter)
@@ -622,3 +621,9 @@ def in_lists(mat1, mat2, eps=1e-4, PBC=True):
                 if (diffs*diffs).sum() < 1e-2:
                     return True
         return False
+
+if __name__ == "__main__":
+
+    for id in range(11):
+        sp = wyckoff_split(G=98, idx=id, wp1=['4b', '8f'], group_type='k')
+        print(sp)
