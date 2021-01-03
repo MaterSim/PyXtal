@@ -344,7 +344,19 @@ class Lattice:
         if self.allow_volume_reset is True:
             self.volume = volume
 
-
+    def transform(self, tran):
+        """
+        Transform the lattice, assuming the symmetry does not change        
+        mostly designed for alternative wyckoff set
+        Args: 
+            tran: 3*3 matrix
+        """
+        # only applied to triclinic/monoclinic/orthorhombic
+        matrix = tran.dot(self.matrix)
+        (a,b,c,alpha,beta,gamma) = matrix2para(matrix)
+        alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
+        return self.from_para(a, b, c, alpha, beta, gamma, self.ltype)
+ 
     def swap_axis(self, random=False, ids=None):
         """
         For the lattice

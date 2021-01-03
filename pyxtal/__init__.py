@@ -1088,3 +1088,24 @@ class pyxtal:
                     new_strucs.append(new_struc)
         return new_strucs
 
+    def get_alternative(self, tran, indices):
+        """
+        get alternative structure representations
+
+        Args:
+            tran: affine matrix
+            indices: the list of transformed wps
+
+        Returns:
+            a new pyxtal structure after transformation
+        """
+        new_struc = self.copy()
+        new_struc.lattice = self.lattice.transform(tran[:3,:3])
+        for atom_site in new_struc.atom_sites:
+            atom_site.equivalent_set(tran, indices)
+        new_struc.numIons = int(np.linalg.det(tran[:3,:3]))*self.numIons
+        new_struc._get_formula()
+
+        new_struc.source = "New Wyckoff Set"
+        return new_struc
+

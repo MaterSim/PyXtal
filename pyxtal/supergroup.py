@@ -96,7 +96,7 @@ class supergroup():
                     solutions = list(itertools.product(*results))
                     trials = self.check_freedom(G, solutions)
                     sol = {'group': G, 'id': id, 'splits': trials}
-                    #print(sol)
+                    #print(G, sol)
                     self.solutions.append(sol)
         else: # load the solution
             raise NotImplementedError
@@ -308,6 +308,7 @@ class supergroup():
                     if disp is not None:
                         coord2 += disp 
                     coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
+                    #print(coord1, coord2)
                     dist = coord1 - coord2
                     dist -= np.round(dist)
                     dist = np.dot(dist, self.cell)
@@ -317,9 +318,15 @@ class supergroup():
                 dist = dists[min_ID]
                 coord2 = coord0s[min_ID].copy()
                 
+                #print("---------", wp1.letter, coord1, coord2, disp, dist)
+                #print(splitter)
+                #print(splitter.R)
                 if disp is None:
                     coord1 = apply_ops(coord2, ops_G2)[0]
                     disp = (coord1 - coord2).copy()
+                    # temporary fix
+                    if abs(disp[0] + disp[1]) < 1e-2:
+                        disp[:2] = 0
                 elif dist < d_tol:
                     coord1 = ops_G2[0].operate(coord2+disp)
                     if round(np.trace(ops_G2[0].rotation_matrix)) in [1, 2]:
@@ -368,9 +375,13 @@ class supergroup():
                     return 10000, None
 
                 # recover the original position
-                #print(op)
-                #print(op.as_xyz_string())
-                inv_op = get_inverse(op)
+                try:
+                    inv_op = get_inverse(op)
+                except:
+                    print("Error in getting the inverse")
+                    print(op)
+                    print(op.as_xyz_string())
+                    import sys; sys.exit()
                 coord1 = inv_op.operate(tmp)
                 if disp is not None:
                     coord1 -= disp
@@ -664,27 +675,37 @@ if __name__ == "__main__":
     #s.from_seed("pyxtal/database/cifs/GeF2.cif")
     #s.from_seed("pyxtal/database/cifs/B28.cif")
     #s.from_seed("pyxtal/database/cifs/PPO.cif")
-    s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif")
+    #s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif")
     #s.from_seed("pyxtal/database/cifs/PVO.cif")
     #s.from_seed("pyxtal/database/cifs/MPWO.cif")
-    #s.from_seed("test2.cif")
+    #s.from_seed("pyxtal/database/cifs/NbO2.cif")
+    s.from_seed("test2.cif")
+    #s.from_seed("SiO2-98.cif")
     print(s)
-    strucs = s.get_alternatives()
-    print(strucs)
+    #strucs = s.get_alternatives()
+    #print(strucs)
     #for i, struc in enumerate(strucs):
     #my = supergroup(s, G=[165, 167])
-    my = supergroup(s)
-    solutions = my.search_supergroup(d_tol=0.90)
+
+    letters = 'abcdefghijklmnopqrstuvwxyz'
+    tran = np.array([[0,1,0,1/2],[1,0,0,0],[0,0,1,0],[0,0,0,1]])
+    letters1 = 'd a b c g h f e j i k m l n o'.replace(" ", "")
+    indices = [len(letters1)-1-letters.index(i) for i in letters1]
+    indices.reverse()
+    s1 = s.get_alternative(tran, indices)
+
+    my = supergroup(s1)
+    solutions = my.search_supergroup(d_tol=1.0)
     G_strucs = my.make_supergroup(solutions)
     if len(G_strucs)>0:
         G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
         my = supergroup(G_strucs[0])
         solutions = my.search_supergroup(d_tol=0.90)
         G_strucs = my.make_supergroup(solutions)
-        G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
-        if len(G_strucs)>0:
-            my = supergroup(G_strucs[-1])
-            solutions = my.search_supergroup(d_tol=0.60)
-            G_strucs = my.make_supergroup(solutions)
-            G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
+        #if len(G_strucs)>0:
+        #    G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
+        #    my = supergroup(G_strucs[-1])
+        #    solutions = my.search_supergroup(d_tol=0.60)
+        #    G_strucs = my.make_supergroup(solutions)
+        #    G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
 

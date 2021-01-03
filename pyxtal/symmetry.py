@@ -589,6 +589,25 @@ class Wyckoff_position:
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                 self.ops[j] = op1    
 
+    def equivalent_set(self, index):
+        """
+        Transform the wp to another equivalent set.
+        Needs to update both wp and positions
+
+        Args:
+            transformation: index
+        """
+        if self.index > 0:
+            G = Group(self.number)
+            if len(G[index]) != len(G[self.index]):
+                msg = "Spg {:d}, Invalid switch in Wyckoff Position\n".format(self.number)
+                msg += str(self)
+                msg += "\n"+str(G[index])
+                raise ValueError(msg)
+            else:
+                return G[index]
+        return self
+
 
     def swap_axis(self, swap_id):
         """
@@ -1010,6 +1029,16 @@ def choose_wyckoff_molecular(group, number, site, orientations, general_site=Tru
 
 # -------------------- quick utilities for symmetry conversion ----------------
 def swap_xyz_string(xyzs, permutation):
+    """
+    Permutate the xyz string operation
+
+    Args:
+        xyzs: e.g. ['x', 'y+1/2', '-z']
+        permuation: list, e.g., [0, 2, 1]
+
+    Returns:
+        the new xyz string after transformation
+    """
     if permutation == [0,1,2]:
         return xyzs
     else:
@@ -1039,6 +1068,16 @@ def swap_xyz_string(xyzs, permutation):
         return new
 
 def swap_xyz_ops(ops, permutation):
+    """
+    change the symmetry operation by swaping the axes
+
+    Args: 
+        ops: SymmOp object
+        permutation: list, e.g. [0, 1, 2]
+
+    Returns:
+        the new xyz string after transformation
+    """
     if permutation == [0,1,2]:
         return ops
     else:
@@ -1054,6 +1093,21 @@ def swap_xyz_ops(ops, permutation):
             new.append(SymmOp(m))
         return new
 
+def op_transform(ops, affine_matrix):
+    """
+    x, y, z -> x+1/2, y+1/2, z
+    0, 1/2, z -> 1/2, 0, z
+
+    Args: 
+        ops: SymmOp object
+        permutation: list, e.g. [0, 1, 2]
+
+    Returns:
+        the new SymmOp object
+    """
+    matrix2 = affine_matrix.dot(ops.affine_matrix)
+    return SymmOp(matrix2)
+
 def op_translation(op, tran):
     m = op.affine_matrix.copy()
     m[:3,3] += tran
@@ -1064,6 +1118,9 @@ def op_translation(op, tran):
     return SymmOp(m)
 
 def are_equivalent_ops(op1, op2, tol=1e-2):
+    """
+    check if two ops are equivalent
+    """
     diff = op1.affine_matrix - op2.affine_matrix
     diff[:,3] -= np.round(diff[:,3])
     diff = np.abs(diff.flatten())
@@ -1073,8 +1130,6 @@ def are_equivalent_ops(op1, op2, tol=1e-2):
         return False
         
 
-
-#
 
 # TODO: Use Group object instead of organized array
 def letter_from_index(index, group, dim=3):

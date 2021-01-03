@@ -407,7 +407,8 @@ class Test_operations(unittest.TestCase):
 			   [0.350,  0.350,  0.400],
 			   [0.350,  0.350,  0.500],
 			   [0.350,  0.350,  0.000],
-			   [0.350,  0.350,  0.350]
+			   [0.350,  0.350,  0.350],
+			   [0.350,  0.000,  0.000],
 			 ])
         xyzs = ['x,y,z',
                 'x,y,0',
@@ -418,6 +419,7 @@ class Test_operations(unittest.TestCase):
                 'x,-x,1/2',
                 '2x,x,0',
                 '-2x, -0.5x, -x+1/4',
+                '0,0,x'
                 ]
         
         for i, xyz in enumerate(xyzs):

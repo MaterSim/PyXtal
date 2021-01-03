@@ -19,6 +19,7 @@ from pyxtal.operations import (
     project_point, 
     filtered_coords, 
     create_matrix,
+    SymmOp,
 )
 from pyxtal.symmetry import Group, jk_from_i, Wyckoff_position
 from pyxtal.symmetry import ss_string_from_ops as site_symm
@@ -754,6 +755,24 @@ class atom_site:
         """
         wp, shift = self.wp.swap_axis(swap_id)
         return shift
+
+    def equivalent_set(self, tran, indices):
+        """
+        Transform the wp to another equivalent set.
+        Needs to update both wp and positions
+
+        Args:
+            tran: affine matrix
+            indices: the list of transformed wps 
+        """
+        self.position = SymmOp(tran).operate(self.position)
+        self.position -= np.floor(self.position)
+        self.wp = self.wp.equivalent_set(indices[self.wp.index]) #update the wp index
+        self.site_symm = site_symm(
+            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
+        )
+        self.update()
+
 
     def update(self, pos=None):
         """
