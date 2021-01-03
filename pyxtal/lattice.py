@@ -205,7 +205,8 @@ class Lattice:
             cell = np.dot(tran, self.matrix)
             if id > 0:
                 opt = True
-            return Lattice.from_matrix(cell, ltype=self.ltype), tran, opt
+            #print(cell); import sys; sys.exit()
+            return Lattice.from_matrix(cell, ltype=self.ltype, reset=False), tran, opt
         else:
             return self, np.eye(3), opt
 
@@ -567,7 +568,7 @@ class Lattice:
         return l
 
     @classmethod
-    def from_matrix(self, matrix, ltype="triclinic", PBC=[1, 1, 1], **kwargs):
+    def from_matrix(self, matrix, reset=True, ltype="triclinic", PBC=[1, 1, 1], **kwargs):
         """
         Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
         are available. Unless specified by the keyword random=True, does not create a
@@ -609,24 +610,24 @@ class Lattice:
             printx("Error: Lattice matrix must be 3x3", priority=1)
             return
         [a, b, c, alpha, beta, gamma] = matrix2para(m)
-
-        if ltype in ['cubic', 'Cubic']:
-            a = b = c = (a+b+c)/3
-            alpha = beta = gamma = np.pi/2
-        elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
-            a = b = (a+b)/2
-            alpha = beta = np.pi/2
-            gamma = np.pi*2/3
-        elif ltype in ['tetragonal', 'Tetragonal']:
-            a = b = (a+b)/2
-            alpha = beta = gamma = np.pi/2
-        elif ltype in ['orthorhombic', 'Orthorhombic']:
-            alpha = beta = gamma = np.pi/2
-        elif ltype in ['monoclinic', 'Monoclinic']:
-            alpha = gamma = np.pi/2
-        
-        # reset matrix according to the symmetry
-        m = para2matrix([a, b, c, alpha, beta, gamma])
+        if reset:
+            if ltype in ['cubic', 'Cubic']:
+                a = b = c = (a+b+c)/3
+                alpha = beta = gamma = np.pi/2
+            elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
+                a = b = (a+b)/2
+                alpha = beta = np.pi/2
+                gamma = np.pi*2/3
+            elif ltype in ['tetragonal', 'Tetragonal']:
+                a = b = (a+b)/2
+                alpha = beta = gamma = np.pi/2
+            elif ltype in ['orthorhombic', 'Orthorhombic']:
+                alpha = beta = gamma = np.pi/2
+            elif ltype in ['monoclinic', 'Monoclinic']:
+                alpha = gamma = np.pi/2
+            
+            # reset matrix according to the symmetry
+            m = para2matrix([a, b, c, alpha, beta, gamma])
         
         # Initialize a Lattice instance
         volume = np.linalg.det(m)

@@ -48,7 +48,7 @@ class TestOptLat(unittest.TestCase):
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
         
         c3 = pyxtal()
-        c3.from_seed("pyxtal/database/cifs/LiCs.cif")
+        c3.from_seed(cif_path+"LiCs.cif")
         pmg3 = c3.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg3))
 

@@ -936,7 +936,6 @@ class pyxtal:
         for i in range(iterations):
             lattice, trans, opt = self.lattice.optimize()
             #print(self.lattice, "->", lattice)
-            #print(trans)
             if opt:
                 if self.molecular:
                     sites = self.mol_sites
@@ -945,14 +944,13 @@ class pyxtal:
 
                 for j, site in enumerate(sites):
                     count += 1
-                    ops = site.wp.ops.copy()
                     pos_abs = np.dot(site.position, self.lattice.matrix)
                     pos_frac = pos_abs.dot(lattice.inv_matrix)
                     pos_frac -= np.floor(pos_frac)
-                    #print(site.position, "->", pos_frac)
                     if self.molecular:
                         site.lattice = lattice
                     # for P21/c, Pc, C2/c, check if opt the inclination angle
+                    ops = site.wp.ops.copy()
                     diag = False
                     if self.group.number in [7, 14, 15]:
                         for k, op in enumerate(ops):
