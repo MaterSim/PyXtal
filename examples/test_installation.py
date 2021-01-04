@@ -44,4 +44,5 @@ if abs(s.get_potential_energy())<1e-8:
 print("launch the GULP calculator")
 from pyxtal.interface.gulp import single_optimize as opt_gulp
 s, eng, time, error = opt_gulp(ase_struc, ff='tersoff.lib', path=calc_folder, clean=False)
-print(eng)
+print(eng*sum(s.numIons))
+#s.to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)

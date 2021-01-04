@@ -585,7 +585,7 @@ class pyxtal:
                             trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
                             multiple = sum(trail_struc.numIons)/sum(self.numIons)
                             max_cell = max([1, max_cell/multiple])
-                            ans = trail_struc.subgroup_once(eps, permutations, group_type, max_cell)
+                            ans = trail_struc.subgroup_once(eps, H, permutations, group_type, max_cell)
                             if ans.group.number > 1:
                                 return ans
                     else:
@@ -685,10 +685,10 @@ class pyxtal:
             for id in idx:
                 if id >= len(Hs):
                     raise ValueError("The idx exceeds the number of possible splits")
-
+        
         if H is not None: 
             idx = [id for id in idx if Hs[id] == H]
-        
+
         if len(idx) == 0:
             raise RuntimeError("Cannot find the splitter")
 
