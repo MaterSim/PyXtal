@@ -115,19 +115,21 @@ class wyckoff_split:
         self.index=self.wyc['index'][idx]
         #import sys; sys.exit()
 
-    def split_t(self, wp1, wp2_lists):
-
+    def split_t(self, wp1, wp2_lists, quadrant=None):
         """
         split the generators in w1 to different w2s
         """
-        #print("split t")
-        #print(wp1)
-        #This functionality uses wyckoff relations in order to create a coordinate mapping between subgroups
-        # of type t. It uses the known wyckoff orbits of the supergroup, converts the orbits of these positions
-        #into the basis of the subgroup, then generates the entire subgroup mapping through applying all of the known
-        #orbits of the subgroup to one of the an acting generator orbit from the supergroup. The connecting group or orbits
-        #written in the basis of the subgroup and be converted back into the orbits of the supergroup position through
-        #the transformation matrix.
+        if self.counter==0:
+            self.proper_wp1=[]
+            [self.proper_wp1.append(np.array(x.as_dict()['matrix'])) for x in wp1]
+            self.original_tau_list=[x[:3,3] for x in self.proper_wp1]
+            for k,x in enumerate(self.original_tau_list):
+                for j in range(3):
+                    self.original_tau_list[k][j]=self.original_tau_list[k][j]%1
+                self.original_tau_list[k]=self.original_tau_list[k].round(4)
+            for k,x in enumerate(self.proper_wp1):
+                self.proper_wp1[k][:3,3]=self.original_tau_list[k]
+                self.proper_wp1[k]=SymmOp(self.proper_wp1[k])
 
         wp1_generators_visited = []
         wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
@@ -136,35 +138,24 @@ class wyckoff_split:
         G2_orbits = []
         factor = max([1,np.linalg.det(self.R)])
 
-
-        quadrant=deepcopy(self.inv_R[:3,3]) # The orientation of the translation components of these orbits
-                                            #is an important feature. It is not always conserved
-                                            #through the matrix operations, and the starting orbits of the known
-                                            #supergroup coordinates are often presented in a way to make the
-                                            #To make the translation components in the subgroup basis be consistent.
-                                            #There are several modulos and translation shifts in the code to ensure that
-                                            #the orbits stay consistent in how their translation components are
-                                            #oriented between either the [-1,0) or [0,1) ranges. THe proper orientation is
-                                            #the directions the translations components are pointing when examining
-                                            #the inverse transformation matrix.
-
-        quadrant[np.abs(quadrant)<1e-5]=0
-        for i in range(3):
-            if quadrant[i]>=0:
-                quadrant[i]=1
-            else:
-                quadrant[i]=-1
-
+        if quadrant is None:
+            quadrant=deepcopy(self.inv_R[:3,3])
+            quadrant[np.abs(quadrant)<1e-5]=0
+            for i in range(3):
+                if quadrant[i]>=0:
+                    quadrant[i]=1
+                else:
+                    quadrant[i]=-1
         for wp2 in wp2_lists:
 
             for l,gen in enumerate(wp1_generators):
+
                 good_generator = False
 
 
                 trans_generator = np.matmul(self.inv_R, gen)
                 trans_generator[np.abs(trans_generator)<1e-5]=0
-                trans_generator[np.abs(trans_generator-1)<1e-5]=1
-                trans_generator[np.abs(trans_generator+1)<1e-5]=-1
+
                 for i in range(3):
                     trans_generator[i][3]=trans_generator[i][3]%quadrant[i]
                     if trans_generator[i][3]==0 and quadrant[i]==-1:
@@ -173,12 +164,11 @@ class wyckoff_split:
                 g1_orbits = []
                 g2_orbits = []
                 strs = []
+
                 for i, wp in enumerate(wp2):
 
                     new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
                     new_basis_orbit[np.abs(new_basis_orbit)<1e-5]=0
-                    new_basis_orbit[np.abs(new_basis_orbit-1)<1e-5]=1
-                    new_basis_orbit[np.abs(new_basis_orbit+1)<1e-5]=-1
                     for j in range(3):
                         new_basis_orbit[j,3]=new_basis_orbit[j,3]%quadrant[j]
                         if new_basis_orbit[j,3]==0 and quadrant[j]==-1:
@@ -192,19 +182,29 @@ class wyckoff_split:
                     tmp = deepcopy(old_basis_orbit)
                     tmp[3,:] = [0, 0, 0, 1]
                     if i==0:
-                        #ensures the chosen orbit to generate the rest of the subgroup_basis orbits is good
-                        if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators):
+                        truth=True
+                        if self.counter!=0:
+
+                            tau=tmp[:3,3]
+                            for j in range(3):
+                                tau[j]=tau[j]%1
+                            tau=tau.round(4)
+                            temporary=deepcopy(tmp)
+                            temporary[:3,3]=tau
+                            temporary=SymmOp(temporary)
+                            truth=any([temporary==x for x in self.proper_wp1])
+                        if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators) and truth:
 
                             good_generator = True
 
                         else:
                             break
-                    if self.counter!=0 and in_lists(new_basis_orbit,g2_orbits):
+                    # to consider PBC
+                    g1_orbits.append(old_basis_orbit)
+                    if self.counter>=1 and in_lists(new_basis_orbit,g2_orbits):
                         good_generator=False
                         break
-                    g1_orbits.append(old_basis_orbit)
                     g2_orbits.append(new_basis_orbit)
-
 
 
                 if good_generator:
@@ -217,31 +217,21 @@ class wyckoff_split:
                     if int(len(temp)*factor) >= len(wp2):
 
                         wp1_generators_visited.extend(temp)
-
                         g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
                         g2_orbits = [SymmOp(orbit) for orbit in g2_orbits]
 
                         G1_orbits.append(g1_orbits)
                         G2_orbits.append(g2_orbits)
-                        break
 
+                        break
             try:
                 self.check_orbits(g1_orbits, wp1, wp2, wp2_lists)
-
-            except ValueError:# This portion is more computationally expensive, and is only called when the more lightweight
-                    #methods above don't work. This is typically ran when there is a splitting that requires a collection
-                    #of starting orbits that are oriented in differet directions than the ones pulled from
-                    #pyxtal. THis causes complications where quite a few splittings schemes cannot be completed
-                    #without testing more orbits oriented in random directions.
-
-                    #The code below uses some of the translations that are displayed in the subgroup orbits in order to
-                    #artifically generate several subgroup_basis orbits that are likely to be attached to group_basis positions
-                    #that will will fit the splitting better than random sampling. This collection of subgroup_positions
-                    #are then oriented and converted back to group_basis positions, where they are sent back into the t-type
-                    #splitter again written in a way that fits better with the splitting scheme.
-                print("restart search on generators")
+            except:
+                if self.counter!=0:
+                    quadrants=[[1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1]]
+                    quadrant=quadrants[self.counter-1]
+                wp1_generators=wp1_generators[:self.current_wp1_size]
                 wp2_translations=[]
-                new_wp1=[]
                 for wp2 in wp2_lists:
                     wp=[np.array(x.as_dict()['matrix']) for x in wp2]
                     rot=[x[:3,:3] for x in wp]
@@ -249,36 +239,292 @@ class wyckoff_split:
                     translations=[np.array(tau[i]) for i,x in enumerate(rot) if np.array_equal(x,rot[0])]
                     translations=[x-translations[0] for x in translations]
                     wp2_translations.append(translations)
-                subgroup_basis=[np.matmul(self.inv_R, x) for x in wp1_generators]
-                for i,x in enumerate(subgroup_basis):
-                    for translation_set in wp2_translations:
-                        for translation in translation_set:
-                            subgroup_basis[i][np.abs(subgroup_basis[i])<1e-5]=0
-                            subgroup_basis[i][np.abs(subgroup_basis[i]-1)<1e-5]=1
-                            subgroup_basis[i][np.abs(subgroup_basis[i]+1)<1e-5]=-1
-                            for j in range(3):
-                                if quadrant[j]==1:
-                                    subgroup_basis[i][j][3]+=(translation[j])%1
-                                    subgroup_basis[i][j][3]=subgroup_basis[i][j][3]%1
+                new_wp1=[]
+                for translation_set in wp2_translations:
+                    for translation in translation_set:
+                        for gen in wp1_generators:
+                            orbit=np.matmul(self.inv_R,gen)
+                            orbit[np.abs(orbit)<1e-5]=0
+                            orbit[np.abs(orbit-1)<1e-5]=1
+                            orbit[np.abs(orbit+1)<1e-5]=-1
+
+                            for i in range(3):
+                                if quadrant[i]==1:
+                                    orbit[i][3]+=(translation[i])%1
+                                    orbit[i][3]=orbit[i][3]%1
                                 else:
-                                    subgroup_basis[i][j][3]+=(translation[j])%-1
-                                    subgroup_basis[i][np.abs(subgroup_basis[i])<1e-5]=0
-                                    subgroup_basis[i][np.abs(subgroup_basis[i]-1)<1e-5]=1
-                                    subgroup_basis[i][np.abs(subgroup_basis[i]+1)<1e-5]=-1
-                                    if subgroup_basis[i][j][3]==0:
-                                        subgroup_basis[i][j][3]=-1
-                                    elif subgroup_basis[i][j][3]!=-1:
-                                        subgroup_basis[i][j][3]=subgroup_basis[i][j][3]%-1
-                            orbit=np.matmul(self.R,subgroup_basis[i])
+
+                                    orbit[i][3]+=(translation[i])%-1
+                                    orbit[np.abs(orbit)<1e-5]=0
+                                    orbit[np.abs(orbit-1)<1e-5]=1
+                                    orbit[np.abs(orbit+1)<1e-5]=-1
+                                    if orbit[i][3]==0:
+                                        orbit[i][3]=-1
+                                    elif orbit[i][3]!=-1:
+                                        orbit[i][3]=orbit[i][3]%-1
+                            orbit=np.matmul(self.R,orbit)
                             orbit[np.abs(orbit)<1e-5]=0
                             orbit[np.abs(orbit-1)<1e-5]=1
                             orbit[np.abs(orbit+1)<1e-5]=-1
                             orbit=SymmOp(orbit)
+
                             if orbit not in new_wp1:
                                 new_wp1.append(orbit)
-                self.counter+=1
-                return self.split_t(new_wp1, wp2_lists)
+                self.counter += 1
+                if self.counter == 5:
+                    self.valid_split = False
+                    self.error = True
+                    return None, None
+                return self.split_t(new_wp1, wp2_lists, quadrant=quadrant)
         return G1_orbits, G2_orbits
+
+    #def split_t(self, wp1, wp2_lists, quadrant=None):
+
+    #    """
+    #    split the generators in w1 to different w2s
+    #    """
+    #    #print("split t")
+    #    #print(wp1)
+    #    if self.counter==0:
+    #        self.proper_wp1=[]
+    #        [self.proper_wp1.append(np.array(x.as_dict()['matrix'])) for x in wp1]
+    #        self.original_tau_list=[x[:3,3] for x in self.proper_wp1]
+    #        for k,x in enumerate(self.original_tau_list):
+    #            for j in range(3):
+    #                self.original_tau_list[k][j]=self.original_tau_list[k][j]%1
+    #            self.original_tau_list[k]=self.original_tau_list[k].round(4)
+    #        for k,x in enumerate(self.proper_wp1):
+    #            self.proper_wp1[k][:3,3]=self.original_tau_list[k]
+    #            self.proper_wp1[k]=SymmOp(self.proper_wp1[k])
+    #    #This functionality uses wyckoff relations in order to create a coordinate mapping between subgroups
+    #    # of type t. It uses the known wyckoff orbits of the supergroup, converts the orbits of these positions
+    #    #into the basis of the subgroup, then generates the entire subgroup mapping through applying all of the known
+    #    #orbits of the subgroup to one of the an acting generator orbit from the supergroup. The connecting group or orbits
+    #    #written in the basis of the subgroup and be converted back into the orbits of the supergroup position through
+    #    #the transformation matrix.
+
+    #    wp1_generators_visited = []
+    #    wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
+
+    #    G1_orbits = []
+    #    G2_orbits = []
+    #    factor = max([1,np.linalg.det(self.R)])
+
+    #    if quadrant is None:
+    #        quadrant=deepcopy(self.inv_R[:3,3])
+    #        quadrant[np.abs(quadrant)<1e-5]=0
+    #        for i in range(3):
+    #            if quadrant[i]>=0:
+    #                quadrant[i]=1
+    #            else:
+    #                quadrant[i]=-1
+
+
+    #    #quadrant=deepcopy(self.inv_R[:3,3]) # The orientation of the translation components of these orbits
+    #    #                                    #is an important feature. It is not always conserved
+    #    #                                    #through the matrix operations, and the starting orbits of the known
+    #    #                                    #supergroup coordinates are often presented in a way to make the
+    #    #                                    #To make the translation components in the subgroup basis be consistent.
+    #    #                                    #There are several modulos and translation shifts in the code to ensure that
+    #    #                                    #the orbits stay consistent in how their translation components are
+    #    #                                    #oriented between either the [-1,0) or [0,1) ranges. THe proper orientation is
+    #    #                                    #the directions the translations components are pointing when examining
+    #    #                                    #the inverse transformation matrix.
+
+    #    #quadrant[np.abs(quadrant)<1e-5]=0
+    #    #for i in range(3):
+    #    #    if quadrant[i]>=0:
+    #    #        quadrant[i]=1
+    #    #    else:
+    #    #        quadrant[i]=-1
+
+    #    for wp2 in wp2_lists:
+
+    #        for l,gen in enumerate(wp1_generators):
+    #            good_generator = False
+
+
+    #            trans_generator = np.matmul(self.inv_R, gen)
+    #            trans_generator[np.abs(trans_generator)<1e-5]=0
+    #            #trans_generator[np.abs(trans_generator-1)<1e-5]=1
+    #            #trans_generator[np.abs(trans_generator+1)<1e-5]=-1
+    #            for i in range(3):
+    #                trans_generator[i][3]=trans_generator[i][3]%quadrant[i]
+    #                if trans_generator[i][3]==0 and quadrant[i]==-1:
+    #                    trans_generator[i][3]=-1
+
+    #            g1_orbits = []
+    #            g2_orbits = []
+    #            strs = []
+    #            for i, wp in enumerate(wp2):
+
+    #                new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
+    #                new_basis_orbit[np.abs(new_basis_orbit)<1e-5]=0
+    #                new_basis_orbit[np.abs(new_basis_orbit-1)<1e-5]=1
+    #                new_basis_orbit[np.abs(new_basis_orbit+1)<1e-5]=-1
+    #                for j in range(3):
+    #                    new_basis_orbit[j,3]=new_basis_orbit[j,3]%quadrant[j]
+    #                    if new_basis_orbit[j,3]==0 and quadrant[j]==-1:
+    #                        new_basis_orbit[j,3]=-1
+    #                
+    #                
+    #                old_basis_orbit = np.matmul(self.R, new_basis_orbit)
+    #                old_basis_orbit[np.abs(old_basis_orbit)<1e-5]=0
+    #                old_basis_orbit[np.abs(old_basis_orbit-1)<1e-5]=1
+    #                old_basis_orbit[np.abs(old_basis_orbit+1)<1e-5]=-1
+    #                tmp = deepcopy(old_basis_orbit)
+    #                tmp[3,:] = [0, 0, 0, 1]
+    #                if i==0:
+    #                    #ensures the chosen orbit to generate the rest of the subgroup_basis orbits is good
+    #                    truth=True
+    #                    if self.counter!=0:
+    #                
+    #                        tau=tmp[:3,3]
+    #                        for j in range(3):
+    #                            tau[j]=tau[j]%1
+    #                        tau=tau.round(4)
+    #                        temporary=deepcopy(tmp)
+    #                        temporary[:3,3]=tau
+    #                        temporary=SymmOp(temporary)
+    #                        truth=any([temporary==x for x in self.proper_wp1])
+    #                    if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators) and truth:
+    #                    #if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators):
+    #                        good_generator = True
+    #                    else:
+    #                        break
+    #                g1_orbits.append(old_basis_orbit)
+    #                if self.counter>=1 and in_lists(new_basis_orbit,g2_orbits):
+    #                #if self.counter!=0 and in_lists(new_basis_orbit,g2_orbits):
+    #                    good_generator=False
+    #                    break
+    #                #g1_orbits.append(old_basis_orbit)
+    #                g2_orbits.append(new_basis_orbit)
+
+
+
+    #            if good_generator:
+
+    #                temp=[]
+
+    #                for gen in g1_orbits:
+    #                    if not in_lists(gen, temp,PBC=False):
+    #                        temp.append(gen)
+    #                if int(len(temp)*factor) >= len(wp2):
+
+    #                    wp1_generators_visited.extend(temp)
+
+    #                    g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
+    #                    g2_orbits = [SymmOp(orbit) for orbit in g2_orbits]
+
+    #                    G1_orbits.append(g1_orbits)
+    #                    G2_orbits.append(g2_orbits)
+    #                    break
+
+    #        try:
+    #            self.check_orbits(g1_orbits, wp1, wp2, wp2_lists)
+
+    #        except ValueError:
+    #        # This portion is more computationally expensive, and is only called when the more lightweight
+    #        #methods above don't work. This is typically ran when there is a splitting that requires a collection
+    #        #of starting orbits that are oriented in differet directions than the ones pulled from
+    #        #pyxtal. THis causes complications where quite a few splittings schemes cannot be completed
+    #        #without testing more orbits oriented in random directions.
+
+    #        #The code below uses some of the translations that are displayed in the subgroup orbits in order to
+    #        #artifically generate several subgroup_basis orbits that are likely to be attached to group_basis positions
+    #        #that will will fit the splitting better than random sampling. This collection of subgroup_positions
+    #        #are then oriented and converted back to group_basis positions, where they are sent back into the t-type
+    #        #splitter again written in a way that fits better with the splitting scheme.
+    #            print("restart search on generators")
+    #            if self.counter!=0:
+    #                quadrants=[[1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1]]
+    #                quadrant=quadrants[self.counter-1]
+
+    #            wp1_generators=wp1_generators[:self.current_wp1_size]
+    #            wp2_translations=[]
+    #            for wp2 in wp2_lists:
+    #                wp=[np.array(x.as_dict()['matrix']) for x in wp2]
+    #                rot=[x[:3,:3] for x in wp]
+    #                tau=[x[:3,3] for x in wp]
+    #                translations=[np.array(tau[i]) for i,x in enumerate(rot) if np.array_equal(x,rot[0])]
+    #                translations=[x-translations[0] for x in translations]
+    #                wp2_translations.append(translations)
+    #            new_wp1=[]
+    #            for translation_set in wp2_translations:
+    #                for translation in translation_set:
+    #                    for gen in wp1_generators:
+    #                        orbit=np.matmul(self.inv_R,gen)
+    #                        orbit[np.abs(orbit)<1e-5]=0
+    #                        orbit[np.abs(orbit-1)<1e-5]=1
+    #                        orbit[np.abs(orbit+1)<1e-5]=-1
+    #            
+    #                        for i in range(3):
+    #                            if quadrant[i]==1:
+    #                                orbit[i][3]+=(translation[i])%1
+    #                                orbit[i][3]=orbit[i][3]%1
+    #                            else:
+    #            
+    #                                orbit[i][3]+=(translation[i])%-1
+    #                                orbit[np.abs(orbit)<1e-5]=0
+    #                                orbit[np.abs(orbit-1)<1e-5]=1
+    #                                orbit[np.abs(orbit+1)<1e-5]=-1
+    #                                if orbit[i][3]==0:
+    #                                    orbit[i][3]=-1
+    #                                elif orbit[i][3]!=-1:
+    #                                    orbit[i][3]=orbit[i][3]%-1
+    #                        orbit=np.matmul(self.R,orbit)
+    #                        orbit[np.abs(orbit)<1e-5]=0
+    #                        orbit[np.abs(orbit-1)<1e-5]=1
+    #                        orbit[np.abs(orbit+1)<1e-5]=-1
+    #                        orbit=SymmOp(orbit)
+    #            
+    #                        if orbit not in new_wp1:
+    #                            new_wp1.append(orbit)
+    #            self.counter += 1
+    #            if self.counter == 5:
+    #                self.valid_split = False
+    #                self.error = True
+    #                return None, None
+    #            return self.split_t(new_wp1, wp2_lists, quadrant=quadrant)
+    #            #wp2_translations=[]
+    #            #new_wp1=[]
+    #            #for wp2 in wp2_lists:
+    #            #    wp=[np.array(x.as_dict()['matrix']) for x in wp2]
+    #            #    rot=[x[:3,:3] for x in wp]
+    #            #    tau=[x[:3,3] for x in wp]
+    #            #    translations=[np.array(tau[i]) for i,x in enumerate(rot) if np.array_equal(x,rot[0])]
+    #            #    translations=[x-translations[0] for x in translations]
+    #            #    wp2_translations.append(translations)
+    #            #subgroup_basis=[np.matmul(self.inv_R, x) for x in wp1_generators]
+    #            #for i,x in enumerate(subgroup_basis):
+    #            #    for translation_set in wp2_translations:
+    #            #        for translation in translation_set:
+    #            #            subgroup_basis[i][np.abs(subgroup_basis[i])<1e-5]=0
+    #            #            subgroup_basis[i][np.abs(subgroup_basis[i]-1)<1e-5]=1
+    #            #            subgroup_basis[i][np.abs(subgroup_basis[i]+1)<1e-5]=-1
+    #            #            for j in range(3):
+    #            #                if quadrant[j]==1:
+    #            #                    subgroup_basis[i][j][3]+=(translation[j])%1
+    #            #                    subgroup_basis[i][j][3]=subgroup_basis[i][j][3]%1
+    #            #                else:
+    #            #                    subgroup_basis[i][j][3]+=(translation[j])%-1
+    #            #                    subgroup_basis[i][np.abs(subgroup_basis[i])<1e-5]=0
+    #            #                    subgroup_basis[i][np.abs(subgroup_basis[i]-1)<1e-5]=1
+    #            #                    subgroup_basis[i][np.abs(subgroup_basis[i]+1)<1e-5]=-1
+    #            #                    if subgroup_basis[i][j][3]==0:
+    #            #                        subgroup_basis[i][j][3]=-1
+    #            #                    elif subgroup_basis[i][j][3]!=-1:
+    #            #                        subgroup_basis[i][j][3]=subgroup_basis[i][j][3]%-1
+    #            #            orbit=np.matmul(self.R,subgroup_basis[i])
+    #            #            orbit[np.abs(orbit)<1e-5]=0
+    #            #            orbit[np.abs(orbit-1)<1e-5]=1
+    #            #            orbit[np.abs(orbit+1)<1e-5]=-1
+    #            #            orbit=SymmOp(orbit)
+    #            #            if orbit not in new_wp1:
+    #            #                new_wp1.append(orbit)
+    #            #self.counter+=1
+    #            #return self.split_t(new_wp1, wp2_lists)
+    #    return G1_orbits, G2_orbits
 
     def split_k(self, wp1, wp2_lists):
         """

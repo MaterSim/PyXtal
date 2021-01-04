@@ -207,7 +207,7 @@ class supergroup():
         disps = []
         for mapping in mappings:
             #disp = None #np.array([0.0, 0.0, 0.222222])
-            dist, disp = self.symmetrize_dist(splitter, mapping, None, d_tol)
+            dist, disp, mask = self.symmetrize_dist(splitter, mapping, None, None, d_tol)
             dists.append(dist)
             disps.append(disp)
         dists = np.array(dists)
@@ -216,9 +216,9 @@ class supergroup():
         disp = disps[id]
         if (mae > 0.2) and (mae < d_tol):
             # optimize further
-            def fun(disp, mapping, splitter):
-                return self.symmetrize_dist(splitter, mapping, disp)[0]
-            res = minimize(fun, disps[id], args=(mappings[id], splitter),
+            def fun(disp, mapping, splitter, mask):
+                return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
+            res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
                     method='Nelder-Mead', options={'maxiter': 20})
             if res.fun < mae:
                 mae = res.fun
@@ -271,7 +271,7 @@ class supergroup():
                 unique_solutions.append(solution)
         return unique_solutions
         
-    def symmetrize_dist(self, splitter, solution, disp=None, d_tol=1.2):
+    def symmetrize_dist(self, splitter, solution, disp=None, mask=None, d_tol=1.2):
         """
         For a given solution, search for the possbile supergroup structure
 
@@ -325,8 +325,13 @@ class supergroup():
                     coord1 = apply_ops(coord2, ops_G2)[0]
                     disp = (coord1 - coord2).copy()
                     # temporary fix
-                    if abs(disp[0] + disp[1]) < 1e-2:
-                        disp[:2] = 0
+                    xyz1 = ops_H[0].as_xyz_string().split(',')
+                    xyz2 = ops_G2[0].as_xyz_string().split(',')
+                    mask = [m for m in range(3) if xyz1[m]==xyz2[m]]
+                    #disp[mask] = 0
+                    #if abs(disp[0] + disp[1]) < 1e-2:
+                    #    disp[:2] = 0
+                    #print(disp, coord1, coord2)
                 elif dist < d_tol:
                     coord1 = ops_G2[0].operate(coord2+disp)
                     if round(np.trace(ops_G2[0].rotation_matrix)) in [1, 2]:
@@ -344,8 +349,9 @@ class supergroup():
                         coord1[0] = res.x[0]
                         coord1 = ops_G2[0].operate(coord1)
                 else:
-                    return 10000, None
-                
+                    return 10000, None, None
+                if mask is not None:
+                    disp[mask] = 0
                 diff = coord1-(coord2+disp)
                 diff -= np.round(diff)
                 max_disps.append(np.linalg.norm(np.dot(diff, self.cell)))
@@ -372,7 +378,7 @@ class supergroup():
                     coords11[m] = op.operate(coord11)
                 tmp, dist = get_best_match(coords11, coord22, self.cell)
                 if dist > np.sqrt(2)*d_tol:
-                    return 10000, None
+                    return 10000, None, mask
 
                 # recover the original position
                 try:
@@ -394,7 +400,7 @@ class supergroup():
 
                 max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
 
-        return max(max_disps), disp
+        return max(max_disps), disp, mask
 
     def symmetrize(self, splitter, solution, disp):
         """
@@ -668,18 +674,18 @@ if __name__ == "__main__":
     from pyxtal import pyxtal
     
     s = pyxtal()
-    #s.from_seed("pyxtal/database/cifs/BTO-P4mm.cif")
+    #s.from_seed("pyxtal/database/cifs/BTO.cif")
     #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
     #s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif")
     #s.from_seed("pyxtal/database/cifs/lt_quartz.cif")
     #s.from_seed("pyxtal/database/cifs/GeF2.cif")
-    #s.from_seed("pyxtal/database/cifs/B28.cif")
+    #s.from_seed("pyxtal/database/cifs/B28.vasp")
     #s.from_seed("pyxtal/database/cifs/PPO.cif")
     #s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif")
     #s.from_seed("pyxtal/database/cifs/PVO.cif")
     #s.from_seed("pyxtal/database/cifs/MPWO.cif")
-    #s.from_seed("pyxtal/database/cifs/NbO2.cif")
-    s.from_seed("test2.cif")
+    s.from_seed("pyxtal/database/cifs/NbO2.cif")
+    #s.from_seed("test2.cif")
     #s.from_seed("SiO2-98.cif")
     print(s)
     #strucs = s.get_alternatives()
@@ -687,25 +693,26 @@ if __name__ == "__main__":
     #for i, struc in enumerate(strucs):
     #my = supergroup(s, G=[165, 167])
 
-    letters = 'abcdefghijklmnopqrstuvwxyz'
-    tran = np.array([[0,1,0,1/2],[1,0,0,0],[0,0,1,0],[0,0,0,1]])
-    letters1 = 'd a b c g h f e j i k m l n o'.replace(" ", "")
-    indices = [len(letters1)-1-letters.index(i) for i in letters1]
-    indices.reverse()
-    s1 = s.get_alternative(tran, indices)
+    #letters = 'abcdefghijklmnopqrstuvwxyz'
+    #tran = np.array([[0,1,0,1/2],[1,0,0,0],[0,0,1,0],[0,0,0,1]])
+    #letters1 = 'd a b c g h f e j i k m l n o'.replace(" ", "")
+    #indices = [len(letters1)-1-letters.index(i) for i in letters1]
+    #indices.reverse()
+    #s1 = s.get_alternative(tran, indices)
+    #my = supergroup(s1)
+    my = supergroup(s)
 
-    my = supergroup(s1)
     solutions = my.search_supergroup(d_tol=1.0)
     G_strucs = my.make_supergroup(solutions)
     if len(G_strucs)>0:
-        G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
+        #G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
         my = supergroup(G_strucs[0])
         solutions = my.search_supergroup(d_tol=0.90)
         G_strucs = my.make_supergroup(solutions)
-        #if len(G_strucs)>0:
-        #    G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
-        #    my = supergroup(G_strucs[-1])
-        #    solutions = my.search_supergroup(d_tol=0.60)
-        #    G_strucs = my.make_supergroup(solutions)
-        #    G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
+        if len(G_strucs)>0:
+            #G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
+            my = supergroup(G_strucs[-1])
+            solutions = my.search_supergroup(d_tol=0.60)
+            G_strucs = my.make_supergroup(solutions)
+            #G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
 
