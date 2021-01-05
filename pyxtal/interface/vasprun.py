@@ -199,7 +199,10 @@ class vasprun:
         if varray.get("type") == 'int':
             m = [[int(number) for number in v.text.split()] for v in varray.findall("v")]
         else:
-            m = [[float(number) for number in v.text.split()] for v in varray.findall("v")]
+            try:
+                m = [[float(number) for number in v.text.split()] for v in varray.findall("v")]
+            except ValueError:
+                m = [[0 for number in v.text.split()] for v in varray.findall("v")]
         return m
 
     @staticmethod
@@ -352,13 +355,14 @@ class vasprun:
         for s in dos.find("total").find("array").findall("set"):
             for ss in s.findall("set"):
                 t_dos.append(self.parse_varray_pymatgen(ss))
-        if dos.find("partial") is not None and len(dos.find("partial"))>0:
-            for s in dos.find("partial").find("array").findall("set"):
-                for i, ss in enumerate(s.findall("set")):
-                    p = []
-                    for sss in ss.findall("set"):
-                        p.append(self.parse_varray_pymatgen(sss))
-                    p_dos.append(p)
+        if dos.find("partial") is not None:
+            if len(dos.find("partial"))>0:
+                for s in dos.find("partial").find("array").findall("set"):
+                    for i, ss in enumerate(s.findall("set")):
+                        p = []
+                        for sss in ss.findall("set"):
+                            p.append(self.parse_varray_pymatgen(sss))
+                        p_dos.append(p)
 
         return t_dos, p_dos
 
@@ -414,7 +418,10 @@ class vasprun:
             elif i.tag == "energy":
                 for e in i.findall("i"):
                     if e.attrib.get("name") == "e_fr_energy":
-                        energy = float(e.text)
+                        try: 
+                            energy = float(e.text)
+                        except ValueError:
+                            energy = 100000000
                     else:
                         Warning("No e_fr_energy found in <calculation><energy> tag, energy set to 0.0")
             elif i.tag == "array" and i.attrib.get("name") == "born_charges":
