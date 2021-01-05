@@ -857,15 +857,15 @@ def orientation_in_wyckoff_position(
                     if pga.is_valid_op(old_op):
                         list_i.remove(j)
                         list_j.remove(j)
-    copies = deepcopy(orientations)
-    orientations = []
+    #copies = deepcopy(orientations)
+    orientations_new = []
     for i in list_i:
-        orientations.append(copies[i])
+        orientations_new.append(orientations[i])
 
     #Check each of the found orientations for consistency with the Wyckoff pos.
     #If consistent, put into an array of valid orientations
     allowed = []
-    for o in orientations:
+    for o in orientations_new:
         if randomize is True:
             op = o.get_op("random")
         elif randomize is False:
