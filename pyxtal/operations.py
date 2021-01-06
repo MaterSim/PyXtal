@@ -354,7 +354,6 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
-
 def get_inverse(op):
     """
     Given a SymmOp object, returns its inverse.
@@ -378,23 +377,32 @@ def get_inverse(op):
         if np.linalg.matrix_rank(matrix) == 3:
             # [-3x/2, -x/2, 1/4]
             # [0, x, 1/4]
-            for rows in [[0,1],[1,2],[0,2]]:
+            for rows in [[0,1,2],[1,2,0],[0,2,1]]:
                 #m = (matrix[rows,:])[:,rows] 
                 #print(rows, m)
-                if np.linalg.matrix_rank(matrix[rows,:3]) != 2:
+                if np.linalg.matrix_rank(matrix[rows[:2],:3]) != 2:
                     break
-            id0, id1 = rows[0], rows[1]
+            id0, id1, id2 = rows[0], rows[1], rows[2]
             if matrix[id0, id1] == 0:
                 matrix[id0, id1], matrix[id0, id0] = matrix[id0, id0], matrix[id0, id1]
+                if np.linalg.matrix_rank(matrix) == 3:
+                    matrix[id0, id1], matrix[id0, id2] = matrix[id0, id2], matrix[id0, id1]
             else:
                 matrix[id1, id0], matrix[id1, id1] = matrix[id1, id1], matrix[id1, id0]
+                if np.linalg.matrix_rank(matrix) == 3:
+                    matrix[id1, id0], matrix[id1, id2] = matrix[id1, id2], matrix[id1, id0]
 
         elif np.linalg.matrix_rank(matrix) == 2:
-            # -3x/2, -x/2, -x+1/4 always x, x, x?
-            matrix[1,0], matrix[1,1] = matrix[1,1], matrix[1,0]
-            matrix[2,0], matrix[2,2] = matrix[2,2], matrix[2,0]
-                
-                
+            # -3x/2, -x/2, -x+1/4 
+            if np.sum(matrix[:, 0]**2) > 1e-3:
+                matrix[1,0], matrix[1,1] = matrix[1,1], matrix[1,0]
+                matrix[2,0], matrix[2,2] = matrix[2,2], matrix[2,0]
+            elif np.sum(matrix[:, 1]**2) > 1e-3:
+                matrix[0,1], matrix[0,0] = matrix[0,0], matrix[0,1]
+                matrix[2,1], matrix[2,2] = matrix[2,2], matrix[2,1]
+            else:
+                matrix[0,2], matrix[0,0] = matrix[0,0], matrix[0,2]
+                matrix[1,2], matrix[1,1] = matrix[1,1], matrix[1,2]
     return SymmOp(np.linalg.inv(matrix))
 
 
