@@ -481,19 +481,23 @@ class Group:
                      'idx': [],
                     }
             for sg in range(1, 231):
+                subgroups = None
                 if group_type == 't':
-                    subgroups = Group(sg).get_max_t_subgroup()
+                    if sg>self.number:
+                        subgroups = Group(sg).get_max_t_subgroup()
                 else:
-                    subgroups = Group(sg).get_max_k_subgroup()
-
-                for i, sub in enumerate(subgroups['subgroup']): 
-                    if sub == self.number:
-                        trans = subgroups['transformation'][i]
-                        relation = subgroups['relations'][i]
-                        dicts['supergroup'].append(sg)
-                        dicts['transformation'].append(trans)
-                        dicts['relations'].append(relation)
-                        dicts['idx'].append(i)
+                    g1 = Group(sg)
+                    if g1.lattice_type == self.lattice_type:
+                        subgroups = Group(sg).get_max_k_subgroup()
+                if subgroups is not None:
+                    for i, sub in enumerate(subgroups['subgroup']): 
+                        if sub == self.number:
+                            trans = subgroups['transformation'][i]
+                            relation = subgroups['relations'][i]
+                            dicts['supergroup'].append(sg)
+                            dicts['transformation'].append(trans)
+                            dicts['relations'].append(relation)
+                            dicts['idx'].append(i)
             return dicts
         else:
             raise NotImplementedError("Now we only support the supergroups for space group")
