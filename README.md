@@ -61,17 +61,22 @@ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
 
 ## Citation
 
-Fredericks S, Sayre D, Zhu Q\*(2019)
-[PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis](https://arxiv.org/pdf/1911.11123.pdf)
+Fredericks S, Parrish K, Sayre D, Zhu Q\*(2019)
+[PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis](https://www.sciencedirect.com/science/article/pii/S0010465520304057)
+
+[arXiv link](https://arxiv.org/pdf/1911.11123.pdf)
 
 ```bib
 @article{pyxtal,
-    title={PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis},
-    author={Scott Fredericks and Dean Sayre and Qiang Zhu},
-    year={2019},
-    eprint={1911.11123},
-    archivePrefix={arXiv},
-    primaryClass={cond-mat.mtrl-sci}
+title = "PyXtal: A Python library for crystal structure generation and symmetry analysis",
+journal = "Computer Physics Communications",
+volume = "261",
+pages = "107810",
+year = "2021",
+issn = "0010-4655",
+doi = "https://doi.org/10.1016/j.cpc.2020.107810",
+url = "http://www.sciencedirect.com/science/article/pii/S0010465520304057",
+author = "Scott Fredericks and Kevin Parrish and Dean Sayre and Qiang Zhu",
 }
 ```
 
