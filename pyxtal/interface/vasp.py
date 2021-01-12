@@ -19,7 +19,7 @@ class VASP():
     opt: `conv`, `conp`, `single`
     """
 
-    def __init__(self, struc, path='tmp'):
+    def __init__(self, struc, path='tmp', cmd='mpirun -np 16 vasp_std'):
 
         if isinstance(struc, pyxtal):
             struc = struc.to_ase()
@@ -39,6 +39,7 @@ class VASP():
         self.gap = None
         self.cputime = 0
         self.error = True
+        self.cmd = cmd
     
     def set_vasp(self, level=0, pstress=0.0000, setup=None):
         self.pstress = pstress 
@@ -106,35 +107,53 @@ class VASP():
                 ncore = int(line.split()[2])
             elif line.rfind('Elapsed time ') > -1:
                 time = float(line.split(':')[-1])
-    
         self.cputime = time
         self.ncore = ncore
+
+    def read_OSZICAR(self, path='OSZICAR'):
+        """read the enthalpy from OSZICAR"""
+        energy = 100000
+        for line in open(path, 'r'):
+            if line.rfind(' F= ') > -1:
+                energy = float(line.split()[2])
+        self.energy = energy # this is actually enthalpy
 
     def read_bandgap(self, path='vasprun.xml'):
         from pyxtal.interface.vasprun import vasprun
         myrun = vasprun(path)
         self.gap = myrun.values['gap'] 
 
-    def run(self, setup=None, pstress=0, level=0, clean=True, read_gap=False):
+    def run(self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None):
+        if walltime is not None:
+            os.environ["VASP_COMMAND"] = "timeout " + max_time + " " + self.cmd
+        else:
+            os.environ["VASP_COMMAND"] = self.cmd
         cwd = os.getcwd()
         setups = self.set_vasp(level, pstress, setup)
         self.structure.set_calculator(setups)
+        os.chdir(self.folder)
         try:
-            os.chdir(self.folder)
-            self.energy = self.structure.get_potential_energy()
-            if self.pstress > 0:
-                self.energy += self.pstress * self.structure.get_volume()/160.21766
-            self.energy_per_atom = self.energy/len(self.structure)
-            self.forces = self.structure.get_forces()
-            self.read_OUTCAR()
-            if read_gap:
-                self.read_bandgap()
-            if clean:
-                self.clean()
+            self.structure.get_potential_energy()
             self.error = False
+            self.read_OSZICAR()
+        except RuntimeError:
+            # VASP is not full done
+            self.read_OSZICAR()
+            if self.energy < 10000:
+                self.error = False
         except (ValueError, UnboundLocalError):
             print("Error in parsing vasp output or VASP calc is wrong")
             os.system("cp OUTCAR Error-OUTCAR")
+
+        if not self.error:
+            self.forces = self.structure.get_forces()
+            self.energy_per_atom = self.energy/len(self.structure)
+            self.read_OUTCAR()
+            if read_gap:
+                self.read_bandgap()
+        if clean:
+            self.clean()
+
         os.chdir(cwd)
 
     def clean(self):
@@ -152,7 +171,8 @@ class VASP():
         struc.from_seed(self.structure)
         return struc
 
-def single_optimize(struc, level, pstress, setup, path, clean):
+def single_optimize(struc, level, pstress, setup, path, clean,
+        cmd='mpirun -np 16 vasp_std', walltime="30m"):
     """
     single optmization
 
@@ -166,7 +186,7 @@ def single_optimize(struc, level, pstress, setup, path, clean):
     Returns:
         the structure, energy and time costs
     """
-    calc = VASP(struc, path)
+    calc = VASP(struc, path, cmd=cmd)
     calc.run(setup, pstress, level, clean=clean)
     if calc.error:
         return None, None, 0, True
@@ -179,6 +199,7 @@ def single_optimize(struc, level, pstress, setup, path, clean):
             return None, None, 0, True
 
 def single_point(struc, setup=None, path=None, clean=True):
+
     """
     single optmization
 
@@ -196,7 +217,9 @@ def single_point(struc, setup=None, path=None, clean=True):
     calc.run(setup, level=4, clean=clean)
     return calc.energy, calc.forces, calc.error
 
-def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None, clean=True):
+def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None, 
+        clean=True, cmd='mpirun -np 16 vasp_std', walltime="30m"):
+    
     """
     multi optimization
 
@@ -213,7 +236,9 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None, clean=True):
 
     time_total = 0
     for i, level in enumerate(levels):
-        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path, clean)
+        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path, 
+                clean, cmd, walltime)
+
         time_total += time
         #print(eng, time, time_total, '++++++++++++++++++++++++++++++')
         if error or not good_lattice(struc):
@@ -228,17 +253,22 @@ if __name__ == "__main__":
         if struc.valid:
             break
 
-    calc = VASP(struc, path='tmp')
+    # set up the commands
+    os.system("source /share/intel/mkl/bin/mklvars.sh intel64")
+    cmd='mpirun -n 4 /share/apps/bin/vasp544-2019u2/vasp_std'
+
+    
+    calc = VASP(struc, path='tmp', cmd=cmd)
     calc.run()
     print("Energy:", calc.energy)
     print("Forces", calc.forces)
 
-    struc, eng, time, _ = optimize(struc, path='tmp', levels=[0,1,2])
+    struc, eng, time, _ = optimize(struc, path='tmp', levels=[0,1,2], cmd=cmd, walltime='30s')
     print(struc)
     print("Energy:", eng)
     print("Time:", time)
 
-    calc = VASP(struc, path='tmp')
+    calc = VASP(struc, path='tmp', cmd=cmd)
     calc.run(level=4, read_gap=True)
     print("Energy:", calc.energy)
     print("Gap:", calc.gap)
