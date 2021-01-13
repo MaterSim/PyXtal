@@ -141,12 +141,15 @@ class VASP():
             self.read_OSZICAR()
             if self.energy < 10000:
                 self.error = False
-        except (ValueError, UnboundLocalError):
+        except (IndexError, ValueError, UnboundLocalError):
             print("Error in parsing vasp output or VASP calc is wrong")
             os.system("cp OUTCAR Error-OUTCAR")
 
         if not self.error:
-            self.forces = self.structure.get_forces()
+            try:
+                self.forces = self.structure.get_forces()
+            except:
+                self.forces = np.zeros([len(self.structure),3])
             self.energy_per_atom = self.energy/len(self.structure)
             self.read_OUTCAR()
             if read_gap:
@@ -161,6 +164,8 @@ class VASP():
         os.remove("POTCAR")
         os.remove("INCAR")
         os.remove("OUTCAR")
+        if os.path.exists("OSZICAR"):
+            os.remove("OSZICAR")
 
     def to_pymatgen(self):
         from pymatgen.core.structure import Structure
