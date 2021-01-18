@@ -46,7 +46,7 @@ class supergroup():
 
     Args:
         struc: pyxtal structure
-        G: list of possible supergroup numbers, default is None 
+        G: list of possible supergroup numbers, default is None
         group_type: `t` or `k`
     """
     def __init__(self, struc, G=None, group_type='t', solution=None):
@@ -56,7 +56,7 @@ class supergroup():
         self.cell = struc.lattice.matrix
         self.group_type = group_type
         self.error = False
-        
+
         # extract the supergroup information
         wyc_supergroups = struc.group.get_min_supergroup(group_type)
         if G is not None:
@@ -72,7 +72,7 @@ class supergroup():
 
         # group the elements, sites, positions
         self.elements = []
-        self.sites = [] 
+        self.sites = []
         for i, at_site in enumerate(struc.atom_sites):
             e = at_site.specie
             site = str(at_site.wp.multiplicity) + at_site.wp.letter
@@ -82,7 +82,7 @@ class supergroup():
             else:
                 id = self.elements.index(e)
                 self.sites[id].append(site)
-        
+
         # search for the compatible solutions
         if solution is None:
             self.solutions = []
@@ -108,7 +108,7 @@ class supergroup():
     def search_supergroup(self, d_tol=1.0):
         """
         search for valid supergroup transition
-        
+
         Args:
             d_tol (float): tolerance
 
@@ -116,7 +116,7 @@ class supergroup():
             valid_solutions: dictionary
         """
         self.d_tol = d_tol
-        # extract the valid 
+        # extract the valid
         valid_solutions = []
         for sols in self.solutions:
             G, id, sols = sols['group'], sols['id'], sols['splits']
@@ -131,7 +131,7 @@ class supergroup():
         """
         create supergroup structures based on the list of solutions
 
-        Args: 
+        Args:
             solutions: list of tuples (splitter, mapping, disp)
 
         Returns:
@@ -154,7 +154,7 @@ class supergroup():
                 G_sites.append(site)
 
             G_struc.atom_sites = G_sites
-            G_struc.source = 'supergroup {:6.3f}'.format(mae) 
+            G_struc.source = 'supergroup {:6.3f}'.format(mae)
 
             lat1 = np.dot(sp.inv_R[:3,:3].T, self.struc.lattice.matrix)
             lattice = Lattice.from_matrix(lat1, ltype=sp.G.lattice_type)
@@ -174,16 +174,16 @@ class supergroup():
                     #print(sp.R)
 
         return G_strucs
-            
+
     def get_displacement(self, G, split_id, solution, d_tol):
         """
         For a given solution, search for the possbile supergroup structure
 
-        Args: 
-            G: supergroup number 
+        Args:
+            G: supergroup number
             split_id: integer
             solution: e.g., [['2d'], ['6h'], ['2c', '6h', '12i']]
-            d_tol: 
+            d_tol:
         Returns:
             mae: mean absolute atomic displcement
             disp: overall cell translation
@@ -192,7 +192,7 @@ class supergroup():
         elements = []
         muls = []
         for i, e in enumerate(self.elements):
-            sites_G.extend(solution[i]) 
+            sites_G.extend(solution[i])
             elements.extend([e]*len(solution[i]))
             muls.extend([int(sol[:-1]) for sol in solution[i]])
 
@@ -239,7 +239,7 @@ class supergroup():
             e_ids = [id for id, site in enumerate(atom_sites_H) if site.specie==ele]
 
             if len(wp2) == 1:
-                ids = [id for id in e_ids if atom_sites_H[id].wp.letter == wp2[0].letter]  
+                ids = [id for id in e_ids if atom_sites_H[id].wp.letter == wp2[0].letter]
                 if len(ids) == 1:
                     solution_template[i] = ids
                     assigned_ids.append(ids[0])
@@ -259,23 +259,23 @@ class supergroup():
                 if None in sol:
                     for j, id in enumerate(permutation[:len(sol)]):
                         if atom_sites_H[id].wp.letter == splitter.wp2_lists[i][j].letter:
-                            solution[i][j] = id                    
+                            solution[i][j] = id
                         else:
                             valid = False
                             break
                     if not valid:
                         break
                     else:
-                        del permutation[:len(sol)] 
+                        del permutation[:len(sol)]
             if valid and new_solution(solution, unique_solutions):
                 unique_solutions.append(solution)
         return unique_solutions
-        
+
     def symmetrize_dist(self, splitter, solution, disp=None, mask=None, d_tol=1.2):
         """
         For a given solution, search for the possbile supergroup structure
 
-        Args: 
+        Args:
             splitter: splitter object to specify the relation between G and H
             solution: list of sites in H, e.g., ['4a', '8b']
             disp: an overall shift from H to G, None or 3 vector
@@ -294,11 +294,11 @@ class supergroup():
             if len(splitter.wp2_lists[i]) == 1:
                 # one to one splitting, e.g., 2c->2d
                 # this usually involves increase of site symmetry
-               
+
                 # symmetry info
                 ops_H = splitter.H_orbits[i][0]  # ops for H
                 ops_G2 = splitter.G2_orbits[i][0] # ops for G2
-                
+
                 # refine coord1 to find the best match on coord2
                 coord = atom_sites_H[solution[i][0]].position
                 coord0s = apply_ops(coord, ops_H) # possible coords in H
@@ -306,7 +306,7 @@ class supergroup():
                 for coord0 in coord0s:
                     coord2 = coord0.copy()
                     if disp is not None:
-                        coord2 += disp 
+                        coord2 += disp
                     coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
                     #print(coord1, coord2)
                     dist = coord1 - coord2
@@ -317,7 +317,7 @@ class supergroup():
 
                 dist = dists[min_ID]
                 coord2 = coord0s[min_ID].copy()
-                
+
                 #print("---------", wp1.letter, coord1, coord2, disp, dist)
                 #print(splitter)
                 #print(splitter.R)
@@ -344,7 +344,7 @@ class supergroup():
                             return np.linalg.norm(diff)
 
                         # optimize the distance by changing coord1
-                        res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]), 
+                        res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]),
                                 method='Nelder-Mead', options={'maxiter': 20})
                         coord1[0] = res.x[0]
                         coord1 = ops_G2[0].operate(coord1)
@@ -355,8 +355,8 @@ class supergroup():
                 diff = coord1-(coord2+disp)
                 diff -= np.round(diff)
                 max_disps.append(np.linalg.norm(np.dot(diff, self.cell)))
-                        
-            else: 
+
+            else:
                 # symmetry operations
                 ops_H1 = splitter.H_orbits[i][0]
                 ops_G22 = splitter.G2_orbits[i][1]
@@ -371,7 +371,7 @@ class supergroup():
                     coord11 = coord1
                     coord22 = coord2
                 coords11 = apply_ops(coord11, ops_H1)
-            
+
                 # transform coords1 by symmetry operation
                 op = ops_G22[0]
                 for m, coord11 in enumerate(coords11):
@@ -396,7 +396,7 @@ class supergroup():
 
                 coord22 -= d/2 #final coord2 after disp
                 # recover the displaced position
-                coord11 = inv_op.operate(coord22) 
+                coord11 = inv_op.operate(coord22)
 
                 max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
 
@@ -406,7 +406,7 @@ class supergroup():
         """
         For a given solution, search for the possbile supergroup structure
 
-        Args: 
+        Args:
             splitter: splitter object to specify the relation between G and H
             disp: an overall shift from H to G, None or 3 vector
             d_tol: the tolerance in angstrom
@@ -433,14 +433,14 @@ class supergroup():
                 # symmetry info
                 ops_H = splitter.H_orbits[i][0]  # ops for H
                 ops_G2 = splitter.G2_orbits[i][0] # ops for G2
-                
+
                 # refine coord1 to find the best match on coord2
                 coord = atom_sites_H[solution[i][0]].position
                 coord0s = apply_ops(coord, ops_H) # possible coords in H
                 dists = []
                 for coord0 in coord0s:
                     coord2 = coord0.copy()
-                    coord2 += disp 
+                    coord2 += disp
                     coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
                     dist = coord1 - coord2
                     dist -= np.round(dist)
@@ -460,7 +460,7 @@ class supergroup():
                         return np.linalg.norm(diff)
 
                     # optimize the distance by changing coord1
-                    res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]), 
+                    res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]),
                             method='Nelder-Mead', options={'maxiter': 20})
                     coord1[0] = res.x[0]
                     coord1 = ops_G2[0].operate(coord1)
@@ -471,8 +471,8 @@ class supergroup():
                 coords_H1.append(coord2)
                 elements.append(splitter.elements[i])
                 mults.append(len(ops_G2))
-                        
-            else: 
+
+            else:
                 # symmetry operations
                 ops_H1 = splitter.H_orbits[i][0]
                 ops_G22 = splitter.G2_orbits[i][1]
@@ -499,7 +499,7 @@ class supergroup():
 
                 coord22 -= d/2 #final coord2 after disp
                 # recover the displaced position
-                coord11 = inv_op.operate(coord22) 
+                coord11 = inv_op.operate(coord22)
 
                 coords_G1.append(np.dot(inv_R[:3,:3], coord11).T+inv_R[:3,3].T)
                 coords_G2.append(coord11)
@@ -557,7 +557,6 @@ class supergroup():
             G: the target space group with high symmetry
             relation: a dictionary to describe the relation between G and H
         """
-
         G = sym.Group(G)
 
         results = {}
@@ -566,8 +565,8 @@ class supergroup():
 
         good_splittings_list=[]
 
-        # A lot of integer math below. 
-        # The goal is to find all the integer combinations of supergroup 
+        # A lot of integer math below.
+        # The goal is to find all the integer combinations of supergroup
         # wyckoff positions with the same number of atoms
 
         # each element is solved one at a time
@@ -577,7 +576,7 @@ class supergroup():
             site_counts = [self.sites[i].count(x) for x in site]
             possible_wyc_indices = []
 
-            # the sum of all positions should be fixed. 
+            # the sum of all positions should be fixed.
             total_units = 0
             for j, x in enumerate(site):
                 total_units += int(x[:-1])*site_counts[j]
@@ -589,14 +588,14 @@ class supergroup():
                 # print(j, split)
                 if np.all([x in site for x in split]):
                     possible_wyc_indices.append(j)
-            # for the case of 173 ['2b'] -> 176 
+            # for the case of 173 ['2b'] -> 176
             # print(possible_wyc_indices) [2, 3, 5]
 
-            # a vector to represent the possible combinations of positions 
-            # when the site is [6c, 2b] 
-            # the split from [6c, 6c] to [12i] will be counted as [2,0]. 
+            # a vector to represent the possible combinations of positions
+            # when the site is [6c, 2b]
+            # the split from [6c, 6c] to [12i] will be counted as [2,0].
             # a entire split from [6c, 6c, 6c, 2b] will need [3, 1]
-            
+
             possible_wycs = [wyc_list[x] for x in possible_wyc_indices]
             blocks = [np.array([relation[j].count(s) for s in site]) for j in possible_wyc_indices]
             block_units = [sum([int(x[:-1])*block[j] for j,x in enumerate(site)]) for block in blocks]
@@ -605,24 +604,31 @@ class supergroup():
             # print(blocks) # [array([1]), array([1]), array([2])]
             # print(block_units) # [2, 2, 4]
 
-            # the position_block_units stores the total sum multiplicty 
-            # from the available G's wyckoff positions. 
-            # below is a brute force search for the valid combinations 
+            # the position_block_units stores the total sum multiplicty
+            # from the available G's wyckoff positions.
+            # below is a brute force search for the valid combinations
 
             combo_storage = [np.zeros(len(block_units))]
             good_list = []
-
+            # print(combo_storage)
+            # print(block_units)
+            # print(blocks)
+            # print(possible_wycs)
+            # print(total_units)
+            # print(site_counts)
             while len(combo_storage)!=0:
                 holder = []
                 for j, x in enumerate(combo_storage):
                     for k in range(len(block_units)):
                         trial = np.array(deepcopy(x)) # trial solution
                         trial[k] += 1
+                        if trial.tolist() in holder:
+                            continue
                         sum_units = np.dot(trial, block_units)
                         if sum_units > total_units:
                             continue
-                        elif sum_units < total_units:
-                            holder.append(trial)
+                        elif (sum_units < total_units):
+                            holder.append(trial.tolist())
                         else:
                             tester = np.zeros(len(site_counts))
                             for l, z in enumerate(trial):
@@ -646,7 +652,8 @@ class supergroup():
                 return None
             else:
                 good_splittings_list.append(good_list)
-
+        # if len(good_splittings_list[0])==1:
+        #     print(good_splittings_list[0])
         return good_splittings_list
 
 def get_best_match(positions, ref, cell):
@@ -672,7 +679,7 @@ def get_best_match(positions, ref, cell):
 if __name__ == "__main__":
 
     from pyxtal import pyxtal
-    
+
     s = pyxtal()
     #s.from_seed("pyxtal/database/cifs/BTO.cif")
     #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
@@ -715,4 +722,3 @@ if __name__ == "__main__":
             solutions = my.search_supergroup(d_tol=0.60)
             G_strucs = my.make_supergroup(solutions)
             #G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
-
