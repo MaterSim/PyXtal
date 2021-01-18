@@ -6,6 +6,7 @@ from pyxtal.wyckoff_split import wyckoff_split
 import pymatgen.analysis.structure_matcher as sm
 import numpy as np
 from copy import deepcopy
+from random import sample
 import itertools
 from scipy.optimize import minimize
 
@@ -205,25 +206,28 @@ class supergroup():
         mappings = self.find_mapping(splitter)
         dists = []
         disps = []
-        for mapping in mappings:
-            #disp = None #np.array([0.0, 0.0, 0.222222])
-            dist, disp, mask = self.symmetrize_dist(splitter, mapping, None, None, d_tol)
-            dists.append(dist)
-            disps.append(disp)
-        dists = np.array(dists)
-        mae = np.min(dists)
-        id = np.argmin(dists)
-        disp = disps[id]
-        if (mae > 0.2) and (mae < d_tol):
-            # optimize further
-            def fun(disp, mapping, splitter, mask):
-                return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
-            res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
-                    method='Nelder-Mead', options={'maxiter': 20})
-            if res.fun < mae:
-                mae = res.fun
-                disp = res.x
-        return mae, disp, mappings[id], splitter
+        if len(mappings) > 0:
+            for mapping in mappings:
+                #disp = None #np.array([0.0, 0.0, 0.222222])
+                dist, disp, mask = self.symmetrize_dist(splitter, mapping, None, None, d_tol)
+                dists.append(dist)
+                disps.append(disp)
+            dists = np.array(dists)
+            mae = np.min(dists)
+            id = np.argmin(dists)
+            disp = disps[id]
+            if (mae > 0.2) and (mae < d_tol):
+                # optimize further
+                def fun(disp, mapping, splitter, mask):
+                    return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
+                res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
+                        method='Nelder-Mead', options={'maxiter': 20})
+                if res.fun < mae:
+                    mae = res.fun
+                    disp = res.x
+            return mae, disp, mappings[id], splitter
+        else:
+            return 1000, None, None, None
 
     def find_mapping(self, splitter):
         """
@@ -250,7 +254,8 @@ class supergroup():
         remaining_ids = [id for id in range(len(atom_sites_H)) if id not in assigned_ids]
         all_permutations = list(itertools.permutations(remaining_ids))
         unique_solutions = []
-
+        if len(all_permutations)>50:
+            all_permutations = sample(all_permutations, 50)
         for permutation in all_permutations:
             permutation = list(permutation)
             solution = deepcopy(solution_template)
@@ -681,19 +686,19 @@ if __name__ == "__main__":
     from pyxtal import pyxtal
 
     s = pyxtal()
-    #s.from_seed("pyxtal/database/cifs/BTO.cif")
-    #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif")
-    #s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif")
-    #s.from_seed("pyxtal/database/cifs/lt_quartz.cif")
-    #s.from_seed("pyxtal/database/cifs/GeF2.cif")
+    #s.from_seed("pyxtal/database/cifs/BTO.cif") #++
+    #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif") #++
+    #s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif") #++
+    #s.from_seed("pyxtal/database/cifs/lt_quartz.cif") #++
+    #s.from_seed("pyxtal/database/cifs/GeF2.cif") #++
+    #s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif") #++
+
     #s.from_seed("pyxtal/database/cifs/B28.vasp")
     #s.from_seed("pyxtal/database/cifs/PPO.cif")
-    #s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif")
     #s.from_seed("pyxtal/database/cifs/PVO.cif")
-    #s.from_seed("pyxtal/database/cifs/MPWO.cif")
-    s.from_seed("pyxtal/database/cifs/NbO2.cif")
+    s.from_seed("pyxtal/database/cifs/MPWO.cif")
+    #s.from_seed("pyxtal/database/cifs/NbO2.cif") # check wyc
     #s.from_seed("test2.cif")
-    #s.from_seed("SiO2-98.cif")
     print(s)
     #strucs = s.get_alternatives()
     #print(strucs)
