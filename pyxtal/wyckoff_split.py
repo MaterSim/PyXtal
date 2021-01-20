@@ -83,7 +83,7 @@ class wyckoff_split:
         self.G2_orbits = [self.G2_orbits[id] for id in ids]
         self.H_orbits  = [self.H_orbits[id] for id in ids]
         self.elements = [self.elements[id] for id in ids]
-        
+
 
     def parse_wp2(self, idx):
         """
@@ -366,8 +366,8 @@ class wyckoff_split:
     #                    new_basis_orbit[j,3]=new_basis_orbit[j,3]%quadrant[j]
     #                    if new_basis_orbit[j,3]==0 and quadrant[j]==-1:
     #                        new_basis_orbit[j,3]=-1
-    #                
-    #                
+    #
+    #
     #                old_basis_orbit = np.matmul(self.R, new_basis_orbit)
     #                old_basis_orbit[np.abs(old_basis_orbit)<1e-5]=0
     #                old_basis_orbit[np.abs(old_basis_orbit-1)<1e-5]=1
@@ -378,7 +378,7 @@ class wyckoff_split:
     #                    #ensures the chosen orbit to generate the rest of the subgroup_basis orbits is good
     #                    truth=True
     #                    if self.counter!=0:
-    #                
+    #
     #                        tau=tmp[:3,3]
     #                        for j in range(3):
     #                            tau[j]=tau[j]%1
@@ -457,13 +457,13 @@ class wyckoff_split:
     #                        orbit[np.abs(orbit)<1e-5]=0
     #                        orbit[np.abs(orbit-1)<1e-5]=1
     #                        orbit[np.abs(orbit+1)<1e-5]=-1
-    #            
+    #
     #                        for i in range(3):
     #                            if quadrant[i]==1:
     #                                orbit[i][3]+=(translation[i])%1
     #                                orbit[i][3]=orbit[i][3]%1
     #                            else:
-    #            
+    #
     #                                orbit[i][3]+=(translation[i])%-1
     #                                orbit[np.abs(orbit)<1e-5]=0
     #                                orbit[np.abs(orbit-1)<1e-5]=1
@@ -477,7 +477,7 @@ class wyckoff_split:
     #                        orbit[np.abs(orbit-1)<1e-5]=1
     #                        orbit[np.abs(orbit+1)<1e-5]=-1
     #                        orbit=SymmOp(orbit)
-    #            
+    #
     #                        if orbit not in new_wp1:
     #                            new_wp1.append(orbit)
     #            self.counter += 1
@@ -530,61 +530,88 @@ class wyckoff_split:
         """
         split the generators in w1 to different w2s
         """
-        wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
 
+
+        wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
 
         G1_orbits = []
         G2_orbits = []
 #         factor = max([1, np.linalg.det(self.R)])
+        quadrant=deepcopy(self.inv_R[:3,3])
+        quadrant[np.abs(quadrant)<1e-5]=0 #finds the orientation of the subgroup_basis
+        for i in range(3):
+            if quadrant[i]>=0:
+                quadrant[i]=1
+            else:
+                quadrant[i]=-1
+
 
         all_g2_orbits = []
         translations = self.translation_generator()
-        for translation in translations:
-            for gen in wp1_generators:
+        for translation in translations: #the translation generator provides all the possible ways to translate the starting positions, then they are shifted
+            for gen in wp1_generators:#into the proper orientation
                 orbit=np.matmul(self.inv_R,gen)
                 orbit[np.abs(orbit)<1e-5]=0
+                orbit[np.abs(orbit-1)<1e-5]=1
+                orbit[np.abs(orbit+1)<1e-5]=-1
                 for i in range(3):
-                    if orbit[i][3]>=0.:
+                    if quadrant[i]==1:
                         orbit[i][3]+=translation[i]
                         orbit[i][3]=orbit[i][3]%1
+                        if np.abs(orbit[i][3]-1)<1e-5:
+                            orbit[i][3]=0
                     else:
                         orbit[i][3]+=(translation[i])%-1
-                        if orbit[i][3]!=-1:
-                            orbit[i][3]=orbit[i][3]%-1
-
+                        orbit[i][3]=orbit[i][3]%-1
+                        if np.abs(orbit[i][3])<1e-5:
+                            orbit[i][3]=-1
                 all_g2_orbits.append(orbit)
 
 
-        for i in range(len(wp2_lists)):
+
+
+        for p,wp2 in enumerate(wp2_lists):
+
             final_G2=[]
             temp=np.array(deepcopy(all_g2_orbits))
             temp[np.abs(temp) <1e-5] =0
-            for j in range(len(temp)):
-                temp[j][:3,3]=temp[j][:3,3]%1
+
 
             temp=temp.tolist()
             for j,x in enumerate(temp):
+
                 temp[j]=SymmOp(x)
 
 
 
 
-            for orbit in temp:
-                try_match=np.array([np.matmul(x.as_dict()['matrix'], orbit.as_dict()['matrix']) for x in wp2_lists[i]])
-                try_match[np.abs(try_match) <1e-5] =0
+            for q,orbit in enumerate(temp):
+
+
+                try_match=np.array([np.matmul(x.as_dict()['matrix'], orbit.as_dict()['matrix']) for x in wp2])
+                try_match[np.abs(try_match) <1e-5]=0
+                try_match[np.abs(try_match-1) <1e-5]=1
+                try_match[np.abs(try_match+1) <1e-5]=-1
+
+
+
 
                 for j in range(len(try_match)):
-                    try_match[j][:3,3]=try_match[j][:3,3]%1
-
+                    for k in range(3):
+                        try_match[j][k][3]=try_match[j][k][3]%quadrant[k]
+                        if try_match[j][k][3]==0 and quadrant[k]==-1:
+                            try_match[j][k][3]=-1
                 try_match=try_match.tolist()
+
+
                 for j,x in enumerate(try_match):
                     try_match[j]=SymmOp(x)
-                duplicates=[]
-                for x in try_match:
-                    if x not in duplicates:
-                        duplicates.append(x)
-                if len(duplicates)!=len(try_match):
+
+
+
+                if np.any([try_match.count(x)>1 for x in try_match]):
                     continue
+
 
 
                 try:
@@ -592,169 +619,24 @@ class wyckoff_split:
                 except:
                     continue
                 for index in sorted(corresponding_positions,reverse=True):
-                    final_G2.append(all_g2_orbits[index])
                     del all_g2_orbits[index]
-
-                G2_orbits.append(final_G2)
-
+                G2_orbits.append(try_match)
                 break
 
 
         for position in G2_orbits:
             final_G1=[]
             for orbit in position:
-                final_G1.append(SymmOp(np.matmul(self.R,orbit).round(3)))
+                final_G1.append(SymmOp(np.matmul(self.R,orbit.as_dict()['matrix'])))
             G1_orbits.append(final_G1)
 
 
-        for i, position in enumerate(G2_orbits):
-            for j, orbit in enumerate(position):
-                G2_orbits[i][j]=SymmOp(orbit)
-        if len(G1_orbits)==0:
-            return self.k_split2(wp1,wp2_lists)
+
+        if len(G1_orbits)!=len(wp2_lists):
+            raise ValueError('inaccurate')
+#             return self.k_split2(wp1,wp2_lists)
         else:
             return G1_orbits, G2_orbits
-
-    def k_split2(self,wp1,wp2_lists):
-        """
-        split the generators in w1 to different w2
-        """
-        def add_g2_orbits(orbit,translations):
-
-            new_g2=[]
-            for translation in translations:
-                pos=deepcopy(orbit)
-                pos[np.abs(pos)<1e-5]=0
-
-                for p in range(3):
-                    if pos[p][3]>=0:
-                        pos[p][3]+=translation[p]
-                        pos[p][3]=pos[p][3]%1
-                    else:
-                        pos[p][3]+=(translation[p])%-1
-                        if pos[p][3]!=-1:
-                            pos[p][3]=pos[p][3]%-1
-
-                new_g2.append(pos)
-            return new_g2
-
-        wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
-
-
-        G1_orbits = []
-        G2_orbits = []
-
-        all_g2_orbits = []
-        translations = self.translation_generator()
-
-        for translation in translations:
-            for gen in wp1_generators:
-                orbit=np.matmul(self.inv_R,gen)
-                orbit[np.abs(orbit)<1e-5]=0
-                for i in range(3):
-                    if orbit[i][3]>=0.:
-                        orbit[i][3]+=translation[i]
-                        orbit[i][3]=orbit[i][3]%1
-                    else:
-                        orbit[i][3]+=(translation[i])%-1
-                        if orbit[i][3]!=-1:
-                            orbit[i][3]=orbit[i][3]%-1
-                all_g2_orbits.append(orbit)
-
-        for i in range(len(wp2_lists)):
-            match=False
-            ite=0
-            while not match:
-                final_G2=[]
-                temp=np.array(deepcopy(all_g2_orbits))
-                for j in range(len(temp)):
-                    temp[j][:3,3]=temp[j][:3,3]%1
-                temp=temp.round(3).tolist()
-                for orbit in temp:
-                    try_match=np.array([np.matmul(x.as_dict()['matrix'], orbit) for x in wp2_lists[i]])
-                    for j in range(len(try_match)):
-                        try_match[j][:3,3]=try_match[j][:3,3]%1
-
-                    try_match=try_match.round(3).tolist()
-                    corresponding_positions=[]
-                    duplicates=[]
-                    for x in try_match:
-                        if x not in duplicates:
-                            duplicates.append(x)
-                    if len(duplicates)!=len(try_match):
-                        continue
-
-
-
-
-                    try:
-                        corresponding_positions=[temp.index(x) for x in try_match]
-                        for index in sorted(corresponding_positions,reverse=True):
-                            final_G2.append(all_g2_orbits[index])
-                            del all_g2_orbits[index]
-
-                        G2_orbits.append(final_G2)
-                        match=True
-                        break
-                    except:
-                        continue
-                if len(corresponding_positions) == 0:
-
-
-                    trial=all_g2_orbits[0]
-                    quadrant=[0,0,0]
-                    for f in range(3):
-                        if trial[f][3]<0.:
-                            quadrant[f]=-1
-                        else:
-                            quadrant[f]=1
-                    try_match=np.array([np.matmul(x.as_dict()['matrix'],trial) for x in wp2_lists[i]])
-
-
-                    for j in range(len(try_match)):
-                        for k in range(3):
-                            if try_match[j][k][3]>=1:
-                                try_match[j][k][3]=try_match[j][k][3]%1
-
-                    temp_try_match=deepcopy(try_match)
-
-
-                    for j in range(len(try_match)):
-                        try_match[j][:3,3]=try_match[j][:3,3]%1
-                    try_match=try_match.round(3).tolist()
-                    temp=np.array(deepcopy(all_g2_orbits))
-                    for j in range(len(temp)):
-                        temp[j][:3,3]=temp[j][:3,3]%1
-                    temp=temp.round(3).tolist()
-
-
-                    necessary_orbits=[x for x in try_match if x not in temp]
-                    necessary_index=[try_match.index(x) for x in necessary_orbits]
-                    trial_orbit=temp_try_match[choice(necessary_index)]
-
-                    for f in range(3):
-                        trial_orbit[f][3]=trial_orbit[f][3]%(quadrant[f])
-
-
-                    all_g2_orbits.extend(add_g2_orbits(trial_orbit,translations))
-                    ite+=1
-
-
-
-
-
-        for position in G2_orbits:
-            final_G1=[]
-            for orbit in position:
-                final_G1.append(SymmOp(np.matmul(self.R,orbit).round(3)))
-            G1_orbits.append(final_G1)
-
-
-        for i, position in enumerate(G2_orbits):
-            for j, orbit in enumerate(position):
-                G2_orbits[i][j]=SymmOp(orbit)
-
-        return G1_orbits, G2_orbits
 
 
 
