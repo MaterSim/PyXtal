@@ -535,7 +535,7 @@ class pyxtal:
             #print("try do one more step")
             new_strucs = []
             for splitter in bad_splitters:
-                trail_struc = self._subgroup_by_splitter(splitter)
+                trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
                 new_strucs.extend(trail_struc.subgroup(permutations, group_type=group_type))
             return new_strucs
         else:
@@ -600,7 +600,7 @@ class pyxtal:
                                         special = True
                                         break
                         if not special:
-                            return self._subgroup_by_splitter(splitter)
+                            return self._subgroup_by_splitter(splitter, eps=eps)
                     else:
                         #print("try to find the next subgroup")
                         trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
