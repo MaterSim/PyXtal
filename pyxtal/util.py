@@ -64,7 +64,7 @@ def symmetrize(pmg, tol=1e-3):
     atoms = (pmg.lattice.matrix, pmg.frac_coords, pmg.atomic_numbers)
     dataset = get_symmetry_dataset(atoms, tol)
     cell = dataset['std_lattice']
-    pos = dataset['std_positions']
+    pos = dataset['std_positions'] - dataset['origin_shift']
     numbers = dataset['std_types']
     pmg = Structure(cell, numbers, pos)
     return pmg

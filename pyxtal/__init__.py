@@ -18,7 +18,7 @@ from pyxtal.crystal import (
     random_crystal_2D,
 )
 from pyxtal.symmetry import Group, Wyckoff_position
-from pyxtal.wyckoff_site import atom_site, mol_site
+from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
 from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.lattice import Lattice
 from pyxtal.operations import apply_ops
@@ -352,15 +352,26 @@ class pyxtal:
             self.numIons = numIons
             self.species = species
             self.group = Group(number)
-            atom_sites = []
-            for i, site in enumerate(sym_struc.equivalent_sites):
-                pos = site[0].frac_coords
-                wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
-                specie = site[0].specie.number
-                atom_sites.append(atom_site(wp, pos, specie, search=True))
-            self.atom_sites = atom_sites
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
+            atom_sites = []
+            wp0 = self.group[0]
+            for i, site in enumerate(sym_struc.equivalent_sites):
+                pos = site[0].frac_coords #needs to find the right generator
+                wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
+                specie = site[0].specie.number
+                for op in wp0:
+                    pos1 = op.operate(pos)
+                    pos0 = wp[0].operate(pos1)
+                    diff = pos1 - pos0
+                    diff -= np.round(diff)
+                    diff = np.abs(diff)
+                    if diff.sum()<1e-2:
+                        pos1 -= np.floor(pos1)
+                        break
+                atom_sites.append(atom_site(wp, pos1, specie))
+            self.atom_sites = atom_sites
+            #import pymatgen.analysis.structure_matcher as sm
             #self.dim = 3
             #self.PBC = [1, 1, 1]
             #pmg1 = self.to_pymatgen()

@@ -7,6 +7,7 @@ from pymatgen.core.structure import Molecule
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.operations import SymmOp
+from pymatgen import Structure
 
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
@@ -211,6 +212,17 @@ class TestAtomic3D(unittest.TestCase):
         struc = pyxtal()
         struc.from_random(3, 225, ["C"], [12], 1.0, sites=[["4a", "8c"]])
         self.assertTrue(struc.valid)
+
+    def test_read(self):
+        # test reading xtal from cif
+        for name in ["FAU", "NaSb3F10", "PVO", "lt_quartz"]:
+            cif_file = cif_path + name + ".cif"
+            pmg1 = Structure.from_file(cif_file)
+            struc = pyxtal()
+            struc.from_seed(seed=cif_file)
+            pmg_struc = struc.to_pymatgen()
+            self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg1))
+
 
 class TestAtomic2D(unittest.TestCase):
     def test_single_specie(self):
