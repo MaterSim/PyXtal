@@ -1,4 +1,5 @@
 import pyxtal.symmetry as sym
+from pymatgen.core.operations import SymmOp
 from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import atom_site
 from pyxtal.operations import apply_ops, get_inverse
@@ -229,7 +230,7 @@ class supergroup():
         else:
             return 1000, None, None, None
 
-    def find_mapping(self, splitter):
+    def find_mapping(self, splitter, max_num=100):
         """
         search for all mappings for a given splitter
         """
@@ -254,8 +255,8 @@ class supergroup():
         remaining_ids = [id for id in range(len(atom_sites_H)) if id not in assigned_ids]
         all_permutations = list(itertools.permutations(remaining_ids))
         unique_solutions = []
-        if len(all_permutations)>50:
-            all_permutations = sample(all_permutations, 50)
+        if len(all_permutations)>max_num:
+            all_permutations = sample(all_permutations, max_num)
         for permutation in all_permutations:
             permutation = list(permutation)
             solution = deepcopy(solution_template)
@@ -302,8 +303,15 @@ class supergroup():
 
                 # symmetry info
                 ops_H = splitter.H_orbits[i][0]  # ops for H
-                ops_G2 = splitter.G2_orbits[i][0] # ops for G2
+                matrix = splitter.G2_orbits[i][0][0].affine_matrix.copy() # ops for G2
 
+                # (x+1/4, 0, 0) -> (x, y, z), 
+                # transition between x and x+1/4 should be zero
+                for mid in range(3):
+                    if np.linalg.norm(matrix[mid,:3])>0:
+                        matrix[mid, 3] = 0
+
+                op_G2 = SymmOp(matrix)
                 # refine coord1 to find the best match on coord2
                 coord = atom_sites_H[solution[i][0]].position
                 coord0s = apply_ops(coord, ops_H) # possible coords in H
@@ -312,10 +320,11 @@ class supergroup():
                     coord2 = coord0.copy()
                     if disp is not None:
                         coord2 += disp
-                    coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
-                    #print(coord1, coord2)
+                    #coord1 = apply_ops(coord2, ops_G2)[0] # coord in G
+                    coord1 = op_G2.operate(coord2)
                     dist = coord1 - coord2
                     dist -= np.round(dist)
+                    #if wp1.letter == 'f': print(coord1, coord2, dist, disp)
                     dist = np.dot(dist, self.cell)
                     dists.append(np.linalg.norm(dist))
                 min_ID = np.argmin(np.array(dists))
@@ -323,23 +332,24 @@ class supergroup():
                 dist = dists[min_ID]
                 coord2 = coord0s[min_ID].copy()
 
-                #print("---------", wp1.letter, coord1, coord2, disp, dist)
                 #print(splitter)
                 #print(splitter.R)
+
                 if disp is None:
-                    coord1 = apply_ops(coord2, ops_G2)[0]
+                    coord1 = op_G2.operate(coord2)
                     disp = (coord1 - coord2).copy()
                     # temporary fix
                     xyz1 = ops_H[0].as_xyz_string().split(',')
-                    xyz2 = ops_G2[0].as_xyz_string().split(',')
+                    xyz2 = op_G2.as_xyz_string().split(',')
                     mask = [m for m in range(3) if xyz1[m]==xyz2[m]]
+                    #print("+++++++++++++++++++++++++", disp)
                     #disp[mask] = 0
                     #if abs(disp[0] + disp[1]) < 1e-2:
                     #    disp[:2] = 0
                     #print(disp, coord1, coord2)
                 elif dist < d_tol:
-                    coord1 = ops_G2[0].operate(coord2+disp)
-                    if round(np.trace(ops_G2[0].rotation_matrix)) in [1, 2]:
+                    coord1 = op_G2.operate(coord2+disp)
+                    if round(np.trace(op_G2.rotation_matrix)) in [1, 2]:
                         def fun(x, pt, ref, op):
                             pt[0] = x[0]
                             y = op.operate(pt)
@@ -349,12 +359,13 @@ class supergroup():
                             return np.linalg.norm(diff)
 
                         # optimize the distance by changing coord1
-                        res = minimize(fun, coord1[0], args=(coord1, coord2, ops_G2[0]),
+                        res = minimize(fun, coord1[0], args=(coord1, coord2, op_G2),
                                 method='Nelder-Mead', options={'maxiter': 20})
                         coord1[0] = res.x[0]
-                        coord1 = ops_G2[0].operate(coord1)
+                        coord1 = op_G2.operate(coord1)
                 else:
                     return 10000, None, None
+
                 if mask is not None:
                     disp[mask] = 0
                 diff = coord1-(coord2+disp)
@@ -388,6 +399,7 @@ class supergroup():
                 # recover the original position
                 try:
                     inv_op = get_inverse(op)
+                    #print(op.as_xyz_string(), inv_op.as_xyz_string())
                 except:
                     print("Error in getting the inverse")
                     print(op)
@@ -688,17 +700,16 @@ if __name__ == "__main__":
     s = pyxtal()
     #s.from_seed("pyxtal/database/cifs/BTO.cif") #++
     #s.from_seed("pyxtal/database/cifs/NaSb3F10.cif") #++
-    #s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif") #++
     #s.from_seed("pyxtal/database/cifs/lt_quartz.cif") #++
     #s.from_seed("pyxtal/database/cifs/GeF2.cif") #++
     #s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif") #++
 
+    s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif") #++
     #s.from_seed("pyxtal/database/cifs/B28.vasp")
     #s.from_seed("pyxtal/database/cifs/PPO.cif")
     #s.from_seed("pyxtal/database/cifs/PVO.cif")
-    s.from_seed("pyxtal/database/cifs/MPWO.cif")
+    #s.from_seed("pyxtal/database/cifs/MPWO.cif")
     #s.from_seed("pyxtal/database/cifs/NbO2.cif") # check wyc
-    #s.from_seed("test2.cif")
     print(s)
     #strucs = s.get_alternatives()
     #print(strucs)
@@ -711,19 +722,19 @@ if __name__ == "__main__":
     #indices = [len(letters1)-1-letters.index(i) for i in letters1]
     #indices.reverse()
     #s1 = s.get_alternative(tran, indices)
-    #my = supergroup(s1)
-    my = supergroup(s)
+    #my = supergroup(s)
+    my = supergroup(s, group_type='k')
 
     solutions = my.search_supergroup(d_tol=1.0)
     G_strucs = my.make_supergroup(solutions)
     if len(G_strucs)>0:
-        #G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
-        my = supergroup(G_strucs[0])
+        G_strucs[-1].to_ase().write('1.vasp', format='vasp', vasp5=True, direct=True)
+        my = supergroup(G_strucs[-1])
         solutions = my.search_supergroup(d_tol=0.90)
         G_strucs = my.make_supergroup(solutions)
-        if len(G_strucs)>0:
-            #G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
-            my = supergroup(G_strucs[-1])
-            solutions = my.search_supergroup(d_tol=0.60)
-            G_strucs = my.make_supergroup(solutions)
-            #G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)
+    #    if len(G_strucs)>0:
+    #        #G_strucs[-1].to_ase().write('2.vasp', format='vasp', vasp5=True, direct=True)
+    #        my = supergroup(G_strucs[-1])
+    #        solutions = my.search_supergroup(d_tol=0.60)
+    #        G_strucs = my.make_supergroup(solutions)
+    #        #G_strucs[-1].to_ase().write('3.vasp', format='vasp', vasp5=True, direct=True)

@@ -275,7 +275,7 @@ class pyxtal:
                 pass
 
 
-    def from_seed(self, seed, molecule=None, tol=1e-4, relax_h=False, backend='pymatgen'):
+    def from_seed(self, seed, molecule=None, tol=1e-4, a_tol=5.0, relax_h=False, backend='pymatgen'):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
@@ -303,13 +303,13 @@ class pyxtal:
             elif isinstance(seed, Atoms): #ASE atoms
                 from pymatgen.io.ase import AseAtomsAdaptor
                 pmg_struc = AseAtomsAdaptor.get_structure(seed)
-                self._from_pymatgen(pmg_struc, tol)
+                self._from_pymatgen(pmg_struc, tol, a_tol)
             elif isinstance(seed, Structure): #Pymatgen
                 self._from_pymatgen(seed, tol)
             elif isinstance(seed, str):
                 if backend=='pymatgen':
                     pmg_struc = Structure.from_file(seed)
-                    self._from_pymatgen(pmg_struc, tol)
+                    self._from_pymatgen(pmg_struc, tol, a_tol)
                 else:
                     self.lattice, self.atom_sites = read_cif(seed)
                     self.group = Group(self.atom_sites[0].wp.number)
@@ -321,7 +321,7 @@ class pyxtal:
         self.PBC = [1, 1, 1]
         self._get_formula()
 
-    def _from_pymatgen(self, struc, tol=1e-3):
+    def _from_pymatgen(self, struc, tol=1e-3, a_tol=5.0):
         """
         Load structure from Pymatgen
         should not be used directly
@@ -331,7 +331,7 @@ class pyxtal:
 
         self.valid = True
         try:
-            sym_struc, number = get_symmetrized_pmg(struc, tol)
+            sym_struc, number = get_symmetrized_pmg(struc, tol, a_tol)
             #print(sym_struc)
             #import sys; sys.exit()
         except TypeError:
