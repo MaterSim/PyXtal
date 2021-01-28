@@ -326,22 +326,18 @@ class pyxtal:
         Load structure from Pymatgen
         should not be used directly
         """
-        from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
-        from pyxtal.util import symmetrize
+        from pyxtal.util import get_symmetrized_pmg
         #import pymatgen.analysis.structure_matcher as sm
 
         self.valid = True
         try:
-            # needs to do it twice in order to get the conventional cell
-            pmg = symmetrize(struc, tol)
-            s = sga(pmg, symprec=tol)
-            sym_struc = s.get_symmetrized_structure()
-            number = s.get_space_group_number()
+            sym_struc, number = get_symmetrized_pmg(struc, tol)
             #print(sym_struc)
-            
-        except:
+            #import sys; sys.exit()
+        except TypeError:
             print("Failed to load the Pymatgen structure")
-            self.valid = False
+        #    print(struc)
+        #    self.valid = False
 
         if self.valid:
             d = sym_struc.composition.as_dict()
@@ -354,23 +350,34 @@ class pyxtal:
             self.group = Group(number)
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
-            atom_sites = []
             wp0 = self.group[0]
+            atom_sites = []
             for i, site in enumerate(sym_struc.equivalent_sites):
-                pos = site[0].frac_coords #needs to find the right generator
+                pos = site[0].frac_coords 
                 wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
                 specie = site[0].specie.number
+                match = False
                 for op in wp0:
                     pos1 = op.operate(pos)
                     pos0 = wp[0].operate(pos1)
                     diff = pos1 - pos0
                     diff -= np.round(diff)
                     diff = np.abs(diff)
+                    #print(wp.letter, pos1, pos0, diff)
                     if diff.sum()<1e-2:
                         pos1 -= np.floor(pos1)
+                        match = True
                         break
-                atom_sites.append(atom_site(wp, pos1, specie))
-            self.atom_sites = atom_sites
+                #print("============", match, wp.letter, pos, pos0)
+                if match:
+                    atom_sites.append(atom_site(wp, pos1, specie))
+                else:
+                    break
+
+            if len(atom_sites) != len(sym_struc.equivalent_sites):
+                raise RuntimeError("Cannot extract the right mapping from spglib")
+            else:
+                self.atom_sites = atom_sites
             #import pymatgen.analysis.structure_matcher as sm
             #self.dim = 3
             #self.PBC = [1, 1, 1]

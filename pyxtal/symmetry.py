@@ -28,6 +28,7 @@ from pyxtal.operations import (
     OperationAnalyzer,
 )
 from pyxtal.database.element import Element
+from pyxtal.database.hall import hall_from_hm
 
 # ------------------------------ Constants ---------------------------------------
 letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -153,6 +154,7 @@ class Group:
             self.wyckoff_generators = get_wyckoff_generators(self.number)
             self.w_symm_m = get_wyckoff_symmetry(self.number, molecular=True)
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True) 
+            self.hall_number = hall_from_hm(self.number)
         elif dim == 2:
             self.wyckoffs = get_layer(self.number)
             self.w_symm = get_layer_symmetry(self.number)
