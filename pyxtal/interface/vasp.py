@@ -3,6 +3,7 @@ from ase import Atoms
 from pyxtal.util import good_lattice
 from ase.calculators.vasp import Vasp
 import os, time
+import numpy as np
 
 """
 A script to perform multistages vasp calculation

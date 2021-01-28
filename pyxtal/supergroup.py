@@ -703,12 +703,11 @@ if __name__ == "__main__":
     #s.from_seed("pyxtal/database/cifs/lt_quartz.cif") #++
     #s.from_seed("pyxtal/database/cifs/GeF2.cif") #++
     #s.from_seed("pyxtal/database/cifs/BTO-Amm2.cif") #++
+    #s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif") k->t #++
 
-    s.from_seed("pyxtal/database/cifs/lt_cristobalite.cif") #++
-    #s.from_seed("pyxtal/database/cifs/B28.vasp")
     #s.from_seed("pyxtal/database/cifs/PPO.cif")
     #s.from_seed("pyxtal/database/cifs/PVO.cif")
-    #s.from_seed("pyxtal/database/cifs/MPWO.cif")
+    s.from_seed("pyxtal/database/cifs/MPWO.cif")
     #s.from_seed("pyxtal/database/cifs/NbO2.cif") # check wyc
     print(s)
     #strucs = s.get_alternatives()
