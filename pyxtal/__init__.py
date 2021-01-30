@@ -18,13 +18,14 @@ from pyxtal.crystal import (
     random_crystal_2D,
 )
 from pyxtal.symmetry import Group, Wyckoff_position
-from pyxtal.wyckoff_site import atom_site, mol_site
+from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
 from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.lattice import Lattice
-from pyxtal.operations import apply_ops
+from pyxtal.operations import apply_ops, SymmOp
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.XRD import XRD
+from pyxtal.constants import letters
 
 # name = "pyxtal"
 
@@ -275,7 +276,7 @@ class pyxtal:
                 pass
 
 
-    def from_seed(self, seed, molecule=None, tol=1e-4, relax_h=False, backend='pymatgen'):
+    def from_seed(self, seed, molecule=None, tol=1e-4, a_tol=5.0, relax_h=False, backend='pymatgen'):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
@@ -303,13 +304,13 @@ class pyxtal:
             elif isinstance(seed, Atoms): #ASE atoms
                 from pymatgen.io.ase import AseAtomsAdaptor
                 pmg_struc = AseAtomsAdaptor.get_structure(seed)
-                self._from_pymatgen(pmg_struc, tol)
+                self._from_pymatgen(pmg_struc, tol, a_tol)
             elif isinstance(seed, Structure): #Pymatgen
                 self._from_pymatgen(seed, tol)
             elif isinstance(seed, str):
                 if backend=='pymatgen':
                     pmg_struc = Structure.from_file(seed)
-                    self._from_pymatgen(pmg_struc, tol)
+                    self._from_pymatgen(pmg_struc, tol, a_tol)
                 else:
                     self.lattice, self.atom_sites = read_cif(seed)
                     self.group = Group(self.atom_sites[0].wp.number)
@@ -321,27 +322,23 @@ class pyxtal:
         self.PBC = [1, 1, 1]
         self._get_formula()
 
-    def _from_pymatgen(self, struc, tol=1e-3):
+    def _from_pymatgen(self, struc, tol=1e-3, a_tol=5.0):
         """
         Load structure from Pymatgen
         should not be used directly
         """
-        from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
-        from pyxtal.util import symmetrize
+        from pyxtal.util import get_symmetrized_pmg
         #import pymatgen.analysis.structure_matcher as sm
 
         self.valid = True
         try:
-            # needs to do it twice in order to get the conventional cell
-            pmg = symmetrize(struc, tol)
-            s = sga(pmg, symprec=tol)
-            sym_struc = s.get_symmetrized_structure()
-            number = s.get_space_group_number()
+            sym_struc, number = get_symmetrized_pmg(struc, tol, a_tol)
             #print(sym_struc)
-            
-        except:
+            #import sys; sys.exit()
+        except TypeError:
             print("Failed to load the Pymatgen structure")
-            self.valid = False
+        #    print(struc)
+        #    self.valid = False
 
         if self.valid:
             d = sym_struc.composition.as_dict()
@@ -352,15 +349,37 @@ class pyxtal:
             self.numIons = numIons
             self.species = species
             self.group = Group(number)
-            atom_sites = []
-            for i, site in enumerate(sym_struc.equivalent_sites):
-                pos = site[0].frac_coords
-                wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
-                specie = site[0].specie.number
-                atom_sites.append(atom_site(wp, pos, specie, search=True))
-            self.atom_sites = atom_sites
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
+            wp0 = self.group[0]
+            atom_sites = []
+            for i, site in enumerate(sym_struc.equivalent_sites):
+                pos = site[0].frac_coords 
+                wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
+                specie = site[0].specie.number
+                match = False
+                for op in wp0:
+                    pos1 = op.operate(pos)
+                    pos0 = wp[0].operate(pos1)
+                    diff = pos1 - pos0
+                    diff -= np.round(diff)
+                    diff = np.abs(diff)
+                    #print(wp.letter, pos1, pos0, diff)
+                    if diff.sum()<1e-2:
+                        pos1 -= np.floor(pos1)
+                        match = True
+                        break
+                #print("============", match, wp.letter, pos, pos0)
+                if match:
+                    atom_sites.append(atom_site(wp, pos1, specie))
+                else:
+                    break
+
+            if len(atom_sites) != len(sym_struc.equivalent_sites):
+                raise RuntimeError("Cannot extract the right mapping from spglib")
+            else:
+                self.atom_sites = atom_sites
+            #import pymatgen.analysis.structure_matcher as sm
             #self.dim = 3
             #self.PBC = [1, 1, 1]
             #pmg1 = self.to_pymatgen()
@@ -535,7 +554,7 @@ class pyxtal:
             #print("try do one more step")
             new_strucs = []
             for splitter in bad_splitters:
-                trail_struc = self._subgroup_by_splitter(splitter)
+                trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
                 new_strucs.extend(trail_struc.subgroup(permutations, group_type=group_type))
             return new_strucs
         else:
@@ -600,7 +619,7 @@ class pyxtal:
                                         special = True
                                         break
                         if not special:
-                            return self._subgroup_by_splitter(splitter)
+                            return self._subgroup_by_splitter(splitter, eps=eps)
                     else:
                         #print("try to find the next subgroup")
                         trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
@@ -1054,7 +1073,7 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
-    def get_alternatives(self, key='permutation'):
+    def get_alternatives(self, unique_letters=True):
         """
         get alternative structure representations
 
@@ -1065,28 +1084,26 @@ class pyxtal:
             
         """
         new_strucs = []
-        # search if the 
-        res = self.group.get_alternatives()[key]
-        if len(res) > 0:
-            if key == 'permutation':
-                for swap in res:
-                    new_struc = self.copy()
-                    # swap lattice and atom_sites
-                    new_struc.lattice = self.lattice.swap_axis(ids=swap)
-                    # check if a shift is required
-                    for atom_site in new_struc.atom_sites:
-                        shift = atom_site.shift_by_swap(swap)
-                        if np.sum(shift) > 0:
-                            break
-                    # perform a swap by considering the shift
-                    for atom_site in new_struc.atom_sites:
-                        atom_site.swap_axis(swap, shift)
+        # the list of wyckoff indices in the original structure
+        # e.g. [0, 2, 2, 4] -> [a, c, c, e] 
+        ids = [len(self.group)-1-site.wp.index for site in self.atom_sites]
+        unique_ids=[ids]
 
-                    new_struc.source = key
+        wyc_sets = self.group.get_alternatives()
+        No = len(wyc_sets['No.'])
+        if No > 1:
+            # skip the first setting since it is identity
+            for no in range(1,No):
+                new_struc, ids = self._get_alternative(wyc_sets, no)
+                if unique_letters and ids in unique_ids:
+                    include = False
+                else:
+                    include = True
+                    unique_ids.append(ids)
                     new_strucs.append(new_struc)
         return new_strucs
 
-    def get_alternative(self, tran, indices):
+    def _get_alternative(self, wyc_set, no):
         """
         get alternative structure representations
 
@@ -1098,12 +1115,24 @@ class pyxtal:
             a new pyxtal structure after transformation
         """
         new_struc = self.copy()
-        new_struc.lattice = self.lattice.transform(tran[:3,:3])
-        for atom_site in new_struc.atom_sites:
-            atom_site.equivalent_set(tran, indices)
-        new_struc.numIons = int(np.linalg.det(tran[:3,:3]))*self.numIons
-        new_struc._get_formula()
 
-        new_struc.source = "New Wyckoff Set"
-        return new_struc
+        # xyz_string like 'x+1/4,y+1/4,z+1/4'
+        xyz_string = wyc_set['Coset Representative'][no]
+        op = SymmOp.from_xyz_string(xyz_string)
+
+        ids = []
+        for i, site in enumerate(new_struc.atom_sites):
+            id = len(self.group) - site.wp.index - 1
+            letter = wyc_set['Transformed WP'][no].split()[id]
+            ids.append(letters.index(letter))
+            wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
+            pos = op.operate(site.position)
+            new_struc.atom_sites[i] = atom_site(wp, pos, site.specie)
+
+        # switch lattice
+        R = op.affine_matrix[:3,:3] #rotation
+        matrix = np.dot(R.T, self.lattice.matrix)
+        new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
+        new_struc.source = "Alt. Wyckoff Set"
+        return new_struc, ids
 

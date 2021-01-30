@@ -1,6 +1,8 @@
 from pymatgen.core.structure import Structure
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pyxtal.symmetry import Group
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
 from ase import Atoms
+from spglib import get_symmetry_dataset
 
 """
 scripts to perform structure conformation
@@ -25,7 +27,7 @@ def symmetrize_cell(struc, mode='C'):
         mode: output conventional or primitive cell
     """
     P_struc = ase2pymatgen(struc)
-    finder = SpacegroupAnalyzer(P_struc,symprec=0.06,angle_tolerance=5)
+    finder = sga(P_struc,symprec=0.06)
     if mode == 'C':
         P_struc = finder.get_conventional_standard_structure()
     else:
@@ -48,7 +50,7 @@ def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
     else:
         return False
 
-def symmetrize(pmg, tol=1e-3):
+def symmetrize(pmg, tol=1e-3, a_tol=5.0):
     """
     symmetrize the structure from spglib
 
@@ -59,16 +61,37 @@ def symmetrize(pmg, tol=1e-3):
     Returns:
         pymatgen structure with symmetrized lattice
     """
-    from spglib import get_symmetry_dataset
 
     atoms = (pmg.lattice.matrix, pmg.frac_coords, pmg.atomic_numbers)
-    dataset = get_symmetry_dataset(atoms, tol)
+    dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol)
+    hn = Group(dataset['number'], 3).hall_number
+    if hn != dataset['hall_number']:
+        dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol, hall_number=hn)
     cell = dataset['std_lattice']
-    pos = dataset['std_positions']
+    pos = dataset['std_positions'] 
     numbers = dataset['std_types']
-    pmg = Structure(cell, numbers, pos)
-    return pmg
+    
+    return Structure(cell, numbers, pos)
 
+def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0):
+    """
+    Symmetrized Pymatgen structure
+    A slight modification to ensure that the structure adopts the
+    standard setting used in interational crystallography table
+
+    Args:
+        pmg: input pymatgen structure
+        tol: symmetry tolerance
+    """
+
+
+    pmg = symmetrize(pmg, tol, a_tol=a_tol)
+    s = sga(pmg, symprec=tol, angle_tolerance=a_tol)
+    hn = Group(s.get_space_group_number()).hall_number
+    # make sure that the coordinates are in standard setting
+    if hn != s._space_group_data["hall_number"]:
+        s._space_group_data = get_symmetry_dataset(s._cell, tol, angle_tolerance=a_tol, hall_number=hn)
+    return s.get_symmetrized_structure(), s.get_space_group_number()
 
 def extract_ase_db(db_file, id):
     """

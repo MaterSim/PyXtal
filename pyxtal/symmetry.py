@@ -28,9 +28,9 @@ from pyxtal.operations import (
     OperationAnalyzer,
 )
 from pyxtal.database.element import Element
-
+from pyxtal.database.hall import hall_from_hm
+from pyxtal.constants import letters
 # ------------------------------ Constants ---------------------------------------
-letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
 wyckoff_symmetry_df = read_csv(
@@ -56,6 +56,7 @@ symbols = loadfn(resource_filename("pyxtal", "database/symbols.json"))
 
 t_subgroup = loadfn(resource_filename("pyxtal",'database/t_subgroup.json'))
 k_subgroup = loadfn(resource_filename("pyxtal",'database/k_subgroup.json'))
+wyc_sets = loadfn(resource_filename("pyxtal",'database/wyckoff_sets_alternatives.json'))
 
 Identity = SymmOp.from_xyz_string("x,y,z")
 Inversion = SymmOp.from_xyz_string("-x,-y,-z")
@@ -153,6 +154,7 @@ class Group:
             self.wyckoff_generators = get_wyckoff_generators(self.number)
             self.w_symm_m = get_wyckoff_symmetry(self.number, molecular=True)
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True) 
+            self.hall_number = hall_from_hm(self.number)
         elif dim == 2:
             self.wyckoffs = get_layer(self.number)
             self.w_symm = get_layer_symmetry(self.number)
@@ -438,28 +440,38 @@ class Group:
             return t_subgroup[str(self.number)]
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
+    
+    #QZ: this is outdated
+    #def get_alternatives(self):
+    #    """
+    #    Get the alternative settings as a dictionary
+    #    """
+    #    dicts = {"permutation": [],
+    #             #"origin": [],
+    #             #"diagonal": [],
+    #            }
+    #    if self.dim == 3:
+    #        if self.number in [17, 18, 25, 27, 34, 35, 
+    #                           37, 38, 42, 43, 44, 49, 
+    #                           51, 52, 54, 56, 58, 59, 
+    #                           68, 74]:
+    #            dicts["permutation"] = [[1,0,2]] # like Pmm2
+    #        elif self.number in [16, 19, 21, 22, 23, 24, 
+    #                             47, 48, 65, 69, 70, 71]:
+    #            dicts["permutation"] = [[1,0,2],[1,2,0],[0,2,1],[2,1,0],[2,0,1]] # like Pmmm
+    #    else:
+    #        raise NotImplementedError("Now we only support the subgroups for space group")
+
+    #    return dicts
 
     def get_alternatives(self):
         """
         Get the alternative settings as a dictionary
         """
-        dicts = {"permutation": [],
-                 #"origin": [],
-                 #"diagonal": [],
-                }
         if self.dim == 3:
-            if self.number in [17, 18, 25, 27, 34, 35, 
-                               37, 38, 42, 43, 44, 49, 
-                               51, 52, 54, 56, 58, 59, 
-                               68, 74]:
-                dicts["permutation"] = [[1,0,2]] # like Pmm2
-            elif self.number in [16, 19, 21, 22, 23, 24, 
-                                 47, 48, 65, 69, 70, 71]:
-                dicts["permutation"] = [[1,0,2],[1,2,0],[0,2,1],[2,1,0],[2,0,1]] # like Pmmm
+            return wyc_sets[str(self.number)]
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
-
-        return dicts
 
     def get_max_k_subgroup(self):
         """

@@ -187,7 +187,7 @@ It is possible to supply your own unit cell lattice for a random crystal, via th
 
 .. code-block:: Python
 
-    from pyxtal.crystal import Lattice
+    from pyxtal.lattice import Lattice
     l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
     l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 
