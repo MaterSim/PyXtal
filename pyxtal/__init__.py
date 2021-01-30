@@ -21,10 +21,11 @@ from pyxtal.symmetry import Group, Wyckoff_position
 from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
 from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.lattice import Lattice
-from pyxtal.operations import apply_ops
+from pyxtal.operations import apply_ops, SymmOp
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.XRD import XRD
+from pyxtal.constants import letters
 
 # name = "pyxtal"
 
@@ -1072,7 +1073,7 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
-    def get_alternatives(self, key='permutation'):
+    def get_alternatives(self, unique_letters=True):
         """
         get alternative structure representations
 
@@ -1083,28 +1084,26 @@ class pyxtal:
             
         """
         new_strucs = []
-        # search if the 
-        res = self.group.get_alternatives()[key]
-        if len(res) > 0:
-            if key == 'permutation':
-                for swap in res:
-                    new_struc = self.copy()
-                    # swap lattice and atom_sites
-                    new_struc.lattice = self.lattice.swap_axis(ids=swap)
-                    # check if a shift is required
-                    for atom_site in new_struc.atom_sites:
-                        shift = atom_site.shift_by_swap(swap)
-                        if np.sum(shift) > 0:
-                            break
-                    # perform a swap by considering the shift
-                    for atom_site in new_struc.atom_sites:
-                        atom_site.swap_axis(swap, shift)
+        # the list of wyckoff indices in the original structure
+        # e.g. [0, 2, 2, 4] -> [a, c, c, e] 
+        ids = [len(self.group)-1-site.wp.index for site in self.atom_sites]
+        unique_ids=[ids]
 
-                    new_struc.source = key
+        wyc_sets = self.group.get_alternatives()
+        No = len(wyc_sets['No.'])
+        if No > 1:
+            # skip the first setting since it is identity
+            for no in range(1,No):
+                new_struc, ids = self._get_alternative(wyc_sets, no)
+                if unique_letters and ids in unique_ids:
+                    include = False
+                else:
+                    include = True
+                    unique_ids.append(ids)
                     new_strucs.append(new_struc)
         return new_strucs
 
-    def get_alternative(self, tran, indices):
+    def _get_alternative(self, wyc_set, no):
         """
         get alternative structure representations
 
@@ -1116,12 +1115,24 @@ class pyxtal:
             a new pyxtal structure after transformation
         """
         new_struc = self.copy()
-        new_struc.lattice = self.lattice.transform(tran[:3,:3])
-        for atom_site in new_struc.atom_sites:
-            atom_site.equivalent_set(tran, indices)
-        new_struc.numIons = int(np.linalg.det(tran[:3,:3]))*self.numIons
-        new_struc._get_formula()
 
-        new_struc.source = "New Wyckoff Set"
-        return new_struc
+        # xyz_string like 'x+1/4,y+1/4,z+1/4'
+        xyz_string = wyc_set['Coset Representative'][no]
+        op = SymmOp.from_xyz_string(xyz_string)
+
+        ids = []
+        for i, site in enumerate(new_struc.atom_sites):
+            id = len(self.group) - site.wp.index - 1
+            letter = wyc_set['Transformed WP'][no].split()[id]
+            ids.append(letters.index(letter))
+            wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
+            pos = op.operate(site.position)
+            new_struc.atom_sites[i] = atom_site(wp, pos, site.specie)
+
+        # switch lattice
+        R = op.affine_matrix[:3,:3] #rotation
+        matrix = np.dot(R.T, self.lattice.matrix)
+        new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
+        new_struc.source = "Alt. Wyckoff Set"
+        return new_struc, ids
 

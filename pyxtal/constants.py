@@ -9,6 +9,7 @@ deg = 180.0 / np.pi  # converting radians to degrees
 pyxtal_verbosity = 1  # constant for printx function
 # Max number of atoms per molecule before using fast distance check
 max_fast_mol_size = 30
+letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 logo = """#############################################################
 #             ______       _    _          _   	            #
