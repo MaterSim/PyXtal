@@ -468,14 +468,19 @@ class Test_operations(unittest.TestCase):
         wp1, trans = wp.swap_axis([1,2,0])
         wp1, trans = wp.swap_axis([2,1,0])
 
-    def test_swap_xtal(self):
-        s = pyxtal()
-        s.from_seed(cif_path+"BTO-Amm2.cif")
-        strucs = s.get_alternatives()
-        self.assertTrue(len(strucs)==1)
-        #s.from_seed(cif_path+"BTO-Amm2.cif")
-        #strucs = s.get_alternatives()
-        #self.assertTrue(len(strucs)==5)
+    def test_alternative(self):
+        for name in ["BTO-Amm2", "lt_quartz", "GeF2", "lt_cristobalite", "PVO"]:
+            s = pyxtal()
+            s.from_seed(cif_path+name+'.cif')
+            pmg_s1 = s.to_pymatgen()
+            strucs = s.get_alternatives()
+            for struc in strucs:
+                pmg_s2 = struc.to_pymatgen()
+                self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
+
+    def test_wyc_sets(self):
+        for i in range(1,229):
+            res = Group(i).get_alternatives()['No.']
 
 # class TestIO(unittest.TestCase):
 
