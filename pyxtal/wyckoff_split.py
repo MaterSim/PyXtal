@@ -21,6 +21,7 @@ class wyckoff_split:
         self.error = False
         self.elements = elements
         self.G = sym.Group(G)  # Group object
+        self.group_type = group_type
         if group_type == 't':
             self.wyc = self.G.get_max_t_subgroup()
         else:

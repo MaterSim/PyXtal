@@ -1073,21 +1073,23 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
-    def get_alternatives(self, unique_letters=True):
+    def get_alternatives(self, include_self=True):
         """
         get alternative structure representations
 
         Args:
-            key: string, now supports only permutation
-
+            include_self (bool): return the original structure
         Return:
-            
+            list of structures
         """
-        new_strucs = []
+        if include_self:
+            new_strucs = [self]
+        else:
+            new_strucs = []
+
         # the list of wyckoff indices in the original structure
         # e.g. [0, 2, 2, 4] -> [a, c, c, e] 
         ids = [len(self.group)-1-site.wp.index for site in self.atom_sites]
-        unique_ids=[ids]
 
         wyc_sets = self.group.get_alternatives()
         No = len(wyc_sets['No.'])
@@ -1095,12 +1097,7 @@ class pyxtal:
             # skip the first setting since it is identity
             for no in range(1,No):
                 new_struc, ids = self._get_alternative(wyc_sets, no)
-                if unique_letters and ids in unique_ids:
-                    include = False
-                else:
-                    include = True
-                    unique_ids.append(ids)
-                    new_strucs.append(new_struc)
+                new_strucs.append(new_struc)
         return new_strucs
 
     def _get_alternative(self, wyc_set, no):
@@ -1128,6 +1125,7 @@ class pyxtal:
             wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
             pos = op.operate(site.position)
             new_struc.atom_sites[i] = atom_site(wp, pos, site.specie)
+            #if wp.letter == 'j': print(site.wp.letter, site.position, '->', wp.letter, pos, '->', atom_site(wp, pos, site.specie).position)
 
         # switch lattice
         R = op.affine_matrix[:3,:3] #rotation
