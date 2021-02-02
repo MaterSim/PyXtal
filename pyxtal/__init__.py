@@ -17,11 +17,11 @@ from pyxtal.crystal import (
     random_crystal_1D,
     random_crystal_2D,
 )
-from pyxtal.symmetry import Group, Wyckoff_position
+from pyxtal.symmetry import Group, Wyckoff_position, search_matched_position
 from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
 from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.lattice import Lattice
-from pyxtal.operations import apply_ops, SymmOp
+from pyxtal.operations import apply_ops, SymmOp, get_inverse
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.XRD import XRD
@@ -351,26 +351,13 @@ class pyxtal:
             self.group = Group(number)
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
-            wp0 = self.group[0]
             atom_sites = []
             for i, site in enumerate(sym_struc.equivalent_sites):
                 pos = site[0].frac_coords 
                 wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
                 specie = site[0].specie.number
-                match = False
-                for op in wp0:
-                    pos1 = op.operate(pos)
-                    pos0 = wp[0].operate(pos1)
-                    diff = pos1 - pos0
-                    diff -= np.round(diff)
-                    diff = np.abs(diff)
-                    #print(wp.letter, pos1, pos0, diff)
-                    if diff.sum()<1e-2:
-                        pos1 -= np.floor(pos1)
-                        match = True
-                        break
-                #print("============", match, wp.letter, pos, pos0)
-                if match:
+                pos1 = search_matched_position(self.group, wp, pos)
+                if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
                     break
@@ -1115,7 +1102,8 @@ class pyxtal:
 
         # xyz_string like 'x+1/4,y+1/4,z+1/4'
         xyz_string = wyc_set['Coset Representative'][no]
-        op = SymmOp.from_xyz_string(xyz_string)
+        op = get_inverse(SymmOp.from_xyz_string(xyz_string))
+        #op = SymmOp.from_xyz_string(xyz_string)
 
         ids = []
         for i, site in enumerate(new_struc.atom_sites):
@@ -1124,13 +1112,19 @@ class pyxtal:
             ids.append(letters.index(letter))
             wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
             pos = op.operate(site.position)
-            new_struc.atom_sites[i] = atom_site(wp, pos, site.specie)
-            #if wp.letter == 'j': print(site.wp.letter, site.position, '->', wp.letter, pos, '->', atom_site(wp, pos, site.specie).position)
+            pos1 = search_matched_position(self.group, wp, pos)
+            if pos1 is not None:
+                new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
+            else:
+                print(pos)
+                print(wp)
+                raise RuntimeError("Cannot find the right pos")
 
         # switch lattice
         R = op.affine_matrix[:3,:3] #rotation
-        matrix = np.dot(R.T, self.lattice.matrix)
+        #if xyz_string == 'z,x,y': print(np.dot(R.T, self.lattice.matrix), np.dot(R, self.lattice.matrix))
+        matrix = np.dot(R, self.lattice.matrix)
         new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
-        new_struc.source = "Alt. Wyckoff Set"
+        new_struc.source = "Alt. Wyckoff Set: " + xyz_string
         return new_struc, ids
 

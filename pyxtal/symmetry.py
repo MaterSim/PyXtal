@@ -56,7 +56,7 @@ symbols = loadfn(resource_filename("pyxtal", "database/symbols.json"))
 
 t_subgroup = loadfn(resource_filename("pyxtal",'database/t_subgroup.json'))
 k_subgroup = loadfn(resource_filename("pyxtal",'database/k_subgroup.json'))
-wyc_sets = loadfn(resource_filename("pyxtal",'database/wyckoff_sets_alternatives.json'))
+wyc_sets = loadfn(resource_filename("pyxtal",'database/wyckoff_sets.json'))
 
 Identity = SymmOp.from_xyz_string("x,y,z")
 Inversion = SymmOp.from_xyz_string("-x,-y,-z")
@@ -2539,4 +2539,40 @@ def get_pbc_and_lattice(number, dim):
         else:
             lattice_type = "ellipsoidal"
     return PBC, lattice_type
+
+def search_matched_position(G, wp, pos):
+    """
+    search generator for a special Wyckoff position
+
+    Args:
+        G: space group number or Group object
+        wp: Wyckoff object
+        pos: initial xyz position
+
+    Return:
+        pos1: the position that matchs the standard setting
+    """
+    if isinstance(G, int):
+        wp0 = Group(G)[0]
+    else:
+        wp0 = G[0]
+    match = False
+
+    for op in wp0:
+        pos1 = op.operate(pos)
+        pos0 = wp[0].operate(pos1)
+        diff = pos1 - pos0
+        diff -= np.round(diff)
+        diff = np.abs(diff)
+        #print(wp.letter, pos1, pos0, diff)
+        if diff.sum()<1e-2:
+            pos1 -= np.floor(pos1)
+            match = True
+            break
+    #print("============", match, wp.letter, pos, pos0)
+    if match:
+        return pos1
+    else:
+        return None
+
 
