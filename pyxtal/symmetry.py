@@ -155,6 +155,7 @@ class Group:
             self.w_symm_m = get_wyckoff_symmetry(self.number, molecular=True)
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True) 
             self.hall_number = hall_from_hm(self.number)
+            self.point_group = get_point_group(self.number)
         elif dim == 2:
             self.wyckoffs = get_layer(self.number)
             self.w_symm = get_layer_symmetry(self.number)
@@ -441,29 +442,6 @@ class Group:
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
     
-    #QZ: this is outdated
-    #def get_alternatives(self):
-    #    """
-    #    Get the alternative settings as a dictionary
-    #    """
-    #    dicts = {"permutation": [],
-    #             #"origin": [],
-    #             #"diagonal": [],
-    #            }
-    #    if self.dim == 3:
-    #        if self.number in [17, 18, 25, 27, 34, 35, 
-    #                           37, 38, 42, 43, 44, 49, 
-    #                           51, 52, 54, 56, 58, 59, 
-    #                           68, 74]:
-    #            dicts["permutation"] = [[1,0,2]] # like Pmm2
-    #        elif self.number in [16, 19, 21, 22, 23, 24, 
-    #                             47, 48, 65, 69, 70, 71]:
-    #            dicts["permutation"] = [[1,0,2],[1,2,0],[0,2,1],[2,1,0],[2,0,1]] # like Pmmm
-    #    else:
-    #        raise NotImplementedError("Now we only support the subgroups for space group")
-
-    #    return dicts
-
     def get_alternatives(self):
         """
         Get the alternative settings as a dictionary
@@ -482,6 +460,15 @@ class Group:
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
 
+    def get_max_t_subgroup(self):
+        """
+        Returns the maximal t-subgroups as a dictionary
+        """
+        if self.dim == 3:
+            return t_subgroup[str(self.number)]
+        else:
+            raise NotImplementedError("Now we only support the subgroups for space group")
+ 
     def get_min_supergroup(self, group_type='t'):
         """
         Returns the minimal supergroups as a dictionary
@@ -499,7 +486,7 @@ class Group:
                         subgroups = Group(sg).get_max_t_subgroup()
                 else:
                     g1 = Group(sg)
-                    if g1.lattice_type == self.lattice_type:
+                    if g1.point_group == self.point_group:
                         subgroups = Group(sg).get_max_k_subgroup()
                 if subgroups is not None:
                     for i, sub in enumerate(subgroups['subgroup']): 
@@ -513,6 +500,19 @@ class Group:
             return dicts
         else:
             raise NotImplementedError("Now we only support the supergroups for space group")
+
+    def get_max_subgroup_numbers(self):
+        """
+        Returns the minimal supergroups as a dictionary
+        """
+        groups = []
+        if self.dim == 3:
+            k = k_subgroup[str(self.number)]['subgroup']
+            t = t_subgroup[str(self.number)]['subgroup']
+            return k+t
+        else:
+            raise NotImplementedError("Now we only support the supergroups for space group")
+
 
     @classmethod
     def list_groups(cls, dim=3):
@@ -2575,4 +2575,73 @@ def search_matched_position(G, wp, pos):
     else:
         return None
 
+def get_point_group(number):
+    """
+    return the point group for the given space group
+    """
+
+    if number == 1:
+        return '1'
+    elif number == 2:
+        return '-1'
+    elif 3 <= number <= 5:
+        return '2'
+    elif 6 <= number <= 9:
+        return 'm'
+    elif 10 <= number <= 15:
+        return '2/m'
+    elif 16 <= number <= 24:
+        return '222'
+    elif 25 <= number <= 46:
+        return 'mm2'
+    elif 47 <= number <= 74:
+        return 'mmm'
+    elif 75 <= number <= 80:
+        return '4'
+    elif 81 <= number <= 82:
+        return '-4'
+    elif 83 <= number <= 88:
+        return '4/m'
+    elif 89 <= number <= 98:
+        return '422'
+    elif 99 <= number <= 110:
+        return '4mm'
+    elif 111 <= number <= 122:
+        return '-42m'
+    elif 123 <= number <= 142:
+        return '4/mmm'
+    elif 143 <= number <= 146:
+        return '3'
+    elif 147 <= number <= 148:
+        return '-3'
+    elif 149 <= number <= 155:
+        return '32'
+    elif 156 <= number <= 161:
+        return '3m'
+    elif 162 <= number <= 167:
+        return '-3m'
+    elif 168 <= number <= 173:
+        return '6'
+    elif number == 174:
+        return '-6'
+    elif 175 <= number <= 176:
+        return '6/m'
+    elif 177 <= number <= 182:
+        return '622'
+    elif 183 <= number <= 186:
+        return '6mm'
+    elif 187 <= number <= 190:
+        return '-6m2'
+    elif 191 <= number <= 194:
+        return '6/mmm'
+    elif 195 <= number <= 199:
+        return '23'
+    elif 200 <= number <= 206:
+        return 'm-3'
+    elif 207 <= number <= 214:
+        return '432'
+    elif 215 <= number <= 200:
+        return '-43m'
+    elif 221 <= number <= 230:
+        return 'm-3m'
 

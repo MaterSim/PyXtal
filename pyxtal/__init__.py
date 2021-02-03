@@ -133,7 +133,7 @@ class pyxtal:
 
     def __str__(self):
         if self.valid:
-            s = "------Crystal from {:s}------".format(self.source)
+            s = "\n------Crystal from {:s}------".format(self.source)
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
             if self.group.number in [7, 14, 15] and self.diag:

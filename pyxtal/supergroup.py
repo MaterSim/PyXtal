@@ -61,6 +61,83 @@ def get_best_match(positions, ref, cell):
     id = np.argmin(dists)
     return positions[id], dists[id]
 
+class supergroups():
+    """
+    Class to search for the feasible transition to a given super group
+
+    Args:
+        struc: pyxtal structure
+        G (int): the desired super group number
+    """
+
+    def __init__(self, struc, G=None, path=None, d_tol=1.0):
+        self.struc0 = struc
+        if path is None:
+            paths = self.search_paths(struc.group.number, G)
+        else:
+            paths = [path]
+
+        self.strucs = None
+        for p in paths:
+            strucs = self.struc_along_path(p, d_tol)
+            if len(strucs) == len(p) + 1:
+                self.strucs = strucs
+                self.path = [self.struc0.group.number] + p
+                break
+
+    def __str__(self):
+        s = "\n===Transition to super group: "
+        if self.strucs is None:
+            s += "Unsuccessful, check your input"
+        else: 
+            s += "{:d}".format(self.path[0])
+            for i, p in enumerate(self.path[1:]):
+                s += " -> {:d}[{:5.3f}]".format(p, self.strucs[i+1].disp)
+            s += '\n'
+            for struc in self.strucs:
+                s += str(struc)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+    def search_paths(self, H, G):
+        # enumerate all connections between H and G
+        # paths = []
+        """
+        >>> from pyxtal.symmetry import Group
+        >>> g = Group(227)
+        >>> g.get_max_subgroup_numbers()
+        [141, 141, 141, 166, 166, 166, 166, 203, 210, 216]
+        """
+        G1 = sym.Group(G).get_max_subgroup_numbers()
+
+        raise NotImplementedError
+
+    def struc_along_path(self, path, d_tol=1.0):
+        strucs = []
+        G_strucs = [self.struc0]
+        for G in path:
+            H = G_strucs[0].group.number
+            if sym.get_point_group(G) == sym.get_point_group(H):
+                group_type = 'k'
+            else:
+                group_type = 't'
+            for G_struc in G_strucs:
+                my = supergroup(G_struc, [G], group_type)
+                solutions = my.search_supergroup(d_tol, max_per_G=500)
+                new_G_strucs = my.make_supergroup(solutions, show_detail=False)
+                if len(new_G_strucs) > 0:
+                    strucs.append(G_struc)
+                    G_strucs = new_G_strucs
+                    break
+            if len(new_G_strucs) == 0:
+                print('cannot proceed from Spg {:d} to {:d}'.format(H, G))
+                break
+        # add the final struc
+        if len(strucs) == len(path):
+            strucs.append(new_G_strucs[0])
+        return strucs
 
 class supergroup():
     """
@@ -70,6 +147,7 @@ class supergroup():
         struc: pyxtal structure
         G: list of possible supergroup numbers, default is None
         group_type: `t` or `k`
+        solution: solution of possible wyc lists in super group symmetry
     """
     def __init__(self, struc, G=None, group_type='t', solution=None):
 
@@ -122,8 +200,6 @@ class supergroup():
                         trials = self.check_freedom(G, sols)
                         sol = {'group': G, 'id': id, 'splits': trials}
                         solutions.append(sol)
-            #else: # load the solution
-            #    raise NotImplementedError
 
             if len(solutions) > 0:
                 # exit if one solution is found
@@ -134,21 +210,20 @@ class supergroup():
             self.error = True
             print("No compatible solution exists")
         else:
-            print(struc)
+            #print(struc)
             self.sites = sites
             self.elements = elements
             self.struc = struc
             self.solutions = solutions
             self.cell = struc.lattice.matrix
 
-
     def search_supergroup(self, d_tol=1.0, max_per_G=2500):
         """
         search for valid supergroup transition
 
         Args:
-            d_tol (float): tolerance
-
+            d_tol (float): tolerance for atomic displacement
+            max_per_G (int): maximum number of possible solution for each G
         Returns:
             valid_solutions: dictionary
         """
@@ -168,20 +243,26 @@ class supergroup():
                         valid_solutions.append((sp, mapping, disp, mae))
         return valid_solutions
 
-    def make_supergroup(self, solutions, show_detail=True):
+    def make_supergroup(self, solutions, once=False, show_detail=True):
         """
         create supergroup structures based on the list of solutions
 
         Args:
             solutions: list of tuples (splitter, mapping, disp)
-
+            show_detail (bool): print out the details 
         Returns:
             list of pyxtal structures
         """
         G_strucs = []
+
         if len(solutions) > 0:
+            if once:
+                disps = np.array([sol[-1] for sol in solutions])
+                ID = np.argmin(disps)
+                solutions = [solutions[ID]]
             for solution in solutions:
                 (sp, mapping, disp, mae) = solution
+                #print(mapping, disp, mae)
                 G = sp.G.number
                 lat1 = np.dot(sp.inv_R[:3,:3].T, self.struc.lattice.matrix)
                 lattice = Lattice.from_matrix(lat1, ltype=sp.G.lattice_type) 
@@ -195,33 +276,20 @@ class supergroup():
                 for i, wp in enumerate(sp.wp1_lists):
                     pos = coords_G1[i]
                     pos -= np.floor(pos)
-                    match = False
-                    for op in sp.G[0]:
-                        pos1 = op.operate(pos)
-                        pos0 = wp[0].operate(pos1)
-                        diff = pos1 - pos0
-                        diff -= np.round(diff)
-                        diff = np.abs(diff)
-                        if diff.sum()<2e-2:
-                            pos1 -= np.floor(pos1)
-                            match = True
-                            break
-                    if match:
+                    pos1 = sym.search_matched_position(sp.G, wp, pos)
+                    if pos1 is not None:
                         site = atom_site(wp, pos1, sp.elements[i])
-                        #print(site)
                         G_sites.append(site)
                     else:
                         print(wp)
-                        print(pos1)
                         raise RuntimeError("cannot assign the right wp")
-                #import sys; sys.exit()
 
                 G_struc.atom_sites = G_sites
                 G_struc.source = 'supergroup {:6.3f}'.format(mae)
-
                 G_struc.lattice = lattice
                 G_struc.numIons *= round(np.abs(np.linalg.det(sp.R[:3,:3])))
                 G_struc._get_formula()
+                G_struc.disp = mae
 
                 if new_structure(G_struc, G_strucs):
                     G_strucs.append(G_struc)
@@ -230,7 +298,6 @@ class supergroup():
                         _, coords_G2, coords_H1, elements, mults = details
                         self.print_detail(G, coords_H1, coords_G2, elements, mults, disp)
                         print(G_struc)
-                        #print(sp.R)
 
         return G_strucs
 
@@ -239,10 +306,11 @@ class supergroup():
         For a given solution, search for the possbile supergroup structure
 
         Args:
-            G: supergroup number
-            split_id: integer
-            solution: e.g., [['2d'], ['6h'], ['2c', '6h', '12i']]
-            d_tol:
+            G (int): supergroup number
+            split_id (int): integer
+            solution (list): e.g., [['2d'], ['6h'], ['2c', '6h', '12i']]
+            d_tol (float): tolerance
+
         Returns:
             mae: mean absolute atomic displcement
             disp: overall cell translation
@@ -290,6 +358,13 @@ class supergroup():
     def find_mapping(self, splitter, max_num=50):
         """
         search for all mappings for a given splitter
+
+        Args:
+            splitter: wyc_splitter object
+            max_num (int): maximum number of atomic mapping
+
+        Returns:
+            unique solutions
         """
         solution_template = [[None]*len(wp2) for wp2 in splitter.wp2_lists]
         atom_sites_H = self.struc.atom_sites
@@ -342,7 +417,9 @@ class supergroup():
             splitter: splitter object to specify the relation between G and H
             solution: list of sites in H, e.g., ['4a', '8b']
             disp: an overall shift from H to G, None or 3 vector
+            mask: if need to freeze the direction
             d_tol: the tolerance in angstrom
+
         Returns:
             distortion
             cell translation
@@ -356,7 +433,7 @@ class supergroup():
             if len(splitter.wp2_lists[i]) == 1:
                 # symmetry info
                 ops_H = splitter.H_orbits[i][0]  # ops for H
-                matrix = splitter.G2_orbits[i][0][0].affine_matrix.copy() # ops for G2
+                matrix = splitter.G2_orbits[i][0][0].affine_matrix.copy() # op for G2
                 
                 change = True
                 for mid in range(3):
@@ -374,7 +451,8 @@ class supergroup():
                             matrix[mid,:] = 0
                             matrix[mid,mid] = 1
                 op_G2 = SymmOp(matrix)
-                #print(change, op_G2.as_xyz_string(), ops_H[0].as_xyz_string()) #; import sys; sys.exit()
+                #print(change, op_G2.as_xyz_string(), ops_H[0].as_xyz_string()) 
+                #import sys; sys.exit()
 
                 # refine coord1 to find the best match on coord2
                 coord = atom_sites_H[solution[i][0]].position
@@ -441,7 +519,6 @@ class supergroup():
                 
             else:
                 # symmetry operations
-                #print(splitter)
                 ops_H1 = splitter.H_orbits[i][0]
                 op_G21 = splitter.G2_orbits[i][0][0]
                 ops_G22 = splitter.G2_orbits[i][1]
@@ -540,7 +617,7 @@ class supergroup():
                         #coord11 = inv_op2.operate(coord22)
                         max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
 
-                    else: #
+                    else: 
                         # 8j in C2m -> 4e+4e in P21/c
                         # (z, y, -x) -> (x1, y1, z1) 
                         # (z, 1/2+y, 1/2-x) -> (x2, y2, z2)
@@ -590,12 +667,13 @@ class supergroup():
             d_tol: the tolerance in angstrom
 
         Returns:
-            coords_G1
-            coords_G2
-            coords_H1
-            elements
-            mults
+            coords_G1: coordinates in G
+            coords_G2: coordinates in G under the subgroup setting
+            coords_H1: coordinates in H
+            elements: list of elements
+            mults: list of multiplicities
         """
+
         atom_sites_H = self.struc.atom_sites
         coords_G1 = [] # position in G
         coords_G2 = [] # position in G on the subgroup bais
@@ -813,18 +891,12 @@ class supergroup():
                 sites.extend(s)
             if G.is_valid_combination(sites):
                 valid_solutions.append(solution)
-                #if 'g' not in sites:
-                #    print(sites)
-            #else:
-            #    print(solution)
-            #    import sys; sys.exit()
         return valid_solutions
         
 
     def check_lattice(self, G, trans, struc, tol=1.0, a_tol=10):
         """
-        donot attempt to detect the supergroup symmetry 
-        if the lattice mismatch is big
+        check if the lattice mismatch is big
         used to save some computational cost
         """
         matrix = np.dot(trans, struc.lattice.get_matrix())
@@ -835,16 +907,13 @@ class supergroup():
         abc_diff = np.abs(np.array([a2-a1, b2-b1, c2-c1])).max()
         ang_diff = np.abs(np.array([alpha2-alpha1, beta2-beta1, gamma2-gamma1])).max()
         if abc_diff > tol or ang_diff > a_tol:
-            #print("bad lattice", G)
-            #print(l1.get_para(degree=True))
-            #print(l2.get_para(degree=True))
             return False
         else:
             return True
 
     def check_compatibility(self, G, relation, sites, elements):
         """
-        find the compatible splitter too let the atoms of subgroup H fit the group G.
+        find the compatible splitter to let the atoms of subgroup H fit the group G.
 
         Args:
             G: the target space group with high symmetry
@@ -953,55 +1022,23 @@ if __name__ == "__main__":
 
     from pyxtal import pyxtal
 
-
-    def search_t(G_strucs):
-        if len(G_strucs)>0:
-            my = supergroup(G_strucs[-1])
-            solutions = my.search_supergroup(d_tol=0.9)
-            G_strucs = my.make_supergroup(solutions)
-            if len(G_strucs)>0:
-                my = supergroup(G_strucs[-1])
-                solutions = my.search_supergroup(d_tol=0.9)
-                G_strucs = my.make_supergroup(solutions)
-
-    # BTO: 99-123-221
-    # BTO-Amm2: 38-65-123-221
-    # NaSb3F10": 173-186-194
-    # lt_quartz": 154-180
-    # GeF2: 19-62,205
-    # lt_cristobalite: 92-98-210-227
-    # NbO2: 88-141,142
-    # PVO: 14-12-
-    # PPO: 15-12-?---bad example?
+    data = {
+            "NbO2": [141],
+            "GeF2": [62],
+            "lt_quartz": [180],
+            "BTO": [123, 221],
+            "NaSb3F10": [186,194],
+            "BTO-Amm2": [65, 123, 221],
+            "lt_cristobalite": [98, 210, 227],
+            "MPWO": [59, 71, 139, 225],
+           }
+    # "PVO: 14-12-
+    # "PPO: 15-12-?---bad example?
 
     cif_path = "pyxtal/database/cifs/"
-    for cif in ["BTO", "BTO-Amm2", "NaSb3F10", "lt_quartz", "GeF2", "NbO2"]:
-    #for cif in ["GeF2"]:
-        print("\n\n\n====================", cif)
-        s = pyxtal()
+    for cif in data.keys():
+        print("===============", cif, "===============")
+        s = pyxtal() 
         s.from_seed(cif_path+cif+'.cif')
-        my = supergroup(s) 
-        solutions = my.search_supergroup(d_tol=1.0)
-        G_strucs = my.make_supergroup(solutions)
-        search_t(G_strucs)
-
-    for cif in ["lt_cristobalite"]:
-        print("\n\n\n====================", cif)
-        s = pyxtal()
-        s.from_seed(cif_path+cif+'.cif')
-        my = supergroup(s, group_type='k')
-        solutions = my.search_supergroup(d_tol=1.0)
-        G_strucs = my.make_supergroup(solutions)
-        search_t(G_strucs)
-
-    cif = "MPWO"
-    print("\n\n\n====================", cif)
-    s = pyxtal()
-    s.from_seed(cif_path+cif+".cif") #62-59-71-139-225
-    my = supergroup(s, G=[59], group_type='k')
-    solutions = my.search_supergroup(d_tol=1.0, max_per_G=500)
-    s = my.make_supergroup(solutions)[-1]
-    my = supergroup(s, G=[71], group_type='k')
-    solutions = my.search_supergroup(d_tol=1.0) #, max_per_G=500)
-    G_strucs = my.make_supergroup(solutions)
-    search_t(G_strucs)
+        sup = supergroups(s, path=data[cif])
+        print(sup)
