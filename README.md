@@ -21,7 +21,7 @@
 
 ## Introduction
 
-PyXtal is an open source Python package which was initiated by [Qiang Zhu](http://qzhu2017.github.io) and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas. The goal of PyXtal is to develop a fundamental library to allow one to design the material structure with a certain symmetry constraint. So far, the package allows for generation/manipulation of crystals based on symmetry constraints. These structures can exported to various structural formats for further study. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for information.
+PyXtal is an open source Python package which was initiated by [Qiang Zhu](http://qzhu2017.github.io) and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas. The goal of PyXtal is to develop a fundamental library to allow one to design the material structure with a certain symmetry constraint. These structures can exported to various structural formats for further study. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for more information.
 
 To contribute to this project, please check [How to contribute?](#how-to-contribute).
 
@@ -34,12 +34,12 @@ To contribute to this project, please check [How to contribute?](#how-to-contrib
 ## Current Features
 
 - Generation of atomic structures for a given symmetry and stoichiometry (0-3D)
-- Generation of molecular crystals (1-3D) with the support of special Wyckoff positions. 
+- Generation of molecular crystals (1-3D) with the support of special Wyckoff positions.
+- Structure manipulation via subgroup/supergroup symmetry relation
+- Geometry optimization from built-in and external optimization methods.
 - Internal support of ``cif`` file and many other formats via ``pymatgen`` or ``ASE``.
 - Easy access to symmetry information (e.g., Wyckoff, site symmetry and international symbols).
 - X-ray diffraction analysis and [its online application](https://vxrd.physics.unlv.edu)
-- Structural manipulation via symmetry constraint (group-subgroup relation)
-- Geometry optimization from built-in and external optimization methods.
 
 ## Installation
 
@@ -80,6 +80,6 @@ author = "Scott Fredericks and Kevin Parrish and Dean Sayre and Qiang Zhu",
 This is an open-source project. Its growth depends on the community. To contribute to PyXtal, you don't necessarily have to write the code. Any contributions from the following list will be helpful.
 
 - [![Star on GitHub](https://img.shields.io/github/stars/qzhu2017/pyxtal.svg?style=social)](https://github.com/qzhu2017/pyxtal/stargazers)
- the PyXtal project via GitHub and recommend it to your colleagues/friends
+ the PyXtal project and recommend it to your colleagues/friends
 - Open an [![GitHub issues](https://img.shields.io/github/issues/qzhu2017/pyxtal.svg)](https://GitHub.com/qzhu2017/pyxtal/issues/) to report the bug or address your wishlist or improve our documentation
 - [![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social)](https://github.com/qzhu2017/PyXtal/network/members) the repository and send us the pull request
