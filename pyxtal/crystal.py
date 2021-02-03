@@ -1,7 +1,11 @@
+"""
+Module for generating atomic crystals
+"""
+
 # Standard Libraries
 import random
-import numpy as np
 from copy import deepcopy
+import numpy as np
 
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff
@@ -18,19 +22,19 @@ class random_crystal:
     Class for storing and generating atomic crystals based on symmetry
     constraints. Given a spacegroup, list of atomic symbols, the stoichiometry,
     and a volume factor, generates a random crystal consistent with the
-    spacegroup's symmetry. 
+    spacegroup's symmetry.
 
     Args:
-        group: the spacegroup number (1-230), or a 
+        group: the spacegroup number (1-230), or a
             `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell), e.g., `[4, 2]`
         factor (optional): volume factor used to generate the crystal
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
             object to define the unit cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
             object to define the distances
     """
 
@@ -48,6 +52,9 @@ class random_crystal:
 
         self.dim = 3 #periodic dimensions of the crystal
         self.PBC = [1, 1, 1] #The periodic boundary axes of the crystal
+        self.lattice_attempts = 0
+        self.coord_attempts = 0
+
         if type(group) != Group:
             group = Group(group, self.dim)
         self.init_common(species, numIons, factor, group, lattice, sites, conventional, tm)
@@ -189,7 +196,7 @@ class random_crystal:
                 )
                 self.valid = False
                 return
-        
+
         self.sites = {}
         for i, specie in enumerate(self.species):
             if sites is not None and sites[i] is not None:
@@ -206,7 +213,7 @@ class random_crystal:
         Checks if the number of atoms is compatible with the Wyckoff
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
-    
+
         NOTE Comprhys: Is degrees of freedom used symnomously with multiplicity?
         perhaps standardising to multiplicity would be clearer?
         """
@@ -249,10 +256,10 @@ class random_crystal:
                     elif mult > numIon:
                         l_maxn.append(0)
                     l_free.append(False)
-    
+
             # Loop over possible combinations
             p = 0  # Create pointer variable to move through lists
-    
+
             # Store the number of each WP, used across possible WP combinations
             n0 = [0] * len(l_mult)
             n = deepcopy(n0)
@@ -308,7 +315,7 @@ class random_crystal:
         else:
             # All species passed, but no degrees of freedom: return 0
             return 0
-    
+
     def check_consistency(self, site, numIon):
         num = 0
         for s in site:
@@ -459,7 +466,7 @@ class random_crystal:
 
         # Now we start to add the specie to the wyckoff position
         sites_list = deepcopy(self.sites[specie]) # the list of Wyckoff site
-        if sites_list is not None: 
+        if sites_list is not None:
             wyckoff_attempts = max(len(sites_list)*2, 10)
         else:
             # the minimum numattempts is to put all atoms to the general WPs
@@ -471,9 +478,9 @@ class random_crystal:
             # Choose a random WP for given multiplicity: 2a, 2b
             if sites_list is not None:
                 site = sites_list[0]
-            else: # Selecting the merging 
+            else: # Selecting the merging
                 site = None
-            
+
             wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
             if wp is not False:
                 # Generate a list of coords from ops
@@ -485,12 +492,11 @@ class random_crystal:
                 if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
                     pt[-1] = 0.5
 
-               
                 # If site the pre-assigned, do not accept merge
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:
                         cycle += 1
-                        continue 
+                        continue
                     # Use a Wyckoff_site object for the current site
                     new_site = atom_site(wp, pt, specie)
 
@@ -504,7 +510,7 @@ class random_crystal:
                         if sites_list is not None:
                             sites_list.pop(0)
                         wyckoff_sites_tmp.append(new_site)
-                        numIon_added += new_site.multiplicity 
+                        numIon_added += new_site.multiplicity
 
                         # Check if enough atoms have been added
                         if numIon_added == numIon:
@@ -521,10 +527,10 @@ class random_crystal_2D(random_crystal):
     A 2d counterpart to random_crystal. Generates a random atomic crystal based
     on a 2d layer group instead of a 3d spacegroup. Note that each layer group
     is equal to a corresponding 3d spacegroup, but without periodicity in one
-    direction. The generated pymatgen structure can be accessed via self.struct
+    direction.
 
     Args:
-        group: the layer group number (1-80), or a 
+        group: the layer group number (1-80), or a
             `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
@@ -533,11 +539,10 @@ class random_crystal_2D(random_crystal):
         thickness: the thickness, in Angstroms, of the unit cell in the 3rd
             dimension (the direction which is not repeated periodically)
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
             object to define the unit cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
             object to define the distances
- 
     """
 
     def __init__(
@@ -565,11 +570,10 @@ class random_crystal_2D(random_crystal):
 class random_crystal_1D(random_crystal):
     """
     A 1d counterpart to random_crystal. Generates a random atomic crystal based
-    on a 1d Rod group instead of a 3d spacegroup. The generated pymatgen
-    structure can be accessed via self.struct
+    on a 1d Rod group instead of a 3d spacegroup.
 
     Args:
-        group: the Rod group number (1-75), or a 
+        group: the Rod group number (1-75), or a
             `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
@@ -577,11 +581,10 @@ class random_crystal_1D(random_crystal):
         factor (optional): volume factor used to generate the crystal
         area: the effective cross-sectional area (A^2), of the unit cell
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
             object to define the unit cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
             object to define the distances
- 
     """
 
     def __init__(
@@ -619,9 +622,9 @@ class random_cluster(random_crystal):
             primitive cell (NOT the conventional cell), e.g., `[4, 2]`
         factor (optional): volume factor used to generate the crystal
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
             object to define the unit cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ 
+        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
             object to define the distances
     """
 

@@ -1,7 +1,12 @@
+"""
+Module for generating molecular crystals
+"""
+
+
 # Standard Libraries
 import random
-import numpy as np
 from copy import deepcopy
+import numpy as np
 
 # PyXtal imports
 from pyxtal.msg import printx
@@ -9,8 +14,8 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.wyckoff_site import mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
-from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular, Wyckoff_position
-from pyxtal.operations import angle
+from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular
+# from pyxtal.operations import angle
 
 # Define functions
 # ------------------------------
@@ -69,6 +74,8 @@ class molecular_crystal:
         self.PBC = [1, 1, 1]
         self.diag = diag
         self.selec_high = select_high
+        self.lattice_attempts = 0
+        self.coord_attempts = 0
 
         self.init_common(
             molecules,
@@ -426,7 +433,7 @@ class molecular_crystal:
         degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
         if degrees is False:
             self.valid = False
-            msg = "the space group is incompatible with the number of molecules"
+            #msg = "the space group is incompatible with the number of molecules"
             #raise ValueError(msg)
             return
         else:
@@ -505,11 +512,11 @@ class molecular_crystal:
         """
         numMol_added = 0
         mol_sites_tmp = []
-        
+
 
         # Now we start to add the specie to the wyckoff position
-        sites_list = deepcopy(self.sites[id]) # the list of Wyckoff site 
-        if sites_list is not None: 
+        sites_list = deepcopy(self.sites[id]) # the list of Wyckoff site
+        if sites_list is not None:
             self.wyckoff_attempts = max(len(sites_list)*2, 10)
         else:
             # the minimum numattempts is to put all atoms to the general WPs
@@ -523,7 +530,7 @@ class molecular_crystal:
                 site = sites_list[0]
             else: # Selecting the merging 
                 site = None
- 
+
             # NOTE: The molecular version return wyckoff indices, not ops
             diff = numMol - numMol_added
             wp = choose_wyckoff_molecular(self.group, diff, site, valid_ori, self.select_high, self.dim)
@@ -603,7 +610,7 @@ class molecular_crystal:
             if len(pyxtal_mol.mol) > 1 and ori.degrees > 0:
                 # bisection method
                 def fun_dist(angle, ori, mo, pt):
-                    ori0 = ori.copy()
+                    # ori0 = ori.copy()
                     ori.change_orientation(angle)
                     ms0 = mol_site(
                         mo,
@@ -643,10 +650,10 @@ class molecular_crystal_2D(molecular_crystal):
     constraints. This crystal is stored as a pymatgen struct via self.struct
 
     Args:
-        group: the layer group number between 1 and 80. 
+        group: the layer group number between 1 and 80.
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
-            or the name of molecules from the built_in 
+            or the name of molecules from the built_in
             `database <pyxtal.database.collection.html>`_
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
@@ -665,9 +672,9 @@ class molecular_crystal_2D(molecular_crystal):
             stoichiometry has been generated, you may pass its
             valid_orientations attribute here to avoid repeating the
             calculation, but this is not required
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
             object to define the unit cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
+        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_
             object to define the distances
     """
 
@@ -719,7 +726,7 @@ class molecular_crystal_1D(molecular_crystal):
             `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
-            or the name of molecules from the built_in 
+            or the name of molecules from the built_in
             `database <pyxtal.database.collection.html>`_
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
@@ -737,9 +744,9 @@ class molecular_crystal_1D(molecular_crystal):
             stoichiometry has been generated, you may pass its
             valid_orientations attribute here to avoid repeating the
             calculation, but this is not required
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
             object to define the unit cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
+        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_
             object to define the distances
     """
 
