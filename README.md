@@ -61,10 +61,9 @@ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
 
 ## Citation
 
-Fredericks S, Parrish K, Sayre D, Zhu Q\*(2019)
-[PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis](https://www.sciencedirect.com/science/article/pii/S0010465520304057)
-
-[arXiv link](https://arxiv.org/pdf/1911.11123.pdf)
+Fredericks S, Parrish K, Sayre D, Zhu Q\*(2020)
+[PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis](https://www.sciencedirect.com/science/article/pii/S0010465520304057).
+\[[arXiv link](https://arxiv.org/pdf/1911.11123.pdf)\]
 
 ```bib
 @article{pyxtal,
@@ -86,12 +85,12 @@ This is an open-source project. Its growth depends on the community. To contribu
 
 ### If you just want to use the code
 
-- Star the PyXtal project via GitHub and recommend it to your colleagues/friends
-- Open an issue to report the bug or address your wishlist
+- <a class="github-button" href="https://github.com/qzhu2017/PyXtal" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true" aria-label="Star qzhu2017/PyXtal on GitHub">Star</a> the PyXtal project via GitHub and recommend it to your colleagues/friends
+- Open an <a class="github-button" href="https://github.com/qzhu2017/PyXtal/issues" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true" aria-label="Issue qzhu2017/PyXtal on GitHub">Issue</a> to report the bug or address your wishlist
 - Suggestions to improve our documentation
 
 ### If you want to join the code development
 
-- Fork the repository
+- <a class="github-button" href="https://github.com/qzhu2017/PyXtal/fork" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true" aria-label="Fork qzhu2017/PyXtal on GitHub">Fork</a> the repository
 - Suggest and implement new functions
 - Send us the pull request
