@@ -9,17 +9,17 @@
 [![Gitter](https://badges.gitter.im/PyXtal/community.svg)](https://gitter.im/PyXtal/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 <img align="right" width="450" src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/water.gif">
 
-## Content
-
-- [Content](#content)
+<details>
+<summary>Table of content</summary>
+## Table of content
 - [Introduction](#introduction)
 - [Quick Start](#quick-start)
 - [Current Features](#current-features)
 - [Installation](#installation)
 - [Citation](#citation)
 - [How to contribute?](#how-to-contribute)
-  - [user](#if-you-just-want-to-use-the-code)
-  - [developer](#if-you-want-to-join-the-code-development)
+
+</details>
 
 ## Introduction
 
@@ -83,15 +83,7 @@ author = "Scott Fredericks and Kevin Parrish and Dean Sayre and Qiang Zhu",
 
 This is an open-source project. Its growth depends on the community. To contribute to PyXtal, you don't necessarily have to write the code. Any contributions from the following list will be helpful.
 
-### If you just want to use the code
-
 - [![Star on GitHub](https://img.shields.io/github/stars/qzhu2017/pyxtal.svg?style=social)](https://github.com/qzhu2017/pyxtal/stargazers)
  the PyXtal project via GitHub and recommend it to your colleagues/friends
-- Open an <a class="github-button" href="https://github.com/qzhu2017/PyXtal/issues" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true" aria-label="Issue qzhu2017/PyXtal on GitHub">Issue</a> to report the bug or address your wishlist
-- Suggestions to improve our documentation
-
-### If you want to join the code development
-
-- [![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social)](https://github.com/qzhu2017/PyXtal/network/members) the repository
-- Suggest and implement new functions
-- Send us the pull request
+- Open an [![GitHub issues](https://img.shields.io/github/issues/qzhu2017/pyxtal.js.svg)](https://GitHub.com/qzhu2017/pyxtal.js/issues/) to report the bug or address your wishlist or improve our documentation
+- [![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social)](https://github.com/qzhu2017/PyXtal/network/members) the repository and send us the pull request
