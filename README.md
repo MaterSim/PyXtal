@@ -92,6 +92,6 @@ This is an open-source project. Its growth depends on the community. To contribu
 
 ### If you want to join the code development
 
-- ![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social) the repository
+- [![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social)](https://github.com/qzhu2017/PyXtal/network/members) the repository
 - Suggest and implement new functions
 - Send us the pull request
