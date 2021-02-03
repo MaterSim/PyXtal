@@ -9,8 +9,6 @@
 [![Gitter](https://badges.gitter.im/PyXtal/community.svg)](https://gitter.im/PyXtal/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 <img align="right" width="450" src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/water.gif">
 
-<details>
-<summary>Table of content</summary>
 
 ## Table of content
 - [Introduction](#introduction)
@@ -20,7 +18,6 @@
 - [Citation](#citation)
 - [How to contribute?](#how-to-contribute)
 
-</details>
 
 ## Introduction
 
@@ -84,5 +81,5 @@ This is an open-source project. Its growth depends on the community. To contribu
 
 - [![Star on GitHub](https://img.shields.io/github/stars/qzhu2017/pyxtal.svg?style=social)](https://github.com/qzhu2017/pyxtal/stargazers)
  the PyXtal project via GitHub and recommend it to your colleagues/friends
-- Open an [![GitHub issues](https://img.shields.io/github/issues/qzhu2017/pyxtal.js.svg)](https://GitHub.com/qzhu2017/pyxtal.js/issues/) to report the bug or address your wishlist or improve our documentation
+- Open an [![GitHub issues](https://img.shields.io/github/issues/qzhu2017/pyxtal.svg)](https://GitHub.com/qzhu2017/pyxtal/issues/) to report the bug or address your wishlist or improve our documentation
 - [![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social)](https://github.com/qzhu2017/PyXtal/network/members) the repository and send us the pull request
