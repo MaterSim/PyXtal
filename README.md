@@ -85,12 +85,13 @@ This is an open-source project. Its growth depends on the community. To contribu
 
 ### If you just want to use the code
 
-- <a class="github-button" href="https://github.com/qzhu2017/PyXtal" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true" aria-label="Star qzhu2017/PyXtal on GitHub">Star</a> the PyXtal project via GitHub and recommend it to your colleagues/friends
+- [![Star on GitHub](https://img.shields.io/github/stars/qzhu2017/pyxtal.svg?style=social)](https://github.com/qzhu2017/pyxtal/stargazers)
+ the PyXtal project via GitHub and recommend it to your colleagues/friends
 - Open an <a class="github-button" href="https://github.com/qzhu2017/PyXtal/issues" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true" aria-label="Issue qzhu2017/PyXtal on GitHub">Issue</a> to report the bug or address your wishlist
 - Suggestions to improve our documentation
 
 ### If you want to join the code development
 
-- <a class="github-button" href="https://github.com/qzhu2017/PyXtal/fork" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true" aria-label="Fork qzhu2017/PyXtal on GitHub">Fork</a> the repository
+- ![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social) the repository
 - Suggest and implement new functions
 - Send us the pull request
