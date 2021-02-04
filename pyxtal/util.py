@@ -1,18 +1,25 @@
-from pymatgen.core.structure import Structure
-from pyxtal.symmetry import Group
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
-from ase import Atoms
-from spglib import get_symmetry_dataset
+"""
+some utilities
+"""
 
-"""
-scripts to perform structure conformation
-"""
+from spglib import get_symmetry_dataset
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
+from pymatgen.core.structure import Structure
+from ase import Atoms
+from pyxtal.symmetry import Group
+
 def pymatgen2ase(struc):
+    """
+    A short cut to convert between pymatgen to ase
+    """
     atoms = Atoms(symbols = struc.atomic_numbers, cell = struc.lattice.matrix)
     atoms.set_scaled_positions(struc.frac_coords)
     return atoms
 
 def ase2pymatgen(struc):
+    """
+    A short cut to convert between pymatgen to ase
+    """
     lattice = struc.cell
     coordinates = struc.get_scaled_positions()
     species = struc.get_chemical_symbols()
@@ -42,7 +49,7 @@ def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
     Args:
         struc: pyxtal structure
     """
-    
+
     para = struc.lattice.get_para(degree=True)
     if (max(para[:3])<maxvec) and (min(para[:3])>minvec)\
         and (max(para[3:])<maxang) and (min(para[3:])>minang):
@@ -68,9 +75,9 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0):
     if hn != dataset['hall_number']:
         dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol, hall_number=hn)
     cell = dataset['std_lattice']
-    pos = dataset['std_positions'] 
+    pos = dataset['std_positions']
     numbers = dataset['std_types']
-    
+
     return Structure(cell, numbers, pos)
 
 def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0):
@@ -84,7 +91,6 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0):
         tol: symmetry tolerance
     """
 
-
     pmg = symmetrize(pmg, tol, a_tol=a_tol)
     s = sga(pmg, symprec=tol, angle_tolerance=a_tol)
     hn = Group(s.get_space_group_number()).hall_number
@@ -95,7 +101,7 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0):
 
 def extract_ase_db(db_file, id):
     """
-    a short cut to extract the structural information 
+    a short cut to extract the structural information
     from the ase db file by row id
     """
 
@@ -131,7 +137,6 @@ if __name__ == "__main__":
         help="index of the row",
     )
 
-    
     options = parser.parse_args()
     ids = options.id
     if ids.find(",")>0:
@@ -139,4 +144,3 @@ if __name__ == "__main__":
     else:
         ids = [int(ids)]
     extract_ase_db(options.file, ids)
-    

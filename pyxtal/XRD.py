@@ -1,10 +1,10 @@
 """
 Module for XRD simulation (experimental stage)
 """
-import numpy as np
-import numba as nb
 import os
 import collections
+import numpy as np
+import numba as nb
 from scipy.interpolate import interp1d
 from monty.serialization import loadfn
 from pkg_resources import resource_filename
@@ -12,22 +12,23 @@ from pyxtal.database.element import Element
 
 ATOMIC_SCATTERING_PARAMS = loadfn(resource_filename("pyxtal", "database/atomic_scattering_params.json"))
 
-class XRD(object):
+class XRD():
+    """
+    a class to compute the powder XRD.
 
-    def __init__(self, crystal, wavelength=1.54184, 
-                 thetas = [0, 180], 
-                 preferred_orientation = False, march_parameter = None):
-       
-        """ 
-        a class to compute the powder XRD.
-        
-        Args:
-            crystal: ase atoms object
-            wavelength: float 
-            max2theta: float
-            preferred_orientation: boolean
-            march_parameter: float
-        """
+    Args:
+        crystal: ase atoms object
+        wavelength: float
+        max2theta: float
+        preferred_orientation: boolean
+        march_parameter: float
+    """
+
+    def __init__(self, crystal, wavelength=1.54184,
+                 thetas = [0, 180],
+                 preferred_orientation = False,
+                 march_parameter = None):
+
 
         self.wavelength = wavelength
         self.min2theta = np.radians(thetas[0])
@@ -37,8 +38,8 @@ class XRD(object):
         self.march_parameter = march_parameter
         self.all_dhkl(crystal)
         self.intensity(crystal)
-        self.pxrdf()     
-        
+        self.pxrdf()
+
     def __str__(self):
         return self.by_hkl()
 
@@ -46,8 +47,8 @@ class XRD(object):
         return str(self)
 
     def by_hkl(self, hkl=None):
-        """ 
-        d for any give abitray [h,k,l] index 
+        """
+        d for any give abitray [h,k,l] index
         """
         s = ""
         if hkl is None:
@@ -61,27 +62,27 @@ class XRD(object):
                     seqs = [id]
 
         if seqs is not None:
-           s += '  2theta     d_hkl     hkl       Intensity  Multi\n'
-           for i in seqs:
-               s += "{:8.3f}  {:8.3f}   ".format(self.theta2[i], self.d_hkls[i])
-               s += "[{:2d} {:2d} {:2d}]".format(*self.hkl_labels[i][0]["hkl"])
-               s += " {:8.2f} ".format(100*self.xrd_intensity[i]/max(self.xrd_intensity))
-               s += "{:8d}\n".format(self.hkl_labels[i][0]["multiplicity"])
+            s += '  2theta     d_hkl     hkl       Intensity  Multi\n'
+            for i in seqs:
+                s += "{:8.3f}  {:8.3f}   ".format(self.theta2[i], self.d_hkls[i])
+                s += "[{:2d} {:2d} {:2d}]".format(*self.hkl_labels[i][0]["hkl"])
+                s += " {:8.2f} ".format(100*self.xrd_intensity[i]/max(self.xrd_intensity))
+                s += "{:8d}\n".format(self.hkl_labels[i][0]["multiplicity"])
         else:
             s += 'This hkl is not in the given 2theta range'
 
         return s
-    
+
     def all_dhkl(self, crystal):
-        """ 
+        """
         3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)
         """
 
         rec_matrix = crystal.get_reciprocal_cell()
         d_min = self.wavelength/np.sin(self.max2theta/2)/2
 
-        # This block is to find the shortest d_hkl, 
-        # for all basic directions (1,0,0), (0,1,0), (1,1,0), (1,-1,0) 
+        # This block is to find the shortest d_hkl
+        # for all basic directions (1,0,0), (0,1,0), (1,1,0), (1,-1,0)
 
         hkl_index = create_index()
         hkl_max = np.array([1,1,1])
@@ -93,7 +94,7 @@ class XRD(object):
             for i in range(len(hkl_max)):
                 if hkl_max[i] < index[i]:
                     hkl_max[i] = index[i]
-        
+
         h1, k1, l1 = hkl_max
         h = np.arange(-h1,h1+1)
         k = np.arange(-k1,k1+1)
@@ -133,7 +134,7 @@ class XRD(object):
             c = ATOMIC_SCATTERING_PARAMS[elem]
             z = Element(elem).z
             coeffs.append(c)
-            zs.append(z) 
+            zs.append(z)
 
         coeffs = np.array(coeffs)
         self.peaks = {}
@@ -144,50 +145,50 @@ class XRD(object):
         SCALED_INTENSITY_TOL = 1e-5 # threshold for intensities
 
         for hkl, s2, theta, d_hkl in zip(self.hkl_list, d0, self.theta, self.d_hkl):
-            
+
             # calculate the scattering factor sf
             g_dot_r = np.dot(crystal.get_scaled_positions(), np.transpose([hkl])).T[0]
             sf = zs - 41.78214 * s2 * np.sum(coeffs[:, :, 0] * np.exp(-coeffs[:, :, 1] * s2), axis=1)
-            
+
             # calculate the structure factor f
             f = np.sum(sf * np.exp(2j * np.pi * g_dot_r))
-            
+
             # calculate the lorentz polarization factor lf
             lf = (1 + np.cos(2 * theta) ** 2) / (np.sin(theta) ** 2 * np.cos(theta))
 
             # calculate the preferred orientation factor
             if self.preferred_orientation != False:
                 G = self.march_parameter
-                po = ((G * np.cos(theta))**2 + 1/G * np.sin(theta)**2)**(-3/2) 
+                po = ((G * np.cos(theta))**2 + 1/G * np.sin(theta)**2)**(-3/2)
             else:
                 po = 1
-    
+
             # calculate the intensity I
             I = (f * f.conjugate()).real
-            
+
             # calculate 2*theta
             two_theta = np.degrees(2 * theta)
-            
+
             # find where the scattered angles are equal
             ind = np.where(np.abs(np.subtract(two_thetas, two_theta)) < TWO_THETA_TOL)
 
             # append intensity, hkl plane, and thetas to lists
             if len(ind[0]) > 0:
-                 self.peaks[two_thetas[ind[0][0]]][0] += I * lf * po
-                 self.peaks[two_thetas[ind[0][0]]][1].append(tuple(hkl))
+                self.peaks[two_thetas[ind[0][0]]][0] += I * lf * po
+                self.peaks[two_thetas[ind[0][0]]][1].append(tuple(hkl))
             else:
                 self.peaks[two_theta] = [I * lf * po, [tuple(hkl)],d_hkl]
                 two_thetas.append(two_theta)
 
         # obtain important intensities (defined by SCALED_INTENSITY_TOL)
         # and corresponding 2*theta, hkl plane + multiplicity, and d_hkl
-        
+
         max_intensity = max([v[0] for v in self.peaks.values()])
         x = []
         y = []
         hkls = []
         d_hkls = []
-        count = 0 
+        count = 0
         for k in sorted(self.peaks.keys()):
             count +=1
             v = self.peaks[k]
@@ -195,7 +196,7 @@ class XRD(object):
             if v[0] / max_intensity * 100 > SCALED_INTENSITY_TOL:
                 x.append(k)
                 y.append(v[0])
-                
+
                 hkls.append([{"hkl": hkl, "multiplicity": mult}
                              for hkl, mult in fam.items()])
                 d_hkls.append(v[2])
@@ -210,7 +211,7 @@ class XRD(object):
         Group the equivalent hkl planes together by 2\theta angle
         N*6 arrays, Angle, d_hkl, h, k, l, intensity
         """
-        
+
         rank = range(len(self.theta2)) #np.argsort(self.theta2)
         PL = []
         last = 0
@@ -230,7 +231,7 @@ class XRD(object):
         PL = (np.array(PL))
         PL[:,-1] = PL[:,-1]/max(PL[:,-1])
         self.pxrd = PL
-    
+
     def get_unique_families(self,hkls):
         """
         Returns unique families of Miller indices. Families must be permutations
@@ -273,25 +274,25 @@ class XRD(object):
         hkl_str= []
         for i in hkl:
             if i<0:
-               label = str(int(-i))
-               label = r"$\bar{" + label + '}$'
-               hkl_str.append(str(label))
+                label = str(int(-i))
+                label = r"$\bar{" + label + '}$'
+                hkl_str.append(str(label))
             else:
-               hkl_str.append(str(int(i)))
+                hkl_str.append(str(int(i)))
 
         return hkl_str
 
     def plot_pxrd(self, filename=None, minimum_I=0.01, show_hkl=True,\
                 fontsize=None, figsize=(20,10), xlim=None, width=1.0):
-        """ 
-        plot PXRD 
+        """
+        plot PXRD
 
         Args:
             filename (None): name of the xrd plot. If None, show the plot
             minimum_I (0.01): the minimum intensity to include in the plot
             show_hkl (True): whether or not show hkl labels
             fontsize (None): fontsize of text in the plot
-            figsize ((20, 10)): figsize 
+            figsize ((20, 10)): figsize
             xlim (None): the 2theta range [x_min, x_max]
         """
         import matplotlib
@@ -308,28 +309,28 @@ class XRD(object):
         dx = x_max-x_min
         for i in self.pxrd:
             plt.bar(i[0],i[-1], color='b', width=width*dx/180)
-            if i[-1] > minimum_I and x_min <= i[0] <= x_max: 
-               if show_hkl:
-                  label = self.draw_hkl(i[2:5])
-                  plt.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
-        
-        ax=plt.gca()
+            if i[-1] > minimum_I and x_min <= i[0] <= x_max:
+                if show_hkl:
+                    label = self.draw_hkl(i[2:5])
+                    plt.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
+
+        #ax=plt.gca()
+        plt.gca()
         plt.grid()
         plt.xlim([x_min, x_max])
         plt.xlabel('2$\Theta$ ($\lambda$=' + str(self.wavelength) + ' $\AA$)')
         plt.ylabel('Intensity')
         plt.title('PXRD of ' + self.name)
-        
+
         if filename is None:
-           plt.show()
+            plt.show()
         else:
-           plt.savefig(filename)
-           plt.close()
+            plt.savefig(filename)
+            plt.close()
 
 
     def plotly_pxrd(self, profile=None, minimum_I = 0.01, html=None):
         import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
 
         """
         interactive plot for pxrd powered by plotly
@@ -374,6 +375,9 @@ class XRD(object):
 
 
     def get_profile(self, method='gaussian', res=0.01, user_kwargs=None):
+        """
+        return the profile detail
+        """
 
         return Profile(method, res, user_kwargs).get_profile(self.theta2, \
                 self.xrd_intensity, np.degrees(self.min2theta), np.degrees(self.max2theta))
@@ -384,102 +388,93 @@ class XRD(object):
 class Profile:
 
     """
-    This class applies a profiling function to simulated or experimentally obtained
-    XRD spectra.
+    This class applies a profiling function to simulated or
+    experimentally obtained XRD spectra.
 
-    Parameters
-    ----------
-    method: str
-        Type of function used to profile
-    res: float
-        resolution of the profiling array in degree
-    user_kwargs: dict
-        The parameters for the profiling method.
+    Args:
+        method (str): Type of function used to profile
+        res (float): resolution of the profiling array in degree
+        user_kwargs (dict): The parameters for the profiling method.
     """
 
     def __init__(self, method='mod_pseudo-voigt', res = 0.02, user_kwargs=None):
-        
+
         self.method = method
         self.user_kwargs = user_kwargs
-        self.res = res       
+        self.res = res
         kwargs = {}
 
         if method == 'mod_pseudo-voigt':
-           _kwargs = {
-                        'U': 5.776410E-03,
-                        'V': -1.673830E-03,
-                        'W': 5.668770E-03,
-                        'A': 1.03944,
-                        'eta_h': 0.504656,
-                        'eta_l': 0.611844,
+            _kwargs = {
+                      'U': 5.776410E-03,
+                      'V': -1.673830E-03,
+                      'W': 5.668770E-03,
+                      'A': 1.03944,
+                      'eta_h': 0.504656,
+                      'eta_l': 0.611844,
                      }
         elif method in ['gaussian', 'lorentzian', 'pseudo-voigt']:
-           _kwargs = {
-                        'FWHM': 0.05,
-                     }
-        
+            _kwargs = {'FWHM': 0.05}
+
         else:
-           msg = method + " isn't supported."
-           raise NotImplementedError(msg)
+            msg = method + " isn't supported."
+            raise NotImplementedError(msg)
 
         kwargs.update(_kwargs)
 
         if user_kwargs is not None:
-           kwargs.update(user_kwargs)
+            kwargs.update(user_kwargs)
 
         self.kwargs = kwargs
 
     def get_profile(self, two_thetas, intensities, min2theta, max2theta):
 
         """
-        Performs profiling with selected function, resolution, and parameters 
-       
-        Parameters
-        ----------
-            two_thetas: 1d float array simulated/measured 2 theta values
-            intensities: simulated/measures peaks
+        Performs profiling with selected function, resolution, and parameters
+
+        Args:
+            - two_thetas: 1d float array simulated/measured 2 theta values
+            - intensities: simulated/measures peaks
         """
-    
+
         N = int((max2theta-min2theta)/self.res)
-        px = np.linspace(min2theta, max2theta, N) 
+        px = np.linspace(min2theta, max2theta, N)
         py = np.zeros((N))
 
         for two_theta, intensity in zip(two_thetas, intensities):
             if self.method == 'gaussian':
-               fwhm = self.kwargs['FWHM']
-               tmp = gaussian(two_theta, px, fwhm)
-            
-            elif self.method == 'lorentzian':
-               fwhm = self.kwargs['FWHM'] 
-               tmp = lorentzian(two_theta, px, fwhm) 
-            
-            elif self.method == 'pseudo-voigt':
-               try:
-                  fwhm_g = self.kwargs['FWHM-G'] 
-                  fwhm_l = self.kwargs['FWHM-L']
-               except:
-                  fwhm_g = self.kwargs['FWHM']
-                  fwhm_l = self.kwargs['FWHM'] 
-                
-               fwhm = (fwhm_g**5 + 2.69269*fwhm_g**4*fwhm_l + 2.42843*fwhm_g**3*fwhm_l**2 +
-                       4.47163*fwhm_g**2*fwhm_l**3 + 0.07842*fwhm_g*fwhm_l**4 + fwhm_l**5)**(1/5)
-               
-               eta = 1.36603*fwhm_l/fwhm - 0.47719*(fwhm_l/fwhm)**2 + 0.11116*(fwhm_l/fwhm)**3
+                fwhm = self.kwargs['FWHM']
+                tmp = gaussian(two_theta, px, fwhm)
 
-               tmp = pseudo_voigt(two_theta, px, fwhm, eta)
+            elif self.method == 'lorentzian':
+                fwhm = self.kwargs['FWHM']
+                tmp = lorentzian(two_theta, px, fwhm)
+
+            elif self.method == 'pseudo-voigt':
+                try:
+                    fwhm_g = self.kwargs['FWHM-G']
+                    fwhm_l = self.kwargs['FWHM-L']
+                except:
+                    fwhm_g = self.kwargs['FWHM']
+                    fwhm_l = self.kwargs['FWHM']
+
+                fwhm = (fwhm_g**5 + 2.69269*fwhm_g**4*fwhm_l + 2.42843*fwhm_g**3*fwhm_l**2 +
+                       4.47163*fwhm_g**2*fwhm_l**3 + 0.07842*fwhm_g*fwhm_l**4 + fwhm_l**5)**(1/5)
+                eta = 1.36603*fwhm_l/fwhm - 0.47719*(fwhm_l/fwhm)**2 + 0.11116*(fwhm_l/fwhm)**3
+                tmp = pseudo_voigt(two_theta, px, fwhm, eta)
 
             elif self.method == 'mod_pseudo-voigt':
-               U = self.kwargs['U']
-               V = self.kwargs['V']
-               W = self.kwargs['W']
-               A = self.kwargs['A']
-               eta_h = self.kwargs['eta_h']
-               eta_l = self.kwargs['eta_l']
-               
-               fwhm = np.sqrt(U*np.tan(np.pi*two_theta/2/180)**2 + V*np.tan(np.pi*two_theta/2/180) + W)
-               x = px - two_theta
-               tmp = mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N)
-            
+                U = self.kwargs['U']
+                V = self.kwargs['V']
+                W = self.kwargs['W']
+                A = self.kwargs['A']
+                eta_h = self.kwargs['eta_h']
+                eta_l = self.kwargs['eta_l']
+
+                fwhm = np.sqrt(U*np.tan(np.pi*two_theta/2/180)**2 + V*np.tan(np.pi*two_theta/2/180) + W)
+                x = px - two_theta
+                tmp = mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N)
+
             py += intensity * tmp
 
         py /= np.max(py)
@@ -489,10 +484,10 @@ class Profile:
 
 
 # ------------------------------ Similarity between two XRDs ---------------------------------
-class Similarity(object):
+class Similarity():
 
     def __init__(self, f, g, N = None, x_range = None, l = 2.0, weight = 'cosine'):
-        
+
         """
         Class to compute the similarity between two diffraction patterns
         Args:
@@ -514,11 +509,11 @@ class Similarity(object):
 
         if N is None:
             self.N = int(2*self.l/self.resolution)
-        else: 
+        else:
             self.N = N
         self.r = np.linspace(-self.l, self.l, self.N)
 
-        if x_range == None: #get the overlap
+        if x_range is None:
             x_min = max(np.min(fx), np.min(gx))
             x_max = min(np.max(fx), np.max(gx))
         else:
@@ -540,14 +535,13 @@ class Similarity(object):
         elif self.weight == 'cosine':
             w = self.cosineFunction()
         else:
-            msg = function + 'is not supported'
+            msg = self.weight + 'is not supported'
             raise NotImplementedError(msg)
 
         Npts = len(self.fx)
         d = self.fx[1] - self.fx[0]
 
         self.S = similarity_calculate(self.r, w, d, Npts, self.fy, self.gy)
-    
 
     def __str__(self):
         s = "The similarity between two PXRDs is {:.4f}".format(self.S)
@@ -557,7 +551,7 @@ class Similarity(object):
         return str(self)
 
     def triangleFunction(self):
-        
+
         """
         Triangle function to weight correlations
         """
@@ -572,7 +566,7 @@ class Similarity(object):
         """
         cosine function to weight correlations
         """
-        
+
         w = 0.5 * (np.cos(np.pi * self.r/self.l) + 1.)
         ids = (np.abs(self.r) > self.l)
         w[ids] = 0
@@ -594,32 +588,32 @@ class Similarity(object):
             matplotlib.rcParams.update({'font.size': fontsize})
 
         fig1 = plt.figure(1, figsize=(15, 6))
-        frame1 = fig1.add_axes((.1,.3,.8,.6))
-    
+        fig1.add_axes((.1,.3,.8,.6))
+
         plt.plot(self.fx, self.fy, label=labels[0])
         plt.plot(self.fx, -self.gy, label=labels[1])
         plt.legend()
 
         # Residual plot
         residuals = self.gy - self.fy
-        frame2 = fig1.add_axes((.1,.1,.8,.2))        
+        fig1.add_axes((.1,.1,.8,.2))
         plt.plot(self.gx, residuals, '.r', markersize = 0.5)
         plt.title("{:6f}".format(self.S))
 
         if filename is None:
-           plt.show()
+            plt.show()
         else:
-           plt.savefig(filename)
-           plt.close()
+            plt.savefig(filename)
+            plt.close()
 
 @nb.njit(nb.f8[:](nb.f8[:], nb.f8, nb.f8, nb.f8, nb.f8, nb.i8), cache = True)
 def mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N):
-    
+
     """
     A modified split-type pseudo-Voigt function for profiling peaks
-    - Izumi, F., & Ikeda, T. (2000). 
+    - Izumi, F., & Ikeda, T. (2000).
     """
-    
+
     tmp = np.zeros((N))
     for xi, dx in enumerate(x):
         if dx < 0:
@@ -662,9 +656,9 @@ def pseudo_voigt(theta2, alpha, fwhm, eta):
 
     """
     Original Pseudo-Voigt function for profiling peaks
-    - Thompson, D. E. Cox & J. B. Hastings (1986). 
+    - Thompson, D. E. Cox & J. B. Hastings (1986).
     """
-    
+
     L = lorentzian(theta2, alpha, fwhm)
     G = gaussian(theta2, alpha, fwhm)
     return eta * L + (1 - eta) * G
@@ -689,11 +683,14 @@ def similarity_calculate(r, w, d, Npts, fy, gy):
         xCorrfg_w += w0*Corrfg*d
         aCorrff_w += w0*Corrff*d
         aCorrgg_w += w0*Corrgg*d
-    
+
     return np.abs(xCorrfg_w / np.sqrt(aCorrff_w * aCorrgg_w))
 
 
 def create_index():
+    """
+    shortcut to get the index
+    """
     hkl_index = []
     for i in [-1,0,1]:
         for j in [-1,0,1]:
@@ -702,6 +699,4 @@ def create_index():
                 if sum(hkl*hkl)>0:
                     hkl_index.append(hkl)
     hkl_index = np.array(hkl_index).reshape([len(hkl_index), 3])
-    return hkl_index           
-
-
+    return hkl_index

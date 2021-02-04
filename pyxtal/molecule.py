@@ -9,11 +9,12 @@ constraints.
 
 """
 # Imports
-import numpy as np
+import os
 from copy import deepcopy
+from random import choice
+import numpy as np
 from scipy.spatial.transform import Rotation
 import networkx as nx
-from random import choice
 # ------------------------------
 # External Libraries
 from pymatgen.core.structure import Molecule
@@ -45,7 +46,6 @@ class pyxtal_molecule:
     Args:
         mol: a string to reprent the molecule
         tm: tolerance matrix
-   
     """
 
     def __init__(self, mol=None, symmetrize=True, tm=Tol_matrix(prototype="molecular")):
@@ -57,7 +57,6 @@ class pyxtal_molecule:
             if len(tmp) > 1:
                 # Load the molecule from the given file
                 if tmp[-1] in ["xyz", "gjf", "g03", "json"]:
-                    import os
                     if os.path.exists(mol):
                         mo = Molecule.from_file(mol)
                     else:
@@ -80,7 +79,7 @@ class pyxtal_molecule:
         if len(mo) > 1:
             if symmetrize:
                 pga = PointGroupAnalyzer(mo)
-                mo = pga.symmetrize_molecule()["sym_mol"] 
+                mo = pga.symmetrize_molecule()["sym_mol"]
             mo = self.add_site_props(mo)
 
         self.mol = mo
@@ -95,6 +94,9 @@ class pyxtal_molecule:
         return '[' + self.name + ']'
 
     def save_dict(self):
+        """
+        save the object as a dictionary
+        """
         return self.mol.as_dict()
 
     def copy(self):
@@ -135,6 +137,9 @@ class pyxtal_molecule:
         return pyxtal_molecule(mo, self.tm)
 
     def add_site_props(self, mo):
+        """
+        add site properties
+        """
         if len(self.props) > 0:
             for key in self.props.keys():
                 mo.add_site_property(key, self.props[key])
@@ -143,13 +148,13 @@ class pyxtal_molecule:
     def get_box(self):
         """
         Given a molecule, find a minimum orthorhombic box containing it.
-        Size is calculated using min and max x, y, and z values, 
+        Size is calculated using min and max x, y, and z values,
         plus the padding defined by the vdw radius
         For best results, call oriented_molecule first.
-        
+
         Args:
             mol: a pymatgen Molecule object. Should be oriented along its principle axes.
-    
+
         Returns:
             a Box object
         """
@@ -174,6 +179,9 @@ class pyxtal_molecule:
         self.axes = P
 
     def get_radius(self):
+        """
+        get the radius of a molecule
+        """
         r_max = 0
         for coord, number in zip(self.mol.cart_coords, self.mol.atomic_numbers):
             radius = (
@@ -189,6 +197,9 @@ class pyxtal_molecule:
             self.radius = rmin
 
     def has_stick_shape(self):
+        """
+        check if the molecule is stick-like
+        """
         sizes = [self.box.width,self.box.height,self.box.length]
         sizes.sort()
         if sizes[2]>15: #and sizes[2]/sizes[0]>2 and sizes[2]/sizes[1]>2:
@@ -213,11 +224,11 @@ class pyxtal_molecule:
         self.tols_matrix = tols
 
     def show(self):
+        """
+        show the molecule
+        """
         from pyxtal.viz import display_molecules
         return display_molecules([self.mol])
-
-
-
 
 class Box:
     """
@@ -316,7 +327,7 @@ class Orientation:
                  "axis": self.axis
                 }
         return dict0
-    
+
     @classmethod
     def load_dict(cls, dicts):
         matrix = dicts['matrix']
@@ -330,9 +341,9 @@ class Orientation:
         rotate about the constraint axis.
 
         Args:
-            angle: an angle to rotate about the constraint axis. 
-            If "random", chooses a random rotation angle. 
-            If self.degrees==2, chooses a random rotation matrix. 
+            angle: an angle to rotate about the constraint axis.
+            If "random", chooses a random rotation angle.
+            If self.degrees==2, chooses a random rotation matrix.
             If self.degrees==1, only apply on angle
             If self.degrees==0, no change
 
@@ -342,12 +353,12 @@ class Orientation:
             if self.axis is None:
                 axis = np.random.RandomState().rand(3) - 0.5
                 self.axis = axis / np.linalg.norm(axis)
- 
+
             # parse the angle
             if angle == "random":
                 angle = np.random.RandomState().rand() * np.pi * 2
             self.angle = angle
-    
+
             # update the matrix
             r1 = Rotation.from_rotvec(self.angle * self.axis)
 
@@ -358,7 +369,6 @@ class Orientation:
                     r2 = Rotation.from_euler(ax, angle0, degrees=True)
                     r1 = r2*r1
             self.r = r1 * self.r
-            #self.r *= r1 
             self.matrix = self.r.as_matrix()
 
     def rotate_by_matrix(self, matrix, ignore_constraint=True):
@@ -379,7 +389,7 @@ class Orientation:
                     raise ValueError("must rotate along the given axis")
         else:
             axis = None
-            
+
         matrix = matrix.dot(self.matrix)
         return Orientation(matrix, self.degrees, axis)
 
@@ -417,7 +427,7 @@ class Orientation:
         elif self.degrees == 0:
             return self.matrix
 
-    def get_op(self, angle=None):
+    def get_op(self): #, angle=None):
         """
         Generate a SymmOp object consistent with the orientation's
         constraints. Allows for specification of an angle (possibly random) to
@@ -436,56 +446,56 @@ class Orientation:
         #    self.change_orientation(angle)
         return SymmOp.from_rotation_and_translation(self.matrix, [0, 0, 0])
 
-    @classmethod
-    def from_constraint(self, v1, c1):
-        """
-        Geneate an orientation object given a constraint axis c1, and a
-        corresponding vector v1. v1 will be rotated onto c1, and the resulting
-        orientation will have a rotational degree of freedom about c1.
+    #@classmethod
+    #def from_constraint(self, v1, c1):
+    #    """
+    #    Geneate an orientation object given a constraint axis c1, and a
+    #    corresponding vector v1. v1 will be rotated onto c1, and the resulting
+    #    orientation will have a rotational degree of freedom about c1.
 
-        Args:
-            v1: a 1x3 vector in the original reference frame
-            c1: a corresponding axis which v1 must be mapped to
+    #    Args:
+    #        v1: a 1x3 vector in the original reference frame
+    #        c1: a corresponding axis which v1 must be mapped to
 
-        Returns:
-            an orientation object consistent with the supplied constraint
-        """
-        # c1 is the constraint vector; v1 will be rotated onto it
-        m = rotate_vector(v1, c1)
-        return Orientation(m, degrees=1, axis=c1)
+    #    Returns:
+    #        an orientation object consistent with the supplied constraint
+    #    """
+    #    # c1 is the constraint vector; v1 will be rotated onto it
+    #    m = rotate_vector(v1, c1)
+    #    return Orientation(m, degrees=1, axis=c1)
 
-    @classmethod
-    def from_constraints(self, v1, c1, v2, c2):
-        """
-        Geneate an orientation object given two constraint vectors
+    #@classmethod
+    #def from_constraints(self, v1, c1, v2, c2):
+    #    """
+    #    Geneate an orientation object given two constraint vectors
 
-        Args:
-            v1: a 1x3 vector in the original reference frame
-            c1: a corresponding axis which v1 must be mapped to
-            v1: a second 1x3 vector in the original reference frame
-            c1: a corresponding axis which v2 must be mapped to
+    #    Args:
+    #        v1: a 1x3 vector in the original reference frame
+    #        c1: a corresponding axis which v1 must be mapped to
+    #        v1: a second 1x3 vector in the original reference frame
+    #        c1: a corresponding axis which v2 must be mapped to
 
-        Returns:
-            an orientation object consistent with the supplied constraints
-        """
-        T = rotate_vector(v1, c1)
-        phi = angle(c1, c2)
-        phi2 = angle(c1, (np.dot(T, v2)))
-        if not np.isclose(phi, phi2, rtol=0.01):
-            printx("Error: constraints and vectors do not match.", priority=1)
-            return
-        r = np.sin(phi)
-        c = np.linalg.norm(np.dot(T, v2) - c2)
-        theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
-        Rot = R.from_rotvec(theta * c1)
-        T2 = np.dot(R, T)
-        a = angle(np.dot(T2, v2), c2)
-        if not np.isclose(a, 0, rtol=0.01):
-            T2 = np.dot(np.linalg.inv(R), T)
-        a = angle(np.dot(T2, v2), c2)
-        if not np.isclose(a, 0, rtol=0.01):
-            printx("Error: Generated incorrect rotation: " + str(theta), priority=1)
-        return Orientation(T2, degrees=0)
+    #    Returns:
+    #        an orientation object consistent with the supplied constraints
+    #    """
+    #    T = rotate_vector(v1, c1)
+    #    phi = angle(c1, c2)
+    #    phi2 = angle(c1, (np.dot(T, v2)))
+    #    if not np.isclose(phi, phi2, rtol=0.01):
+    #        printx("Error: constraints and vectors do not match.", priority=1)
+    #        return
+    #    r = np.sin(phi)
+    #    c = np.linalg.norm(np.dot(T, v2) - c2)
+    #    theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
+    #    #Rot = R.from_rotvec(theta * c1)
+    #    T2 = np.dot(R, T)
+    #    a = angle(np.dot(T2, v2), c2)
+    #    if not np.isclose(a, 0, rtol=0.01):
+    #        T2 = np.dot(np.linalg.inv(R), T)
+    #    a = angle(np.dot(T2, v2), c2)
+    #    if not np.isclose(a, 0, rtol=0.01):
+    #        printx("Error: Generated incorrect rotation: " + str(theta), priority=1)
+    #    return Orientation(T2, degrees=0)
 
     def random_orientation(self):
         """
@@ -500,12 +510,15 @@ class Orientation:
         return self
 
     def get_Euler_angles(self):
+        """
+        get the Euler angles
+        """
         return self.r.as_euler('zxy', degrees=True)
 
 
 def get_inertia_tensor(coords):
     """
-    Calculate the symmetric inertia tensor for a Molecule 
+    Calculate the symmetric inertia tensor for a Molecule
     the principal axes of symmetry.
 
     Args:
@@ -522,22 +535,20 @@ def get_inertia_tensor(coords):
     Inertia[0,1] = Inertia[1,0] = -np.sum(coords[:,0]*coords[:,1])
     Inertia[0,2] = Inertia[2,0] = -np.sum(coords[:,0]*coords[:,2])
     Inertia[1,2] = Inertia[2,1] = -np.sum(coords[:,1]*coords[:,2])
- 
+
     return Inertia
 
 
-def reoriented_molecule(mol, nested=False):
+def reoriented_molecule(mol): #, nested=False):
     """
     Reorient a molecule so that its principal axes are aligned with the
     identity matrix.
 
     Args:
         mol: a Molecule object
-        nested: keep track of how many times the function
-            has been called recursively
 
     Returns:
-        new_mol: a reoriented copy of the original molecule. 
+        new_mol: a reoriented copy of the original molecule.
         P: the 3x3 rotation matrix used to obtain it.
     """
     coords = mol.cart_coords
@@ -572,7 +583,7 @@ def get_symmetry(mol, already_oriented=False):
     pga = PointGroupAnalyzer(mol)
     # Handle linear molecules
     if "*" in pga.sch_symbol:
-        if already_oriented == False:
+        if not already_oriented:
             # Reorient the molecule
             oriented_mol, P = reoriented_molecule(mol)
             pga = PointGroupAnalyzer(oriented_mol)
@@ -594,15 +605,15 @@ def get_symmetry(mol, already_oriented=False):
                 if axis == [1, 0, 0]:
                     symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
                     symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                    r = SymmOp.from_xyz_string("-x,y,-z")
+                    #r = SymmOp.from_xyz_string("-x,y,-z")
                 elif axis == [0, 1, 0]:
                     symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
                     symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                    r = SymmOp.from_xyz_string("-x,-y,z")
+                    #r = SymmOp.from_xyz_string("-x,-y,z")
                 elif axis == [0, 0, 1]:
                     symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
                     symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
-                    r = SymmOp.from_xyz_string("x,-y,-z")
+                    #r = SymmOp.from_xyz_string("x,-y,-z")
                 # Generate a full list of SymmOps for the molecule's pointgroup
                 symm_m = generate_full_symmops(symm_m, 1e-3)
                 break
@@ -663,7 +674,6 @@ def orientation_in_wyckoff_position(
 
     wyckoffs = wyckoff_position.ops
     w_symm = wyckoff_position.symmetry_m
-    index = wyckoff_position.index
 
     # Obtain the Wyckoff symmetry
     symm_w = w_symm[0]
@@ -758,7 +768,7 @@ def orientation_in_wyckoff_position(
                     # Check if axes are symmetrically equivalent
                     else:
                         cond1 = False
-                        cond2 = False
+                        # cond2 = False
                         for opa in opa_m:
                             if opa.type == "rotation":
                                 op = opa.op
@@ -867,14 +877,16 @@ def orientation_in_wyckoff_position(
     allowed = []
     for o in orientations_new:
         if randomize is True:
-            op = o.get_op("random")
+            op = o.get_op()
         elif randomize is False:
             op = o.get_op() #do not change
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(mo, wyckoff_position, exact_orientation=True, randomize=False, allow_inversion=allow_inversion) is True:
+        if orientation_in_wyckoff_position(
+                mo, wyckoff_position, exact_orientation=True,
+                randomize=False, allow_inversion=allow_inversion
+        ):
             allowed.append(o)
-    #Return the array of allowed orientations. If there are none, return False
     if allowed == []:
         return False
     else:
@@ -883,7 +895,7 @@ def orientation_in_wyckoff_position(
 def make_graph(mol, tol=0.2):
     """
     make graph object for the input molecule
-    """   
+    """
     G = nx.Graph()
     names = {}
     for i, site in enumerate(mol._sites):
@@ -911,7 +923,7 @@ def make_graph(mol, tol=0.2):
     nx.set_node_attributes(G, names, 'name')
 
     return G
- 
+
 def compare_mol_connectivity(mol1, mol2, ignore_name=False):
     """
     Compare two molecules by connectivity
@@ -926,5 +938,3 @@ def compare_mol_connectivity(mol1, mol2, ignore_name=False):
         GM = nx.isomorphism.GraphMatcher(G1, G2, node_match=fun)
 
     return GM.is_isomorphic(), GM.mapping
-
-
