@@ -306,7 +306,7 @@ def search_paths(H,G,max_layers=5):
         previous_layer_groups=layers[l-1]['groups']
         groups=[]
         subgroups=[]
-        for i,g in enumerate(previous_layer_groups):
+        for g in previous_layer_groups:
             subgroup_numbers=np.unique(sym.Group(g).get_max_subgroup_numbers())
 
             #If a subgroup list has been found with H, will trace a path through the dictionary to build the path
