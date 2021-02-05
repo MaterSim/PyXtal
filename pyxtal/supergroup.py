@@ -34,6 +34,74 @@ def new_solution(A, refs):
             return False
     return True
 
+def find_mapping(atom_sites, splitter, max_num=50):
+    """
+    search for all mappings for a given splitter
+
+    Args:
+        atom_sites: list of wyc object
+        splitter: wyc_splitter object
+        max_num (int): maximum number of atomic mapping
+
+    Returns:
+        unique solutions
+    """
+    solution_template = [[None]*len(wp2) for wp2 in splitter.wp2_lists]
+    assigned_ids = []
+    # look for unique assignment from sites_H to sites_G
+    for i, wp2 in enumerate(splitter.wp2_lists):
+        # choose the sites belong to the same element
+        ele = splitter.elements[i]
+        e_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
+        #print(ele, e_ids)
+
+        if len(wp2) == 1:
+            ids = [id for id in e_ids if atom_sites[id].wp.letter == wp2[0].letter]
+            if len(ids) == 1:
+                solution_template[i] = ids
+                assigned_ids.append(ids[0])
+    # print(assigned_ids, solution_template)
+    # consider all permutations for to assign the rest atoms from H to G
+    # https://stackoverflow.com/questions/65484940
+
+    remaining_ids = [id for id in range(len(atom_sites)) if id not in assigned_ids]
+    all_permutations = list(itertools.permutations(remaining_ids))
+    unique_solutions = []
+    if len(all_permutations)>max_num:
+        all_permutations = sample(all_permutations, max_num)
+    for permutation in all_permutations:
+        permutation = list(permutation)
+        solution = deepcopy(solution_template)
+        for i, sol in enumerate(solution):
+            valid = True
+            if None in sol:
+                for j, id in enumerate(permutation[:len(sol)]):
+                    if atom_sites[id].wp.letter == splitter.wp2_lists[i][j].letter and\
+                            atom_sites[id].specie == splitter.elements[i]:
+                        solution[i][j] = id
+                    else:
+                        valid = False
+                        break
+                if not valid:
+                    break
+                else:
+                    del permutation[:len(sol)]
+        if valid and new_solution(solution, unique_solutions):
+            unique_solutions.append(solution)
+    return unique_solutions
+
+def find_match(G, wp, pos, op):
+    pos1, _, d0 = sym.search_matched_min(G, wp, pos)
+    tmp = op.operate(pos1)
+    diff1 = tmp - pos
+    diff1 -= np.round(diff1)
+    diff2 = tmp + pos
+    diff2 -= np.round(diff2)
+    if np.linalg.norm(diff1) < np.linalg.norm(diff2):
+        return tmp
+    else:
+        return -tmp
+
 def new_structure(struc, refs):
     """
     check if struc is already in the reference solutions
@@ -60,7 +128,6 @@ def get_best_match(positions, ref, cell):
         position: matched position
         id: matched id
     """
-
     diffs = positions - ref
     diffs -= np.round(diffs)
     diffs = np.dot(diffs, cell)
@@ -217,8 +284,9 @@ class supergroups():
         G (int): the desired super group number
     """
 
-    def __init__(self, struc, G=None, path=None, d_tol=1.0):
+    def __init__(self, struc, G=None, path=None, d_tol=1.0, show=False):
         self.struc0 = struc
+        self.show = show
         if path is None:
             paths = self.search_paths(struc.group.number, G)
         else:
@@ -277,7 +345,7 @@ class supergroups():
             for G_struc in G_strucs:
                 my = supergroup(G_struc, [G], group_type)
                 solutions = my.search_supergroup(d_tol, max_per_G=2500)
-                new_G_strucs = my.make_supergroup(solutions, show_detail=False)
+                new_G_strucs = my.make_supergroup(solutions, show_detail=self.show)
                 if len(new_G_strucs) > 0:
                     strucs.append(G_struc)
                     G_strucs = new_G_strucs
@@ -388,7 +456,7 @@ class supergroup():
                     sols = sample(sols, max_per_G)
                 for sol in sols:
                     mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
-                    #if mae < 1.2: print(G, sol, mae, disp)
+                    #if mae < 5: print(G, sol, mae, disp)
                     if mae < d_tol:
                         valid_solutions.append((sp, mapping, disp, mae))
         return valid_solutions
@@ -410,15 +478,17 @@ class supergroup():
                 disps = np.array([sol[-1] for sol in solutions])
                 ID = np.argmin(disps)
                 solutions = [solutions[ID]]
+
             for solution in solutions:
                 (sp, mapping, disp, mae) = solution
-                #print(mapping, disp, mae)
                 G = sp.G.number
                 lat1 = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.struc.lattice.matrix)
                 lattice = Lattice.from_matrix(lat1, ltype=sp.G.lattice_type)
 
+                #disp = np.zeros(3)
                 details = self.symmetrize(sp, mapping, disp)
                 coords_G1, coords_G2, coords_H1, elements = details
+                #self.print_detail(G, coords_H1, coords_G2, elements, disp)
                 G_struc = self.struc.copy()
                 G_struc.group = sp.G
 
@@ -426,14 +496,13 @@ class supergroup():
                 for i, wp in enumerate(sp.wp1_lists):
                     pos = coords_G1[i]
                     pos -= np.floor(pos)
-                    #print(pos, wp)
                     pos1 = sym.search_matched_position(sp.G, wp, pos)
                     if pos1 is not None:
                         site = atom_site(wp, pos1, sp.elements[i])
                         G_sites.append(site)
                     else:
                         print("========")
-                        print(pos1)
+                        print(pos)
                         print(wp)
                         raise RuntimeError("cannot assign the right wp")
 
@@ -447,8 +516,6 @@ class supergroup():
                 if new_structure(G_struc, G_strucs):
                     G_strucs.append(G_struc)
                     if show_detail:
-                        details = self.symmetrize(sp, mapping, disp)
-                        _, coords_G2, coords_H1, elements = details
                         self.print_detail(G, coords_H1, coords_G2, elements, disp)
                         print(G_struc)
 
@@ -482,93 +549,62 @@ class supergroup():
         sites_G = [sites_G[id] for id in ids]
         #print(G, self.struc.group.number, sites_G)
         splitter = wyckoff_split(G, split_id, sites_G, self.group_type, elements)
-        mappings = self.find_mapping(splitter)
+        mappings = find_mapping(self.struc.atom_sites, splitter)
         dists = []
         disps = []
+        masks = []
         if len(mappings) > 0:
             for mapping in mappings:
                 dist, disp, mask = self.symmetrize_dist(splitter, mapping, None, None, d_tol)
-                #print("mask---disp", disp, mask, dist)
                 dists.append(dist)
                 disps.append(disp)
+                masks.append(mask)
             dists = np.array(dists)
             mae = np.min(dists)
             id = np.argmin(dists)
             disp = disps[id]
+            mask = masks[id]
             if 0.2 < mae < d_tol:
-                # optimize further
-                def fun(disp, mapping, splitter, mask):
-                    return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
-                res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
-                        method='Nelder-Mead', options={'maxiter': 20})
-                if res.fun < mae:
-                    mae = res.fun
-                    disp = res.x
+                # optimize disp further
+                if len(mask)<3:
+                    def fun(disp, mapping, splitter, mask):
+                        return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
+                    res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
+                            method='Nelder-Mead', options={'maxiter': 20})
+                    if res.fun < mae:
+                        mae = res.fun
+                        disp = res.x
             return mae, disp, mappings[id], splitter
         else:
             return 1000, None, None, None
 
-    def find_mapping(self, splitter, max_num=50):
+
+    def print_detail(self, G, coords_H1, coords_G1, elements, disp):
         """
-        search for all mappings for a given splitter
-
-        Args:
-            splitter: wyc_splitter object
-            max_num (int): maximum number of atomic mapping
-
-        Returns:
-            unique solutions
+        print out the details of tranformation
         """
-        solution_template = [[None]*len(wp2) for wp2 in splitter.wp2_lists]
-        atom_sites_H = self.struc.atom_sites
-        assigned_ids = []
-        # look for unique assignment from sites_H to sites_G
-        for i, wp2 in enumerate(splitter.wp2_lists):
-            # choose the sites belong to the same element
-            ele = splitter.elements[i]
-            e_ids = [id for id, site in enumerate(atom_sites_H) if site.specie==ele]
+        print("Valid structure", G)
+        disps = []
+        for x, y, ele in zip(coords_H1, coords_G1, elements):
+            dis = y-(x+disp)
+            dis -= np.round(dis)
+            dis_abs = np.linalg.norm(dis.dot(self.cell))
+            output = "{:2s} {:8.4f}{:8.4f}{:8.4f}".format(ele, *x)
+            output += " -> {:8.4f}{:8.4f}{:8.4f}".format(*y)
+            output += " -> {:8.4f}{:8.4f}{:8.4f} {:8.4f}".format(*dis, dis_abs)
+            disps.append(dis_abs)
+            print(output)
+        print("cell: {:8.4f}{:8.4f}{:8.4f}, disp (A): {:8.4f}".format(*disp, max(disps)))
 
-            if len(wp2) == 1:
-                ids = [id for id in e_ids if atom_sites_H[id].wp.letter == wp2[0].letter]
-                if len(ids) == 1:
-                    solution_template[i] = ids
-                    assigned_ids.append(ids[0])
 
-        # consider all permutations for to assign the rest atoms from H to G
-        # https://stackoverflow.com/questions/65484940
 
-        remaining_ids = [id for id in range(len(atom_sites_H)) if id not in assigned_ids]
-        all_permutations = list(itertools.permutations(remaining_ids))
-        unique_solutions = []
-        if len(all_permutations)>max_num:
-            all_permutations = sample(all_permutations, max_num)
-        for permutation in all_permutations:
-            permutation = list(permutation)
-            solution = deepcopy(solution_template)
-            for i, sol in enumerate(solution):
-                valid = True
-                if None in sol:
-                    for j, id in enumerate(permutation[:len(sol)]):
-                        if atom_sites_H[id].wp.letter == splitter.wp2_lists[i][j].letter:
-                            solution[i][j] = id
-                        else:
-                            valid = False
-                            break
-                    if not valid:
-                        break
-                    else:
-                        del permutation[:len(sol)]
-            if valid and new_solution(solution, unique_solutions):
-                unique_solutions.append(solution)
-        return unique_solutions
-
-    def symmetrize_dist(self, splitter, solution, disp=None, mask=None, d_tol=1.2):
+    def symmetrize_dist(self, splitter, mapping, disp=None, mask=None, d_tol=1.2):
         """
         For a given solution, search for the possbile supergroup structure
 
         Args:
             splitter: splitter object to specify the relation between G and H
-            solution: list of sites in H, e.g., ['4a', '8b']
+            mapping: list of sites in H, e.g., ['4a', '8b']
             disp: an overall shift from H to G, None or 3 vector
             mask: if need to freeze the direction
             d_tol: the tolerance in angstrom
@@ -577,8 +613,14 @@ class supergroup():
             distortion
             cell translation
         """
+        cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
         max_disps = []
         atom_sites_H = self.struc.atom_sites
+        rot = splitter.R[:3,:3] # inverse coordinate transformation
+        tran = splitter.R[:3,3] # needs to check
+        inv_rot = np.linalg.inv(rot)
+        cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
+        ops_G1  = splitter.G[0]
         #n_atoms = sum([site.wp.multiplicity for site in atom_sites_H])
 
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
@@ -608,7 +650,7 @@ class supergroup():
                 #import sys; sys.exit()
 
                 # refine coord1 to find the best match on coord2
-                coord = atom_sites_H[solution[i][0]].position
+                coord = atom_sites_H[mapping[i][0]].position
                 coord0s = apply_ops(coord, ops_H) # possible coords in H
                 dists = []
                 for coord0 in coord0s:
@@ -676,25 +718,17 @@ class supergroup():
                     disp = np.zeros(3)
                     mask = [0, 1, 2]
 
-                # symmetry operations
-                ops_H1 = splitter.H_orbits[i][0]
-                op_G21 = splitter.G2_orbits[i][0][0]
-                ops_G22 = splitter.G2_orbits[i][1]
-                #print(op_G21.as_xyz_string()) # (z, y, -x)
-                #print(op_G22.as_xyz_string()) #
-                #op_G2 = SymmOp(matrix)
-
-                # atoms in H
-                coord1 = atom_sites_H[solution[i][0]].position.copy()
-                coord2 = atom_sites_H[solution[i][1]].position.copy()
-
-                # refine coord1 to find the best match on coord2
-                if disp is not None:
-                    coord11 = coord1 + disp
-                    coord22 = coord2 + disp
+                # H->G2->G1
+                if atom_sites_H[mapping[i][0]].wp.letter == splitter.wp2_lists[i][0].letter:
+                    coord1_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord2_H = atom_sites_H[mapping[i][1]].position.copy()
                 else:
-                    coord11 = coord1
-                    coord22 = coord2
+                    coord2_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord1_H = atom_sites_H[mapping[i][1]].position.copy()
+                #print("\n\n\nH", coord1_H, coord2_H)
+
+                coord1_G2 = coord1_H + disp
+                coord2_G2 = coord2_H + disp  
 
                 if splitter.group_type == 'k':
                     # if it is t-type splitting
@@ -705,118 +739,65 @@ class supergroup():
                     # 8n in Immm -> 4f+4f in Pmmn
                     # x,y,0 -> -1/4+y,-1/4,-1/4+x -> 1/2+x1, 3/4, -z1
                     # -1/2+x,-1/2+y,-1/2 -> -1/4+y,-3/4,-x -> (x2, 1/4, z2 )
+                    ops_H1 = splitter.H_orbits[i][0]
+                    op_G21 = splitter.G2_orbits[i][0][0]
+                    ops_G22 = splitter.G2_orbits[i][1]
                     for op_G22 in ops_G22:
                         diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
                         if np.sum(diff**2) < 1e-3:
                             trans = op_G22.translation_vector - op_G21.translation_vector
                             break
                     trans -= np.round(trans)
-                    coords11 = apply_ops(coord11, ops_H1)
+                    coords11 = apply_ops(coord1_G2, ops_H1)
                     coords11 += trans
-                    tmp, dist = get_best_match(coords11, coord22, self.cell)
+                    tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
 
                     if dist > np.sqrt(2)*d_tol:
                         return 10000, None, mask
                     else:
-                        d = coord22 - tmp
+                        d = coord2_G2 - tmp
                         d -= np.round(d)
                         max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
+
                 else:
-                    op_G22 = ops_G22[0]
-                    if round(np.trace(ops_H1[0].rotation_matrix)) == 0:
-                        # if there is no freedom e.g. (0.5, 0, 0)
-                        # no displacement to adjust
-                        # G1/H1 and G2/H2 have to be identical
-                        coord2 = op_G21.operate(coord2) #
-                        coord_G1 = op_G21.operate(coord11)
-                        coord_G2 = op_G22.operate(coord22)
-                        dist1 = coord_G1 - coord11
-                        dist2 = coord_G2 - coord22
-                        dist1 -= np.round(dist1)
-                        dist2 -= np.round(dist2)
-                        dist1 = np.linalg.norm(dist1)
-                        dist2 = np.linalg.norm(dist2)
-                        if max([dist1, dist2]) > np.sqrt(2)*d_tol:
-                            return 10000, None, mask
-                        else:
-                            max_disps.append(max([dist1, dist2]))
+                    #print("G2", coord1_G2, coord2_G2)
+                    op_G12 = splitter.G1_orbits[i][1][0]
+                    coord1_G1 = np.dot(rot, coord1_G2) + tran.T
+                    coord2_G1 = np.dot(rot, coord2_G2) + tran.T
+                    coord1_G1 -= np.round(coord1_G1)
+                    coord2_G1 -= np.round(coord2_G1)
+                    #print("G1", coord1_G1, coord2_G1, op_G12.as_xyz_string())
+                    coord2_G1 = find_match(splitter.G, splitter.wp1_lists[i], coord2_G1, op_G12)
+                    #print("G1", coord1_G1, coord2_G1)
+                    
+                    #find the best match
+                    coords11 = apply_ops(coord1_G1, ops_G1)
+                    tmp, dist = get_best_match(coords11, coord2_G1, cell)
+                    tmp = find_match(splitter.G, splitter.wp1_lists[i], tmp, op_G12)
+                    
+                    # G1->G2->H
+                    d = coord2_G1 - tmp
+                    d -= np.round(d)
+                    #print("dist", np.linalg.norm(d), "d", d, tmp, coord2_G1)
 
-                    #elif round(np.trace(op_G21.rotation_matrix)) == 1:
-                    elif round(np.trace(ops_H1[0].rotation_matrix)) == 1:
-                        # 24e in Fm-3m -> 4e+8h in I4/mmm
-                        # x,0,0 -> x,x,0 -> x1,x1,0
-                        # 0,0,-x -> 0,0,-x -> 0,0,z2
-                        # only one freedom exists
+                    coord2_G1 -= d/2
+                    coord1_G1 += d/2
+                    #print("G1 (symm)", coord1_G1, coord2_G1)
 
-                        # 9b in R3m -> 2a+4b in C2m
-                        # x,-x,z -> 3x/2, 3x/2, x+z -> x, y, z                       
-                        # x,2x,z -> -3x, 0, -2x+z -> x, 0, z                       
-
-                        coords11 = apply_ops(coord11, ops_H1)
-                        for m, coord11 in enumerate(coords11):
-                            coords11[m] = op_G22.operate(coord11)
-                        tmp, dist = get_best_match(coords11, coord22, self.cell)
-                        if dist > np.sqrt(2)*d_tol:
-                            return 10000, None, mask
-
-                        # recover the original position
-                        try:
-                            inv_op1 = get_inverse(op_G21)
-                            inv_op2 = get_inverse(op_G22)
-                            #print(op.as_xyz_string(), inv_op.as_xyz_string())
-                        except:
-                            print("Error in getting the inverse")
-                            print(op_G21.as_xyz_string())
-                            print(op_G22.as_xyz_string())
-                            #import sys; sys.exit()
-
-                        coord1 = inv_op2.operate(tmp)
-                        coord2 = inv_op1.operate(coord2)
-                        if disp is not None:
-                            coord1 -= disp
-                        d = coord22 - tmp
-                        d -= np.round(d)
-
-                        max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
-
-                    else:
-                        # 8j in C2m -> 4e+4e in P21/c
-                        # (z, y, -x) -> (x1, y1, z1)
-                        # (z, 1/2+y, 1/2-x) -> (x2, y2, z2)
-                        coord2 = op_G21.operate(coord2) #
-                        coords11 = apply_ops(coord11, ops_H1)
-                        # transform coords1 by symmetry operation
-                        for m, coord11 in enumerate(coords11):
-                            coords11[m] = op_G22.operate(coord11)
-                        tmp, dist = get_best_match(coords11, coord22, self.cell)
-                        #if wp1.letter == 'e': print(tmp, coord22, dist)
-
-                        if dist > np.sqrt(2)*d_tol:
-                            return 10000, None, mask
-
-                        # recover the original position
-                        try:
-                            inv_op1 = get_inverse(op_G21)
-                            inv_op2 = get_inverse(op_G22)
-                            #print(op.as_xyz_string(), inv_op.as_xyz_string())
-                        except:
-                            print("Error in getting the inverse")
-                            print(op_G21.as_xyz_string())
-                            print(op_G22.as_xyz_string())
-                            #import sys; sys.exit()
-                        #print(coord1)
-                        #print(coord2)
-                        coord1 = inv_op2.operate(tmp)
-                        coord2 = inv_op1.operate(coord2)
-                        if disp is not None:
-                            coord1 -= disp
-                        d = coord22 - tmp
-                        d -= np.round(d)
-                        max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
-        #print(max_disps, mask)
+                    coord1_G2 = np.dot(inv_rot, coord1_G1 - tran.T)
+                    coord2_G2 = np.dot(inv_rot, coord2_G1 - tran.T)
+                    diff1 = coord1_G2-coord1_H-disp
+                    diff2 = coord2_G2-coord2_H-disp
+                    diff1 -= np.round(diff1)
+                    diff2 -= np.round(diff2)
+                    dist1 = np.linalg.norm(np.dot(diff1, self.cell))
+                    dist2 = np.linalg.norm(np.dot(diff2, self.cell))
+                    max_disps.append(max([dist1, dist2]))
+                    #print("1:", coord1_G2, coord1_H, dist1)
+                    #print("2:", coord2_G2, coord2_H, dist2)
         return max(max_disps), disp, mask
 
-    def symmetrize(self, splitter, solution, disp):
+    def symmetrize(self, splitter, mapping, disp):
         """
         For a given solution, search for the possbile supergroup structure
 
@@ -832,13 +813,17 @@ class supergroup():
             elements: list of elements
         """
 
+        cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
         atom_sites_H = self.struc.atom_sites
         coords_G1 = [] # position in G
         coords_G2 = [] # position in G on the subgroup bais
         coords_H1 = [] # position in H
         elements = []
-        inv_rot = splitter.R[:3,:3] # inverse coordinate transformation
-        inv_tran = splitter.R[:3,3] # needs to check
+        rot = splitter.R[:3,:3] # inverse coordinate transformation
+        tran = splitter.R[:3,3] # needs to check
+        inv_rot = np.linalg.inv(rot)
+        ops_G1  = splitter.G[0]
+
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
 
@@ -870,7 +855,7 @@ class supergroup():
 
                 op_G2 = SymmOp(matrix)
                 # refine coord1 to find the best match on coord2
-                coord = atom_sites_H[solution[i][0]].position
+                coord = atom_sites_H[mapping[i][0]].position
                 coord0s = apply_ops(coord, ops_H) # possible coords in H
                 dists = []
                 for coord0 in coord0s:
@@ -884,10 +869,6 @@ class supergroup():
                 min_ID = np.argmin(np.array(dists))
                 coord2 = coord0s[min_ID].copy()
                 coord1 = op_G2.operate(coord2+disp)
-
-                #if splitter.G.number == 92:
-                #    print(change, op_G2.as_xyz_string(), "++++++++++++++")
-                #    print(coord1, coord2, np.dot(inv_rot, coord1).T+inv_tran.T, "--------")
 
                 if round(np.trace(op_G2.rotation_matrix)) in [1, 2]:
                     def fun(x, pt, ref, op):
@@ -904,34 +885,35 @@ class supergroup():
                     coord1[0] = res.x[0]
                     coord1 = op_G2.operate(coord1)
 
-                coords_G1.append(np.dot(inv_rot, coord1).T+inv_tran.T)
+                coords_G1.append(np.dot(rot, coord1).T+tran.T)
                 coords_G2.append(coord1)
                 coords_H1.append(coord2)
-                elements.append(splitter.elements[i])
 
             else:
-                # symmetry operations
-                ops_H1 = splitter.H_orbits[i][0]
-                #ops_H2 = splitter.H_orbits[i][0]
-                op_G1  = splitter.G1_orbits[i][0][0]
-                op_G21 = splitter.G2_orbits[i][0][0]
-                ops_G22 = splitter.G2_orbits[i][1]
+                # assume zero shift
+                if disp is None:
+                    disp = np.zeros(3)
+                    mask = [0, 1, 2]
 
-                # atoms in H
-                coord1 = atom_sites_H[solution[i][0]].position.copy()
-                coord2 = atom_sites_H[solution[i][1]].position.copy()
+                if atom_sites_H[mapping[i][0]].wp.letter == splitter.wp2_lists[i][0].letter:
+                    coord1_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord2_H = atom_sites_H[mapping[i][1]].position.copy()
+                else:
+                    coord2_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord1_H = atom_sites_H[mapping[i][1]].position.copy()
+                #print("\n\n\nH", coord1_H, coord2_H)
+
+                coord1_G2 = coord1_H + disp
+                coord2_G2 = coord2_H + disp  
+                #print("G2", coord1_G2, coord2_G2)
 
                 if splitter.group_type == 'k':
-                    # if it is t-type splitting
-                    # the key is to restore the translation symmetry:
-                    # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
-                    # then find the best_match between coord11 and coord22
-                    # regarding this vector, for example
-                    # 8n in Immm -> 4f+4f in Pmmn
-                    # x,y,0 -> -1/4+y,-1/4,-1/4+x -> 1/2+x1, 3/4, -z1
-                    # -1/2+x,-1/2+y,-1/2 -> -1/4+y,-3/4,-x -> (x2, 1/4, z2 )
-                    coord11 = coord1 + disp
-                    coord22 = coord2 + disp
+                    ops_H1 = splitter.H_orbits[i][0]
+                    op_G21 = splitter.G2_orbits[i][0][0]
+                    ops_G22 = splitter.G2_orbits[i][1]
+
+                    coord11 = coord1_H + disp
+                    coord22 = coord2_H + disp
 
                     for op_G22 in ops_G22:
                         diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
@@ -939,97 +921,57 @@ class supergroup():
                             trans = op_G22.translation_vector - op_G21.translation_vector
                             break
                     trans -= np.round(trans)
-                    coords11 = apply_ops(coord11, ops_H1)
+                    coords11 = apply_ops(coord1_G2, ops_H1)
                     coords11 += trans
-                    tmp, dist = get_best_match(coords11, coord22, self.cell)
+                    tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
 
-                    d = coord22 - tmp
+                    d = coord2_G2 - tmp
                     d -= np.round(d)
-                    coord22 -= d/2
-                    coord11 += d/2
-
-                    coords_G1.append(np.dot(inv_rot, coord22).T+inv_tran.T)
-                    coords_G2.append(coord11)
-                    coords_G2.append(coord22)
-                    coords_H1.append(coord1)
-                    coords_H1.append(coord2)
+                    coord2_G2 -= d/2
+                    coord1_G2 += d/2
+                    coords_G1.append(np.dot(rot, coord2_G2).T + tran.T)
 
                 else:
-                    op_G22 = ops_G22[0]
-                    if round(np.trace(ops_H1[0].rotation_matrix)) == 0:
-                        # if there is no freedom e.g. (0.5, 0, 0)
-                        # only check between
-                        coord11 = coord1 + disp
-                        coord22 = coord2 + disp
-                        coords_G1.append(op_G1.operate(coord11))
-                        coords_G2.append(op_G21.operate(coord11))
-                        coords_G2.append(op_G22.operate(coord22))
-                        coords_H1.append(coord1)
-                        coords_H1.append(coord2)
+                    # H->G2->G1
+                    op_G12 = splitter.G1_orbits[i][1][0]
 
-                    elif round(np.trace(ops_H1[0].rotation_matrix)) == 1:
-                        coord11 = coord1 + disp
-                        coord22 = coord2 + disp
-                        coords11 = apply_ops(coord11, ops_H1)
-                        for m, coord in enumerate(coords11):
-                            coords11[m] = op_G22.operate(coord)
-                        tmp, dist = get_best_match(coords11, coord22, self.cell)
 
-                        d = coord22 - tmp
-                        d -= np.round(d)
+                    coord1_G1 = np.dot(rot, coord1_G2) + tran.T
+                    coord2_G1 = np.dot(rot, coord2_G2) + tran.T
+                    coord1_G1 -= np.round(coord1_G1)
+                    coord2_G1 -= np.round(coord2_G1)
 
-                        coord22 -= d/2
-                        coord11 += d/2
+                    pos1, _, d = sym.search_matched_min(splitter.G, splitter.wp1_lists[i], coord2_G1)
+                    coord2_G1 = find_match(splitter.G, splitter.wp1_lists[i], coord2_G1, op_G12)
+                    #coord2_G1 = op_G12.operate(pos1)
+                    #print("G1", coord1_G1, coord2_G1, d)
+                    
+                    #find the best match
+                    coords11 = apply_ops(coord1_G1, ops_G1)
+                    tmp, dist = get_best_match(coords11, coord2_G1, cell)
+                    pos1, _, d = sym.search_matched_min(splitter.G, splitter.wp1_lists[i], tmp)
+                    tmp = find_match(splitter.G, splitter.wp1_lists[i], tmp, op_G12)
+                    #tmp = op_G12.operate(pos1)
+ 
+                    # G1->G2->H
+                    d = coord2_G1 - tmp
+                    d -= np.round(d)
+                    #print("dist", dist, "d", d, tmp, coord2_G1)
+                    coord2_G1 -= d/2
+                    coord1_G1 += d/2
+                    coords_G1.append(coord2_G1)
+                    #print("G1 (symm)", coord1_G1, coord2_G1)
 
-                        coords_G1.append(np.dot(inv_rot, coord22).T+inv_tran.T)
-                        coords_G2.append(coord11)
-                        coords_G2.append(coord22)
-                        coords_H1.append(coord1)
-                        coords_H1.append(coord2)
+                    coord1_G2 = np.dot(inv_rot, coord1_G1 - tran.T)
+                    coord2_G2 = np.dot(inv_rot, coord2_G1 - tran.T)
+                    #print("G2 (symm)", coord1_G2, coord2_G2)
 
-                    else:
-                        coord2_t = op_G21.operate(coord2) #
-                        #print("A", coord2_t)
-                        d2 = coord2_t - coord2
-                        coord11 = coord1 + disp
-                        coord22 = coord2 + disp  # applied the operation
-                        coords11 = apply_ops(coord11, ops_H1)
-                        # transform coords1 by symmetry operation
-                        for m, coord in enumerate(coords11):
-                            coords11[m] = op_G22.operate(coord)
-                        tmp, dist = get_best_match(coords11, coord22, self.cell)
-                        #print(coord22)
-                        d = coord22 - tmp
-                        d -= np.round(d)
-                        coord22 == d/2 #+ d2 #final coord2 after disp
-                        coord11 += d/2
-                        #print(coord11, coord22, np.dot(inv_rot, coord22).T+inv_tran.T)
-                        coords_G1.append(np.dot(inv_rot, coord22).T+inv_tran.T)
-                        coords_G2.append(coord11)
-                        coords_G2.append(coord22)
-                        coords_H1.append(coord1)
-                        coords_H1.append(coord2)
-                        #print(splitter)
-                elements.extend([splitter.elements[i]]*2)
+                coords_G2.append(coord1_G2)
+                coords_G2.append(coord2_G2)
+                coords_H1.append(coord1_H)
+                coords_H1.append(coord2_H)
+            elements.extend([splitter.elements[i]]*len(splitter.wp2_lists[i]))
         return coords_G1, coords_G2, coords_H1, elements
-
-    def print_detail(self, G, coords_H1, coords_G1, elements, disp):
-        """
-        print out the details of tranformation
-        """
-        print("Valid structure", G)
-        disps = []
-        for x, y, ele in zip(coords_H1, coords_G1, elements):
-            dis = y-(x+disp)
-            dis -= np.round(dis)
-            dis_abs = np.linalg.norm(dis.dot(self.cell))
-            output = "{:2s} {:8.4f}{:8.4f}{:8.4f}".format(ele, *x)
-            output += " -> {:8.4f}{:8.4f}{:8.4f}".format(*y)
-            output += " -> {:8.4f}{:8.4f}{:8.4f} {:8.4f}".format(*dis, dis_abs)
-            disps.append(dis_abs)
-            print(output)
-        print("cell: {:8.4f}{:8.4f}{:8.4f}, disp (A): {:8.4f}".format(*disp, max(disps)))
-
 
 
 if __name__ == "__main__":
@@ -1039,7 +981,7 @@ if __name__ == "__main__":
     data = {
             #"PVO": [12, 166],
             #"PPO": [12],
-            #"NiS-Cm": [160],
+            "NiS-Cm": [160],
             "NbO2": [141],
             "GeF2": [62],
             "lt_quartz": [180],
@@ -1055,5 +997,5 @@ if __name__ == "__main__":
         print("===============", cif, "===============")
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
-        sup = supergroups(s, path=data[cif])
+        sup = supergroups(s, path=data[cif], show=False) #True)
         print(sup)

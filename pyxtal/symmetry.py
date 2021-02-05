@@ -2575,6 +2575,46 @@ def search_matched_position(G, wp, pos):
     else:
         return None
 
+def search_matched_min(G, wp, pos):
+    """
+    search generator for a special Wyckoff position
+
+    Args:
+        G: space group number or Group object
+        wp: Wyckoff object
+        pos: initial xyz position
+
+    Return:
+        pos1: the position that matchs the standard setting
+    """
+    if isinstance(G, int):
+        wp0 = Group(G)[0]
+    else:
+        wp0 = G[0]
+
+    match = False
+    ds = []
+    res = []
+
+    for op in wp0:
+        pos1 = op.operate(pos)
+        pos0 = wp[0].operate(pos1)
+        pos1 -= np.floor(pos1)
+        diff = pos1 - pos0
+        diff -= np.round(diff)
+        diff = np.abs(diff).sum()
+        ds.append(diff)
+        res.append(pos1)
+        if diff<1e-2:
+            match = True
+            break
+    if match:
+        return pos1, match, 1e-2
+    else:
+        minID = np.argmin(np.array(ds))
+        pos1 = res[minID]
+        return pos1, match, ds[minID]
+
 def get_point_group(number):
     """
     return the point group for the given space group
