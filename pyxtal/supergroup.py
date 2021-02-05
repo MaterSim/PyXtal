@@ -275,6 +275,67 @@ def check_compatibility(G, relation, sites, elements):
     #     print(good_splittings_list[0])
     return good_splittings_list
 
+def search_paths(H,G,max_layers=5):
+    """
+    Search function throws away paths that take a roundabout. For example,
+
+    Args:
+        H: starting structure IT group number
+        G: final supergroup IT Group number
+        max_layers: the number of supergroup calculations needed.
+
+    Return:
+        list of possible paths ordered from smallest to biggest
+
+
+    """
+        #Search function throws away paths that take a roundabout. For example,
+        #path1:a>>e>>f>>g
+        #path2:a>>b>>c>>e>>f>>g
+        #path 2 will not be counted as there is already a shorter path from a>>e
+
+    layers={}
+    layers[0]={'groups':[G],'subgroups':[]}
+    final=[]
+    traversed=[]
+
+    #searches for every subgroup of the the groups from the previous layer.
+    #Stores the possible groups of each layer and their subgroups in a dictinoary to avoid redundant calculations.
+    #Starts from G and goes down to H
+    for l in range(1,max_layers+1):
+        previous_layer_groups=layers[l-1]['groups']
+        groups=[]
+        subgroups=[]
+        for i,g in enumerate(previous_layer_groups):
+            subgroup_numbers=np.unique(sym.Group(g).get_max_subgroup_numbers())
+
+            #If a subgroup list has been found with H, will trace a path through the dictionary to build the path
+            if H in subgroup_numbers:
+                paths=[[H,g]]
+                for j in reversed(range(l-1)):
+                    holder=[]
+                    for path in paths:
+                        tail_number=path[-1]
+                        indices=[]
+                        for idx,numbers in enumerate(layers[j]['subgroups']):
+                            if tail_number in numbers:
+                                indices.append(idx)
+                        for idx in indices:
+                            holder.append(path+[layers[j]['groups'][idx]])
+                    paths=deepcopy(holder)
+                final.extend(paths)
+                subgroups.append([])
+
+            #will continue to generate a layer of groups if the path to H has not been found.
+            else:
+                subgroups.append(subgroup_numbers)
+                [groups.append(x) for x in subgroup_numbers if (x not in groups) and (x not in traversed)]
+
+        traversed.extend(groups)
+        layers[l]={'groups':deepcopy(groups),'subgroups':[]}
+        layers[l-1]['subgroups']=deepcopy(subgroups)
+    return final
+
 class supergroups():
     """
     Class to search for the feasible transition to a given super group
@@ -318,7 +379,7 @@ class supergroups():
 
     def search_paths(self, H, G, max_layer=5):
         # enumerate all connections between H and G
-        # suppose H=62, G=225 
+        # suppose H=62, G=225
         # paths = [[59, 71, 139], [72, 139]]
         """
         >>> from pyxtal.symmetry import Group
@@ -720,15 +781,15 @@ class supergroup():
 
                 # H->G2->G1
                 if atom_sites_H[mapping[i][0]].wp.letter == splitter.wp2_lists[i][0].letter:
-                    coord1_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord1_H = atom_sites_H[mapping[i][0]].position.copy()
                     coord2_H = atom_sites_H[mapping[i][1]].position.copy()
                 else:
-                    coord2_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord2_H = atom_sites_H[mapping[i][0]].position.copy()
                     coord1_H = atom_sites_H[mapping[i][1]].position.copy()
                 #print("\n\n\nH", coord1_H, coord2_H)
 
                 coord1_G2 = coord1_H + disp
-                coord2_G2 = coord2_H + disp  
+                coord2_G2 = coord2_H + disp
 
                 if splitter.group_type == 'k':
                     # if it is t-type splitting
@@ -769,12 +830,12 @@ class supergroup():
                     #print("G1", coord1_G1, coord2_G1, op_G12.as_xyz_string())
                     coord2_G1 = find_match(splitter.G, splitter.wp1_lists[i], coord2_G1, op_G12)
                     #print("G1", coord1_G1, coord2_G1)
-                    
+
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
                     tmp = find_match(splitter.G, splitter.wp1_lists[i], tmp, op_G12)
-                    
+
                     # G1->G2->H
                     d = coord2_G1 - tmp
                     d -= np.round(d)
@@ -896,15 +957,15 @@ class supergroup():
                     mask = [0, 1, 2]
 
                 if atom_sites_H[mapping[i][0]].wp.letter == splitter.wp2_lists[i][0].letter:
-                    coord1_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord1_H = atom_sites_H[mapping[i][0]].position.copy()
                     coord2_H = atom_sites_H[mapping[i][1]].position.copy()
                 else:
-                    coord2_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord2_H = atom_sites_H[mapping[i][0]].position.copy()
                     coord1_H = atom_sites_H[mapping[i][1]].position.copy()
                 #print("\n\n\nH", coord1_H, coord2_H)
 
                 coord1_G2 = coord1_H + disp
-                coord2_G2 = coord2_H + disp  
+                coord2_G2 = coord2_H + disp
                 #print("G2", coord1_G2, coord2_G2)
 
                 if splitter.group_type == 'k':
@@ -945,14 +1006,14 @@ class supergroup():
                     coord2_G1 = find_match(splitter.G, splitter.wp1_lists[i], coord2_G1, op_G12)
                     #coord2_G1 = op_G12.operate(pos1)
                     #print("G1", coord1_G1, coord2_G1, d)
-                    
+
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
                     pos1, _, d = sym.search_matched_min(splitter.G, splitter.wp1_lists[i], tmp)
                     tmp = find_match(splitter.G, splitter.wp1_lists[i], tmp, op_G12)
                     #tmp = op_G12.operate(pos1)
- 
+
                     # G1->G2->H
                     d = coord2_G1 - tmp
                     d -= np.round(d)
@@ -975,27 +1036,27 @@ class supergroup():
 
 
 if __name__ == "__main__":
-
-    from pyxtal import pyxtal
-
-    data = {
-            #"PVO": [12, 166],
-            #"PPO": [12],
-            "NiS-Cm": [160],
-            "NbO2": [141],
-            "GeF2": [62],
-            "lt_quartz": [180],
-            "BTO": [123, 221],
-            "NaSb3F10": [186,194],
-            "BTO-Amm2": [65, 123, 221],
-            "lt_cristobalite": [98, 210, 227],
-            "MPWO": [59, 71, 139, 225],
-           }
-    cif_path = "pyxtal/database/cifs/"
-
-    for cif in data.keys():
-        print("===============", cif, "===============")
-        s = pyxtal()
-        s.from_seed(cif_path+cif+'.cif')
-        sup = supergroups(s, path=data[cif], show=False) #True)
-        print(sup)
+    search_paths(62,225)
+    # from pyxtal import pyxtal
+    #
+    # data = {
+    #         #"PVO": [12, 166],
+    #         #"PPO": [12],
+    #         "NiS-Cm": [160],
+    #         "NbO2": [141],
+    #         "GeF2": [62],
+    #         "lt_quartz": [180],
+    #         "BTO": [123, 221],
+    #         "NaSb3F10": [186,194],
+    #         "BTO-Amm2": [65, 123, 221],
+    #         "lt_cristobalite": [98, 210, 227],
+    #         "MPWO": [59, 71, 139, 225],
+    #        }
+    # cif_path = "pyxtal/database/cifs/"
+    #
+    # for cif in data.keys():
+    #     print("===============", cif, "===============")
+    #     s = pyxtal()
+    #     s.from_seed(cif_path+cif+'.cif')
+    #     sup = supergroups(s, path=data[cif], show=False) #True)
+    #     print(sup)
