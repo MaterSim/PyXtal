@@ -539,7 +539,9 @@ class supergroup():
                 if len(sols) > max_per_G:
                     #print(len(sols))
                     sols = sample(sols, max_per_G)
+                #sols = [[['2d'], ['6h'], ['2c', '6g', '12i']]]
                 for sol in sols:
+                    #print(sol)
                     mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
                     #if mae < 5: print(G, sol, mae, disp)
                     if mae < d_tol:
@@ -639,6 +641,7 @@ class supergroup():
         disps = []
         masks = []
         if len(mappings) > 0:
+            #print(len(mappings))
             for mapping in mappings:
                 dist, disp, mask = self.symmetrize_dist(splitter, mapping, None, None, d_tol)
                 dists.append(dist)
@@ -651,7 +654,7 @@ class supergroup():
             mask = masks[id]
             if 0.2 < mae < d_tol:
                 # optimize disp further
-                if len(mask)<3:
+                if mask is None or len(mask)<3:
                     def fun(disp, mapping, splitter, mask):
                         return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
                     res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
@@ -707,93 +710,71 @@ class supergroup():
         ops_G1  = splitter.G[0]
         #n_atoms = sum([site.wp.multiplicity for site in atom_sites_H])
 
+        if mask is not None and disp is not None:
+            disp[mask] = 0
+
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
             if len(splitter.wp2_lists[i]) == 1:
-                # symmetry info
-                ops_H = splitter.H_orbits[i][0]  # ops for H
-                matrix = splitter.G2_orbits[i][0][0].affine_matrix.copy() # op for G2
-
-                change = True
-                for mid in range(3):
-                    # (x, 2x, 0) -> (x, y, z)
-                    col = matrix[:3,mid]
-                    if len(col[col==0])<2:
-                        change=False
-                        break
-                if change:
-                    # (x+1/4, 0, 0) -> (x, y, z)
-                    # (z, 0, -x) -> (x1, y1, z1)
-                    # transition between x and x+1/4 should be zero
-                    for mid in range(3):
-                        if np.linalg.norm(matrix[mid,:3])>0:
-                            matrix[mid,:] = 0
-                            matrix[mid,mid] = 1
-                op_G2 = SymmOp(matrix)
-                #print(change, op_G2.as_xyz_string(), ops_H[0].as_xyz_string())
-                #import sys; sys.exit()
-
-                # refine coord1 to find the best match on coord2
-                coord = atom_sites_H[mapping[i][0]].position
-                coord0s = apply_ops(coord, ops_H) # possible coords in H
-                dists = []
-                for coord0 in coord0s:
-                    coord2 = coord0.copy()
+                op_G1 = splitter.G1_orbits[i][0][0]
+                ops_H = splitter.H_orbits[i][0]
+                base = atom_sites_H[mapping[i][0]].position.copy() 
+                coord1s_H = apply_ops(base, ops_H)
+                ds = []
+                for coord1_H in coord1s_H:
                     if disp is not None:
-                        coord2 += disp
-                    coord1 = op_G2.operate(coord2)
-                    dist = coord1 - coord2
-                    dist -= np.round(dist)
-                    dist = np.dot(dist, self.cell)
-                    dists.append(np.linalg.norm(dist))
-                min_ID = np.argmin(np.array(dists))
-                dist = dists[min_ID]
-                coord2 = coord0s[min_ID].copy()
+                        coord1_G2 = coord1_H + disp
+                    else:
+                        coord1_G2 = coord1_H 
+                    coord1_G1 = np.dot(rot, coord1_G2) + tran.T
+                    tmp = find_match(splitter.G, splitter.wp1_lists[i], coord1_G1, op_G1)
+                    d = tmp - coord1_G1
+                    d -= np.round(d)
+                    ds.append(np.linalg.norm(d))
+                minID = np.argmin(np.array(ds))
+                coord1_H = coord1s_H[minID]
+                if disp is not None:
+                    coord1_G2 = coord1_H + disp
+                else:
+                    coord1_G2 = coord1_H 
+                coord1_G1 = np.dot(rot, coord1_G2) + tran.T
+                tmp = find_match(splitter.G, splitter.wp1_lists[i], coord1_G1, op_G1)
+                coord1_G2 = tmp - tran.T
+                coord1_G2 -= np.floor(coord1_G2)
+                coord1_G2 = np.dot(inv_rot, coord1_G2)
+
+                diff = coord1_G2 - coord1_H
+                diff -= np.floor(diff)
+
+                #some annoy translation issues
+                if abs(np.linalg.det(inv_rot)-0.5)<1e-3:
+                    for m in range(3):
+                        if abs(abs(diff[m])-0.5)<1e-4:
+                            diff[m] = 0.5
+                        else:
+                            diff[m] = 0
+                    coord1_G2 += diff
+
+                # initial guess on disp
                 if disp is None:
-                    coord1 = op_G2.operate(coord2)
-                    disp = (coord1 - coord2).copy()
-                    # check if two are identical
+                    diff = coord1_G2 - coord1_H
+                    diff -= np.round(diff)
+                    disp = diff.copy()
                     mask = []
                     for m in range(3):
-                        row1 = ops_H[0].affine_matrix[m]
-                        row2 = op_G2.affine_matrix[m]
-                        rot1 = row1[:3]
-                        rot2 = row2[:3]
-                        tran1 = row1[3]
-                        tran2 = row2[3]
-                        diff1 = np.sum((rot1-rot2)**2)
-                        diff2 = tran1 - tran2
-                        diff2 -= np.round(diff2)
-                        diff2 *= diff2
-                        if diff1 < 1e-3 and diff2 < 1e-3:
+                        if abs(diff[m])<1e-4:
                             mask.append(m)
-                elif dist < d_tol:
-                    coord1 = op_G2.operate(coord2+disp)
-                    if round(np.trace(op_G2.rotation_matrix)) in [1, 2]:
-                        def fun(x, pt, ref, op):
-                            pt[0] = x[0]
-                            y = op.operate(pt)
-                            diff = y - ref
-                            diff -= np.round(diff)
-                            diff = np.dot(diff, self.cell)
-                            return np.linalg.norm(diff)
-
-                        # optimize the distance by changing coord1
-                        res = minimize(fun, coord1[0], args=(coord1, coord2, op_G2),
-                                method='Nelder-Mead', options={'maxiter': 20})
-                        coord1[0] = res.x[0]
-                        coord1 = op_G2.operate(coord1)
+                    diff = np.zeros(3)
                 else:
-                    return 10000, None, None
+                    diff = coord1_G2 - (coord1_H + disp)
+                    diff -= np.round(diff)
 
-                if mask is not None:
-                    disp[mask] = 0
-                diff = coord1-(coord2+disp)
-                diff -= np.round(diff)
-
-                if np.linalg.norm(np.dot(diff, self.cell)) < d_tol:
-                    max_disps.append(np.linalg.norm(np.dot(diff, self.cell)))
+                dist = np.linalg.norm(np.dot(diff, self.cell))
+                #print(wp1.letter, coord1_G2, coord1_H, disp, dist)
+                if dist < d_tol:
+                    max_disps.append(dist)
                 else:
+                    #import sys; sys.exit()
                     return 10000, None, None
 
             else:
@@ -1039,6 +1020,7 @@ if __name__ == "__main__":
             #"lt_cristobalite": [98, 210, 227],
             #"MPWO": [59, 71, 139, 225],
             #"BTO-Amm2": [65, 123, 221],
+            #"NaSb3F10": [186, 194],
             "GeF2": 62,
             "NbO2": 141,
             "NiS-Cm": 160,
@@ -1046,8 +1028,8 @@ if __name__ == "__main__":
             "BTO-Amm2": 221,
             "BTO": 221,
             "MPWO": 225,
-            "NaSb3F10": 194,
             "lt_cristobalite": 227,
+            "NaSb3F10": 194,
            }
     cif_path = "pyxtal/database/cifs/"
 
@@ -1056,7 +1038,7 @@ if __name__ == "__main__":
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
         if isinstance(data[cif], list):
-            sup = supergroups(s, path=data[cif], show=True)
+            sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
         else:
-            sup = supergroups(s, G=data[cif], show=False)
+            sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
         print(sup)

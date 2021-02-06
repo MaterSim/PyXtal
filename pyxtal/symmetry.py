@@ -262,10 +262,10 @@ class Group:
             True or False
         """
         # remove the multiplicity:
-        for site in sites:
+        for i, site in enumerate(sites):
             if len(site) > 1:
-                site = site[-1]
-
+                sites[i] = site[-1]
+        
         for wp in self:
             letter = wp.letter
             if sites.count(letter)>1:
