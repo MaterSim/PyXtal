@@ -1,0 +1,81 @@
+data_global
+_chemical_name_mineral 'Babefphite'
+loop_
+_publ_author_name
+'Simonov M A'
+'Egorov-Tismenko Y K'
+'Belov N V'
+_journal_name_full 'Soviet Physics Crystallography'
+_journal_volume 25 
+_journal_year 1980
+_journal_page_first 28
+_journal_page_last 31
+_publ_section_title
+;
+ Use of modern X-ray equipment to solve fine problems of structural
+ mineralogy by the example of the crystal structure of babefphite BaBe(PO4)F
+;
+_database_code_amcsd 0019355
+_chemical_compound_source 'Aunik F-Be deposit, Transbaikalia, Eastern-Siberian Region, Russia'
+_chemical_formula_sum 'Ba Be P O4 F'
+_chemical_formula_sum ''
+_cell_length_a 6.889
+_cell_length_b 16.814
+_cell_length_c 6.902
+_cell_angle_alpha 90.01
+_cell_angle_beta 89.99
+_cell_angle_gamma 90.32
+_cell_volume 799.458
+_exptl_crystal_density_diffrn      4.325
+_symmetry_space_group_name_H-M 'F 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,y,1/2+z'
+  '1/2+x,1/2+y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ba1   0.00000   0.00000   0.00000
+Ba2   0.25000   0.25000   0.25000
+Be1   0.26400   0.17030   0.74100
+Be2   0.51400   0.41840   0.51100
+P1   0.00990   0.08280   0.48950
+P2   0.26030   0.33250   0.76090
+O1   0.16370   0.07940   0.33340
+O2   0.89810   0.00260   0.50020
+O3   0.14670   0.25210   0.74980
+O4   0.34990   0.34880   0.56010
+O5   0.41270   0.32910   0.91670
+O6   0.35990   0.14830   0.94790
+O7   0.10020   0.09810   0.69040
+O8   0.10860   0.39910   0.80140
+F1   0.41800   0.17410   0.58180
+F2   0.16820   0.42350   0.16850
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ba1 0.00734 0.01203 0.01051 -0.00190 0.00038 0.00089
+Ba2 0.00849 0.00975 0.00912 -0.00038 0.00051 -0.00165
+Be1 0.01267 0.01013 0.01267 -0.00760 0.00633 0.00507
+Be2 0.01267 0.00633 0.00380 0.00000 -0.00760 0.00126
+P1 0.00393 0.00507 0.00532 -0.00190 0.00000 0.00013
+P2 0.00456 0.00380 0.00481 -0.00013 0.00025 -0.00013
+O1 0.01013 0.01266 0.01013 0.00000 0.00380 -0.00126
+O2 0.00760 0.00507 0.01646 -0.00127 0.00127 -0.00253
+O3 0.00633 0.00507 0.01900 0.00000 0.00000 0.00126
+O4 0.01267 0.01013 0.02026 -0.00633 0.00380 -0.00253
+O5 0.00887 0.01266 0.01013 0.00000 -0.00253 -0.00126
+O6 0.01140 0.00887 0.00887 0.00000 -0.00253 0.00000
+O7 0.01013 0.00887 0.00760 -0.00253 -0.00253 0.00000
+O8 0.01267 0.00887 0.00887 0.00127 0.00253 0.00000
+F1 0.01013 0.01520 0.01140 -0.00253 0.00253 0.00000
+F2 0.00887 0.01266 0.01140 -0.00253 -0.00127 -0.00126

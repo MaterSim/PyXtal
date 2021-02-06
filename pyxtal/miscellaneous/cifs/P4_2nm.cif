@@ -1,0 +1,64 @@
+data_global
+_amcsd_formula_title 'F6 Fe2 Li'
+loop_
+_publ_author_name
+'Fourquet J'
+'LeSamedi E'
+'Calage Y'
+_journal_name_full 'Journal of Solid State Chemistry'
+_journal_volume 77 
+_journal_year 1988
+_journal_page_first 84
+_journal_page_last 89
+_publ_section_title
+;
+ Le trirutile ordonne Li Fe2 F6: Croissance cristalline et etude structurale
+ _cod_database_code 1000239
+;
+_database_code_amcsd 0013624
+_chemical_formula_sum 'Li Fe2 F6'
+_chemical_formula_sum ''
+_cell_length_a 4.679
+_cell_length_b 4.679
+_cell_length_c 9.324
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 204.131
+_exptl_crystal_density_diffrn      3.785
+_symmetry_space_group_name_H-M 'P 42 n m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-y,-x,z'
+  '1/2-y,1/2+x,1/2+z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,-y,z'
+  'y,x,z'
+  '1/2+y,1/2-x,1/2+z'
+  '1/2-x,1/2+y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Li1   0.00000   0.00000   0.66640
+Fe1   0.00000   0.00000   0.33390
+Fe2   0.00000   0.00000   0.00000
+F1   0.69380   0.69380   0.65680
+F2   0.29140   0.29140   0.00260
+F3   0.30530   0.30530   0.34400
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Li1 0.01650 0.01650 0.01070 0.01530 0.00000 0.00000
+Fe1 0.00790 0.00790 0.00770 -0.00220 0.00000 0.00000
+Fe2 0.00770 0.00770 0.00700 -0.00020 0.00000 0.00000
+F1 0.01220 0.01220 0.00810 -0.00450 0.00020 0.00020
+F2 0.01280 0.01280 0.01210 -0.00550 -0.00170 -0.00170
+F3 0.01480 0.01480 0.01240 -0.00520 -0.00180 -0.00180

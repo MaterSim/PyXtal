@@ -1,0 +1,60 @@
+data_global
+_amcsd_formula_title 'Mn2GeO4-delta'
+loop_
+_publ_author_name
+'Morimoto N'
+'Tokonami M'
+'Koto K'
+'Nakajima S'
+_journal_name_full 'American Mineralogist'
+_journal_volume 57 
+_journal_year 1972
+_journal_page_first 62
+_journal_page_last 75
+_publ_section_title
+;
+ Crystal structures of the high pressure polymorphs of Mn2GeO4
+;
+_database_code_amcsd 0000271
+_chemical_formula_sum 'Mn2 Ge O4'
+_chemical_formula_sum ''
+_cell_length_a 5.262
+_cell_length_b 9.274
+_cell_length_c 2.954
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 144.155
+_exptl_crystal_density_diffrn      5.679
+_symmetry_space_group_name_H-M 'P b a m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2-y,z'
+  '1/2-x,1/2+y,-z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,-z'
+  'x,y,-z'
+  '-x,-y,z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mn   0.06220   0.32220   0.50000
+Ge   0.00000   0.00000   0.00000
+O1   0.22950   0.04330   0.50000
+O2   0.37220   0.31410   0.00000
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Mn 0.00673 0.01176 0.01768 -0.00025 0.00000 0.00000
+Ge 0.00743 0.00741 0.01459 0.00000 0.00000 0.00000
+O1 0.01094 0.01133 0.01282 -0.00470 0.00000 0.00000
+O2 0.00926 0.00741 0.01326 0.00000 0.00000 0.00000

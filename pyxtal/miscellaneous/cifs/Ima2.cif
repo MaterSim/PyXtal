@@ -1,0 +1,49 @@
+data_global
+_amcsd_formula_title 'SiO2'
+loop_
+_publ_author_name
+'Boisen M B'
+'Gibbs G V'
+'Bukowinski M S T'
+_journal_name_full 'Physics and Chemistry of Minerals'
+_journal_volume 21 
+_journal_year 1994
+_journal_page_first 269
+_journal_page_last 284
+_publ_section_title
+;
+ Framework silica structures generated using simulated annealing
+ with a potential energy function based on an H6Si2O7 molecule
+ Sample: 6
+;
+_database_code_amcsd 0007871
+_chemical_formula_sum 'Si O2'
+_chemical_formula_sum ''
+_cell_length_a 10.2170
+_cell_length_b 7.9579
+_cell_length_c 4.9565
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 402.993
+_exptl_crystal_density_diffrn      1.981
+_symmetry_space_group_name_H-M 'I m a 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '1/2+x,-y,z'
+  '+x,1/2-y,1/2+z'
+  '1/2-x,y,z'
+  '-x,1/2+y,1/2+z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Si   0.10183   0.35660   0.50000
+O1   0.57933   0.69059   0.18477
+O2   0.75000   0.92453   0.04157
+O3   0.00000   0.50000   0.59431

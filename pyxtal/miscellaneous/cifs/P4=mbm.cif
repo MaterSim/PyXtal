@@ -1,0 +1,55 @@
+data_global
+_amcsd_formula_title 'V2Ga5'
+loop_
+_publ_author_name
+'Reddy J M'
+'Storm A R'
+'Knox K'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 121 
+_journal_year 1965
+_journal_page_first 441
+_journal_page_last 448
+_publ_section_title
+;
+ The crystal structure of V2Ga5
+;
+_database_code_amcsd 0010625
+_chemical_formula_sum 'V2 Ga5'
+_chemical_formula_sum ''
+_cell_length_a 8.968
+_cell_length_b 8.968
+_cell_length_c 2.693
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 216.585
+_exptl_crystal_density_diffrn      6.908
+_symmetry_space_group_name_H-M 'P 4/m b m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-y,1/2-x,z'
+  '1/2+y,1/2+x,-z'
+  'y,-x,-z'
+  '-y,x,z'
+  '1/2+x,1/2-y,z'
+  '1/2-x,1/2+y,-z'
+  'x,y,-z'
+  '-x,-y,z'
+  '1/2+y,1/2+x,z'
+  '1/2-y,1/2-x,-z'
+  '-y,x,-z'
+  'y,-x,z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+V   0.31970   0.81970   0.50000  -0.00215
+Ga1   0.29368   0.56030   0.00000  -0.00279
+Ga2   0.50000   0.00000   0.00000  -0.00076

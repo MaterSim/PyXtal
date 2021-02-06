@@ -1,0 +1,44 @@
+data_global
+_amcsd_formula_title 'Ba H16 O14 Sb2'
+loop_
+_publ_author_name
+'Beintema J'
+_journal_name_full 'Proceedings of the Koninklijke Nederlandse Academie van Wetenschappen'
+_journal_volume 39 
+_journal_year 1936
+_journal_page_first 652
+_journal_page_last 661
+_publ_section_title
+;
+ On the crystal structure of barium antimonate.
+ _cod_database_code 1010070
+;
+_database_code_amcsd 0017005
+_chemical_formula_sum 'Ba Sb'
+_chemical_formula_sum ''
+_cell_length_a 9.961
+_cell_length_b 12.506
+_cell_length_c 10.129
+_cell_angle_alpha 90
+_cell_angle_beta 87.3
+_cell_angle_gamma 90
+_cell_volume 1260.392
+_exptl_crystal_density_diffrn      2.731
+_symmetry_space_group_name_H-M 'I 1 2/a 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '1/2-x,y,-z'
+  '-x,1/2+y,1/2-z'
+  '1/2+x,-y,z'
+  '+x,1/2-y,1/2+z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ba1   0.00000   0.25000   0.00000
+Sb1   0.00000   0.00000   0.25000

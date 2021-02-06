@@ -1,0 +1,43 @@
+data_global
+_amcsd_formula_title 'AlOOH'
+loop_
+_publ_author_name
+'Suzuki A'
+'Ohtani E'
+'Kamada T'
+_journal_name_full 'Physics and Chemistry of Minerals'
+_journal_volume 27 
+_journal_year 2000
+_journal_page_first 689
+_journal_page_last 693
+_publ_section_title
+;
+ A new hydrous phase delta-AlOOH synthesized at 21 GPa and 1000 C
+;
+_database_code_amcsd 0008490
+_chemical_formula_sum 'Al O2 H'
+_chemical_formula_sum ''
+_cell_length_a 4.7134
+_cell_length_b 4.2241
+_cell_length_c 2.83252
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 56.395
+_exptl_crystal_density_diffrn      3.533
+_symmetry_space_group_name_H-M 'P 21 n m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,-y,1/2+z'
+  'x,y,-z'
+  '1/2+x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Al   0.00000   0.27400   0.00000   0.00507
+O   0.33600   0.49100   0.00000   0.00507
+O-H   0.64100   0.00700   0.00000   0.00507

@@ -1,0 +1,59 @@
+data_global
+_chemical_name_mineral 'Erdite'
+loop_
+_publ_author_name
+'Konnert J A'
+'Evans H T'
+_journal_name_full 'American Mineralogist'
+_journal_volume 65 
+_journal_year 1980
+_journal_page_first 516
+_journal_page_last 521
+_publ_section_title
+;
+ The crystal structure of erdite, NaFeS2*2H2O
+;
+_database_code_amcsd 0000785
+_chemical_compound_source 'Coyote Peak, Humboldt County, California, USA'
+_chemical_formula_sum 'Na Fe S2 (O2 H4)'
+_chemical_formula_sum ''
+_cell_length_a 10.693
+_cell_length_b 9.115
+_cell_length_c 5.507
+_cell_angle_alpha 90
+_cell_angle_beta 92.17
+_cell_angle_gamma 90
+_cell_volume 536.364
+_exptl_crystal_density_diffrn      2.217
+_symmetry_space_group_name_H-M 'C 1 2/c 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  'x,-y,1/2+z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,y,1/2-z'
+  '1/2-x,1/2+y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Na   0.00000   0.38700   0.25000
+Fe   0.00000  -0.00100   0.25000
+S   0.11800   0.86400   0.00800
+Wat   0.13000   0.58400   0.41400
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Na 0.04200 0.03600 0.01700 0.00000 0.00700 0.00000
+Fe 0.02100 0.01100 0.00700 0.00000 0.00200 0.00000
+S 0.01900 0.02200 0.01000 0.00900 -0.00700 -0.00100
+Wat 0.06500 0.02700 0.00400 -0.01200 0.00100 0.00500

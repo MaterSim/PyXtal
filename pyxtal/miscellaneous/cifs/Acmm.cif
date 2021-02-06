@@ -1,0 +1,55 @@
+data_global
+_amcsd_formula_title 'Pb2OFCl'
+loop_
+_publ_author_name
+'Aurivillius B'
+_journal_name_full 'Chemica Scripta'
+_journal_volume 11 
+_journal_year 1977
+_journal_page_first 208
+_journal_page_last 211
+_publ_section_title
+;
+ A case of mimetic twinning. The crystal structures of Pb2OFX (X=Cl, Br, and I)
+ Sample: Pb2OFCl(L), isostructural with blixite
+;
+_database_code_amcsd 0012187
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Pb2 O F Cl'
+_chemical_formula_sum ''
+_cell_length_a 5.7221
+_cell_length_b 5.7269
+_cell_length_c 12.5410
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 410.967
+_exptl_crystal_density_diffrn      7.836
+_symmetry_space_group_name_H-M 'A c m m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  'x,-y,1/2+z'
+  'x,1/2-y,+z'
+  '-x,y,1/2-z'
+  '-x,1/2+y,-z'
+  'x,y,-z'
+  'x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+  '-x,y,1/2+z'
+  '-x,1/2+y,+z'
+  'x,-y,1/2-z'
+  'x,1/2-y,-z'
+  '-x,-y,-z'
+  '-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pb   0.22046   0.25000   0.14651 
+O    0.00000   0.00000   0.25000 
+F    0.50000   0.00000   0.25000 
+Cl   0.22270   0.25000   0.50000 

@@ -1,0 +1,54 @@
+data_global
+_chemical_name_mineral 'Dyscrasite'
+loop_
+_publ_author_name
+'Scott J D'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 14 
+_journal_year 1976
+_journal_page_first 139
+_journal_page_last 142
+_publ_section_title
+;
+ Refinement of the crystal structure of dyscrasite, and its implications
+ for the structure of allargentum
+;
+_database_code_amcsd 0005121
+_chemical_formula_sum 'Sb Ag3'
+_chemical_formula_sum ''
+_cell_length_a 3.008
+_cell_length_b 4.828
+_cell_length_c 5.214
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 75.721
+_exptl_crystal_density_diffrn      9.766
+_symmetry_space_group_name_H-M 'P m m 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,-y,z'
+  '-x,y,z'
+  '-x,-y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Sb   0.00000   0.00000  -0.02488
+Ag1   0.50000   0.00000   0.50000
+Ag2   0.00000   0.50000   0.64808
+Ag3   0.50000   0.50000   0.16016
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Sb 0.01728 0.01039 0.01363 0.00000 0.00000 0.00000
+Ag1 0.03832 0.03247 0.00372 0.00000 0.00000 0.00000
+Ag2 0.00770 0.01724 0.01157 0.00000 0.00000 0.00000
+Ag3 0.04171 0.00744 0.01584 0.00000 0.00000 0.00000

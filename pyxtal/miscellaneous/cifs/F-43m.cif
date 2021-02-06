@@ -1,0 +1,131 @@
+data_global
+_chemical_name_mineral 'Tiemannite'
+loop_
+_publ_author_name
+'Earley J W'
+_journal_name_full 'American Mineralogist'
+_journal_volume 35 
+_journal_year 1950
+_journal_page_first 337
+_journal_page_last 364
+_publ_section_title
+;
+ Description and syntheses of the selenide minerals
+;
+_database_code_amcsd 0000050
+_chemical_formula_sum 'Hg Se'
+_chemical_formula_sum ''
+_cell_length_a 6.084
+_cell_length_b 6.084
+_cell_length_c 6.084
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 225.200
+_exptl_crystal_density_diffrn      8.245
+_symmetry_space_group_name_H-M 'F -4 3 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,y,1/2+z'
+  '1/2+x,1/2+y,z'
+  '-z,x,-y'
+  '-z,1/2+x,1/2-y'
+  '1/2-z,x,1/2-y'
+  '1/2-z,1/2+x,-y'
+  '-y,z,-x'
+  '-y,1/2+z,1/2-x'
+  '1/2-y,z,1/2-x'
+  '1/2-y,1/2+z,-x'
+  '-x,y,-z'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,y,1/2-z'
+  '1/2-x,1/2+y,-z'
+  'x,-z,-y'
+  'x,1/2-z,1/2-y'
+  '1/2+x,-z,1/2-y'
+  '1/2+x,1/2-z,-y'
+  'z,-y,-x'
+  'z,1/2-y,1/2-x'
+  '1/2+z,-y,1/2-x'
+  '1/2+z,1/2-y,-x'
+  'y,-x,-z'
+  'y,1/2-x,1/2-z'
+  '1/2+y,-x,1/2-z'
+  '1/2+y,1/2-x,-z'
+  'x,z,y'
+  'x,1/2+z,1/2+y'
+  '1/2+x,z,1/2+y'
+  '1/2+x,1/2+z,y'
+  'z,y,x'
+  'z,1/2+y,1/2+x'
+  '1/2+z,y,1/2+x'
+  '1/2+z,1/2+y,x'
+  'y,x,z'
+  'y,1/2+x,1/2+z'
+  '1/2+y,x,1/2+z'
+  '1/2+y,1/2+x,z'
+  '-z,-x,y'
+  '-z,1/2-x,1/2+y'
+  '1/2-z,-x,1/2+y'
+  '1/2-z,1/2-x,y'
+  '-y,-z,x'
+  '-y,1/2-z,1/2+x'
+  '1/2-y,-z,1/2+x'
+  '1/2-y,1/2-z,x'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+  '1/2-x,-y,1/2+z'
+  '1/2-x,1/2-y,z'
+  'z,-x,-y'
+  'z,1/2-x,1/2-y'
+  '1/2+z,-x,1/2-y'
+  '1/2+z,1/2-x,-y'
+  'y,-z,-x'
+  'y,1/2-z,1/2-x'
+  '1/2+y,-z,1/2-x'
+  '1/2+y,1/2-z,-x'
+  'x,-y,-z'
+  'x,1/2-y,1/2-z'
+  '1/2+x,-y,1/2-z'
+  '1/2+x,1/2-y,-z'
+  '-x,z,-y'
+  '-x,1/2+z,1/2-y'
+  '1/2-x,z,1/2-y'
+  '1/2-x,1/2+z,-y'
+  '-z,y,-x'
+  '-z,1/2+y,1/2-x'
+  '1/2-z,y,1/2-x'
+  '1/2-z,1/2+y,-x'
+  '-y,x,-z'
+  '-y,1/2+x,1/2-z'
+  '1/2-y,x,1/2-z'
+  '1/2-y,1/2+x,-z'
+  '-x,-z,y'
+  '-x,1/2-z,1/2+y'
+  '1/2-x,-z,1/2+y'
+  '1/2-x,1/2-z,y'
+  '-z,-y,x'
+  '-z,1/2-y,1/2+x'
+  '1/2-z,-y,1/2+x'
+  '1/2-z,1/2-y,x'
+  '-y,-x,z'
+  '-y,1/2-x,1/2+z'
+  '1/2-y,-x,1/2+z'
+  '1/2-y,1/2-x,z'
+  'z,x,y'
+  'z,1/2+x,1/2+y'
+  '1/2+z,x,1/2+y'
+  '1/2+z,1/2+x,y'
+  'y,z,x'
+  'y,1/2+z,1/2+x'
+  '1/2+y,z,1/2+x'
+  '1/2+y,1/2+z,x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Hg   0.00000   0.00000   0.00000
+Se   0.25000   0.25000   0.25000

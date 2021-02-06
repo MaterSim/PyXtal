@@ -1,0 +1,47 @@
+data_global
+_chemical_name_mineral 'Pucherite'
+loop_
+_publ_author_name
+'Qurashi M M'
+'Barnes W H'
+_journal_name_full 'American Mineralogist'
+_journal_volume 38 
+_journal_year 1953
+_journal_page_first 489
+_journal_page_last 500
+_publ_section_title
+;
+ The structure of pucherite, BiVO4
+;
+_database_code_amcsd 0000057
+_chemical_formula_sum 'Bi V O4'
+_chemical_formula_sum ''
+_cell_length_a 5.332
+_cell_length_b 5.060
+_cell_length_c 12.020
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 324.299
+_exptl_crystal_density_diffrn      6.634
+_symmetry_space_group_name_H-M 'P n c a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,y,-z'
+  '1/2-x,-y,z'
+  'x,1/2-y,1/2+z'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,1/2+y,1/2+z'
+  '1/2+x,1/2-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Bi   0.25000   0.00000   0.10970   0.01646
+V   0.25000   0.00000   0.39380   0.01646
+O1  -0.05250  -0.22920   0.03160   0.01646
+O2  -0.03000   0.34980   0.19550   0.01646

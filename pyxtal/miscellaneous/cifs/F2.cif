@@ -1,0 +1,64 @@
+data_global
+_chemical_name_mineral 'Natrolite'
+loop_
+_publ_author_name
+'Wang H'
+'Bish D L'
+_journal_name_full 'American Mineralogist'
+_journal_volume 93 
+_journal_year 2008
+_journal_page_first 1191
+_journal_page_last 1194
+_publ_section_title
+;
+ A PH2O-dependent structural phase transition in the zeolite natrolite
+ Sample: alpha1-metanatrolite
+ Note: T = 400 C, P = 0.15 mbar
+;
+_database_code_amcsd 0004617
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Si3 Al2 Na2 O10'
+_chemical_formula_sum ''
+_cell_length_a 16.167
+_cell_length_b 16.938
+_cell_length_c 6.4380
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 89.680
+_cell_volume 1762.933
+_exptl_crystal_density_diffrn      2.594
+_symmetry_space_group_name_H-M 'F 1 1 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,y,1/2+z'
+  '1/2+x,1/2+y,z'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+  '1/2-x,-y,1/2+z'
+  '1/2-x,1/2-y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Si11   0.00000   0.00000   0.00000   0.00900
+Si12   0.25000   0.25000   0.25000   0.00900
+Si21   0.13560   0.23350   0.61900   0.00900
+Si22   0.11220  -0.01970   0.37000   0.00900
+Al11   0.02460   0.10660   0.61500   0.00900
+Al12   0.26850   0.13980   0.86300   0.00900
+Na1   0.06830   0.19110   0.14900   0.05100
+Na2   0.29120   0.07930   0.40300   0.05100
+O11   0.04200   0.06740   0.86000   0.02000
+O12   0.24170   0.17160   0.11200   0.02000
+O21   0.03900   0.20780   0.61400   0.02000
+O22   0.20960  -0.04000   0.35900   0.02000
+O31   0.09500   0.06860   0.43700   0.02000
+O32   0.14760   0.30440   0.78100   0.02000
+O41   0.07360  -0.07850   0.54300   0.02000
+O42   0.18740   0.15700   0.69300   0.02000
+O51   0.07070  -0.03810   0.14600   0.02000
+O52   0.16820   0.25840   0.39300   0.02000

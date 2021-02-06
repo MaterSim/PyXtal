@@ -1,0 +1,49 @@
+data_global
+_chemical_name_mineral 'Macedonite'
+loop_
+_publ_author_name
+'Cole S'
+'Espenschied H'
+_journal_name_full 'Journal of Physical Chemistry'
+_journal_volume 41 
+_journal_year 1937
+_journal_page_first 445
+_journal_page_last 451
+_publ_section_title
+;
+ Lead titanate: crystal structure, temperature of formation, and
+ specific gravity data
+ _cod_database_code 1011028
+;
+_database_code_amcsd 0017934
+_chemical_formula_sum 'Pb Ti O3'
+_chemical_formula_sum ''
+_cell_length_a 4.000
+_cell_length_b 4.211
+_cell_length_c 3.875
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 65.271
+_exptl_crystal_density_diffrn      7.711
+_symmetry_space_group_name_H-M 'P m m m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,-y,z'
+  '-x,y,-z'
+  '-x,y,z'
+  'x,-y,-z'
+  'x,y,-z'
+  '-x,-y,z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pb1   0.00000   0.00000   0.00000
+Ti1   0.50000   0.50000   0.50000
+O1   0.50000   0.50000   0.00000
+O2   0.50000   0.00000   0.50000
+O3   0.00000   0.50000   0.50000

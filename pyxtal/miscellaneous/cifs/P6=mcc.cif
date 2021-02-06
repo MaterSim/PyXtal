@@ -1,0 +1,66 @@
+data_global
+_chemical_name_mineral 'Beryl'
+loop_
+_publ_author_name
+'Hazen R M'
+'Au A Y'
+'Finger L W'
+_journal_name_full 'American Mineralogist'
+_journal_volume 71 
+_journal_year 1986
+_journal_page_first 977
+_journal_page_last 984
+_publ_section_title
+;
+ High-pressure crystal chemistry of beryl (Be3Al2Si6O18) and euclase (BeAlSiO4OH)
+ Sample: Pressure = .001 kbar
+;
+_database_code_amcsd 0001040
+_chemical_formula_sum 'Be3 Al2 Si6 O18'
+_chemical_formula_sum ''
+_cell_length_a 9.208
+_cell_length_b 9.208
+_cell_length_c 9.188
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 674.656
+_exptl_crystal_density_diffrn      2.646
+_symmetry_space_group_name_H-M 'P 6/m c c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,-x+y,1/2+z'
+  'x,x-y,1/2-z'
+  '-x+y,-x,-z'
+  'x-y,x,z'
+  '-y,-x,1/2+z'
+  'y,x,1/2-z'
+  'y,-x+y,-z'
+  '-y,x-y,z'
+  'x-y,-y,1/2+z'
+  '-x+y,y,1/2-z'
+  'x,y,-z'
+  '-x,-y,z'
+  'x,x-y,1/2+z'
+  '-x,-x+y,1/2-z'
+  'x-y,x,-z'
+  '-x+y,-x,z'
+  'y,x,1/2+z'
+  '-y,-x,1/2-z'
+  '-y,x-y,-z'
+  'y,-x+y,z'
+  '-x+y,y,1/2+z'
+  'x-y,-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Be   0.50000   0.00000   0.25000   0.00722
+Al   0.33333   0.66667   0.25000   0.00646
+Si   0.38760   0.11590   0.00000   0.00557
+O1   0.31030   0.23690   0.00000   0.01039
+O2   0.49850   0.14560   0.14530   0.00861

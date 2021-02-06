@@ -1,0 +1,60 @@
+data_global
+_chemical_name_mineral 'Pyroxene-ideal'
+loop_
+_publ_author_name
+'Thompson R M'
+'Downs R T'
+_journal_name_full 'American Mineralogist'
+_journal_volume 88 
+_journal_year 2003
+_journal_page_first 653
+_journal_page_last 666
+_publ_section_title
+;
+ Model pyroxenes I: Ideal pyroxene topologies
+ Pyroxene #7 based on stacking sequence ABABACAC
+ Note: Atoms Mg, Si, and O are assigned to atomic positions just for convenience.
+;
+_database_code_amcsd 0003003
+_chemical_formula_sum 'Si Mg O3'
+_chemical_formula_sum ''
+_cell_length_a 13.063945
+_cell_length_b 6
+_cell_length_c 3.4641016
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 271.529
+_exptl_crystal_density_diffrn      9.823
+_symmetry_space_group_name_H-M 'P 21 c a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,-y,1/2+z'
+  '1/2+x,y,1/2-z'
+  '1/2+x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+SiA   0.96875   0.91667   0.91667
+SiB   0.90625   0.41667   0.75000
+Mg1a   0.31250   0.08333   0.41667
+Mg2a   0.31250   0.75000   0.41667
+SiC   0.15625   0.08333   0.75000
+SiD   0.21875   0.41667   0.08333
+Mg1b   0.06250   0.41667   0.41667
+Mg2b   0.06250   0.25000   0.91667
+O1A   0.87500   0.91667   0.91667
+O2A   0.00000   0.75000   0.75000
+O3A   0.00000   0.08333   0.75000
+O1B   0.00000   0.41667   0.75000
+O2B   0.87500   0.58333   0.91667
+O3B   0.87500   0.75000   0.41667
+O1C   0.25000   0.08333   0.75000
+O2C   0.12500   0.75000   0.08333
+O3C   0.12500   0.08333   0.08333
+O1D   0.12500   0.41667   0.08333
+O2D   0.25000   0.25000   0.25000
+O3D   0.25000   0.41667   0.75000

@@ -1,0 +1,53 @@
+data_global
+_amcsd_formula_title 'MnO2'
+loop_
+_publ_author_name
+'Kondrashev Y D'
+'Zaslavskii A I'
+_journal_name_full 'Izvestiya Akademii Nauk SSSR'
+_journal_volume 15 
+_journal_year 1951
+_journal_page_first 179
+_journal_page_last 186
+_publ_section_title
+;
+ The structure of the modifications of manganese oxide
+;
+_database_code_amcsd 0017792
+_chemical_formula_sum 'Mn O2'
+_chemical_formula_sum ''
+_cell_length_a 9.815
+_cell_length_b 9.815
+_cell_length_c 2.847
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 274.263
+_exptl_crystal_density_diffrn      4.211
+_symmetry_space_group_name_H-M 'I 4/m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'y,-x,-z'
+  '1/2+y,1/2-x,1/2-z'
+  '-y,x,z'
+  '1/2-y,1/2+x,1/2+z'
+  'x,y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,1/2+z'
+  '-y,x,-z'
+  '1/2-y,1/2+x,1/2-z'
+  'y,-x,z'
+  '1/2+y,1/2-x,1/2+z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mn   0.33000   0.15000   0.50000
+O1   0.20500   0.16000   0.00000
+O2   0.45800   0.16000   0.00000

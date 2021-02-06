@@ -1,0 +1,47 @@
+data_global
+_amcsd_formula_title 'Cl8 N4 P4'
+loop_
+_publ_author_name
+'Ketelaar J'
+'De Vries T'
+_journal_name_full 'Recueil des Travaux Chimiques des Pays-Bas et de la Belgique'
+_journal_volume 58 
+_journal_year 1939
+_journal_page_first 1081
+_journal_page_last 1099
+_publ_section_title
+;
+ The Crystal Structure of Tetra Phosphonitrile Chloride , $= P4N4Cl8
+ _cod_database_code 1010890
+;
+_database_code_amcsd 0017618
+_chemical_formula_sum 'Cl2 P N'
+_chemical_formula_sum ''
+_cell_length_a 10.82
+_cell_length_b 10.82
+_cell_length_c 5.95
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 696.581
+_exptl_crystal_density_diffrn      2.210
+_symmetry_space_group_name_H-M 'P 42/n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,-x,-z'
+  '1/2-y,1/2+x,1/2+z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '-y,x,-z'
+  '1/2+y,1/2-x,1/2+z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cl1   0.10200   0.19900   0.11000
+Cl2   0.05700   0.34400   0.56500
+P1   0.04100   0.17600   0.42000
+N1   0.12500   0.10500   0.61500

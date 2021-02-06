@@ -1,0 +1,67 @@
+data_global
+_chemical_name_mineral 'Litharge'
+loop_
+_publ_author_name
+'Boher P'
+'Garnier P'
+'Gavarri J R'
+'Hewat A W'
+_journal_name_full 'Journal of Solid State Chemistry'
+_journal_volume 57 
+_journal_year 1985
+_journal_page_first 343
+_journal_page_last 350
+_publ_section_title
+;
+ Monoxyde quadratique PbO alpha(I): Description de la transition structurale ferroelastique
+ Method: Neutron Diffraction
+ T = 2 K
+;
+_database_code_amcsd 0013536
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Pb O'
+_chemical_formula_sum ''
+_cell_length_a 5.6124
+_cell_length_b 5.6089
+_cell_length_c 4.9924
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 157.158
+_exptl_crystal_density_diffrn      9.433
+_symmetry_space_group_name_H-M 'C m m a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  '1/2+x,-y,z'
+  '+x,1/2-y,z'
+  '1/2-x,y,-z'
+  '-x,1/2+y,-z'
+  '-x,y,z'
+  '1/2-x,1/2+y,z'
+  'x,-y,-z'
+  '1/2+x,1/2-y,-z'
+  '1/2+x,y,-z'
+  '+x,1/2+y,-z'
+  '1/2-x,-y,z'
+  '-x,1/2-y,z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pb   0.00000   0.25000   0.76420
+O   0.25000   0.00000   0.00000
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Pb 0.00911 0.00912 0.00303 0.00000 0.00000 0.00000
+O 0.01329 0.01329 0.01126 0.00000 0.00000 0.00000

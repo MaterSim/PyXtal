@@ -1,0 +1,45 @@
+data_global
+_chemical_name_mineral 'Enargite'
+loop_
+_publ_author_name
+'Pauling L'
+'Weinbaum S'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 88 
+_journal_year 1934
+_journal_page_first 48
+_journal_page_last 53
+_publ_section_title
+;
+ The crystal structure of enargite, Cu3AsS4
+;
+_database_code_amcsd 0010518
+_chemical_compound_source 'Philippine Islands'
+_chemical_formula_sum 'Cu3 As S4'
+_chemical_formula_sum ''
+_cell_length_a 6.46
+_cell_length_b 7.43
+_cell_length_c 6.18
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 296.626
+_exptl_crystal_density_diffrn      4.409
+_symmetry_space_group_name_H-M 'P n m 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,1/2+y,1/2+z'
+  'x,-y,z'
+  '-x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cu1   0.16500   0.00000   0.50000
+Cu2   0.33300   0.24500   0.99000
+As   0.82000   0.00000   0.00000
+S1   0.83000   0.00000   0.36000
+S2   0.14000   0.00000   0.87500
+S3   0.33000   0.25500   0.36700

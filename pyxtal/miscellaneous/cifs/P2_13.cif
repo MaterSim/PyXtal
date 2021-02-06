@@ -1,0 +1,48 @@
+data_global
+_amcsd_formula_title 'H3 N'
+loop_
+_publ_author_name
+'Mark H'
+'Pohland E'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 61 
+_journal_year 1925
+_journal_page_first 532
+_journal_page_last 537
+_publ_section_title
+;
+ Das Gitter des Ammoniaks.
+ _cod_database_code 1010490
+;
+_database_code_amcsd 0017406
+_chemical_formula_sum 'N'
+_chemical_formula_sum ''
+_cell_length_a 5.193
+_cell_length_b 5.193
+_cell_length_c 5.193
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 140.041
+_exptl_crystal_density_diffrn      0.664
+_symmetry_space_group_name_H-M 'P 21 3'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-z,-x,1/2+y'
+  '-z,1/2+x,1/2-y'
+  '1/2+z,1/2-x,-y'
+  'z,x,y'
+  '1/2+y,1/2-z,-x'
+  '1/2-y,-z,1/2+x'
+  '-y,1/2+z,1/2-x'
+  'y,z,x'
+  '-x,1/2+y,1/2-z'
+  '1/2+x,1/2-y,-z'
+  '1/2-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+N1   0.22000   0.22000   0.22000

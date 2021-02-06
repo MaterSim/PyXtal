@@ -1,0 +1,46 @@
+data_global
+_chemical_name_mineral 'Kalsilite'
+loop_
+_publ_author_name
+'Cellai D'
+'Bonazzi P'
+'Carpenter M A'
+_journal_name_full 'American Mineralogist'
+_journal_volume 82 
+_journal_year 1997
+_journal_page_first 276
+_journal_page_last 279
+_publ_section_title
+;
+ Natural kalsilite, KAlSiO4, with P31c symmetry: Crystal structure and twinning
+;
+_database_code_amcsd 0001874
+_chemical_formula_sum 'K Al Si O4'
+_chemical_formula_sum ''
+_cell_length_a 5.157
+_cell_length_b 5.157
+_cell_length_c 8.706
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 200.513
+_exptl_crystal_density_diffrn      2.620
+_symmetry_space_group_name_H-M 'P 3 1 c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x-y,-y,1/2+z'
+  '-y,x-y,z'
+  'y,x,1/2+z'
+  '-x+y,-x,z'
+  '-x,-x+y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+K   0.00000   0.00000   0.25000
+Al1   0.33333   0.66667   0.05940
+Si2   0.33333   0.66667   0.44160
+O1   0.61600   0.01100   0.00000
+O2   0.33333   0.66667   0.26000

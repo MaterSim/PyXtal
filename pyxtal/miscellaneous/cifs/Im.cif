@@ -1,0 +1,63 @@
+data_global
+_chemical_name_mineral 'Shakhovite'
+loop_
+_publ_author_name
+'Tillmanns E'
+'Krupp R'
+'Abraham K'
+_journal_name_full 'Tschermaks Mineralogische und Petrographische Mitteilungen'
+_journal_volume 30 
+_journal_year 1982
+_journal_page_first 227
+_journal_page_last 235
+_publ_section_title
+;
+ New data on the mercury antimony mineral shakhovite: Chemical composition,
+ unit cell and crystal structure
+;
+_database_code_amcsd 0015689
+_chemical_compound_source 'Moschellandsberg, Palatinate, Germany'
+_chemical_formula_sum 'Hg4 Sb O6 H3'
+_chemical_formula_sum ''
+_cell_length_a 4.871
+_cell_length_b 15.098
+_cell_length_c 5.433
+_cell_angle_alpha 90
+_cell_angle_beta 98.86
+_cell_angle_gamma 90
+_cell_volume 394.788
+_exptl_crystal_density_diffrn      8.607
+_symmetry_space_group_name_H-M 'I 1 m 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'x,-y,z'
+  '1/2+x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Hg1   0.00000   0.11845   0.00000
+Hg2   0.36070   0.78042   0.51700
+Sb   0.41690   0.00000   0.48820
+O1   0.72200   0.50000   0.63600
+O2   0.68000   0.59540   0.09000
+O-H3   0.15300   0.59590   0.88700
+O-H4   0.15300   0.50000   0.33300
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Hg1 0.02140 0.00970 0.01304 0.00405 0.00215 0.00037
+Hg2 0.02115 0.01005 0.01988 0.00390 0.00215 -0.00074
+Sb 0.00329 0.00797 0.00545 0.00000 0.00038 0.00000
+O1 0.01393 0.00127 0.01013 0.00000 0.00126 0.00000
+O2 0.00886 0.00878 0.01266 0.00504 0.00126 0.00250
+O-H3 0.00886 0.01640 0.01139 -0.00250 0.00380 0.00378
+O-H4 0.00506 0.01767 0.00632 0.00000 0.00000 0.00000

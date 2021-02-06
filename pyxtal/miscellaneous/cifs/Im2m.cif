@@ -1,0 +1,47 @@
+data_global
+_amcsd_formula_title 'Na O3'
+loop_
+_publ_author_name
+'Klein W'
+'Armbruster K'
+'Jansen M'
+_journal_name_full 'Chemical Communications'
+_journal_volume 1998 
+_journal_year 1998
+_journal_page_first 707
+_journal_page_last 708
+_publ_section_title
+;
+ Synthesis and crystal structure determination of sodium ozonide
+ _cod_database_code 1008882
+;
+_database_code_amcsd 0016749
+_chemical_formula_sum 'Na O3'
+_chemical_formula_sum ''
+_cell_length_a 3.5070
+_cell_length_b 5.7703
+_cell_length_c 5.2701
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 106.648
+_exptl_crystal_density_diffrn      2.211
+_symmetry_space_group_name_H-M 'I m 2 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '-x,y,z'
+  '1/2-x,1/2+y,1/2+z'
+  'x,y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Na1   0.00000   0.50740   0.00000
+O1   0.00000   0.01060   0.00000
+O2   0.00000   0.88110   0.21390

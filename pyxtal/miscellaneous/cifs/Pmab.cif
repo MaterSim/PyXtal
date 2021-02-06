@@ -1,0 +1,49 @@
+data_global
+_amcsd_formula_title 'Mn3O4'
+loop_
+_publ_author_name
+'Ross C R'
+'Rubie D C'
+'Paris E'
+_journal_name_full 'American Mineralogist'
+_journal_volume 75 
+_journal_year 1990
+_journal_page_first 1249
+_journal_page_last 1252
+_publ_section_title
+;
+ Rietveld refinement of the high-pressure polymorph of Mn3O4
+;
+_database_code_amcsd 0001332
+_chemical_formula_sum 'Mn3 O4'
+_chemical_formula_sum ''
+_cell_length_a 9.5564
+_cell_length_b 9.7996
+_cell_length_c 3.0240
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 283.194
+_exptl_crystal_density_diffrn      5.367
+_symmetry_space_group_name_H-M 'P m a b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2-y,z'
+  '1/2-x,1/2+y,-z'
+  'x,1/2+y,-z'
+  '-x,1/2-y,z'
+  '1/2-x,y,z'
+  '1/2+x,-y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Mn2+   0.75000   0.14610   0.68450   0.00697
+Mn3+   0.06960   0.11470   0.20340   0.00317
+O1   0.00000   0.25000   0.62040   0.00228
+O2   0.25000   0.19990   0.18990   0.00228
+O3   0.11120   0.96940   0.79560   0.00228

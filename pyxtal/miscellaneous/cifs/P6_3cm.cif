@@ -1,0 +1,53 @@
+data_global
+_chemical_name_mineral 'Fluocerite (La)'
+loop_
+_publ_author_name
+'de Rango C'
+'Tsoucaris G'
+'Zelwer C'
+_journal_name_full 'Comptes Rendus Hebdomadaires des Seances de l'Academie des Sciences'
+_journal_volume 263 
+_journal_year 1966
+_journal_page_first 64
+_journal_page_last 66
+_publ_section_title
+;
+ Determination de la structure du fluorure de lanthane La F3
+ _cod_database_code 1008751
+;
+_database_code_amcsd 0016630
+_chemical_formula_sum 'La F3'
+_chemical_formula_sum ''
+_cell_length_a 7.16
+_cell_length_b 7.16
+_cell_length_c 7.36
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 326.764
+_exptl_crystal_density_diffrn      5.973
+_symmetry_space_group_name_H-M 'P 63 c m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,-x+y,z'
+  'x-y,x,1/2+z'
+  '-y,-x,1/2+z'
+  '-y,x-y,z'
+  'x-y,-y,z'
+  '-x,-y,1/2+z'
+  'x,x-y,1/2+z'
+  '-x+y,-x,z'
+  'y,x,z'
+  'y,-x+y,1/2+z'
+  '-x+y,y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+La1   0.67100   0.00000   0.25000
+F1   0.00000   0.00000   0.31000
+F2   0.33333   0.66667   0.21000
+F3   0.27600   0.00000   0.06700
+F4   0.37200   0.00000   0.40400

@@ -1,0 +1,49 @@
+data_global
+_amcsd_formula_title 'Mn2 O4 Ti'
+loop_
+_publ_author_name
+'Bertaut E'
+'Vincent H'
+_journal_name_full 'Solid State Communications'
+_journal_volume 6 
+_journal_year 1968
+_journal_page_first 269
+_journal_page_last 275
+_publ_section_title
+;
+ Etude par diffraction neutronique de la forme ordonnee de l'orthotitanate
+ de manganese - structure cristalline et structure magnetique
+ _cod_database_code 1008093
+;
+_database_code_amcsd 0016035
+_chemical_formula_sum 'O4 Ti Mn2'
+_chemical_formula_sum ''
+_cell_length_a 6.170
+_cell_length_b 6.170
+_cell_length_c 8.564
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 326.022
+_exptl_crystal_density_diffrn      4.518
+_symmetry_space_group_name_H-M 'P 43 2 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,x,1/4-z'
+  '-y,x,3/4+z'
+  '-x,y,-z'
+  '-x,-y,1/2+z'
+  '-y,-x,3/4-z'
+  'y,-x,1/4+z'
+  'x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+O1   0.27200   0.01100   0.00900
+O2   0.29200   0.52100   0.01500
+Ti1   0.50000   0.24700   0.00000
+Mn1   0.00000   0.24200   0.00000
+Mn2   0.24100   0.24100   0.62500

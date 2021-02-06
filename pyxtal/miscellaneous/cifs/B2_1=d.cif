@@ -1,0 +1,44 @@
+data_global
+_chemical_name_mineral 'Gudmundite'
+loop_
+_publ_author_name
+'Buerger M J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 24 
+_journal_year 1939
+_journal_page_first 183
+_journal_page_last 184
+_publ_section_title
+;
+ The crystal structure of gudmundite
+;
+_database_code_amcsd 0000021
+_chemical_formula_sum 'Fe Sb S'
+_chemical_formula_sum ''
+_cell_length_a 10.00
+_cell_length_b 5.93
+_cell_length_c 6.73
+_cell_angle_alpha 90
+_cell_angle_beta 90.
+_cell_angle_gamma 90
+_cell_volume 399.089
+_exptl_crystal_density_diffrn      6.979
+_symmetry_space_group_name_H-M 'B 1 21/d 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,y,1/2+z'
+  '3/4-x,1/2+y,3/4-z'
+  '1/4-x,1/2+y,1/4-z'
+  '3/4+x,1/2-y,3/4+z'
+  '1/4+x,1/2-y,1/4+z'
+  '1/2-x,-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe   0.00000   0.01500   0.30000
+Sb   0.14000   0.13100  -0.00800
+S   0.15600   0.14500   0.51100

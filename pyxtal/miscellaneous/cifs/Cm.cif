@@ -1,0 +1,45 @@
+data_global
+_amcsd_formula_title 'Pd2PbBi'
+loop_
+_publ_author_name
+'Mayer H W'
+'Bhatt Y C'
+'Schubert K'
+_journal_name_full 'Journal of the Less-Common Metals'
+_journal_volume 66 
+_journal_year 1979
+_journal_page_first 1
+_journal_page_last 9
+_publ_section_title
+;
+ Kristallstrukturen von Pd2PbBi und Pd4PbBi3
+;
+_database_code_amcsd 0014144
+_chemical_formula_sum 'Pd2 Pb Bi'
+_chemical_formula_sum ''
+_cell_length_a 7.171
+_cell_length_b 8.677
+_cell_length_c 5.575
+_cell_angle_alpha 90
+_cell_angle_beta 71.74
+_cell_angle_gamma 90
+_cell_volume 329.424
+_exptl_crystal_density_diffrn     12.683
+_symmetry_space_group_name_H-M 'C 1 m 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  'x,-y,z'
+  '1/2+x,1/2-y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pda1   0.96100   0.00000   0.53800
+Pda2   0.55100   0.00000   0.52800
+Pdb   0.91700   0.25600   0.87600
+Pba1   0.12000   0.00000   0.00000
+Pba2   0.64100   0.00000   0.97800
+Bib   0.28100   0.22400   0.42000

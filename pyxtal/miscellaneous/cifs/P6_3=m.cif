@@ -1,0 +1,66 @@
+data_global
+_amcsd_formula_title 'K2SiSi3O9'
+loop_
+_publ_author_name
+'Swanson D K'
+'Prewitt C T'
+_journal_name_full 'American Mineralogist'
+_journal_volume 68 
+_journal_year 1983
+_journal_page_first 581
+_journal_page_last 585
+_publ_section_title
+;
+ The crystal structure of K2SiSi3O9
+ Note: B(1,2) for K and Si1 have been changed to match symmetry constraints
+ Note: wadeite structure
+;
+_database_code_amcsd 0000896
+_chemical_formula_sum 'K2 Si4 O9'
+_chemical_formula_sum ''
+_cell_length_a 6.612
+_cell_length_b 6.612
+_cell_length_c 9.510
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 360.062
+_exptl_crystal_density_diffrn      3.086
+_symmetry_space_group_name_H-M 'P 63/m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x+y,-x,1/2-z'
+  'x-y,x,1/2+z'
+  'y,-x+y,-z'
+  '-y,x-y,z'
+  'x,y,1/2-z'
+  '-x,-y,1/2+z'
+  'x-y,x,-z'
+  '-x+y,-x,z'
+  '-y,x-y,1/2-z'
+  'y,-x+y,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+K   0.33333   0.66667   0.05778
+Si1   0.00000   0.00000   0.00000
+Si2   0.36532   0.23343   0.25000
+O1   0.49150   0.07339   0.25000
+O2   0.23203   0.20907   0.10611
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+K 0.02349 0.02349 0.01196 0.01174 0.00000 0.00000
+Si1 0.00744 0.00744 0.00316 0.00372 0.00000 0.00000
+Si2 0.00359 0.00440 0.00431 0.00201 0.00000 0.00000
+O1 0.00508 0.00663 0.01310 0.00364 0.00000 0.00000
+O2 0.00865 0.00799 0.00641 0.00384 -0.00389 -0.00226

@@ -1,0 +1,45 @@
+data_global
+_chemical_name_mineral 'Stibiotantalite'
+loop_
+_publ_author_name
+'Dihlstrom K'
+_journal_name_full 'Zeitschrift fur Anorganische und Allgemeine Chemie'
+_journal_volume 239 
+_journal_year 1938
+_journal_page_first 57
+_journal_page_last 64
+_publ_section_title
+;
+ Uber den bau des wahren antimontetroxyds und des damit isomorphen
+ stibiotantalits, SbTaO4
+;
+_database_code_amcsd 0015749
+_chemical_compound_source 'Grande Mesa, California, USA'
+_chemical_formula_sum 'Sb Ta O4'
+_chemical_formula_sum ''
+_cell_length_a 4.916
+_cell_length_b 5.542
+_cell_length_c 11.78
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 320.940
+_exptl_crystal_density_diffrn      7.589
+_symmetry_space_group_name_H-M 'P b n 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Sb  -0.04000   0.00000   0.00000
+Ta   0.00000   0.37500   0.25000
+O1   0.16000   0.33000   0.09000
+O2   0.75000   0.12000   0.17000
+O3   0.25000   0.12000   0.33000
+O4   0.84000   0.33000   0.41000

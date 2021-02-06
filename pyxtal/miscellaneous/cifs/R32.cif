@@ -1,0 +1,42 @@
+data_global
+_chemical_name_mineral 'Heazlewoodite'
+loop_
+_publ_author_name
+'Fleet M E'
+_journal_name_full 'American Mineralogist'
+_journal_volume 62 
+_journal_year 1977
+_journal_page_first 341
+_journal_page_last 345
+_publ_section_title
+;
+ The crystal structure of heazlewoodite, and metallic bonds in sulfide minerals
+;
+_database_code_amcsd 0000575
+_chemical_formula_sum 'Ni3 S2'
+_chemical_formula_sum ''
+_cell_length_a 4.0821
+_cell_length_b 4.0821
+_cell_length_c 4.0821
+_cell_angle_alpha 89.475
+_cell_angle_beta 89.475
+_cell_angle_gamma 89.475
+_cell_volume 68.014
+_exptl_crystal_density_diffrn      5.864
+_symmetry_space_group_name_H-M 'R 3 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,-z,-y'
+  'z,x,y'
+  '-y,-x,-z'
+  'y,z,x'
+  '-z,-y,-x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Ni   0.50000   0.24700  -0.24700   0.01431
+S   0.25500   0.25500   0.25500   0.00063

@@ -1,0 +1,69 @@
+data_global
+_chemical_name_mineral 'Gallium'
+loop_
+_publ_author_name
+'Bosio L'
+_journal_name_full 'Journal of Chemical Physics'
+_journal_volume 68 
+_journal_year 1978
+_journal_page_first 1221
+_journal_page_last 1223
+_publ_section_title
+;
+ Crystal structures of Ga(II) and Ga(III)
+ Sample: at P = 2.8 GPa, T = 298 K
+ Note: structure known as Ga(III) phase
+;
+_database_code_amcsd 0013006
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Ga'
+_chemical_formula_sum ''
+_cell_length_a 2.813
+_cell_length_b 2.813
+_cell_length_c 4.452
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 35.229
+_exptl_crystal_density_diffrn      6.573
+_symmetry_space_group_name_H-M 'I 4/m m m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '-y,-x,z'
+  '1/2-y,1/2-x,1/2+z'
+  'y,x,-z'
+  '1/2+y,1/2+x,1/2-z'
+  'y,-x,-z'
+  '1/2+y,1/2-x,1/2-z'
+  '-y,x,z'
+  '1/2-y,1/2+x,1/2+z'
+  'x,-y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,1/2-z'
+  'x,y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,1/2+z'
+  'y,x,z'
+  '1/2+y,1/2+x,1/2+z'
+  '-y,-x,-z'
+  '1/2-y,1/2-x,1/2-z'
+  '-y,x,-z'
+  '1/2-y,1/2+x,1/2-z'
+  'y,-x,z'
+  '1/2+y,1/2-x,1/2+z'
+  '-x,y,z'
+  '1/2-x,1/2+y,1/2+z'
+  'x,-y,-z'
+  '1/2+x,1/2-y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ga   0.00000   0.00000   0.00000

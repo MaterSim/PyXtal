@@ -1,0 +1,45 @@
+data_global
+_chemical_name_mineral 'Neptunium-beta'
+loop_
+_publ_author_name
+'Wyckoff R W G'
+_journal_name_full 'Crystal Structures'
+_journal_volume 1 
+_journal_year 1963
+_journal_page_first 7
+_journal_page_last 83
+_publ_section_title
+;
+ Second edition. Interscience Publishers, New York, New York
+ Sample is stable between 551 K and 843 K
+ Note: T = 586 K
+;
+_database_code_amcsd 0011264
+_chemical_formula_sum 'Np'
+_chemical_formula_sum ''
+_cell_length_a 4.897
+_cell_length_b 4.897
+_cell_length_c 3.388
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 81.246
+_exptl_crystal_density_diffrn     19.376
+_symmetry_space_group_name_H-M 'P 4 21 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,x,-z'
+  '1/2-y,1/2+x,z'
+  '1/2-x,1/2+y,-z'
+  '-x,-y,z'
+  '-y,-x,-z'
+  '1/2+y,1/2-x,z'
+  '1/2+x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Np1   0.00000   0.00000   0.00000
+Np2   0.00000   0.50000  -0.37500

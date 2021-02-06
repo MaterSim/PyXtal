@@ -1,0 +1,47 @@
+data_global
+_amcsd_formula_title 'SO2'
+loop_
+_publ_author_name
+'Post B'
+'Schwartz R S'
+'Fankuchen I'
+_journal_name_full 'Acta Crystallographica'
+_journal_volume 5 
+_journal_year 1952
+_journal_page_first 372
+_journal_page_last 374
+_publ_section_title
+;
+ The crystal structure of sulfur dioxide
+ Sample: T = -130 C
+;
+_database_code_amcsd 0009146
+_chemical_formula_sum 'S O2'
+_chemical_formula_sum ''
+_cell_length_a 6.07
+_cell_length_b 5.94
+_cell_length_c 6.14
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 221.383
+_exptl_crystal_density_diffrn      1.922
+_symmetry_space_group_name_H-M 'A b a 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,1/2-y,z'
+  '1/2+x,-y,1/2+z'
+  '1/2-x,1/2+y,z'
+  '1/2-x,+y,1/2+z'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+S   0.00000   0.00000   0.00000   0.03166
+O   0.14000   0.15000   0.11800   0.03166

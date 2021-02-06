@@ -1,0 +1,46 @@
+data_global
+_chemical_name_mineral 'Umangite'
+loop_
+_publ_author_name
+'Milman V'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 58 
+_journal_year 2002
+_journal_page_first 437
+_journal_page_last 447
+_publ_section_title
+;
+ Klockmannite, CuSe: structure, properties and phase stability from ab initio
+ modeling
+;
+_database_code_amcsd 0009926
+_chemical_compound_source 'hypothetical structure calculated using DFT'
+_chemical_formula_sum 'Cu3 Se2'
+_chemical_formula_sum ''
+_cell_length_a 6.308
+_cell_length_b 6.308
+_cell_length_c 4.350
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 173.090
+_exptl_crystal_density_diffrn      6.688
+_symmetry_space_group_name_H-M 'P -4 21 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-y,1/2-x,z'
+  'y,-x,-z'
+  '1/2-x,1/2+y,-z'
+  '-x,-y,z'
+  '1/2+y,1/2+x,z'
+  '-y,x,-z'
+  '1/2+x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cu1   0.00000   0.00000   0.00000
+Cu2   0.64300   0.85700   0.24750
+Se   0.26550   0.76550   0.25860

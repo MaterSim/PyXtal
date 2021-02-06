@@ -1,0 +1,42 @@
+data_global
+_chemical_name_mineral 'Hematite'
+loop_
+_publ_author_name
+'Pauling L'
+'Hendricks S'
+_journal_name_full 'Journal of the American Chemical Society'
+_journal_volume 47 
+_journal_year 1925
+_journal_page_first 781
+_journal_page_last 790
+_publ_section_title
+;
+ The Structure of Hematite
+;
+_database_code_amcsd 0018106
+_chemical_formula_sum 'Fe O3'
+_chemical_formula_sum ''
+_cell_length_a 5.43
+_cell_length_b 5.43
+_cell_length_c 5.43
+_cell_angle_alpha 55.28
+_cell_angle_beta 55.28
+_cell_angle_gamma 55.28
+_cell_volume 100.792
+_exptl_crystal_density_diffrn      3.422
+_symmetry_space_group_name_H-M 'R 3 c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+z,1/2+y'
+  'z,x,y'
+  '1/2+y,1/2+x,1/2+z'
+  'y,z,x'
+  '1/2+z,1/2+y,1/2+x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe1   0.10500   0.10500   0.10500
+O1   0.29200  -0.29200   0.00000

@@ -1,0 +1,45 @@
+data_global
+_chemical_name_mineral 'Cubanite'
+loop_
+_publ_author_name
+'Buerger M J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 32 
+_journal_year 1947
+_journal_page_first 415
+_journal_page_last 425
+_publ_section_title
+;
+ The crystal structure of cubanite
+;
+_database_code_amcsd 0000042
+_chemical_formula_sum 'Fe2 Cu S3'
+_chemical_formula_sum ''
+_cell_length_a 6.463
+_cell_length_b 11.117
+_cell_length_c 6.234
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 447.908
+_exptl_crystal_density_diffrn      4.025
+_symmetry_space_group_name_H-M 'P c m n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2-y,z'
+  '-x,1/2+y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '1/2-x,1/2-y,1/2+z'
+  '1/2-x,y,1/2+z'
+  '1/2+x,-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe   0.08330   0.08300   0.13500
+Cu   0.58330   0.25000   0.12200
+S1   0.91670   0.25000   0.27000
+S2   0.41670   0.08300   0.26500

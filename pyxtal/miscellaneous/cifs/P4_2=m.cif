@@ -1,0 +1,49 @@
+data_global
+_chemical_name_mineral 'Vysotskite'
+loop_
+_publ_author_name
+'Brese N E'
+'Squattrito P J'
+'Ibers J A'
+_journal_name_full 'Acta Crystallographica, Section C'
+_journal_volume 41 
+_journal_year 1985
+_journal_page_first 1829
+_journal_page_last 1830
+_publ_section_title
+;
+ Reinvestigation of the structure of PdS
+;
+_database_code_amcsd 0010019
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Pd S'
+_chemical_formula_sum ''
+_cell_length_a 6.429
+_cell_length_b 6.429
+_cell_length_c 6.611
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 273.246
+_exptl_crystal_density_diffrn      6.733
+_symmetry_space_group_name_H-M 'P 42/m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,-x,1/2-z'
+  '-y,x,1/2+z'
+  'x,y,-z'
+  '-x,-y,z'
+  '-y,x,1/2-z'
+  'y,-x,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Pd1   0.00000   0.00000   0.25000   0.00443
+Pd2   0.50000   0.00000   0.00000   0.00418
+Pd3   0.25713   0.46779   0.00000   0.00418
+S   0.30754   0.19361   0.22904   0.00469

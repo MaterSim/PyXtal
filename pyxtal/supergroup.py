@@ -358,9 +358,11 @@ class supergroups():
         show (bool): whether or not show the detailed process
     """
 
-    def __init__(self, struc, G=None, path=None, d_tol=1.0, show=False):
+    def __init__(self, struc, G=None, path=None, d_tol=1.0, max_per_G=100, show=False):
         self.struc0 = struc
         self.show = show
+        self.d_tol = d_tol
+        self.max_per_G = max_per_G
         if path is None:
             paths = search_paths(struc.group.number, G, max_layers=5)
         else:
@@ -372,7 +374,7 @@ class supergroups():
         for i, p in enumerate(paths):
             status = "path{:2d}: {:s}, ".format(i, str(p))
             if new_path(p, failed_paths):
-                strucs, w_path, valid = self.struc_along_path(p, d_tol)
+                strucs, w_path, valid = self.struc_along_path(p)
                 status += "stops at: {:s}".format(str(w_path))
                 if valid:
                     self.strucs = strucs
@@ -404,7 +406,7 @@ class supergroups():
     def __repr__(self):
         return str(self)
 
-    def struc_along_path(self, path, d_tol=1.0):
+    def struc_along_path(self, path):
         """
         search for the super group structure along a given path
         """
@@ -419,9 +421,10 @@ class supergroups():
                     group_type = 'k'
                 else:
                     group_type = 't'
+
                 for G_struc in G_strucs:
                     my = supergroup(G_struc, [G], group_type)
-                    solutions = my.search_supergroup(d_tol, max_per_G=2500)
+                    solutions = my.search_supergroup(self.d_tol, self.max_per_G)
                     new_G_strucs = my.make_supergroup(solutions, show_detail=self.show)
                     if len(new_G_strucs) > 0:
                         strucs.append(G_struc)
@@ -429,6 +432,7 @@ class supergroups():
                         break
                 if len(new_G_strucs) == 0:
                     break
+
         # add the final struc
         if len(new_G_strucs) > 0:
             ds = [st.disp for st in new_G_strucs]

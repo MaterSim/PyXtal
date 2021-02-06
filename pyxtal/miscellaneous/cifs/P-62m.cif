@@ -1,0 +1,63 @@
+data_global
+_chemical_name_mineral 'Monipite'
+loop_
+_publ_author_name
+'Guerin R'
+'Sergent M'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 33 
+_journal_year 1977
+_journal_page_first 2820
+_journal_page_last 2823
+_publ_section_title
+;
+ Structure cristalline de NiMoP
+ Localite: synthetic
+;
+_database_code_amcsd 0009604
+_chemical_formula_sum 'Ni Mo P'
+_chemical_formula_sum ''
+_cell_length_a 5.861
+_cell_length_b 5.861
+_cell_length_c 3.704
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 110.191
+_exptl_crystal_density_diffrn      8.391
+_symmetry_space_group_name_H-M 'P -6 2 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,-x+y,z'
+  '-x+y,-x,-z'
+  'y,x,-z'
+  '-y,x-y,z'
+  'x-y,-y,z'
+  'x,y,-z'
+  '-x,-x+y,-z'
+  '-x+y,-x,z'
+  'y,x,z'
+  '-y,x-y,-z'
+  'x-y,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ni   0.25034   0.00000   0.00000
+Mo   0.58647   0.00000   0.50000
+P1   0.33333   0.66667   0.00000
+P2   0.00000   0.00000   0.50000
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ni 0.00313 0.00379 0.00327 0.00183 0.00000 0.00000
+Mo 0.00248 0.00287 0.00104 0.00144 0.00000 0.00000
+P1 0.00287 0.00287 0.00327 0.00144 0.00000 0.00000
+P2 0.00405 0.00405 0.00229 0.00196 0.00000 0.00000

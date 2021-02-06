@@ -1,0 +1,84 @@
+data_global
+_chemical_name_mineral 'Petzite'
+loop_
+_publ_author_name
+'Frueh A J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 44 
+_journal_year 1959
+_journal_page_first 693
+_journal_page_last 701
+_publ_section_title
+;
+ The crystallography of petzite, Ag3AuTe2
+;
+_database_code_amcsd 0000087
+_chemical_formula_sum 'Ag3 Au Te2'
+_chemical_formula_sum ''
+_cell_length_a 10.38
+_cell_length_b 10.38
+_cell_length_c 10.38
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 1118.387
+_exptl_crystal_density_diffrn      9.215
+_symmetry_space_group_name_H-M 'I 41 3 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '-z,1/2+x,1/2-y'
+  '1/2-z,+x,-y'
+  '-y,1/2+z,1/2-x'
+  '1/2-y,+z,-x'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,+y,-z'
+  '3/4-x,1/4+z,3/4+y'
+  '1/4-x,3/4+z,1/4+y'
+  '3/4-z,1/4+y,3/4+x'
+  '1/4-z,3/4+y,1/4+x'
+  '3/4-y,1/4+x,3/4+z'
+  '1/4-y,3/4+x,1/4+z'
+  '1/4-x,1/4-z,1/4-y'
+  '3/4-x,3/4-z,3/4-y'
+  '1/4-z,1/4-y,1/4-x'
+  '3/4-z,3/4-y,3/4-x'
+  '1/4-y,1/4-x,1/4-z'
+  '3/4-y,3/4-x,3/4-z'
+  '1/2-z,-x,1/2+y'
+  '-z,1/2-x,+y'
+  '1/2-y,-z,1/2+x'
+  '-y,1/2-z,+x'
+  '1/2-x,-y,1/2+z'
+  '-x,1/2-y,+z'
+  '1/2+z,1/2-x,-y'
+  '+z,-x,1/2-y'
+  '1/2+y,1/2-z,-x'
+  '+y,-z,1/2-x'
+  '1/2+x,1/2-y,-z'
+  '+x,-y,1/2-z'
+  '3/4+x,3/4-z,1/4+y'
+  '1/4+x,1/4-z,3/4+y'
+  '3/4+z,3/4-y,1/4+x'
+  '1/4+z,1/4-y,3/4+x'
+  '3/4+y,3/4-x,1/4+z'
+  '1/4+y,1/4-x,3/4+z'
+  '1/4+x,3/4+z,3/4-y'
+  '3/4+x,1/4+z,1/4-y'
+  '1/4+z,3/4+y,3/4-x'
+  '3/4+z,1/4+y,1/4-x'
+  '1/4+y,3/4+x,3/4-z'
+  '3/4+y,1/4+x,1/4-z'
+  'z,x,y'
+  '1/2+z,1/2+x,1/2+y'
+  'y,z,x'
+  '1/2+y,1/2+z,1/2+x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ag   0.36500   0.00000   0.25000
+Au   0.12500   0.12500   0.12500
+Te   0.26600   0.26600   0.26600

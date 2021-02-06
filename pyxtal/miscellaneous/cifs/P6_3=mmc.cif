@@ -1,0 +1,66 @@
+data_global
+_chemical_name_mineral 'Hexaferrum'
+loop_
+_publ_author_name
+'Dubrovinsky L S'
+'Lazor P'
+'Saxena S K'
+'Haggkvist P'
+'Weber H P'
+'Le Bihan T'
+'Hausermann D'
+_journal_name_full 'Physics and Chemistry of Minerals'
+_journal_volume 26 
+_journal_year 1999
+_journal_page_first 539
+_journal_page_last 545
+_publ_section_title
+;
+ Study of laser heated iron using third generation synchrotron
+ X-ray radiation facility with imaging plate at high pressures
+ Sample: epsilon iron phase: P = 61 GPa, T = 300 K
+;
+_database_code_amcsd 0008238
+_chemical_formula_sum 'Fe'
+_chemical_formula_sum ''
+_cell_length_a 2.347
+_cell_length_b 2.347
+_cell_length_c 3.797
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 18.113
+_exptl_crystal_density_diffrn     10.240
+_symmetry_space_group_name_H-M 'P 63/m m c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,-x+y,1/2+z'
+  'x,x-y,1/2-z'
+  '-x+y,-x,1/2-z'
+  'x-y,x,1/2+z'
+  '-y,-x,z'
+  'y,x,-z'
+  'y,-x+y,-z'
+  '-y,x-y,z'
+  'x-y,-y,1/2+z'
+  '-x+y,y,1/2-z'
+  'x,y,1/2-z'
+  '-x,-y,1/2+z'
+  'x,x-y,z'
+  '-x,-x+y,-z'
+  'x-y,x,-z'
+  '-x+y,-x,z'
+  'y,x,1/2+z'
+  '-y,-x,1/2-z'
+  '-y,x-y,1/2-z'
+  'y,-x+y,1/2+z'
+  '-x+y,y,z'
+  'x-y,-y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe   0.33333   0.66667   0.25000

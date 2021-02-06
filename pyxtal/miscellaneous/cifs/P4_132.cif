@@ -1,0 +1,74 @@
+data_global
+_chemical_name_mineral 'Manganese-beta'
+loop_
+_publ_author_name
+'Shoemaker C B'
+'Shoemaker D P'
+'Hopkins T E'
+'Yindepit S'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 34 
+_journal_year 1978
+_journal_page_first 3573
+_journal_page_last 3576
+_publ_section_title
+;
+ Refinement of the structure of beta-manganese and of related phase in the
+ Mn-Ni-Si system
+;
+_database_code_amcsd 0009651
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Mn5'
+_chemical_formula_sum ''
+_cell_length_a 6.315
+_cell_length_b 6.315
+_cell_length_c 6.315
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 251.837
+_exptl_crystal_density_diffrn      7.245
+_symmetry_space_group_name_H-M 'P 41 3 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-z,1/2+x,1/2-y'
+  '-y,1/2+z,1/2-x'
+  '-x,1/2+y,1/2-z'
+  '1/4-x,3/4+z,1/4+y'
+  '1/4-z,3/4+y,1/4+x'
+  '1/4-y,3/4+x,1/4+z'
+  '3/4-x,3/4-z,3/4-y'
+  '3/4-z,3/4-y,3/4-x'
+  '3/4-y,3/4-x,3/4-z'
+  '1/2-z,-x,1/2+y'
+  '1/2-y,-z,1/2+x'
+  '1/2-x,-y,1/2+z'
+  '1/2+z,1/2-x,-y'
+  '1/2+y,1/2-z,-x'
+  '1/2+x,1/2-y,-z'
+  '1/4+x,1/4-z,3/4+y'
+  '1/4+z,1/4-y,3/4+x'
+  '1/4+y,1/4-x,3/4+z'
+  '3/4+x,1/4+z,1/4-y'
+  '3/4+z,1/4+y,1/4-x'
+  '3/4+y,1/4+x,1/4-z'
+  'z,x,y'
+  'y,z,x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mn1   0.06361   0.06361   0.06361
+Mn2   0.12500   0.20224   0.45224
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Mn1 0.00723 0.00723 0.00723 0.00000 0.00000 0.00000
+Mn2 0.02608 0.00970 0.00970 0.00541 -0.00541 -0.00265

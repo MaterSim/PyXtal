@@ -1,0 +1,49 @@
+data_global
+_amcsd_formula_title 'MgFe2O4'
+loop_
+_publ_author_name
+'Palin E J'
+'Harrison R J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 92 
+_journal_year 2007
+_journal_page_first 1334
+_journal_page_last 1345
+_publ_section_title
+;
+ A Monte Carlo investigation of the thermodynamics of cation ordering in
+ 2-3 spinels
+ Note: theoretical atom sites using GULP
+;
+_database_code_amcsd 0004415
+_chemical_formula_sum 'Mg Fe2 O4'
+_chemical_formula_sum ''
+_cell_length_a 5.8309
+_cell_length_b 5.8309
+_cell_length_c 8.2218
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 279.536
+_exptl_crystal_density_diffrn      4.752
+_symmetry_space_group_name_H-M 'P 41 2 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,x,3/4-z'
+  '-y,x,1/4+z'
+  '-x,y,-z'
+  '-x,-y,1/2+z'
+  '-y,-x,1/4-z'
+  'y,-x,3/4+z'
+  'x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mg   0.25756   0.50000   0.75000
+Fe1   0.74250   0.00000   0.25000
+Fe2   0.25317   0.25317   0.37500
+O1   0.25971   0.96702   0.50693
+O2   0.73983   0.47624   0.02034

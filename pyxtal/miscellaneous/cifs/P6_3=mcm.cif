@@ -1,0 +1,62 @@
+data_global
+_chemical_name_mineral 'Mavlyanovite'
+loop_
+_publ_author_name
+'Aronsson B'
+_journal_name_full 'Acta Chemica Scandinavica'
+_journal_volume 14 
+_journal_year 1960
+_journal_page_first 1414
+_journal_page_last 1418
+_publ_section_title
+;
+ A note on the compositions and crystal structures of MnB2, Mn3Si, Mn5Si3 and FeSi2
+;
+_database_code_amcsd 0018916
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Mn5 Si3'
+_chemical_formula_sum ''
+_cell_length_a 6.91
+_cell_length_b 6.91
+_cell_length_c 4.814
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 199.064
+_exptl_crystal_density_diffrn      5.988
+_symmetry_space_group_name_H-M 'P 63/m c m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,-x+y,z'
+  'x,x-y,-z'
+  '-x+y,-x,1/2-z'
+  'x-y,x,1/2+z'
+  '-y,-x,1/2+z'
+  'y,x,1/2-z'
+  'y,-x+y,-z'
+  '-y,x-y,z'
+  'x-y,-y,z'
+  '-x+y,y,-z'
+  'x,y,1/2-z'
+  '-x,-y,1/2+z'
+  'x,x-y,1/2+z'
+  '-x,-x+y,1/2-z'
+  'x-y,x,-z'
+  '-x+y,-x,z'
+  'y,x,z'
+  '-y,-x,-z'
+  '-y,x-y,1/2-z'
+  'y,-x+y,1/2+z'
+  '-x+y,y,1/2+z'
+  'x-y,-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Mn1   0.33333   0.66667   0.00000   0.00431
+Mn2   0.23580   0.00000   0.25000   0.00431
+Si   0.59920   0.00000   0.25000   0.00431

@@ -1,0 +1,98 @@
+data_global
+_chemical_name_mineral 'Cuprite'
+loop_
+_publ_author_name
+'Kirfel A'
+'Eichhorn K'
+_journal_name_full 'Acta Crystallographica, Section A'
+_journal_volume 46 
+_journal_year 1990
+_journal_page_first 271
+_journal_page_last 284
+_publ_section_title
+;
+ Accurate structure analysis with synchrotron radiation.
+ The electron density in Al2O3 and Cu2O
+ Note: Atomic parameters were mislabeled in the publication.
+ They have been fixed in this dataset.
+;
+_database_code_amcsd 0009326
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Cu2 O'
+_chemical_formula_sum ''
+_cell_length_a 4.2685
+_cell_length_b 4.2685
+_cell_length_c 4.2685
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 77.772
+_exptl_crystal_density_diffrn      6.110
+_symmetry_space_group_name_H-M 'P n 3 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+z,1/2-x,1/2+y'
+  '-y,z,-x'
+  '1/2+x,1/2-y,1/2+z'
+  '-z,x,-y'
+  '1/2+y,1/2-z,1/2+x'
+  '-x,y,-z'
+  'x,-z,-y'
+  '1/2-z,1/2+y,1/2+x'
+  'y,-x,-z'
+  '1/2-x,1/2+z,1/2+y'
+  'z,-y,-x'
+  '1/2-y,1/2+x,1/2+z'
+  'x,z,y'
+  '1/2-z,1/2-y,1/2-x'
+  'y,x,z'
+  '1/2-x,1/2-z,1/2-y'
+  'z,y,x'
+  '1/2-y,1/2-x,1/2-z'
+  '1/2+z,1/2+x,1/2-y'
+  '-y,-z,x'
+  '1/2+x,1/2+y,1/2-z'
+  '-z,-x,y'
+  '1/2+y,1/2+z,1/2-x'
+  '-x,-y,z'
+  '1/2-z,1/2+x,1/2+y'
+  'y,-z,-x'
+  '1/2-x,1/2+y,1/2+z'
+  'z,-x,-y'
+  '1/2-y,1/2+z,1/2+x'
+  'x,-y,-z'
+  '-x,z,-y'
+  '1/2+z,1/2-y,1/2+x'
+  '-y,x,-z'
+  '1/2+x,1/2-z,1/2+y'
+  '-z,y,-x'
+  '1/2+y,1/2-x,1/2+z'
+  '-x,-z,y'
+  '1/2+z,1/2+y,1/2-x'
+  '-y,-x,z'
+  '1/2+x,1/2+z,1/2-y'
+  '-z,-y,x'
+  '1/2+y,1/2+x,1/2-z'
+  '1/2-z,1/2-x,1/2-y'
+  'y,z,x'
+  '1/2-x,1/2-y,1/2-z'
+  'z,x,y'
+  '1/2-y,1/2-z,1/2-x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cu   0.25000   0.25000   0.25000
+O   0.00000   0.00000   0.00000
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Cu 0.01900 0.01900 0.01900 -0.00084 -0.00084 -0.00084
+O 0.01880 0.01880 0.01880 0.00000 0.00000 0.00000

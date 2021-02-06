@@ -1,0 +1,59 @@
+data_global
+_chemical_name_mineral 'Benitoite'
+loop_
+_publ_author_name
+'Hejny C'
+'Miletich R'
+'Jasser A'
+'Schouwink P'
+'Crichton W'
+'Kahlenberg V'
+_journal_name_full 'American Mineralogist'
+_journal_volume 97 
+_journal_year 2012
+_journal_page_first 1749
+_journal_page_last 1763
+_publ_section_title
+;
+ Second-order P6c2-P31c transition and structural crystallography of
+ the cyclosilicate benitoite, BaTiSi3O9, at high pressure
+ Note: P = 0.0001 GPa
+;
+_database_code_amcsd 0019506
+_chemical_compound_source 'San Benito, California, USA'
+_chemical_formula_sum 'Ba Ti Si3 O9'
+_chemical_formula_sum ''
+_cell_length_a 6.6430
+_cell_length_b 6.6430
+_cell_length_c 9.7660
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 373.229
+_exptl_crystal_density_diffrn      3.679
+_symmetry_space_group_name_H-M 'P -6 c 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,x-y,-z'
+  '-x+y,-x,1/2-z'
+  '-y,-x,1/2+z'
+  '-y,x-y,z'
+  '-x+y,y,-z'
+  'x,y,1/2-z'
+  'x,x-y,1/2+z'
+  '-x+y,-x,z'
+  '-y,-x,-z'
+  '-y,x-y,1/2-z'
+  '-x+y,y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Ba   0.66667   0.33333   0.00000   0.00740
+Ti   0.33333   0.66667   0.00000   0.00320
+Si   0.07050   0.78170   0.25000   0.00140
+O1   0.80900   0.74500   0.25000   0.00240
+O2   0.08620   0.65780   0.38770   0.00390

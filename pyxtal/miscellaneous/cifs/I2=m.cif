@@ -1,0 +1,46 @@
+data_global
+_chemical_name_mineral 'Brezinaite'
+loop_
+_publ_author_name
+'Jellinek F'
+_journal_name_full 'Acta Crystallographica'
+_journal_volume 10 
+_journal_year 1957
+_journal_page_first 620
+_journal_page_last 628
+_publ_section_title
+;
+ The structures of the chromium sulphides
+;
+_database_code_amcsd 0009201
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Cr3 S4'
+_chemical_formula_sum ''
+_cell_length_a 5.694
+_cell_length_b 3.428
+_cell_length_c 11.272
+_cell_angle_alpha 90
+_cell_angle_beta 91.50
+_cell_angle_gamma 90
+_cell_volume 219.943
+_exptl_crystal_density_diffrn      4.292
+_symmetry_space_group_name_H-M 'I 1 2/m 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'x,-y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cr1   0.00000   0.00000   0.00000
+Cr2  -0.01200   0.00000   0.26300
+S1   0.35500   0.00000   0.36350
+S2   0.32000   0.00000   0.87600

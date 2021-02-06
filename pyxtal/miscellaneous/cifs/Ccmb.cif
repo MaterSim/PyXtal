@@ -1,0 +1,66 @@
+data_global
+_chemical_name_mineral 'Sternbergite'
+loop_
+_publ_author_name
+'Pertlik F'
+_journal_name_full 'Neues Jahrbuch fur Mineralogie, Monatshefte'
+_journal_volume 1987 
+_journal_year 1987
+_journal_page_first 458
+_journal_page_last 464
+_publ_section_title
+;
+ Crystal structure of sternbergite, AgFe2S3
+;
+_database_code_amcsd 0014818
+_chemical_compound_source 'Medenec, Krusne hory Mts, Czechoslovakia'
+_chemical_formula_sum 'Ag Fe2 S3'
+_chemical_formula_sum ''
+_cell_length_a 6.615
+_cell_length_b 11.639
+_cell_length_c 12.693
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 977.259
+_exptl_crystal_density_diffrn      4.292
+_symmetry_space_group_name_H-M 'C c m b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  '1/2-x,y,1/2+z'
+  '-x,1/2+y,1/2+z'
+  '1/2+x,-y,1/2-z'
+  '+x,1/2-y,1/2-z'
+  'x,-y,z'
+  '1/2+x,1/2-y,z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,-z'
+  '1/2+x,y,1/2-z'
+  '+x,1/2+y,1/2-z'
+  '1/2-x,-y,1/2+z'
+  '-x,1/2-y,1/2+z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ag   0.85310   0.00000   0.69960
+Fe   0.83350   0.33510   0.56350
+S1   0.69520   0.00000   0.88000
+S2   0.66580   0.17860   0.61790
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ag 0.02830 0.02480 0.05960 0.00000 0.00830 0.00000
+Fe 0.01860 0.00870 0.02610 0.00100 0.00170 0.00040
+S1 0.03230 0.00990 0.04400 0.00000 -0.00890 0.00000
+S2 0.02240 0.01420 0.03400 -0.00410 -0.00080 0.00410

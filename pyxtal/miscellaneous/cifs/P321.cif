@@ -1,0 +1,43 @@
+data_global
+_amcsd_formula_title 'La2 O3'
+loop_
+_publ_author_name
+'Zachariasen W'
+_journal_name_full 'Zeitschrift fur Physikalische Chemie'
+_journal_volume 123 
+_journal_year 1926
+_journal_page_first 134
+_journal_page_last 150
+_publ_section_title
+;
+ Die Kristallstruktur der A-Modifikation von den Sesquioxyden der
+ seltenen Erdmetalle. ( La2 O3, Ce2 O3, Pr2 O3, Nd2 O3 )
+ _cod_database_code 1010278
+;
+_database_code_amcsd 0017204
+_chemical_formula_sum 'La2 O3'
+_chemical_formula_sum ''
+_cell_length_a 3.93
+_cell_length_b 3.93
+_cell_length_c 6.12
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 81.859
+_exptl_crystal_density_diffrn      6.609
+_symmetry_space_group_name_H-M 'P 3 2 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,x,-z'
+  '-y,x-y,z'
+  '-x,-x+y,-z'
+  '-x+y,-x,z'
+  'x-y,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+La1   0.33333   0.66667   0.25000
+O1   0.25000   0.25000   0.00000

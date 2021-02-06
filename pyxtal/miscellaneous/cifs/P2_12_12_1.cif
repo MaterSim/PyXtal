@@ -1,0 +1,41 @@
+data_global
+_chemical_name_mineral 'Naumannite'
+loop_
+_publ_author_name
+'Wiegers G A'
+_journal_name_full 'American Mineralogist'
+_journal_volume 56 
+_journal_year 1971
+_journal_page_first 1882
+_journal_page_last 1888
+_publ_section_title
+;
+ The crystal structure of the low-temperature form of silver selenide
+;
+_database_code_amcsd 0000262
+_chemical_formula_sum 'Ag2 Se'
+_chemical_formula_sum ''
+_cell_length_a 4.333
+_cell_length_b 7.062
+_cell_length_c 7.764
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 237.576
+_exptl_crystal_density_diffrn      8.239
+_symmetry_space_group_name_H-M 'P 21 21 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-x,1/2+y,1/2-z'
+  '1/2+x,-y,-z'
+  '-x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Ag1   0.10700   0.36900   0.45600   0.00950
+Ag2   0.72800   0.02900   0.36100   0.00950
+Se   0.35800   0.23500   0.14900   0.00950

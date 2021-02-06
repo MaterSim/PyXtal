@@ -1,0 +1,42 @@
+data_global
+_chemical_name_mineral 'Cobaltite'
+loop_
+_publ_author_name
+'Giese R F'
+'Kerr P F'
+_journal_name_full 'American Mineralogist'
+_journal_volume 50 
+_journal_year 1965
+_journal_page_first 1002
+_journal_page_last 1014
+_publ_section_title
+;
+ The crystal structures of ordered and disordered cobaltite
+ ordered, annealed after heating in a vacuum at 450 C
+;
+_database_code_amcsd 0000137
+_chemical_formula_sum 'Co As S'
+_chemical_formula_sum ''
+_cell_length_a 5.582
+_cell_length_b 5.582
+_cell_length_c 5.582
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 173.928
+_exptl_crystal_density_diffrn      6.336
+_symmetry_space_group_name_H-M 'P c a 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,-y,z'
+  '1/2-x,y,1/2+z'
+  '-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Co  -0.01000   0.00600   0.01100
+As   0.38000   0.38100   0.38300
+S  -0.38000   0.38000  -0.38200

@@ -1,0 +1,46 @@
+data_global
+_amcsd_formula_title 'Cd O4 W'
+loop_
+_publ_author_name
+'Daturi M'
+'Busca G'
+'Borel M'
+'Leclaire A'
+'Piaggio P'
+_journal_name_full 'Journal of Physical Chemistry'
+_journal_volume 101 
+_journal_year 1997
+_journal_page_first 4358
+_journal_page_last 4369
+_publ_section_title
+;
+ Vibrational and XRD study of the system Cd W O4 - Cd Mo O4
+ _cod_database_code 1001799
+;
+_database_code_amcsd 0013149
+_chemical_formula_sum 'W Cd O4'
+_chemical_formula_sum ''
+_cell_length_a 5.026
+_cell_length_b 5.078
+_cell_length_c 5.867
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 91.47
+_cell_volume 149.688
+_exptl_crystal_density_diffrn      7.993
+_symmetry_space_group_name_H-M 'P 1 1 2/b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,1/2-y,z'
+  'x,1/2+y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+W1   0.00000   0.25000   0.17840
+Cd1   0.50000   0.75000   0.30200
+O1   0.18900   0.45400   0.90100
+O2   0.25000   0.39300   0.36000

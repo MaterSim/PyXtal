@@ -1,0 +1,47 @@
+data_global
+_chemical_name_mineral 'Ramsdellite'
+loop_
+_publ_author_name
+'Post J E'
+'Heaney P J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 89 
+_journal_year 2004
+_journal_page_first 969
+_journal_page_last 975
+_publ_section_title
+;
+ Neutron and synchrotron X-ray diffraction study of the structures
+ and dehydration behaviors of ramsdellite and "groutellite"
+;
+_database_code_amcsd 0003565
+_chemical_formula_sum 'Mn O2'
+_chemical_formula_sum ''
+_cell_length_a 9.2734
+_cell_length_b 2.8638
+_cell_length_c 4.5219
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 120.089
+_exptl_crystal_density_diffrn      4.809
+_symmetry_space_group_name_H-M 'P n m a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2-y,z'
+  '-x,1/2+y,-z'
+  '1/2-x,1/2+y,1/2+z'
+  '1/2+x,1/2-y,1/2-z'
+  '1/2+x,y,1/2-z'
+  '1/2-x,-y,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Mn   0.13320   0.25000   0.02580   0.00210
+O1   0.96550   0.25000   0.78380   0.00410
+O2   0.27960   0.25000   0.32010   0.00340

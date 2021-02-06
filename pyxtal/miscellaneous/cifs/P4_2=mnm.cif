@@ -1,0 +1,56 @@
+data_global
+_chemical_name_mineral 'Stishovite'
+loop_
+_publ_author_name
+'Ross N L'
+'Shu J F'
+'Hazen R M'
+'Gasparik T'
+_journal_name_full 'American Mineralogist'
+_journal_volume 75 
+_journal_year 1990
+_journal_page_first 739
+_journal_page_last 747
+_publ_section_title
+;
+ High-pressure crystal chemistry of stishovite
+ P = 0, but in the diamond cell
+;
+_database_code_amcsd 0001306
+_chemical_formula_sum 'Si O2'
+_chemical_formula_sum ''
+_cell_length_a 4.1801
+_cell_length_b 4.1801
+_cell_length_c 2.6678
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 46.615
+_exptl_crystal_density_diffrn      4.281
+_symmetry_space_group_name_H-M 'P 42/m n m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-y,-x,z'
+  'y,x,-z'
+  '1/2+y,1/2-x,1/2-z'
+  '1/2-y,1/2+x,1/2+z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,1/2-z'
+  'x,y,-z'
+  '-x,-y,z'
+  'y,x,z'
+  '-y,-x,-z'
+  '1/2-y,1/2+x,1/2-z'
+  '1/2+y,1/2-x,1/2+z'
+  '1/2-x,1/2+y,1/2+z'
+  '1/2+x,1/2-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Si   0.00000   0.00000   0.00000   0.00190
+O   0.30670   0.30670   0.00000   0.00393

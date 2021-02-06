@@ -1,0 +1,48 @@
+data_global
+_chemical_name_mineral 'Melonite'
+loop_
+_publ_author_name
+'Peacock M A'
+'Thompson R M'
+_journal_name_full 'American Mineralogist'
+_journal_volume 31 
+_journal_year 1946
+_journal_page_first 204
+_journal_page_last 204
+_publ_section_title
+;
+ On melonite from Quebec and the crystal structure of NiTe2
+;
+_database_code_amcsd 0000033
+_chemical_formula_sum 'Ni Te2'
+_chemical_formula_sum ''
+_cell_length_a 3.835
+_cell_length_b 3.835
+_cell_length_c 5.255
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 66.932
+_exptl_crystal_density_diffrn      7.787
+_symmetry_space_group_name_H-M 'P -3 m 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-y,-x,z'
+  'y,-x+y,-z'
+  '-x,-x+y,-z'
+  '-x+y,-x,z'
+  '-x+y,y,z'
+  '-x,-y,-z'
+  'y,x,-z'
+  '-y,x-y,z'
+  'x,x-y,z'
+  'x-y,x,-z'
+  'x-y,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ni   0.00000   0.00000   0.00000
+Te   0.33333   0.66667   0.25000

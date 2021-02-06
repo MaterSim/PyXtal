@@ -1,0 +1,47 @@
+data_global
+_chemical_name_mineral 'Sphaerobismoite'
+loop_
+_publ_author_name
+'Blower S K'
+'Greaves C'
+_journal_name_full 'Acta Crystallographica, Section C'
+_journal_volume 44 
+_journal_year 1988
+_journal_page_first 587
+_journal_page_last 589
+_publ_section_title
+;
+ The structure of beta-Bi2O3 from powder neutron diffraction data
+;
+_database_code_amcsd 0010069
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Bi2 O3'
+_chemical_formula_sum ''
+_cell_length_a 7.739
+_cell_length_b 7.739
+_cell_length_c 5.636
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 337.552
+_exptl_crystal_density_diffrn      9.169
+_symmetry_space_group_name_H-M 'P -4 21 c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-y,1/2-x,1/2+z'
+  'y,-x,-z'
+  '1/2-x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '1/2+y,1/2+x,1/2+z'
+  '-y,x,-z'
+  '1/2+x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Bi   0.01740   0.25450   0.23850   0.01406
+O1   0.29050   0.31250   0.02860   0.02166
+O2   0.00000   0.50000   0.39390   0.01608

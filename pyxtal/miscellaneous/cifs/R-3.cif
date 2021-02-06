@@ -1,0 +1,68 @@
+data_global
+_chemical_name_mineral 'Akimotoite'
+loop_
+_publ_author_name
+'Horiuchi H'
+'Hirano M'
+'Ito E'
+'Matsui Y'
+_journal_name_full 'American Mineralogist'
+_journal_volume 67 
+_journal_year 1982
+_journal_page_first 788
+_journal_page_last 793
+_publ_section_title
+;
+ MgSiO3 (ilmenite-type): Single crystal X-ray diffraction study
+;
+_database_code_amcsd 0000870
+_chemical_formula_sum 'Si Mg O3'
+_chemical_formula_sum ''
+_cell_length_a 4.7284
+_cell_length_b 4.7284
+_cell_length_c 13.5591
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 262.537
+_exptl_crystal_density_diffrn      3.810
+_symmetry_space_group_name_H-M 'R -3'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '2/3+x,1/3+y,1/3+z'
+  '1/3+x,2/3+y,2/3+z'
+  'y,-x+y,-z'
+  '2/3+y,1/3-x+y,1/3-z'
+  '1/3+y,2/3-x+y,2/3-z'
+  '-x+y,-x,z'
+  '2/3-x+y,1/3-x,1/3+z'
+  '1/3-x+y,2/3-x,2/3+z'
+  '-x,-y,-z'
+  '2/3-x,1/3-y,1/3-z'
+  '1/3-x,2/3-y,2/3-z'
+  '-y,x-y,z'
+  '2/3-y,1/3+x-y,1/3+z'
+  '1/3-y,2/3+x-y,2/3+z'
+  'x-y,x,-z'
+  '2/3+x-y,1/3+x,1/3-z'
+  '1/3+x-y,2/3+x,2/3-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Si   0.00000   0.00000   0.15768
+Mg   0.00000   0.00000   0.35970
+O   0.32140   0.03610   0.24077
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Si 0.00535 0.00535 0.00531 0.00268 0.00000 0.00000
+Mg 0.00849 0.00849 0.00550 0.00425 0.00000 0.00000
+O 0.00578 0.00510 0.00745 0.00289 -0.00028 0.00028

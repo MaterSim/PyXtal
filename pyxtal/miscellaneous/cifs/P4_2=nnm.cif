@@ -1,0 +1,54 @@
+data_global
+_chemical_name_mineral 'Mushistonite'
+loop_
+_publ_author_name
+'Morgenstern-Badarau I'
+_journal_name_full 'Journal of Solid State Chemistry'
+_journal_volume 17 
+_journal_year 1976
+_journal_page_first 399
+_journal_page_last 406
+_publ_section_title
+;
+ Effet Jahn-Teller et structure cristalline de l'hydroxyde CuSn(OH)6
+;
+_database_code_amcsd 0013333
+_chemical_formula_sum 'Cu Sn (O6 H6)'
+_chemical_formula_sum ''
+_cell_length_a 7.586
+_cell_length_b 7.586
+_cell_length_c 8.103
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 466.307
+_exptl_crystal_density_diffrn      4.050
+_symmetry_space_group_name_H-M 'P 42/n n m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-y,-x,z'
+  'y,x,-z'
+  '1/2+y,-x,1/2-z'
+  '1/2-y,x,1/2+z'
+  '1/2+x,-y,1/2+z'
+  '1/2-x,y,1/2-z'
+  '1/2+x,1/2+y,-z'
+  '1/2-x,1/2-y,z'
+  '1/2+y,1/2+x,z'
+  '1/2-y,1/2-x,-z'
+  '-y,1/2+x,1/2-z'
+  'y,1/2-x,1/2+z'
+  '-x,1/2+y,1/2+z'
+  'x,1/2-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Cu   0.00000   0.00000   0.00000   0.01520
+Sn   0.50000   0.50000   0.50000   0.01456
+O-H   0.06300   0.24350  -0.07700   0.02368
+O-H  -0.07500   0.07500   0.26400   0.01368

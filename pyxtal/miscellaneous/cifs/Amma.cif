@@ -1,0 +1,67 @@
+data_global
+_chemical_name_mineral 'Anhydrite'
+loop_
+_publ_author_name
+'Hawthorne F C'
+'Ferguson R B'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 13 
+_journal_year 1975
+_journal_page_first 289
+_journal_page_last 292
+_publ_section_title
+;
+ Anhydrous sulphates. II. Refinement of the crystal structure of anhydrite
+;
+_database_code_amcsd 0005117
+_chemical_compound_source 'Leopoldshall, East Germany'
+_chemical_formula_sum 'Ca S O4'
+_chemical_formula_sum ''
+_cell_length_a 6.993
+_cell_length_b 6.995
+_cell_length_c 6.245
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 305.481
+_exptl_crystal_density_diffrn      2.960
+_symmetry_space_group_name_H-M 'A m m a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '1/2-x,-y,z'
+  '1/2-x,1/2-y,1/2+z'
+  'x,-y,z'
+  'x,1/2-y,1/2+z'
+  '-x,y,-z'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,y,z'
+  '1/2-x,1/2+y,1/2+z'
+  '1/2+x,-y,-z'
+  '1/2+x,1/2-y,1/2-z'
+  '-x,-y,-z'
+  '-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ca   0.75000   0.00000   0.34760
+S   0.25000   0.00000   0.15556
+O1   0.25000   0.16990   0.01620
+O2   0.08190   0.00000   0.29750
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ca 0.00850 0.00935 0.00699 0.00000 0.00000 0.00000
+S 0.00837 0.00669 0.00585 0.00000 0.00000 0.00000
+O1 0.01947 0.00835 0.00960 0.00000 0.00000 0.00000
+O2 0.00870 0.01683 0.01014 0.00000 0.00268 0.00000

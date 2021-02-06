@@ -1,0 +1,60 @@
+data_global
+_chemical_name_mineral 'Muthmannite'
+loop_
+_publ_author_name
+'Bindi L'
+'Cipriani C'
+_journal_name_full 'American Mineralogist'
+_journal_volume 89 
+_journal_year 2004
+_journal_page_first 1505
+_journal_page_last 1509
+_publ_section_title
+;
+ Ordered distribution of Au and Ag in the crystal structure of muthmannite,
+ AuAgTe2, a rare telluride from Sacarimb, Western Romania
+;
+_database_code_amcsd 0003649
+_chemical_formula_sum 'Au Ag Te2'
+_chemical_formula_sum ''
+_cell_length_a 5.124
+_cell_length_b 4.419
+_cell_length_c 7.437
+_cell_angle_alpha 90
+_cell_angle_beta 89.96
+_cell_angle_gamma 90
+_cell_volume 168.396
+_exptl_crystal_density_diffrn     11.045
+_symmetry_space_group_name_H-M 'P 1 2/m 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,-y,z'
+  '-x,y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Au1   0.00000   0.00000   0.00000   0.02330
+Au2   0.00000   0.00000   0.50000   0.02650
+Ag1   0.50000   0.50000   0.00000   0.03030
+Ag2   0.50000   0.50000   0.50000   0.03090
+Te1   0.62770   0.00000   0.25090   0.02700
+Te2   0.10890   0.50000   0.25820   0.02980
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Au1 0.02250 0.02410 0.02340 0.00000 -0.00030 0.00000
+Au2 0.02560 0.02710 0.02670 0.00000 0.00010 0.00000
+Ag1 0.02810 0.03210 0.03080 0.00000 -0.00020 0.00000
+Ag2 0.02910 0.03240 0.03120 0.00000 -0.00070 0.00000
+Te1 0.02550 0.02840 0.02720 0.00000 -0.00030 0.00000
+Te2 0.02820 0.03110 0.02990 0.00000 -0.00020 0.00000

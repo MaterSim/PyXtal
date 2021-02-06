@@ -1,0 +1,49 @@
+data_global
+_chemical_name_mineral 'Valleriite'
+loop_
+_publ_author_name
+'Hiller J'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 101 
+_journal_year 1939
+_journal_page_first 425
+_journal_page_last 434
+_publ_section_title
+;
+ Zur Kristallstruktur des Valleriits
+ _cod_database_code 1011125
+;
+_database_code_amcsd 0018019
+_chemical_formula_sum 'S7 Fe4 Cu2'
+_chemical_formula_sum ''
+_cell_length_a 6.13
+_cell_length_b 9.81
+_cell_length_c 11.4
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 685.542
+_exptl_crystal_density_diffrn      2.785
+_symmetry_space_group_name_H-M 'P m m a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,-y,z'
+  '-x,y,-z'
+  '1/2-x,y,z'
+  '1/2+x,-y,-z'
+  '1/2+x,y,-z'
+  '1/2-x,-y,z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+S1   0.25000   0.25000   0.10000
+S2   0.25000   0.50000  -0.10000
+S3   0.25000   0.00000  -0.10000
+S4   0.25000   0.16670  -0.41670
+S5   0.25000   0.50000   0.41670
+Fe1   0.06250   0.37500   0.22220
+Cu1   0.02780   0.00000   0.25000

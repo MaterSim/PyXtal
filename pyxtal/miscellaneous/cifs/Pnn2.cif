@@ -1,0 +1,44 @@
+data_global
+_chemical_name_mineral 'Seinajokite'
+loop_
+_publ_author_name
+'Holseth H'
+'Kjekshus A'
+_journal_name_full 'Acta Chemica Scandinavica'
+_journal_volume 23 
+_journal_year 1969
+_journal_page_first 3043
+_journal_page_last 3050
+_publ_section_title
+;
+ Compounds with the marcasite type crystal structure
+ IV. The crystal structure of FeSb2
+ Note: Powder X-ray diffractometer with strip charts
+;
+_database_code_amcsd 0011919
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Fe Sb2'
+_chemical_formula_sum ''
+_cell_length_a 5.8328
+_cell_length_b 6.5376
+_cell_length_c 3.1973
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 121.921
+_exptl_crystal_density_diffrn      8.154
+_symmetry_space_group_name_H-M 'P n n 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,1/2+z'
+  '-x,-y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Fe   0.00000   0.00000   0.00000   0.04053
+Sb   0.18750   0.35790   0.00270   0.03293

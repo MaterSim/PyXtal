@@ -1,0 +1,46 @@
+data_global
+_amcsd_formula_title 'Cl Fe O'
+loop_
+_publ_author_name
+'Goldsztaub M'
+_journal_name_full 'Bulletin de la Societe Francaise de Mineralogie'
+_journal_volume 58 
+_journal_year 1935
+_journal_page_first 6
+_journal_page_last 6
+_publ_section_title
+;
+ Etude de quelques derives de l'oxyde ferrique (FeO*OH, FeO^2^Na, FeOCl)
+ determination de leurs structures.
+ _cod_database_code 1010645
+;
+_database_code_amcsd 0017526
+_chemical_formula_sum 'Fe Cl O'
+_chemical_formula_sum ''
+_cell_length_a 3.75
+_cell_length_b 7.65
+_cell_length_c 3.3
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 94.669
+_exptl_crystal_density_diffrn      3.764
+_symmetry_space_group_name_H-M 'P m n m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,y,z'
+  '1/2+x,-y,1/2-z'
+  'x,y,-z'
+  '1/2-x,-y,1/2+z'
+  '1/2+x,-y,1/2+z'
+  '-x,y,-z'
+  '1/2-x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe1   0.00000   0.09700   0.50000
+Cl1   0.00000   0.30500   0.00000
+O1   0.00000  -0.08300   0.00000

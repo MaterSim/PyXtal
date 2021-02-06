@@ -1,0 +1,54 @@
+data_global
+_chemical_name_mineral 'Silicon'
+loop_
+_publ_author_name
+'McMahon M I'
+'Nelmes R J'
+_journal_name_full 'Physical Review'
+_journal_volume B47 
+_journal_year 1993
+_journal_page_first 8337
+_journal_page_last 8340
+_publ_section_title
+;
+ New high-pressure phase of Si
+ Sample: structure exists between 13 GPa to 18 GPa
+ Note: intermediate structure between those of Si II and Si V
+;
+_database_code_amcsd 0015170
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Si'
+_chemical_formula_sum ''
+_cell_length_a 4.737
+_cell_length_b 4.502
+_cell_length_c 2.550
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 54.381
+_exptl_crystal_density_diffrn      3.430
+_symmetry_space_group_name_H-M 'I m m a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'x,1/2-y,z'
+  '1/2+x,-y,1/2+z'
+  '-x,1/2+y,-z'
+  '1/2-x,+y,1/2-z'
+  '-x,y,z'
+  '1/2-x,1/2+y,1/2+z'
+  'x,-y,-z'
+  '1/2+x,1/2-y,1/2-z'
+  'x,1/2+y,-z'
+  '1/2+x,+y,1/2-z'
+  '-x,1/2-y,z'
+  '1/2-x,-y,1/2+z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Si   0.00000   0.25000   0.19300

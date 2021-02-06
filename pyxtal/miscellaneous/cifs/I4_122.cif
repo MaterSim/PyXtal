@@ -1,0 +1,52 @@
+data_global
+_amcsd_formula_title 'NbP'
+loop_
+_publ_author_name
+'Wyckoff R W G'
+_journal_name_full 'Crystal Structures'
+_journal_volume 1 
+_journal_year 1963
+_journal_page_first 85
+_journal_page_last 237
+_publ_section_title
+;
+ Second edition. Interscience Publishers, New York, New York
+ Note: beta form
+;
+_database_code_amcsd 0011651
+_chemical_formula_sum 'Nb P'
+_chemical_formula_sum ''
+_cell_length_a 3.325
+_cell_length_b 3.325
+_cell_length_c 11.38
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 125.813
+_exptl_crystal_density_diffrn      6.540
+_symmetry_space_group_name_H-M 'I 41 2 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '1/2+y,1/2+x,1/2-z'
+  '+y,+x,-z'
+  '-y,1/2+x,1/4+z'
+  '1/2-y,+x,3/4+z'
+  '1/2-x,y,3/4-z'
+  '-x,1/2+y,1/4-z'
+  '1/2-x,1/2-y,1/2+z'
+  '-x,-y,+z'
+  '-y,-x,-z'
+  '1/2-y,1/2-x,1/2-z'
+  '1/2+y,-x,3/4+z'
+  '+y,1/2-x,1/4+z'
+  'x,1/2-y,1/4-z'
+  '1/2+x,-y,3/4-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Nb   0.00000   0.00000   0.00000
+P   0.00000   0.00000   0.50000

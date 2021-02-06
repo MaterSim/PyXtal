@@ -1,0 +1,44 @@
+data_global
+_chemical_name_mineral 'Baddeleyite'
+loop_
+_publ_author_name
+'Kisi E H'
+'Howard C J'
+'Hill R J'
+_journal_name_full 'Journal of the American Ceramic Society'
+_journal_volume 72 
+_journal_year 1989
+_journal_page_first 1757
+_journal_page_last 1760
+_publ_section_title
+;
+ Crystal structure of orthorhombic zirconia in partially stabilized zirconia
+ Note: distorted polymorph of baddeleyite
+;
+_database_code_amcsd 0014064
+_chemical_formula_sum 'Zr O2'
+_chemical_formula_sum ''
+_cell_length_a 5.068
+_cell_length_b 5.260
+_cell_length_c 5.077
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 135.341
+_exptl_crystal_density_diffrn      6.047
+_symmetry_space_group_name_H-M 'P b c 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,1/2+y,z'
+  'x,1/2-y,1/2+z'
+  '-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Zr   0.26700   0.03000   0.25000   0.00507
+O1   0.06800   0.36100   0.10600   0.01013
+O2   0.53700   0.22900   0.00000   0.00253

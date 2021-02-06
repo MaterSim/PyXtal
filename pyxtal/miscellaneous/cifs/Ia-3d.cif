@@ -1,0 +1,146 @@
+data_global
+_chemical_name_mineral 'Hydrogarnet'
+loop_
+_publ_author_name
+'Lager G A'
+'Armbruster T'
+'Faber J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 72 
+_journal_year 1987
+_journal_page_first 756
+_journal_page_last 765
+_publ_section_title
+;
+ Neutron and X-ray diffraction study of hydrogarnet Ca3Al2(O4H4)3
+ Sample: T = 300 K, X-ray 2, without H
+;
+_database_code_amcsd 0001108
+_chemical_formula_sum 'Ca3 Al2 (O12 H12)'
+_chemical_formula_sum ''
+_cell_length_a 12.565
+_cell_length_b 12.565
+_cell_length_c 12.565
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 1983.752
+_exptl_crystal_density_diffrn      2.533
+_symmetry_space_group_name_H-M 'I a -3 d'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'z,1/2-x,1/2+y'
+  '1/2+z,-x,+y'
+  '-y,1/2+z,1/2-x'
+  '1/2-y,+z,-x'
+  'x,1/2-y,1/2+z'
+  '1/2+x,-y,+z'
+  '-z,1/2+x,1/2-y'
+  '1/2-z,+x,-y'
+  'y,1/2-z,1/2+x'
+  '1/2+y,-z,+x'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,+y,-z'
+  '3/4+x,1/4-z,3/4-y'
+  '1/4+x,3/4-z,1/4-y'
+  '3/4-z,1/4+y,3/4+x'
+  '1/4-z,3/4+y,1/4+x'
+  '3/4+y,1/4-x,3/4-z'
+  '1/4+y,3/4-x,1/4-z'
+  '3/4-x,1/4+z,3/4+y'
+  '1/4-x,3/4+z,1/4+y'
+  '3/4+z,1/4-y,3/4-x'
+  '1/4+z,3/4-y,1/4-x'
+  '3/4-y,1/4+x,3/4+z'
+  '1/4-y,3/4+x,1/4+z'
+  '1/4+x,1/4+z,1/4+y'
+  '3/4+x,3/4+z,3/4+y'
+  '1/4-z,1/4-y,1/4-x'
+  '3/4-z,3/4-y,3/4-x'
+  '1/4+y,1/4+x,1/4+z'
+  '3/4+y,3/4+x,3/4+z'
+  '1/4-x,1/4-z,1/4-y'
+  '3/4-x,3/4-z,3/4-y'
+  '1/4+z,1/4+y,1/4+x'
+  '3/4+z,3/4+y,3/4+x'
+  '1/4-y,1/4-x,1/4-z'
+  '3/4-y,3/4-x,3/4-z'
+  '1/2+z,x,1/2-y'
+  '+z,1/2+x,-y'
+  '1/2-y,-z,1/2+x'
+  '-y,1/2-z,+x'
+  '1/2+x,y,1/2-z'
+  '+x,1/2+y,-z'
+  '1/2-z,-x,1/2+y'
+  '-z,1/2-x,+y'
+  '1/2+y,z,1/2-x'
+  '+y,1/2+z,-x'
+  '1/2-x,-y,1/2+z'
+  '-x,1/2-y,+z'
+  '1/2-z,1/2+x,y'
+  '-z,+x,1/2+y'
+  '1/2+y,1/2-z,-x'
+  '+y,-z,1/2-x'
+  '1/2-x,1/2+y,z'
+  '-x,+y,1/2+z'
+  '1/2+z,1/2-x,-y'
+  '+z,-x,1/2-y'
+  '1/2-y,1/2+z,x'
+  '-y,+z,1/2+x'
+  '1/2+x,1/2-y,-z'
+  '+x,-y,1/2-z'
+  '3/4-x,3/4+z,1/4-y'
+  '1/4-x,1/4+z,3/4-y'
+  '3/4+z,3/4-y,1/4+x'
+  '1/4+z,1/4-y,3/4+x'
+  '3/4-y,3/4+x,1/4-z'
+  '1/4-y,1/4+x,3/4-z'
+  '3/4+x,3/4-z,1/4+y'
+  '1/4+x,1/4-z,3/4+y'
+  '3/4-z,3/4+y,1/4-x'
+  '1/4-z,1/4+y,3/4-x'
+  '3/4+y,3/4-x,1/4+z'
+  '1/4+y,1/4-x,3/4+z'
+  '1/4-x,3/4-z,3/4+y'
+  '3/4-x,1/4-z,1/4+y'
+  '1/4+z,3/4+y,3/4-x'
+  '3/4+z,1/4+y,1/4-x'
+  '1/4-y,3/4-x,3/4+z'
+  '3/4-y,1/4-x,1/4+z'
+  '1/4+x,3/4+z,3/4-y'
+  '3/4+x,1/4+z,1/4-y'
+  '1/4-z,3/4-y,3/4+x'
+  '3/4-z,1/4-y,1/4+x'
+  '1/4+y,3/4+x,3/4-z'
+  '3/4+y,1/4+x,1/4-z'
+  '-z,-x,-y'
+  '1/2-z,1/2-x,1/2-y'
+  'y,z,x'
+  '1/2+y,1/2+z,1/2+x'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+  'z,x,y'
+  '1/2+z,1/2+x,1/2+y'
+  '-y,-z,-x'
+  '1/2-y,1/2-z,1/2-x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ca   0.12500   0.00000   0.25000
+Al   0.00000   0.00000   0.00000
+O-H   0.02860   0.05280   0.63980
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ca 0.01368 0.00912 0.00912 0.00000 0.00000 0.00256
+Al 0.00848 0.00848 0.00848 -0.00064 -0.00064 -0.00064
+O-H 0.01480 0.01448 0.01032 -0.00240 -0.00096 -0.00360

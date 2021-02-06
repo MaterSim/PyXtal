@@ -1,0 +1,60 @@
+data_global
+_amcsd_formula_title 'N2 O4'
+loop_
+_publ_author_name
+'Vegard L'
+_journal_name_full 'Zeitschrift fur Physik'
+_journal_volume 68 
+_journal_year 1931
+_journal_page_first 184
+_journal_page_last 203
+_publ_section_title
+;
+ Die Struktur von festem N2 O4 bei der Temperatur von fluessiger Luft.
+ _cod_database_code 1010516
+;
+_database_code_amcsd 0017427
+_chemical_formula_sum 'N O2'
+_chemical_formula_sum ''
+_cell_length_a 7.77
+_cell_length_b 7.77
+_cell_length_c 7.77
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 469.097
+_exptl_crystal_density_diffrn      1.954
+_symmetry_space_group_name_H-M 'I 21 3'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '1/2-z,-x,1/2+y'
+  '-z,1/2-x,+y'
+  '-z,1/2+x,1/2-y'
+  '1/2-z,+x,-y'
+  '1/2+z,1/2-x,-y'
+  '+z,-x,1/2-y'
+  'z,x,y'
+  '1/2+z,1/2+x,1/2+y'
+  '1/2+y,1/2-z,-x'
+  '+y,-z,1/2-x'
+  '1/2-y,-z,1/2+x'
+  '-y,1/2-z,+x'
+  '-y,1/2+z,1/2-x'
+  '1/2-y,+z,-x'
+  'y,z,x'
+  '1/2+y,1/2+z,1/2+x'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,+y,-z'
+  '1/2+x,1/2-y,-z'
+  '+x,-y,1/2-z'
+  '1/2-x,-y,1/2+z'
+  '-x,1/2-y,+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+N1   0.40300   0.00000   0.25000
+O1   0.17800   0.25000   0.40300

@@ -1,0 +1,56 @@
+data_global
+_amcsd_formula_title 'H6 N O2 P'
+loop_
+_publ_author_name
+'Zachariasen W'
+'Mooney R'
+_journal_name_full 'Journal of Chemical Physics'
+_journal_volume 2 
+_journal_year 1934
+_journal_page_first 34
+_journal_page_last 37
+_publ_section_title
+;
+ The Structure of the Hypophosphite Group as Determined from the Crystal
+ Lattice of Ammonium Hypophosphite
+ _cod_database_code 1010304
+;
+_database_code_amcsd 0017230
+_chemical_formula_sum 'N P O2 H2'
+_chemical_formula_sum ''
+_cell_length_a 3.98
+_cell_length_b 7.57
+_cell_length_c 11.47
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 345.575
+_exptl_crystal_density_diffrn      1.518
+_symmetry_space_group_name_H-M 'A b m m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  'x,1/2+y,-z'
+  'x,+y,1/2-z'
+  '-x,1/2-y,z'
+  '-x,-y,1/2+z'
+  'x,-y,z'
+  'x,1/2-y,1/2+z'
+  '-x,y,-z'
+  '-x,1/2+y,1/2-z'
+  '-x,1/2+y,z'
+  '-x,+y,1/2+z'
+  'x,1/2-y,-z'
+  'x,-y,1/2-z'
+  '-x,-y,-z'
+  '-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+N1   0.00000   0.25000   0.00000
+P1   0.54200   0.00000   0.25000
+O1   0.34700   0.00000   0.13600
+H1  -0.80600   0.35800   0.25000

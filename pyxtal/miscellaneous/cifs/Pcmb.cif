@@ -1,0 +1,46 @@
+data_global
+_amcsd_formula_title 'K N S'
+loop_
+_publ_author_name
+'Klug H'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 85 
+_journal_year 1933
+_journal_page_first 214
+_journal_page_last 222
+_publ_section_title
+;
+ The crystal structure of potassium thiocyanate
+ _cod_database_code 1010625
+;
+_database_code_amcsd 0017507
+_chemical_formula_sum 'K N C S'
+_chemical_formula_sum ''
+_cell_length_a 6.66
+_cell_length_b 7.58
+_cell_length_c 6.635
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 334.953
+_exptl_crystal_density_diffrn      1.927
+_symmetry_space_group_name_H-M 'P c m b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2-z'
+  '-x,1/2-y,1/2+z'
+  '-x,y,1/2+z'
+  'x,-y,1/2-z'
+  'x,1/2-y,z'
+  '-x,1/2+y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+K1   0.21200   0.00000   0.75000
+N1   0.08000   0.25000   0.40000
+C1   0.20500   0.25000   0.28000
+S1   0.38500   0.25000   0.09500

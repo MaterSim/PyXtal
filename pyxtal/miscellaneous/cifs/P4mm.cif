@@ -1,0 +1,62 @@
+data_global
+_chemical_name_mineral 'Macedonite'
+loop_
+_publ_author_name
+'Glazer A M'
+'Mabud S A'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 34 
+_journal_year 1978
+_journal_page_first 1065
+_journal_page_last 1070
+_publ_section_title
+;
+ Powder profile refinement of lead zirconate titanate at several temperatures.
+ II. Pure PbTiO3
+ Sample: T = -183 C
+;
+_database_code_amcsd 0009629
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Pb Ti O3'
+_chemical_formula_sum ''
+_cell_length_a 3.895
+_cell_length_b 3.895
+_cell_length_c 4.171
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 63.278
+_exptl_crystal_density_diffrn      7.953
+_symmetry_space_group_name_H-M 'P 4 m m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-y,-x,z'
+  '-y,x,z'
+  'x,-y,z'
+  '-x,-y,z'
+  'y,x,z'
+  'y,-x,z'
+  '-x,y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Pb   0.00000   0.00000   0.00000   0.00479
+Ti   0.50000   0.50000   0.54000   0.00360
+O1   0.50000   0.50000   0.11800   0.00849
+O2   0.50000   0.00000   0.62100   0.00631
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Pb 0.00089 0.00089 0.00329 0.00000 0.00000 0.00000
+Ti 0.00241 0.00241 -0.00101 0.00000 0.00000 0.00000
+O1 0.00481 0.00481 0.02064 0.00000 0.00000 0.00000
+O2 0.01216 0.00646 0.01444 0.00000 0.00000 0.00000

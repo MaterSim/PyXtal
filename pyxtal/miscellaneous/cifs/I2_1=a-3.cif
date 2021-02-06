@@ -1,0 +1,101 @@
+data_global
+_chemical_name_mineral 'Winstanleyite'
+loop_
+_publ_author_name
+'Bindi L'
+'Cipriani C'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 41 
+_journal_year 2003
+_journal_page_first 1469
+_journal_page_last 1473
+_publ_section_title
+;
+ The crystal structure of winstanleyite, TiTe3O8, from the
+ Grand Central Mine, Tombstone, Arizona
+;
+_database_code_amcsd 0005922
+_chemical_compound_source 'Grand Central Mine, Tombstone, Arizona'
+_chemical_formula_sum 'Ti Te3 O8'
+_chemical_formula_sum ''
+_cell_length_a 10.965
+_cell_length_b 10.965
+_cell_length_c 10.965
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 1318.335
+_exptl_crystal_density_diffrn      5.630
+_symmetry_space_group_name_H-M 'I 21/a -3'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '1/2+z,x,1/2-y'
+  '+z,1/2+x,-y'
+  '1/2+z,-x,y'
+  '+z,1/2-x,1/2+y'
+  '-z,x,1/2+y'
+  '1/2-z,1/2+x,+y'
+  '-z,-x,-y'
+  '1/2-z,1/2-x,1/2-y'
+  '1/2+y,1/2-z,-x'
+  '+y,-z,1/2-x'
+  '-y,1/2-z,x'
+  '1/2-y,-z,1/2+x'
+  '1/2-y,z,-x'
+  '-y,1/2+z,1/2-x'
+  'y,z,x'
+  '1/2+y,1/2+z,1/2+x'
+  'x,1/2-y,1/2+z'
+  '1/2+x,-y,+z'
+  '-x,y,1/2+z'
+  '1/2-x,1/2+y,+z'
+  'x,1/2+y,-z'
+  '1/2+x,+y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+  '1/2-z,-x,1/2+y'
+  '-z,1/2-x,+y'
+  '1/2-z,x,-y'
+  '-z,1/2+x,1/2-y'
+  'z,-x,1/2-y'
+  '1/2+z,1/2-x,-y'
+  'z,x,y'
+  '1/2+z,1/2+x,1/2+y'
+  '1/2-y,1/2+z,x'
+  '-y,+z,1/2+x'
+  'y,1/2+z,-x'
+  '1/2+y,+z,1/2-x'
+  '1/2+y,-z,x'
+  '+y,1/2-z,1/2+x'
+  '-y,-z,-x'
+  '1/2-y,1/2-z,1/2-x'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,+y,-z'
+  'x,-y,1/2-z'
+  '1/2+x,1/2-y,-z'
+  '-x,1/2-y,z'
+  '1/2-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Ti   0.00000   0.00000   0.00000   0.02440
+Te   0.20907   0.00000   0.25000   0.02740
+O1   0.43860   0.13330   0.39870   0.02240
+O2   0.17290   0.17290   0.17290   0.02250
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ti 0.02440 0.02440 0.02440 -0.00010 -0.00010 -0.00010
+Te 0.02750 0.02740 0.02740 0.00000 0.00000 0.00010
+O1 0.02280 0.02280 0.02270 -0.00020 -0.00030 -0.00020
+O2 0.02250 0.02250 0.02250 0.00050 0.00050 0.00050

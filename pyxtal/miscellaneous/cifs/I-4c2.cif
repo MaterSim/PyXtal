@@ -1,0 +1,59 @@
+data_global
+_amcsd_formula_title 'Al F4 H4 N'
+loop_
+_publ_author_name
+'Fourquet J'
+'Plet F'
+'Courbion G'
+'Bulou A'
+'de Pape R'
+_journal_name_full 'Revue de Chimie Minerale'
+_journal_volume 16 
+_journal_year 1979
+_journal_page_first 490
+_journal_page_last 500
+_publ_section_title
+;
+ Etude de la filiation structurale des phases M(I)AlF4
+ (M(I) = K, Rb, Tl, N H4, Cs)
+ _cod_database_code 1000199
+;
+_database_code_amcsd 0015388
+_chemical_formula_sum 'N Al F4'
+_chemical_formula_sum ''
+_cell_length_a 5.078
+_cell_length_b 5.078
+_cell_length_c 12.715
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 327.870
+_exptl_crystal_density_diffrn      2.370
+_symmetry_space_group_name_H-M 'I -4 c 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'y,x,1/2-z'
+  '1/2+y,1/2+x,-z'
+  'y,-x,-z'
+  '1/2+y,1/2-x,1/2-z'
+  'x,-y,1/2+z'
+  '1/2+x,1/2-y,+z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,1/2+z'
+  '-y,-x,1/2-z'
+  '1/2-y,1/2-x,-z'
+  '-y,x,-z'
+  '1/2-y,1/2+x,1/2-z'
+  '-x,y,1/2+z'
+  '1/2-x,1/2+y,+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+N1   0.00000   0.50000   0.25000
+Al1   0.00000   0.00000   0.00000
+F1   0.00000   0.00000   0.13860
+F2   0.20970   0.70970   0.00000

@@ -1,0 +1,61 @@
+data_global
+_amcsd_formula_title 'Fe Nb Te2'
+loop_
+_publ_author_name
+'Li J'
+'Badding M'
+'DiSalvo F'
+_journal_name_full 'Inorganic Chemistry'
+_journal_volume 31 
+_journal_year 1992
+_journal_page_first 1050
+_journal_page_last 1054
+_publ_section_title
+;
+ New layered ternary niobium tellurides: synthesis, structure and
+ properties of NbMTe2 (M=Fe, Co)
+ _cod_database_code 1005004
+;
+_database_code_amcsd 0012702
+_chemical_formula_sum 'Nb Fe Te2'
+_chemical_formula_sum ''
+_cell_length_a 7.922
+_cell_length_b 7.239
+_cell_length_c 6.243
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 358.020
+_exptl_crystal_density_diffrn      7.494
+_symmetry_space_group_name_H-M 'P m n a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,-y,1/2+z'
+  '1/2-x,y,1/2-z'
+  '-x,y,z'
+  'x,-y,-z'
+  '1/2+x,y,1/2-z'
+  '1/2-x,-y,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Nb1   0.79810   0.50000   0.00000
+Fe1   0.00000   0.38360   0.64650
+Te1   0.75000   0.18080   0.75000
+Te2   0.00000   0.72570   0.75080
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Nb1 0.01700 0.02800 0.02300 0.00000 0.00000 -0.00800
+Fe1 0.01700 0.02500 0.01900 0.00000 0.00000 -0.00200
+Te1 0.01700 0.01900 0.01900 0.00000 0.00300 0.00000
+Te2 0.03400 0.02400 0.01600 0.00000 0.00000 0.00300

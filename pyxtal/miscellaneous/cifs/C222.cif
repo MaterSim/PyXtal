@@ -1,0 +1,46 @@
+data_global
+_amcsd_formula_title 'Cd(NH3)2Cl2'
+loop_
+_publ_author_name
+'MacGillavry C H'
+'Bijvoet J M'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 94 
+_journal_year 1936
+_journal_page_first 231
+_journal_page_last 245
+_publ_section_title
+;
+ Die kristallstruktur der cadmium-und quecksilber-diammin-dihalogenide
+;
+_database_code_amcsd 0010558
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Cd N2 Cl2'
+_chemical_formula_sum ''
+_cell_length_a 8.196
+_cell_length_b 8.307
+_cell_length_c 3.968
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 270.158
+_exptl_crystal_density_diffrn      2.598
+_symmetry_space_group_name_H-M 'C 2 2 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,-z'
+  'x,-y,-z'
+  '1/2+x,1/2-y,-z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cd   0.00000   0.00000   0.00000
+N    0.00000   0.25000   0.00000
+Cl   0.22600   0.00000   0.50000

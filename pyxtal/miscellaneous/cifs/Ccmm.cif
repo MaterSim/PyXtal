@@ -1,0 +1,55 @@
+data_global
+_amcsd_formula_title 'I3 U'
+loop_
+_publ_author_name
+'Levy J'
+'Taylor J'
+'Wilson P'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 31 
+_journal_year 1975
+_journal_page_first 880
+_journal_page_last 882
+_publ_section_title
+;
+ The structure of uranium(III) triiodide by neutron diffraction
+ _cod_database_code 1008021
+;
+_database_code_amcsd 0015969
+_chemical_formula_sum 'U I3'
+_chemical_formula_sum ''
+_cell_length_a 14.011
+_cell_length_b 4.328
+_cell_length_c 10.005
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 606.699
+_exptl_crystal_density_diffrn      6.774
+_symmetry_space_group_name_H-M 'C c m m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  '-x,y,1/2+z'
+  '1/2-x,1/2+y,1/2+z'
+  'x,-y,1/2-z'
+  '1/2+x,1/2-y,1/2-z'
+  'x,-y,z'
+  '1/2+x,1/2-y,z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,-z'
+  'x,y,1/2-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,-y,1/2+z'
+  '1/2-x,1/2-y,1/2+z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+U1   0.25620   0.00000   0.25000
+I1  -0.07890   0.00000   0.25000
+I2   0.35570   0.00000  -0.06610

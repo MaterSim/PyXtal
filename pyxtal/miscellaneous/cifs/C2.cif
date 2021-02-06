@@ -1,0 +1,43 @@
+data_global
+_amcsd_formula_title 'Po'
+loop_
+_publ_author_name
+'Rollier M'
+'Hendricks S'
+'Maxwell L'
+_journal_name_full 'Journal of Chemical Physics'
+_journal_volume 4 
+_journal_year 1936
+_journal_page_first 648
+_journal_page_last 652
+_publ_section_title
+;
+ The Crystal Structure of Polonium by Electron Diffraction
+ _cod_database_code 1010519
+;
+_database_code_amcsd 0017430
+_chemical_formula_sum 'Po'
+_chemical_formula_sum ''
+_cell_length_a 7.42
+_cell_length_b 4.29
+_cell_length_c 14.1
+_cell_angle_alpha 90
+_cell_angle_beta 92
+_cell_angle_gamma 90
+_cell_volume 448.555
+_exptl_crystal_density_diffrn      9.285
+_symmetry_space_group_name_H-M 'C 1 2 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Po1   0.05000   0.27000   0.24500
+Po2   0.13000  -0.20000   0.43000
+Po3   0.35000   0.40000   0.07000

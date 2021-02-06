@@ -1,0 +1,54 @@
+data_global
+_chemical_name_mineral 'Perite'
+loop_
+_publ_author_name
+'Gillberg M'
+_journal_name_full 'Arkiv for Mineralogi och Geologi'
+_journal_volume 2 
+_journal_year 1960
+_journal_page_first 565
+_journal_page_last 570
+_publ_section_title
+;
+ Perite, a new oxyhalide mineral from Langban, Sweden
+;
+_database_code_amcsd 0012046
+_chemical_compound_source 'Langban, Sweden'
+_chemical_formula_sum 'Pb Bi Cl O2'
+_chemical_formula_sum ''
+_cell_length_a 5.627
+_cell_length_b 5.575
+_cell_length_c 12.425
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 389.779
+_exptl_crystal_density_diffrn      8.241
+_symmetry_space_group_name_H-M 'B m m b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,y,1/2+z'
+  'x,1/2+y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,1/2-y,z'
+  '1/2-x,1/2-y,1/2+z'
+  '-x,y,z'
+  '1/2-x,y,1/2+z'
+  'x,-y,-z'
+  '1/2+x,-y,1/2-z'
+  'x,1/2-y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,1/2+y,-z'
+  '1/2-x,1/2+y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pb   0.00000   0.25000   0.38500
+Bi   0.00000   0.25000   0.09000
+Cl   0.00000   0.25000   0.75000
+O   0.25000   0.00000   0.00000

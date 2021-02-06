@@ -1,0 +1,63 @@
+data_global
+_chemical_name_mineral 'Mawsonite'
+loop_
+_publ_author_name
+'Szymanski J T'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 14 
+_journal_year 1976
+_journal_page_first 529
+_journal_page_last 535
+_publ_section_title
+;
+ The crystal structure of mawsonite, Cu6Fe2SnS8
+;
+_database_code_amcsd 0005128
+_chemical_formula_sum 'Sn Cu6 Fe2 S8'
+_chemical_formula_sum ''
+_cell_length_a 7.603
+_cell_length_b 7.603
+_cell_length_c 5.358
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 309.722
+_exptl_crystal_density_diffrn      4.655
+_symmetry_space_group_name_H-M 'P -4 m 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,x,-z'
+  'y,-x,-z'
+  'x,-y,z'
+  '-x,-y,z'
+  '-y,-x,-z'
+  '-y,x,-z'
+  '-x,y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Sn   0.00000   0.00000   0.00000
+Cu1   0.50000   0.00000   0.00020
+Cu2   0.24630   0.24630   0.50000
+Fe1   0.50000   0.50000   0.00000
+Fe2   0.50000   0.50000   0.50000
+S1   0.26150   0.00000   0.25380
+S2   0.25970   0.50000   0.24900
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Sn 0.00840 0.00840 0.00910 0.00000 0.00000 0.00000
+Cu1 0.01650 0.02470 0.01860 0.00000 0.00000 0.00000
+Cu2 0.01650 0.01650 0.01820 -0.00270 0.00120 -0.00120
+Fe1 0.01140 0.01140 0.00510 0.00000 0.00000 0.00000
+Fe2 0.00830 0.00830 0.00540 0.00000 0.00000 0.00000
+S1 0.00950 0.01060 0.01150 0.00000 -0.00260 0.00000
+S2 0.00920 0.01320 0.00840 0.00000 -0.00180 0.00000

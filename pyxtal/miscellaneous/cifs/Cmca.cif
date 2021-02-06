@@ -1,0 +1,52 @@
+data_global
+_chemical_name_mineral 'Gallium'
+loop_
+_publ_author_name
+'Sharma B D'
+'Donohue J'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 117 
+_journal_year 1962
+_journal_page_first 293
+_journal_page_last 300
+_publ_section_title
+;
+ A refinement of the crystal structure of gallium
+;
+_database_code_amcsd 0010597
+_chemical_formula_sum 'Ga'
+_chemical_formula_sum ''
+_cell_length_a 4.523
+_cell_length_b 7.661
+_cell_length_c 4.524
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 156.760
+_exptl_crystal_density_diffrn      5.909
+_symmetry_space_group_name_H-M 'C m c a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  'x,1/2-y,1/2+z'
+  '1/2+x,-y,1/2+z'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,+y,1/2-z'
+  '-x,y,z'
+  '1/2-x,1/2+y,z'
+  'x,-y,-z'
+  '1/2+x,1/2-y,-z'
+  'x,1/2+y,1/2-z'
+  '1/2+x,+y,1/2-z'
+  '-x,1/2-y,1/2+z'
+  '1/2-x,-y,1/2+z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Ga   0.00000   0.15490   0.08100   0.00608

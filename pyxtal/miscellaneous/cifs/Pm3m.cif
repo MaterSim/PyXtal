@@ -1,0 +1,86 @@
+data_global
+_chemical_name_mineral 'Isoferroplatinum'
+loop_
+_publ_author_name
+'Cabri L J'
+'Feather C E'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 13 
+_journal_year 1975
+_journal_page_first 117
+_journal_page_last 126
+_publ_section_title
+;
+ Platinum-iron alloys: a nomenclature based on a
+ study of natural and synthetic alloys
+;
+_database_code_amcsd 0005108
+_chemical_compound_source 'Tulameen River, British Columbia, Canada'
+_chemical_formula_sum 'Fe Pt3'
+_chemical_formula_sum ''
+_cell_length_a 3.864
+_cell_length_b 3.864
+_cell_length_c 3.864
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 57.691
+_exptl_crystal_density_diffrn     18.452
+_symmetry_space_group_name_H-M 'P m 3 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'z,-x,y'
+  '-y,z,-x'
+  'x,-y,z'
+  '-z,x,-y'
+  'y,-z,x'
+  '-x,y,-z'
+  'x,-z,-y'
+  '-z,y,x'
+  'y,-x,-z'
+  '-x,z,y'
+  'z,-y,-x'
+  '-y,x,z'
+  'x,z,y'
+  '-z,-y,-x'
+  'y,x,z'
+  '-x,-z,-y'
+  'z,y,x'
+  '-y,-x,-z'
+  'z,x,-y'
+  '-y,-z,x'
+  'x,y,-z'
+  '-z,-x,y'
+  'y,z,-x'
+  '-x,-y,z'
+  '-z,x,y'
+  'y,-z,-x'
+  '-x,y,z'
+  'z,-x,-y'
+  '-y,z,x'
+  'x,-y,-z'
+  '-x,z,-y'
+  'z,-y,x'
+  '-y,x,-z'
+  'x,-z,y'
+  '-z,y,-x'
+  'y,-x,z'
+  '-x,-z,y'
+  'z,y,-x'
+  '-y,-x,z'
+  'x,z,-y'
+  '-z,-y,x'
+  'y,x,-z'
+  '-z,-x,-y'
+  'y,z,x'
+  '-x,-y,-z'
+  'z,x,y'
+  '-y,-z,-x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe   0.00000   0.00000   0.00000
+Pt   0.00000   0.50000   0.50000

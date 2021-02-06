@@ -1,0 +1,55 @@
+data_global
+_chemical_name_mineral 'Kusachiite'
+loop_
+_publ_author_name
+'Boivin J'
+'Trehoux J'
+'Thomas D'
+_journal_name_full 'Bulletin de la Societe Francaise de Mineralogie et de Cristallographie'
+_journal_volume 99 
+_journal_year 1976
+_journal_page_first 193
+_journal_page_last 196
+_publ_section_title
+;
+ Etude structurale de CuBi2O4
+ _cod_database_code 1004051
+;
+_database_code_amcsd 0012142
+_chemical_formula_sum 'Bi2 Cu O4'
+_chemical_formula_sum ''
+_cell_length_a 8.510
+_cell_length_b 8.510
+_cell_length_c 5.814
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 421.050
+_exptl_crystal_density_diffrn      8.605
+_symmetry_space_group_name_H-M 'P 4/n c c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-y,1/2-x,1/2+z'
+  'y,x,1/2-z'
+  'y,-x,-z'
+  '1/2-y,1/2+x,z'
+  'x,-y,1/2+z'
+  '1/2-x,1/2+y,1/2-z'
+  '1/2+x,1/2+y,-z'
+  '-x,-y,z'
+  '1/2+y,1/2+x,1/2+z'
+  '-y,-x,1/2-z'
+  '-y,x,-z'
+  '1/2+y,1/2-x,z'
+  '-x,y,1/2+z'
+  '1/2+x,1/2-y,1/2-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Bi   0.16850   0.16850   0.25000
+Cu   0.00000   0.50000   0.08000
+O   0.29500   0.11400  -0.09700

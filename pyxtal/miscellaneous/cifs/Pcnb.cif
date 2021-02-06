@@ -1,0 +1,67 @@
+data_global
+_chemical_name_mineral 'Haidingerite'
+loop_
+_publ_author_name
+'Ferraris G'
+'Jones D W'
+'Yerkess J'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 28 
+_journal_year 1972
+_journal_page_first 209
+_journal_page_last 214
+_publ_section_title
+;
+ A neutron and X-ray refinement of the crystal structure of CaHAsO4*H2O (haidingerite)
+ Sample: X-ray refinement
+;
+_database_code_amcsd 0009421
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Ca As O5 H2'
+_chemical_formula_sum ''
+_cell_length_a 6.904
+_cell_length_b 16.161
+_cell_length_c 7.935
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 885.352
+_exptl_crystal_density_diffrn      2.956
+_symmetry_space_group_name_H-M 'P c n b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,-z'
+  '-x,1/2-y,z'
+  '1/2-x,y,1/2+z'
+  '1/2+x,-y,1/2-z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ca   0.62630   0.04760   0.18410
+As   0.12830   0.10900   0.05890
+O1   0.22490   0.20070   0.14280
+O2  -0.04130   0.07440   0.19090
+O3   0.05470   0.13240  -0.13360
+O4   0.30050   0.03650   0.05490
+Wat   0.62390   0.16030  -0.00640
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ca 0.02026 0.02432 0.02090 0.00051 -0.00253 0.00494
+As 0.01735 0.00000 0.01140 0.01773 0.01469 0.00051
+O1 0.04509 0.01457 0.02482 0.00988 -0.01887 -0.00405
+O2 0.01659 0.02191 0.02255 -0.00608 0.00317 -0.01368
+O3 0.03838 0.02280 0.02077 -0.00418 0.01659 0.00051
+O4 0.02584 0.02102 0.03002 0.01634 -0.00063 -0.00456
+Wat 0.03546 0.01393 0.02216 -0.01077 -0.01684 -0.00355

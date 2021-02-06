@@ -1,0 +1,42 @@
+data_global
+_chemical_name_mineral 'Shcherbinaite'
+loop_
+_publ_author_name
+'Ketelaar J'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 95 
+_journal_year 1936
+_journal_page_first 9
+_journal_page_last 27
+_publ_section_title
+;
+ Die Kristallstruktur des Vanadinpentoxyds
+ _cod_database_code 1011126
+;
+_database_code_amcsd 0018020
+_chemical_formula_sum 'V2 O5'
+_chemical_formula_sum ''
+_cell_length_a 11.48
+_cell_length_b 4.360
+_cell_length_c 3.550
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 177.687
+_exptl_crystal_density_diffrn      3.399
+_symmetry_space_group_name_H-M 'P m n 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,-y,1/2+z'
+  '-x,y,z'
+  '1/2-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+V1   0.14800   0.09700   0.00000
+O1   0.14800   0.45000   0.92000
+O2   0.20000   0.03000   0.46000
+O3   0.00000   0.08000   0.89000

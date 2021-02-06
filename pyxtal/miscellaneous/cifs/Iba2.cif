@@ -1,0 +1,61 @@
+data_global
+_chemical_name_mineral 'Stronalsite'
+loop_
+_publ_author_name
+'Liferovich R P'
+'Locock A J'
+'Mitchell R H'
+'Shpachenko A K'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 44 
+_journal_year 2006
+_journal_page_first 533
+_journal_page_last 546
+_publ_section_title
+;
+ The crystal structure of stronalsite and a
+ redetermination of the structure of banalsite
+;
+_database_code_amcsd 0006093
+_chemical_compound_source 'Khibina peralkaline complex, Kola alkaline province, Russia'
+_chemical_formula_sum 'Sr Na2 Al4 Si4 O16'
+_chemical_formula_sum ''
+_cell_length_a 8.4080
+_cell_length_b 9.8699
+_cell_length_c 16.7083
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 1386.557
+_exptl_crystal_density_diffrn      2.921
+_symmetry_space_group_name_H-M 'I b a 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'x,-y,1/2+z'
+  '1/2+x,1/2-y,+z'
+  '-x,y,1/2+z'
+  '1/2-x,1/2+y,+z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Sr   0.00000   0.50000   0.15410   0.01690
+Na  -0.04300   0.32440  -0.09550   0.02150
+Al1   0.06930   0.19120   0.06350   0.01150
+Al2  -0.27710   0.45070   0.31060   0.01050
+Si1  -0.26310   0.55460  -0.00170   0.01080
+Si2   0.07700   0.80090   0.24570   0.01010
+O1  -0.21540   0.49110   0.40790   0.01610
+O2  -0.00230   0.21540   0.15930   0.01830
+O3  -0.07760   0.14270  -0.00400   0.01390
+O4   0.22480   0.90640   0.24880   0.01420
+O5   0.22780   0.07600   0.05710   0.01560
+O6  -0.44850   0.35340   0.31000   0.01500
+O7   0.12180   0.64720   0.27200   0.01640
+O8  -0.11550   0.64390   0.03270   0.01340

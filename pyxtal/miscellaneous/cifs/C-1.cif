@@ -1,0 +1,47 @@
+data_global
+_chemical_name_mineral 'Pyrophyllite'
+loop_
+_publ_author_name
+'Wardle R'
+'Brindley G W'
+_journal_name_full 'American Mineralogist'
+_journal_volume 57 
+_journal_year 1972
+_journal_page_first 732
+_journal_page_last 750
+_publ_section_title
+;
+ The crystal structures of pyrophyllite, 1Tc, and of its dehydroxylate
+;
+_database_code_amcsd 0000285
+_chemical_formula_sum 'Al Si2 O6 H'
+_chemical_formula_sum ''
+_cell_length_a 5.1614
+_cell_length_b 8.9576
+_cell_length_c 9.3511
+_cell_angle_alpha 91.03
+_cell_angle_beta 100.37
+_cell_angle_gamma 89.75
+_cell_volume 425.206
+_exptl_crystal_density_diffrn      2.814
+_symmetry_space_group_name_H-M 'C -1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Al   0.50000   0.16700   0.00000
+Si1   0.74800   0.00000   0.28900
+Si2   0.75900   0.33100   0.28900
+O1   0.67100   0.00400   0.11300
+O2   0.72100   0.31900   0.11300
+O-H   0.22100   0.18600   0.11300
+Ob1   0.05500   0.38700   0.35300
+Ob2   0.72400   0.16700   0.35300
+Ob3   0.55000   0.44800   0.33600

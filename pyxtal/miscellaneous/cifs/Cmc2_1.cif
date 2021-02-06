@@ -1,0 +1,47 @@
+data_global
+_amcsd_formula_title 'O Sn'
+loop_
+_publ_author_name
+'Donaldson J'
+'Moser W'
+'Simpson W'
+_journal_name_full 'Acta Crystallographica'
+_journal_volume 16 
+_journal_year 1963
+_journal_page_first A22
+_journal_page_last A22
+_publ_section_title
+;
+ The structure of the red modification of tin(II)oxide
+ _cod_database_code 1100020
+;
+_database_code_amcsd 0018222
+_chemical_formula_sum 'Sn O'
+_chemical_formula_sum ''
+_cell_length_a 5.
+_cell_length_b 5.72
+_cell_length_c 11.12
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 318.032
+_exptl_crystal_density_diffrn      5.627
+_symmetry_space_group_name_H-M 'C m c 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  'x,-y,1/2+z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,y,z'
+  '1/2-x,1/2+y,z'
+  '-x,-y,1/2+z'
+  '1/2-x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Sn1   0.00000   0.00000   0.00000
+Sn2   0.00000   0.44100   0.25400
+O1   0.18000   0.25000   0.38000

@@ -1,0 +1,45 @@
+data_global
+_chemical_name_mineral 'Eriochalcite'
+loop_
+_publ_author_name
+'Harker D'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 93 
+_journal_year 1936
+_journal_page_first 136
+_journal_page_last 145
+_publ_section_title
+;
+ The Crystal Structure of Cupric Chloride Dihydrate Cu Cl2 (H2 O)2
+ _cod_database_code 1011014
+;
+_database_code_amcsd 0017922
+_chemical_formula_sum 'Cu O2 Cl2'
+_chemical_formula_sum ''
+_cell_length_a 7.38
+_cell_length_b 8.04
+_cell_length_c 3.72
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 220.727
+_exptl_crystal_density_diffrn      2.504
+_symmetry_space_group_name_H-M 'P b m n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,-z'
+  '1/2-x,1/2-y,z'
+  'x,-y,z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cu1   0.00000   0.00000   0.00000
+O1   0.00000   0.25000   0.00000
+Cl1   0.25000   0.00000   0.37000

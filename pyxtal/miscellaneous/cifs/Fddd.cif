@@ -1,0 +1,67 @@
+data_global
+_chemical_name_mineral 'Plutonium-gamma'
+loop_
+_publ_author_name
+'Wyckoff R W G'
+_journal_name_full 'Crystal Structures'
+_journal_volume 1 
+_journal_year 1963
+_journal_page_first 7
+_journal_page_last 83
+_publ_section_title
+;
+ Second edition. Interscience Publishers, New York, New York
+ Sample at T = 508 K
+;
+_database_code_amcsd 0011266
+_chemical_formula_sum 'Pu'
+_chemical_formula_sum ''
+_cell_length_a 3.1587
+_cell_length_b 5.7682
+_cell_length_c 10.162
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 185.152
+_exptl_crystal_density_diffrn     17.507
+_symmetry_space_group_name_H-M 'F d d d'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,y,1/2+z'
+  '1/2+x,1/2+y,z'
+  '3/4+x,1/4-y,3/4+z'
+  '3/4+x,3/4-y,1/4+z'
+  '1/4+x,1/4-y,1/4+z'
+  '1/4+x,3/4-y,3/4+z'
+  '-x,y,-z'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,y,1/2-z'
+  '1/2-x,1/2+y,-z'
+  '1/4-x,3/4+y,3/4+z'
+  '1/4-x,1/4+y,1/4+z'
+  '3/4-x,3/4+y,1/4+z'
+  '3/4-x,1/4+y,3/4+z'
+  'x,-y,-z'
+  'x,1/2-y,1/2-z'
+  '1/2+x,-y,1/2-z'
+  '1/2+x,1/2-y,-z'
+  '3/4+x,3/4+y,1/4-z'
+  '3/4+x,1/4+y,3/4-z'
+  '1/4+x,3/4+y,3/4-z'
+  '1/4+x,1/4+y,1/4-z'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+  '1/2-x,-y,1/2+z'
+  '1/2-x,1/2-y,z'
+  '1/4-x,1/4-y,1/4-z'
+  '1/4-x,3/4-y,3/4-z'
+  '3/4-x,1/4-y,3/4-z'
+  '3/4-x,3/4-y,1/4-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pu   0.00000   0.00000   0.00000

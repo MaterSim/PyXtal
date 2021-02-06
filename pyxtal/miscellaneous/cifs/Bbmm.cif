@@ -1,0 +1,52 @@
+data_global
+_chemical_name_mineral 'Lepidocrocite'
+loop_
+_publ_author_name
+'Wyckoff R W G'
+_journal_name_full 'Crystal Structures'
+_journal_volume 1 
+_journal_year 1963
+_journal_page_first 290
+_journal_page_last 295
+_publ_section_title
+;
+ Second edition. Interscience Publishers, New York, New York
+;
+_database_code_amcsd 0011833
+_chemical_formula_sum 'Fe O2 H'
+_chemical_formula_sum ''
+_cell_length_a 12.4
+_cell_length_b 3.87
+_cell_length_c 3.06
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 146.843
+_exptl_crystal_density_diffrn      4.019
+_symmetry_space_group_name_H-M 'B b m m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,y,1/2+z'
+  '-x,1/2+y,z'
+  '1/2-x,1/2+y,1/2+z'
+  'x,1/2-y,-z'
+  '1/2+x,1/2-y,1/2-z'
+  'x,y,-z'
+  '1/2+x,y,1/2-z'
+  '-x,-y,z'
+  '1/2-x,-y,1/2+z'
+  'x,1/2-y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,1/2+y,-z'
+  '1/2-x,1/2+y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe  -0.17800   0.25000   0.00000
+O   0.21000   0.25000   0.00000
+O-H   0.42500   0.25000   0.00000

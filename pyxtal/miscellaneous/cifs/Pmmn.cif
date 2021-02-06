@@ -1,0 +1,45 @@
+data_global
+_chemical_name_mineral 'Vulcanite'
+loop_
+_publ_author_name
+'Baranova R V'
+'Pinsker Z G'
+_journal_name_full 'Soviet Physics Crystallography'
+_journal_volume 9 
+_journal_year 1964
+_journal_page_first 83
+_journal_page_last 85
+_publ_section_title
+;
+ Study of the copper-tellurium system in thin films
+;
+_database_code_amcsd 0015547
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Cu Te'
+_chemical_formula_sum ''
+_cell_length_a 3.10
+_cell_length_b 4.02
+_cell_length_c 6.86
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 85.489
+_exptl_crystal_density_diffrn      7.426
+_symmetry_space_group_name_H-M 'P m m n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,-y,z'
+  '1/2-x,1/2+y,-z'
+  '-x,y,z'
+  '1/2+x,1/2-y,-z'
+  '1/2+x,1/2+y,-z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cu   0.00000   0.50000   0.44900
+Te   0.00000   0.00000   0.22300

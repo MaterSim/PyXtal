@@ -1,0 +1,56 @@
+data_global
+_amcsd_formula_title 'Ag Co H6 N6 O8'
+loop_
+_publ_author_name
+'Wells A'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 95 
+_journal_year 1936
+_journal_page_first 74
+_journal_page_last 82
+_publ_section_title
+;
+ The crystal structure of silver diammino-tetranitro-cobaltiate
+ (Ag(Co(NH3)2(NO2)4))
+ _cod_database_code 1010270
+;
+_database_code_amcsd 0017196
+_chemical_formula_sum 'Ag Co N6 O8'
+_chemical_formula_sum ''
+_cell_length_a 6.97
+_cell_length_b 6.97
+_cell_length_c 10.43
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 506.699
+_exptl_crystal_density_diffrn      2.483
+_symmetry_space_group_name_H-M 'P 4/n n c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-y,1/2-x,1/2+z'
+  'y,x,-z'
+  '1/2+y,1/2-x,1/2-z'
+  '-y,x,z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '1/2+y,1/2+x,1/2+z'
+  '-y,-x,-z'
+  '1/2-y,1/2+x,1/2-z'
+  'y,-x,z'
+  '1/2-x,1/2+y,1/2+z'
+  'x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ag1   0.00000   0.00000   0.00000
+Co1   0.50000   0.50000   0.00000
+N1   0.00000   0.00000   0.22000
+N2   0.19500   0.19500   0.00000
+O1   0.31000   0.22000   0.09000

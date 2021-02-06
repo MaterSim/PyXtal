@@ -1,0 +1,46 @@
+data_global
+_amcsd_formula_title 'HCl'
+loop_
+_publ_author_name
+'Sandor E'
+'Farrow R F C'
+_journal_name_full 'Nature'
+_journal_volume 213 
+_journal_year 1967
+_journal_page_first 171
+_journal_page_last 172
+_publ_section_title
+;
+ Crystal structure of solid hydrogen chloride and deuterium chloride
+ Note T = 77.4 K
+;
+_database_code_amcsd 0018512
+_chemical_compound_source 'synthetic, note this is the deuterated structure'
+_chemical_formula_sum 'H Cl'
+_chemical_formula_sum ''
+_cell_length_a 5.053
+_cell_length_b 5.373
+_cell_length_c 5.825
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 158.147
+_exptl_crystal_density_diffrn      1.531
+_symmetry_space_group_name_H-M 'B b 21 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,y,1/2+z'
+  '-x,1/2+y,z'
+  '1/2-x,1/2+y,1/2+z'
+  'x,y,-z'
+  '1/2+x,y,1/2-z'
+  '-x,1/2+y,-z'
+  '1/2-x,1/2+y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+H   0.08100   0.17000   0.00000
+Cl   0.25000   0.00000   0.00000

@@ -1,0 +1,68 @@
+data_global
+_chemical_name_mineral 'Coccinite'
+loop_
+_publ_author_name
+'Schwarzenbach D'
+'Birkedal H'
+'Hostettler M'
+'Fischer P'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 63 
+_journal_year 2007
+_journal_page_first 828
+_journal_page_last 835
+_publ_section_title
+;
+ Neutron diffraction investigation of the temperature dependence of
+ crystal structure and thermal motions of red HgI2
+ Note: T = 10 K, powder neutron data
+;
+_database_code_amcsd 0019547
+_chemical_compound_source 'synthetic, Fluka 83379'
+_chemical_formula_sum 'Hg I2'
+_chemical_formula_sum ''
+_cell_length_a 4.358
+_cell_length_b 4.358
+_cell_length_c 12.300
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 233.604
+_exptl_crystal_density_diffrn      6.460
+_symmetry_space_group_name_H-M 'P 42/n m c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-y,1/2-x,1/2+z'
+  '1/2+y,1/2+x,1/2-z'
+  '1/2+y,-x,1/2-z'
+  '1/2-y,x,1/2+z'
+  'x,1/2-y,z'
+  '-x,1/2+y,-z'
+  '1/2+x,1/2+y,-z'
+  '1/2-x,1/2-y,z'
+  'y,x,1/2+z'
+  '-y,-x,1/2-z'
+  '-y,1/2+x,1/2-z'
+  'y,1/2-x,1/2+z'
+  '1/2-x,y,z'
+  '1/2+x,-y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Hg   0.25000   0.75000   0.25000   0.00130
+I   0.25000   0.25000   0.39150   0.00110
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Hg 0.00130 0.00130 0.00110 0.00000 0.00000 0.00000
+I 0.00240 0.00010 0.00080 0.00000 0.00000 0.00000

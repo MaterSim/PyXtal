@@ -1,0 +1,47 @@
+data_global
+_chemical_name_mineral 'Brucite'
+loop_
+_publ_author_name
+'Mookherjee M'
+'Stixrude L'
+_journal_name_full 'American Mineralogist'
+_journal_volume 91 
+_journal_year 2006
+_journal_page_first 127
+_journal_page_last 134
+_publ_section_title
+;
+ High-pressure proton disorder in brucite
+ Sample: P = .3 GPa
+ Note: cell adjusted to match Figure 2
+;
+_database_code_amcsd 0003999
+_chemical_compound_source 'hypothetical structure calculated with DFT'
+_chemical_formula_sum 'Mg O2 H2'
+_chemical_formula_sum ''
+_cell_length_a 5.5407
+_cell_length_b 5.5407
+_cell_length_c 4.8435
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 128.771
+_exptl_crystal_density_diffrn      2.256
+_symmetry_space_group_name_H-M 'P -3'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'y,-x+y,-z'
+  '-x+y,-x,z'
+  '-x,-y,-z'
+  '-y,x-y,z'
+  'x-y,x,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mg1   0.00000   0.00000   0.00000
+Mg2   0.33333   0.66667   0.01090
+O   0.33210   0.33460   0.22000
+H   0.31650   0.34930   0.42200

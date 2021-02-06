@@ -1,0 +1,61 @@
+data_global
+_chemical_name_mineral 'Eskebornite'
+loop_
+_publ_author_name
+'Delgado J M'
+'Diaz de Delgado G'
+'Quintero M'
+'Woolley J C'
+_journal_name_full 'Materials Research Bulletin'
+_journal_volume 27 
+_journal_year 1992
+_journal_page_first 367
+_journal_page_last 373
+_publ_section_title
+;
+ The crystal structure of copper iron selenide, CuFeSe2
+;
+_database_code_amcsd 0014365
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Cu Fe Se2'
+_chemical_formula_sum ''
+_cell_length_a 5.530
+_cell_length_b 5.530
+_cell_length_c 11.049
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 337.888
+_exptl_crystal_density_diffrn      5.451
+_symmetry_space_group_name_H-M 'P -4 2 c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-y,-x,1/2+z'
+  'y,-x,-z'
+  '-x,y,1/2-z'
+  '-x,-y,z'
+  'y,x,1/2+z'
+  '-y,x,-z'
+  'x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cu1   0.00000   0.00000   0.00000
+Cu2   0.00000   0.00000   0.25000
+Fe   0.00000   0.50000   0.00010
+Se   0.24870   0.25970   0.12540
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Cu1 0.00330 0.00330 0.00530 0.00000 0.00000 0.00000
+Cu2 0.03260 0.01320 0.01390 0.00000 0.00000 0.00000
+Fe 0.01180 0.00440 0.01460 -0.00460 0.00000 0.00000
+Se 0.00140 0.00850 0.00880 0.00000 0.00170 0.00080

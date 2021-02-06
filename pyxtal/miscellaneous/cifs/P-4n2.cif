@@ -1,0 +1,45 @@
+data_global
+_amcsd_formula_title 'O6 Sb2 Zn'
+loop_
+_publ_author_name
+'Clark G'
+'Reynolds D'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 98 
+_journal_year 1938
+_journal_page_first 185
+_journal_page_last 190
+_publ_section_title
+;
+ The crystal structure of zinc meta-antimonate Zn (Sb O3)2
+ _cod_database_code 1010617
+;
+_database_code_amcsd 0017499
+_chemical_formula_sum 'Zn Sb2'
+_chemical_formula_sum ''
+_cell_length_a 6.585
+_cell_length_b 6.585
+_cell_length_c 6.585
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 285.540
+_exptl_crystal_density_diffrn      3.593
+_symmetry_space_group_name_H-M 'P -4 n 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+y,1/2+x,1/2-z'
+  'y,-x,-z'
+  '1/2+x,1/2-y,1/2+z'
+  '-x,-y,z'
+  '1/2-y,1/2-x,1/2-z'
+  '-y,x,-z'
+  '1/2-x,1/2+y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Zn1   0.00000   0.00000   0.00000
+Sb1   0.34000   0.16000   0.25000

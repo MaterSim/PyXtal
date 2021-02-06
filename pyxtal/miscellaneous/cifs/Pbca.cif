@@ -1,0 +1,55 @@
+data_global
+_chemical_name_mineral 'Pararammelsbergite'
+loop_
+_publ_author_name
+'Fleet M E'
+_journal_name_full 'American Mineralogist'
+_journal_volume 57 
+_journal_year 1972
+_journal_page_first 1
+_journal_page_last 9
+_publ_section_title
+;
+ The crystal structure of pararammelsbergite (NiAs2)
+;
+_database_code_amcsd 0000267
+_chemical_formula_sum 'Ni As2'
+_chemical_formula_sum ''
+_cell_length_a 5.753
+_cell_length_b 5.799
+_cell_length_c 11.407
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 380.556
+_exptl_crystal_density_diffrn      7.279
+_symmetry_space_group_name_H-M 'P b c a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2-y,1/2+z'
+  '-x,1/2+y,1/2-z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,-z'
+  '1/2+x,y,1/2-z'
+  '1/2-x,-y,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ni   0.99700   0.17550   0.37170
+As1   0.11960   0.05470   0.18090
+As2   0.36640   0.30840   0.43080
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ni 0.00494 0.00101 0.00152 0.00000 0.00000 0.00000
+As1 0.00583 0.00076 0.00228 0.00000 0.00000 0.00000
+As2 0.00709 0.00127 0.00266 0.00000 0.00000 0.00000

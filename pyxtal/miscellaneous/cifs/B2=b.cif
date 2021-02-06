@@ -1,0 +1,52 @@
+data_global
+_amcsd_formula_title 'O5 Si Y2'
+loop_
+_publ_author_name
+'Michel C'
+'Buisson G'
+'Bertaut E'
+_journal_name_full 'Comptes Rendus Hebdomadaires des Seances de l'Academie des Sciences'
+_journal_volume 264 
+_journal_year 1967
+_journal_page_first 397
+_journal_page_last 399
+_publ_section_title
+;
+ Structure de Y2 Si O5
+ _cod_database_code 1001838
+;
+_database_code_amcsd 0012264
+_chemical_formula_sum 'Y2 Si O5'
+_chemical_formula_sum ''
+_cell_length_a 14.59
+_cell_length_b 10.52
+_cell_length_c 6.82
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 122.25
+_cell_volume 885.291
+_exptl_crystal_density_diffrn      4.290
+_symmetry_space_group_name_H-M 'B 1 1 2/b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,y,1/2+z'
+  '-x,1/2-y,z'
+  '1/2-x,1/2-y,1/2+z'
+  'x,1/2+y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Y1   0.53700  -0.03100   0.24100
+Y2   0.35700  -0.33500   0.88000
+Si1   0.31600  -0.30400   0.41400
+O1   0.37400  -0.33400   0.21300
+O2   0.40700  -0.15600   0.49200
+O3   0.20400  -0.32500   0.37200
+O4   0.31200  -0.40400   0.59400
+O5   0.51900  -0.10600   0.91500

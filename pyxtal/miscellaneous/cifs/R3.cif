@@ -1,0 +1,49 @@
+data_global
+_amcsd_formula_title 'H12 Mg O9 S'
+loop_
+_publ_author_name
+'Flack H'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 29 
+_journal_year 1973
+_journal_page_first 656
+_journal_page_last 658
+_publ_section_title
+;
+ Etude de la structure cristalline du sulfite de magnesium hexahydrate,
+ Mg S O3 (H2 O)6
+ _cod_database_code 1100103
+;
+_database_code_amcsd 0018267
+_chemical_formula_sum 'Mg S O9'
+_chemical_formula_sum ''
+_cell_length_a 8.830
+_cell_length_b 8.830
+_cell_length_c 9.075
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 612.772
+_exptl_crystal_density_diffrn      1.629
+_symmetry_space_group_name_H-M 'R 3'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '2/3+x,1/3+y,1/3+z'
+  '1/3+x,2/3+y,2/3+z'
+  '-y,x-y,z'
+  '2/3-y,1/3+x-y,1/3+z'
+  '1/3-y,2/3+x-y,2/3+z'
+  '-x+y,-x,z'
+  '2/3-x+y,1/3-x,1/3+z'
+  '1/3-x+y,2/3-x,2/3+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mg1   0.00000   0.00000   0.00000
+S1   0.00000   0.00000   0.50010
+O1   0.12710   0.17750   0.43030
+O2  -0.19510  -0.19750  -0.12490
+O3   0.18450   0.19310   0.13920

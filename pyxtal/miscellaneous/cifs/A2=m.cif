@@ -1,0 +1,51 @@
+data_global
+_amcsd_formula_title 'O Ti'
+loop_
+_publ_author_name
+'Watanabe D'
+'Castles J'
+'Jostsons A'
+'Malin A'
+_journal_name_full 'Acta Crystallographica'
+_journal_volume 23 
+_journal_year 1967
+_journal_page_first 307
+_journal_page_last 313
+_publ_section_title
+;
+ The ordered structure of Ti O
+ _cod_database_code 1100042
+;
+_database_code_amcsd 0018233
+_chemical_formula_sum 'Ti5 O5'
+_chemical_formula_sum ''
+_cell_length_a 5.855
+_cell_length_b 9.340
+_cell_length_c 4.142
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 107.53
+_cell_volume 215.989
+_exptl_crystal_density_diffrn      4.911
+_symmetry_space_group_name_H-M 'A 1 1 2/m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  'x,y,-z'
+  'x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+  '-x,-y,-z'
+  '-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ti1   0.50000   0.00000   0.00000
+Ti2   0.16400   0.33600   0.00000
+Ti3   0.66660   0.34000   0.00000
+O1   0.32400   0.18100   0.00000
+O2   0.81900   0.16500   0.00000
+O3   0.00000   0.50000   0.00000

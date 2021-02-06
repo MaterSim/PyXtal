@@ -1,0 +1,73 @@
+data_global
+_chemical_name_mineral 'Moeloite'
+loop_
+_publ_author_name
+'Orlandi P'
+'Meerschaut A'
+'Palvadeau P'
+'Merlino S'
+_journal_name_full 'European Journal of Mineralogy'
+_journal_volume 14 
+_journal_year 2002
+_journal_page_first 599
+_journal_page_last 606
+_publ_section_title
+;
+ Lead-antimony sulfosalts from Tuscany (Italy). V. Definition and crystal
+ structure of moeloite, Pb6Sb6S14(S3), a new mineral from the Ceragiola
+ marble quarry
+;
+_database_code_amcsd 0006941
+_chemical_compound_source 'Tuscany, Italy'
+_chemical_formula_sum 'Pb6 Sb6 S17'
+_chemical_formula_sum ''
+_cell_length_a 15.328
+_cell_length_b 4.0400
+_cell_length_c 23.054
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 1427.622
+_exptl_crystal_density_diffrn      5.860
+_symmetry_space_group_name_H-M 'P 21 2 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,-y,1/2-z'
+  '1/2-x,-y,1/2+z'
+  '-x,y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Pb1   0.08070   0.00000   0.12610   0.02900
+Pb2   0.18200  -0.00120   0.29500   0.02200
+Pb3   0.30280  -0.00100   0.46170   0.02100
+Sb1   0.17510   0.51000   0.60370   0.06300
+Sb2   0.06450   0.51100   0.43040   0.07000
+Sb3  -0.06050   0.54000   0.25630   0.05400
+S1   0.09070   0.49600   0.22200   0.01500
+S2   0.23060  -0.02800   0.66820   0.03100
+S3   0.20650   0.52300   0.38490   0.01500
+S4   0.31220   0.50600   0.55280   0.01500
+S5  -0.04560   0.48900   0.06990   0.01700
+S6   0.12160   0.00600   0.50660   0.03000
+S7   0.01730   0.00900   0.35100   0.02500
+S8  -0.10150  -0.03400   0.18850   0.03200
+S9   0.00000   0.23800   0.00000   0.02300
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Pb1 0.05100 0.00800 0.02800 -0.00100 -0.00300 0.00500
+Pb2 0.03200 0.01100 0.02400 0.00200 0.00100 0.00000
+Pb3 0.02400 0.01000 0.02900 0.00400 -0.00400 0.00100
+Sb1 0.01800 0.13100 0.03900 -0.01700 0.00800 -0.02000
+Sb2 0.01400 0.16800 0.02800 0.01900 0.00100 -0.04200
+Sb3 0.02500 0.07600 0.06100 0.05300 0.01500 0.00900

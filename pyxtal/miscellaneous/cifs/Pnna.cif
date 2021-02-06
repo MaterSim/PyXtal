@@ -1,0 +1,58 @@
+data_global
+_amcsd_formula_title 'SbTaO4'
+loop_
+_publ_author_name
+'Jeitschko W'
+'Sleight A W'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 30 
+_journal_year 1974
+_journal_page_first 2088
+_journal_page_last 2094
+_publ_section_title
+;
+ Alpha stannous tungstate: Properties, crystal structure and relationship to
+ ferroelectric SbTaO4 type compounds
+;
+_database_code_amcsd 0009511
+_chemical_formula_sum 'Sn W O4'
+_chemical_formula_sum ''
+_cell_length_a 5.6270
+_cell_length_b 11.6486
+_cell_length_c 4.9973
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 327.556
+_exptl_crystal_density_diffrn      7.433
+_symmetry_space_group_name_H-M 'P n n a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,1/2-z'
+  '-x,1/2+y,1/2+z'
+  'x,1/2-y,1/2-z'
+  '1/2+x,y,-z'
+  '1/2-x,-y,z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Sn   0.25000   0.00000   0.21960 ?
+W   0.66770   0.25000   0.25000 ?
+O1   0.37650   0.29870   0.99880   0.01127
+O2   0.10190   0.39610   0.60370   0.00811
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Sn 0.01601 0.01141 0.00712 0.00282 0.00000 0.00000
+W 0.00433 0.00516 0.00434 0.00000 -0.00043 0.00000

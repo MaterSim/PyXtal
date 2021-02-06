@@ -1,0 +1,51 @@
+data_global
+_chemical_name_mineral 'Clinobisvanite'
+loop_
+_publ_author_name
+'Sleight A W'
+'Chen H-Y'
+'Ferretti A'
+'Cox D E'
+_journal_name_full 'Materials Research Bulletin'
+_journal_volume 14 
+_journal_year 1979
+_journal_page_first 1571
+_journal_page_last 1581
+_publ_section_title
+;
+ Crystal growth and structure of BiVO4
+ Sample: T = 4.5 K
+;
+_database_code_amcsd 0014279
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Bi V O4'
+_chemical_formula_sum ''
+_cell_length_a 5.2146
+_cell_length_b 5.0842
+_cell_length_c 11.7063
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90.394
+_cell_volume 310.351
+_exptl_crystal_density_diffrn      6.933
+_symmetry_space_group_name_H-M 'I 1 1 2/b'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '-x,1/2-y,z'
+  '1/2-x,-y,1/2+z'
+  'x,1/2+y,-z'
+  '1/2+x,+y,1/2-z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Bi   0.00000   0.25000   0.63630   0.00152
+V   0.00000   0.25000   0.13900   0.00253
+O1   0.15140   0.50980   0.21030   0.00380
+O2   0.26270   0.38060   0.44810   0.00355

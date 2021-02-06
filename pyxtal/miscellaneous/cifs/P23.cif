@@ -1,0 +1,49 @@
+data_global
+_amcsd_formula_title 'I4 Sn'
+loop_
+_publ_author_name
+'Ott H'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 63 
+_journal_year 1926
+_journal_page_first 222
+_journal_page_last 230
+_publ_section_title
+;
+ Die Strukturen von Mn O, Mn S, Ag F, Ni S, Sn I4, Sr Cl2, Ba F2,
+ Praezisionsmessungen einiger Alkalihalogenide.
+ _cod_database_code 1010043
+;
+_database_code_amcsd 0016979
+_chemical_formula_sum 'Sn I4'
+_chemical_formula_sum ''
+_cell_length_a 6.12
+_cell_length_b 6.12
+_cell_length_c 6.12
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 229.221
+_exptl_crystal_density_diffrn      4.537
+_symmetry_space_group_name_H-M 'P 2 3'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-z,-x,y'
+  '-z,x,-y'
+  'z,-x,-y'
+  'z,x,y'
+  'y,-z,-x'
+  '-y,-z,x'
+  '-y,z,-x'
+  'y,z,x'
+  '-x,y,-z'
+  'x,-y,-z'
+  '-x,-y,z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Sn1   0.00000   0.00000   0.00000
+I1   0.25000   0.25000   0.25000

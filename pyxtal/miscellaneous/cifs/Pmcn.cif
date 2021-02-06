@@ -1,0 +1,57 @@
+data_global
+_chemical_name_mineral 'Aragonite'
+loop_
+_publ_author_name
+'de Villiers J P R'
+_journal_name_full 'American Mineralogist'
+_journal_volume 56 
+_journal_year 1971
+_journal_page_first 758
+_journal_page_last 767
+_publ_section_title
+;
+ Crystal structures of aragonite, strontianite, and witherite
+;
+_database_code_amcsd 0000233
+_chemical_formula_sum 'Ca C O3'
+_chemical_formula_sum ''
+_cell_length_a 4.9614
+_cell_length_b 7.9671
+_cell_length_c 5.7404
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 226.906
+_exptl_crystal_density_diffrn      2.930
+_symmetry_space_group_name_H-M 'P m c n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-x,y,z'
+  '1/2+x,-y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '1/2-x,1/2-y,1/2+z'
+  'x,1/2-y,1/2+z'
+  '-x,1/2+y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ca   0.25000   0.41500   0.75970
+C   0.25000   0.76220  -0.08620
+O1   0.25000   0.92250  -0.09620
+O2   0.47360   0.68100  -0.08620
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Ca 0.00773 0.00675 0.01052 0.00000 0.00000 0.00023
+C 0.00811 0.00868 0.00417 0.00000 0.00000 -0.00139
+O1 0.01521 0.00900 0.01436 0.00000 0.00000 -0.00255
+O2 0.00661 0.01351 0.01152 0.00160 -0.00014 -0.00695

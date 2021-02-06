@@ -1,0 +1,53 @@
+data_global
+_chemical_name_mineral 'Modderite'
+loop_
+_publ_author_name
+'Lyman P S'
+'Prewitt C T'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 40 
+_journal_year 1984
+_journal_page_first 14
+_journal_page_last 20
+_publ_section_title
+;
+ Room- and high-pressure crystal chemistry of CoAs and FeAs
+ Note: anisoB's taken from ICSD
+ Sample: Pna2_1 refinement, P = .0001 GPa
+;
+_database_code_amcsd 0009792
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Co As'
+_chemical_formula_sum ''
+_cell_length_a 5.2857
+_cell_length_b 5.8675
+_cell_length_c 3.4883
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 108.186
+_exptl_crystal_density_diffrn      8.218
+_symmetry_space_group_name_H-M 'P n a 21'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2-y,z'
+  '1/2-x,1/2+y,1/2+z'
+  '-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Co   0.00200   0.20030   0.25000
+As   0.19960   0.58670   0.25060
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Co 0.00410 0.00890 0.00425 0.00016 -0.00374 0.00000
+As 0.00481 0.00785 0.00197 0.00047 0.00037 0.00000

@@ -1,0 +1,58 @@
+data_global
+_amcsd_formula_title 'V2Sn2Ga'
+loop_
+_publ_author_name
+'Ye J'
+'Horiuchi H'
+'Shishido T'
+'Fukuda T'
+_journal_name_full 'Acta Crystallographica, Section C'
+_journal_volume 46 
+_journal_year 1990
+_journal_page_first 1195
+_journal_page_last 1197
+_publ_section_title
+;
+ Structure of V2Sn2Ga
+;
+_database_code_amcsd 0010152
+_chemical_formula_sum 'V2 Ga Sn2'
+_chemical_formula_sum ''
+_cell_length_a 6.7191
+_cell_length_b 18.798
+_cell_length_c 5.603
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 707.691
+_exptl_crystal_density_diffrn      7.678
+_symmetry_space_group_name_H-M 'A c a m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,1/2-y,z'
+  '1/2+x,-y,1/2+z'
+  '1/2-x,1/2+y,-z'
+  '1/2-x,+y,1/2-z'
+  'x,y,-z'
+  'x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,z'
+  '1/2-x,+y,1/2+z'
+  '1/2+x,1/2-y,-z'
+  '1/2+x,-y,1/2-z'
+  '-x,-y,-z'
+  '-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+V1   0.46840   0.07569   0.50000   0.00874
+V2   0.75000   0.15949   0.25000   0.00811
+Ga   0.75000   0.01814   0.25000   0.01039
+Sn1   0.42472   0.11137   0.00000   0.00937
+Sn2   0.42048   0.22207   0.50000   0.00899

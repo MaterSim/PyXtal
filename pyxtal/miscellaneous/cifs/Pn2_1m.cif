@@ -1,0 +1,53 @@
+data_global
+_chemical_name_mineral 'Costibite'
+loop_
+_publ_author_name
+'Rowland J F'
+'Gabe E J'
+'Hall S R'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 13 
+_journal_year 1975
+_journal_page_first 188
+_journal_page_last 196
+_publ_section_title
+;
+ The crystal structures of costibite (CoSbS) and paracostibite(CoSbS)
+;
+_database_code_amcsd 0005114
+_chemical_formula_sum 'Co Sb S'
+_chemical_formula_sum ''
+_cell_length_a 4.873
+_cell_length_b 5.852
+_cell_length_c 3.608
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 102.889
+_exptl_crystal_density_diffrn      6.867
+_symmetry_space_group_name_H-M 'P n 21 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x,1/2+y,1/2+z'
+  'x,y,-z'
+  '-x,1/2+y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Co   0.28060   0.00000   0.00000
+Sb   0.04120   0.37400   0.00000
+S   0.45400   0.63370   0.00000
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Co 0.00690 0.00540 0.00450 -0.00030 0.00000 0.00000
+Sb 0.00680 0.00540 0.00450 -0.00050 0.00000 0.00000
+S 0.00680 0.00490 0.00350 -0.00030 0.00000 0.00000

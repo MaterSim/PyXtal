@@ -1,0 +1,76 @@
+data_global
+_chemical_name_mineral 'Chiolite'
+loop_
+_publ_author_name
+'Jacoboni C'
+'Leble A'
+'Rousseau J J'
+_journal_name_full 'Journal of Solid State Chemistry'
+_journal_volume 36 
+_journal_year 1981
+_journal_page_first 297
+_journal_page_last 304
+_publ_section_title
+;
+ Determination precise de la structure de la chiolite Na5Al3F14
+ et etude par R.P.E. de Na5Al3F14:Cr3+
+;
+_database_code_amcsd 0013413
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Na5 Al3 F14'
+_chemical_formula_sum ''
+_cell_length_a 7.0138
+_cell_length_b 7.0138
+_cell_length_c 10.402
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 511.710
+_exptl_crystal_density_diffrn      2.998
+_symmetry_space_group_name_H-M 'P 4/m n c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-y,1/2-x,1/2+z'
+  '1/2+y,1/2+x,1/2-z'
+  'y,-x,-z'
+  '-y,x,z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,1/2-z'
+  'x,y,-z'
+  '-x,-y,z'
+  '1/2+y,1/2+x,1/2+z'
+  '1/2-y,1/2-x,1/2-z'
+  '-y,x,-z'
+  'y,-x,z'
+  '1/2-x,1/2+y,1/2+z'
+  '1/2+x,1/2-y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Na1   0.00000   0.00000   0.50000   0.02780
+Na2   0.27680   0.77680   0.25000   0.02039
+Al1   0.00000   0.00000   0.00000   0.00686
+Al2   0.00000   0.50000   0.00000   0.00712
+F1   0.00000   0.00000   0.17110   0.02229
+F2   0.06420   0.24770   0.00000   0.01873
+F3   0.17940   0.53640   0.11980   0.01755
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Na1 0.02410 0.02410 0.03530 0.00000 0.00000 0.00000
+Na2 0.02103 0.02103 0.01913 -0.00805 0.00617 -0.00617
+Al1 0.00541 0.00541 0.00981 0.00000 0.00000 0.00000
+Al2 0.00815 0.00493 0.00839 -0.00040 0.00000 0.00000
+F1 0.02794 0.02794 0.01113 0.00000 0.00000 0.00000
+F2 0.01269 0.00638 0.03711 -0.00035 0.00000 0.00000
+F3 0.02068 0.01488 0.01716 -0.00282 -0.00872 0.00018

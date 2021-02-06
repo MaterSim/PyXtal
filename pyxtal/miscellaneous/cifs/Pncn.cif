@@ -1,0 +1,48 @@
+data_global
+_amcsd_formula_title 'LiSbO3'
+loop_
+_publ_author_name
+'Fourquet J'
+'Gillet P'
+'Le Bail A'
+_journal_name_full 'Materials Research Bulletin'
+_journal_volume 24 
+_journal_year 1989
+_journal_page_first 1207
+_journal_page_last 1214
+_publ_section_title
+;
+ Li/H topotactic exchange on LiSbO3: The series Li(1-x)HxSbO3 (0<=x<=1).
+ _cod_database_code 1000141
+;
+_database_code_amcsd 0014342
+_chemical_formula_sum 'Li Sb O3'
+_chemical_formula_sum ''
+_cell_length_a 4.9005
+_cell_length_b 8.4892
+_cell_length_c 5.1816
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 215.561
+_exptl_crystal_density_diffrn      5.444
+_symmetry_space_group_name_H-M 'P n c n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-x,1/2+y,1/2+z'
+  '1/2+x,1/2-y,1/2-z'
+  '1/2+x,1/2+y,-z'
+  '1/2-x,1/2-y,z'
+  'x,-y,1/2+z'
+  '-x,y,1/2-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Li   0.00000   0.69900   0.25000
+Sb   0.00000   0.09550   0.25000
+O1   0.25000   0.25000   0.40900
+O2   0.20600   0.08500   0.92400

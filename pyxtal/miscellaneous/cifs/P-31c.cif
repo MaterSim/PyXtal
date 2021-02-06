@@ -1,0 +1,53 @@
+data_global
+_chemical_name_mineral 'Witherite'
+loop_
+_publ_author_name
+'Holl C M'
+'Smyth J R'
+'Laustsen H M S'
+'Jacobsen S D'
+'Downs R T'
+_journal_name_full 'Physics and Chemistry of Minerals'
+_journal_volume 27 
+_journal_year 2000
+_journal_page_first 467
+_journal_page_last 473
+_publ_section_title
+;
+ Compression of witherite to 8 GPa and the crystal structure of BaCO3 II
+ Sample: P = 7.2 GPa
+;
+_database_code_amcsd 0008429
+_chemical_formula_sum 'Ba C O3'
+_chemical_formula_sum ''
+_cell_length_a 5.258
+_cell_length_b 5.258
+_cell_length_c 5.64
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 135.036
+_exptl_crystal_density_diffrn      4.853
+_symmetry_space_group_name_H-M 'P -3 1 c'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x-y,-y,1/2+z'
+  'y,-x+y,-z'
+  '-y,-x,1/2-z'
+  '-x+y,-x,z'
+  '-x,-x+y,1/2+z'
+  '-x,-y,-z'
+  '-x+y,y,1/2-z'
+  '-y,x-y,z'
+  'y,x,1/2+z'
+  'x-y,x,-z'
+  'x,x-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ba   0.66667   0.33333   0.25000
+C   0.00000   0.00000   0.25000
+O   0.14000   0.86000   0.25000

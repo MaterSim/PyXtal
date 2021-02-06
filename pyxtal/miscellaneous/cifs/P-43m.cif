@@ -1,0 +1,63 @@
+data_global
+_chemical_name_mineral 'Roaldite'
+loop_
+_publ_author_name
+'Bayliss P'
+_journal_name_full 'The Canadian Mineralogist'
+_journal_volume 28 
+_journal_year 1990
+_journal_page_first 751
+_journal_page_last 755
+_publ_section_title
+;
+ Revised unit cell dimensions, space group,
+ and chemical formula of some metallic minerals
+ Note: Fe and N positions switched to match formula
+ Note: cell edge taken from Handbook of Mineralogy
+;
+_database_code_amcsd 0005250
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Fe4 N'
+_chemical_formula_sum ''
+_cell_length_a 3.79
+_cell_length_b 3.79
+_cell_length_c 3.79
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 54.440
+_exptl_crystal_density_diffrn      7.241
+_symmetry_space_group_name_H-M 'P -4 3 m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-z,x,-y'
+  '-y,z,-x'
+  '-x,y,-z'
+  'x,-z,-y'
+  'z,-y,-x'
+  'y,-x,-z'
+  'x,z,y'
+  'z,y,x'
+  'y,x,z'
+  '-z,-x,y'
+  '-y,-z,x'
+  '-x,-y,z'
+  'z,-x,-y'
+  'y,-z,-x'
+  'x,-y,-z'
+  '-x,z,-y'
+  '-z,y,-x'
+  '-y,x,-z'
+  '-x,-z,y'
+  '-z,-y,x'
+  '-y,-x,z'
+  'z,x,y'
+  'y,z,x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe   0.26500   0.26500   0.26500
+N   0.00000   0.00000   0.00000

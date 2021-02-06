@@ -1,0 +1,52 @@
+data_global
+_amcsd_formula_title 'Ge Hf O4'
+loop_
+_publ_author_name
+'Durif A'
+_journal_name_full 'Acta Crystallographica'
+_journal_volume 14 
+_journal_year 1961
+_journal_page_first 312
+_journal_page_last 312
+_publ_section_title
+;
+ Structure du germanate d'hafnium
+ _cod_database_code 1007090
+;
+_database_code_amcsd 0009248
+_chemical_formula_sum 'Ge Hf'
+_chemical_formula_sum ''
+_cell_length_a 4.849
+_cell_length_b 4.849
+_cell_length_c 10.501
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 246.908
+_exptl_crystal_density_diffrn      6.755
+_symmetry_space_group_name_H-M 'I 41/a'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  '1/2+y,1/2-x,1/2-z'
+  '+y,-x,-z'
+  '-y,1/2+x,1/4+z'
+  '1/2-y,+x,3/4+z'
+  '1/2+x,y,3/4-z'
+  '+x,1/2+y,1/4-z'
+  '1/2-x,1/2-y,1/2+z'
+  '-x,-y,+z'
+  '-y,x,-z'
+  '1/2-y,1/2+x,1/2-z'
+  '1/2+y,-x,3/4+z'
+  '+y,1/2-x,1/4+z'
+  '-x,1/2-y,1/4-z'
+  '1/2-x,-y,3/4-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ge1   0.00000   0.00000   0.00000
+Hf1   0.00000   0.00000   0.50000

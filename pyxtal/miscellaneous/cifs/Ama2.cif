@@ -1,0 +1,49 @@
+data_global
+_chemical_name_mineral 'Vaterite'
+loop_
+_publ_author_name
+'Demichelis R'
+'Raiteri P'
+'Gale J D'
+'Dovesi R'
+_journal_name_full 'CrystEngComm'
+_journal_volume 14 
+_journal_year 2012
+_journal_page_first 44
+_journal_page_last 47
+_publ_section_title
+;
+ A new structural model for disorder in vaterite from first-principles calculations
+;
+_database_code_amcsd 0019871
+_chemical_compound_source 'theoretical'
+_chemical_formula_sum 'Ca C O3'
+_chemical_formula_sum ''
+_cell_length_a 8.4905
+_cell_length_b 6.3905
+_cell_length_c 4.5026
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 244.305
+_exptl_crystal_density_diffrn      2.721
+_symmetry_space_group_name_H-M 'A m a 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,-y,z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,y,z'
+  '1/2-x,1/2+y,1/2+z'
+  '-x,-y,z'
+  '-x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ca   0.50000   0.00000   0.50868
+C   0.25000   0.14432   0.94400
+O1   0.38423   0.16589   0.07718
+O2   0.25000   0.10559   0.66336

@@ -1,0 +1,55 @@
+data_global
+_amcsd_formula_title 'Ge S2'
+loop_
+_publ_author_name
+'Zachariasen W'
+_journal_name_full 'Journal of Chemical Physics'
+_journal_volume 4 
+_journal_year 1936
+_journal_page_first 618
+_journal_page_last 619
+_publ_section_title
+;
+ The Crystal Structure of Germanium Disulphide
+ _cod_database_code 1010520
+;
+_database_code_amcsd 0017431
+_chemical_formula_sum 'Ge S2'
+_chemical_formula_sum ''
+_cell_length_a 11.66
+_cell_length_b 22.34
+_cell_length_c 6.86
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 1786.923
+_exptl_crystal_density_diffrn      3.050
+_symmetry_space_group_name_H-M 'F d d 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,y,1/2+z'
+  '1/2+x,1/2+y,z'
+  '1/4+x,1/4-y,1/4+z'
+  '1/4+x,3/4-y,3/4+z'
+  '3/4+x,1/4-y,3/4+z'
+  '3/4+x,3/4-y,1/4+z'
+  '1/4-x,1/4+y,1/4+z'
+  '1/4-x,3/4+y,3/4+z'
+  '3/4-x,1/4+y,3/4+z'
+  '3/4-x,3/4+y,1/4+z'
+  '-x,1/2-y,1/2+z'
+  '-x,-y,+z'
+  '1/2-x,1/2-y,+z'
+  '1/2-x,-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ge1   0.00000   0.00000   0.00000
+Ge2   0.12500   0.13900   0.00000
+S1   0.02200   0.08000   0.18300
+S2   0.15200  -0.01400  -0.18300
+S3   0.06200   0.12500  -0.27800

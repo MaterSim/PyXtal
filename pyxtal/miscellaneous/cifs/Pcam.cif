@@ -1,0 +1,49 @@
+data_global
+_amcsd_formula_title 'B Na O5 U'
+loop_
+_publ_author_name
+'Gasperin M'
+_journal_name_full 'Acta Crystallographica, Section C'
+_journal_volume 44 
+_journal_year 1988
+_journal_page_first 415
+_journal_page_last 416
+_publ_section_title
+;
+ Synthese et structure du borouranate de sodium, Na B U O5.
+ _cod_database_code 1001359
+;
+_database_code_amcsd 0010067
+_chemical_formula_sum 'U Na B O5'
+_chemical_formula_sum ''
+_cell_length_a 10.712
+_cell_length_b 5.780
+_cell_length_c 6.862
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 424.863
+_exptl_crystal_density_diffrn      5.500
+_symmetry_space_group_name_H-M 'P c a m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2-x,y,1/2+z'
+  '1/2+x,-y,1/2-z'
+  '1/2+x,-y,z'
+  '1/2-x,y,-z'
+  'x,y,1/2-z'
+  '-x,-y,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+U1   0.06740   0.09790   0.25000
+Na1   0.25000   0.59990   0.00000
+B1   0.85190   0.79670   0.25000
+O1   0.41230   0.12880   0.41730
+O2   0.66820   0.15280   0.25000
+O3   0.24260   0.31850   0.25000
+O4   0.46490   0.65440   0.25000

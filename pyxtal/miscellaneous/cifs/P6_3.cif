@@ -1,0 +1,60 @@
+data_global
+_chemical_name_mineral 'Kalsilite'
+loop_
+_publ_author_name
+'Cellai D'
+'Gesing T M'
+'Wruck B'
+'Carpenter M A'
+_journal_name_full 'American Mineralogist'
+_journal_volume 84 
+_journal_year 1999
+_journal_page_first 1950
+_journal_page_last 1955
+_publ_section_title
+;
+ X-ray study of the trigonal-hexagonal phase transition in metamorphic kalsilite
+;
+_database_code_amcsd 0002336
+_chemical_formula_sum 'K Al Si O4'
+_chemical_formula_sum ''
+_cell_length_a 5.1627
+_cell_length_b 5.1627
+_cell_length_c 8.706
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 200.957
+_exptl_crystal_density_diffrn      2.614
+_symmetry_space_group_name_H-M 'P 63'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x-y,x,1/2+z'
+  '-y,x-y,z'
+  '-x,-y,1/2+z'
+  '-x+y,-x,z'
+  'y,-x+y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+K   0.00000   0.00000   0.25000
+Al   0.33333   0.66667   0.06100
+Si   0.33333   0.66667   0.44300
+O1   0.33333   0.66667   0.24100
+O2   0.60270   0.01190   0.99700
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+K 0.01740 0.01740 0.01940 0.00870 0.00000 0.00000
+Al 0.00860 0.00860 0.01100 0.00430 0.00000 0.00000
+Si 0.00810 0.00810 0.00700 0.00405 0.00000 0.00000
+O1 0.05200 0.05200 0.00500 0.02600 0.00000 0.00000
+O2 0.01100 0.01200 0.03600 0.00600 0.00300 0.00200

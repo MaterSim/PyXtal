@@ -1,0 +1,63 @@
+data_global
+_amcsd_formula_title 'Ge3 O8 Zn2'
+loop_
+_publ_author_name
+'Joubert J'
+'Durif A'
+_journal_name_full 'Comptes Rendus Hebdomadaires des Seances de l'Academie des Sciences'
+_journal_volume 256 
+_journal_year 1963
+_journal_page_first 4403
+_journal_page_last 4405
+_publ_section_title
+;
+ Preparation de spinelles lacunaires par reaction d'echange a l'etat solide.
+ _cod_database_code 1007256
+;
+_database_code_amcsd 0015937
+_chemical_formula_sum 'Ge3 Zn2 O8'
+_chemical_formula_sum ''
+_cell_length_a 8.213
+_cell_length_b 8.213
+_cell_length_c 8.213
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 553.995
+_exptl_crystal_density_diffrn      5.714
+_symmetry_space_group_name_H-M 'P 43 3 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-z,1/2+x,1/2-y'
+  '-y,1/2+z,1/2-x'
+  '-x,1/2+y,1/2-z'
+  '3/4-x,1/4+z,3/4+y'
+  '3/4-z,1/4+y,3/4+x'
+  '3/4-y,1/4+x,3/4+z'
+  '1/4-x,1/4-z,1/4-y'
+  '1/4-z,1/4-y,1/4-x'
+  '1/4-y,1/4-x,1/4-z'
+  '1/2-z,-x,1/2+y'
+  '1/2-y,-z,1/2+x'
+  '1/2-x,-y,1/2+z'
+  '1/2+z,1/2-x,-y'
+  '1/2+y,1/2-z,-x'
+  '1/2+x,1/2-y,-z'
+  '3/4+x,3/4-z,1/4+y'
+  '3/4+z,3/4-y,1/4+x'
+  '3/4+y,3/4-x,1/4+z'
+  '1/4+x,3/4+z,3/4-y'
+  '1/4+z,3/4+y,3/4-x'
+  '1/4+y,3/4+x,3/4-z'
+  'z,x,y'
+  'y,z,x'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ge1   0.12500   0.36300  -0.11300
+Zn1   0.00800   0.00800   0.00800
+O1   0.13700   0.13700   0.38700
+O2   0.38700   0.38700   0.38700

@@ -1,0 +1,54 @@
+data_global
+_amcsd_formula_title 'S2 Si'
+loop_
+_publ_author_name
+'Buessem W'
+'Fischer H'
+'Gruner E'
+_journal_name_full 'Naturwissenschaften'
+_journal_volume 23 
+_journal_year 1935
+_journal_page_first 740
+_journal_page_last 740
+_publ_section_title
+;
+ Die Struktur des Siliciumdisulfids
+ _cod_database_code 1010409
+;
+_database_code_amcsd 0017334
+_chemical_formula_sum 'Si S2'
+_chemical_formula_sum ''
+_cell_length_a 9.57
+_cell_length_b 5.65
+_cell_length_c 5.54
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 299.551
+_exptl_crystal_density_diffrn      2.045
+_symmetry_space_group_name_H-M 'I b a m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,1/2+z'
+  'x,-y,1/2+z'
+  '1/2+x,1/2-y,+z'
+  '-x,y,1/2-z'
+  '1/2-x,1/2+y,-z'
+  '-x,y,1/2+z'
+  '1/2-x,1/2+y,+z'
+  'x,-y,1/2-z'
+  '1/2+x,1/2-y,-z'
+  'x,y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '-x,-y,z'
+  '1/2-x,1/2-y,1/2+z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,1/2-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Si1   0.00000   0.00000   0.25000
+S1   0.11700   0.21700   0.00000

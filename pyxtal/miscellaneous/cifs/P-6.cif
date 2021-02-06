@@ -1,0 +1,43 @@
+data_global
+_amcsd_formula_title 'Ge I2'
+loop_
+_publ_author_name
+'Powell H'
+'Brewer F'
+_journal_name_full 'Journal of the Chemical Society'
+_journal_volume 1938 
+_journal_year 1938
+_journal_page_first 197
+_journal_page_last 198
+_publ_section_title
+;
+ The Structure of Germanous Iodide
+ _cod_database_code 1010319
+;
+_database_code_amcsd 0017245
+_chemical_formula_sum 'Ge I2'
+_chemical_formula_sum ''
+_cell_length_a 4.13
+_cell_length_b 4.13
+_cell_length_c 6.69
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 98.823
+_exptl_crystal_density_diffrn      5.485
+_symmetry_space_group_name_H-M 'P -6'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-x+y,-x,-z'
+  '-y,x-y,z'
+  'x,y,-z'
+  '-x+y,-x,z'
+  '-y,x-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Ge1   0.00000   0.00000   0.00000
+I1   0.33333   0.66667   0.25000

@@ -1,0 +1,63 @@
+data_global
+_chemical_name_mineral 'Lucabindiite'
+loop_
+_publ_author_name
+'Pertlik F'
+_journal_name_full 'Monatshefte fur Chemie'
+_journal_volume 119 
+_journal_year 1988
+_journal_page_first 451
+_journal_page_last 456
+_publ_section_title
+;
+ The compounds KAs4O6X (X=Cl,Br,I) and NH4As4O6X (X=Br,I):
+ Hydrothermal syntheses and structure determinations
+;
+_database_code_amcsd 0019949
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'K As4 O6 Cl'
+_chemical_formula_sum ''
+_cell_length_a 5.252
+_cell_length_b 5.252
+_cell_length_c 8.880
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 212.126
+_exptl_crystal_density_diffrn      3.681
+_symmetry_space_group_name_H-M 'P 6 2 2'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,x-y,-z'
+  'x-y,x,z'
+  'y,x,-z'
+  '-y,x-y,z'
+  '-x+y,y,-z'
+  '-x,-y,z'
+  '-x,-x+y,-z'
+  '-x+y,-x,z'
+  '-y,-x,-z'
+  'y,-x+y,z'
+  'x-y,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+KM   0.00000   0.00000   0.50000
+As   0.33333   0.66667   0.20533
+O   0.50000   0.00000   0.31360
+ClX   0.00000   0.00000   0.00000
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+KM 0.03540 0.03540 0.03010 0.01770 0.00000 0.00000
+As 0.01500 0.01500 0.01720 0.00750 0.00000 0.00000
+O 0.02970 0.01260 0.02250 0.01110 0.00000 0.00000
+ClX 0.03150 0.03150 0.07740 0.01575 0.00000 0.00000

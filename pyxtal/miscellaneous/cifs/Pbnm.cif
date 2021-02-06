@@ -1,0 +1,46 @@
+data_global
+_chemical_name_mineral 'Montroseite'
+loop_
+_publ_author_name
+'Evans H T'
+'Mrose M E'
+_journal_name_full 'American Mineralogist'
+_journal_volume 40 
+_journal_year 1955
+_journal_page_first 861
+_journal_page_last 875
+_publ_section_title
+;
+ A crystal chemical study of montroseite and paramontroseite.
+;
+_database_code_amcsd 0000073
+_chemical_formula_sum 'V (O2 H)'
+_chemical_formula_sum ''
+_cell_length_a 4.54
+_cell_length_b 9.97
+_cell_length_c 3.03
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 137.149
+_exptl_crystal_density_diffrn      4.066
+_symmetry_space_group_name_H-M 'P b n m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,y,1/2-z'
+  '-x,-y,1/2+z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,1/2-z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+V  -0.05170   0.14550   0.25000   0.00405
+O-H1   0.30100  -0.19700   0.25000   0.00405
+O2  -0.19800  -0.05400   0.25000   0.00405

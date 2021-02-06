@@ -1,0 +1,48 @@
+data_global
+_amcsd_formula_title 'Cl4 Rb2 Zn'
+loop_
+_publ_author_name
+'Hedoux A'
+'Grebille D'
+'Jaud J'
+'Godefroy G'
+_journal_name_full 'Acta Crystallographica, Section B'
+_journal_volume 45 
+_journal_year 1989
+_journal_page_first 370
+_journal_page_last 378
+_publ_section_title
+;
+ Structural study of the incommensurate and lock-in phases of Rb2ZnCl4
+ _cod_database_code 1001389
+;
+_database_code_amcsd 0009830
+_chemical_formula_sum 'Rb2 Zn Cl4'
+_chemical_formula_sum ''
+_cell_length_a 7.230
+_cell_length_b 12.608
+_cell_length_c 9.199
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 838.543
+_exptl_crystal_density_diffrn      2.995
+_symmetry_space_group_name_H-M 'P 21 c n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2-y,1/2+z'
+  '1/2+x,1/2+y,1/2-z'
+  '1/2+x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Rb1   0.25000   0.40670   0.62980
+Rb2   0.25000   0.81960   0.48620
+Zn1   0.25000   0.42170   0.22400
+Cl1   0.25000   0.41890  -0.01750
+Cl2   0.25000   0.58510   0.32040
+Cl3   0.00100   0.34100   0.31390
+Cl4   0.49900   0.34100   0.31390

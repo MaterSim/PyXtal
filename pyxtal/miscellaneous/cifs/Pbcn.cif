@@ -1,0 +1,49 @@
+data_global
+_chemical_name_mineral 'Seifertite'
+loop_
+_publ_author_name
+'Dera P'
+'Prewitt C T'
+'Boctor N Z'
+'Hemley R J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 87 
+_journal_year 2002
+_journal_page_first 1018
+_journal_page_last 1023
+_publ_section_title
+;
+ Characterization of a high-pressure phase of silica from the
+ Martian meteorite Shergotty
+ alpha-PbO2-like
+;
+_database_code_amcsd 0002871
+_chemical_formula_sum 'Si O2'
+_chemical_formula_sum ''
+_cell_length_a 4.097
+_cell_length_b 5.0462
+_cell_length_c 4.4946
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 92.923
+_exptl_crystal_density_diffrn      4.295
+_symmetry_space_group_name_H-M 'P b c n'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,-y,1/2+z'
+  '-x,y,1/2-z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,-z'
+  '1/2+x,1/2+y,1/2-z'
+  '1/2-x,1/2-y,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Si   0.00000   0.15220   0.25000   0.01013
+O   0.73360   0.62450   0.91860   0.00127

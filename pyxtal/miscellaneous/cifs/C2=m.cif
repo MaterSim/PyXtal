@@ -1,0 +1,47 @@
+data_global
+_chemical_name_mineral 'Haggite'
+loop_
+_publ_author_name
+'Evans H T'
+'Mrose M E'
+_journal_name_full 'American Mineralogist'
+_journal_volume 45 
+_journal_year 1960
+_journal_page_first 1144
+_journal_page_last 1166
+_publ_section_title
+;
+ A crystal chemical study of the vanadium oxide minerals, haggite and doloresite
+;
+_database_code_amcsd 0000094
+_chemical_formula_sum 'V2 O5'
+_chemical_formula_sum ''
+_cell_length_a 12.17
+_cell_length_b 2.99
+_cell_length_c 4.83
+_cell_angle_alpha 90
+_cell_angle_beta 98.25
+_cell_angle_gamma 90
+_cell_volume 173.937
+_exptl_crystal_density_diffrn      3.473
+_symmetry_space_group_name_H-M 'C 1 2/m 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  'x,-y,z'
+  '1/2+x,1/2-y,z'
+  '-x,y,-z'
+  '1/2-x,1/2+y,-z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+V   0.13780   0.00000   0.39670   0.05269
+O1   0.00000   0.00000   0.50000   0.07434
+O2   0.60940   0.00000   0.13300   0.06206
+O3   0.30260   0.00000   0.34600   0.06510

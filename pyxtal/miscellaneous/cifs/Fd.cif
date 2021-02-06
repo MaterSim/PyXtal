@@ -1,0 +1,71 @@
+data_global
+_chemical_name_mineral 'Scolecite'
+loop_
+_publ_author_name
+'Stuckenschmidt E'
+'Joswig W'
+'Baur W H'
+'Hofmeister W'
+_journal_name_full 'Physics and Chemistry of Minerals'
+_journal_volume 24 
+_journal_year 1997
+_journal_page_first 403
+_journal_page_last 410
+_publ_section_title
+;
+ Scolecite, Part I: Refinement of high-order data, separation of
+ internal and external vibrational amplitudes from displacement parameters
+;
+_database_code_amcsd 0008025
+_chemical_formula_sum 'Ca Al2 Si3 O13 H6'
+_chemical_formula_sum ''
+_cell_length_a 18.502
+_cell_length_b 18.974
+_cell_length_c 6.525
+_cell_angle_alpha 90
+_cell_angle_beta 90.615
+_cell_angle_gamma 90
+_cell_volume 2290.515
+_exptl_crystal_density_diffrn      2.275
+_symmetry_space_group_name_H-M 'F 1 d 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,y,1/2+z'
+  '1/2+x,1/2+y,z'
+  '1/4+x,1/4-y,1/4+z'
+  '1/4+x,3/4-y,3/4+z'
+  '3/4+x,1/4-y,3/4+z'
+  '3/4+x,3/4-y,1/4+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Ca   0.47393   0.73179   0.36470   0.01099
+Al1   0.53302   0.59168   0.61120   0.00588
+Al10   0.45014   0.41292   0.61564   0.00617
+Si1   0.50000   0.50440   0.00000   0.00603
+Si2   0.64989   0.70685   0.62019   0.00577
+Si20   0.33444   0.29244   0.62550   0.00564
+O1   0.51589   0.57450   0.86835   0.00164
+O10   0.48314   0.43812   0.85594   0.01280
+O2   0.57062   0.67464   0.57552   0.00858
+O20   0.41280   0.32898   0.64013   0.00906
+O3   0.59211   0.52626   0.52419   0.01076
+O30   0.39248   0.47951   0.53072   0.01229
+O4   0.45456   0.60378   0.45885   0.01146
+O40   0.51956   0.40642   0.43755   0.01202
+O5   0.43275   0.51631   0.15256   0.01214
+O50   0.57178   0.48514   0.13908   0.01113
+O6   0.53024   0.70120   0.06250   0.03280
+O60   0.44574   0.79528   0.66290   0.02920
+O7   0.56282   0.82040   0.35830   0.02430
+H61   0.51400   0.66700   0.00600   0.08000
+H62   0.56700   0.72700   0.02000   0.05200
+H601   0.42100   0.77200   0.71400   0.06000
+H602   0.48400   0.80000   0.72800   0.10000
+H71   0.60600   0.81900   0.33200   0.05000
+H72   0.55000   0.86100   0.37800   0.04600

@@ -1,0 +1,56 @@
+data_global
+_chemical_name_mineral 'Massicot'
+loop_
+_publ_author_name
+'Hill R J'
+_journal_name_full 'Acta Crystallographica, Section C'
+_journal_volume 41 
+_journal_year 1985
+_journal_page_first 1281
+_journal_page_last 1284
+_publ_section_title
+;
+ Refinement of the structure of orthorhombic PbO (massicot) by
+ Rietveld analysis of neutron powder diffraction data
+;
+_database_code_amcsd 0010011
+_chemical_compound_source 'synthetic: Merck "pro analyse" (batch number 0093820)'
+_chemical_formula_sum 'Pb O'
+_chemical_formula_sum ''
+_cell_length_a 5.8931
+_cell_length_b 5.4904
+_cell_length_c 4.7528
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 153.779
+_exptl_crystal_density_diffrn      9.641
+_symmetry_space_group_name_H-M 'P b c m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2-y,1/2+z'
+  '-x,1/2+y,1/2-z'
+  '-x,1/2+y,z'
+  'x,1/2-y,-z'
+  'x,y,1/2-z'
+  '-x,-y,1/2+z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Pb   0.22970  -0.01160   0.25000   0.01355
+O  -0.13470   0.09170   0.25000   0.01444
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Pb 0.01513 0.01329 0.01224 -0.00229 0.00000 0.00000
+O 0.01619 0.01665 0.01053 -0.00016 0.00000 0.00000

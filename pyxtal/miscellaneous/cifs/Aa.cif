@@ -1,0 +1,45 @@
+data_global
+_chemical_name_mineral 'Daomanite'
+loop_
+_publ_author_name
+'Ding K'
+'He C'
+'Zheng Q'
+_journal_name_full 'Kexue Tongbao'
+_journal_volume 27 
+_journal_year 1982
+_journal_page_first 62
+_journal_page_last 66
+_publ_section_title
+;
+ Determination of daomanite crystal structure
+;
+_database_code_amcsd 0019982
+_chemical_compound_source 'Tao and Ma districts, Fengning County, Chengde Prefecture, Hebei Province, China'
+_chemical_formula_sum 'Pt Cu As S2'
+_chemical_formula_sum ''
+_cell_length_a 5.852
+_cell_length_b 15.876
+_cell_length_c 3.756
+_cell_angle_alpha 90
+_cell_angle_beta 90.
+_cell_angle_gamma 90
+_cell_volume 348.956
+_exptl_crystal_density_diffrn      7.570
+_symmetry_space_group_name_H-M 'A 1 a 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,1/2+y,1/2+z'
+  '1/2+x,-y,z'
+  '1/2+x,1/2-y,1/2+z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pt   0.25000   0.18000   0.05300
+Cu   0.24900   0.45400   0.05200
+As   0.86700   0.23000   0.05200
+S1   0.65000   0.41600   0.05000
+S2   0.65000   0.11600   0.05000
