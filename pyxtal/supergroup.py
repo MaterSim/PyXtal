@@ -90,17 +90,73 @@ def find_mapping(atom_sites, splitter, max_num=50):
             unique_solutions.append(solution)
     return unique_solutions
 
-def find_match(G, wp, pos, op):
-    pos1, _, d0 = sym.search_matched_min(G, wp, pos)
-    tmp = op.operate(pos1)
-    diff1 = tmp - pos
-    diff1 -= np.round(diff1)
-    diff2 = tmp + pos
-    diff2 -= np.round(diff2)
-    if np.linalg.norm(diff1) < np.linalg.norm(diff2):
-        return tmp
+def search_cloest_wp(G, wp, op, pos):
+    """
+    For a given position, search for the cloest wp which
+    satisfies the desired symmetry relation
+    e.g., for pos (0.1, 0.12, 0.2) and op (x, x, z)
+    the closest match is (0.11, 0.11, 0.2)
+
+    Args:
+        G: space group number or Group object
+        wp: Wyckoff object
+        op: symmetry operation belonging to wp 
+        pos: initial xyz position
+
+    Return:
+        pos1: the position that matchs symmetry operation
+    """
+    #print("=======", G.number, wp.index, wp.letter, op.as_xyz_string(), pos)
+    if np.linalg.matrix_rank(op.rotation_matrix) == 0:
+        # fixed point (e.g, 1/2, 1/2, 1/2)
+        return op.translation_vector
+    elif np.linalg.matrix_rank(op.rotation_matrix) == 3:
+        # fully independent, e.g., (x,y,z), (-x,y,z)
+        return pos
     else:
-        return -tmp
+        # check if this is already matched
+        coords = sym.search_matched_positions(G, wp, pos)
+        if len(coords)>0:
+            diffs = []
+            for coord in coords:
+                tmp = op.operate(coord)
+                diff1 = tmp - pos
+                diff1 -= np.round(diff1)
+                dist = np.linalg.norm(diff1) 
+                if dist < 1e-3:
+                    return tmp
+                else:
+                    diffs.append(dist)
+            minID = np.argmin(diffs)
+            return op.operate(coords[minID])
+            #print("=======", G.number, wp.index, wp.letter, op.as_xyz_string(), pos)
+
+        # if not match, search for the closet solution
+        else:
+            if type(G) is int:
+                wp0 = Group(G)[0]
+            else:
+                wp0 = G[0]
+
+            # extract all possible xyzs
+            all_xyz = apply_ops(pos, wp0)[1:]
+            dists = all_xyz - pos
+            dists -= np.round(dists)
+            ds = np.linalg.norm(dists, axis=1)
+            ids = np.argsort(ds)
+            for id in ids:
+                d = all_xyz[id] - pos
+                d -= np.round(d)
+                res = pos + d/2
+                if sym.search_matched_position(G, wp, res) is not None:
+                    #print(ds[id], pos, res)
+                    return res
+
+            return op.operate(pos)
+
+
+def find_match(G, wp, pos, op):
+    return search_cloest_wp(G, wp, op, pos)
 
 def new_structure(struc, refs):
     """
@@ -399,8 +455,8 @@ class supergroups():
             for i, p in enumerate(self.path[1:]):
                 s += " -> {:d}[{:5.3f}]".format(p, self.strucs[i+1].disp)
             s += '\n'
-            for struc in self.strucs:
-                s += str(struc)
+            #for struc in self.strucs:
+            #    s += str(struc)
         return s
 
     def __repr__(self):
@@ -511,7 +567,7 @@ class supergroup():
         if len(solutions) == 0:
             self.solutions = []
             self.error = True
-            #print("No compatible solution exists")
+            print("No compatible solution exists")
         else:
             #print(struc)
             self.sites = sites
@@ -539,11 +595,12 @@ class supergroup():
                 if len(sols) > max_per_G:
                     #print(len(sols))
                     sols = sample(sols, max_per_G)
-                #sols = [[['2d'], ['6h'], ['2c', '6g', '12i']]]
+                #sols = [[['2f'], ['1a'], ['4n']]]
+                #if G==194: sols=[(['2d'], ['2c', '6h', '12k'], ['6h'])]
                 for sol in sols:
                     #print(sol)
                     mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
-                    #if mae < 5: print(G, sol, mae, disp)
+                    #print(G, sol, mae, disp)
                     if mae < d_tol:
                         valid_solutions.append((sp, mapping, disp, mae))
         return valid_solutions
@@ -588,9 +645,10 @@ class supergroup():
                         site = atom_site(wp, pos1, sp.elements[i])
                         G_sites.append(site)
                     else:
-                        print("========")
+                        print(">>>>>>>>>>>>>>")
                         print(pos)
                         print(wp)
+                        print(">>>>>>>>>>>>>>")
                         raise RuntimeError("cannot assign the right wp")
 
                 G_struc.atom_sites = G_sites
@@ -659,6 +717,7 @@ class supergroup():
                         return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
                     res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
                             method='Nelder-Mead', options={'maxiter': 20})
+                    #print("MMMMMMMMMMMMMMMm", res.fun, mae)
                     if res.fun < mae:
                         mae = res.fun
                         disp = res.x
@@ -719,6 +778,8 @@ class supergroup():
                 op_G1 = splitter.G1_orbits[i][0][0]
                 ops_H = splitter.H_orbits[i][0]
                 base = atom_sites_H[mapping[i][0]].position.copy() 
+
+                #choose the best coord1_H
                 coord1s_H = apply_ops(base, ops_H)
                 ds = []
                 for coord1_H in coord1s_H:
@@ -726,34 +787,58 @@ class supergroup():
                         coord1_G2 = coord1_H + disp
                     else:
                         coord1_G2 = coord1_H 
-                    coord1_G1 = np.dot(rot, coord1_G2) + tran.T
-                    tmp = find_match(splitter.G, splitter.wp1_lists[i], coord1_G1, op_G1)
-                    d = tmp - coord1_G1
-                    d -= np.round(d)
-                    ds.append(np.linalg.norm(d))
-                minID = np.argmin(np.array(ds))
+
+                    if np.linalg.det(rot) < 1:
+                        shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
+                    else:
+                        shifts = np.array([[0,0,0]])
+
+                    diffs = []
+                    for shift in shifts:
+                        res = np.dot(rot, coord1_G2+shift) + tran.T
+                        tmp = find_match(splitter.G, splitter.wp1_lists[i], res, op_G1)
+                        diff = res - tmp
+                        diff -= np.round(diff)
+                        diffs.append(np.linalg.norm(diff))
+                    diffs = np.array(diffs)
+                    #if len(diffs) > 1:
+                    ds.append([np.min(diffs), np.argmin(diffs)])
+                    #else:
+                    #    ds.append([diffs[0], 0])
+
+                    #if splitter.G.number==210 and wp1.letter=='c': 
+                    #    print(coord1_G1, coord1_G2, coord1_H)
+                    #    print(splitter.G.number, coord1_G1, tmp, ds[-1])
+                ds = np.array(ds)
+                minID = np.argmin(ds[:,0])
+                #print(ds, minID, ds[minID, 1])
                 coord1_H = coord1s_H[minID]
                 if disp is not None:
                     coord1_G2 = coord1_H + disp
                 else:
                     coord1_G2 = coord1_H 
-                coord1_G1 = np.dot(rot, coord1_G2) + tran.T
+                coord1_G1 = np.dot(rot, coord1_G2+shifts[int(ds[minID, 1])]) + tran.T
                 tmp = find_match(splitter.G, splitter.wp1_lists[i], coord1_G1, op_G1)
                 coord1_G2 = tmp - tran.T
                 coord1_G2 -= np.floor(coord1_G2)
-                coord1_G2 = np.dot(inv_rot, coord1_G2)
 
-                diff = coord1_G2 - coord1_H
-                diff -= np.floor(diff)
+                #it is possibe that translation
+                if np.linalg.det(rot) > 1:
+                    shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
+                else:
+                    shifts = np.array([[0,0,0]])
 
-                #some annoy translation issues
-                if abs(np.linalg.det(inv_rot)-0.5)<1e-3:
-                    for m in range(3):
-                        if abs(abs(diff[m])-0.5)<1e-4:
-                            diff[m] = 0.5
-                        else:
-                            diff[m] = 0
-                    coord1_G2 += diff
+                diffs = []
+                for shift in shifts:
+                    res = np.dot(inv_rot, coord1_G2+shift)
+                    diff = res - coord1_H
+                    diff -= np.round(diff)
+                    diffs.append(np.linalg.norm(diff))
+
+                #if splitter.G.number==210 and wp1.letter=='c': print(diffs, np.linalg.det(rot))
+
+                minID = np.argmin(np.array(diffs))
+                coord1_G2 = np.dot(inv_rot, coord1_G2+shifts[minID])
 
                 # initial guess on disp
                 if disp is None:
@@ -768,9 +853,10 @@ class supergroup():
                 else:
                     diff = coord1_G2 - (coord1_H + disp)
                     diff -= np.round(diff)
-
                 dist = np.linalg.norm(np.dot(diff, self.cell))
-                #print(wp1.letter, coord1_G2, coord1_H, disp, dist)
+                #if splitter.G.number==210 and wp1.letter=='c': print(wp1.letter, tmp, coord1_G2, coord1_H, disp, dist, np.linalg.det(rot))
+                #if wp1.letter == 'c': import sys; sys.exit()
+                
                 if dist < d_tol:
                     max_disps.append(dist)
                 else:
@@ -824,6 +910,7 @@ class supergroup():
                         max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
 
                 else:
+                    #print("disp", disp)
                     #print("G2", coord1_G2, coord2_G2)
                     op_G12 = splitter.G1_orbits[i][1][0]
                     coord1_G1 = np.dot(rot, coord1_G2) + tran.T
@@ -831,12 +918,15 @@ class supergroup():
                     coord1_G1 -= np.round(coord1_G1)
                     coord2_G1 -= np.round(coord2_G1)
                     #print("G1", coord1_G1, coord2_G1, op_G12.as_xyz_string())
+                    #print(splitter.G.number, splitter.wp1_lists[i].index, coord2_G1, op_G12.as_xyz_string())
                     coord2_G1 = find_match(splitter.G, splitter.wp1_lists[i], coord2_G1, op_G12)
-                    #print("G1", coord1_G1, coord2_G1)
-
+                    #print("G1(symm1)", coord1_G1, coord2_G1)
+                    #import sys; sys.exit()
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
+                    #print(coords11)
+                    #print("tmp_raw:", tmp, coord2_G1, "dist", dist)
                     tmp = find_match(splitter.G, splitter.wp1_lists[i], tmp, op_G12)
 
                     # G1->G2->H
@@ -846,12 +936,12 @@ class supergroup():
 
                     coord2_G1 -= d/2
                     coord1_G1 += d/2
-                    #print("G1 (symm)", coord1_G1, coord2_G1)
+                    #print("G1 (symm2)", coord1_G1, coord2_G1)
 
                     coord1_G2 = np.dot(inv_rot, coord1_G1 - tran.T)
                     coord2_G2 = np.dot(inv_rot, coord2_G1 - tran.T)
-                    diff1 = coord1_G2-coord1_H-disp
-                    diff2 = coord2_G2-coord2_H-disp
+                    diff1 = coord1_G2 - coord1_H - disp
+                    diff2 = coord2_G2 - coord2_H - disp
                     diff1 -= np.round(diff1)
                     diff2 -= np.round(diff2)
                     dist1 = np.linalg.norm(np.dot(diff1, self.cell))
@@ -916,19 +1006,24 @@ class supergroup():
                 coords_G1.append(tmp)
                 coord1_G2 = tmp - tran.T
                 coord1_G2 -= np.floor(coord1_G2)
-                coord1_G2 = np.dot(inv_rot, coord1_G2)
+                #it is possibe that translation
+                if np.linalg.det(rot) > 1:
+                    shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
+                else:
+                    shifts = np.array([[0,0,0]])
 
-                #some annoy translation issues
-                if abs(np.linalg.det(inv_rot)-0.5)<1e-3:
+                diffs = []
+                for shift in shifts:
+                    coord1_G2 = np.dot(inv_rot, coord1_G2+shift)
                     diff = coord1_G2 - coord1_H
-                    diff -= np.floor(diff)
-                    for m in range(3):
-                        if abs(abs(diff[m])-0.5)<1e-4:
-                            diff[m] = 0.5
-                        else:
-                            diff[m] = 0
-                    coord1_G2 += diff
+                    if disp is not None:
+                        diff -= disp
+                    diff -= np.round(diff)
+                    diffs.append(np.linalg.norm(diff))
 
+                minID = np.argmin(np.array(diffs))
+                coord1_G2 = np.dot(inv_rot, coord1_G2+shifts[minID])
+ 
                 coords_G2.append(coord1_G2)
                 coords_H1.append(coord1_H)
 
@@ -1038,7 +1133,8 @@ if __name__ == "__main__":
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
         if isinstance(data[cif], list):
-            sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
+            #sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
+            sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
         else:
             sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
         print(sup)

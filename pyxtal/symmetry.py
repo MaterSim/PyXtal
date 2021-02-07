@@ -2575,7 +2575,7 @@ def search_matched_position(G, wp, pos):
     else:
         return None
 
-def search_matched_min(G, wp, pos):
+def search_matched_positions(G, wp, pos):
     """
     search generator for a special Wyckoff position
 
@@ -2592,28 +2592,20 @@ def search_matched_min(G, wp, pos):
     else:
         wp0 = G[0]
 
-    match = False
-    ds = []
-    res = []
+    coords = []
 
     for op in wp0:
         pos1 = op.operate(pos)
         pos0 = wp[0].operate(pos1)
-        pos1 -= np.floor(pos1)
         diff = pos1 - pos0
         diff -= np.round(diff)
-        diff = np.abs(diff).sum()
-        ds.append(diff)
-        res.append(pos1)
-        if diff<1e-2:
-            match = True
-            break
-    if match:
-        return pos1, match, 1e-2
-    else:
-        minID = np.argmin(np.array(ds))
-        pos1 = res[minID]
-        return pos1, match, ds[minID]
+        diff = np.abs(diff)
+        #print(wp.letter, pos1, pos0, diff)
+        if diff.sum()<1e-2:
+            pos1 -= np.floor(pos1)
+            coords.append(pos1)
+    return coords
+
 
 def get_point_group(number):
     """
