@@ -2606,6 +2606,68 @@ def search_matched_positions(G, wp, pos):
             coords.append(pos1)
     return coords
 
+def search_cloest_wp(G, wp, op, pos):
+    """
+    For a given position, search for the cloest wp which
+    satisfies the desired symmetry relation
+    e.g., for pos (0.1, 0.12, 0.2) and op (x, x, z)
+    the closest match is (0.11, 0.11, 0.2)
+
+    Args:
+        G: space group number or Group object
+        wp: Wyckoff object
+        op: symmetry operation belonging to wp 
+        pos: initial xyz position
+
+    Return:
+        pos1: the position that matchs symmetry operation
+    """
+    if np.linalg.matrix_rank(op.rotation_matrix) == 0:
+        # fixed point (e.g, 1/2, 1/2, 1/2)
+        return op.translation_vector
+    elif np.linalg.matrix_rank(op.rotation_matrix) == 3:
+        # fully independent, e.g., (x,y,z), (-x,y,z)
+        return pos
+    else:
+        # check if this is already matched
+        coords = search_matched_positions(G, wp, pos)
+        if len(coords)>0:
+            diffs = []
+            for coord in coords:
+                tmp = op.operate(coord)
+                diff1 = tmp - pos
+                diff1 -= np.round(diff1)
+                dist = np.linalg.norm(diff1) 
+                if dist < 1e-3:
+                    return tmp
+                else:
+                    diffs.append(dist)
+            minID = np.argmin(diffs)
+            return op.operate(coords[minID])
+
+        # if not match, search for the closet solution
+        else:
+            if type(G) is int:
+                wp0 = Group(G)[0]
+            else:
+                wp0 = G[0]
+
+            # extract all possible xyzs
+            all_xyz = apply_ops(pos, wp0)[1:]
+            dists = all_xyz - pos
+            dists -= np.round(dists)
+            ds = np.linalg.norm(dists, axis=1)
+            ids = np.argsort(ds)
+            for id in ids:
+                d = all_xyz[id] - pos
+                d -= np.round(d)
+                res = pos + d/2
+                if search_matched_position(G, wp, res) is not None:
+                    #print(ds[id], pos, res)
+                    return res
+
+            return op.operate(pos)
+
 
 def get_point_group(number):
     """

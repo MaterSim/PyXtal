@@ -52,10 +52,10 @@ for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")[:160]):
         if valid:
             #print(G, H)
             if H != G and H in s.group.get_max_subgroup_numbers():
-                struc_h = s.subgroup_once(eps=0.05, H=H, group_type=gtype)
+                struc_h = s.subgroup_once(eps=0.05, H=H, group_type=gtype, mut_lat=False)
                 try: 
                     error = False
-                    sup = supergroups(struc_h, G=G, d_tol=0.3)
+                    sup = supergroups(struc_h, G=G, d_tol=0.3, max_per_G=500)
                     if sup.strucs is not None:
                         pmg_g = sup.strucs[-1].to_pymatgen()
                         if not sm.StructureMatcher().fit(pmg_g, pmg_s1):

@@ -574,7 +574,7 @@ class pyxtal:
             return new_strucs
 
 
-    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', max_cell=4):
+    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', max_cell=4, mut_lat=True):
         """
         generate a structure with lower symmetry (for atomic crystals only)
 
@@ -606,7 +606,7 @@ class pyxtal:
                             return self._apply_substitution(splitter, permutations)
                         else:
                             #print("try to find the next subgroup")
-                            trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
+                            trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                             multiple = sum(trail_struc.numIons)/sum(self.numIons)
                             max_cell = max([1, max_cell/multiple])
                             ans = trail_struc.subgroup_once(eps, H, permutations, group_type, max_cell)
@@ -624,10 +624,10 @@ class pyxtal:
                                         special = True
                                         break
                         if not special:
-                            return self._subgroup_by_splitter(splitter, eps=eps)
+                            return self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                     else:
                         #print("try to find the next subgroup")
-                        trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
+                        trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                         multiple = sum(trail_struc.numIons)/sum(self.numIons)
                         max_cell = max([1, max_cell/multiple])
                         ans = trail_struc.subgroup_once(eps, H, None, group_type, max_cell)
@@ -725,7 +725,7 @@ class pyxtal:
 
         return idx, sites, t_types, k_types
 
-    def _subgroup_by_splitter(self, splitter, eps=0.05):
+    def _subgroup_by_splitter(self, splitter, eps=0.05, mut_lat=True):
         """
         transform the crystal to subgroup symmetry from a splitter object
         """
@@ -734,7 +734,8 @@ class pyxtal:
         new_struc = self.copy()
         new_struc.group = splitter.H
         lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
-        lattice=lattice.mutate(degree=eps, frozen=True)
+        if mut_lat:
+            lattice=lattice.mutate(degree=eps, frozen=True)
 
         h = splitter.H.number
         split_sites = []
