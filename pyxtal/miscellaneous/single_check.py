@@ -14,7 +14,14 @@ from pyxtal import pyxtal
 from pyxtal.supergroup import supergroups
 
 name, H, gtype = "Fd3m", 166, 't'
+name, H, gtype = "R-3", 148, 'k' #needs 1->3
 name, H, gtype = "Acam", 12, 't'
+name, H, gtype = "Pcmb", 61, 'k'
+name, H, gtype = "P2_122_1", 61, 'k'
+name, H, gtype = "I2_12_12_1", 5, 't'
+name, H, gtype = "R32", 5, 't'
+name, H, gtype = "I2mb", 8, 't'
+name, H, gtype = "Acam", 57, 'k'
 name = "pyxtal/miscellaneous/cifs/" + name + ".cif"
 print(name)
 
