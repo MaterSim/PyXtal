@@ -23,7 +23,7 @@ PyXtal (pronounced ``pie-crystal``) is an open source Python library for the ab-
 - Structural manipulation via symmetry constraint (group-subgroup relation)
 - Geometry optimization from built-in and external optimization methods.
 
-The current version is ``0.1.8`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license. Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
+The current version is ``0.2.0`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license. Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
 
 PyXtal is an open source project. You are welcome to contribute it directly via the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your comments and suggestions to the `developer <http://www.physics.unlv.edu/~qzhu/>`_.
 
