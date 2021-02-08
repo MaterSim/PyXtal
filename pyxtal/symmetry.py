@@ -2734,7 +2734,7 @@ def get_point_group(number):
         return 'm-3'
     elif 207 <= number <= 214:
         return '432'
-    elif 215 <= number <= 200:
+    elif 215 <= number <= 220:
         return '-43m'
     elif 221 <= number <= 230:
         return 'm-3m'
