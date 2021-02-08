@@ -34,7 +34,7 @@ def new_solution(A, refs):
             return False
     return True
 
-def find_mapping(atom_sites, splitter, max_num=100):
+def find_mapping(atom_sites, splitter, max_num=720):
     """
     search for all mappings for a given splitter
 
@@ -63,6 +63,9 @@ def find_mapping(atom_sites, splitter, max_num=100):
         elif len(wp2) == 2 and len(e_ids) == 2:
             solution_template[i] = e_ids
             assigned_ids.extend(e_ids)
+        elif len(wp2) == 3 and len(e_ids) == 3:
+            solution_template[i] = e_ids
+            assigned_ids.extend(e_ids)
     # print(assigned_ids, solution_template)
     # consider all permutations for to assign the rest atoms from H to G
     # https://stackoverflow.com/questions/65484940
@@ -73,6 +76,7 @@ def find_mapping(atom_sites, splitter, max_num=100):
     #print(len(all_permutations), solution_template)
 
     if len(all_permutations) > max_num:
+        print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
         all_permutations = sample(all_permutations, max_num)
     for permutation in all_permutations:
         permutation = list(permutation)
@@ -697,13 +701,14 @@ class supergroup():
                         return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
                     res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
                             method='Nelder-Mead', options={'maxiter': 20})
-                    #print("MMMMMMMMMMMMMMMm", res.fun, mae)
                     if res.fun < mae:
                         mae = res.fun
                         disp = res.x
             return mae, disp, mappings[id], splitter
         else:
             print("bug in findding the mappings", solution)
+            print(splitter.G.number, '->', splitter.H.number)
+
             return 1000, None, None, None
 
 

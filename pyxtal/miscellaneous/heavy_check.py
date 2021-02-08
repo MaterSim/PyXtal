@@ -14,7 +14,6 @@ from pyxtal import pyxtal
 from pyxtal.supergroup import supergroups
 
 for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")[:160]):
-    print(i, name)
 
     # 1, read from cif
     s = pyxtal()
@@ -23,6 +22,7 @@ for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")[:160]):
     pmg0 = Structure.from_file(name)
     G = s.group.number
     
+    print(i, name, len(s.atom_sites))
     if not sm.StructureMatcher().fit(pmg_s1, pmg0):
         print("Error in reading cif")
 
