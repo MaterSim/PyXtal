@@ -19,7 +19,7 @@ class Lattice:
         ltype: a string representing the type of lattice (from the above list)
         volume: the volume, in Angstroms cubed, of the lattice
         PBC: A periodic boundary condition list, where 1 means periodic,
-            0 means not periodic. 
+            0 means not periodic.
             Ex: [1, 1, 1] -> full 3d periodicity, [0, 0, 1] -> periodicity
             along the z axis
         kwargs: various values which may be defined. If none are defined,
@@ -141,8 +141,8 @@ class Lattice:
             self.dof = 4
         elif self.ltype in ['orthorhombic', 'Orthorhombic']:
             self.dof = 3
-        elif self.ltype in ['tetragonal', 'Tetragonal', 
-            'hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:        
+        elif self.ltype in ['tetragonal', 'Tetragonal',
+            'hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
             self.dof = 2
         else:
             self.dof = 1
@@ -347,8 +347,9 @@ class Lattice:
 
     def transform(self, tran):
         """
-        Transform the lattice, assuming the symmetry does not change        
+        Transform the lattice, assuming the symmetry does not change
         mostly designed for alternative wyckoff set
+
         Args: 
             tran: 3*3 matrix
         """
@@ -357,7 +358,7 @@ class Lattice:
         (a,b,c,alpha,beta,gamma) = matrix2para(matrix)
         alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
         return self.from_para(a, b, c, alpha, beta, gamma, self.ltype)
- 
+
     def swap_axis(self, random=False, ids=None):
         """
         For the lattice
@@ -398,12 +399,12 @@ class Lattice:
             return self.from_para(b, c, a, beta, gamma, alpha, self.ltype)
         else:
             return self
-    
+
     def swap_angle(self, random=True, ids=None):
         # only applied to triclinic/monoclinic #/hexagonal
         """
         If the angle is not 90. There will be two equivalent versions
-        e.g., 80 and 100. 
+        e.g., 80 and 100.
         """
         if self.ltype in ["monoclinic", "Monoclinic"]:
             allowed_ids = ["beta", "No"]
@@ -424,25 +425,25 @@ class Lattice:
         alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
         if ids is None:
             return self
-        elif ids == "alpha": 
+        elif ids == "alpha":
             return self.from_para(a, b, c, 180-alpha, beta, gamma, self.ltype)
-        elif ids == "beta": 
+        elif ids == "beta":
             return self.from_para(a, b, c, alpha, 180-beta, gamma, self.ltype)
-        elif ids == "gamma": 
+        elif ids == "gamma":
             return self.from_para(a, b, c, alpha, beta, 180-gamma, self.ltype)
         else:
             return self
-    
+
     def add_vacuum(self, coor, frac=True, vacuum=15, PBC=[0, 0, 0]):
         """
-        Adds space above and below a 2D or 1D crystal. 
-    
+        Adds space above and below a 2D or 1D crystal.
+
         Args:
             coor: the relative coordinates of the crystal
             vacuum: the amount of space, in Angstroms, to add above and below
             PBC: A periodic boundary condition list,
-                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along 
-                the z axis    
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity
+                along the z axis
 
         Returns:
             The transformed lattice and coordinates after the vacuum is added
@@ -461,7 +462,7 @@ class Lattice:
         if frac:
             coor = np.dot(absolute_coords, np.linalg.inv(matrix))
         else:
-            coor = absolute_coords 
+            coor = absolute_coords
         return matrix, coor
 
 
@@ -472,7 +473,7 @@ class Lattice:
             while point.dot(point) > 1:  # squared
                 point = np.random.random(3)
             # Randomly flip some coordinates
-            for index, x in enumerate(point):
+            for index in range(len(point)):
                 # Scale the point by the max radius
                 if random.uniform(0, 1) < 0.5:
                     point[index] *= -1
@@ -535,7 +536,7 @@ class Lattice:
                     transformed, you should use the default values for random
                     crystal generation
                 random: If False, keeps the stored values for the lattice geometry
-                    even upon applying reset_matrix. To alter the matrix, 
+                    even upon applying reset_matrix. To alter the matrix,
                     use set_matrix() or set_para
                 'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
                     equivalent to the other two
@@ -591,7 +592,7 @@ class Lattice:
                 unique_axis: The unique axis for certain symmetry (and especially layer) groups.
                     Because the symmetry operations are not also transformed, you should use the
                     default values for random crystal generation
-                random: If False, keeps the stored values for the lattice geometry even upon applying
+                random: If False, keeps the stored values for the lattice geometry even applying
                     reset_matrix. To alter the matrix, use set_matrix() or set_para
                 'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
                     equivalent to the other two

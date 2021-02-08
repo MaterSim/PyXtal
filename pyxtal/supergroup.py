@@ -69,35 +69,43 @@ def find_mapping(atom_sites, splitter, max_num=720):
     # print(assigned_ids, solution_template)
     # consider all permutations for to assign the rest atoms from H to G
     # https://stackoverflow.com/questions/65484940
+    # splitting them by elements
+    eles = set([site.specie for site in atom_sites])
+    lists = []
+    eles0 = []
+    for ele in eles:
+        ids = [id for id, site in enumerate(atom_sites) if id not in assigned_ids and site.specie==ele]
+        if len(ids)>0:
+            lists.append(list(itertools.permutations(ids)))
+            eles0.append(ele)
 
-    remaining_ids = [id for id in range(len(atom_sites)) if id not in assigned_ids]
-    all_permutations = list(itertools.permutations(remaining_ids))
+    all_permutations = list(itertools.product(*lists))
     unique_solutions = []
-    #print(len(all_permutations), solution_template)
 
     if len(all_permutations) > max_num:
         print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
         all_permutations = sample(all_permutations, max_num)
+
     for permutation in all_permutations:
-        permutation = list(permutation)
         solution = deepcopy(solution_template)
-        for i, sol in enumerate(solution):
-            valid = True
-            if None in sol:
-                for j, id in enumerate(permutation[:len(sol)]):
-                    if atom_sites[id].wp.letter == splitter.wp2_lists[i][j].letter and\
-                            atom_sites[id].specie == splitter.elements[i]:
-                        solution[i][j] = id
-                    else:
-                        valid = False
+        valid = True
+        for perm, ele in zip(permutation, eles0):
+            perm = list(perm)
+            for i, sol in enumerate(solution):
+                if None in sol and splitter.elements[i]==ele:
+                    for j, wp in enumerate(splitter.wp2_lists[i]):
+                        if wp.letter == atom_sites[perm[j]].wp.letter:
+                            solution[i][j] = perm[j]
+                        else:
+                            valid = False
+                            break
+                    if not valid:
                         break
-                if not valid:
-                    break
-                else:
-                    del permutation[:len(sol)]
+                    else:
+                        del perm[:len(splitter.wp2_lists[i])]
         if valid and new_solution(solution, unique_solutions):
             unique_solutions.append(solution)
-
+    #print("mapping", len(unique_solutions), len(all_permutations))
     #import sys; sys.exit()
     return unique_solutions
 
