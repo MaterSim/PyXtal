@@ -51,30 +51,33 @@ def find_mapping(atom_sites, splitter, max_num=720):
     # look for unique assignment from sites_H to sites_G
     for i, wp2 in enumerate(splitter.wp2_lists):
         # choose the sites belong to the same element
+
         ele = splitter.elements[i]
         e_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
-        #print(ele, e_ids)
+        wp_letters = set([wp.letter for wp in wp2])
+        ids = [id for id in e_ids if atom_sites[id].wp.letter in wp_letters]
+        if len(wp2) == len(ids):
+            solution_template[i] = ids
+            assigned_ids.extend(ids)
+        else:
+            if len(wp_letters) == len(wp2): # eg, ['4a', '2b']
+                for j, wp in enumerate(wp2):
+                    ids = [id for id in ids if atom_sites[id].wp.letter == wp_letters]
+                    if len(ids) == 1:
+                        solution_template[i][j] = ids[0]
+                        assigned_ids.extend(ids)
 
-        if len(wp2) == 1:
-            ids = [id for id in e_ids if atom_sites[id].wp.letter == wp2[0].letter]
-            if len(ids) == 1:
-                solution_template[i] = ids
-                assigned_ids.append(ids[0])
-        elif len(wp2) == 2 and len(e_ids) == 2:
-            solution_template[i] = e_ids
-            assigned_ids.extend(e_ids)
-        elif len(wp2) == 3 and len(e_ids) == 3:
-            solution_template[i] = e_ids
-            assigned_ids.extend(e_ids)
     # print(assigned_ids, solution_template)
     # consider all permutations for to assign the rest atoms from H to G
     # https://stackoverflow.com/questions/65484940
+    #print(solution_template)
     # splitting them by elements
     eles = set([site.specie for site in atom_sites])
     lists = []
     eles0 = []
     for ele in eles:
         ids = [id for id, site in enumerate(atom_sites) if id not in assigned_ids and site.specie==ele]
+        # split them by sites e.g. ['4a', '4a'] will be no permutation
         if len(ids)>0:
             lists.append(list(itertools.permutations(ids)))
             eles0.append(ele)
@@ -588,7 +591,7 @@ class supergroup():
             for sols in self.solutions:
                 G, id, sols = sols['group'], sols['id'], sols['splits']
                 if len(sols) > max_per_G:
-                    #print(len(sols))
+                    print("Warning: ignore some solutions: ", len(sols)-max_per_G)
                     sols = sample(sols, max_per_G)
                 #sols = [[['2f'], ['1a'], ['4n']]]
                 #if G==59: sols=[(['2a'], ['4f'], ['2b'], ['4e', '4e', '4f'])]
