@@ -711,7 +711,7 @@ class supergroup():
                     def fun(disp, mapping, splitter, mask):
                         return self.symmetrize_dist(splitter, mapping, disp, mask)[0]
                     res = minimize(fun, disps[id], args=(mappings[id], splitter, mask),
-                            method='Nelder-Mead', options={'maxiter': 20})
+                            method='Nelder-Mead', options={'maxiter': 10})
                     if res.fun < mae:
                         mae = res.fun
                         disp = res.x
@@ -793,7 +793,7 @@ class supergroup():
                     diffs = []
                     for shift in shifts:
                         res = np.dot(rot, coord1_G2+shift) + tran.T
-                        tmp = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G1, res)
+                        tmp = sym.search_cloest_wp(splitter.G, wp1, op_G1, res)
                         diff = res - tmp
                         diff -= np.round(diff)
                         diffs.append(np.linalg.norm(diff))
@@ -810,7 +810,7 @@ class supergroup():
                     coord1_G2 = coord1_H 
 
                 coord1_G1 = np.dot(rot, coord1_G2+shifts[int(ds[minID, 1])]) + tran.T
-                tmp = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G1, coord1_G1)
+                tmp = sym.search_cloest_wp(splitter.G, wp1, op_G1, coord1_G1)
 
                 # initial guess on disp
                 if disp is None:
@@ -888,7 +888,7 @@ class supergroup():
                     coord2_G1 -= np.round(coord2_G1)
                     #print("G1", coord1_G1, coord2_G1, op_G12.as_xyz_string())
                     #print(splitter.G.number, splitter.wp1_lists[i].index, coord2_G1, op_G12.as_xyz_string())
-                    coord2_G1 = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G12, coord2_G1)
+                    coord2_G1 = sym.search_cloest_wp(splitter.G, wp1, op_G12, coord2_G1)
                     #print("G1(symm1)", coord1_G1, coord2_G1)
                     #import sys; sys.exit()
                     #find the best match
@@ -896,7 +896,7 @@ class supergroup():
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
                     #print(coords11)
                     #print("tmp_raw:", tmp, coord2_G1, "dist", dist)
-                    tmp = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G12, tmp)
+                    tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
 
                     # G1->G2->H
                     d = coord2_G1 - tmp
@@ -964,7 +964,7 @@ class supergroup():
                     diffs = []
                     for shift in shifts:
                         res = np.dot(rot, coord1_G2+shift) + tran.T
-                        tmp = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G1, res)
+                        tmp = sym.search_cloest_wp(splitter.G, wp1, op_G1, res)
                         diff = res - tmp
                         diff -= np.round(diff)
                         diffs.append(np.linalg.norm(diff))
@@ -975,22 +975,9 @@ class supergroup():
                 minID = np.argmin(ds[:,0])
                 coord1_H = coord1s_H[minID]
 
-                #coord1s_H = apply_ops(base, ops_H)
-                #ds = []
-                #for coord1_H in coord1s_H:
-                #    coord1_G2 = coord1_H + disp
-                #    coord1_G1 = np.dot(rot, coord1_G2) + tran.T
-                #    tmp = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G1, coord1_G1)
-                #    d = tmp - coord1_G1
-                #    d -= np.round(d)
-                #    ds.append(np.linalg.norm(d))
-
-                #minID = np.argmin(np.array(ds))
-                #coord1_H = coord1s_H[minID]
-
                 coord1_G2 = coord1_H + disp
                 coord1_G1 = np.dot(rot, coord1_G2) + tran.T
-                tmp = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G1, coord1_G1)
+                tmp = sym.search_cloest_wp(splitter.G, wp1, op_G1, coord1_G1)
 
                 coords_G1.append(tmp)
                 coord1_G2, dist = search_match_with_trans(inv_rot, -tran, tmp, coord1_H+disp, self.cell, True)
@@ -1043,12 +1030,12 @@ class supergroup():
                     coord1_G1 -= np.round(coord1_G1)
                     coord2_G1 -= np.round(coord2_G1)
 
-                    coord2_G1 = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G12, coord2_G1)
+                    coord2_G1 = sym.search_cloest_wp(splitter.G, wp1, op_G12, coord2_G1)
                     
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
-                    tmp = sym.search_cloest_wp(splitter.G, splitter.wp1_lists[i], op_G12, tmp)
+                    tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
  
                     # G1->G2->H
                     d = coord2_G1 - tmp
@@ -1072,7 +1059,7 @@ class supergroup():
 if __name__ == "__main__":
 
     from pyxtal import pyxtal
-
+    from time import time
     data = {
             #"PVO": [12, 166],
             #"PPO": [12],
@@ -1094,6 +1081,7 @@ if __name__ == "__main__":
     cif_path = "pyxtal/database/cifs/"
 
     for cif in data.keys():
+        t0 = time()
         print("===============", cif, "===============")
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
@@ -1104,3 +1092,4 @@ if __name__ == "__main__":
             sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
             #sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
         print(sup)
+        print("{:6.3f} seconds".format(time()-t0))

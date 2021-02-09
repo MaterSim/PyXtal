@@ -2622,6 +2622,7 @@ def search_cloest_wp(G, wp, op, pos):
     Return:
         pos1: the position that matchs symmetry operation
     """
+    #G = Group(wp.number)
     if np.linalg.matrix_rank(op.rotation_matrix) == 0:
         # fixed point (e.g, 1/2, 1/2, 1/2)
         return op.translation_vector
@@ -2647,11 +2648,7 @@ def search_cloest_wp(G, wp, op, pos):
 
         # if not match, search for the closet solution
         else:
-            if type(G) is int:
-                wp0 = Group(G)[0]
-            else:
-                wp0 = G[0]
-
+            wp0 = G[0]
             # extract all possible xyzs
             all_xyz = apply_ops(pos, wp0)[1:]
             dists = all_xyz - pos
