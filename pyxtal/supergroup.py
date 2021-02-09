@@ -113,7 +113,9 @@ def find_mapping(atom_sites, splitter, max_num=720):
     return unique_solutions
 
 def search_G1(G, rot, tran, pos, wp1, op):
-    if np.linalg.det(rot) < 1:
+    #shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
+    #if np.linalg.det(rot) < 1:
+    if abs(np.linalg.det(rot)-1) > 1e-3:
         shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
     else:
         shifts = np.array([[0,0,0]])
@@ -125,8 +127,12 @@ def search_G1(G, rot, tran, pos, wp1, op):
         tmp = sym.search_cloest_wp(G, wp1, op, res)
         diff = res - tmp
         diff -= np.round(diff)
-        diffs.append(np.linalg.norm(diff))
+        dist = np.linalg.norm(diff)
+        diffs.append(dist)
         coords.append(tmp)
+        if dist < 1e-1:
+            break
+        
     diffs = np.array(diffs)
     minID = np.argmin(diffs)
     tmp = coords[minID]
@@ -142,7 +148,8 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     difference between the transformed pos1 and reference pos2
     """
     pos1 -= np.round(pos1)
-    if np.linalg.det(rot) < 1:
+    #shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
+    if abs(np.linalg.det(rot)-1) > 1e-3:
         shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
     else:
         shifts = np.array([[0,0,0]])
@@ -152,7 +159,10 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
         res = np.dot(rot, pos1 + shift + tran.T)
         diff = res - pos2
         diff -= np.round(diff)
-        dists.append(np.linalg.norm(diff))
+        dist = np.linalg.norm(diff)
+        dists.append(dist)
+        if dist < 1e-1:
+            break
 
     dists = np.array(dists)
     dist = np.min(dists)
@@ -644,6 +654,7 @@ class supergroup():
                         G_sites.append(site)
                     else:
                         print(">>>>>>>>>>>>>>")
+                        print(self.struc.group.number)
                         print(pos)
                         print(wp)
                         print(">>>>>>>>>>>>>>")
@@ -810,8 +821,6 @@ class supergroup():
                     coord1_G2 = coord1_H 
                 
                 tmp, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G1)
-                #coord1_G1 = np.dot(rot, coord1_G2+shifts[int(ds[minID, 1])]) + tran.T
-                #tmp = sym.search_cloest_wp(splitter.G, wp1, op_G1, coord1_G1)
 
                 # initial guess on disp
                 if disp is None:
@@ -835,7 +844,7 @@ class supergroup():
                     #print(wp1.letter, tmp, coord1_G2, coord1_H+disp, dist)
                     return 10000, None, None
 
-            else:
+            elif len(splitter.wp2_lists[i]) == 2:
                 # assume zero shift, needs to check
                 if disp is None:
                     disp = np.zeros(3)
@@ -895,8 +904,6 @@ class supergroup():
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
-                    #print(coords11)
-                    #print("tmp_raw:", tmp, coord2_G1, "dist", dist)
                     tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
 
                     # G1->G2->H
@@ -914,6 +921,9 @@ class supergroup():
                     max_disps.append(max([dist1, dist2]))
                     #print("1:", coord1_G2, coord1_H, dist1)
                     #print("2:", coord2_G2, coord2_H, dist2)
+                    #print("T:", tmp)
+            else:
+                raise RuntimeError("donot support merging 3 sites to 1 site")
         #if max(max_disps)<0.1: print(max_disps)
         return max(max_disps), disp, mask
 
@@ -1010,7 +1020,8 @@ class supergroup():
                     d -= np.round(d)
                     coord2_G2 -= d/2
                     coord1_G2 += d/2
-                    coords_G1.append(np.dot(rot, coord2_G2).T + tran.T)
+                    #print(coord1_G2, coord2_G2, np.dot(rot, tmp).T + tran.T)
+                    coords_G1.append(np.dot(rot, tmp).T + tran.T)
 
                 else:
                     # H->G2->G1
@@ -1033,10 +1044,9 @@ class supergroup():
                     d -= np.round(d)
                     coord2_G1 -= d/2
                     coord1_G1 += d/2
-                    coords_G1.append(coord2_G1)
+                    #coords_G1.append(coord2_G1)
+                    coords_G1.append(tmp)
 
-                    #coord1_G2 = np.dot(inv_rot, coord1_G1 - tran.T)
-                    #coord2_G2 = np.dot(inv_rot, coord2_G1 - tran.T)
                     coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell)
                     coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell)
 
