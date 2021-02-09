@@ -25,7 +25,9 @@ name, H, gtype = "P6_3mc", 36, 't'
 name, H, gtype = "Ia-3d", 220, 't'
 name, H, gtype = "R-3c", 15, 't'
 #name, H, gtype = "I2_12_12_1", 17, 'k'
+name, H, gtype = "Fd-3m", 166, 't'
 name, H, gtype = "Pmma", 25, 't'
+name, H, gtype = "Pman", 60, 'k'
 name = "pyxtal/miscellaneous/cifs/" + name + ".cif"
 print(name)
 
@@ -33,7 +35,7 @@ s = pyxtal()
 s.from_seed(name)
 pmg_s1 = s.to_pymatgen()
 G = s.group.number
-for i in range(10):
+for i in range(100):
     struc_h = s.subgroup_once(eps=0.05, H=H, group_type=gtype)
     print(struc_h)
     print(s)

@@ -52,7 +52,7 @@ for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")):
             # 4, supergroup
             if valid:
                 #print(G, H)
-                if H != G and H in s.group.get_max_subgroup_numbers():
+                if H>2 and H != G and H in s.group.get_max_subgroup_numbers():
                     struc_h = s.subgroup_once(eps=0.05, H=H, group_type=gtype, mut_lat=False)
                     try: 
                         error = False
