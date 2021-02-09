@@ -195,7 +195,7 @@ def check_freedom(G, solutions):
     a special WP such as (0,0,0) cannot be occupied twice
     """
     valid_solutions = []
-    G = sym.Group(G)
+    #G = sym.Group(G)
     for solution in solutions:
         sites = []
         for s in solution:
@@ -211,7 +211,7 @@ def check_lattice(G, trans, struc, tol=1.0, a_tol=10):
     """
     matrix = np.dot(trans.T, struc.lattice.get_matrix())
     l1 = Lattice.from_matrix(matrix)
-    l2 = Lattice.from_matrix(matrix, ltype=sym.Group(G).lattice_type)
+    l2 = Lattice.from_matrix(matrix, ltype=G.lattice_type)
     (a1,b1,c1,alpha1,beta1,gamma1)=l1.get_para(degree=True)
     (a2,b2,c2,alpha2,beta2,gamma2)=l2.get_para(degree=True)
     abc_diff = np.abs(np.array([a2-a1, b2-b1, c2-c1])).max()
@@ -230,7 +230,7 @@ def check_compatibility(G, relation, sites, elements):
         G: the target space group with high symmetry
         relation: a dictionary to describe the relation between G and H
     """
-    G = sym.Group(G)
+    #G = sym.Group(G)
 
     #results = {}
     wyc_list = [(str(x.multiplicity)+x.letter) for x in G]
@@ -343,8 +343,6 @@ def search_paths(H, G, max_layers=5):
 
     Return:
         list of possible paths ordered from smallest to biggest
-
-
     """
 
     layers={}
@@ -513,17 +511,7 @@ class supergroup():
         self.error = False
 
         # extract the supergroup information
-        wyc_supergroups = struc.group.get_min_supergroup(group_type)
-        if G is not None:
-            self.wyc_supergroups = {}
-            ids = [id for id, group in enumerate(wyc_supergroups['supergroup']) if group in G]
-            if len(ids) == 0:
-                self.error = True
-            else:
-                for key in wyc_supergroups:
-                    self.wyc_supergroups[key] = [wyc_supergroups[key][id] for id in ids]
-        else:
-            self.wyc_supergroups = wyc_supergroups
+        self.wyc_supergroups = struc.group.get_min_supergroup(group_type, G)
 
         # list of all alternative wycsets
         strucs = struc.get_alternatives()
@@ -544,7 +532,7 @@ class supergroup():
             # search for the compatible solutions
             solutions = []
             for idx in range(len(self.wyc_supergroups['supergroup'])):
-                G = self.wyc_supergroups['supergroup'][idx]
+                G = sym.Group(self.wyc_supergroups['supergroup'][idx])
                 relation = self.wyc_supergroups['relations'][idx]
                 id = self.wyc_supergroups['idx'][idx]
                 trans = np.linalg.inv(self.wyc_supergroups['transformation'][idx][:,:3])
@@ -623,7 +611,7 @@ class supergroup():
 
             for solution in solutions:
                 (sp, mapping, disp, mae) = solution
-                G = sp.G.number
+                #G = sp.G.number
                 lat1 = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.struc.lattice.matrix)
                 lattice = Lattice.from_matrix(lat1, ltype=sp.G.lattice_type)
 
@@ -667,7 +655,7 @@ class supergroup():
         For a given solution, search for the possbile supergroup structure
 
         Args:
-            G (int): supergroup number
+            G: group object
             split_id (int): integer
             solution (list): e.g., [['2d'], ['6h'], ['2c', '6h', '12i']]
             d_tol (float): tolerance
@@ -799,6 +787,8 @@ class supergroup():
                         diffs.append(np.linalg.norm(diff))
                     diffs = np.array(diffs)
                     ds.append([np.min(diffs), np.argmin(diffs)])
+                    if np.min(diffs) < 5e-2:
+                        break
 
                 ds = np.array(ds)
                 minID = np.argmin(ds[:,0])

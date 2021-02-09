@@ -16,7 +16,7 @@ class wyckoff_split:
     relations
 
     Args:
-        G (int): 1-230, number of super space group
+        G (int): 1-230, number of super space group or object
         idx (int): index of splitting scheme, default None
         wp1: string ("4a") or integer (1)
         group_type (string): 't' or 'k'
@@ -26,7 +26,10 @@ class wyckoff_split:
     def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t', elements=None):
         self.error = False
         self.elements = elements
-        self.G = sym.Group(G)  # Group object
+        if type(G) is int:
+            self.G = sym.Group(G)  # Group object
+        else:
+            self.G = G
         self.group_type = group_type
         if group_type == 't':
             self.wyc = self.G.get_max_t_subgroup()

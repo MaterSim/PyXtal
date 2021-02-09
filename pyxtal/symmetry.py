@@ -58,6 +58,7 @@ t_subgroup = loadfn(resource_filename("pyxtal",'database/t_subgroup.json'))
 k_subgroup = loadfn(resource_filename("pyxtal",'database/k_subgroup.json'))
 wyc_sets = loadfn(resource_filename("pyxtal",'database/wyckoff_sets.json'))
 
+t2h = SymmOp.from_rotation_and_translation([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0])
 Identity = SymmOp.from_xyz_string("x,y,z")
 Inversion = SymmOp.from_xyz_string("-x,-y,-z")
 op_o = SymmOp.from_xyz_string("0,0,0")
@@ -469,7 +470,7 @@ class Group:
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
  
-    def get_min_supergroup(self, group_type='t'):
+    def get_min_supergroup(self, group_type='t', G=None):
         """
         Returns the minimal supergroups as a dictionary
         """
@@ -479,7 +480,12 @@ class Group:
                      'relations': [],
                      'idx': [],
                     }
-            for sg in range(1, 231):
+            if G is None:
+                sgs = range(1,231)
+            else:
+                sgs = G
+
+            for sg in sgs:
                 subgroups = None
                 if group_type == 't':
                     if sg>self.number:
@@ -1842,6 +1848,7 @@ def get_point(num, organized=False):
 
 
 def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
+    #QZ: to get rid of something
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -1869,15 +1876,11 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
-    P = SymmOp.from_rotation_and_translation(
-        [[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
-    )
+
     symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
     symmetry = []
     convert = False
-    if molecular is True:
-        if sg >= 143 and sg <= 194:
-            convert = True
+    if molecular and 143 <= sg <= 194: convert = True
     # Loop over Wyckoff positions
     for x, w in zip(symmetry_strings, wyckoffs):
         if PBC != [1, 1, 1]:
@@ -1888,7 +1891,7 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
                 if not a:
                     if not abs(coor1[i] - 0.5) < 1e-2:
                         invalid = True
-            if invalid == False:
+            if not invalid:
                 symmetry.append([])
                 # Loop over points in WP
                 for y in x:
@@ -1896,12 +1899,11 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
                     # Loop over ops
                     for z in y:
                         op = SymmOp.from_xyz_string(z)
-                        if convert is True:
-                            # Convert non-orthogonal trigonal/hexagonal operations
-                            op = P * op * P.inverse
-                        if molecular is False:
+                        # Convert non-orthogonal trigonal/hexagonal operations
+                        if convert: op = t2h * op * t2h.inverse
+                        if not molecular:
                             symmetry[-1][-1].append(op)
-                        elif molecular is True:
+                        else:
                             op = SymmOp.from_rotation_and_translation(
                                 op.rotation_matrix, [0, 0, 0]
                             )
@@ -1914,12 +1916,12 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
                 # Loop over ops
                 for z in y:
                     op = SymmOp.from_xyz_string(z)
-                    if convert is True:
+                    if convert:
                         # Convert non-orthogonal trigonal/hexagonal operations
-                        op = P * op * P.inverse
-                    if molecular is False:
+                        op = t2h * op * t2h.inverse
+                    if not molecular:
                         symmetry[-1][-1].append(op)
-                    elif molecular is True:
+                    else:
                         op = SymmOp.from_rotation_and_translation(
                             op.rotation_matrix, [0, 0, 0]
                         )
@@ -1947,15 +1949,10 @@ def get_layer_symmetry(num, molecular=False):
         point in each Wyckoff position
     """
 
-    P = SymmOp.from_rotation_and_translation(
-        [[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
-    )
     symmetry_strings = eval(layer_symmetry_df["0"][num])
     symmetry = []
     convert = False
-    if molecular is True:
-        if num >= 65:
-            convert = True
+    if molecular and num >= 65: convert = True
     # Loop over Wyckoff positions
     for x in symmetry_strings:
         symmetry.append([])
@@ -1965,12 +1962,12 @@ def get_layer_symmetry(num, molecular=False):
             # Loop over ops
             for z in y:
                 op = SymmOp.from_xyz_string(z)
-                if convert is True:
+                if convert:
                     # Convert non-orthogonal trigonal/hexagonal operations
-                    op = P * op * P.inverse
-                if molecular is False:
+                    op = t2h * op * t2h.inverse
+                if not molecular:
                     symmetry[-1][-1].append(op)
-                elif molecular is True:
+                else:
                     op = SymmOp.from_rotation_and_translation(
                         op.rotation_matrix, [0, 0, 0]
                     )
@@ -1998,15 +1995,10 @@ def get_rod_symmetry(num, molecular=False):
         point in each Wyckoff position
     """
 
-    P = SymmOp.from_rotation_and_translation(
-        [[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
-    )
     symmetry_strings = eval(rod_symmetry_df["0"][num])
     symmetry = []
     convert = False
-    if molecular is True:
-        if num >= 42:
-            convert = True
+    if molecular and num >= 42: convert = True
     # Loop over Wyckoff positions
     for x in symmetry_strings:
         symmetry.append([])
@@ -2016,12 +2008,11 @@ def get_rod_symmetry(num, molecular=False):
             # Loop over ops
             for z in y:
                 op = SymmOp.from_xyz_string(z)
-                if convert is True:
                     # Convert non-orthogonal trigonal/hexagonal operations
-                    op = P * op * P.inverse
-                if molecular is False:
+                if convert: op = t2h * op * t2h.inverse
+                if not molecular:
                     symmetry[-1][-1].append(op)
-                elif molecular is True:
+                else:
                     op = SymmOp.from_rotation_and_translation(
                         op.rotation_matrix, [0, 0, 0]
                     )
@@ -2552,10 +2543,7 @@ def search_matched_position(G, wp, pos):
     Return:
         pos1: the position that matchs the standard setting
     """
-    if isinstance(G, int):
-        wp0 = Group(G)[0]
-    else:
-        wp0 = G[0]
+    wp0 = G[0]
     match = False
 
     for op in wp0:
@@ -2569,7 +2557,6 @@ def search_matched_position(G, wp, pos):
             pos1 -= np.floor(pos1)
             match = True
             break
-    #print("============", match, wp.letter, pos, pos0)
     if match:
         return pos1
     else:
@@ -2587,11 +2574,7 @@ def search_matched_positions(G, wp, pos):
     Return:
         pos1: the position that matchs the standard setting
     """
-    if isinstance(G, int):
-        wp0 = Group(G)[0]
-    else:
-        wp0 = G[0]
-
+    wp0 = G[0]
     coords = []
 
     for op in wp0:
@@ -2646,7 +2629,7 @@ def search_cloest_wp(G, wp, op, pos):
             minID = np.argmin(diffs)
             return op.operate(coords[minID])
 
-        # if not match, search for the closet solution
+        # if not match, search for the closest solution
         else:
             wp0 = G[0]
             # extract all possible xyzs
@@ -2662,7 +2645,6 @@ def search_cloest_wp(G, wp, op, pos):
                 if search_matched_position(G, wp, res) is not None:
                     #print(ds[id], pos, res)
                     return res
-
             return op.operate(pos)
 
 
