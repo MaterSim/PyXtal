@@ -728,6 +728,11 @@ class pyxtal:
     def _subgroup_by_splitter(self, splitter, eps=0.05, mut_lat=True):
         """
         transform the crystal to subgroup symmetry from a splitter object
+
+        Args:
+            splitter: wyckoff splitter object
+            eps (float): maximum atomic displacement in Angstrom
+            mut_lat (bool): whether or not mutate the lattice
         """
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
         multiples = np.linalg.det(splitter.R[:3,:3])
@@ -781,7 +786,7 @@ class pyxtal:
                     pos0 -= np.floor(pos0)
                     dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
                     dis /= np.linalg.norm(dis)
-                    pos0 += eps*dis*(np.random.random()-0.5)
+                    pos0 += np.dot(eps*dis*(np.random.random()-0.5), self.lattice.inv_matrix)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
                     split_sites.append(atom_site(wp, pos0, site.specie))
 

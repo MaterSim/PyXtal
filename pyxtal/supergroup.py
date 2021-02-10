@@ -604,11 +604,11 @@ class supergroup():
                     print("Warning: ignore some solutions: ", len(sols)-max_per_G)
                     sols = sample(sols, max_per_G)
                 #sols = [[['2f'], ['1a'], ['4n']]]
-                #if G==59: sols=[(['2a'], ['4f'], ['2b'], ['4e', '4e', '4f'])]
+                #sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
                 for sol in sols:
                     #print(sol)
                     mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
-                    #print(G, sol, mae, disp)
+                    #print(G.number, sol, mae, disp)
                     if mae < d_tol:
                         valid_solutions.append((sp, mapping, disp, mae))
         return valid_solutions
@@ -838,7 +838,7 @@ class supergroup():
                     max_disps.append(dist)
                 else:
                     #import sys; sys.exit()
-                    #print(wp1.letter, tmp, coord1_G2, coord1_H+disp, dist)
+                    #print("--------", wp1.letter, tmp, coord1_G2, coord1_H+disp, dist)
                     return 10000, None, None
 
             elif len(splitter.wp2_lists[i]) == 2:
@@ -878,7 +878,13 @@ class supergroup():
                     coords11 += trans
                     tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
                     if dist > np.sqrt(2)*d_tol:
-                        #print("kkkk", dist, coords11, coord2_G2)
+                        #print("disp:", disp)
+                        #print("G21:", coords11)
+                        #print("G22:", coord2_G2)
+                        #print("start: ", coord1_H, coord2_H)
+                        #res = tmp - coord2_G2
+                        #res -= np.round(res)
+                        #print("kkkk", wp1.letter, dist, tmp, coord2_G2, "diff", res)
                         return 10000, None, mask
                     else:
                         d = coord2_G2 - tmp
@@ -915,13 +921,17 @@ class supergroup():
                     coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell)
                     coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell)
 
-                    max_disps.append(max([dist1, dist2]))
-                    #print("1:", coord1_G2, coord1_H, dist1)
-                    #print("2:", coord2_G2, coord2_H, dist2)
-                    #print("T:", tmp)
+                    #print(wp1.letter, dist1, dist2)
+                    if max([dist1, dist2]) > np.sqrt(2)*d_tol:
+                        #print("1:", coord1_G2, coord1_H, dist1)
+                        #print("2:", coord2_G2, coord2_H, dist2)
+                        #print("T:", tmp)
+                        return 10000, None, mask
+                    else:
+                        max_disps.append(max([dist1, dist2]))
             else:
                 raise RuntimeError("donot support merging 3 sites to 1 site")
-        #if max(max_disps)<0.1: print(max_disps)
+        #print(max_disps)
         return max(max_disps), disp, mask
 
 
@@ -991,6 +1001,8 @@ class supergroup():
 
                 coord1_G2 = coord1_H + disp
                 coord2_G2 = coord2_H + disp  
+                op_G11 = splitter.G1_orbits[i][0][0]
+                op_G12 = splitter.G1_orbits[i][1][0]
 
                 if splitter.group_type == 'k':
                     ops_H1 = splitter.H_orbits[i][0]
@@ -1009,18 +1021,17 @@ class supergroup():
                     coords11 = apply_ops(coord1_G2, ops_H1)
                     coords11 += trans
                     tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
-
+                    #print("G1:", tmp)
                     d = coord2_G2 - tmp
                     d -= np.round(d)
                     coord2_G2 -= d/2
                     coord1_G2 += d/2
+                    coord1_G1, _ = search_G1(splitter.G, rot, tran, tmp, wp1, op_G11)
                     #print(coord1_G2, coord2_G2, np.dot(rot, tmp).T + tran.T)
-                    coords_G1.append(np.dot(rot, tmp).T + tran.T)
+                    coords_G1.append(coord1_G1)
 
                 else:
                     # H->G2->G1
-                    op_G11 = splitter.G1_orbits[i][0][0]
-                    op_G12 = splitter.G1_orbits[i][1][0]
                     coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
                     coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
                     
