@@ -113,9 +113,7 @@ def find_mapping(atom_sites, splitter, max_num=720):
     return unique_solutions
 
 def search_G1(G, rot, tran, pos, wp1, op):
-    #shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
-    #if np.linalg.det(rot) < 1:
-    if abs(np.linalg.det(rot)-1) > 1e-3:
+    if np.linalg.det(rot) < 1:
         shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
     else:
         shifts = np.array([[0,0,0]])
@@ -148,8 +146,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     difference between the transformed pos1 and reference pos2
     """
     pos1 -= np.round(pos1)
-    #shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
-    if abs(np.linalg.det(rot)-1) > 1e-3:
+    if np.linalg.det(rot) < 1:
         shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
     else:
         shifts = np.array([[0,0,0]])
@@ -976,9 +973,6 @@ class supergroup():
 
                 # symmetrize coord_G1
                 tmp, _ = search_G1(splitter.G, rot, tran, coord1_H+disp, wp1, op_G1)
-                #coord1_G2 = coord1_H + disp
-                #coord1_G1 = np.dot(rot, coord1_G2) + tran.T
-                #tmp = sym.search_cloest_wp(splitter.G, wp1, op_G1, coord1_G1)
 
                 coords_G1.append(tmp)
                 coord1_G2, _ = search_G2(inv_rot, -tran, tmp, coord1_H+disp, self.cell)
@@ -1025,14 +1019,10 @@ class supergroup():
 
                 else:
                     # H->G2->G1
+                    op_G11 = splitter.G1_orbits[i][0][0]
                     op_G12 = splitter.G1_orbits[i][1][0]
-
-                    coord1_G1 = np.dot(rot, coord1_G2) + tran.T
-                    coord2_G1 = np.dot(rot, coord2_G2) + tran.T
-                    coord1_G1 -= np.round(coord1_G1)
-                    coord2_G1 -= np.round(coord2_G1)
-
-                    coord2_G1 = sym.search_cloest_wp(splitter.G, wp1, op_G12, coord2_G1)
+                    coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
+                    coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
                     
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
@@ -1044,7 +1034,6 @@ class supergroup():
                     d -= np.round(d)
                     coord2_G1 -= d/2
                     coord1_G1 += d/2
-                    #coords_G1.append(coord2_G1)
                     coords_G1.append(tmp)
 
                     coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell)
@@ -1072,14 +1061,14 @@ if __name__ == "__main__":
             #"BTO-Amm2": [65, 123, 221],
             #"NaSb3F10": [186, 194],
             "GeF2": 62,
-            "NbO2": 141,
             "NiS-Cm": 160,
             "lt_quartz": 180,
             "BTO-Amm2": 221,
             "BTO": 221,
-            "MPWO": 225,
             "lt_cristobalite": 227,
             "NaSb3F10": 194,
+            "MPWO": 225,
+            "NbO2": 141,
            }
     cif_path = "pyxtal/database/cifs/"
 
