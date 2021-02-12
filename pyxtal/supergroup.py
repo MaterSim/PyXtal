@@ -34,6 +34,69 @@ def new_solution(A, refs):
             return False
     return True
 
+def find_mapping_per_element(sites1, sites2, max_num=720):
+    """
+    search for all mappings for a given splitter
+
+    Args:
+        sites1 (list): e.g., l layer ['4a', '8b', '4c']
+        sites2 (list): e.g., 2 layers [['4a'], ['8b', '4c']]
+        max_num (int): maximum number of atomic mapping
+
+    Returns:
+        unique solutions: e.g. 3 layers: [[[0], [1,2]]]
+    """
+    unique_solutions = []
+    solution_template = [[None]*len(site2) for site2 in sites2]
+    assigned_ids = []
+
+    # first identify the unique assignment
+    for i, site2 in enumerate(sites2):
+        wp_letters = set(site2)
+        if len(wp_letters) == len(site2): #site2: ['a', 'b'] or ['a']
+            for j, s2 in enumerate(site2):
+                ids = [id for id, s1 in enumerate(sites1) if s1==s2]
+                if len(ids) == 1:
+                    solution_template[i][j] = ids[0]
+                    assigned_ids.append(ids[0])
+        elif len(wp_letters)==1: #site2: ['a','a'] or ['a','a','a']
+            ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[0]]
+            if len(ids) == len(site2):
+                solution_template[i] = ids
+                assigned_ids.extend(ids)
+        elif len(wp_letters)==2: #site2: ['a','a','b']
+            raise NotImplementedError("unsupported:", site2)
+
+    ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
+    all_permutations = list(itertools.permutations(ids))
+    if len(all_permutations) > max_num:
+        print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
+        print(solution_template)
+        all_permutations = sample(all_permutations, max_num)
+
+    #print(solution_template)
+    for perm in all_permutations:
+        solution = deepcopy(solution_template)
+        perm = list(perm)
+        valid = True
+        count = 0
+        for i, sol in enumerate(solution):
+            if None in sol:
+                for j, s2 in enumerate(sites2[i]):
+                    if sol[j] is None:
+                        if s2 == sites1[perm[count]]:
+                            solution[i][j] = deepcopy(perm[count])
+                            count += 1
+                        else:
+                            valid = False
+                            break
+                if not valid:
+                    break
+        if valid and new_solution(solution, unique_solutions):
+            unique_solutions.append(solution)
+
+    return unique_solutions
+
 def find_mapping(atom_sites, splitter, max_num=720):
     """
     search for all mappings for a given splitter
@@ -46,71 +109,42 @@ def find_mapping(atom_sites, splitter, max_num=720):
     Returns:
         unique solutions
     """
-    solution_template = [[None]*len(wp2) for wp2 in splitter.wp2_lists]
-    assigned_ids = []
-    # look for unique assignment from sites_H to sites_G
-    for i, wp2 in enumerate(splitter.wp2_lists):
-        # choose the sites belong to the same element
-
-        ele = splitter.elements[i]
-        e_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
-        wp_letters = set([wp.letter for wp in wp2])
-        ids = [id for id in e_ids if atom_sites[id].wp.letter in wp_letters]
-        if len(wp2) == len(ids):
-            solution_template[i] = ids
-            assigned_ids.extend(ids)
-        else:
-            if len(wp_letters) == len(wp2): # eg, ['4a', '2b']
-                for j, wp in enumerate(wp2):
-                    ids = [id for id in ids if atom_sites[id].wp.letter == wp_letters]
-                    if len(ids) == 1:
-                        solution_template[i][j] = ids[0]
-                        assigned_ids.extend(ids)
-
-    # print(assigned_ids, solution_template)
-    # consider all permutations for to assign the rest atoms from H to G
-    # https://stackoverflow.com/questions/65484940
-    #print(solution_template)
-    # splitting them by elements
     eles = set([site.specie for site in atom_sites])
+
+    # loop over the mapping for each element
+    # then propogate the possible mapping via itertools.product
     lists = []
-    eles0 = []
     for ele in eles:
-        ids = [id for id, site in enumerate(atom_sites) if id not in assigned_ids and site.specie==ele]
-        # split them by sites e.g. ['4a', '4a'] will be no permutation
-        if len(ids)>0:
-            lists.append(list(itertools.permutations(ids)))
-            eles0.append(ele)
+        # ids of atom sites
+        site_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
+        # ids to be assigned
+        wp2_ids = [id for id, e in enumerate(splitter.elements) if e==ele]
 
-    all_permutations = list(itertools.product(*lists))
-    unique_solutions = []
+        letters1 = [atom_sites[id].wp.letter for id in site_ids]
+        letters2 = []
+        for id in wp2_ids:
+            wp2 = splitter.wp2_lists[id]
+            letters2.append([wp.letter for wp in wp2])
+        #print(letters1, letters2)
+        res = find_mapping_per_element(letters1, letters2, max_num=720)
+        lists.append(res)
+    mappings = list(itertools.product(*lists))
+    # resort the mapping 
+    ordered_mappings = []
+    for mapping in mappings:
+        ordered_mapping = [None]*len(splitter.wp2_lists)
+        for i, ele in enumerate(eles):
+            site_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
+            count = 0
+            for j, wp2 in enumerate(splitter.wp2_lists):
+                if splitter.elements[j] == ele:
+                    ordered_mapping[j] = [site_ids[m] for m in mapping[i][count]]
+                    count += 1
+        #print("res", ordered_mapping)
+        ordered_mappings.append(ordered_mapping)
 
-    if len(all_permutations) > max_num:
-        print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
-        all_permutations = sample(all_permutations, max_num)
-
-    for permutation in all_permutations:
-        solution = deepcopy(solution_template)
-        valid = True
-        for perm, ele in zip(permutation, eles0):
-            perm = list(perm)
-            for i, sol in enumerate(solution):
-                if None in sol and splitter.elements[i]==ele:
-                    for j, wp in enumerate(splitter.wp2_lists[i]):
-                        if wp.letter == atom_sites[perm[j]].wp.letter:
-                            solution[i][j] = perm[j]
-                        else:
-                            valid = False
-                            break
-                    if not valid:
-                        break
-                    else:
-                        del perm[:len(splitter.wp2_lists[i])]
-        if valid and new_solution(solution, unique_solutions):
-            unique_solutions.append(solution)
-    #print("mapping", len(unique_solutions), len(all_permutations))
-    #import sys; sys.exit()
-    return unique_solutions
+    #if len(ordered_mappings)==0: import sys; sys.exit()
+    return ordered_mappings
 
 def search_G1(G, rot, tran, pos, wp1, op):
     if np.linalg.det(rot) < 1:
@@ -950,7 +984,6 @@ class supergroup():
             coords_H1: coordinates in H
             elements: list of elements
         """
-
         cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
         atom_sites_H = self.struc.atom_sites
         coords_G1 = [] # position in G
@@ -986,7 +1019,7 @@ class supergroup():
 
                 coords_G1.append(tmp)
                 coord1_G2, _ = search_G2(inv_rot, -tran, tmp, coord1_H+disp, self.cell)
- 
+                #print("G2", wp1.letter, coord1_G2, tmp)
                 coords_G2.append(coord1_G2)
                 coords_H1.append(coord1_H)
 
