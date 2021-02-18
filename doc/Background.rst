@@ -173,7 +173,7 @@ Typically, to describe coordinates within a crystal, we use what are called *fra
    :scale: 100 %
    :alt: fractional vs absolute coordinates
 
-It is important to note that when periodicity is present, multiple coordinates can actually correspond to the same point, at least in notation. It is common practice to convert all coordintaes to lie within the range [0.1) for periodic axes. So, for example, if we have a point at ``(1.4,-0.3,0.6)``, it will usually be written as ``(0.4,0.7,0.6)``. This is because it is assumed that each unit cell is the same. In other words, an atom located at ``(1.4,-0.3,0.6)`` implies that another atom is located at ``(0.4,0.7,0.6)``. So, it is more convenient to only consider the unit cell which lies between ``(0,0,0)`` and ``(1,1,1)``.
+It is important to note that when periodicity is present, multiple coordinates can actually correspond to the same point, at least in notation. It is common practice to convert all coordintaes to lie within the range [0, 1) for periodic axes. So, for example, if we have a point at ``(1.4,-0.3,0.6)``, it will usually be written as ``(0.4,0.7,0.6)``. This is because it is assumed that each unit cell is the same. In other words, an atom located at ``(1.4,-0.3,0.6)`` implies that another atom is located at ``(0.4,0.7,0.6)``. So, it is more convenient to only consider the unit cell which lies between ``(0,0,0)`` and ``(1,1,1)``.
 
 Symmetry Operations
 -------------------
