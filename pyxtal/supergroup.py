@@ -809,7 +809,7 @@ class supergroup():
         inv_rot = np.linalg.inv(rot)
         cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
         ops_G1  = splitter.G[0]
-
+        #print(mapping)
         # if there involves wp transformation between frozen points, disp has to be zero
         for wp2 in splitter.wp2_lists:
             frozen = True
@@ -867,12 +867,12 @@ class supergroup():
                 else:
                     coord1_G2, dist = search_G2(inv_rot, -tran, tmp, coord1_H+disp, self.cell)
 
+                #print("--------", wp1.letter, tmp, coord1_G2, coord1_H+disp, dist)
                 if dist < d_tol:
                     #if dist >0: print(dist, coord1_G2, coord1_H+disp)
                     max_disps.append(dist)
                 else:
                     #import sys; sys.exit()
-                    #print("--------", wp1.letter, tmp, coord1_G2, coord1_H+disp, dist)
                     return 10000, None, None
 
             elif len(splitter.wp2_lists[i]) == 2:
@@ -935,13 +935,13 @@ class supergroup():
 
                     #print("G1", coord1_G1, coord2_G1, op_G12.as_xyz_string())
                     #print(splitter.G.number, splitter.wp1_lists[i].index, coord2_G1, op_G12.as_xyz_string())
-                    coord2_G1 = sym.search_cloest_wp(splitter.G, wp1, op_G12, coord2_G1)
+                    #coord2_G1 = sym.search_cloest_wp(splitter.G, wp1, op_G12, coord2_G1)
                     #print("G1(symm1)", coord1_G1, coord2_G1)
                     #import sys; sys.exit()
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
-                    tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
+                    #tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
 
                     # G1->G2->H
                     d = coord2_G1 - tmp
@@ -956,10 +956,10 @@ class supergroup():
                     coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell)
 
                     #print(wp1.letter, dist1, dist2)
+                    #print("1:", coord1_G2, coord1_H, dist1)
+                    #print("2:", coord2_G2, coord2_H, dist2)
+                    #print("T:", tmp)
                     if max([dist1, dist2]) > np.sqrt(2)*d_tol:
-                        #print("1:", coord1_G2, coord1_H, dist1)
-                        #print("2:", coord2_G2, coord2_H, dist2)
-                        #print("T:", tmp)
                         return 10000, None, mask
                     else:
                         max_disps.append(max([dist1, dist2]))
@@ -1104,15 +1104,15 @@ if __name__ == "__main__":
             #"MPWO": [59, 71, 139, 225],
             #"BTO-Amm2": [65, 123, 221],
             #"NaSb3F10": [186, 194],
-            "GeF2": 62,
-            "NiS-Cm": 160,
-            "lt_quartz": 180,
-            "BTO-Amm2": 221,
-            "BTO": 221,
-            "lt_cristobalite": 227,
-            "NaSb3F10": 194,
+            #"GeF2": 62,
+            #"NiS-Cm": 160,
+            #"lt_quartz": 180,
+            #"BTO-Amm2": 221,
+            #"BTO": 221,
+            #"lt_cristobalite": 227,
+            #"NaSb3F10": 194,
             "MPWO": 225,
-            "NbO2": 141,
+            #"NbO2": 141,
            }
     cif_path = "pyxtal/database/cifs/"
 
