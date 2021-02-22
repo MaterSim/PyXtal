@@ -524,22 +524,23 @@ class supergroups():
         for G in path:
             working_path.append(G)
             H = G_strucs[0].group.number
-            if G != H:
-                if sym.get_point_group(G) == sym.get_point_group(H):
-                    group_type = 'k'
-                else:
-                    group_type = 't'
+            print(G, H)
+            #if G != H:
+            if sym.get_point_group(G) == sym.get_point_group(H):
+                group_type = 'k'
+            else:
+                group_type = 't'
 
-                for G_struc in G_strucs:
-                    my = supergroup(G_struc, [G], group_type)
-                    solutions = my.search_supergroup(self.d_tol, self.max_per_G)
-                    new_G_strucs = my.make_supergroup(solutions, show_detail=self.show)
-                    if len(new_G_strucs) > 0:
-                        strucs.append(G_struc)
-                        G_strucs = new_G_strucs
-                        break
-                if len(new_G_strucs) == 0:
+            for G_struc in G_strucs:
+                my = supergroup(G_struc, [G], group_type)
+                solutions = my.search_supergroup(self.d_tol, self.max_per_G)
+                new_G_strucs = my.make_supergroup(solutions, show_detail=self.show)
+                if len(new_G_strucs) > 0:
+                    strucs.append(G_struc)
+                    G_strucs = new_G_strucs
                     break
+            if len(new_G_strucs) == 0:
+                break
 
         # add the final struc
         if len(new_G_strucs) > 0:
@@ -965,7 +966,7 @@ class supergroup():
                         max_disps.append(max([dist1, dist2]))
 
 
-            'the 3 position merge is currently a pure prototype that hasnt been tested yet'
+            #the 3 position merge is currently a pure prototype that hasnt been tested yet
             elif len(splitter.wp2_lists[i]) == 3:
                 # assume zero shift, needs to check
                 if disp is None:
@@ -1101,6 +1102,7 @@ class supergroup():
                     else:
                         max_disps.append(max([dist1,dist2,dist3]))
             else:
+                print(splitter)
                 raise RuntimeError("do not support merging more than 3 sites to 1 site")
         #print(max_disps)
         return max(max_disps), disp, mask
