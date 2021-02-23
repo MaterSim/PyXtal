@@ -15,6 +15,7 @@ from pyxtal.supergroup import supergroups
 
 name, H, gtype = "Fd3m", 166, 't'
 name, H, gtype = "R-3", 148, 'k' #needs 1->3
+name, H, gtype = "Pm3", 47, 't' #needs 1->3
 #Name, H, gtype = "Acam", 12, 't'
 #Name, H, gtype = "Pcmb", 61, 'k'
 #Name, H, gtype = "P2_122_1", 61, 'k'

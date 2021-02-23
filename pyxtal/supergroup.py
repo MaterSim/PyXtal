@@ -65,7 +65,12 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
                 solution_template[i] = ids
                 assigned_ids.extend(ids)
         elif len(wp_letters)==2: #site2: ['a','a','b']
-            raise NotImplementedError("unsupported:", site2)
+            for j in range(2):
+                ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[j]]
+                if len(ids) == site2.count(wp_letters[j]):
+                    solution_template[i][j] = ids[j]
+                    assigned_ids.extend(ids[j])
+            #raise NotImplementedError("unsupported:", site2)
 
     ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
     all_permutations = list(itertools.permutations(ids))
@@ -495,7 +500,7 @@ class supergroups():
                     failed_paths.append(w_path)
             else:
                 status += "skipped..."
-            print(status)
+            #print(status)
 
 
     def __str__(self):
@@ -802,7 +807,7 @@ class supergroup():
             distortion
             cell translation
         """
-        print('ran')
+        #print('ran')
         cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
         max_disps = []
         atom_sites_H = self.struc.atom_sites
