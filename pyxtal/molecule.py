@@ -351,12 +351,12 @@ class Orientation:
         if self.degrees >= 1:
             # choose the axis
             if self.axis is None:
-                axis = np.random.RandomState().rand(3) - 0.5
+                axis = np.random.rand(3) - 0.5
                 self.axis = axis / np.linalg.norm(axis)
 
             # parse the angle
             if angle == "random":
-                angle = np.random.RandomState().rand() * np.pi * 2
+                angle = np.random.rand() * np.pi * 2
             self.angle = angle
 
             # update the matrix
