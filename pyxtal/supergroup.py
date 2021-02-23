@@ -419,7 +419,7 @@ def search_paths(H, G, max_layers=5):
             # If a subgroup list has been found with H, will trace
             # a path through the dictionary to build the path
             if H in subgroup_numbers:
-                paths=[[H,g]]
+                paths=[[g]]
                 for j in reversed(range(l-1)):
                     holder=[]
                     for path in paths:
@@ -802,6 +802,7 @@ class supergroup():
             distortion
             cell translation
         """
+        print('ran')
         cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
         max_disps = []
         atom_sites_H = self.struc.atom_sites
