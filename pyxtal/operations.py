@@ -559,7 +559,7 @@ def angle(v1, v2, radians=True):
     elif np.abs(dot+1)<1e-3:
         return np.pi
     a = np.arccos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
-    if radians is True:
+    if radians:
         return a
     else:
         return a * deg
@@ -605,10 +605,10 @@ def aa2matrix(axis, angle, radians=True, random=False):
         a 3x3 numpy array representing a rotation matrix
     """
     # Convert to radians if necessary
-    if radians is not True:
+    if not radians:
         angle *= rad
     # Allow for generation of random rotations
-    if random is True:
+    if random:
         # a = np.random.random()
         axis = np.random.sample(3)
         angle = np.random.random() * np.pi * 2
@@ -743,9 +743,9 @@ class OperationAnalyzer(SymmOp):
             if abs(y) <= tol:
                 found = True
                 break
-        if found is True:
+        if found:
             # Double order of odd-rotation rotoinversions
-            if rotoinversion is True:
+            if rotoinversion:
                 if n % 2 == 1:
                     return int(n * 2)
                 else:
