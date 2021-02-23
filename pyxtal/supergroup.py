@@ -529,7 +529,7 @@ class supergroups():
         for G in path:
             working_path.append(G)
             H = G_strucs[0].group.number
-            print(G, H)
+            #print(G, H)
             #if G != H:
             if sym.get_point_group(G) == sym.get_point_group(H):
                 group_type = 'k'

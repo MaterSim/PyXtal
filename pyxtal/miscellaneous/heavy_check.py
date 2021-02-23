@@ -23,7 +23,7 @@ for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")):
     G = s.group.number
     
     print(i, name, len(s.atom_sites))
-    if len(s.atom_sites) <= 10:
+    if len(s.atom_sites) <= 6:
         if not sm.StructureMatcher().fit(pmg_s1, pmg0):
             print("Error in reading cif")
 
@@ -55,16 +55,17 @@ for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")):
                 if H>2 and H != G and H in s.group.get_max_subgroup_numbers():
                     struc_h = s.subgroup_once(eps=0.05, H=H, group_type=gtype, mut_lat=False)
                     try: 
-                        error = False
                         sup = supergroups(struc_h, G=G, d_tol=0.3, max_per_G=500)
                         if sup.strucs is not None:
-                            pmg_g = sup.strucs[-1].to_pymatgen()
-                            if not sm.StructureMatcher().fit(pmg_g, pmg_s1):
-                                error = True
+                            match = False
+                            for struc in sup.strucs:
+                                pmg_g = struc.to_pymatgen()
+                                if sm.StructureMatcher().fit(pmg_g, pmg_s1):
+                                    match = True
+                                    break
+                            if not match:
+                                print("Cannot recover the original structure", G, '<-', H)
                         else:
-                            error = True
-
-                        if error:
                             print("Error in supergroup", G, '<-', H)
                     except RuntimeError:
                         print("no splitter skip", name)
