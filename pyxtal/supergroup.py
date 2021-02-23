@@ -129,7 +129,7 @@ def find_mapping(atom_sites, splitter, max_num=720):
         res = find_mapping_per_element(letters1, letters2, max_num=720)
         lists.append(res)
     mappings = list(itertools.product(*lists))
-    # resort the mapping 
+    # resort the mapping
     ordered_mappings = []
     for mapping in mappings:
         ordered_mapping = [None]*len(splitter.wp2_lists)
@@ -164,7 +164,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
         coords.append(tmp)
         if dist < 1e-1:
             break
-        
+
     diffs = np.array(diffs)
     minID = np.argmin(diffs)
     tmp = coords[minID]
@@ -406,7 +406,7 @@ def search_paths(H, G, max_layers=5):
     traversed=[]
 
     # searches for every subgroup of the the groups from the previous layer.
-    # Stores the possible groups of each layer and their subgroups 
+    # Stores the possible groups of each layer and their subgroups
     # in a dictinoary to avoid redundant calculations.
     # Starts from G and goes down to H
     for l in range(1,max_layers+1):
@@ -416,7 +416,7 @@ def search_paths(H, G, max_layers=5):
         for g in previous_layer_groups:
             subgroup_numbers=np.unique(sym.Group(g).get_max_subgroup_numbers())
 
-            # If a subgroup list has been found with H, will trace 
+            # If a subgroup list has been found with H, will trace
             # a path through the dictionary to build the path
             if H in subgroup_numbers:
                 paths=[[H,g]]
@@ -474,7 +474,7 @@ class supergroups():
             paths = search_paths(struc.group.number, G, max_layers=5)
         else:
             paths = [path]
-        
+
         print("{:d} paths will be checked".format(len(paths)))
         self.strucs = None
         failed_paths = []
@@ -524,22 +524,23 @@ class supergroups():
         for G in path:
             working_path.append(G)
             H = G_strucs[0].group.number
-            if G != H:
-                if sym.get_point_group(G) == sym.get_point_group(H):
-                    group_type = 'k'
-                else:
-                    group_type = 't'
+            print(G, H)
+            #if G != H:
+            if sym.get_point_group(G) == sym.get_point_group(H):
+                group_type = 'k'
+            else:
+                group_type = 't'
 
-                for G_struc in G_strucs:
-                    my = supergroup(G_struc, [G], group_type)
-                    solutions = my.search_supergroup(self.d_tol, self.max_per_G)
-                    new_G_strucs = my.make_supergroup(solutions, show_detail=self.show)
-                    if len(new_G_strucs) > 0:
-                        strucs.append(G_struc)
-                        G_strucs = new_G_strucs
-                        break
-                if len(new_G_strucs) == 0:
+            for G_struc in G_strucs:
+                my = supergroup(G_struc, [G], group_type)
+                solutions = my.search_supergroup(self.d_tol, self.max_per_G)
+                new_G_strucs = my.make_supergroup(solutions, show_detail=self.show)
+                if len(new_G_strucs) > 0:
+                    strucs.append(G_struc)
+                    G_strucs = new_G_strucs
                     break
+            if len(new_G_strucs) == 0:
+                break
 
         # add the final struc
         if len(new_G_strucs) > 0:
@@ -829,7 +830,7 @@ class supergroup():
             if len(splitter.wp2_lists[i]) == 1:
                 op_G1 = splitter.G1_orbits[i][0][0]
                 ops_H = splitter.H_orbits[i][0]
-                base = atom_sites_H[mapping[i][0]].position.copy() 
+                base = atom_sites_H[mapping[i][0]].position.copy()
 
                 #choose the best coord1_H
                 coord1s_H = apply_ops(base, ops_H)
@@ -838,7 +839,7 @@ class supergroup():
                     if disp is not None:
                         coord1_G2 = coord1_H + disp
                     else:
-                        coord1_G2 = coord1_H 
+                        coord1_G2 = coord1_H
                     coord1_G1, diff = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G1)
                     ds.append(diff)
 
@@ -849,8 +850,8 @@ class supergroup():
                 if disp is not None:
                     coord1_G2 = coord1_H + disp
                 else:
-                    coord1_G2 = coord1_H 
-                
+                    coord1_G2 = coord1_H
+
                 tmp, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G1)
 
                 # initial guess on disp
@@ -897,7 +898,7 @@ class supergroup():
                 if splitter.group_type == 'k':
                     # For t-type splitting, restore the translation symmetry:
                     # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
-                    # then find the best_match between coord1 and coord2, 
+                    # then find the best_match between coord1 and coord2,
 
                     ops_H1 = splitter.H_orbits[i][0]
                     op_G21 = splitter.G2_orbits[i][0][0]
@@ -951,7 +952,7 @@ class supergroup():
                     coord2_G1 -= d/2
                     coord1_G1 += d/2
                     #print("G1 (symm2)", coord1_G1, coord2_G1)
-                    
+
                     coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell)
                     coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell)
 
@@ -963,8 +964,146 @@ class supergroup():
                         return 10000, None, mask
                     else:
                         max_disps.append(max([dist1, dist2]))
+
+
+            #the 3 position merge is currently a pure prototype that hasnt been tested yet
+            elif len(splitter.wp2_lists[i]) == 3:
+                # assume zero shift, needs to check
+                if disp is None:
+                    disp = np.zeros(3)
+                    mask = [0, 1, 2]
+
+                # H->G2->G1
+                letters=[atom_sites_H[mapping[i][x]].wp.letter for x in range(3)]
+                ordered_letter_index=[letters.index(x) for x in [splitter.wp2_lists[i][y].letter for y in range(3)]]
+                ordered_mapping=[mapping[i][x] for x in ordered_letter_index]
+
+                coord1_H = atom_sites_H[ordered_mapping[0]].position.copy()
+                coord2_H = atom_sites_H[ordered_mapping[1]].position.copy()
+                coord3_H = atom_sites_H[ordered_mapping[2]].position.copy()
+
+
+
+                coord1_G2 = coord1_H + disp
+                coord2_G2 = coord2_H + disp
+                coord3_G2 = coord3_H + disp
+
+                if splitter.group_type == 'k':
+                    # For t-type splitting, restore the translation symmetry:
+                    # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
+                    # then find the best_match between coord1 and coord2,
+
+                    ops_H1 = splitter.H_orbits[i][0]
+                    op_G21 = splitter.G2_orbits[i][0][0]
+
+                    ops_G22 = splitter.G2_orbits[i][1]
+                    ops_G23 = splitter.G2_orbits[i][2]
+
+                    for op_G22 in ops_G22:
+                        diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
+                        if np.sum(diff**2) < 1e-3:
+                            trans12 = op_G22.translation_vector - op_G21.translation_vector
+                            break
+
+                    for op_G23 in ops_G23:
+                        diff = (op_G23.rotation_matrix - op_G21.rotation_matrix).flatten()
+                        if np.sum(diff**2) < 1e-3:
+                            trans13 = op_G23.translation_vector - op_G21.translation_vector
+                            break
+
+                    trans12 -= np.round(trans12)
+                    trans13 -= np.round(trans13)
+                    coords11 = apply_ops(coord1_G2,ops_H1)
+
+                    coords11_2 += trans12
+                    coords11_3 += trans13
+
+                    #check if tmp12 and tmp13 are the same position
+                    tmp12,dist12=get_best_match(coords11,coord2_G2,self.cell)
+                    tmp13,dist13=get_best_match(coords11,coord3_G2,self.cell)
+
+                    if max([dist12,dist13]) > np.sqrt(3)*d_tol:
+                        return 10000, None, mask
+
+                    else:
+                        d12 = coord2_G2 - tmp12
+                        d12 -= np.round(d12)
+                        disp12=np.linalg.norm(np.dot(d12/2,self.cell))
+
+                        d13 = coord3_G2 - tmp13
+                        d13 -= np.round(d13)
+                        disp13 = np.linalg.norm(np.dot(d13/2,self.cell))
+
+                        max_disps.append(max([disp12,disp13]))
+
+
+
+                else:
+                    op_G11 = splitter.G1_orbits[i][0][0]
+                    op_G12 = splitter.G1_orbits[i][1][0]
+                    op_G13 = splitter.G1_orbits[i][2][0]
+                    coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
+                    coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
+                    coord3_G1, _ = search_G1(splitter.G, rot, tran, coord3_G2, wp1, op_G13)
+
+
+                    coords11 = apply_ops(coord1_G1,ops_G1)
+                    tmp12, dist12 = get_best_match(coords11, coord2_G1, cell)
+                    central_op1=ops_G1[coords11.index(temp12)]
+                    ops_H3=splitter.H_orbits[i][2]
+                    coords3_H = apply_ops(coord3_H,ops_H3)
+                    coord_list=[]
+                    diff_list=[]
+                    for coord3_H in coords3_H:
+                        coord3_G2 = coord1_H + disp
+                        coord, diff = search_G1(splitter.G,rot,tran,coord3_G2,wp1,central_op1)
+                        coord_list.append(coord)
+                        diff_list.append(diff)
+                    diff_list=np.array(diff_list)
+                    minID = np.argmin(diff_list)
+                    coord3_G1 = coord_list[minID]
+
+                    #at this point, tmp12 has been chosen from a list of of positions generated
+                    #by applying all the G1_ops to coord1_G1. It was chosen as being the best
+                    #match from that list to coord2_G2. Then, all the positions of the third co-
+                    #ordinate are created by applying all coord3_H ops to coord3_H. All these
+                    #positions are then fed into the search_G1 function along with the oroginal
+                    #operation that connected coord1 and coord2.
+
+                    d12 = coord2_G1 - tmp
+                    d12 -= np.round(d12)
+
+
+                    #should there be a line: coord1_G1 = tmp ?
+                    ############not sure this part is right. Must check#####################
+                    d13 = coord3_G1 - tmp
+                    d13 -= np.round(d13)
+
+                    d23 = coord2_G1-coord3_G1-tmp
+                    d23 = np.round(d23)
+                    ##########################################################################
+
+                    midpoint_d12 = coord2_G1 + d12/2
+                    midpoint_d13 = coord3_G1 + d13/2
+                    midpoint_d23 = coord2_G1 + d23/2
+
+
+
+                    coord1_G1 = (coord1_G1 + midpoint_d23)/2
+                    coord2_G1 = (coord2_G1 + midpoint_d13)/2
+                    coord3_G1 = (coord3_G1 + midpoint_d12)/2
+
+                    coord1_G2, dist1 = searchG2(inv_rot, -tran, coord1_G1, coord1_H + disp,self.cell)
+                    coord2_G2, dist2 = searchG2(inv_rot, -tran, coord2_G1, coord2_H + disp,self.cell)
+                    coord3_G2, dist3 = searchG2(inv_rot, -tran, coord3_G1, coord3_H + disp,self.cell)
+
+                    if max([dist1,dist2,dist3]) > np.sqrt(3)*d_tol:
+                        return 10000, None, mask
+                    else:
+                        max_disps.append(max([dist1,dist2,dist3]))
             else:
-                raise RuntimeError("donot support merging 3 sites to 1 site")
+                print(splitter)
+                raise RuntimeError("do not support merging more than 3 sites to 1 site")
         #print(max_disps)
         return max(max_disps), disp, mask
 
@@ -1000,7 +1139,7 @@ class supergroup():
             if len(splitter.wp2_lists[i]) == 1:
                 op_G1 = splitter.G1_orbits[i][0][0]
                 ops_H = splitter.H_orbits[i][0]
-                base = atom_sites_H[mapping[i][0]].position.copy() 
+                base = atom_sites_H[mapping[i][0]].position.copy()
 
                 #choose the best coord1_H
                 coord1s_H = apply_ops(base, ops_H)
@@ -1026,14 +1165,14 @@ class supergroup():
             else:
 
                 if atom_sites_H[mapping[i][0]].wp.letter == splitter.wp2_lists[i][0].letter:
-                    coord1_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord1_H = atom_sites_H[mapping[i][0]].position.copy()
                     coord2_H = atom_sites_H[mapping[i][1]].position.copy()
                 else:
-                    coord2_H = atom_sites_H[mapping[i][0]].position.copy() 
+                    coord2_H = atom_sites_H[mapping[i][0]].position.copy()
                     coord1_H = atom_sites_H[mapping[i][1]].position.copy()
 
                 coord1_G2 = coord1_H + disp
-                coord2_G2 = coord2_H + disp  
+                coord2_G2 = coord2_H + disp
                 op_G11 = splitter.G1_orbits[i][0][0]
                 op_G12 = splitter.G1_orbits[i][1][0]
 
@@ -1067,12 +1206,12 @@ class supergroup():
                     # H->G2->G1
                     coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
                     coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
-                    
+
                     #find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
                     tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
- 
+
                     # G1->G2->H
                     d = coord2_G1 - tmp
                     d -= np.round(d)
