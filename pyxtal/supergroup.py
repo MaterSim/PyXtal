@@ -67,10 +67,11 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
         elif len(wp_letters)==2: #site2: ['a','a','b']
             for j in range(2):
                 ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[j]]
-                if len(ids) == site2.count(wp_letters[j]):
+                if len(ids) == site2.count(list(wp_letters)[j]):
                     solution_template[i][j] = ids[j]
-                    assigned_ids.extend(ids[j])
+                    assigned_ids.append(ids[j])
             #raise NotImplementedError("unsupported:", site2)
+    #print(assigned_ids)
 
     ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
     all_permutations = list(itertools.permutations(ids))
