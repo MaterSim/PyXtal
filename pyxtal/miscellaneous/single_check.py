@@ -12,13 +12,18 @@ from pymatgen import Structure
 from pyxtal import pyxtal
 from pyxtal.supergroup import supergroups
 
-paras = (["R-3", 147, 'k'],
+paras = (#["R-3", 147, 'k'],
+         #["P3_112", 5, 't'],
+         ["P6_422", 21, 't'],
+         ["P4_332", 155, 't'],
+         ["P4_332", 96, 't'],
          ["FD3", 70, 't'], #needs 1->3
-         ["Pm3", 47, 't'], #needs 1->3
          ["Fd3m", 166, 't'],
          ["R-3c", 15, 't'],
          ["R32", 5, 't'],
+         ["Pm3", 47, 't'], #needs 1->3
          #["Pmma", 25, 't'],
+         #["I-43m", 160, 't'], #mapping
         )
 for para in paras:
     name, H, gtype = para
