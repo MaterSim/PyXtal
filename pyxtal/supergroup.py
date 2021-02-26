@@ -65,15 +65,18 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
                 solution_template[i] = ids
                 assigned_ids.extend(ids)
         elif len(wp_letters)==2: #site2: ['a','a','b']
+            count = 0
             for j in range(2):
                 ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[j]]
                 if len(ids) == site2.count(list(wp_letters)[j]):
-                    solution_template[i][j] = ids[j]
-                    assigned_ids.append(ids[j])
+                    solution_template[i][count:count+len(ids)] = ids
+                    assigned_ids.extend(ids)
+                    count += len(ids)
             #raise NotImplementedError("unsupported:", site2)
     #print(assigned_ids)
 
     ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
+    
     all_permutations = list(itertools.permutations(ids))
     if len(all_permutations) > max_num:
         print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
@@ -131,7 +134,7 @@ def find_mapping(atom_sites, splitter, max_num=720):
         for id in wp2_ids:
             wp2 = splitter.wp2_lists[id]
             letters2.append([wp.letter for wp in wp2])
-        #print(letters1, letters2)
+        #print(ele, letters1, letters2)
         res = find_mapping_per_element(letters1, letters2, max_num=720)
         lists.append(res)
     mappings = list(itertools.product(*lists))
