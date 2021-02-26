@@ -76,7 +76,7 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
     #print(assigned_ids)
 
     ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
-    
+
     all_permutations = list(itertools.permutations(ids))
     if len(all_permutations) > max_num:
         print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
@@ -814,7 +814,6 @@ class supergroup():
             distortion
             cell translation
         """
-        #print(mapping)
         if splitter.H.number <= 15 or 143<= splitter.H.number <= 194:
             ortho = False
         else:
@@ -968,15 +967,11 @@ class supergroup():
 
                     coord2_G1 -= d/2
                     coord1_G1 += d/2
-                    #print("G1 (symm2)", coord1_G1, coord2_G1)
 
                     coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell, ortho)
                     coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell, ortho)
 
-                    #print(wp1.letter, dist1, dist2)
-                    #print("1:", coord1_G2, coord1_H+disp, dist1)
-                    #print("2:", coord2_G2, coord2_H+disp, dist2)
-                    #print("T:", tmp)
+
                     if max([dist1, dist2]) > np.sqrt(2)*d_tol:
                         #import sys; sys.exit()
                         return 10000, None, mask
@@ -986,14 +981,21 @@ class supergroup():
 
             #the 3 position merge is currently a pure prototype that hasnt been tested yet
             elif len(splitter.wp2_lists[i]) == 3:
+
                 # assume zero shift, needs to check
                 if disp is None:
                     disp = np.zeros(3)
                     mask = [0, 1, 2]
 
-                # H->G2->G1
+
+                #organizes the numbers from the mapping to be in same order as the positions in splitter.wp2_lists
+                #so that the positions from atoms_sites_H are in the correct assigned position.
                 letters=[atom_sites_H[mapping[i][x]].wp.letter for x in range(3)]
-                ordered_letter_index=[letters.index(x) for x in [splitter.wp2_lists[i][y].letter for y in range(3)]]
+                ordered_letter_index=[]
+                for pos in splitter.wp2_lists[i]:
+                    indice=letters.index(pos.letter)
+                    ordered_letter_index.append(indice)
+                    letters[indice]=0
                 ordered_mapping=[mapping[i][x] for x in ordered_letter_index]
 
                 coord1_H = atom_sites_H[ordered_mapping[0]].position.copy()
@@ -1002,57 +1004,86 @@ class supergroup():
 
 
 
+
+
                 coord1_G2 = coord1_H + disp
                 coord2_G2 = coord2_H + disp
                 coord3_G2 = coord3_H + disp
 
+                #Finds the correct quadrant that the coordinates lie in to easily generate all possible_wycs
+                #translations when trying to match
+                quadrant2=[0,0,0]
+                quadrant3=[0,0,0]
+                for k in range(3):
+                    if coord2_G2[k]>=0:
+                        quadrant2[k]=1
+                    else:
+                        quadrant2[k]=-1
+                for k in range(3):
+                    if coord3_G2[k]>=0:
+                        quadrant3[k]=1
+                    else:
+                        quadrant3[k]=-1
+                #The current code is written in a way to only support all coordinates in the same quadrant
+                #This is done for efficiency purposes. Can be modified to if the coordinates from atoms_sites_H
+                #to be merged are orinented in different quadrants
+                if quadrant2!=quadrant3:
+                    raise RuntimeError('coordinates not in same quadrant')
+                quadrant=quadrant2
+
+
                 if splitter.group_type == 'k':
-                    # For t-type splitting, restore the translation symmetry:
-                    # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
-                    # then find the best_match between coord1 and coord2,
+                    #This functionality uses the fact that, in a k type transitinos, atoms must be displaced such that
+                    #there is just 1 set of rotation matrices with n different trnaslation vectors
+                    #where n is the index of the splitting
+
+
 
                     ops_H1 = splitter.H_orbits[i][0]
                     op_G21 = splitter.G2_orbits[i][0][0]
 
                     ops_G22 = splitter.G2_orbits[i][1]
-                    ops_G23 = splitter.G2_orbits[i][2]
 
+                    #tries to find the two translation vectors (along with [0,0,0]) specific to this
+                    #splitting.
                     for op_G22 in ops_G22:
                         diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
                         if np.sum(diff**2) < 1e-3:
-                            trans12 = op_G22.translation_vector - op_G21.translation_vector
+                            trans2 = op_G22.translation_vector - op_G21.translation_vector
+                            trans3 = 2*deepcopy(trans2)
+                            for k in range(3):
+                                trans2[k]=trans2[k]%quadrant[k]
+                                trans3[k]=trans3[k]%quadrant[k]
+                            translations=[trans2,trans3]
+                            translations.append(np.array([0,0,0]))
+                            translations=np.array(translations)
                             break
 
-                    for op_G23 in ops_G23:
-                        diff = (op_G23.rotation_matrix - op_G21.rotation_matrix).flatten()
-                        if np.sum(diff**2) < 1e-3:
-                            trans13 = op_G23.translation_vector - op_G21.translation_vector
-                            break
 
-                    trans12 -= np.round(trans12)
-                    trans13 -= np.round(trans13)
+                    #Generates all rotation matrices by applying every operation of the wyckoff position of the
+                    #1st coordinate to the 1st coordinate.
                     coords11 = apply_ops(coord1_G2,ops_H1)
+                    for j in range(len(coords11)):
+                        for k in range(3):
+                            coords11[j][k]=coords11[j][k]%quadrant[k]
 
-                    coords11_2 += trans12
-                    coords11_3 += trans13
+                    #Generates all the new possible positions using the translations
+                    possible_coord_G2=[]
+                    for coordinate in coords11:
+                        for translation in translations:
+                            t=coordinate+translation
+                            for j in range(3):
+                                t[j]=t[j]%quadrant[j]
+                            possible_coord_G2.append(t)
 
-                    #check if tmp12 and tmp13 are the same position
-                    tmp12,dist12=get_best_match(coords11,coord2_G2,self.cell)
-                    tmp13,dist13=get_best_match(coords11,coord3_G2,self.cell)
 
+                    tmp12,dist12=get_best_match(possible_coord_G2,coord2_G2,self.cell)
+                    tmp13,dist13=get_best_match(possible_coord_G2,coord3_G2,self.cell)
                     if max([dist12,dist13]) > np.sqrt(3)*d_tol:
                         return 10000, None, mask
-
                     else:
-                        d12 = coord2_G2 - tmp12
-                        d12 -= np.round(d12)
-                        disp12=np.linalg.norm(np.dot(d12/2,self.cell))
+                        max_disps.append(max([dist12,dist13]))
 
-                        d13 = coord3_G2 - tmp13
-                        d13 -= np.round(d13)
-                        disp13 = np.linalg.norm(np.dot(d13/2,self.cell))
-
-                        max_disps.append(max([disp12,disp13]))
 
 
 
@@ -1124,7 +1155,6 @@ class supergroup():
                 raise RuntimeError("do not support merging more than 3 sites to 1 site")
         #print(max_disps)
         return max(max_disps), disp, mask
-
 
     def symmetrize(self, splitter, mapping, disp):
         """
