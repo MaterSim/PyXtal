@@ -222,6 +222,94 @@ def search_G2(rot, tran, pos1, pos2, cell=None, ortho=True):
 
     return pos, dist
 
+def find_xyz(G2_op,H_op,H_coord,splitter,quadrant=[0,0,0]):
+    """
+    Finds the x,y,z free parameter values for positions in the H basis. Then converts this into the
+    x,y,z free values written in the G2 basis.
+
+    Args:
+        G2_op:a symmetry operation in G2
+        H_op: The corresponding symmetry operation in H
+        coord: a coordinate
+        splitter: a wyckoff_split object
+        quadrant: a 3 item list (ex:[1,1,-1]) that contains information
+                  on the orientation of the molecule
+
+
+
+    Returns:
+        H_holder: The x,y,z parameters for the H wyckoff position
+        G2_holder: The corresponding x,y,z parameters written in the G2 basis
+    """
+    if np.all(quadrant==[0,0,0]):
+        for i,n in enumerate(coord):
+            if n>=0.:
+                quadrant[i]=1
+            else:
+                quadrant[i]=-1
+
+
+    #prepare the rotation matrices and translations vectors seperately
+    G2_holder=[1,1,1]
+    H_holder=[1,1,1]
+    G2_op=np.array(G2_op.as_dict()['matrix'])
+    H_op=np.array(H_op.as_dict()['matrix'])
+    rot_G2=G2_op[:3,:3].T
+    rot_H=H_op[:3,:3].T
+    tau_H=H_op[:3,3]
+    b=H_coord-tau_H
+    for k in range(3):
+        b[k]=b[k]%quadrant[k]
+
+
+    #eliminate any unused free parameters in the G2 and H basis
+    #The goal is to reduce the symmetry operations to be a full rank matrix
+    #any free parameter that is not used has its spot deleted from the rotation matrix and translation vector
+    for i,x in reversed(list(enumerate(rot_G2))):
+        if set(x)=={0.}:
+            G2_holder[i]=0
+            rot_G2=np.delete(rot_G2,i,0)
+    for i,x in reversed(list(enumerate(rot_H))):
+        if set(x)=={0.}:
+            H_holder[i]=0
+            rot_H=np.delete(rot_H,i,0)
+            b=np.delete(b,i)
+            quadrant=np.delete(quadrant,i)
+    if G2_holder.count(1) != H_holder.count(1):
+        raise RuntimeError('cannot merge') #can add functionality later
+
+
+    #eliminate any leftover empty rows to have fulll rank matrix
+    rot_G2=rot_G2.T
+    rot_H=rot_H.T
+    for i,x in reversed(list(enumerate(rot_G2))):
+        if set(x)=={0.}:
+            rot_G2=np.delete(rot_G2,i,0)
+    for i,x in reversed(list(enumerate(rot_H))):
+        if set(x)=={0.}:
+            rot_H=np.delete(rot_H,i,0)
+
+    #Must come back later and add Schwarz Inequality check to elininate any dependent vectors
+
+
+    #Use linear algebra and change of basis matrices to rewrite free parameters in both H and G2 basis.
+    #Then, fill the free parameters back into full 3 coordinate [x,y,z] form after all the matrix inverse calculations
+    #have been solved using the reduced, full rank matrix
+
+    H_basis_xyz=np.linalg.solve(rot_H,b)
+    change_of_basis=np.matmul(rot_H,np.linalg.inv(rot_G2))
+    G2_basis_xyz=np.matmul(change_of_basis,H_basis_xyz)
+    for i in range(len(quadrant)):
+        H_basis_xyz[i]=H_basis_xyz[i]%quadrant[i]
+        G2_basis_xyz[i]=G2_basis_xyz[i]%quadrant[i]
+    for i in range(H_holder.count(1)):
+        H_holder[H_holder.index(1)]=H_basis_xyz[i]
+        G2_holder[G2_holder.index(1)]=G2_basis_xyz[i]
+
+
+
+
+    return np.array(H_holder), np.array(G2_holder)
 
 def new_structure(struc, refs):
     """
@@ -1088,63 +1176,75 @@ class supergroup():
 
 
                 else:
-                    op_G11 = splitter.G1_orbits[i][0][0]
-                    op_G12 = splitter.G1_orbits[i][1][0]
-                    op_G13 = splitter.G1_orbits[i][2][0]
-                    coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
-                    coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
-                    coord3_G1, _ = search_G1(splitter.G, rot, tran, coord3_G2, wp1, op_G13)
+                    #merges 3 wyckoff positions to one for t type splitting
 
 
-                    coords11 = apply_ops(coord1_G1,ops_G1)
-                    tmp12, dist12 = get_best_match(coords11, coord2_G1, cell)
-                    central_op1=ops_G1[coords11.index(temp12)]
-                    ops_H3=splitter.H_orbits[i][2]
-                    coords3_H = apply_ops(coord3_H,ops_H3)
+                    #Pick the 1st coordinate representing a the 1st wyckoff position to be merged
+                    #Search for the nearest G1 coordinate as a starting point by testing all operations
+                    #onto the 1st coordinate and picking the one with minimum distance
+
+                    dist_list=[]
                     coord_list=[]
-                    diff_list=[]
-                    for coord3_H in coords3_H:
-                        coord3_G2 = coord1_H + disp
-                        coord, diff = search_G1(splitter.G,rot,tran,coord3_G2,wp1,central_op1)
+                    for op in splitter.G1_orbits[i][0]:
+                        coord,dist=search_G1(splitter.G,rot,tran,coord1_G2,wp1,op)
+                        dist_list.append(dist)
                         coord_list.append(coord)
-                        diff_list.append(diff)
-                    diff_list=np.array(diff_list)
-                    minID = np.argmin(diff_list)
-                    coord3_G1 = coord_list[minID]
-
-                    #at this point, tmp12 has been chosen from a list of of positions generated
-                    #by applying all the G1_ops to coord1_G1. It was chosen as being the best
-                    #match from that list to coord2_G2. Then, all the positions of the third co-
-                    #ordinate are created by applying all coord3_H ops to coord3_H. All these
-                    #positions are then fed into the search_G1 function along with the oroginal
-                    #operation that connected coord1 and coord2.
-
-                    d12 = coord2_G1 - tmp
-                    d12 -= np.round(d12)
+                    dist_list=np.array(dist_list)
+                    index1=np.argmin(dist_list)
+                    corresponding_op1=splitter.G2_orbits[i][0][index1]
 
 
-                    #should there be a line: coord1_G1 = tmp ?
-                    ############not sure this part is right. Must check#####################
-                    d13 = coord3_G1 - tmp
-                    d13 -= np.round(d13)
-
-                    d23 = coord2_G1-coord3_G1-tmp
-                    d23 = np.round(d23)
-                    ##########################################################################
-
-                    midpoint_d12 = coord2_G1 + d12/2
-                    midpoint_d13 = coord3_G1 + d13/2
-                    midpoint_d23 = coord2_G1 + d23/2
+                    #call the find_xyz function which calculates the values of the [x,y,z] free variables for
+                    #both the H basis and G2 basis. With the calculated values of the free parameters for the whole
+                    #G2 list, We can generate every position that can be matched.
+                    H_xyz1,G2_xyz1=find_xyz(corresponding_op1,splitter.H_orbits[i][0][index1],coord1_G2,splitter,quadrant)
 
 
 
-                    coord1_G1 = (coord1_G1 + midpoint_d23)/2
-                    coord2_G1 = (coord2_G1 + midpoint_d13)/2
-                    coord3_G1 = (coord3_G1 + midpoint_d12)/2
+                    #using the calculated free parameters,all the corresponding G2 positions for the other
+                    #two wyckoff positions are found. The coordinates for each of the other two wyckoff positions
+                    #are compared with the list of G2 positions to see which is the correct operation that it
+                    #corresponds with
+                    coords2_G2=[x.operate(G2_xyz1) for x in splitter.G2_orbits[i][1]]
+                    coords3_G2=[x.operate(G2_xyz1) for x in splitter.G2_orbits[i][2]]
+                    corresponding_coord2, _ = get_best_match(coords2_G2,coord2_G2,cell)
+                    corresponding_coord3, _ = get_best_match(coords3_G2,coord3_G2,cell)
+                    index2=coords2_G2.index(corresponding_coord2)
+                    index3=coords3_G2.index(corresponding_coord3)
+                    corresponding_op2=splitter.G2_orbits[i][1][index2]
+                    corresponding_op3=splitter.G2_orbits[i][2][index3]
 
-                    coord1_G2, dist1 = searchG2(inv_rot, -tran, coord1_G1, coord1_H + disp,self.cell)
-                    coord2_G2, dist2 = searchG2(inv_rot, -tran, coord2_G1, coord2_H + disp,self.cell)
-                    coord3_G2, dist3 = searchG2(inv_rot, -tran, coord3_G1, coord3_H + disp,self.cell)
+
+                    #once the correct operations associated with the other two coordinates are found, the values
+                    #of the free parameters for the H basis and G2 basis for both wyckoff positions are calculated
+                    H_xyz2,G2_xyz2=find_xyz(corresponding_op2,splitter.H_orbits[i][1][index2],coord2_G2,splitter,quadrant)
+                    H_xyz3,G2_xyz3=find_xyz(corresponding_op3,splitter.H_orbits[i][2][index3],coord3_G2,splitter,quadrant)
+
+
+
+
+                    #Now that each coordinate has its associated [x,y,z] free parameters for the whole G2 list,
+                    #we take the average of all of them to find the most fair free parameters for the supergroup
+                    #that will be inbetween all the wyckoff positions
+
+                    final_xyz=(G2_xyz1+G2_xyz2+G2_xyz3)/3
+
+
+                    #Use the known G1 operations that correspond with the H operations to operate
+                    #on the average [x,y,z] t
+                    coord1_G1=splitter.G1_orbits[i][0][index1].operate(final_xyz)
+                    coord2_G1=splitter.G1_orbits[i][1][index2].operate(final_xyz)
+                    coord3_G1=splitter.G1_orbits[i][2][index3].operate(final_xyz)
+
+
+
+
+                    #use the mandatory G1 coordinate match to find the final position that the
+                    #subgroup positions must move to to achieve symmetry.
+
+                    coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H + disp,self.cell)
+                    coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H + disp,self.cell)
+                    coord3_G2, dist3 = search_G2(inv_rot, -tran, coord3_G1, coord3_H + disp,self.cell)
 
                     if max([dist1,dist2,dist3]) > np.sqrt(3)*d_tol:
                         return 10000, None, mask
