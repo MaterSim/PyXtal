@@ -181,7 +181,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
     return tmp, np.min(diffs)
 
 
-def search_G2(rot, tran, pos1, pos2, cell=None):
+def search_G2(rot, tran, pos1, pos2, cell=None, ortho=True):
     """
     apply symmetry operation on pos1 when it involves cell change.
     e.g., when the transformation is (a+b, a-b, c),
@@ -191,8 +191,11 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     pos1 -= np.round(pos1)
     if np.linalg.det(rot) < 1:
         shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
+    elif not ortho:
+        shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
     else:
         shifts = np.array([[0,0,0]])
+    shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
 
     dists = []
     for shift in shifts:
@@ -203,7 +206,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
         dists.append(dist)
         if dist < 1e-1:
             break
-
+    #print("TTTTTTTTT", dists, np.linalg.det(rot))
     dists = np.array(dists)
     dist = np.min(dists)
     shift = shifts[np.argmin(dists)]
@@ -811,7 +814,11 @@ class supergroup():
             distortion
             cell translation
         """
-        #print('ran')
+        #print(mapping)
+        if splitter.H.number <= 15 or 143<= splitter.H.number <= 194:
+            ortho = False
+        else:
+            ortho = True
         cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
         max_disps = []
         atom_sites_H = self.struc.atom_sites
@@ -866,7 +873,7 @@ class supergroup():
 
                 # initial guess on disp
                 if disp is None:
-                    coord1_G2, dist1 = search_G2(inv_rot, -tran, tmp, coord1_H, None)
+                    coord1_G2, dist1 = search_G2(inv_rot, -tran, tmp, coord1_H, None, ortho)
                     diff = coord1_G2 - coord1_H
                     diff -= np.round(diff)
                     disp = diff.copy()
@@ -876,7 +883,7 @@ class supergroup():
                             mask.append(m)
                     dist = 0
                 else:
-                    coord1_G2, dist = search_G2(inv_rot, -tran, tmp, coord1_H+disp, self.cell)
+                    coord1_G2, dist = search_G2(inv_rot, -tran, tmp, coord1_H+disp, self.cell, ortho)
 
                 #print("--------", wp1.letter, tmp, coord1_G2, coord1_H+disp, dist)
                 if dist < d_tol:
@@ -963,14 +970,15 @@ class supergroup():
                     coord1_G1 += d/2
                     #print("G1 (symm2)", coord1_G1, coord2_G1)
 
-                    coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell)
-                    coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell)
+                    coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell, ortho)
+                    coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell, ortho)
 
                     #print(wp1.letter, dist1, dist2)
-                    #print("1:", coord1_G2, coord1_H, dist1)
-                    #print("2:", coord2_G2, coord2_H, dist2)
+                    #print("1:", coord1_G2, coord1_H+disp, dist1)
+                    #print("2:", coord2_G2, coord2_H+disp, dist2)
                     #print("T:", tmp)
                     if max([dist1, dist2]) > np.sqrt(2)*d_tol:
+                        #import sys; sys.exit()
                         return 10000, None, mask
                     else:
                         max_disps.append(max([dist1, dist2]))

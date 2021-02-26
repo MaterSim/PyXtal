@@ -13,12 +13,12 @@ from pymatgen import Structure
 from pyxtal import pyxtal
 from pyxtal.supergroup import supergroups
 
-name, H, gtype = "R-3", 148, 'k' #needs 1->3
-name, H, gtype = "Pm3", 47, 't' #needs 1->3
-name, H, gtype = "Fd3m", 166, 't'
-name, H, gtype = "R32", 5, 't'
-#name, H, gtype = "R-3c", 15, 't'
+#name, H, gtype = "R-3", 147, 'k' #needs 1->3
+#name, H, gtype = "Pm3", 47, 't' #needs 1->3
 #name, H, gtype = "Pmma", 25, 't'
+name, H, gtype = "Fd3m", 166, 't'
+name, H, gtype = "R-3c", 15, 't'
+name, H, gtype = "R32", 5, 't'
 name = "pyxtal/miscellaneous/cifs/" + name + ".cif"
 print(name)
 
