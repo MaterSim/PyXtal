@@ -259,7 +259,7 @@ def find_xyz(G2_op,H_op,H_coord,splitter,quadrant=[0,0,0]):
     tau_H=H_op[:3,3]
     b=H_coord-tau_H
     for k in range(3):
-        b[k]=b[k]%quadrant[k]
+        b[k]=b[k]%1
 
 
     #eliminate any unused free parameters in the G2 and H basis
@@ -1092,34 +1092,21 @@ class supergroup():
                 coord3_H = atom_sites_H[ordered_mapping[2]].position.copy()
 
 
-
-
-
+             #Finds the correct quadrant that the coordinates lie in to easily generate all possible_wycs
+                #translations when trying to match
+                quadrant=np.array(splitter.G2_orbits[i][0][0].as_dict()['matrix'])[:3,3]
+                for k in range(3):
+                    if quadrant[k]>=0.:
+                        quadrant[k]=1
+                    else:
+                        quadrant[k]=-1
                 coord1_G2 = coord1_H + disp
                 coord2_G2 = coord2_H + disp
                 coord3_G2 = coord3_H + disp
-
-                #Finds the correct quadrant that the coordinates lie in to easily generate all possible_wycs
-                #translations when trying to match
-                quadrant2=[0,0,0]
-                quadrant3=[0,0,0]
                 for k in range(3):
-                    if coord2_G2[k]>=0:
-                        quadrant2[k]=1
-                    else:
-                        quadrant2[k]=-1
-                for k in range(3):
-                    if coord3_G2[k]>=0:
-                        quadrant3[k]=1
-                    else:
-                        quadrant3[k]=-1
-                #The current code is written in a way to only support all coordinates in the same quadrant
-                #This is done for efficiency purposes. Can be modified to if the coordinates from atoms_sites_H
-                #to be merged are orinented in different quadrants
-                if quadrant2!=quadrant3:
-                    raise RuntimeError('coordinates not in same quadrant')
-                quadrant=quadrant2
-
+                    coord1_G2[k]=coord1_G2[k]%quadrant[k]
+                    coord2_G2[k]=coord2_G2[k]%quadrant[k]
+                    coord3_G2[k]=coord3_G2[k]%quadrant[k]
 
                 if splitter.group_type == 'k':
                     #This functionality uses the fact that, in a k type transitinos, atoms must be displaced such that
@@ -1210,8 +1197,8 @@ class supergroup():
                     coords3_G2=[x.operate(G2_xyz1) for x in splitter.G2_orbits[i][2]]
                     corresponding_coord2, _ = get_best_match(coords2_G2,coord2_G2,cell)
                     corresponding_coord3, _ = get_best_match(coords3_G2,coord3_G2,cell)
-                    index2=coords2_G2.index(corresponding_coord2)
-                    index3=coords3_G2.index(corresponding_coord3)
+                    index2=[np.all(x==corresponding_coord2) for x in coords2_G2].index(True)
+                    index3=[np.all(x==corresponding_coord3) for x in coords3_G2].index(True)
                     corresponding_op2=splitter.G2_orbits[i][1][index2]
                     corresponding_op3=splitter.G2_orbits[i][2][index3]
 
