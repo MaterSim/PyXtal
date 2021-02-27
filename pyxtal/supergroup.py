@@ -256,10 +256,11 @@ def find_xyz(G2_op,H_op,H_coord,splitter,quadrant=[0,0,0]):
     H_op=np.array(H_op.as_dict()['matrix'])
     rot_G2=G2_op[:3,:3].T
     rot_H=H_op[:3,:3].T
+    tau_G2=G2_op[:3,3]
     tau_H=H_op[:3,3]
-    b=H_coord-tau_H
+    b=H_coord-tau_G2
     for k in range(3):
-        b[k]=b[k]%1
+        b[k]=b[k]%quadrant[k]
 
 
     #eliminate any unused free parameters in the G2 and H basis
@@ -300,7 +301,8 @@ def find_xyz(G2_op,H_op,H_coord,splitter,quadrant=[0,0,0]):
     else:
         H_basis_xyz=np.linalg.solve(rot_H,b)
         change_of_basis=np.matmul(rot_H,np.linalg.inv(rot_G2))
-        G2_basis_xyz=np.matmul(change_of_basis,H_basis_xyz)
+        # G2_basis_xyz=np.matmul(change_of_basis,H_basis_xyz)
+        G2_basis_xyz=np.linalg.solve(rot_G2,b)
         for i in range(len(quadrant)):
             H_basis_xyz[i]=H_basis_xyz[i]%quadrant[i]
             G2_basis_xyz[i]=G2_basis_xyz[i]%quadrant[i]
