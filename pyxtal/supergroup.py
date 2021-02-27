@@ -295,22 +295,23 @@ def find_xyz(G2_op,H_op,H_coord,splitter,quadrant=[0,0,0]):
     #Use linear algebra and change of basis matrices to rewrite free parameters in both H and G2 basis.
     #Then, fill the free parameters back into full 3 coordinate [x,y,z] form after all the matrix inverse calculations
     #have been solved using the reduced, full rank matrix
-
-    H_basis_xyz=np.linalg.solve(rot_H,b)
-    change_of_basis=np.matmul(rot_H,np.linalg.inv(rot_G2))
-    G2_basis_xyz=np.matmul(change_of_basis,H_basis_xyz)
-    for i in range(len(quadrant)):
-        H_basis_xyz[i]=H_basis_xyz[i]%quadrant[i]
-        G2_basis_xyz[i]=G2_basis_xyz[i]%quadrant[i]
-    for i in range(H_holder.count(1)):
-        H_holder[H_holder.index(1)]=H_basis_xyz[i]
-        G2_holder[G2_holder.index(1)]=G2_basis_xyz[i]
+    if set(H_holder)=={0.}:
+        return np.array(H_holder) , np.array(G2_holder)
+    else:
+        H_basis_xyz=np.linalg.solve(rot_H,b)
+        change_of_basis=np.matmul(rot_H,np.linalg.inv(rot_G2))
+        G2_basis_xyz=np.matmul(change_of_basis,H_basis_xyz)
+        for i in range(len(quadrant)):
+            H_basis_xyz[i]=H_basis_xyz[i]%quadrant[i]
+            G2_basis_xyz[i]=G2_basis_xyz[i]%quadrant[i]
+        for i in range(H_holder.count(1)):
+            H_holder[H_holder.index(1)]=H_basis_xyz[i]
+            G2_holder[G2_holder.index(1)]=G2_basis_xyz[i]
 
 
 
 
     return np.array(H_holder), np.array(G2_holder)
-
 def new_structure(struc, refs):
     """
     check if struc is already in the reference solutions
@@ -1231,7 +1232,7 @@ class supergroup():
 
 
                     #Use the known G1 operations that correspond with the H operations to operate
-                    #on the average [x,y,z] t
+                    #on the average [x,y,z]
                     coord1_G1=splitter.G1_orbits[i][0][index1].operate(final_xyz)
                     coord2_G1=splitter.G1_orbits[i][1][index2].operate(final_xyz)
                     coord3_G1=splitter.G1_orbits[i][2][index3].operate(final_xyz)
