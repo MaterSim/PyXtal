@@ -271,6 +271,10 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
         if set(x)=={0.}:
             rot_G2=np.delete(rot_G2,i,0)
             b=np.delete(b,i)
+    while len(rot_G2)!=len(rot_G2[0]):
+        rot_G2=np.delete(rot_G2,len(rot_G2)-1,0)
+        b=np.delete(b,len(b)-1)
+
 
     #Must come back later and add Schwarz Inequality check to elininate any dependent vectors
 
@@ -278,6 +282,7 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
     #solves a linear system to find the free parameters
     if set(G2_holder)=={0.}:
         return np.array(G2_holder)
+
     else:
         try:
             G2_basis_xyz=np.linalg.solve(rot_G2,b)
