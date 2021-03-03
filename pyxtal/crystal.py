@@ -357,7 +357,7 @@ class random_crystal:
         self.numattempts = 1
         degrees = self.check_compatible(self.group, self.numIons)
         if degrees is False:
-            msg = "Error: the stoichiometry is incompatible with wyckoff choice"
+            msg = "Warning: the stoichiometry is incompatible with wyckoff choice"
             printx(msg, priority=1)
             self.valid = False
             return
