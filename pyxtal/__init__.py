@@ -980,7 +980,6 @@ class pyxtal:
                     if self.group.number in [7, 14, 15]:
                         for k, op in enumerate(ops):
                             vec = op.translation_vector.dot(trans)
-                            #print(vec)
                             vec -= np.floor(vec)
                             op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                             ops[k] = op1
@@ -991,7 +990,13 @@ class pyxtal:
                         else:
                             diag = False
                             pos_frac = pos_frac[perm]
-                        sites[j] = atom_site(wp, pos_frac, site.specie, diag)
+
+                        if self.molecular:
+                            mol = site.molecule
+                            ori = site.orientation
+                            sites[j] = mol_site(mol, pos_frac, ori, wp, lattice, diag)
+                        else:
+                            sites[j] = atom_site(wp, pos_frac, site.specie, diag)
                         #print(sites[j].wp)
                     #site.update()
 

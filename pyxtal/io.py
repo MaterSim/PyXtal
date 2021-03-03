@@ -231,7 +231,7 @@ class structure_from_ext():
             self.group = Group(self.wyc.number)
             if isinstance(perm, list):
                 if perm != [0,1,2]:
-                    lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
+                    lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, ltype=self.group.lattice_type)
                     latt = lattice.swap_axis(ids=perm, random=False).get_matrix()
                     coor = pmg_struc.frac_coords[:, perm]
                     pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
@@ -246,7 +246,7 @@ class structure_from_ext():
             else:
                 self.molecule = Molecule(numbers, coords)
             self.pmg_struc = pmg_struc
-            self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, self.group.lattice_type)
+            self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, ltype=self.group.lattice_type)
             self.numMols = [len(self.wyc)]
         else:
             raise ValueError("Cannot find the space group matching the symmetry operation")
