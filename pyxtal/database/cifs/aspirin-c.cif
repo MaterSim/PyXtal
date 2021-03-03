@@ -1,0 +1,65 @@
+#############################################################
+#             ______       _    _          _                #
+#            (_____ \     \ \  / /        | |               #
+#             _____) )   _ \ \/ / |_  ____| |               #
+#            |  ____/ | | | )  (|  _)/ _  | |               #
+#            | |    | |_| |/ /\ \ |_( (_| | |___            #
+#            |_|     \__  /_/  \_\___)__|_|_____)           #
+#                   (____/                                  #
+#---------------------(version    0.2.0)--------------------#
+#       A Python package for random crystal generation      #
+#       url: https://github.com/qzhu2017/pyxtal             #
+#       @Zhu's group at University of Nevada Las Vegas      #
+#############################################################
+data_from_pyxtal
+#Energy: -18.62258295 eV/cell
+
+_symmetry_space_group_name_H-M 'P21/c'
+_symmetry_Int_Tables_number                   14
+_symmetry_cell_setting                monoclinic
+_cell_length_a            6.236361
+_cell_length_b           16.898537
+_cell_length_c           10.389847
+_cell_angle_alpha        90.000000
+_cell_angle_beta         53.698230
+_cell_angle_gamma        90.000000
+
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+1 'x, y, z'
+2 '-x, y+1/2, -z+1/2'
+3 '-x, -y, -z'
+4 'x, -y+1/2, z+1/2'
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+C      C        4     0.637000    0.654000    0.485000 1
+C      C        4     0.615000    0.743000    0.484000 1
+O      O        4     0.787000    0.786000    0.377000 1
+O      O        4     0.391000    0.770000    0.623000 1
+C      C        4     0.324000    0.848000    0.655000 1
+C      C        4     0.331000    0.883000    0.776000 1
+C      C        4     0.270000    0.963000    0.815000 1
+C      C        4     0.199000    1.009000    0.734000 1
+C      C        4     0.192000    0.975000    0.613000 1
+C      C        4     0.251000    0.894000    0.574000 1
+C      C        4     0.236000    0.861000    0.445000 1
+O      O        4     0.256000    0.901000    0.341000 1
+O      O        4     0.133000    0.789000    0.469000 1
+H      H        4     0.723000    0.638000    0.547000 1
+H      H        4     0.439000    0.627000    0.546000 1
+H      H        4     0.762000    0.632000    0.362000 1
+H      H        4     0.388000    0.846000    0.837000 1
+H      H        4     0.281000    0.989000    0.906000 1
+H      H        4     0.155000    1.072000    0.761000 1
+H      H        4     0.143000    1.012000    0.548000 1
+H      H        4     0.097000    0.790000    0.389000 1
+#END
+
