@@ -34,7 +34,7 @@ def new_solution(A, refs):
             return False
     return True
 
-def find_mapping_per_element(sites1, sites2, max_num=720):
+def find_mapping_per_element(sites1, sites2,max_num=720):
     """
     search for all mappings for a given splitter
 
@@ -46,65 +46,102 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
     Returns:
         unique solutions: e.g. 3 layers: [[[0], [1,2]]]
     """
-    unique_solutions = []
-    solution_template = [[None]*len(site2) for site2 in sites2]
-    assigned_ids = []
 
-    # first identify the unique assignment
-    for i, site2 in enumerate(sites2):
-        wp_letters = set(site2)
-        if len(wp_letters) == len(site2): #site2: ['a', 'b'] or ['a']
-            for j, s2 in enumerate(site2):
-                ids = [id for id, s1 in enumerate(sites1) if s1==s2]
-                if len(ids) == 1:
-                    solution_template[i][j] = ids[0]
-                    assigned_ids.append(ids[0])
-        elif len(wp_letters)==1: #site2: ['a','a'] or ['a','a','a']
-            ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[0]]
-            if len(ids) == len(site2):
-                solution_template[i] = ids
-                assigned_ids.extend(ids)
-        elif len(wp_letters)==2: #site2: ['a','a','b']
-            count = 0
-            for j in range(2):
-                ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[j]]
-                if len(ids) == site2.count(list(wp_letters)[j]):
-                    solution_template[i][count:count+len(ids)] = ids
-                    assigned_ids.extend(ids)
-                    count += len(ids)
-            #raise NotImplementedError("unsupported:", site2)
-    #print(assigned_ids)
+    unique_letters=list(set(sites1))
+    site1_letter_indices=[]
+    for letter in unique_letters:
+        site1_letter_indices.append([i for i, x in enumerate(sites1) if x==letter])
+    site2_letter_bins=[]
+    for lbin in sites2:
+        site2_letter_bins.append([unique_letters.index(x) for x in lbin])
 
-    ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
-
-    all_permutations = list(itertools.permutations(ids))
-    if len(all_permutations) > max_num:
-        print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
-        print(solution_template)
-        all_permutations = sample(all_permutations, max_num)
-
-    #print(solution_template)
-    for perm in all_permutations:
-        solution = deepcopy(solution_template)
-        perm = list(perm)
-        valid = True
-        count = 0
-        for i, sol in enumerate(solution):
-            if None in sol:
-                for j, s2 in enumerate(sites2[i]):
-                    if sol[j] is None:
-                        if s2 == sites1[perm[count]]:
-                            solution[i][j] = deepcopy(perm[count])
-                            count += 1
-                        else:
-                            valid = False
-                            break
-                if not valid:
-                    break
-        if valid and new_solution(solution, unique_solutions):
-            unique_solutions.append(solution)
-
+    combo_list=[]
+    for s in site2_letter_bins:
+        ls=list(set(s))
+        rs=[s.count(r) for r in ls]
+        p=[]
+        for i, l in enumerate(ls):
+            combo=itertools.combinations(site1_letter_indices[l],rs[i])
+            combo=[list(x) for x in combo]
+            p.append(deepcopy(combo))
+        pr=p[0]
+        for i in range(1,len(p)):
+            pr=itertools.product(pr,p[i])
+            pr=[sum(list(x),[]) for x in pr]
+        combo_list.append(pr)
+    unique_solutions=[[x] for x in combo_list[0]]
+    for i in range(1,len(combo_list)):
+        unique_solutions=[x+[y] for x in unique_solutions for y in combo_list[i] if len(set(sum(x,[])).intersection(y))==0]
     return unique_solutions
+
+
+    #depreciated  mapping function
+#     print('sites1=',sites1)
+#     print('sites2=',sites2)
+#     unique_solutions = []
+#     solution_template = [[None]*len(site2) for site2 in sites2]
+#     assigned_ids = []
+
+#     # first identify the unique assignment
+#     for i, site2 in enumerate(sites2):
+#         wp_letters = set(site2)
+#         if len(wp_letters) == len(site2): #site2: ['a', 'b'] or ['a']
+#             for j, s2 in enumerate(site2):
+#                 ids = [id for id, s1 in enumerate(sites1) if s1==s2]
+#                 if len(ids) == 1:
+#                     solution_template[i][j] = ids[0]
+#                     assigned_ids.append(ids[0])
+#         elif len(wp_letters)==1: #site2: ['a','a'] or ['a','a','a']
+#             ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[0]]
+#             if len(ids) == len(site2):
+#                 solution_template[i] = ids
+#                 assigned_ids.extend(ids)
+#         elif len(wp_letters)==2: #site2: ['a','a','b']
+#             count = 0
+#             for j in range(2):
+#                 ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[j]]
+#                 if len(ids) == site2.count(list(wp_letters)[j]):
+#                     solution_template[i][count:count+len(ids)] = ids
+#                     assigned_ids.extend(ids)
+#                     count += len(ids)
+#             #raise NotImplementedError("unsupported:", site2)
+#     #print(assigned_ids)
+
+#     ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
+
+#     all_permutations = list(itertools.permutations(ids))
+#     if len(all_permutations) > max_num:
+#         print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
+#         print(solution_template)
+#         all_permutations = sample(all_permutations, max_num)
+
+#     print('allpermuataions')
+#     for x in all_permutations:
+#         print(x)
+#     #print(solution_template)
+#     for perm in all_permutations:
+#         solution = deepcopy(solution_template)
+#         perm = list(perm)
+#         valid = True
+#         count = 0
+#         for i, sol in enumerate(solution):
+#             if None in sol:
+#                 for j, s2 in enumerate(sites2[i]):
+#                     if sol[j] is None:
+#                         if s2 == sites1[perm[count]]:
+#                             solution[i][j] = deepcopy(perm[count])
+#                             count += 1
+#                         else:
+#                             valid = False
+#                             break
+#                 if not valid:
+#                     break
+#         if valid and new_solution(solution, unique_solutions):
+#             unique_solutions.append(solution)
+#     print('unique_solutions')
+#     for x in unique_solutions:
+#         print(x)
+#     return unique_solutions
 
 def find_mapping(atom_sites, splitter, max_num=720):
     """
@@ -271,7 +308,7 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
         if set(x)=={0.}:
             rot_G2=np.delete(rot_G2,i,0)
             b=np.delete(b,i)
-    while len(rot_G2)!=len(rot_G2[0]):
+    while len(rot_G2)!=0 and len(rot_G2)!=len(rot_G2[0]):
         rot_G2=np.delete(rot_G2,len(rot_G2)-1,0)
         b=np.delete(b,len(b)-1)
 
