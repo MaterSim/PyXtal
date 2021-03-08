@@ -3,11 +3,12 @@ import unittest
 
 import numpy as np
 from pkg_resources import resource_filename
+from pymatgen.core import Structure
+from pymatgen.core import Lattice as pmg_Lattice
 from pymatgen.core.structure import Molecule
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.operations import SymmOp
-from pymatgen import Structure
 
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
@@ -344,9 +345,8 @@ class TestSubgroup(unittest.TestCase):
         C3s = C1.subgroup(permutations={"C":"Si"}, H=216)
 
     def test_from_seed(self):
-        from pymatgen import Lattice, Structure
         coords = [[0, 0, 0], [0.75,0.5,0.75]]
-        lattice = Lattice.from_parameters(a=3.84, b=3.84, c=3.84, alpha=120,
+        lattice = pmg_Lattice.from_parameters(a=3.84, b=3.84, c=3.84, alpha=120,
                                   beta=90, gamma=60)
         struct = Structure(lattice, ["Si", "C"], coords)
         s1 = pyxtal()

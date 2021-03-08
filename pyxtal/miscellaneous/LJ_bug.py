@@ -5,7 +5,7 @@ from random import randint, choice
 from scipy.optimize import minimize
 from scipy.spatial.distance import pdist, cdist
 from pyxtal.molecule import PointGroupAnalyzer
-from pymatgen import Molecule
+from pymatgen.core import Molecule
 from pyxtal.database.collection import Collection
 from time import time
 import numpy as np

@@ -8,24 +8,24 @@ A script to systematicly check
 from glob import glob
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
-from pymatgen import Structure
+from pymatgen.core import Structure
 from pyxtal import pyxtal
 from pyxtal.supergroup import supergroups
 
 paras = (
-         ["P4_332", 155, 't'], #1-4 splitting
-         ["I-43m", 160, 't'], #mapping
-         ['I4_132',98,'t'], #mapping
+         #["P4_332", 155, 't'], #1-4 splitting
+         #["I-43m", 160, 't'], #mapping
+         #["Pmma", 25, 't'], #mapping
+         #['I4_132',98,'t'], 
          #["P4_332", 96, 't'],
          #["R-3", 147, 'k'],
          #["P3_112", 5, 't'],
          #["P6_422", 21, 't'],
-         #["FD3", 70, 't'], 
+         #["Fd3", 70, 't'], 
          #["Fd3m", 166, 't'],
          #["R-3c", 15, 't'],
-         #["R32", 5, 't'],
-         #["Pm3", 47, 't'], 
-         #["Pmma", 25, 't'],
+         ["R32", 5, 't'],
+         ["Pm3", 47, 't'], 
         )
 
 for para in paras:
@@ -38,8 +38,8 @@ for para in paras:
     G = s.group.number
     for i in range(10):
         struc_h = s.subgroup_once(eps=0.15, H=H, group_type=gtype, mut_lat=False, max_cell=4)
-        print(struc_h)
-        print(s)
+        #print(struc_h)
+        #print(s)
         sup = supergroups(struc_h, G=G, d_tol=0.2, show=True, max_per_G=500)
         if sup.strucs is not None:
             match = False

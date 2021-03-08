@@ -1,6 +1,6 @@
-from molecule import *
+from pyxtal.molecule import *
 from ase.build import molecule
-from pymatgen import Molecule
+from pymatgen.core import Molecule
 
 
 def get_ase_mol(molname):

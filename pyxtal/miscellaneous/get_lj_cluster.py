@@ -4,7 +4,7 @@ import json
 from monty.serialization import MontyEncoder
 import requests
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
-from pymatgen import Molecule
+from pymatgen.core import Molecule
 
 black_list = {
     "6": "Oh",  # takes long time

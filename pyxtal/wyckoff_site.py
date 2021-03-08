@@ -7,7 +7,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 # External Libraries
-from pymatgen import Molecule
+from pymatgen.core import Molecule
+from pymatgen.core.structure import Structure  
 
 # PyXtal imports
 from pyxtal.tolerance import Tol_matrix
@@ -344,7 +345,6 @@ class mol_site:
         If the list does not change, we return the new coordinates
         otherwise, terminate the calculation.
         """
-        from pymatgen.core.structure import Structure  
         from pyxtal.io import search_molecule_in_crystal
         from pyxtal.molecule import compare_mol_connectivity, Orientation
         try:

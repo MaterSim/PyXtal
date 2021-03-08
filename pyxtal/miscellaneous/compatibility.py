@@ -1,7 +1,7 @@
 from pyxtal.molecule import *
 from pyxtal.structure import *
 from ase.build import molecule
-from pymatgen import Molecule
+from pymatgen.core import Molecule
 
 letters = "abcdefghijklmnopqrstuvwxyzA"
 
