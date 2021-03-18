@@ -219,6 +219,9 @@ class pyxtal_molecule:
         for i1, number1 in enumerate(numbers):
             for i2, number2 in enumerate(numbers):
                 tols[i1][i2] = self.tm.get_tol(number1, number2)
+                # allow hydrogen bond
+                if [number1, number2] in [[1,7], [1,8], [1,9], [7,1], [8,1], [9,1]]:
+                    tols[i1][i2] *= 0.9
         if len(self.mol)==1:
             tols *= 0.8 # if only one atom, reduce the tolerance
         self.tols_matrix = tols

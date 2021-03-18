@@ -1149,3 +1149,15 @@ class pyxtal:
         new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
         new_struc.source = "Alt. Wyckoff Set: " + xyz_string
         return new_struc, ids
+
+    def check_distance(self):
+        """
+        check intermolecular distance for molecular crystal
+        """
+        if self.molecular:
+            for ms in self.mol_sites:
+                if not ms.check_distances():
+                    return False
+            return True
+
+
