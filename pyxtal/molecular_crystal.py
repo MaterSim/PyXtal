@@ -273,7 +273,7 @@ class molecular_crystal:
                         allow_inversion=self.allow_inversion,
                     )
 
-                    if allowed is not False:
+                    if allowed:
                         self.valid_orientations[-1][-1].append(allowed)
                     else:
                         self.valid_orientations[-1][-1].append([])
@@ -312,13 +312,14 @@ class molecular_crystal:
             l_free = []
             indices = []
             for mult, maxn, free, i_wp in zip(l_mult0, l_maxn0, l_free0, indices0):
-                if free is True:
+                if free:
                     if mult not in l_mult:
                         l_mult.append(mult)
                         l_maxn.append(maxn)
                         l_free.append(True)
                         indices.append(i_wp)
-                elif free is False and i_wp not in used_indices:
+                #elif not free and i_wp not in used_indices:
+                elif i_wp not in used_indices:
                     l_mult.append(mult)
                     l_maxn.append(1)
                     l_free.append(False)
@@ -379,10 +380,10 @@ class molecular_crystal:
                                 p2 = p + 1
                             break
         # All species passed: return True
-        if has_freedom is True:
+        if has_freedom:
             return True
         # All species passed, but no degrees of freedom: return 0
-        elif has_freedom is False:
+        else:
             return 0
 
     def __str__(self):

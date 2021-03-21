@@ -966,17 +966,19 @@ class pyxtal:
                     sites = self.mol_sites
                 else:
                     sites = self.atom_sites
-
+                #print(self.lattice)
+                #print("->")
+                #print(lattice)
+                #print(lattice.matrix)
                 for j, site in enumerate(sites):
                     count += 1
+                    #print("old lattice"); print(site.lattice); print(site.lattice.matrix)
                     pos_abs = np.dot(site.position, self.lattice.matrix)
                     pos_frac = pos_abs.dot(lattice.inv_matrix)
                     pos_frac -= np.floor(pos_frac)
-                    if self.molecular:
-                        site.lattice = lattice
+
                     # for P21/c, Pc, C2/c, check if opt the inclination angle
                     ops = site.wp.ops.copy()
-                    diag = False
                     if self.group.number in [7, 14, 15]:
                         for k, op in enumerate(ops):
                             vec = op.translation_vector.dot(trans)
@@ -985,22 +987,76 @@ class pyxtal:
                             ops[k] = op1
                         wp, perm = Wyckoff_position.from_symops(ops, self.group.number)
 
+                        #print('perm', perm)
                         if not isinstance(perm, list):
                             diag = True
                         else:
                             diag = False
+                            # maybe p21/a
                             pos_frac = pos_frac[perm]
-
+                        
+                        # from p21/n to p21/c
+                        #if self.diag and not diag:
+                        
                         if self.molecular:
-                            mol = site.molecule
                             ori = site.orientation
-                            sites[j] = mol_site(mol, pos_frac, ori, wp, lattice, diag)
+                            #print("new lattice"); print(site.lattice); print(site.lattice.matrix)
+                            #if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
+                            if diag and not site.diag:
+                                #print("from p21/c to p21/n")
+                                site.lattice = lattice
+                                xyz, _ = site._get_coords_and_species(absolute=False, first=True)
+                                lattice0 = Lattice.from_matrix(lattice.matrix, 
+                                                          ltype=lattice.ltype, 
+                                                          reset=True)
+
+                                xyz = np.dot(xyz, lattice0.matrix)
+                                center = site.molecule.get_center(xyz)
+                                site.molecule.reset_positions(xyz-center)
+                                ori.reset_matrix(np.eye(3))
+                            elif site.diag and not diag:
+                                if perm == [2, 1, 0]:
+                                    #print("from p21/n to p21/a to p21/c")
+                                    lattice0 = lattice.swap_axis(ids=perm)
+                                    xyz, _ = site._get_coords_and_species(absolute=True, first=True)
+                                    xyz = np.dot(xyz, lattice.inv_matrix) #frac
+                                    xyz = np.dot(xyz[:, perm], lattice0.matrix)
+                                    #center = pos_frac.dot(lattice0.matrix)
+                                    center = site.molecule.get_center(xyz)
+                                    site.molecule.reset_positions(xyz-center)
+                                    ori.reset_matrix(np.eye(3))
+
+                                elif not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
+                                    #print("from p21/n to p21/c")
+                                    site.lattice = lattice
+                                    xyz, _ = site._get_coords_and_species(absolute=False, first=True)
+                                    lattice0 = Lattice.from_matrix(lattice.matrix, 
+                                                                   ltype=lattice.ltype, 
+                                                                   reset=True)
+
+                                    xyz = np.dot(xyz, lattice0.matrix)
+                                    center = site.molecule.get_center(xyz)
+                                    site.molecule.reset_positions(xyz-center)
+                                    ori.reset_matrix(np.eye(3))
+                            else:
+                                lattice0 = lattice
+
+                            #print("bereset lattice"); print(lattice); print(lattice.matrix)
+                            #print("reset lattice"); print(lattice0); print(lattice0.matrix)
+
+                            mol = site.molecule
+                            sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag)
+                            #print("----->", sites[j])
+                            #xyz, _ = sites[j]._get_coords_and_species(absolute=False, first=True)
+                            #print("new", xyz[0])
                         else:
                             sites[j] = atom_site(wp, pos_frac, site.specie, diag)
-                        #print(sites[j].wp)
-                    #site.update()
 
-                self.lattice = lattice
+                self.diag = diag
+                if self.molecular:
+                    self.lattice = lattice0
+                else:
+                    self.lattice = lattice
                 self.diag = diag
             else:
                 break

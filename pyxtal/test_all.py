@@ -64,6 +64,26 @@ class TestOptLat(unittest.TestCase):
         pmg2 = c2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
+    def test_molecular_diag(self):
+        for i in range(20):
+            c1 = pyxtal(molecular=True)
+            c1.from_random(3, 14, ["aspirin"], [4], diag=True) 
+            pmg1 = c1.to_pymatgen()
+            c2 = c1.copy()
+            c2.optimize_lattice(1)
+            pmg2 = c2.to_pymatgen()
+            self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
+
+    def test_molecular_nodiag(self):
+        for i in range(20):
+            c1 = pyxtal(molecular=True)
+            c1.from_random(3, 14, ["aspirin"], [4], diag=False) 
+            pmg1 = c1.to_pymatgen()
+            c2 = c1.copy()
+            c2.optimize_lattice(1)
+            pmg2 = c2.to_pymatgen()
+            self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
+
 
 class TestWP(unittest.TestCase):
     def test_wp(self):
@@ -111,7 +131,7 @@ class TestMolecular(unittest.TestCase):
 
         # test rotation
         ax = struc.mol_sites[0].orientation.axis
-        struc.mol_sites[0].rotate(axis=[1, 0, 0], angle=90)
+        struc.mol_sites[0].rotate(ax_vector=[1, 0, 0], angle=90)
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         pmg_struc.to("cif", "1.cif")

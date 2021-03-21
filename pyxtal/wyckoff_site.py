@@ -58,7 +58,6 @@ class mol_site:
             self.lattice = Lattice.from_matrix(lattice)
         self.PBC = self.wp.PBC
         self.mol = mol.mol # A Pymatgen molecule object
-        self.site_props = mol.props
         self.symbols = mol.symbols #[site.specie.value for site in self.mol.sites]
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
@@ -99,7 +98,12 @@ class mol_site:
                  "molecule": self.molecule.save_dict(),
                  "orientation": self.orientation.save_dict(),
                  "lattice": self.lattice.matrix,
+                 "lattice_type": self.lattice.ltype,
                 }
+        if self.molecule.torsionlist is not None:
+            xyz, _ = self._get_coords_and_species(absolute=True, first=True)
+            dict0['rotors'] = molecule.get_torsion_angles(xyz)
+
         return dict0
 
     @classmethod
@@ -109,30 +113,69 @@ class mol_site:
         """
         from pyxtal.molecule import pyxtal_molecule, Orientation
 
+        mol = pyxtal_molecule.load_dict(dicts["molecule"])
         g = dicts["number"]
         index = dicts["index"]
         dim = dicts["dim"]
-        mol = pyxtal_molecule.load_dict(dicts["molecule"])
         position = dicts["position"]
         orientation = Orientation.load_dict(dicts['orientation'])
         wp = Wyckoff_position.from_group_and_index(g, index, dim)
         diag = dicts["diag"]
-        lattice = Lattice.from_matrix(dicts["lattice"])
+        lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
         return cls(mol, position, orientation, wp, lattice, diag)
 
+    def to_1D_representation(self):
+        """
+        save the wp in 1D representation
+        """
+        xyz, _ = self._get_coords_and_species(absolute=True, first=True)
+        dict0 = {"smile": self.molecule.smile}
+        dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
+        dict0["orientation"], dict0["rmsd"] = self.molecule.get_orientation(xyz)
+        dict0["center"] = self.molecule.get_center(xyz)
+        dict0["number"] = self.wp.number
+        dict0["index"] = self.wp.index
+        dict0["dim"] = self.wp.dim
+        dict0["diag"] = self.diag
+        dict0["lattice"] = self.lattice.get_matrix()
+        dict0["lattice_type"] = self.lattice.ltype
+
+        return dict0
+
+    @classmethod
+    def from_1D_representation(cls, dicts):
+        from pyxtal.molecule import pyxtal_molecule, Orientation
+        from scipy.spatial.transform import Rotation
+
+        mol = pyxtal_molecule(mol=dicts['smile']+'.smi')
+        rdkit_mol = mol.rdkit_mol(mol.smile)
+        conf = rdkit_mol.GetConformer(0)
+        mol.set_torsion_angles(conf, dicts["rotor"])
+
+        g = dicts["number"]
+        index = dicts["index"]
+        dim = dicts["dim"]
+        matrix = Rotation.from_euler('zxy', dicts["orientation"]).as_matrix()
+        orientation = Orientation(matrix)
+        wp = Wyckoff_position.from_group_and_index(g, index, dim)
+        diag = dicts["diag"]
+        lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
+        position = np.dot(dicts["center"], lattice.inv_matrix)
+
+        return cls(mol, position, orientation, wp, lattice, diag)
 
     def show(self, id=None, **kwargs):
         from pyxtal.viz import display_molecular_site
         return display_molecular_site(self, id, **kwargs)
 
-    def _get_coords_and_species(self, absolute=False, add_PBC=False, first=False, unitcell=False):
+    def _get_coords_and_species(self, absolute=False, PBC=False, first=False, unitcell=False):
         """
         Used to generate coords and species for get_coords_and_species
 
         Args:
             absolute: whether or not to return absolute (Euclidean)
                 coordinates. If false, return relative coordinates instead
-            add_PBC: whether or not to add coordinates in neighboring unit cells, 
+            PBC: whether or not to add coordinates in neighboring unit cells, 
                 used for distance checking
             first: whether or not to extract the information from only the first site
             unitcell: whether or not to move the molecular center to the unit cell
@@ -172,7 +215,7 @@ class mol_site:
             if first:
                 break
 
-        if add_PBC is True:
+        if PBC:
             # Filter PBC of wp_atomic_coords
             wp_atomic_coords = filtered_coords(wp_atomic_coords, PBC=self.PBC)
             # Add PBC copies of coords
@@ -189,7 +232,7 @@ class mol_site:
 
         return wp_atomic_coords, wp_atomic_sites
 
-    def get_coords_and_species(self, absolute=False, add_PBC=False, unitcell=False):
+    def get_coords_and_species(self, absolute=False, PBC=False, unitcell=False):
         """
         Lazily generates and returns the atomic coordinate and species for the
         Wyckoff position. Plugs the molecule into the provided orientation
@@ -198,7 +241,7 @@ class mol_site:
         Args:
             absolute: whether or not to return absolute (Euclidean)
                 coordinates. If false, return relative coordinates instead
-            add_PBC: whether or not to add coordinates in neighboring unit cells, used for
+            PBC: whether or not to add coordinates in neighboring unit cells, used for
                 distance checking
             unitcell: whether or not to move the molecular center to the unit cell
 
@@ -206,61 +249,21 @@ class mol_site:
             coords: a np array of 3-vectors.
             species: a list of atomic symbols, e.g. ['H', 'H', 'O', 'H', 'H', 'O']
         """
-        return self._get_coords_and_species(absolute, add_PBC, unitcell=unitcell)
+        return self._get_coords_and_species(absolute, PBC, unitcell=unitcell)
 
-    def get_centers(self, absolute=False):
-        """
-        Returns the fractional coordinates for the center of mass for each molecule in
-        the Wyckoff position
+    #def get_centers(self, absolute=False):
+    #    """
+    #    Get the coordinates for the center of mass 
 
-        Returns:
-            A numpy array of fractional 3-vectors
-        """
-        centers = apply_ops(self.position, self.wp.ops)
-        # centers1 = filtered_coords(centers0, self.PBC)
-        if absolute is False:
-            return centers
-        else:
-            return np.dot(centers, self.lattice.matrix)
-
-    def get_principle_axes(self, coords, adjust=False):
-        """
-        compute the principle axis
-        """
-        coords -= np.mean(coords, axis=0)
-        Inertia = np.zeros([3,3])
-        Inertia[0,0] = np.sum(coords[:,1]**2 + coords[:,2]**2)
-        Inertia[1,1] = np.sum(coords[:,0]**2 + coords[:,2]**2)
-        Inertia[2,2] = np.sum(coords[:,0]**2 + coords[:,1]**2)
-        Inertia[0,1] = Inertia[1,0] = -np.sum(coords[:,0]*coords[:,1])
-        Inertia[0,2] = Inertia[2,0] = -np.sum(coords[:,0]*coords[:,2])
-        Inertia[1,2] = Inertia[2,1] = -np.sum(coords[:,1]*coords[:,2])
-        _, matrix = np.linalg.eigh(Inertia)
-        
-        # search for the best direction
-        if adjust:
-            diffs = coords.dot(matrix) - self.mol.cart_coords
-            diffs = np.sqrt(np.sum(diffs**2,axis=0))/len(coords)
-            for axis in range(3):
-                if diffs[axis] > 0.05: #needs to check
-                    matrix[:,axis] *= -1
-
-            diffs = coords.dot(matrix) - self.mol.cart_coords
-            tol = np.sqrt(np.sum(diffs**2))/len(coords)
-            if tol > 0.1:
-                print("warining: molecular geometry changed")
-                print(diffs)
-
-        return matrix
-
-    def get_Euler_angle(self):
-        """
-        To compute the Euler_angle for the given molecule
-        """
-        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
-        coord0 -= np.mean(coord0, axis=0)
-        matrix = self.get_principle_axes(coord0, True)
-        return R.from_matrix(matrix).as_euler('zxy', degrees=True)
+    #    Returns:
+    #        A numpy array of fractional 3-vectors
+    #    """
+    #    centers = apply_ops(self.position, self.wp.ops)
+    #    # centers1 = filtered_coords(centers0, self.PBC)
+    #    if not absolute:
+    #        return centers
+    #    else:
+    #        return np.dot(centers, self.lattice.matrix)
 
     def perturbate(self, lattice, trans=0.1, rot=5):
         """
@@ -280,7 +283,7 @@ class mol_site:
         else:
             self.orientation.change_orientation(angle=rot/180*np.pi)
     
-    def translate(self, disp=np.array([0.0,0.0,0.0]), absolute=False):
+    def translate(self, disp=np.zeros(3), absolute=False):
         """
         To translate the molecule 
         """
@@ -290,17 +293,21 @@ class mol_site:
         position = self.position + disp
         self.position = project_point(position, self.wp[0])
 
-    def rotate(self, axis=0, angle=180):
+    def rotate(self, ax_id=0, ax_vector=None, angle=180):
         """
-        To rotate the molecule 
+        To rotate the molecule
+        Args:
+            ax_id: the principle axis id
+            ax_vector (float): 3-vector to define the axis
+            angle (float): angle to rotate
         """
         p = self.orientation.r
-        if type(axis) == int:
-            coord0 = self.mol.cart_coords.dot(self.orientation.r.as_matrix().T) 
-            coord0 -= np.mean(coord0, axis=0)
-            ax = self.get_principle_axes(coord0).T[axis]
-        elif len(axis) == 3:
-            ax = axis/np.linalg.norm(axis)
+
+        if ax_vector is not None:
+            ax = ax_vector/np.linalg.norm(ax_vector)
+        else:
+            xyz = self.mol.cart_coords.dot(p.as_matrix().T) 
+            ax = self.molecule.get_principle_axes(xyz).T[axis]
 
         q = R.from_rotvec(ax*rad*angle)
         o = q*p
@@ -335,7 +342,6 @@ class mol_site:
             return Molecule(self.symbols, tmp)           
         else:
             raise ValueError("id is greater than the number of molecules")
-        
 
     def update(self, coords, lattice=None, absolute=False, update_mol=True):
         """
@@ -355,11 +361,15 @@ class mol_site:
             self.lattice = lattice
         if not absolute:
             coords = coords.dot(self.lattice.matrix)
-        mol = Molecule(self.symbols, coords-np.mean(coords, axis=0))
+        #mol = Molecule(self.symbols, coords-np.mean(coords, axis=0))
+        center = self.molecule.get_center(coords)
+        mol = Molecule(self.symbols, coords-center)
+
         #match, _ = compare_mol_connectivity(mol, self.mol, True)
         match, _ = compare_mol_connectivity(mol, self.mol)
         if match:
-            position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
+            #position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
+            position = center.dot(self.lattice.inv_matrix)
             #position -= np.floor(position)
             self.position = position
             if update_mol:

@@ -205,7 +205,7 @@ class Lattice:
             cell = np.dot(tran, self.matrix)
             if id > 0:
                 opt = True
-            #print(cell); import sys; sys.exit()
+            #print("cell:"); print(cell) #; import sys; sys.exit()
             return Lattice.from_matrix(cell, ltype=self.ltype, reset=False), tran, opt
         else:
             return self, np.eye(3), opt
@@ -617,6 +617,8 @@ class Lattice:
             printx("Error: Lattice matrix must be 3x3", priority=1)
             return
         [a, b, c, alpha, beta, gamma] = matrix2para(m)
+
+        # symmetrize the lattice
         if reset:
             if ltype in ['cubic', 'Cubic']:
                 a = b = c = (a+b+c)/3
@@ -634,7 +636,7 @@ class Lattice:
                 alpha = gamma = np.pi/2
             
             # reset matrix according to the symmetry
-            m = para2matrix([a, b, c, alpha, beta, gamma])
+            m = para2matrix([a, b, c, alpha, beta, gamma], format="upper")
         
         # Initialize a Lattice instance
         volume = np.linalg.det(m)

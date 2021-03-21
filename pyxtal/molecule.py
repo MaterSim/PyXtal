@@ -11,6 +11,7 @@ constraints.
 # Imports
 import os
 from copy import deepcopy
+from operator import itemgetter
 from random import choice
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -32,6 +33,63 @@ from pyxtal.database.collection import Collection
 # ------------------------------
 molecule_collection = Collection("molecules")
 
+def cleaner(list_to_clean):
+    """
+    Remove duplicate torsion definion from a list of atom ind. tuples.
+    """
+    for_remove = []
+    for x in reversed(range(len(list_to_clean))):
+        for y in reversed(range(x)):
+            ix1, ix2 = itemgetter(1)(list_to_clean[x]), itemgetter(2)(list_to_clean[x])
+            iy1, iy2 = itemgetter(1)(list_to_clean[y]), itemgetter(2)(list_to_clean[y])
+            if (ix1 == iy1 and ix2 == iy2) or (ix1 == iy2 and ix2 == iy1):
+                for_remove.append(y)
+    clean_list = [v for i, v in enumerate(list_to_clean)
+                  if i not in set(for_remove)]
+    return clean_list
+
+def find_id_from_smile(smile):
+    """
+    Find the positions of rotatable bonds in the molecule.
+    """
+    from rdkit import Chem
+
+    smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+    mol = Chem.MolFromSmiles(smile)
+    pattern_tor = Chem.MolFromSmarts(smarts_torsion)
+    torsion = list(mol.GetSubstructMatches(pattern_tor))
+    return cleaner(torsion)
+
+def dihedral(p):
+    """
+    dihedral from https://stackoverflow.com/questions/20305272
+    """
+    p0 = p[0]
+    p1 = p[1]
+    p2 = p[2]
+    p3 = p[3]
+
+    b0 = -1.0*(p1 - p0)
+    b1 = p2 - p1
+    b2 = p3 - p2
+
+    # normalize b1 so that it does not influence magnitude of vector
+    # rejections that come next
+    b1 /= np.linalg.norm(b1)
+
+    # vector rejections
+    # v = projection of b0 onto plane perpendicular to b1
+    #   = b0 minus component that aligns with b1
+    # w = projection of b2 onto plane perpendicular to b1
+    #   = b2 minus component that aligns with b1
+    v = b0 - np.dot(b0, b1)*b1
+    w = b2 - np.dot(b2, b1)*b1
+
+    # angle between v and w in a plane is the torsion angle
+    # v and w may not be normalized but that's fine since tan is y/x
+    x = np.dot(v, w)
+    y = np.dot(np.cross(b1, v), w)
+    return np.degrees(np.arctan2(y, x))
 
 class pyxtal_molecule:
     """
@@ -39,9 +97,16 @@ class pyxtal_molecule:
     The added features include:
     0, parse the input
     1, estimate volume/tolerance/radii
-    2, find and store symmetry (todo)
-    3, get the principle axis (todo)
-    4, re-align the molecule (todo)
+    2, find and store symmetry 
+    3, get the principle axis 
+    4, re-align the molecule 
+
+    The molecule is always centered at (0, 0, 0).
+
+    If the smile format is used, the center is defined as in
+    https://www.rdkit.org/docs/source/rdkit.Chem.rdMolTransforms.html
+
+    Otherwise, the center is just the mean of atomic positions
 
     Args:
         mol: a string to reprent the molecule
@@ -50,6 +115,8 @@ class pyxtal_molecule:
 
     def __init__(self, mol=None, symmetrize=True, tm=Tol_matrix(prototype="molecular")):
         mo = None
+        self.smile = None
+        self.torsionlist = None
         if type(mol) == str:
             # Parse molecules: either file or molecule name
             tmp = mol.split(".")
@@ -61,6 +128,11 @@ class pyxtal_molecule:
                         mo = Molecule.from_file(mol)
                     else:
                         raise NameError("{:s} is not a valid path".format(mol))
+                elif tmp[-1] == 'smi':
+                    self.smile = tmp[0]
+                    symbols, xyz, self.torsionlist = self.rdkit_mol_init(tmp[0])
+                    mo = Molecule(symbols, xyz)
+                    symmetrize = False
                 else:
                     raise NameError("{:s} is not a supported format".format(tmp[-1]))
             else:
@@ -90,6 +162,8 @@ class pyxtal_molecule:
         self.get_symbols()
         self.get_tols_matrix()
 
+
+
     def __str__(self):
         return '[' + self.name + ']'
 
@@ -104,19 +178,6 @@ class pyxtal_molecule:
         simply copy the structure
         """
         return deepcopy(self)
-
-    def reset_positions(self, coors):
-        """
-        reset the coordinates
-        """
-        from pymatgen.core.sites import Site
-        if len(coors) != len(self.mol._sites):
-            raise ValueError("number of atoms is inconsistent!")
-        else:
-            for i, coor in enumerate(coors):
-                _site = self.mol._sites[i]
-                new_site = Site(_site.species, coor, properties=_site.properties)
-                self.mol._sites[i] = new_site
 
     @classmethod
     def load_dict(cls, dicts):
@@ -232,6 +293,166 @@ class pyxtal_molecule:
         """
         from pyxtal.viz import display_molecules
         return display_molecules([self.mol])
+
+
+    def rdkit_mol_init(self, smile):
+        """
+        initialize the mol xyz and torsion list
+        """
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+
+        smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+        mol = Chem.MolFromSmiles(smile)
+        pattern_tor = Chem.MolFromSmarts(smarts_torsion)
+        torsion = list(mol.GetSubstructMatches(pattern_tor))
+        torsionlist = cleaner(torsion)
+
+        mol = Chem.AddHs(mol)
+        symbols = []
+        for id in range(mol.GetNumAtoms()):
+            symbols.append(mol.GetAtomWithIdx(id).GetSymbol())
+
+        cids = AllChem.EmbedMultipleConfs(mol, numConfs=1)
+        conf = mol.GetConformer(0)
+        xyz = self.align(conf)
+
+        return symbols, xyz, torsionlist
+
+    def rdkit_mol(self, smile):
+        """
+        initialize the mol xyz and torsion list
+        """
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+
+        mol = Chem.MolFromSmiles(smile)
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMultipleConfs(mol, numConfs=2)
+        return mol
+
+    def align(self, conf):
+        """
+        Align the molecule and return the xyz
+        The default CanonicalizeConformer function may also include inversion
+        """
+        from rdkit.Chem import rdMolTransforms as rdmt
+
+        #rotation
+        trans = rdmt.ComputeCanonicalTransform(conf)
+        if np.linalg.det(trans[:3,:3]) < 0:
+            trans[:3,:3] *= -1
+        rdmt.TransformConformer(conf, trans)
+        
+        #translation
+        pt = rdmt.ComputeCentroid(conf)
+        center = np.array([pt.x, pt.y, pt.z])
+        return conf.GetPositions() - center
+
+    def get_center(self, xyz):
+        """
+        get the molecular center for a transformed xyz
+        """
+        if self.smile is None:
+            return np.mean(xyz, axis=0)
+        else:
+            # from rdkit
+            from rdkit.Geometry import Point3D
+            from rdkit.Chem import rdMolTransforms as rdmt
+
+            conf1 = self.rdkit_mol(self.smile).GetConformer(0)
+            for i in range(conf1.GetNumAtoms()):
+                x, y, z = xyz[i]
+                conf1.SetAtomPosition(i, Point3D(x,y,z))
+            pt = rdmt.ComputeCentroid(conf1)
+            return np.array([pt.x, pt.y, pt.z])
+
+    def get_principle_axes(self, xyz):
+        """
+        get the principle axis for a rotated xyz
+        """
+        if self.smile is None:
+            Inertia = get_inertia_tensor(xyz)
+            _, matrix = np.linalg.eigh(Inertia)
+            return matrix
+
+        else:
+            from rdkit.Geometry import Point3D
+            from rdkit.Chem import rdMolTransforms as rdmt
+
+            conf1 = self.rdkit_mol(self.smile).GetConformer(0)
+            for i in range(len(self.mol)):
+                x,y,z = xyz[i]
+                conf1.SetAtomPosition(i,Point3D(x,y,z))
+
+            return rdmt.ComputePrincipalAxesAndMoments(conf1)
+
+    def get_torsion_angles(self, xyz):
+        """
+        get the torsion angles
+        """
+        angs = []
+        for torsion in self.torsionlist:
+            (i, j, k, l) = torsion
+            angs.append(abs(dihedral(xyz[[i,j,k,l],:])))
+        return angs
+    
+    def get_orientation(self, xyz):
+        """
+        get orientation
+        """
+        from rdkit.Geometry import Point3D
+        from rdkit.Chem import rdMolAlign, RemoveHs, rdmolfiles
+        mol = self.rdkit_mol(self.smile)
+
+        conf0 = mol.GetConformer(0)
+        conf1 = mol.GetConformer(1)
+
+        angs = self.get_torsion_angles(xyz)
+        xyz0 = self.set_torsion_angles(conf0, angs)
+        self.reset_positions(xyz0)
+
+        for i in range(len(self.mol)):
+            x0,y0,z0 = xyz0[i]
+            x,y,z = xyz[i]
+            conf0.SetAtomPosition(i,Point3D(x0,y0,z0))
+            conf1.SetAtomPosition(i,Point3D(x,y,z))
+
+        mol = RemoveHs(mol)
+        rmsd, trans = rdMolAlign.GetAlignmentTransform(mol, mol, 0, 1)
+        r = Rotation.from_matrix(trans[:3,:3])
+
+        return r.as_euler('zxy', degrees=True), rmsd
+
+    def set_torsion_angles(self, conf, angles):
+        """
+        reset the torsion angles and update molecular xyz
+        """
+        from rdkit.Chem import rdMolTransforms as rdmt
+
+        for id, torsion in enumerate(self.torsionlist):
+            (i, j, k, l) = torsion
+            rdmt.SetDihedralDeg(conf, i, j, k, l, angles[id])
+        
+        xyz = self.align(conf)
+
+        return xyz
+
+
+    def reset_positions(self, coors):
+        """
+        reset the coordinates
+        """
+        from pymatgen.core.sites import Site
+        if len(coors) != len(self.mol._sites):
+            raise ValueError("number of atoms is inconsistent!")
+        else:
+            for i, coor in enumerate(coors):
+                _site = self.mol._sites[i]
+                new_site = Site(_site.species, coor, properties=_site.properties)
+                self.mol._sites[i] = new_site
+
+      
 
 class Box:
     """
@@ -448,57 +669,6 @@ class Orientation:
         #if angle is not None:
         #    self.change_orientation(angle)
         return SymmOp.from_rotation_and_translation(self.matrix, [0, 0, 0])
-
-    #@classmethod
-    #def from_constraint(self, v1, c1):
-    #    """
-    #    Geneate an orientation object given a constraint axis c1, and a
-    #    corresponding vector v1. v1 will be rotated onto c1, and the resulting
-    #    orientation will have a rotational degree of freedom about c1.
-
-    #    Args:
-    #        v1: a 1x3 vector in the original reference frame
-    #        c1: a corresponding axis which v1 must be mapped to
-
-    #    Returns:
-    #        an orientation object consistent with the supplied constraint
-    #    """
-    #    # c1 is the constraint vector; v1 will be rotated onto it
-    #    m = rotate_vector(v1, c1)
-    #    return Orientation(m, degrees=1, axis=c1)
-
-    #@classmethod
-    #def from_constraints(self, v1, c1, v2, c2):
-    #    """
-    #    Geneate an orientation object given two constraint vectors
-
-    #    Args:
-    #        v1: a 1x3 vector in the original reference frame
-    #        c1: a corresponding axis which v1 must be mapped to
-    #        v1: a second 1x3 vector in the original reference frame
-    #        c1: a corresponding axis which v2 must be mapped to
-
-    #    Returns:
-    #        an orientation object consistent with the supplied constraints
-    #    """
-    #    T = rotate_vector(v1, c1)
-    #    phi = angle(c1, c2)
-    #    phi2 = angle(c1, (np.dot(T, v2)))
-    #    if not np.isclose(phi, phi2, rtol=0.01):
-    #        printx("Error: constraints and vectors do not match.", priority=1)
-    #        return
-    #    r = np.sin(phi)
-    #    c = np.linalg.norm(np.dot(T, v2) - c2)
-    #    theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
-    #    #Rot = R.from_rotvec(theta * c1)
-    #    T2 = np.dot(R, T)
-    #    a = angle(np.dot(T2, v2), c2)
-    #    if not np.isclose(a, 0, rtol=0.01):
-    #        T2 = np.dot(np.linalg.inv(R), T)
-    #    a = angle(np.dot(T2, v2), c2)
-    #    if not np.isclose(a, 0, rtol=0.01):
-    #        printx("Error: Generated incorrect rotation: " + str(theta), priority=1)
-    #    return Orientation(T2, degrees=0)
 
     def random_orientation(self):
         """
