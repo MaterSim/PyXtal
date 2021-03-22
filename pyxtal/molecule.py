@@ -401,6 +401,7 @@ class pyxtal_molecule:
         """
         get the torsion angles
         """
+        from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolTransforms as rdmt
         mol = self.rdkit_mol(self.smile)
         conf = mol.GetConformer(0)
@@ -419,7 +420,6 @@ class pyxtal_molecule:
         """
         reset the torsion angles and update molecular xyz
         """
-        from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolTransforms as rdmt
 
         for id, torsion in enumerate(self.torsionlist):
@@ -429,7 +429,7 @@ class pyxtal_molecule:
         xyz = self.align(conf, reflect)
         return xyz
 
-    def get_orientation(self, xyz):
+    def get_orientation(self, xyz, rtol=0.25):
         """
         get orientation
         """
@@ -471,11 +471,11 @@ class pyxtal_molecule:
         rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
         rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
 
-        if rmsd1 < 0.1:
+        if rmsd1 < rtol:
             trans = trans1[:3,:3].T
             r = Rotation.from_matrix(trans)
             return r.as_euler('zxy', degrees=True), rmsd1, False
-        elif rmsd2 < 0.1:
+        elif rmsd2 < tol:
             trans = trans2[:3,:3].T
             r = Rotation.from_matrix(trans)
             #print("the trial molecule:")
@@ -486,6 +486,7 @@ class pyxtal_molecule:
             #print(r.as_matrix())
             return r.as_euler('zxy', degrees=True), rmsd2, True
         else:
+            print(rmsd1, rmsd2)
             rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
             rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
             rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
