@@ -405,30 +405,28 @@ class pyxtal_molecule:
         mol = self.rdkit_mol(self.smile)
         conf = mol.GetConformer(0)
 
+        for i in range(len(self.mol)):
+            x,y,z = xyz[i]
+            conf.SetAtomPosition(i,Point3D(x,y,z))
+
         angs = []
         for torsion in self.torsionlist:
             (i, j, k, l) = torsion
             angs.append(rdmt.GetDihedralDeg(conf, i, j, k, l))
-            #angs.append(abs(dihedral(xyz[[i,j,k,l],:])))
         return angs
     
     def set_torsion_angles(self, conf, angles, reflect=False):
         """
         reset the torsion angles and update molecular xyz
         """
+        from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolTransforms as rdmt
-        #print("SSSSSSSSSSSSSSSSS")
-        #print(conf.GetPositions()[:3])
-        #print(angles)
-        #print(reflect)
 
         for id, torsion in enumerate(self.torsionlist):
             (i, j, k, l) = torsion
             rdmt.SetDihedralDeg(conf, i, j, k, l, angles[id])
         
         xyz = self.align(conf, reflect)
-        #print(xyz[:3])
-        #print("==================SSSSSSSSSSSSSSSSS")
         return xyz
 
     def get_orientation(self, xyz):
