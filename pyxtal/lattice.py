@@ -210,6 +210,18 @@ class Lattice:
         else:
             return self, np.eye(3), opt
 
+    def encode(self):
+        a, b, c, alpha, beta, gamma = self.get_para(degree=True)
+        if self.ltype in ['cubic', 'Cubic']:
+            return [a]
+        elif self.ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal', 'tetragonal', 'Tetragonal']:
+            return [a, c]
+        elif self.ltype in ['orthorhombic', 'Orthorhombic']:
+            return [a, b, c]
+        elif self.ltype in ['monoclinic', 'Monoclinic']:
+            return [a, b, c, beta]
+        else:
+            return [a, b, c, alpha, beta, gamma]
 
     def mutate(self, degree=0.20, frozen=False):
         """

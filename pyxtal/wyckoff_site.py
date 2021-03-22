@@ -79,6 +79,7 @@ class mol_site:
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
         s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
+
         return s
 
     def _get_dof(self):
@@ -124,15 +125,37 @@ class mol_site:
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
         return cls(mol, position, orientation, wp, lattice, diag)
 
-    def to_1D_representation(self):
+    def encode(self):
+        """
+        transform dict to 1D vector
+        [x, y, z, or1, or2, or3, rotor1, rotor2, .etc]
+        """
+        xyz, _ = self._get_coords_and_species(absolute=True, first=True)
+        xyz -= self.molecule.get_center(xyz)
+        rotor = self.molecule.get_torsion_angles(xyz)
+        ori, _, reflect = self.molecule.get_orientation(xyz)
+        #print(self.molecule.mol)
+        return list(self.position) + list(ori) + rotor + [reflect]
+        
+    def to_1D_dicts(self):
         """
         save the wp in 1D representation
         """
         xyz, _ = self._get_coords_and_species(absolute=True, first=True)
         dict0 = {"smile": self.molecule.smile}
         dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
-        dict0["orientation"], dict0["rmsd"] = self.molecule.get_orientation(xyz)
-        dict0["center"] = self.molecule.get_center(xyz)
+        dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(xyz)
+        
+        angs = dict0["rotor"] 
+        rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
+        conf0 = rdkit_mol.GetConformer(0)
+        #print(self.molecule.set_torsion_angles(conf0, angs))
+        #import sys; sys.exit()
+
+        #print("save matrix"); print(self.orientation.r.as_matrix())
+        #print("save angle"); print(self.orientation.r.as_euler('zxy', degrees=True))
+        #print("angle"); print(dict0["orientation"])
+        dict0["center"] = self.position #self.molecule.get_center(xyz)
         dict0["number"] = self.wp.number
         dict0["index"] = self.wp.index
         dict0["dim"] = self.wp.dim
@@ -143,24 +166,34 @@ class mol_site:
         return dict0
 
     @classmethod
-    def from_1D_representation(cls, dicts):
+    def from_1D_dicts(cls, dicts):
         from pyxtal.molecule import pyxtal_molecule, Orientation
-        from scipy.spatial.transform import Rotation
 
         mol = pyxtal_molecule(mol=dicts['smile']+'.smi')
         rdkit_mol = mol.rdkit_mol(mol.smile)
         conf = rdkit_mol.GetConformer(0)
-        mol.set_torsion_angles(conf, dicts["rotor"])
-
+        #print("try")
+        #print(conf.GetPositions()[:3])
+        #print(dicts["rotor"])
+        if dicts['reflect']:
+            mol.set_torsion_angles(conf, dicts["rotor"], False)
+        #    print(mol.set_torsion_angles(conf, dicts["rotor"], True))
+        #    #import sys; sys.exit()
+        xyz = mol.set_torsion_angles(conf, dicts["rotor"], dicts['reflect'])
+        mol.reset_positions(xyz)
         g = dicts["number"]
         index = dicts["index"]
         dim = dicts["dim"]
-        matrix = Rotation.from_euler('zxy', dicts["orientation"]).as_matrix()
+        matrix = R.from_euler('zxy', dicts["orientation"], degrees=True).as_matrix()
         orientation = Orientation(matrix)
+        #if dicts['reflect']:
+        #    print('load'); print(xyz[:3])
+        #    print("aaaaaaaaaaaaaa"); print(xyz[:3].dot(orientation.matrix.T))
+        #    print("matrix"); print(orientation.matrix)
         wp = Wyckoff_position.from_group_and_index(g, index, dim)
         diag = dicts["diag"]
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
-        position = np.dot(dicts["center"], lattice.inv_matrix)
+        position = dicts["center"] #np.dot(dicts["center"], lattice.inv_matrix)
 
         return cls(mol, position, orientation, wp, lattice, diag)
 
