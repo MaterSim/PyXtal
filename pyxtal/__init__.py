@@ -966,10 +966,7 @@ class pyxtal:
                     sites = self.mol_sites
                 else:
                     sites = self.atom_sites
-                #print(self.lattice)
-                #print("->")
-                #print(lattice)
-                #print(lattice.matrix)
+
                 for j, site in enumerate(sites):
                     count += 1
                     #print("old lattice"); print(site.lattice); print(site.lattice.matrix)
@@ -1041,18 +1038,16 @@ class pyxtal:
                             else:
                                 lattice0 = lattice
 
-                            #print("bereset lattice"); print(lattice); print(lattice.matrix)
+                            #print("reset lattice"); print(lattice); print(lattice.matrix)
                             #print("reset lattice"); print(lattice0); print(lattice0.matrix)
-
                             mol = site.molecule
                             sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag)
-                            #print("----->", sites[j])
-                            #xyz, _ = sites[j]._get_coords_and_species(absolute=False, first=True)
-                            #print("new", xyz[0])
                         else:
                             sites[j] = atom_site(wp, pos_frac, site.specie, diag)
+                    else:
+                        diag = False
+                        lattice0 = lattice
 
-                self.diag = diag
                 if self.molecular:
                     self.lattice = lattice0
                 else:

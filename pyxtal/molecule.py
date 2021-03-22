@@ -429,35 +429,20 @@ class pyxtal_molecule:
         xyz = self.align(conf, reflect)
         return xyz
 
-    def get_orientation(self, xyz, rtol=0.25):
+    def get_orientation(self, xyz, rtol=0.15):
         """
-        get orientation
+        get orientation, needs to check the tolerance
         """
         from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolAlign, RemoveHs, rdmolfiles, rdMolTransforms
         mol = self.rdkit_mol(self.smile)
-
+        
         conf0 = mol.GetConformer(0)
         conf1 = mol.GetConformer(1)
         conf2 = mol.GetConformer(2)
-
-        #ref = conf0.GetPositions()
-        #for i in range(len(self.mol)):
-        #    x,y,z = ref[i]
-        #    conf2.SetAtomPosition(i,Point3D(-x,-y,-z))
-        #rdMolTransforms.TransformConformer(conf2, np.eye(3)*-1)
-
-        #print(xyz[:3])
         angs = self.get_torsion_angles(xyz)
-        #print("conf0")
-        #print(conf0.GetPositions()[:3])
-        #print(angs)
-
         xyz0 = self.set_torsion_angles(conf0, angs) #conf0 with aligned
         xyz1 = self.set_torsion_angles(conf0, angs, True) #conf0 with aligned
-        #print("the reference molecule:")
-        #print(xyz0)
-        #self.reset_positions(xyz0)
 
         for i in range(len(self.mol)):
             x0,y0,z0 = xyz0[i]
@@ -470,9 +455,10 @@ class pyxtal_molecule:
         mol = RemoveHs(mol)
         rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
         rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
+        tol = rtol*mol.GetNumAtoms()
 
         #print(rmsd1, rmsd2)
-        if rmsd1 < rtol:
+        if rmsd1 < tol:
             trans = trans1[:3,:3].T
             r = Rotation.from_matrix(trans)
             return r.as_euler('zxy', degrees=True), rmsd1, False
