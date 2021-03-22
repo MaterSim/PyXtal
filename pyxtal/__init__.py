@@ -952,7 +952,7 @@ class pyxtal:
         else:
             return display_atomic(self, **kwargs)
 
-    def optimize_lattice(self, iterations=3):
+    def optimize_lattice(self, iterations=3, force=False):
         """
         optimize the lattice if the cell has a bad inclination angles
         """
@@ -961,7 +961,7 @@ class pyxtal:
         for i in range(iterations):
             lattice, trans, opt = self.lattice.optimize()
             #print(self.lattice, "->", lattice)
-            if opt:
+            if force or opt:
                 if self.molecular:
                     sites = self.mol_sites
                 else:
@@ -1001,8 +1001,8 @@ class pyxtal:
                         if self.molecular:
                             ori = site.orientation
                             #print("new lattice"); print(site.lattice); print(site.lattice.matrix)
-                            #if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
-                            if diag and not site.diag:
+                            if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
+                            #if diag and not site.diag:
                                 #print("from p21/c to p21/n")
                                 site.lattice = lattice
                                 xyz, _ = site._get_coords_and_species(absolute=False, first=True)

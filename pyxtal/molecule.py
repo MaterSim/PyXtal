@@ -471,6 +471,7 @@ class pyxtal_molecule:
         rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
         rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
 
+        #print(rmsd1, rmsd2)
         if rmsd1 < rtol:
             trans = trans1[:3,:3].T
             r = Rotation.from_matrix(trans)
@@ -478,18 +479,12 @@ class pyxtal_molecule:
         elif rmsd2 < tol:
             trans = trans2[:3,:3].T
             r = Rotation.from_matrix(trans)
-            #print("the trial molecule:")
-            #print(xyz[:3])
-            #print("the ref molecule:")
-            #print(xyz1[:3])
-            #print(xyz1.dot(trans.T)[:3])
-            #print(r.as_matrix())
             return r.as_euler('zxy', degrees=True), rmsd2, True
         else:
             print(rmsd1, rmsd2)
-            rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
-            rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
-            rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
+            #rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
+            #rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
+            #rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
             print(self.get_torsion_angles(xyz))   
             print(self.get_torsion_angles(xyz0))   
             print(self.get_torsion_angles(xyz1))   
