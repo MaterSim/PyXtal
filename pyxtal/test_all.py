@@ -1,6 +1,7 @@
 # python -m unittest pyxtal/test_all.py
 import unittest
 
+from random import choice
 import numpy as np
 from pkg_resources import resource_filename
 from pymatgen.core import Structure
@@ -65,42 +66,31 @@ class TestOptLat(unittest.TestCase):
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
     def test_molecular_diag(self):
-        for i in range(20):
-            c1 = pyxtal(molecular=True)
-            c1.from_random(3, 14, ["aspirin"], [4], diag=True) 
-            pmg1 = c1.to_pymatgen()
-            c2 = c1.copy()
-            c2.optimize_lattice(1)
-            pmg2 = c2.to_pymatgen()
-            self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
+        sgs, diags = [5, 7, 8, 12, 13, 14], [True, False]
+        for diag in diags:
+            for i in range(40):
+                sg = choice(sgs)
+                num = len(Group(sg)[0])
+                c1 = pyxtal(molecular=True)
+                c1.from_random(3, sg, ["aspirin"], [num], diag=diag) 
+                pmg1 = c1.to_pymatgen()
+                c2 = c1.copy()
+                c2.optimize_lattice(1)
+                pmg2 = c2.to_pymatgen()
+                self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
     def test_molecular_nodiag(self):
-        for i in range(20):
+        sgs, diag = [5, 7, 8, 12, 13, 14], False
+        for i in range(40):
+            sg = choice(sgs)
+            num = len(Group(sg)[0])
             c1 = pyxtal(molecular=True)
-            c1.from_random(3, 14, ["aspirin"], [4], diag=False) 
+            c1.from_random(3, sg, ["aspirin"], [num], diag=diag) 
             pmg1 = c1.to_pymatgen()
             c2 = c1.copy()
             c2.optimize_lattice(1)
             pmg2 = c2.to_pymatgen()
             self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
-
-        for i in range(20):
-            c1 = pyxtal(molecular=True)
-            c1.from_random(3, 7, ["aspirin"], [2], diag=False) 
-            pmg1 = c1.to_pymatgen()
-            c2 = c1.copy()
-            c2.optimize_lattice(1)
-            pmg2 = c2.to_pymatgen()
-            self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
-
-        #for i in range(20):
-        #    c1 = pyxtal(molecular=True)
-        #    c1.from_random(3, 4, ["aspirin"], [2], diag=False) 
-        #    pmg1 = c1.to_pymatgen()
-        #    c2 = c1.copy()
-        #    c2.optimize_lattice(1)
-        #    pmg2 = c2.to_pymatgen()
-        #    self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
 
 class TestWP(unittest.TestCase):

@@ -158,7 +158,7 @@ class pyxtal:
             s = "\n------Crystal from {:s}------".format(self.source)
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
-            if self.group.number in [7, 14, 15] and self.diag:
+            if self.group.number in [5, 7, 8, 9, 12, 13, 14, 15] and self.diag:
                 symbol = self.group.alias
             else:
                 symbol = self.group.symbol
@@ -699,7 +699,7 @@ class pyxtal:
                     # QZ: This loop needs a generalization!
                     if abs(np.linalg.det(tran[:3,:3])-1)>1e-3:
                         good = False
-                    elif self.group.number in [7, 14, 15] and self.diag and Hs[i]==4:
+                    elif self.group.number in [5, 7, 8, 9, 12, 13, 14, 15] and self.diag and Hs[i]==4:
                         good = False
                     elif self.group.number in [31] and Hs[i]==7:
                         good = False
@@ -769,7 +769,7 @@ class pyxtal:
                     dis /= np.linalg.norm(dis)
                     pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
-                    if h in [7, 14] and self.group.number == 31:
+                    if h in [5, 7, 8, 9, 12, 13, 14, 15] and self.group.number == 31:
                         diag = True
                     else:
                         diag = self.diag
@@ -975,8 +975,9 @@ class pyxtal:
                     pos_frac -= np.floor(pos_frac)
 
                     # for P21/c, Pc, C2/c, check if opt the inclination angle
+                    #print(trans)
                     ops = site.wp.ops.copy()
-                    if self.group.number in [7, 14, 15]:
+                    if self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                         for k, op in enumerate(ops):
                             vec = op.translation_vector.dot(trans)
                             vec -= np.floor(vec)
@@ -998,20 +999,7 @@ class pyxtal:
                         if self.molecular:
                             ori = site.orientation
                             #print("new lattice"); print(site.lattice); print(site.lattice.matrix)
-                            if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
-                            #if diag and not site.diag:
-                                #print("from p21/c to p21/n")
-                                site.lattice = lattice
-                                xyz, _ = site._get_coords_and_species(absolute=False, first=True)
-                                lattice0 = Lattice.from_matrix(lattice.matrix, 
-                                                          ltype=lattice.ltype, 
-                                                          reset=True)
-
-                                xyz = np.dot(xyz, lattice0.matrix)
-                                center = site.molecule.get_center(xyz)
-                                site.molecule.reset_positions(xyz-center)
-                                ori.reset_matrix(np.eye(3))
-                            elif site.diag and not diag:
+                            if site.diag and not diag:
                                 if perm == [2, 1, 0]:
                                     #print("from p21/n to p21/a to p21/c")
                                     lattice0 = lattice.swap_axis(ids=perm)
@@ -1035,18 +1023,62 @@ class pyxtal:
                                     center = site.molecule.get_center(xyz)
                                     site.molecule.reset_positions(xyz-center)
                                     ori.reset_matrix(np.eye(3))
+                                else:
+                                    lattice0 = lattice
+                            #if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
+                            elif diag and not site.diag:
+                                #print("from p21/c to p21/n")
+                                site.lattice = lattice
+                                xyz, _ = site._get_coords_and_species(absolute=False, first=True)
+                                lattice0 = Lattice.from_matrix(lattice.matrix, 
+                                                          ltype=lattice.ltype, 
+                                                          reset=True)
+
+                                xyz = np.dot(xyz, lattice0.matrix)
+                                center = site.molecule.get_center(xyz)
+                                site.molecule.reset_positions(xyz-center)
+                                ori.reset_matrix(np.eye(3))
+                            elif not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
+                                site.lattice = lattice
+                                xyz, _ = site._get_coords_and_species(absolute=False, first=True)
+                                lattice0 = Lattice.from_matrix(lattice.matrix, 
+                                                          ltype=lattice.ltype, 
+                                                          reset=True)
+
+                                xyz = np.dot(xyz, lattice0.matrix)
+                                center = site.molecule.get_center(xyz)
+                                site.molecule.reset_positions(xyz-center)
+                                ori.reset_matrix(np.eye(3))
                             else:
                                 lattice0 = lattice
-
                             #print("reset lattice"); print(lattice); print(lattice.matrix)
                             #print("reset lattice"); print(lattice0); print(lattice0.matrix)
+                            #print(self.group.symbol, wp)
                             mol = site.molecule
                             sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag)
                         else:
                             sites[j] = atom_site(wp, pos_frac, site.specie, diag)
                     else:
                         diag = False
-                        lattice0 = lattice
+                        #print(self.group.symbol)
+                        #print(lattice.matrix)
+                        if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
+                            site.lattice = lattice
+                            xyz, _ = sites[j]._get_coords_and_species(absolute=False, first=True)
+                            lattice0 = Lattice.from_matrix(lattice.matrix, 
+                                                      ltype=lattice.ltype, 
+                                                      reset=True)
+                            xyz = np.dot(xyz, lattice0.matrix)
+                        else:
+                            lattice0 = lattice
+                            xyz, _ = sites[j]._get_coords_and_species(absolute=True, first=True)
+                        #print(lattice0.matrix)
+ 
+                        center = sites[j].molecule.get_center(xyz)
+                        sites[j].molecule.reset_positions(xyz-center)
+                        sites[j].orientation.reset_matrix(np.eye(3))
+                        sites[j].position = pos_frac
+                        sites[j].lattice = lattice0
 
                 if self.molecular:
                     self.lattice = lattice0

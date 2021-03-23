@@ -148,8 +148,9 @@ class Group:
         # Wyckoff positions, site_symmetry, generators, inverse
         # QZ: check if we can just use the get_wyckoff_symmetry function
         if dim == 3:
-            if self.number in [7, 14, 15]:
+            if self.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                 self.alias = self.symbol.replace("c","n")
+                self.alias = self.alias.replace("C","I")
             self.wyckoffs = get_wyckoffs(self.number) 
             self.w_symm = get_wyckoff_symmetry(self.number)
             self.wyckoff_generators = get_wyckoff_generators(self.number)
@@ -600,16 +601,26 @@ class Wyckoff_position:
 
     def diagonalize_symops(self):
         """
-        Obtain the symmetry in n representation for P21/c, Pc, C2/c
+        Obtain the symmetry in n representation for P2/c, Cc, P21/c, Pc, C2/c
         """
         ops = Group(self.number)[self.index]
-        if self.number in [7, 14, 15]:
+        #Pn, Cn, P2/n, P21/n, C2/n
+        if self.number in [7, 9, 13, 14, 15]:
             trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
             for j, op in enumerate(ops):
                 vec = op.translation_vector.dot(trans)
                 vec -= np.floor(vec) 
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                 self.ops[j] = op1    
+        #I2, Im, Ic, I2/m, I2/c
+        elif self.number in [5, 8, 9, 12, 15]:
+            trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
+            for j, op in enumerate(ops):
+                vec = op.translation_vector.dot(trans)
+                vec -= np.floor(vec) 
+                op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                self.ops[j] = op1  
+        #In, I2/n
 
     def equivalent_set(self, index):
         """
@@ -713,8 +724,19 @@ class Wyckoff_position:
                             return wyc, perm
 
                     # Try monoclinic space groups (P21/n, Pn, C2/n) 
-                    if i in [7, 14, 15]:
+                    if i in [7, 9, 13, 14, 15]:
                         trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+                        str3 = []
+                        for j, op in enumerate(wyc.ops):
+                            vec = op.translation_vector.dot(trans)
+                            vec -= np.floor(vec) 
+                            op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                            str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
+                            #wyc.ops[j] = op3
+                        if set(str3) == set(str1):
+                            return wyc, trans
+                    elif i in [5, 8, 9, 12, 15]:
+                        trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
                         str3 = []
                         for j, op in enumerate(wyc.ops):
                             vec = op.translation_vector.dot(trans)
