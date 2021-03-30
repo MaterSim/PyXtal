@@ -155,7 +155,7 @@ class mol_site:
         #print("save matrix"); print(self.orientation.r.as_matrix())
         #print("save angle"); print(self.orientation.r.as_euler('zxy', degrees=True))
         #print("angle"); print(dict0["orientation"])
-        dict0["center"] = self.position #self.molecule.get_center(xyz)
+        dict0["center"] = self.position - np.floor(self.position) #self.molecule.get_center(xyz)
         dict0["number"] = self.wp.number
         dict0["index"] = self.wp.index
         dict0["dim"] = self.wp.dim
