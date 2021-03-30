@@ -70,7 +70,7 @@ class random_crystal:
             for wyc in self.atom_sites:
                 s += "\n\t{}".format(wyc)
         else:
-            s += "\nStructure not available."
+            s = "\nStructure not available."
         return s
 
     def __repr__(self):
