@@ -196,14 +196,14 @@ class structure_from_ext():
     
         Args: 
             struc: cif/poscar file or a Pymatgen Structure object
-            ref_mol: xyz file or a reference Pymatgen molecule object
+            ref_mol: xyz file or a reference Pyxtal molecule object
             tol: scale factor for covalent bond distance
             relax_h: whether or not relax the position for hydrogen atoms in structure
         
     """
         if isinstance(ref_mol, str):
-            ref_mol = Molecule.from_file(ref_mol)
-        elif isinstance(ref_mol, Molecule):
+            ref_mol = pyxtal_molecule(ref_mol)
+        elif isinstance(ref_mol, pyxtal_molecule):
             ref_mol = ref_mol
         else:
             print(type(ref_mol))
@@ -218,8 +218,7 @@ class structure_from_ext():
             print(type(struc))
             raise NameError("input structure cannot be intepretted")
 
-        self.props = ref_mol.site_properties
-        self.ref_mol = ref_mol.get_centered_molecule()
+        self.ref_mol = ref_mol
         self.tol = tol
         self.diag = False
         self.relax_h = relax_h
@@ -260,26 +259,11 @@ class structure_from_ext():
         mol = ad.pymatgen_mol
         return mol
 
-
-    def add_site_props(self, mo):
-        if len(self.props) > 0:
-            for key in self.props.keys():
-                mo.add_site_property(key, self.props[key])
-        return mo
-
-
-    def make_mol_site(self, ref=False):
-        if ref:
-            mol = self.ref_mol
-            ori = self.ori
-        else:
-            mol = self.molecule
-            ori = Orientation(np.eye(3))
-        mol = self.add_site_props(mol)
-        pmol = pyxtal_molecule(mol, symmetrize=False)
-        site = mol_site(pmol, self.position, ori, self.wyc, self.lattice, self.diag)
+    def make_mol_site(self):
+        mol = self.p_mol
+        ori = Orientation(np.eye(3))
+        site = mol_site(mol, self.position, ori, self.wyc, self.lattice, self.diag)
         return site
-
 
     def align(self):
         """
@@ -311,7 +295,7 @@ class structure_from_ext():
         """
         Check the two molecular graphs are isomorphic
         """
-        match, mapping = compare_mol_connectivity(self.ref_mol, self.molecule)
+        match, mapping = compare_mol_connectivity(self.ref_mol.mol, self.molecule)
         if not match:
             print(self.ref_mol.to("xyz"))
             print(self.molecule.to("xyz"))
@@ -322,13 +306,20 @@ class structure_from_ext():
             return False
         else:
             # resort the atomic number for molecule 1
-            order = [mapping[i] for i in range(len(self.ref_mol))]
-            numbers = np.array(self.molecule.atomic_numbers)
-            numbers = numbers[order].tolist()
-            coords = self.molecule.cart_coords[order]
-            position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
+            order = [mapping[i] for i in range(len(self.molecule))]
+            xyz = self.molecule.cart_coords[order] 
+            frac = np.dot(xyz, self.pmg_struc.lattice.inv_matrix) 
+            xyz = np.dot(frac, self.lattice.matrix) 
+            self.p_mol = self.ref_mol.copy() 
+            center = self.p_mol.get_center(xyz) 
+
+            self.p_mol.reset_positions(xyz-center)
+            position = np.dot(center, self.lattice.inv_matrix)
             position -= np.floor(position)
+
             # check if molecule is on the special wyckoff position
+            #print(xyz)
+            #print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
             if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
                 if self.diag:
                     #Transform it to the conventional representation
@@ -338,8 +329,9 @@ class structure_from_ext():
                 #print(position)
                 #print(wp)
                 self.wyc = wp
+
             self.position = position
-            self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
+            #self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
             #self.align()
             return True
 

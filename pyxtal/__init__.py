@@ -243,6 +243,8 @@ class pyxtal:
             count += 1
             if self.molecular:
                 if dim == 3:
+                    if numIons is None:
+                        numIons = [len(Group(group)[0])]*len(species)
                     struc = molecular_crystal(group, species, numIons, factor,
                     lattice=lattice, sites=sites, conventional=conventional, diag=diag, tm=tm)
                 elif dim == 2:
@@ -304,13 +306,17 @@ class pyxtal:
         """
 
         if self.molecular:
-            pmol = pyxtal_molecule(molecule).mol
+            pmol = pyxtal_molecule(molecule)#.mol
             struc = structure_from_ext(seed, pmol, relax_h=relax_h)
             if struc.match():
                 self.mol_sites = [struc.make_mol_site()]
+                #xyz = self.mol_sites[0].molecule.mol.cart_coords
+                #self.mol_sites[0].molecule = pyxtal_molecule(molecule)
+                #self.mol_sites[0].molecule.reset_positions(xyz)
                 self.group = Group(struc.wyc.number)
                 self.lattice = struc.lattice
-                self.molecules = [pyxtal_molecule(struc.molecule, symmetrize=False)]
+                #self.molecules = [pyxtal_molecule(struc.molecule, symmetrize=False)]
+                self.molecules = [self.mol_sites[0].molecule]
                 self.numMols = struc.numMols
                 self.diag = struc.diag
                 self.valid = True # Need to add a check function

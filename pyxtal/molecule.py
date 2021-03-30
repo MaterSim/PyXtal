@@ -161,7 +161,8 @@ class pyxtal_molecule:
         self.get_radius()
         self.get_symbols()
         self.get_tols_matrix()
-
+        xyz = self.mol.cart_coords
+        self.reset_positions(xyz-self.get_center(xyz))
 
 
     def __str__(self):
