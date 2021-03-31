@@ -550,15 +550,17 @@ def angle(v1, v2, radians=True):
     Returns:
         the angle in radians between the two vectors
     """
-    np.real(v1)
+    v1 = np.real(v1)
     v2 = np.real(v2)
-    dot = np.dot(v1, v2)
+    dot = np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2))
     #if np.isclose(dot, 1.0):
     if np.abs(dot-1)<1e-3:
-        return 0
+        a = 0
     elif np.abs(dot+1)<1e-3:
-        return np.pi
-    a = np.arccos(np.real(dot) / np.real(np.linalg.norm(v1) * np.linalg.norm(v2)))
+        a = np.pi
+    else:
+        a = np.arccos(dot)
+
     if radians:
         return a
     else:

@@ -429,8 +429,8 @@ class mol_site:
             import pickle
             with open('wrong.pkl', "wb") as f:
                 pickle.dump([mol, self.mol], f)
-            #print(mol.to(fmt='xyz'))
-            #print(self.mol.to(fmt='xyz'))
+                mol.to(filename='Wrong.xyz', fmt='xyz')
+                self.mol.to(filename='Ref.xyz', fmt='xyz')
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
    
