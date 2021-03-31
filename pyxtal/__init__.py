@@ -452,7 +452,7 @@ class pyxtal:
             raise NotImplementedError("Does not support cluster for now")
         return N_pairs
 
-    def to_file(self, filename=None, fmt=None, permission='w', sym_num=None):
+    def to_file(self, filename=None, fmt=None, permission='w', sym_num=None, header="from_pyxtal"):
         """
         Creates a file with the given filename and file type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
@@ -475,7 +475,7 @@ class pyxtal:
 
             if fmt == "cif":
                 if self.dim == 3:
-                    return write_cif(self, filename, "from_pyxtal", permission, sym_num=sym_num)
+                    return write_cif(self, filename, header, permission, sym_num=sym_num)
                 else:
                     pmg_struc = self.to_pymatgen()
                     if self.molecular:
