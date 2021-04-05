@@ -124,6 +124,7 @@ class wyckoff_split:
             wp2_lists.append(wp2_list)
         self.wp2_lists = wp2_lists
         self.index=self.wyc['index'][idx]
+        self.cosets=self.wyc['cosets'][idx]
         #import sys; sys.exit()
 
     def split_t(self, wp1, wp2_lists, quadrant=None):
