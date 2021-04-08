@@ -65,6 +65,18 @@ class TestOptLat(unittest.TestCase):
         pmg2 = c2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
+    def test_molecular_trans(self):
+        c1 = pyxtal(molecular=True)
+        c1.from_seed(seed=cif_path+"aspirin.cif", molecule="aspirin")
+        pmg1 = c1.to_pymatgen()
+        c1.transform(trans=[[1,0,0],[0,1,0],[-1,0,1]])
+        pmg2 = c1.to_pymatgen()
+        c1.optimize_lattice()
+        pmg3 = c1.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
+        self.assertTrue(sm.StructureMatcher().fit(pmg2, pmg3))
+
+
     def test_molecular_diag(self):
         sgs, diags = [5, 7, 8, 12, 13, 14], [True, False]
         for diag in diags:

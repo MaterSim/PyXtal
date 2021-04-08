@@ -774,7 +774,7 @@ class supergroup():
                         valid_solutions.append((sp, mapping, disp, mae))
         return valid_solutions
 
-    def make_supergroup(self, solutions, once=False, show_detail=True):
+    def make_supergroup(self, solutions, once=False, show_detail=False):
         """
         create supergroup structures based on the list of solutions
 

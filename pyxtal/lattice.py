@@ -210,6 +210,15 @@ class Lattice:
         else:
             return self, np.eye(3), opt
 
+    def transform(self, trans_mat=np.eye(3), reset=False):
+        """
+        Optimize the lattice's inclination angles
+        """
+        if type(trans_mat) == list:
+            trans_mat = np.array(trans_mat)
+        cell = np.dot(trans_mat, self.matrix)
+        return Lattice.from_matrix(cell, ltype=self.ltype, reset=reset)
+
     def encode(self):
         a, b, c, alpha, beta, gamma = self.get_para(degree=True)
         if self.ltype in ['cubic', 'Cubic']:
@@ -357,19 +366,19 @@ class Lattice:
         if self.allow_volume_reset is True:
             self.volume = volume
 
-    def transform(self, tran):
-        """
-        Transform the lattice, assuming the symmetry does not change
-        mostly designed for alternative wyckoff set
+    #def transform(self, tran):
+    #    """
+    #    Transform the lattice, assuming the symmetry does not change
+    #    mostly designed for alternative wyckoff set
 
-        Args: 
-            tran: 3*3 matrix
-        """
-        # only applied to triclinic/monoclinic/orthorhombic
-        matrix = tran.dot(self.matrix)
-        (a,b,c,alpha,beta,gamma) = matrix2para(matrix)
-        alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
-        return self.from_para(a, b, c, alpha, beta, gamma, self.ltype)
+    #    Args: 
+    #        tran: 3*3 matrix
+    #    """
+    #    # only applied to triclinic/monoclinic/orthorhombic
+    #    matrix = tran.dot(self.matrix)
+    #    (a,b,c,alpha,beta,gamma) = matrix2para(matrix)
+    #    alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
+    #    return self.from_para(a, b, c, alpha, beta, gamma, self.ltype)
 
     def swap_axis(self, random=False, ids=None):
         """
