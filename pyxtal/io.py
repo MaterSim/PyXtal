@@ -297,7 +297,7 @@ class structure_from_ext():
         """
         match, mapping = compare_mol_connectivity(self.ref_mol.mol, self.molecule)
         if not match:
-            print(self.ref_mol.to("xyz"))
+            print(self.ref_mol.mol.to("xyz"))
             print(self.molecule.to("xyz"))
             import pickle
             with open('wrong.pkl', "wb") as f:
