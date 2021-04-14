@@ -1117,6 +1117,7 @@ def make_graph(mol, tol=0.2):
     """
     make graph object for the input molecule
     """
+    #print("making graphs")
     G = nx.Graph()
     names = {}
     for i, site in enumerate(mol._sites):
@@ -1133,12 +1134,14 @@ def make_graph(mol, tol=0.2):
                 factor = 0.05
             elif "H" in [names[i], names[j]]:
                 factor = 0.5
+            elif [names[i], names[j]] in [["N", "S"], ["S", "N"]]:
+                factor = 1.25
             else:
                 factor = 1.0
             try:
                 if CovalentBond.is_bonded(site1, site2, factor*tol):
                     G.add_edge(i,j)
-                    #print(names[i], names[j], mol.get_distance(i, j))
+                    #if 'S' in [names[i], names[j]]: print(names[i], names[j], mol.get_distance(i, j))
             except ValueError:
                 pass
     nx.set_node_attributes(G, names, 'name')
