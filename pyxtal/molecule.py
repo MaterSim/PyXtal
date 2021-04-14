@@ -491,7 +491,16 @@ class pyxtal_molecule:
                 new_site = Site(_site.species, coor, properties=_site.properties)
                 self.mol._sites[i] = new_site
 
-      
+    def apply_inversion(self):
+        """
+        reset the coordinates
+        """
+        from pymatgen.core.sites import Site
+        xyz = self.mol.cart_coords
+        center = self.get_center(xyz)
+        xyz -= center
+        xyz *= -1
+        self.reset_positions(xyz)
 
 class Box:
     """

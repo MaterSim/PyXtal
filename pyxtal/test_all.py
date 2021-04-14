@@ -57,7 +57,7 @@ class TestOptLat(unittest.TestCase):
 
     def test_molecular(self):
         c1 = pyxtal(molecular=True)
-        c1.from_seed(seed=cif_path+"aspirin-c.cif", molecule="aspirin")
+        c1.from_seed(seed=cif_path+"aspirin-c.cif", molecules=["aspirin"])
         pmg1 = c1.to_pymatgen()
 
         c2 = c1.copy()
@@ -67,7 +67,7 @@ class TestOptLat(unittest.TestCase):
 
     def test_molecular_trans(self):
         c1 = pyxtal(molecular=True)
-        c1.from_seed(seed=cif_path+"aspirin.cif", molecule="aspirin")
+        c1.from_seed(seed=cif_path+"aspirin.cif", molecules=["aspirin"])
         pmg1 = c1.to_pymatgen()
         c1.transform(trans=[[1,0,0],[0,1,0],[-1,0,1]])
         pmg2 = c1.to_pymatgen()
@@ -174,7 +174,7 @@ class TestMolecular(unittest.TestCase):
     def test_read(self):
         # test reading structure from external
         struc = pyxtal(molecular=True)
-        struc.from_seed(seed=cif_path+"aspirin.cif", molecule="aspirin")
+        struc.from_seed(seed=cif_path+"aspirin.cif", molecules=["aspirin"])
         self.assertTrue(struc.lattice.ltype == "monoclinic")
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
@@ -405,15 +405,20 @@ class TestSubgroup(unittest.TestCase):
         #struc.subgroup_once(0.01, None, permutation, max_cell=2) 
 
     def test_molecules(self):
-        for name in ["HAHCOI", "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", "JAPWIH"]:
+        for name in ["aspirin", "resorcinol", "coumarin", "HAHCOI", \
+                     "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", "JAPWIH"]:
             cif = cif_path + name + ".cif"
             struc = pyxtal(molecular=True)
-            struc.from_seed(seed=cif, molecule=name)
+            struc.from_seed(seed=cif, molecules=[name])
             pmg_struc = struc.to_pymatgen()
-            Cs = struc.subgroup(eps=0, max_cell=1)
-            for C in Cs:
-                pmg_s2 = C.to_pymatgen()
-                self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
+            pmg_s1 = Structure.from_file(cif)
+            self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s1))
+
+            if name not in ["aspirin", "resorcinol", "coumarin"]:
+                Cs = struc.subgroup(eps=0, max_cell=1)
+                for C in Cs:
+                    pmg_s2 = C.to_pymatgen()
+                    self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
  
     def test_special(self):
         cif = cif_path + '191.vasp'

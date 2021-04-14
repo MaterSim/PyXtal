@@ -299,29 +299,25 @@ class pyxtal:
                 pass
 
 
-    def from_seed(self, seed, molecule=None, tol=1e-4, a_tol=5.0, relax_h=False, backend='pymatgen'):
+    def from_seed(self, seed, molecules=None, tol=1e-4, a_tol=5.0, relax_h=False, backend='pymatgen'):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
         """
 
         if self.molecular:
-            pmol = pyxtal_molecule(molecule)#.mol
-            struc = structure_from_ext(seed, pmol, relax_h=relax_h)
-            if struc.match():
-                self.mol_sites = [struc.make_mol_site()]
-                #xyz = self.mol_sites[0].molecule.mol.cart_coords
-                #self.mol_sites[0].molecule = pyxtal_molecule(molecule)
-                #self.mol_sites[0].molecule.reset_positions(xyz)
-                self.group = Group(struc.wyc.number)
-                self.lattice = struc.lattice
-                #self.molecules = [pyxtal_molecule(struc.molecule, symmetrize=False)]
-                self.molecules = [self.mol_sites[0].molecule]
-                self.numMols = struc.numMols
-                self.diag = struc.diag
-                self.valid = True # Need to add a check function
-            else:
-                raise ValueError("Cannot extract the molecular crystal from cif")
+            pmols = []
+            for mol in molecules:
+                pmols.append(pyxtal_molecule(mol)) #.mol
+
+            struc = structure_from_ext(seed, pmols, relax_h=relax_h)
+            self.mol_sites = struc.make_mol_sites()
+            self.group = Group(struc.wyc.number)
+            self.lattice = struc.lattice
+            self.molecules = pmols
+            self.numMols = struc.numMols
+            self.diag = struc.diag
+            self.valid = True # Need to add a check function
         else:
             if isinstance(seed, dict):
                 self.from_dict()
@@ -572,6 +568,7 @@ class pyxtal:
             #print(len(valid_splitters), "valid_splitters are present")
             new_strucs = []
             for splitter in valid_splitters:
+                #print(splitter)
                 if permutations is None:
                     new_struc = self._subgroup_by_splitter(splitter, eps=eps)
                 else:
@@ -731,7 +728,7 @@ class pyxtal:
 
         return idx, sites, t_types, k_types
 
-    def _subgroup_by_splitter(self, splitter, eps=0.05, mut_lat=True):
+    def _subgroup_by_splitter(self, splitter, eps=0.05, mut_lat=False):
         """
         transform the crystal to subgroup symmetry from a splitter object
 
@@ -765,9 +762,11 @@ class pyxtal:
                 for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
                     #reset molecule
                     rot = wp1.generators_m[id].affine_matrix[:3,:3].T
+                    #print(rot)
                     coord1 = np.dot(coord0, rot)
                     _mol = mol.copy()
                     _mol.reset_positions(coord1)
+                    #if id != 0: _mol.apply_inversion()
 
                     pos0 = apply_ops(pos, ops1)[0]
                     pos0 -= np.floor(pos0)
