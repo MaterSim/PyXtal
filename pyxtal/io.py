@@ -274,10 +274,11 @@ class structure_from_ext():
                 mults.append(len(tmp_ids))
                 #print("check", id, tmp_ids)
         # add position and molecule
-        #print(ids, mults)
+        #print("ids", ids, mults)
         self.numMols = [0] * len(self.ref_mols)
         self.positions = []
         self.p_mols = []
+        self.wps = []
         for i in range(len(ids)):
             mol1 = molecules[ids[i]]
             matched = False
@@ -297,16 +298,17 @@ class structure_from_ext():
 
                     position = np.dot(center, inv_lat)
                     position -= np.floor(position)
-                    #print(xyz); print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
-
+                    #print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
                     # check if molecule is on the special wyckoff position
                     if mults[i] < len(self.wyc):
                         #Transform it to the conventional representation
                         if self.diag: position = np.dot(self.perm, position).T
                         #print("molecule is on the special wyckoff position")
-                        position, wp, _ = WP_merge(position, self.lattice.matrix, self.wyc, 2.0)
-                        self.wyc = wp
-                        #print(self.wyc); print("After Merge:---"); print(position); print(wp)
+                        position, wp, _ = WP_merge(position, self.lattice.matrix, self.wyc, 0.1)
+                        self.wps.append(wp)
+                        #print("After Merge:---"); print(position); print(wp)
+                    else:
+                        self.wps.append(self.wyc)
 
                     self.positions.append(position)
                     self.p_mols.append(p_mol)
@@ -336,8 +338,8 @@ class structure_from_ext():
         """
         ori = Orientation(np.eye(3))
         sites = []
-        for mol, pos in zip(self.p_mols, self.positions):
-            site = mol_site(mol, pos, ori, self.wyc, self.lattice, self.diag)
+        for mol, pos, wp in zip(self.p_mols, self.positions, self.wps):
+            site = mol_site(mol, pos, ori, wp, self.lattice, self.diag)
             sites.append(site)
         return sites
 

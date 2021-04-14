@@ -920,10 +920,9 @@ def WP_merge(pt, lattice, wp, tol, orientations=None):
                 break
 
         # for molecular crystal, one more check
-        if check_images([coor[0]], [6], lattice, PBC=PBC, tol=tol) is False:
+        if not check_images([coor[0]], [6], lattice, PBC=PBC, tol=tol):
             passed_distance_check = False
 
-        
         if not passed_distance_check:
             mult1 = group[index].multiplicity
             # Find possible wp's to merge into
@@ -943,12 +942,11 @@ def WP_merge(pt, lattice, wp, tol, orientations=None):
                     possible.append(i)
             if possible == []:
                 return None, False, valid_ori
-        
             # Calculate minimum separation for each WP
             distances = []
             for i in possible:
                 wp = group[i]
-                projected_point = project_point(pt, wp[0], lattice=lattice, PBC=PBC)
+                projected_point = project_point(pt.copy(), wp[0], lattice=lattice, PBC=PBC)
                 d = distance(pt - projected_point, lattice, PBC=PBC)
                 distances.append(np.min(d))
             # Choose wp with shortest translation for generating point
