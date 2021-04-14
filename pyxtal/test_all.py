@@ -420,6 +420,15 @@ class TestSubgroup(unittest.TestCase):
                     pmg_s2 = C.to_pymatgen()
                     self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
  
+    def test_hydrate(self):
+        # glycine dihydrate
+        cif = cif_path + "gdh.cif"
+        struc = pyxtal(molecular=True)
+        struc.from_seed(seed=cif, molecules=['Glycine-z', 'H2O'])
+        pmg_struc = struc.to_pymatgen()
+        pmg_s1 = Structure.from_file(cif)
+        self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s1))
+
     def test_special(self):
         cif = cif_path + '191.vasp'
         struc = pyxtal()
