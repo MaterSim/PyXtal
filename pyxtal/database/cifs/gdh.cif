@@ -1,0 +1,247 @@
+####################################################################### 
+# 
+# This file contains crystal structure data downloaded from the 
+# Cambridge Structural Database (CSD) hosted by the Cambridge 
+# Crystallographic Data Centre (CCDC).
+# 
+# Full information about CCDC data access policies and citation 
+# guidelines are available at http://www.ccdc.cam.ac.uk/access/V1 
+# 
+# Audit and citation data items may have been added by the CCDC. 
+# Please retain this information to preserve the provenance of 
+# this file and to allow appropriate attribution of the data. 
+# 
+#######################################################################
+
+data_20GLY_29_RIGIDGLY2_phase_1
+_audit_block_doi                 10.5517/ccdc.csd.cc1mvtdp
+_database_code_depnum_ccdc_archive 'CCDC 1515323'
+loop_
+_citation_id
+_citation_doi
+_citation_year
+1 10.1002/anie.201610977 2017
+_audit_update_record             
+;
+2016-11-04 deposited with the CCDC.	2021-04-14 downloaded from the CCDC.
+;
+
+_pd_block_id                     
+2016-11-01T01:40|20GLY_29_RIGIDGLY2_phase1|Wenqian_Xu||
+
+# Histograms for phase 1
+loop_
+_pd_block_diffractogram_id
+2016-11-01T01:40|20GLY_29_RIGIDGLY2_H_01|Wenqian_Xu|17-BM
+
+#==============================================================================
+# 7. CHEMICAL, STRUCTURAL AND CRYSTAL DATA
+
+_pd_char_particle_morphology     ?
+
+_chemical_name_systematic        'glycine dihydrate'
+_chemical_name_common            'glycine dihydrate'
+_chemical_formula_moiety         'C2H5NO2 * 2H2O'
+_chemical_formula_structural     ?
+_chemical_formula_analytical     ?
+_chemical_melting_point          ?
+_chemical_compound_source        ? # for minerals and
+# natural products
+_symmetry_space_group_name_Hall  ?
+
+_exptl_crystal_F_000             ?
+_exptl_crystal_density_diffrn    ?
+_exptl_crystal_density_meas      ?
+_exptl_crystal_density_method    ?
+
+_cell_measurement_temperature    208
+
+_cell_special_details            
+; ?
+;
+
+_geom_special_details            ?
+
+# The following item identifies the program(s) used (if appropriate).
+_computing_structure_solution    ?
+
+#==============================================================================
+
+# 8. Phase information from GSAS
+
+_pd_phase_name                   
+'from C:/GSAS/MyWork/2016-1/Chunhua/20Gly-29/20Gly_d250_R-00029.cif'
+_cell_length_a                   8.9585(9)
+_cell_length_b                   8.2166(8)
+_cell_length_c                   7.6142(6)
+_cell_angle_alpha                90.0
+_cell_angle_beta                 104.262(7)
+_cell_angle_gamma                90.0
+_cell_volume                     543.20(8)
+_symmetry_cell_setting           monoclinic
+_symmetry_space_group_name_H-M   'P 1 21/c 1'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 +x,+y,+z
+2 -x,+y+1/2,-z+1/2
+-1 -x,-y,-z
+-2 +x,-y+1/2,+z+1/2
+
+# ATOMIC COORDINATES AND DISPLACEMENT PARAMETERS
+
+
+loop_
+_atom_site_type_symbol
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+_atom_site_thermal_displace_type
+_atom_site_U_iso_or_equiv
+_atom_site_symmetry_multiplicity
+O O1 0.3959(4) 0.7533(4) 0.9633(4) 1.0 Uiso 0.0408(33) 4
+O O2 0.1508(4) 0.8496(4) 0.9160(4) 1.0 Uiso 0.0408(33) 4
+N N1 0.2924(4) 0.4371(4) 0.9486(4) 1.0 Uiso 0.0408(33) 4
+H H1A 0.3559(4) 0.4338(4) 1.0604(4) 1.0 Uiso 0.061(5) 4
+H H1B 0.3478(4) 0.4540(4) 0.8665(4) 1.0 Uiso 0.061(5) 4
+H H1C 0.2416(4) 0.3420(4) 0.9250(4) 1.0 Uiso 0.061(5) 4
+C C1 0.2523(4) 0.7429(4) 0.9388(4) 1.0 Uiso 0.0408(33) 4
+C C2 0.1797(4) 0.5720(4) 0.9386(4) 1.0 Uiso 0.0408(33) 4
+H H2A 0.1333(4) 0.5636(4) 1.0421(4) 1.0 Uiso 0.061(5) 4
+H H2B 0.0972(4) 0.5594(4) 0.8279(4) 1.0 Uiso 0.061(5) 4
+O O3 0.4917(13) 0.4990(17) 0.7151(14) 1.0 Uiso 0.056(4) 4
+H H3A 0.5268(13) 0.4287(17) 0.6573(14) 1.0 Uiso 0.084(5) 4
+H H3B 0.4590(13) 0.5808(17) 0.6522(14) 1.0 Uiso 0.084(5) 4
+O O4 0.1548(11) 0.3365(12) 0.5273(11) 1.0 Uiso 0.056(4) 4
+H H4A 0.0866(11) 0.3301(12) 0.5863(11) 1.0 Uiso 0.084(5) 4
+H H4B 0.1525(11) 0.4316(12) 0.4828(11) 1.0 Uiso 0.084(5) 4
+
+loop_
+_atom_type_symbol
+_atom_type_number_in_cell
+O 16.0
+N 4.0
+H 36.0
+C 8.0
+
+# If you change Z, be sure to change all 3 of the following
+_chemical_formula_sum            'C2 H9 N O4'
+_chemical_formula_weight         111.10
+_cell_formula_units_Z            4
+
+# MOLECULAR GEOMETRY
+
+loop_
+_geom_bond_atom_site_label_1
+_geom_bond_atom_site_label_2
+_geom_bond_distance
+_geom_bond_site_symmetry_1
+_geom_bond_site_symmetry_2
+_geom_bond_publ_flag
+O1 C1 1.25719(13) . 1_555 N
+O1 H3A 1.927(13) . 2_656 N
+O1 H3B 1.961(13) . -2_565 N
+O2 C1 1.24389(9) . 1_555 N
+O2 H4B 1.867(11) . -2_565 N
+N1 H1A 0.90043(8) . 1_555 N
+N1 H1B 0.89970(6) . 1_555 N
+N1 H1C 0.90009(7) . 1_555 N
+N1 C2 1.48822(10) . 1_555 N
+N1 H2A 2.02958(14) . 1_555 N
+N1 H2B 2.02956(16) . 1_555 N
+H1A N1 0.90043(8) . 1_555 N
+H1A H1B 1.46967(11) . 1_555 N
+H1A H1C 1.47004(11) . 1_555 N
+H1A C2 1.97985(15) . 1_555 N
+H1A O3 1.986(12) . -1_667 N
+H1B N1 0.89970(6) . 1_555 N
+H1B H1A 1.46967(11) . 1_555 N
+H1B H1C 1.46960(9) . 1_555 N
+H1B C2 1.97914(14) . 1_555 N
+H1B O3 1.964(9) . 1_555 N
+H1C N1 0.90009(7) . 1_555 N
+H1C H1A 1.47004(11) . 1_555 N
+H1C H1B 1.46960(9) . 1_555 N
+H1C C2 1.97934(17) . 1_555 N
+H1C O4 1.914(9) . -2_555 N
+C1 O1 1.25719(13) . 1_555 N
+C1 O2 1.24389(9) . 1_555 N
+C1 C2 1.54774(12) . 1_555 N
+C1 H2A 2.08312(13) . 1_555 N
+C1 H2B 2.08314(14) . 1_555 N
+C2 N1 1.48822(10) . 1_555 N
+C2 H1A 1.97985(15) . 1_555 N
+C2 H1B 1.97914(14) . 1_555 N
+C2 H1C 1.97934(17) . 1_555 N
+C2 C1 1.54774(12) . 1_555 N
+C2 H2A 0.97988(7) . 1_555 N
+C2 H2B 0.97992(9) . 1_555 N
+H2A N1 2.02958(14) . 1_555 N
+H2A C1 2.08312(13) . 1_555 N
+H2A C2 0.97988(7) . 1_555 N
+H2A H2B 1.58269(12) . 1_555 N
+H2B N1 2.02956(16) . 1_555 N
+H2B C1 2.08314(14) . 1_555 N
+H2B C2 0.97992(9) . 1_555 N
+H2B H2A 1.58269(12) . 1_555 N
+O3 H1A 1.986(12) . -1_667 N
+O3 H1B 1.964(9) . 1_555 N
+O3 H3A 0.83316(5) . 1_555 N
+O3 H3B 0.83577(6) . 1_555 N
+H3A O1 1.927(13) . 2_646 N
+H3A O3 0.83316(5) . 1_555 N
+H3A H3B 1.38593(11) . 1_555 N
+H3B O1 1.961(13) . -2_564 N
+H3B O3 0.83577(6) . 1_555 N
+H3B H3A 1.38593(11) . 1_555 N
+O4 H1C 1.914(9) . -2_554 N
+O4 H4A 0.84428(7) . 1_555 N
+O4 H4B 0.84991(7) . 1_555 N
+H4A O4 0.84428(7) . 1_555 N
+H4A H4B 1.37627(8) . 1_555 N
+H4B O2 1.867(11) . -2_564 N
+H4B O4 0.84991(7) . 1_555 N
+H4B H4A 1.37627(8) . 1_555 N
+
+loop_
+_geom_angle_atom_site_label_1
+_geom_angle_atom_site_label_2
+_geom_angle_atom_site_label_3
+_geom_angle
+_geom_angle_site_symmetry_1
+_geom_angle_site_symmetry_2
+_geom_angle_site_symmetry_3
+_geom_angle_publ_flag
+H1A N1 H1B 109.456(7) 1_555 . 1_555 N
+H1A N1 H1C 109.463(4) 1_555 . 1_555 N
+H1A N1 C2 109.490(4) 1_555 . 1_555 N
+H1B N1 H1C 109.4793(32) 1_555 . 1_555 N
+H1B N1 C2 109.473(5) 1_555 . 1_555 N
+H1C N1 C2 109.467(7) 1_555 . 1_555 N
+N1 H1A H1B 35.256(4) 1_555 . 1_555 N
+N1 H1A H1C 35.261(4) 1_555 . 1_555 N
+H1B H1A H1C 59.988(5) 1_555 . 1_555 N
+N1 H1B H1A 35.289(4) 1_555 . 1_555 N
+N1 H1B H1C 35.2690(26) 1_555 . 1_555 N
+H1A H1B H1C 60.018(4) 1_555 . 1_555 N
+N1 H1C H1A 35.2765(16) 1_555 . 1_555 N
+N1 H1C H1B 35.2517(25) 1_555 . 1_555 N
+H1A H1C H1B 59.993(5) 1_555 . 1_555 N
+O1 C1 O2 131.270(4) 1_555 . 1_555 N
+O1 C1 C2 118.4154(25) 1_555 . 1_555 N
+O2 C1 C2 110.305(7) 1_555 . 1_555 N
+N1 C2 C1 113.350(7) 1_555 . 1_555 N
+N1 C2 H2A 108.889(4) 1_555 . 1_555 N
+N1 C2 H2B 108.885(5) 1_555 . 1_555 N
+C1 C2 H2A 108.9243(26) 1_555 . 1_555 N
+C1 C2 H2B 108.9230(27) 1_555 . 1_555 N
+H2A C2 H2B 107.720(7) 1_555 . 1_555 N
+H3A O3 H3B 112.286(6) 1_555 . 1_555 N
+O3 H3A H3B 33.9171(27) 1_555 . 1_555 N
+O3 H3B H3A 33.7968(32) 1_555 . 1_555 N
+H4A O4 H4B 108.6509(22) 1_555 . 1_555 N
+O4 H4A H4B 35.8112(29) 1_555 . 1_555 N
+O4 H4B H4A 35.5378(22) 1_555 . 1_555 N
+_diffrn_ambient_temperature      208
