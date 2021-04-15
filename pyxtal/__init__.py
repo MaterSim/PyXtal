@@ -737,6 +737,7 @@ class pyxtal:
             eps (float): maximum atomic displacement in Angstrom
             mut_lat (bool): whether or not mutate the lattice
         """
+        #print(splitter)
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
         multiples = np.linalg.det(splitter.R[:3,:3])
         new_struc = self.copy()
@@ -759,25 +760,31 @@ class pyxtal:
                 wp1 = site.wp
                 ori.reset_matrix(np.eye(3))
                 id = 0
-                for ops1, ops2 in zip(splitter.G2_orbits[i], splitter.H_orbits[i]):
+                for g1s, ops1, ops2 in zip(splitter.G1_orbits[i], splitter.G2_orbits[i], splitter.H_orbits[i]):
                     #reset molecule
-                    rot = wp1.generators_m[id].affine_matrix[:3,:3].T
-                    #print(rot)
+                    if id > 0 and h in [7]:
+                        j=1 
+                    else:
+                        j=0
+                    if site.wp.multiplicity == len(self.group[0]):
+                        rot = g1s[j].affine_matrix[:3,:3].T
+                    else:
+                        rot = wp1.generators_m[id].affine_matrix[:3,:3].T
+                    #print(len(g1s), len(self.group[0]), rot)
                     coord1 = np.dot(coord0, rot)
                     _mol = mol.copy()
-                    _mol.reset_positions(coord1)
-                    #if id != 0: _mol.apply_inversion()
-
-                    pos0 = apply_ops(pos, ops1)[0]
+                    center = _mol.get_center(coord1)
+                    _mol.reset_positions(coord1-center)
+                    pos0 = apply_ops(pos, ops1)[j]
                     pos0 -= np.floor(pos0)
                     dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
                     dis /= np.linalg.norm(dis)
                     pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
-                    if h in [5, 7, 8, 9, 12, 13, 14, 15] and self.group.number == 31:
-                        diag = True
-                    else:
-                        diag = self.diag
+                    #if h in [5, 7, 8, 9, 12, 13, 14, 15] and self.group.number == 31:
+                    #    diag = True
+                    #else:
+                    diag = self.diag
                     split_sites.append(mol_site(_mol, pos0, ori, wp, lattice, diag))
                     id += wp.multiplicity
             new_struc.mol_sites = split_sites

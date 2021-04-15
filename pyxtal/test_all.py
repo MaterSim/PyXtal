@@ -414,7 +414,7 @@ class TestSubgroup(unittest.TestCase):
             pmg_s1 = Structure.from_file(cif)
             self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s1))
 
-            if name not in ["aspirin", "resorcinol", "coumarin"]:
+            if name not in ["resorcinol", "coumarin"]:
                 Cs = struc.subgroup(eps=0, max_cell=1)
                 for C in Cs:
                     pmg_s2 = C.to_pymatgen()
