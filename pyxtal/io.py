@@ -257,6 +257,7 @@ class structure_from_ext():
         # filter out the molecular generators
         lat = self.pmg_struc.lattice.matrix
         inv_lat = self.pmg_struc.lattice.inv_matrix
+        new_lat = self.lattice.matrix
         positions = np.zeros([len(molecules),3])
         for i in range(len(molecules)):
             positions[i, :] = np.dot(molecules[i].cart_coords.mean(axis=0), inv_lat) 
@@ -273,8 +274,9 @@ class structure_from_ext():
                 visited_ids.extend(tmp_ids)
                 mults.append(len(tmp_ids))
                 #print("check", id, tmp_ids)
+
         # add position and molecule
-        #print("ids", ids, mults)
+        # print("ids", ids, mults)
         self.numMols = [0] * len(self.ref_mols)
         self.positions = []
         self.p_mols = []
@@ -286,25 +288,30 @@ class structure_from_ext():
                 match, mapping = compare_mol_connectivity(mol2.mol, mol1)
                 if match:
                     self.numMols[j] += mults[i]
-                    #rearrange the order
+                    # rearrange the order
                     order = [mapping[at] for at in range(len(mol1))]
                     xyz = mol1.cart_coords[order] 
                     frac = np.dot(xyz, inv_lat) 
-                    xyz = np.dot(frac, lat) 
+                    xyz = np.dot(frac, new_lat) 
+                    #print(xyz[:10])
                     # create p_mol
                     p_mol = mol2.copy() 
                     center = p_mol.get_center(xyz) 
                     p_mol.reset_positions(xyz-center)
 
-                    position = np.dot(center, inv_lat)
+                    position = np.dot(center, np.linalg.inv(new_lat))
                     position -= np.floor(position)
-                    #print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
+                    #print(position)
+                    #print(lat)
+                    #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
+                    # print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
+
                     # check if molecule is on the special wyckoff position
                     if mults[i] < len(self.wyc):
                         #Transform it to the conventional representation
                         if self.diag: position = np.dot(self.perm, position).T
                         #print("molecule is on the special wyckoff position")
-                        position, wp, _ = WP_merge(position, self.lattice.matrix, self.wyc, 0.1)
+                        position, wp, _ = WP_merge(position, new_lat, self.wyc, 0.1)
                         self.wps.append(wp)
                         #print("After Merge:---"); print(position); print(wp)
                     else:
@@ -340,6 +347,11 @@ class structure_from_ext():
         sites = []
         for mol, pos, wp in zip(self.p_mols, self.positions, self.wps):
             site = mol_site(mol, pos, ori, wp, self.lattice, self.diag)
+            #print(pos)
+            #print(self.lattice.matrix)
+            #print([a.value for a in site.molecule.mol.species])
+            #print(site.molecule.mol.cart_coords)
+            #print(site._get_coords_and_species(absolute=True)[0][:10])
             sites.append(site)
         return sites
 
