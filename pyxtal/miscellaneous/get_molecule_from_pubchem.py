@@ -147,6 +147,7 @@ molecule = {
     "volume": None,
     "pubchem id": None,
 }
+molecules.append(molecule)
 
 molecule = {
     "name": "xxvi",

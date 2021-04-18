@@ -405,7 +405,7 @@ class TestSubgroup(unittest.TestCase):
         #struc.subgroup_once(0.01, None, permutation, max_cell=2) 
 
     def test_molecules(self):
-        for name in ["aspirin", "resorcinol", "coumarin", "HAHCOI", \
+        for name in ["aspirin", "resorcinol", "coumarin", "HAHCOI", "xxvi",\
                      "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", "JAPWIH"]:
             cif = cif_path + name + ".cif"
             struc = pyxtal(molecular=True)

@@ -766,11 +766,13 @@ class pyxtal:
                         j=1 
                     else:
                         j=0
+                    #general wyc
                     if site.wp.multiplicity == len(self.group[0]):
                         rot = g1s[j].affine_matrix[:3,:3].T
+                    #for special wyc, needs to get better treatment
                     else:
                         rot = wp1.generators_m[id].affine_matrix[:3,:3].T
-                    #print(len(g1s), len(self.group[0]), rot)
+                    #if id>0: print(rot)
                     coord1 = np.dot(coord0, rot)
                     _mol = mol.copy()
                     center = _mol.get_center(coord1)

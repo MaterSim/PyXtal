@@ -1,7 +1,6 @@
 """
 This module handles reading and write crystal files.
 """
-from pyxtal.constants import deg, logo
 import numpy as np
 from pymatgen.core.structure import Structure, Molecule
 from pymatgen.core.bonds import CovalentBond
@@ -10,6 +9,8 @@ from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
 from pyxtal.symmetry import Wyckoff_position, Group
 from pyxtal.lattice import Lattice
+from pyxtal.util import get_symmetrized_pmg
+from pyxtal.constants import deg, logo
 
 def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
@@ -224,32 +225,18 @@ class structure_from_ext():
         self.diag = False
         self.relax_h = relax_h
 
-        sga = SpacegroupAnalyzer(pmg_struc)
-        ops = sga.get_space_group_operations()
-        self.wyc, perm = Wyckoff_position.from_symops(ops, sga.get_space_group_number())
-        if self.wyc is not None:
-            self.group = Group(self.wyc.number)
-            if isinstance(perm, list):
-                # Standard setting
-                if perm != [0,1,2]:
-                    lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, ltype=self.group.lattice_type)
-                    latt = lattice.swap_axis(ids=perm, random=False).get_matrix()
-                    coor = pmg_struc.frac_coords[:, perm]
-                    pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
-            else:
-                # Nonstandard setting
-                self.diag = True
-                self.perm = perm
-                self.wyc.diagonalize_symops()
+        sym_struc, number = get_symmetrized_pmg(pmg_struc)
+        group = Group(number)
+        self.group = group
+        self.wyc = group[0]
+        self.perm = [0,1,2]
 
-            molecules = search_molecules_in_crystal(pmg_struc, self.tol)
-            if self.relax_h: molecules = self.addh(molecules)
-            self.pmg_struc = pmg_struc
-            self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, ltype=self.group.lattice_type)
-            self.resort(molecules)
-            self.numMols = [len(self.wyc)]
-        else:
-            raise ValueError("Cannot find the space group matching the symmetry operation")
+        molecules = search_molecules_in_crystal(sym_struc, self.tol)
+        if self.relax_h: molecules = self.addh(molecules)
+        self.pmg_struc = sym_struc
+        self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=group.lattice_type)
+        self.resort(molecules)
+        self.numMols = [len(self.wyc)]
 
     def resort(self, molecules):
         from pyxtal.operations import apply_ops, find_ids
