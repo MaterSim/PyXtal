@@ -1028,23 +1028,6 @@ def test_modules():
 
     check()
 
-    fprint("  class Orientation")
-    try:
-        from pyxtal.molecule import Orientation
-    except Exception as e:
-        fail(e)
-
-    if passed():
-        try:
-            for i in range(10):
-                v1 = random_vector()
-                c1 = random_vector()
-                o = Orientation.from_constraint(v1, c1)
-        except Exception as e:
-            fail(e)
-
-    check()
-
     # =====symmetry=====
     fprint("pyxtal.symmetry")
     reset()

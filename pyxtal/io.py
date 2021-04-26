@@ -1,7 +1,6 @@
 """
 This module handles reading and write crystal files.
 """
-from pyxtal.constants import deg, logo
 import numpy as np
 from pymatgen.core.structure import Structure, Molecule
 from pymatgen.core.bonds import CovalentBond
@@ -10,6 +9,8 @@ from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
 from pyxtal.symmetry import Wyckoff_position, Group
 from pyxtal.lattice import Lattice
+from pyxtal.util import get_symmetrized_pmg
+from pyxtal.constants import deg, logo
 
 def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
@@ -188,7 +189,7 @@ def read_cif(filename):
 
 class structure_from_ext():
     
-    def __init__(self, struc, ref_mol=None, tol=0.2, relax_h=False):
+    def __init__(self, struc, ref_mols, tol=0.2, relax_h=False):
 
         """
         extract the mol_site information from the give cif file 
@@ -196,19 +197,20 @@ class structure_from_ext():
     
         Args: 
             struc: cif/poscar file or a Pymatgen Structure object
-            ref_mol: xyz file or a reference Pyxtal molecule object
+            ref_mols: a list of reference molecule (xyz file or Pyxtal molecule)
             tol: scale factor for covalent bond distance
             relax_h: whether or not relax the position for hydrogen atoms in structure
         
-    """
-        if isinstance(ref_mol, str):
-            ref_mol = pyxtal_molecule(ref_mol)
-        elif isinstance(ref_mol, pyxtal_molecule):
-            ref_mol = ref_mol
-        else:
-            print(type(ref_mol))
-            raise NameError("reference molecule cannot be defined")
+        """
 
+        for ref_mol in ref_mols:
+            if isinstance(ref_mol, str):
+                ref_mol = pyxtal_molecule(ref_mol)
+            elif isinstance(ref_mol, pyxtal_molecule):
+                ref_mol = ref_mol
+            else:
+                print(type(ref_mol))
+                raise NameError("reference molecule cannot be defined")
     
         if isinstance(struc, str):
             pmg_struc = Structure.from_file(struc)
@@ -218,52 +220,127 @@ class structure_from_ext():
             print(type(struc))
             raise NameError("input structure cannot be intepretted")
 
-        self.ref_mol = ref_mol
+        self.ref_mols = ref_mols
         self.tol = tol
         self.diag = False
         self.relax_h = relax_h
 
-        sga = SpacegroupAnalyzer(pmg_struc)
-        ops = sga.get_space_group_operations()
-        self.wyc, perm = Wyckoff_position.from_symops(ops, sga.get_space_group_number())
-        if self.wyc is not None:
-            self.group = Group(self.wyc.number)
-            if isinstance(perm, list):
-                if perm != [0,1,2]:
-                    lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, ltype=self.group.lattice_type)
-                    latt = lattice.swap_axis(ids=perm, random=False).get_matrix()
-                    coor = pmg_struc.frac_coords[:, perm]
-                    pmg_struc = Structure(latt, pmg_struc.atomic_numbers, coor)
-            else:
-                self.diag = True
-                self.perm = perm
+        sym_struc, number = get_symmetrized_pmg(pmg_struc)
+        group = Group(number)
+        self.group = group
+        self.wyc = group[0]
+        self.perm = [0,1,2]
 
-            coords, numbers = search_molecule_in_crystal(pmg_struc, self.tol)
-            #coords -= np.mean(coords, axis=0)
-            if self.relax_h:
-                self.molecule = self.addh(Molecule(numbers, coords))
-            else:
-                self.molecule = Molecule(numbers, coords)
-            self.pmg_struc = pmg_struc
-            self.lattice = Lattice.from_matrix(pmg_struc.lattice.matrix, ltype=self.group.lattice_type)
-            self.numMols = [len(self.wyc)]
-        else:
-            raise ValueError("Cannot find the space group matching the symmetry operation")
+        molecules = search_molecules_in_crystal(sym_struc, self.tol)
+        if self.relax_h: molecules = self.addh(molecules)
+        self.pmg_struc = sym_struc
+        self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=group.lattice_type)
+        self.resort(molecules)
+        self.numMols = [len(self.wyc)]
 
-    def addh(self, mol):
-        #if len(mol) < len(self.ref_mol):
+    def resort(self, molecules):
+        from pyxtal.operations import apply_ops, find_ids
+
+        # filter out the molecular generators
+        lat = self.pmg_struc.lattice.matrix
+        inv_lat = self.pmg_struc.lattice.inv_matrix
+        new_lat = self.lattice.matrix
+        positions = np.zeros([len(molecules),3])
+        for i in range(len(molecules)):
+            positions[i, :] = np.dot(molecules[i].cart_coords.mean(axis=0), inv_lat) 
+
+        ids = []  #id for the generator
+        mults = [] #the corresponding multiplicities
+        visited_ids = []
+        for id, pos in enumerate(positions):
+            if id not in visited_ids:
+                ids.append(id)
+                #print("pos", pos); print(self.wyc)
+                centers = apply_ops(pos, self.wyc)
+                tmp_ids = find_ids(centers, positions)
+                visited_ids.extend(tmp_ids)
+                mults.append(len(tmp_ids))
+                #print("check", id, tmp_ids)
+
+        # add position and molecule
+        # print("ids", ids, mults)
+        self.numMols = [0] * len(self.ref_mols)
+        self.positions = []
+        self.p_mols = []
+        self.wps = []
+        for i in range(len(ids)):
+            mol1 = molecules[ids[i]]
+            matched = False
+            for j, mol2 in enumerate(self.ref_mols):
+                match, mapping = compare_mol_connectivity(mol2.mol, mol1)
+                if match:
+                    self.numMols[j] += mults[i]
+                    # rearrange the order
+                    order = [mapping[at] for at in range(len(mol1))]
+                    xyz = mol1.cart_coords[order] 
+                    frac = np.dot(xyz, inv_lat) 
+                    xyz = np.dot(frac, new_lat) 
+                    #print(xyz[:10])
+                    # create p_mol
+                    p_mol = mol2.copy() 
+                    center = p_mol.get_center(xyz) 
+                    p_mol.reset_positions(xyz-center)
+
+                    position = np.dot(center, np.linalg.inv(new_lat))
+                    position -= np.floor(position)
+                    #print(position)
+                    #print(lat)
+                    #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
+                    # print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
+
+                    # check if molecule is on the special wyckoff position
+                    if mults[i] < len(self.wyc):
+                        #Transform it to the conventional representation
+                        if self.diag: position = np.dot(self.perm, position).T
+                        #print("molecule is on the special wyckoff position")
+                        position, wp, _ = WP_merge(position, new_lat, self.wyc, 0.1)
+                        self.wps.append(wp)
+                        #print("After Merge:---"); print(position); print(wp)
+                    else:
+                        self.wps.append(self.wyc)
+
+                    self.positions.append(position)
+                    self.p_mols.append(p_mol)
+                    matched = True
+                    break
+
+
+            if not matched:
+                print(mol1.to('xyz'))
+                raise RuntimeError("molecule cannot be matched")
+
+    def addh(self, molecules):
+        """
+        add hydrogen
+        """
         from pymatgen.io.babel import BabelMolAdaptor
-        ad = BabelMolAdaptor(mol)
-        ad.add_hydrogen()        
-        ad.localopt()
-        mol = ad.pymatgen_mol
-        return mol
+        for mol in molecules:
+            ad = BabelMolAdaptor(mol)
+            ad.add_hydrogen()        
+            ad.localopt()
+            mol = ad.pymatgen_mol
+        return molecules
 
-    def make_mol_site(self):
-        mol = self.p_mol
+    def make_mol_sites(self):
+        """
+        generate the molecular wyckoff sites
+        """
         ori = Orientation(np.eye(3))
-        site = mol_site(mol, self.position, ori, self.wyc, self.lattice, self.diag)
-        return site
+        sites = []
+        for mol, pos, wp in zip(self.p_mols, self.positions, self.wps):
+            site = mol_site(mol, pos, ori, wp, self.lattice, self.diag)
+            #print(pos)
+            #print(self.lattice.matrix)
+            #print([a.value for a in site.molecule.mol.species])
+            #print(site.molecule.mol.cart_coords)
+            #print(site._get_coords_and_species(absolute=True)[0][:10])
+            sites.append(site)
+        return sites
 
     def align(self):
         """
@@ -290,50 +367,6 @@ class structure_from_ext():
         coord3 = rot.dot(coord2.T).T + np.mean(self.ref_mol.cart_coords, axis=0)
         self.mol_aligned = Molecule(self.ref_mol.atomic_numbers, coord3)
         self.ori = Orientation(rot)
-   
-    def match(self):
-        """
-        Check the two molecular graphs are isomorphic
-        """
-        match, mapping = compare_mol_connectivity(self.ref_mol.mol, self.molecule)
-        if not match:
-            print(self.ref_mol.to("xyz"))
-            print(self.molecule.to("xyz"))
-            import pickle
-            with open('wrong.pkl', "wb") as f:
-                pickle.dump([self.ref_mol, self.molecule], f)
-
-            return False
-        else:
-            # resort the atomic number for molecule 1
-            order = [mapping[i] for i in range(len(self.molecule))]
-            xyz = self.molecule.cart_coords[order] 
-            frac = np.dot(xyz, self.pmg_struc.lattice.inv_matrix) 
-            xyz = np.dot(frac, self.lattice.matrix) 
-            self.p_mol = self.ref_mol.copy() 
-            center = self.p_mol.get_center(xyz) 
-
-            self.p_mol.reset_positions(xyz-center)
-            position = np.dot(center, self.lattice.inv_matrix)
-            position -= np.floor(position)
-
-            # check if molecule is on the special wyckoff position
-            #print(xyz)
-            #print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
-            if len(self.pmg_struc)/len(self.molecule) < len(self.wyc):
-                if self.diag:
-                    #Transform it to the conventional representation
-                    position = np.dot(self.perm, position).T
-                position, wp, _ = WP_merge(position, self.lattice.matrix, self.wyc, 2.0)
-                #print("After Mergey:---------------")
-                #print(position)
-                #print(wp)
-                self.wyc = wp
-
-            self.position = position
-            #self.molecule = Molecule(numbers, coords-np.mean(coords, axis=0))
-            #self.align()
-            return True
 
     def show(self, overlay=True):
         from pyxtal.viz import display_molecules
@@ -343,19 +376,18 @@ class structure_from_ext():
             return display_molecules([self.ref_mol, self.molecule])
 
 
-def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
+def search_molecules_in_crystal(struc, tol=0.2, once=False):
     """
-    This is a function to perform a search to find the molecule
-    in a Pymatgen crystal structure
+    Function to perform to find the molecule in a Pymatgen structure
 
     Args:
         struc: Pymatgen Structure
-        keep_order: whether or not use the orignal sequence
-        absolute: whether or not output absolute coordindates
+        tol: tolerance value to check the connectivity
+        once: search only one molecule or all molecules
 
     Returns:
-        coords: fractional coordinates
-        numbers: atomic numbers
+        molecules: list of pymatgen molecules
+        positions: list of center positions
     """
     def check_one_layer(struc, sites0, visited):
         new_members = []
@@ -380,37 +412,36 @@ def search_molecule_in_crystal(struc, tol=0.2, keep_order=False, absolute=True):
 
         return sites_add, visited
 
-    first_site = struc.sites[0]
-    first_site.index = 0 #assign the index
-    visited = [first_site] 
-    ids = [0]
+    molecules = []
+    visited_ids = []
 
-    n_iter, max_iter = 0, len(struc)
-    while n_iter < max_iter:
-        if n_iter == 0:
-            new_sites, visited = check_one_site(struc, first_site, visited)
-        else:
-            new_sites, visited = check_one_layer(struc, new_sites, visited)
-        n_iter += 1
-        if len(new_sites)==0:
+    for id, site in enumerate(struc.sites):
+        if id not in visited_ids:
+            first_site = site
+            visited = [first_site] 
+            first_site.index = id
+            n_iter, max_iter = 0, len(struc)-len(visited_ids)
+            while n_iter < max_iter:
+                if n_iter == 0:
+                    new_sites, visited = check_one_site(struc, first_site, visited)
+                else:
+                    new_sites, visited = check_one_layer(struc, new_sites, visited)
+                n_iter += 1
+                if len(new_sites)==0:
+                    break
+            
+            coords = [s.coords for s in visited]
+            coords = np.array(coords)
+            numbers = [s.specie.number for s in visited]
+            molecules.append(Molecule(numbers, coords))
+            visited_ids.extend([s.index for s in visited])
+        if once and len(molecules) == 1:
             break
-    
-    coords = [s.coords for s in visited]
-    coords = np.array(coords)
-    numbers = [s.specie.number for s in visited]
-    
-    if keep_order:
-        ids = [s.index for s in visited]
-        seq = np.argsort(ids)
-        coords = coords[seq]
-        numbers = numbers[seq]
 
-    if not absolute:
-        coords = coords.dot(struc.lattice.inv_matrix)
-    return coords, numbers
+    return molecules
 
-#seed = structure_from_cif("254385.cif", "1.xyz")
-#if seed.match():
-#    print(seed.pmg_struc)
+if __name__ == "__main__":
 
-
+    pmg = Structure.from_file('pyxtal/database/cifs/resorcinol.cif')
+    mols = search_molecules_in_crystal(pmg, tol=0.2, once=False)
+    print(len(mols))

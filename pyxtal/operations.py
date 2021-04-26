@@ -922,6 +922,21 @@ class OperationAnalyzer(SymmOp):
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
 
+def find_ids(coords, ref):
+    ids = []
+    #print('ref', ref)
+    for coord in coords:
+        diffs = ref - coord
+        diffs -= np.round(diffs)
+        norms = np.linalg.norm(diffs, axis=1)
+        #print(norms, diffs)
+        for i, norm in enumerate(norms):
+            if norm < 1e-3 and i not in ids:
+                ids.append(i)
+                break
+    return ids
+
+
 
 # Test Functionality
 if __name__ == "__main__":
