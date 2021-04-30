@@ -398,7 +398,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
             new_members.extend(sites_add)
         return new_members, visited
     
-    def check_one_site(struc, site0, visited, rmax=2.75):
+    def check_one_site(struc, site0, visited, rmax=2.9):
         neigh_sites = struc.get_neighbors(site0, rmax)
         ids = [m.index for m in visited]
         sites_add = []
@@ -407,7 +407,9 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
         for site1 in neigh_sites:
             if (site1.index not in ids+ids_add):
                 if CovalentBond.is_bonded(site0, site1, tol):
-                    #print(site0, site1, site0.distance(site1, jimage=[0,0,0]))
+                    (d, image) = site0.distance_and_image(site1)
+                    site1.frac_coords += image
+                    #print(d, image, site1)
                     sites_add.append(site1)
                     ids_add.append(site1.index)
         if len(sites_add) > 0:
