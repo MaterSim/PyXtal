@@ -280,10 +280,10 @@ class structure_from_ext():
                     xyz = mol1.cart_coords[order] 
                     frac = np.dot(xyz, inv_lat) 
                     xyz = np.dot(frac, new_lat) 
-                    #print(xyz[:10])
                     # create p_mol
                     p_mol = mol2.copy() 
                     center = p_mol.get_center(xyz) 
+                    #print(xyz-center)
                     p_mol.reset_positions(xyz-center)
 
                     position = np.dot(center, np.linalg.inv(new_lat))
@@ -312,6 +312,7 @@ class structure_from_ext():
 
             if not matched:
                 print(mol1.to('xyz'))
+                print(mol2.mol.to('xyz'))
                 raise RuntimeError("molecule cannot be matched")
 
     def addh(self, molecules):
@@ -393,11 +394,12 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
         new_members = []
         for site0 in sites0:
             sites_add, visited = check_one_site(struc, site0, visited)
+            #print(sites_add)
             new_members.extend(sites_add)
         return new_members, visited
     
-    def check_one_site(struc, site0, visited):
-        neigh_sites = struc.get_neighbors(site0, 3.0)
+    def check_one_site(struc, site0, visited, rmax=2.75):
+        neigh_sites = struc.get_neighbors(site0, rmax)
         ids = [m.index for m in visited]
         sites_add = []
         ids_add = []
@@ -405,6 +407,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
         for site1 in neigh_sites:
             if (site1.index not in ids+ids_add):
                 if CovalentBond.is_bonded(site0, site1, tol):
+                    #print(site0, site1, site0.distance(site1, jimage=[0,0,0]))
                     sites_add.append(site1)
                     ids_add.append(site1.index)
         if len(sites_add) > 0:
@@ -435,6 +438,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
             numbers = [s.specie.number for s in visited]
             molecules.append(Molecule(numbers, coords))
             visited_ids.extend([s.index for s in visited])
+            #print(molecules[-1].to(fmt='xyz')); import sys; sys.exit()
         if once and len(molecules) == 1:
             break
 
