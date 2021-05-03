@@ -821,7 +821,7 @@ class supergroup():
                 G_struc.atom_sites = G_sites
                 G_struc.source = 'supergroup {:6.3f}'.format(mae)
                 G_struc.lattice = lattice
-                G_struc.numIons *= round(np.abs(np.linalg.det(sp.R[:3,:3])))
+                G_struc.numIons *= int(round(np.abs(np.linalg.det(sp.R[:3,:3]))))
                 G_struc._get_formula()
                 G_struc.disp = mae
 
