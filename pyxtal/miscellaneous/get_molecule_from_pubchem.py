@@ -255,6 +255,8 @@ dicts = {"LEFCIK": 812440,
          "WEXBOS": 12232323,
          "LAGNAL": 139087974,
          "LUFHAW": 102382626,
+         "PAHYON01": 10006,
+         "AXOSOW01": 7847,
         }
 for key in dicts.keys():
     mol = pcp.get_compounds(dicts[key], "cid", record_type="3d")[0]
