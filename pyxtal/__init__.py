@@ -318,6 +318,7 @@ class pyxtal:
             self.numMols = struc.numMols
             self.diag = struc.diag
             self.valid = True # Need to add a check function
+            self.optimize_lattice()
         else:
             if isinstance(seed, dict):
                 self.from_dict()
@@ -761,11 +762,7 @@ class pyxtal:
                 ori.reset_matrix(np.eye(3))
                 id = 0
                 for g1s, ops1, ops2 in zip(splitter.G1_orbits[i], splitter.G2_orbits[i], splitter.H_orbits[i]):
-                    #reset molecule
-                    if id > 0 and h in [7]:
-                        j=1 
-                    else:
-                        j=0
+                    j=0
                     #general wyc
                     if site.wp.multiplicity == len(self.group[0]):
                         rot = g1s[j].affine_matrix[:3,:3].T
