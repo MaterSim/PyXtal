@@ -80,6 +80,7 @@ class wyckoff_split:
                 G1_orbits, G2_orbits = self.split_k(wp1, self.wp2_lists[i])
             self.G1_orbits.append(G1_orbits)
             self.G2_orbits.append(G2_orbits)
+            self.patch()
 
     def sort(self):
         """
@@ -146,11 +147,6 @@ class wyckoff_split:
         wp1_generators_visited = []
         wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
 
-        if np.all([wp2_lists[0]==x for x in wp2_lists]) and len(wp2_lists)==2:
-            w1=deepcopy(wp1_generators[1])
-            w2=deepcopy(wp1_generators[2])
-            wp1_generators[1]=w2
-            wp1_generators[2]=w1
 
         G1_orbits = []
         G2_orbits = []
@@ -165,17 +161,10 @@ class wyckoff_split:
                 else:
                     quadrant[i]=-1
         for wp2 in wp2_lists:
-            # [print(SymmOp(np.matmul(self.inv_R,x)).as_xyz_string()) for x in wp1_generators]
             for gen in wp1_generators:
 
                 good_generator = False
-                # inv=np.linalg.inv(self.R[:3,:3])
-                # t=self.R[:3,3]
-                # trans_generator=np.zeros([4,4])
-                # trans_generator[:3,3]=gen[:3,3]-t
-                # trans_generator[:3,:3]=np.matmul(inv,gen[:3,:3])
-                #
-                # print("My new one",SymmOp(trans_generator).as_xyz_string())
+
 
 
                 trans_generator = np.matmul(self.inv_R, gen)
@@ -218,7 +207,9 @@ class wyckoff_split:
                             temporary[:3,3]=tau
                             temporary=SymmOp(temporary)
                             truth=any([temporary==x for x in self.proper_wp1])
-                        # print('current state')
+                        # print('current state gen',SymmOp(gen).as_xyz_string())
+                        # print('current state new_basis_orbit',SymmOp(new_basis_orbit).as_xyz_string())
+                        # print('current state wp2 orbit',wp.as_xyz_string())
                         # print('wp1generated')
                         # [print(SymmOp(x).as_xyz_string()) for x in wp1_generators_visited]
                         # print('not in wp1 visited',not in_lists(tmp, wp1_generators_visited))
@@ -478,6 +469,23 @@ class wyckoff_split:
             # print(g1_orbits)
             # import sys; sys.exit()
             raise ValueError("Cannot find the generator for wp2")
+
+    def patch(self):
+        if 0 in self.wp1_indices and self.wp1_lists[self.wp1_indices.index(0)].multiplicity==4 and len(self.G2_orbits[self.wp1_indices.index(0)])==2:
+            id=self.wp1_indices.index(0)
+            top=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][0]]
+            bottom=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][1]]
+            disp=top[1]-top[0]
+            one=bottom[0]+disp
+            one[one==-1.]=0.
+            two=bottom[1]+disp
+            two[two==-1.]=0.
+
+            if np.all(two==bottom[0]):
+                self.G1_orbits[id][1][0],self.G1_orbits[id][1][1]=self.G1_orbits[id][1][1],self.G1_orbits[id][1][0]
+                self.G2_orbits[id][1][0],self.G2_orbits[id][1][1]=self.G2_orbits[id][1][1],self.G2_orbits[id][1][0]
+
+
 
 
     def __str__(self):
