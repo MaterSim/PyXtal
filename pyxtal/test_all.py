@@ -406,7 +406,8 @@ class TestSubgroup(unittest.TestCase):
 
     def test_molecules(self):
         for name in ["aspirin", "resorcinol", "coumarin", "HAHCOI", "xxvi",\
-                     "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", "JAPWIH"]:
+                     "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", \
+                     "JAPWIH", "AXOSOW01", "PAHYON01"]:
             cif = cif_path + name + ".cif"
             struc = pyxtal(molecular=True)
             struc.from_seed(seed=cif, molecules=[name])
@@ -414,11 +415,10 @@ class TestSubgroup(unittest.TestCase):
             pmg_s1 = Structure.from_file(cif)
             self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s1))
 
-            if name not in ["resorcinol", "coumarin"]:
-                Cs = struc.subgroup(eps=0, max_cell=1)
-                for C in Cs:
-                    pmg_s2 = C.to_pymatgen()
-                    self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
+            Cs = struc.subgroup(eps=0, max_cell=1)
+            for C in Cs:
+                pmg_s2 = C.to_pymatgen()
+                self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
  
     def test_hydrate(self):
         # glycine dihydrate

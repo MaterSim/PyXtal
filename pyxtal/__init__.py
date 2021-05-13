@@ -699,9 +699,11 @@ class pyxtal:
             else:
                 # for molecular crystals, assume the cell does not change
                 for i, tran in enumerate(trans):
+                    tran = np.abs(tran[:3,:3])
                     good = True
                     # QZ: This loop needs a generalization!
-                    if abs(np.linalg.det(tran[:3,:3])-1)>1e-3:
+                    # only accepts trans like [a, b, c] [b, c, a]
+                    if abs(np.linalg.det(tran)-1)>1e-3 or len(tran[tran>0])!=3: 
                         good = False
                     elif self.group.number in [5, 7, 8, 9, 12, 13, 14, 15] and self.diag and Hs[i]==4:
                         good = False
@@ -751,39 +753,36 @@ class pyxtal:
         split_sites = []
         if self.molecular:
             # below only works when the cell does not change
+            # Fix when a, b, c swaps
             for i, site in enumerate(self.mol_sites):
                 pos = site.position
                 mol = site.molecule
                 ori = site.orientation
-                coord0 = mol.mol.cart_coords.dot(ori.matrix.T)
-                coord0 = np.dot(coord0, splitter.R[:3,:3])
+                coord0 = np.dot(mol.mol.cart_coords, ori.matrix.T)
 
                 wp1 = site.wp
                 ori.reset_matrix(np.eye(3))
                 id = 0
                 for g1s, ops1, ops2 in zip(splitter.G1_orbits[i], splitter.G2_orbits[i], splitter.H_orbits[i]):
-                    j=0
                     #general wyc
                     if site.wp.multiplicity == len(self.group[0]):
-                        rot = g1s[j].affine_matrix[:3,:3].T
-                    #for special wyc, needs to get better treatment
+                        rot = g1s[0].affine_matrix[:3,:3].T
                     else:
+                        #for special wyc, needs to get better treatment
                         rot = wp1.generators_m[id].affine_matrix[:3,:3].T
-                    #if id>0: print(rot)
                     coord1 = np.dot(coord0, rot)
+                    coord1 = np.dot(coord1, splitter.inv_R[:3,:3].T)
                     _mol = mol.copy()
                     center = _mol.get_center(coord1)
                     _mol.reset_positions(coord1-center)
-                    pos0 = apply_ops(pos, ops1)[j]
+                    pos0 = apply_ops(pos, ops1)[0]
                     pos0 -= np.floor(pos0)
                     dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
                     dis /= np.linalg.norm(dis)
                     pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
-                    #if h in [5, 7, 8, 9, 12, 13, 14, 15] and self.group.number == 31:
-                    #    diag = True
-                    #else:
                     diag = self.diag
+                    #print("pos0", pos0); print(ops1[0].as_xyz_string()); print(ops2[0].as_xyz_string())
                     split_sites.append(mol_site(_mol, pos0, ori, wp, lattice, diag))
                     id += wp.multiplicity
             new_struc.mol_sites = split_sites
