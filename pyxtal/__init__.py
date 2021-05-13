@@ -703,13 +703,14 @@ class pyxtal:
                     good = True
                     # QZ: This loop needs a generalization!
                     # only accepts trans like [a, b, c] [b, c, a]
-                    if abs(np.linalg.det(tran)-1)>1e-3 or len(tran[tran>0])!=3: 
+                    if abs(abs(np.linalg.det(tran))-1)>1e-3: #or len(tran[tran>0])!=3: 
                         good = False
                     elif self.group.number in [5, 7, 8, 9, 12, 13, 14, 15] and self.diag and Hs[i]==4:
                         good = False
                     elif self.group.number in [31] and Hs[i]==7:
                         good = False
                     if good:
+                        #print(np.linalg.det(tran), tran)
                         idx.append(i)
         else:
             for id in idx:
@@ -746,6 +747,7 @@ class pyxtal:
         new_struc = self.copy()
         new_struc.group = splitter.H
         lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+        #print(lattice); print(lattice.matrix)
         if mut_lat:
             lattice=lattice.mutate(degree=eps, frozen=True)
 
@@ -770,12 +772,19 @@ class pyxtal:
                     else:
                         #for special wyc, needs to get better treatment
                         rot = wp1.generators_m[id].affine_matrix[:3,:3].T
-                    coord1 = np.dot(coord0, rot)
-                    coord1 = np.dot(coord1, splitter.inv_R[:3,:3].T)
+                    #coord1 = np.dot(coord0, rot)
+                    #coord1 = np.dot(coord1, splitter.inv_R[:3,:3].T)
+                    #coord1 = np.array([np.dot(splitter.R[:3,:3].T, coord) for coord in coord1])
+                    frac = np.dot(np.dot(coord0, self.lattice.inv_matrix), rot)
+                    frac = np.dot(frac, splitter.inv_R[:3,:3].T)
+                    #print(frac)
+                    coord1 = np.dot(frac, lattice.matrix)
+                    #print(coord1.shape)
                     _mol = mol.copy()
                     center = _mol.get_center(coord1)
                     _mol.reset_positions(coord1-center)
-                    pos0 = apply_ops(pos, ops1)[0]
+                    #print('============'); print(_mol.mol.to(fmt='xyz'))
+                    pos0 = apply_ops(pos, ops1)[0] #; print(pos0, pos)
                     pos0 -= np.floor(pos0)
                     dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
                     dis /= np.linalg.norm(dis)
