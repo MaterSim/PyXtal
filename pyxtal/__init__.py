@@ -703,7 +703,7 @@ class pyxtal:
                     good = True
                     # QZ: This loop needs a generalization!
                     # only accepts trans like [a, b, c] [b, c, a]
-                    if abs(abs(np.linalg.det(tran))-1)>1e-3: #or len(tran[tran>0])!=3: 
+                    if abs(abs(np.linalg.det(tran))-1)>1e-3: 
                         good = False
                     elif self.group.number in [5, 7, 8, 9, 12, 13, 14, 15] and self.diag and Hs[i]==4:
                         good = False
@@ -766,20 +766,21 @@ class pyxtal:
                 ori.reset_matrix(np.eye(3))
                 id = 0
                 for g1s, ops1, ops2 in zip(splitter.G1_orbits[i], splitter.G2_orbits[i], splitter.H_orbits[i]):
-                    #general wyc
                     if site.wp.multiplicity == len(self.group[0]):
+                        #general wyc
                         rot = g1s[0].affine_matrix[:3,:3].T
                     else:
                         #for special wyc, needs to get better treatment
                         rot = wp1.generators_m[id].affine_matrix[:3,:3].T
+
+                    # xyz in new lattice
                     #coord1 = np.dot(coord0, rot)
                     #coord1 = np.dot(coord1, splitter.inv_R[:3,:3].T)
                     #coord1 = np.array([np.dot(splitter.R[:3,:3].T, coord) for coord in coord1])
                     frac = np.dot(np.dot(coord0, self.lattice.inv_matrix), rot)
                     frac = np.dot(frac, splitter.inv_R[:3,:3].T)
-                    #print(frac)
                     coord1 = np.dot(frac, lattice.matrix)
-                    #print(coord1.shape)
+
                     _mol = mol.copy()
                     center = _mol.get_center(coord1)
                     _mol.reset_positions(coord1-center)
@@ -791,7 +792,6 @@ class pyxtal:
                     pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
                     diag = self.diag
-                    #print("pos0", pos0); print(ops1[0].as_xyz_string()); print(ops2[0].as_xyz_string())
                     split_sites.append(mol_site(_mol, pos0, ori, wp, lattice, diag))
                     id += wp.multiplicity
             new_struc.mol_sites = split_sites

@@ -154,7 +154,7 @@ class TestMolecular(unittest.TestCase):
         struc.mol_sites[0].rotate(ax_vector=[1, 0, 0], angle=90)
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
-        pmg_struc.to("cif", "1.cif")
+        #pmg_struc.to("cif", "1.cif")
         self.assertTrue(sga.get_space_group_symbol() == "Cmc2_1")
         # print(pmg_struc.frac_coords[:3])
 
