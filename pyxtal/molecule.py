@@ -10,6 +10,7 @@ constraints.
 """
 # Imports
 import os
+from pkg_resources import resource_filename
 from copy import deepcopy
 from operator import itemgetter
 from random import choice
@@ -21,6 +22,7 @@ import networkx as nx
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
 from pymatgen.core.bonds import CovalentBond
+from monty.serialization import loadfn
 
 # PyXtal imports
 from pyxtal.msg import printx
@@ -31,6 +33,7 @@ from pyxtal.database.collection import Collection
 
 # Define functions
 # ------------------------------
+bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 molecule_collection = Collection("molecules")
 
 def cleaner(list_to_clean):
@@ -1122,28 +1125,16 @@ def make_graph(mol, tol=0.2):
     names = {}
     for i, site in enumerate(mol._sites):
         names[i] = site.specie.value
+        if names[i] not in ["C", "H", "O", "N", "S", "P", "Si", "F", "Cl", "Br", "I"]:
+            raise ValueError(name[i]+' is not supported')
 
     for i in range(len(mol)-1):
         site1 = mol.sites[i]
         for j in range(i+1, len(mol)):
             site2 = mol.sites[j]
-            #remove short X-H distances
-            if names[i] == "H" and names[j]=="H":
-                factor = -0.5
-            elif [names[i], names[j]] in [["S","S"], ["S","O"], ["O","S"], ["F","O"], ["O","F"]]:
-                factor = 0.05
-            elif "H" in [names[i], names[j]]:
-                factor = 0.5
-            elif [names[i], names[j]] in [["N", "S"], ["S", "N"]]:
-                factor = 1.25
-            else:
-                factor = 1.0
-            try:
-                if CovalentBond.is_bonded(site1, site2, factor*tol):
-                    G.add_edge(i,j)
-                    #if 'S' in [names[i], names[j]]: print(names[i], names[j], mol.get_distance(i, j))
-            except ValueError:
-                pass
+            key = "{:s}-{:s}".format(names[i], names[j])
+            if site1.distance(site2) < bonds[key]:
+                G.add_edge(i,j)
     nx.set_node_attributes(G, names, 'name')
 
     return G
