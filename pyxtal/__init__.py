@@ -671,17 +671,21 @@ class pyxtal:
         """
         generate the subgroup dictionary
         """
+        #transform from p21/n to p21/n
+        if self.diag:
+            self.transform([[1,0,0],[0,1,0],[1,0,1]])
+
         t_types = []
         k_types = []
         if group_type == 't':
-            dicts = self.group.get_max_t_subgroup()#['subgroup']
+            dicts = self.group.get_max_t_subgroup()
             t_types = ['t']*len(dicts['subgroup'])
         elif group_type == 'k':
-            dicts = self.group.get_max_k_subgroup()#['subgroup']
+            dicts = self.group.get_max_k_subgroup()
             k_types = ['k']*len(dicts['subgroup'])
         else:
-            dicts = self.group.get_max_t_subgroup()#['subgroup']
-            dict2 = self.group.get_max_k_subgroup()#['subgroup']
+            dicts = self.group.get_max_t_subgroup()
+            dict2 = self.group.get_max_k_subgroup()
             t_types = ['t']*len(dicts['subgroup'])
             k_types = ['k']*len(dict2['subgroup'])
             for key in dicts.keys():
@@ -701,13 +705,8 @@ class pyxtal:
                 for i, tran in enumerate(trans):
                     tran = np.abs(tran[:3,:3])
                     good = True
-                    # QZ: This loop needs a generalization!
                     # only accepts trans like [a, b, c] [b, c, a]
                     if abs(abs(np.linalg.det(tran))-1)>1e-3: 
-                        good = False
-                    elif self.group.number in [5, 7, 8, 9, 12, 13, 14, 15] and self.diag and Hs[i]==4:
-                        good = False
-                    elif self.group.number in [31] and Hs[i]==7:
                         good = False
                     if good:
                         #print(np.linalg.det(tran), tran)
@@ -983,6 +982,13 @@ class pyxtal:
                 self.transform(trans, lattice)
             else:
                 break
+
+    def get_std_representation(self, trans):
+        """
+        perform cell transformation so that the symmetry operations 
+        follow standard space group notation
+        """
+        pass
 
     def transform(self, trans, lattice=None):
         """
