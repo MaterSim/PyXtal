@@ -228,6 +228,7 @@ class pyxtal:
         diag = False,
         t_factor = 1.0,
         max_count = 10,
+        torsions = None,
         force_pass = False,
     ):
         if self.molecular:
@@ -245,8 +246,8 @@ class pyxtal:
                 if dim == 3:
                     if numIons is None:
                         numIons = [len(Group(group)[0])]*len(species)
-                    struc = molecular_crystal(group, species, numIons, factor,
-                    lattice=lattice, sites=sites, conventional=conventional, diag=diag, tm=tm)
+                    struc = molecular_crystal(group, species, numIons, factor, lattice=lattice, 
+                    torsions=torsions, sites=sites, conventional=conventional, diag=diag, tm=tm)
                 elif dim == 2:
                     struc = molecular_crystal_2D(group, species, numIons, factor,
                     thickness=thickness, sites=sites, conventional=conventional, tm=tm)

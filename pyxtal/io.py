@@ -205,7 +205,7 @@ class structure_from_ext():
 
         for ref_mol in ref_mols:
             if isinstance(ref_mol, str):
-                ref_mol = pyxtal_molecule(ref_mol)
+                ref_mol = pyxtal_molecule(ref_mol, fix=True)
             elif isinstance(ref_mol, pyxtal_molecule):
                 ref_mol = ref_mol
             else:

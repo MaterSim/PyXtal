@@ -78,7 +78,7 @@ class mol_site:
         s = "{:} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
-        s += "{:6.3f} {:6.3f} {:6.3f}".format(*self.angles)
+        s += "{:6.2f} {:6.2f} {:6.2f}".format(*self.angles)
 
         return s
 

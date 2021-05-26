@@ -64,6 +64,7 @@ class molecular_crystal:
         allow_inversion=True,
         orientations=None,
         lattice=None,
+        torsions=None,
         tm=Tol_matrix(prototype="molecular"),
         sites = None,
         conventional = True,
@@ -86,6 +87,7 @@ class molecular_crystal:
             orientations,
             group,
             lattice,
+            torsions,
             sites,
             conventional,
             tm,
@@ -101,6 +103,7 @@ class molecular_crystal:
         orientations,
         group,
         lattice,
+        torsions,
         sites,
         conventional,
         tm,
@@ -147,9 +150,12 @@ class molecular_crystal:
                 printx(msg, priority=1)
                 return
 
+        if torsions is None:
+            torsions = [None]*len(molecules)
+
         self.molecules = []  # A pyxtal_molecule objects,
-        for mol in molecules:
-            self.molecules.append(pyxtal_molecule(mol, self.tol_matrix))
+        for i, mol in enumerate(molecules):
+            self.molecules.append(pyxtal_molecule(mol, torsions=torsions[i], tm=self.tol_matrix))
 
         self.sites = {}
         for i, mol in enumerate(self.molecules):
@@ -709,6 +715,7 @@ class molecular_crystal_2D(molecular_crystal):
             orientations,
             group,
             lattice,
+            None,
             sites,
             conventional,
             tm,
@@ -779,6 +786,7 @@ class molecular_crystal_1D(molecular_crystal):
             orientations,
             group,
             lattice,
+            None,
             sites,
             conventional,
             tm,
