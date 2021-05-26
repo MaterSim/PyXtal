@@ -311,7 +311,9 @@ class structure_from_ext():
 
 
             if not matched:
+                print("molecule from structure file")
                 print(mol1.to('xyz'))
+                print("molecule from given input")
                 print(mol2.mol.to('xyz'))
                 raise RuntimeError("molecule cannot be matched")
 

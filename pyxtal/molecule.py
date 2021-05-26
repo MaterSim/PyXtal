@@ -328,12 +328,15 @@ class pyxtal_molecule:
         symbols = []
         for id in range(mol.GetNumAtoms()):
             symbols.append(mol.GetAtomWithIdx(id).GetSymbol())
-        if fix: # or torsions is not None:
-            AllChem.EmbedMultipleConfs(mol, numConfs=2, randomSeed=0xf00d)
+        if fix or torsions is not None:
+            AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
             conf = mol.GetConformer(0)
+            #print(conf.GetPositions())
         else:
-            AllChem.EmbedMultipleConfs(mol, numConfs=10)
-            conf = mol.GetConformer(choice(range(10)))
+            AllChem.EmbedMultipleConfs(mol, numConfs=10, maxAttempts=100, useRandomCoords=True, pruneRmsThresh=0.5)
+            N_confs = mol.GetNumConformers()
+            #print(N_confs)
+            conf = mol.GetConformer(choice(range(N_confs)))
 
         #print("Init: ", conf.GetPositions())
         if torsions is not None:

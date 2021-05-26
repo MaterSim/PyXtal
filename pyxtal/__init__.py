@@ -309,7 +309,7 @@ class pyxtal:
         if self.molecular:
             pmols = []
             for mol in molecules:
-                pmols.append(pyxtal_molecule(mol)) #.mol
+                pmols.append(pyxtal_molecule(mol, fix=True)) #.mol
 
             struc = structure_from_ext(seed, pmols, relax_h=relax_h)
             self.mol_sites = struc.make_mol_sites()
