@@ -10,11 +10,48 @@ There are 4 options for defining molecules within the molecular_crystal class. Y
 
 2) a `pymatgen.core.structure.Molecule <http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule>`_ object.
 
-3) the path to a molecule file (as a string). This will generate a pymatgen Molecule object using the `from_file <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.IMolecule.from_file>`_ method. Supported formats include ``.xyz``, ``.gjf``, ``.g03``, ``.g09``, ``.com``, ``.inp``, ``.out``, and pymatgen's ``JSON`` serialized molecules.
+3) the path to a molecule file (as a string). This will generate a pymatgen Molecule object using the `from_file <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.IMolecule.from_file>`_ method. Supported formats include ``.xyz``.
 
-4) a string representing the molecule. This will generate a pymatgen Molecule object using the `from_str <http://pymatgen.org/pymatgen.core.structure.html#pymatgen.core.structure.IMolecule.from_str>`_ method. For this option, you must specify the string format (fmt) within the call to molecular_crystal. fmt must be one of: ``xyz``, ``gjf``, ``g03``, or ``json``.
+4) a smile string representing the molecule. For example, 'C1=CC=CC=C1.smi' means a benzene molecule. Note that the `.smi` suffix must be included to indicate that this is a smile string. 
 
-**For options 3 and 4, installing OpenBabel will allow additional file formats, but is not required.**
+**RDKit must be installed to use this function.** One can install RDKit by simply typing 
+
+::
+
+    $ conda install -c rdkit rdkit
+    
+Below is an example to generate a random molecular crystal from smile string.
+
+.. code-block:: Python
+
+    from pyxtal import pyxtal
+    c1 = pyxtal(molecular=True)
+    c1.from_random(3, 14, ['CC(=O)NC1=CC=CC=C1C(=O)N.smi'], [4])
+    print(c1)
+    
+
+One advantage of using the smile string is that one can also specify the desired torsions
+
+.. code-block:: Python
+
+    from pyxtal import pyxtal
+    
+    c1 = pyxtal(molecular=True)
+    c1.from_random(3, 14, ['CC(=O)NC1=CC=CC=C1C(=O)N.smi'], [4], torsions=[[-60.2, 1.7, 126.5]])
+    print(c1)
+    print("Torsions", c1.mol_sites[0].encode()[-4:-1])
+    
+::
+    
+    ------Crystal from random------
+    Dimension: 3
+    Composition: [CC(=O)NC1=CC=CC=C1C(=O)N]4
+    Group: P21/c (14)
+    monoclinic lattice:  19.2246  13.2842  10.1448  90.0000 113.3669  90.0000
+    Wyckoff sites:
+	    H10C9N2O2 @ [ 0.2497  0.4534  0.9597]  WP:  4e, Site symmetry 1 ==> Euler: -66.31  25.98 -37.99
+    angles [-60.19971274864328, 1.6999253045986045, 126.50111998425088]
+
 
 Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The `molecular_crystal class <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_ handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric. Currently, PyXtal only works with rigid molecules; this simplifies the calculation of symmetry compatibility.
 
