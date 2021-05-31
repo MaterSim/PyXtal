@@ -715,6 +715,8 @@ class Wyckoff_position:
         for i in groups:
             for wyc in Group(i):
                 if len(wyc) == N_sym:
+                    wyc.PBC = [1, 1, 1]
+                    wyc.dim = 3
                     # Try permutation first
                     str2 = [op.as_xyz_string() for op in wyc.ops]
                     for perm in permutations:

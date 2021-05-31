@@ -158,6 +158,7 @@ class mol_site:
         dict0["center"] = self.position - np.floor(self.position) #self.molecule.get_center(xyz)
         dict0["number"] = self.wp.number
         dict0["index"] = self.wp.index
+        dict0["PBC"] = self.wp.PBC
         dict0["dim"] = self.wp.dim
         dict0["diag"] = self.diag
         dict0["lattice"] = self.lattice.get_matrix()
@@ -190,7 +191,7 @@ class mol_site:
         #    print('load'); print(xyz[:3])
         #    print("aaaaaaaaaaaaaa"); print(xyz[:3].dot(orientation.matrix.T))
         #    print("matrix"); print(orientation.matrix)
-        wp = Wyckoff_position.from_group_and_index(g, index, dim)
+        wp = Wyckoff_position.from_group_and_index(g, index, dim, dicts["PBC"])
         diag = dicts["diag"]
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
         position = dicts["center"] #np.dot(dicts["center"], lattice.inv_matrix)

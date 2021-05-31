@@ -1,0 +1,89 @@
+####################################################################### 
+# 
+# This file contains crystal structure data downloaded from the 
+# Cambridge Structural Database (CSD) hosted by the Cambridge 
+# Crystallographic Data Centre (CCDC).
+# 
+# Full information about CCDC data access policies and citation 
+# guidelines are available at http://www.ccdc.cam.ac.uk/access/V1 
+# 
+# Audit and citation data items may have been added by the CCDC. 
+# Please retain this information to preserve the provenance of 
+# this file and to allow appropriate attribution of the data. 
+# 
+#######################################################################
+
+data_ACBNZA01
+#This CIF has been generated from an entry in the Cambridge Structural Database
+_database_code_depnum_ccdc_archive 'CCDC 1100480'
+_database_code_CSD               ACBNZA01
+loop_
+_citation_id
+_citation_doi
+_citation_year
+1 10.1039/p29810000233 1981
+_audit_creation_method           'Created from the CSD'
+_audit_update_record             
+;
+2021-05-20 downloaded from the CCDC.
+;
+_database_code_NBS               530274
+_chemical_formula_moiety         'C9 H10 N2 O2'
+_chemical_name_systematic        o-Acetamidobenzamide
+_chemical_absolute_configuration unk
+_diffrn_ambient_temperature      295
+_exptl_crystal_density_diffrn    1.34525
+#These two values have been output from a single CSD field.
+_refine_ls_R_factor_gt           0.04
+_refine_ls_wR_factor_gt          0.04
+_diffrn_radiation_probe          x-ray
+_symmetry_cell_setting           monoclinic
+_symmetry_space_group_name_H-M   'P 21/c'
+_symmetry_Int_Tables_number      14
+_space_group_name_Hall           '-P 2ybc'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 -x,1/2+y,1/2-z
+3 -x,-y,-z
+4 x,1/2-y,1/2+z
+_cell_length_a                   7.807(2)
+_cell_length_b                   9.039(3)
+_cell_length_c                   12.706(3)
+_cell_angle_alpha                90
+_cell_angle_beta                 101.12(2)
+_cell_angle_gamma                90
+_cell_volume                     879.796
+_cell_formula_units_Z            4
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+O1 O 0.30640 0.45440 0.06550
+O2 O 0.45420 0.44520 0.32870
+N1 N 0.49220 0.64630 0.09710
+N2 N 0.46900 0.69330 0.32790
+C1 C 0.29190 0.71430 0.27310
+C2 C 0.23330 0.65510 0.17210
+C3 C 0.06020 0.67370 0.12480
+C4 C -0.05150 0.75310 0.17440
+C5 C 0.00970 0.81400 0.27300
+C6 C 0.18060 0.79450 0.32350
+C7 C 0.34790 0.57580 0.10840
+C8 C 0.53900 0.55890 0.35360
+C9 C 0.72320 0.55700 0.41330
+H1 H 0.57200 0.60500 0.05200
+H2 H 0.51800 0.73400 0.12000
+H3 H 0.02400 0.63900 0.05800
+H4 H -0.17200 0.76600 0.14200
+H5 H -0.05800 0.85900 0.30500
+H6 H 0.22600 0.83400 0.39200
+H7 H 0.52200 0.77100 0.35000
+H8 H 0.77600 0.64700 0.42600
+H9 H 0.79000 0.50900 0.36500
+H10 H 0.74100 0.48200 0.46500
+
+#END

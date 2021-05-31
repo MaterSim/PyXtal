@@ -13,7 +13,7 @@ import os
 from pkg_resources import resource_filename
 from copy import deepcopy
 from operator import itemgetter
-from random import choice
+from random import choice, random
 import numpy as np
 from scipy.spatial.transform import Rotation
 import networkx as nx
@@ -333,7 +333,7 @@ class pyxtal_molecule:
             conf = mol.GetConformer(0)
             #print(conf.GetPositions())
         else:
-            AllChem.EmbedMultipleConfs(mol, numConfs=10, maxAttempts=100, useRandomCoords=True, pruneRmsThresh=0.5)
+            AllChem.EmbedMultipleConfs(mol, numConfs=20, maxAttempts=200, useRandomCoords=True, pruneRmsThresh=0.5)
             N_confs = mol.GetNumConformers()
             #print(N_confs)
             conf = mol.GetConformer(choice(range(N_confs)))
@@ -342,7 +342,14 @@ class pyxtal_molecule:
         if torsions is not None:
             xyz = self.set_torsion_angles(conf, torsions, torsionlist=torsionlist)
         else:
-            xyz = self.align(conf)
+            xyz = conf.GetPositions()
+            angs = self.get_torsion_angles(xyz, torsionlist)
+            angs *= (1+0.15*np.random.uniform(-1., 1., len(angs))) 
+            xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
+            xyz -= self.get_center(xyz)
+            #if random() > 0.5:
+            #else:
+            #    xyz = self.align(conf)
         #print(torsions, "align", self.get_torsion_angles(xyz, torsionlist))
         #print("Init: ", xyz[:3])
         return symbols, xyz, torsionlist

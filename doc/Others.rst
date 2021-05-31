@@ -50,7 +50,7 @@ One advantage of using the smile string is that one can also specify the desired
     monoclinic lattice:  19.2246  13.2842  10.1448  90.0000 113.3669  90.0000
     Wyckoff sites:
 	    H10C9N2O2 @ [ 0.2497  0.4534  0.9597]  WP:  4e, Site symmetry 1 ==> Euler: -66.31  25.98 -37.99
-    angles [-60.19971274864328, 1.6999253045986045, 126.50111998425088]
+    Torsions [-60.19971274864328, 1.6999253045986045, 126.50111998425088]
 
 
 Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The `molecular_crystal class <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_ handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric. Currently, PyXtal only works with rigid molecules; this simplifies the calculation of symmetry compatibility.
