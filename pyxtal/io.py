@@ -236,7 +236,6 @@ class structure_from_ext():
         self.pmg_struc = sym_struc
         self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=group.lattice_type)
         self.resort(molecules)
-        self.numMols = [len(self.wyc)]
 
     def resort(self, molecules):
         from pyxtal.operations import apply_ops, find_ids
@@ -264,7 +263,7 @@ class structure_from_ext():
 
         # add position and molecule
         # print("ids", ids, mults)
-        self.numMols = [0] * len(self.ref_mols)
+        self.numMols = [0] * len(mults) #self.ref_mols)
         self.positions = []
         self.p_mols = []
         self.wps = []
@@ -300,6 +299,7 @@ class structure_from_ext():
                         #print("molecule is on the special wyckoff position")
                         position, wp, _ = WP_merge(position, new_lat, self.wyc, 0.1)
                         self.wps.append(wp)
+                        self.numMols[i] = len(wp)
                         #print("After Merge:---"); print(position); print(wp)
                     else:
                         self.wps.append(self.wyc)

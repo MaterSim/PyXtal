@@ -170,7 +170,7 @@ class mol_site:
     def from_1D_dicts(cls, dicts):
         from pyxtal.molecule import pyxtal_molecule, Orientation
 
-        mol = pyxtal_molecule(mol=dicts['smile']+'.smi')
+        mol = pyxtal_molecule(mol=dicts['smile']+'.smi', fix=True)
         rdkit_mol = mol.rdkit_mol(mol.smile)
         conf = rdkit_mol.GetConformer(0)
         #print("try")

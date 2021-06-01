@@ -115,6 +115,8 @@ class molecular_crystal:
             self.group = group
         else:
             self.group = Group(group, dim=self.dim)
+        if self.diag and self.group.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
+            self.diag = False
         self.number = self.group.number
         """
         The international group number of the crystal:

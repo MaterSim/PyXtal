@@ -1009,6 +1009,7 @@ class pyxtal:
         else:
             sites = self.atom_sites
 
+        change_lat = True
         for j, site in enumerate(sites):
             #print("old lattice"); print(site.lattice); print(site.lattice.matrix)
             pos_abs = np.dot(site.position, self.lattice.matrix)
@@ -1099,11 +1100,12 @@ class pyxtal:
                         sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag)
                     else:
                         sites[j] = atom_site(wp, pos_frac, site.specie, diag)
-                #else:
-                #    #print(wp)
-                #    print("BUG to 1.cif")
-                #    #self.to_file('1.cif')
-                #    #import sys; sys.exit()
+                else:
+                    change_lat = False
+                    #print(wp)
+                    #print("BUG to 1.cif")
+                    #self.to_file('1.cif')
+                    #import sys; sys.exit()
             else:
                 diag = False
                 #print(self.group.symbol)
@@ -1126,7 +1128,7 @@ class pyxtal:
                 sites[j].position = pos_frac
                 sites[j].lattice = lattice0
 
-        if wp is not None:
+        if change_lat:
             if self.molecular:
                 self.lattice = lattice0
             else:
