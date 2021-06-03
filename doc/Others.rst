@@ -65,7 +65,7 @@ For the molecular crystal, PyXtal also provides a `representation <pyxtal.repres
     
     c1 = pyxtal(molecular=True)
     print("\n1D string")
-    c1.from_seed(, ['CC(=O)NC1=CC=CC=C1C(=O)N.smi'])
+    c1.from_seed('pyxtal/database/cifs/aspirin.cif', ['CC(=O)NC1=CC=CC=C1C(=O)N.smi'])
     
 ::
     
@@ -90,6 +90,7 @@ In an 1D string, the data is organized as follows
 Alternatively, one can read the structure from the 1D representation and smile string
 
 .. code-block:: Python
+
     rep1 = representation(rep.x, ['CC(=O)OC1=CC=CC=C1C(=O)O'])
     xtal = rep1.to_pyxtal()
     print(xtal)
