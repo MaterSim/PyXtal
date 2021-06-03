@@ -30,7 +30,7 @@ Below is an example to generate a random molecular crystal from smile string.
     print(c1)
     
 
-One advantage of using the smile string is that one can also specify the desired torsions
+Using the smile string, one can specify the desired torsions
 
 .. code-block:: Python
 
@@ -51,19 +51,66 @@ One advantage of using the smile string is that one can also specify the desired
     Wyckoff sites:
 	    H10C9N2O2 @ [ 0.2497  0.4534  0.9597]  WP:  4e, Site symmetry 1 ==> Euler: -66.31  25.98 -37.99
     Torsions [-60.19971274864328, 1.6999253045986045, 126.50111998425088]
+    
+
+1D Representation (Experimental)
+--------------------------------
+
+For the molecular crystal, PyXtal also provides a `representation <pyxtal.representation.html#pyxtal.representation.representation.>`_ class to handle the conversion between Pyxtal and its 1D representation. With this module, one can represent the crystal into a 1D array.
+    
+.. code-block:: Python
+
+    from pyxtal import pyxtal
+    from pyxtal.representation import representation
+    
+    c1 = pyxtal(molecular=True)
+    print("\n1D string")
+    c1.from_seed(, ['CC(=O)NC1=CC=CC=C1C(=O)N.smi'])
+    
+::
+    
+    ------Crystal from Seed------
+    Dimension: 3
+    Composition: [CC(=O)OC1=CC=CC=C1C(=O)O]4
+    Group: P21/c (14)
+    monoclinic lattice:  11.2330   6.5440  11.2310  90.0000  95.8900  90.0000
+    Wyckoff sites:
+	H8C9O4 @ [ 0.2252  0.5852  0.0308]  WP:  4e, Site symmetry 1 ==> Euler:   0.00   0.00   0.00
+
+    1D string	
+     14 0 11.23  6.54 11.23 95.89  0.23  0.59  0.03  130.3   24.9 -147.4   82.9    2.8 -178.3 0
+     
+In an 1D string, the data is organized as follows
+
+- space group number (1-230)
+- HM sequence (for monoclinic system like space group 14, 0 is ``P21/c``, 1 is ``P21/n``)
+- cell parameter: ``a, b, c, alpha, beta, gamma`` (For othorhombic system, only a, b, c is specified)
+- molecular site: fractional coordinates [``x, y, z``] + orientation [``ang_x, ang_y, ang_z``] + torsions [``t1, t2, ...``]
+
+Alternatively, one can read the structure from the 1D representation and smile string
+
+.. code-block:: Python
+    rep1 = representation(rep.x, ['CC(=O)OC1=CC=CC=C1C(=O)O'])
+    xtal = rep1.to_pyxtal()
+    print(xtal)
 
 
-Because molecules are less symmetric than individual atoms, they may or may not fit within a given Wyckoff position. Furthermore, the molecule may need to be oriented in a certain direction to be compatible with a site. The `molecular_crystal class <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.molecular_crystal>`_ handles this automatically, and only inserts molecules in positions and orientations for which the molecules are sufficiently symmetric. Currently, PyXtal only works with rigid molecules; this simplifies the calculation of symmetry compatibility.
+::
+    
+    ------Crystal from 1D rep.------
+    Dimension: 3
+    Composition: [CC(=O)OC1=CC=CC=C1C(=O)O]4
+    Group: P21/c (14)
+    monoclinic lattice:  11.2330   6.5440  11.2310  90.0000  95.8900  90.0000
+    Wyckoff sites:
+	H8C9O4 @ [ 0.2252  0.5852  0.0308]  WP:  4e, Site symmetry 1 ==> Euler: 130.31  24.91 -147.41
 
-Like atomic crystals, the atomic positions may be accessed with the struct attribute, and stored using to_file(filename). However, for accessing the positions and orientations of the molecules themselves, there is an attribute called mol_generators. This provides a list of `mol_site <pyxtal.molecular_crystal.html#pyxtal.molecular_crystal.mol_site>`_ objects, which in turn give the type, location, Wyckoff position, and orientation of each molecule in the asymmetric unit. This can be used to generate the crystal using molecules instead of indivual atoms. Note that the coordinates here are fractional, and refer to the molecule’s center of mass.
-
-The orientations stored in the mol_site class are members of the `operations.orientation <pyxtal.operations.html#pyxtal.operations.orientation>`_ class. A molecule in a Wyckoff position may be allowed to rotate about a certain axis, allowed to rotate freely, or may be rigidly constrained. This information is stored in the orientation class. To obtain a SymmOp which can be applied to the molecule, and which is consistent with the geometric constraints, call `orientation.get_op <pyxtal.operations.html#pyxtal.operations.orientation.get_op>`_. For a 3x3 matrix instead, call `orientation.get_matrix <pyxtal.operations.html#pyxtal.operations.orientation.get_matrix>`_. In either case, this will give a random rotation consistent with the degrees of freedom. To obtain the exact rotation used when generating the crystal (and avoid the random rotation), pass the parameter angle=0.
 
 Symmetry Groups and Wyckoff Positions
 -------------------------------------
 
 The package makes working with symmetry groups simple. Useful information can be accessed directly through the 
-`Group <pyxtal.symmetry.html#yxtal.symmetry.Group>`_ class:
+`Group <pyxtal.symmetry.html#pyxtal.symmetry.Group>`_ class:
 
 .. code-block:: Python
 
