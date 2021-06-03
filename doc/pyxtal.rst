@@ -25,6 +25,7 @@ Submodules
    pyxtal.wyckoff_split
    pyxtal.molecule
    pyxtal.operations
+   pyxtal.representation
    pyxtal.supergroup
    pyxtal.symmetry
    pyxtal.lattice

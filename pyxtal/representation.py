@@ -113,6 +113,7 @@ class representation():
                 strs += "{:5.2f} ".format(v)      
         for v in x[num:-1]:
             strs += "{:6.1f} ".format(v)      
+        strs += "{:d} ".format(int(x[-1]))      
 
         if time is not None:
             strs += "{:5.2f}".format(time)
