@@ -18,7 +18,9 @@ There are 4 options for defining molecules within the molecular_crystal class. Y
 
 ::
 
-    $ conda install -c rdkit rdkit
+    $ conda install -c conda-forge rdkit==2020.09.5
+
+Note that the current code is designed for version no later than ``2020.09.5``.
     
 Below is an example to generate a random molecular crystal from smile string.
 
