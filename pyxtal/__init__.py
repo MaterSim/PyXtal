@@ -1265,4 +1265,10 @@ class pyxtal:
                     return False
             return True
 
+    def get_density(self):
+        """
+        compute density
+        """
+
+        return self.to_pymatgen().density
 
