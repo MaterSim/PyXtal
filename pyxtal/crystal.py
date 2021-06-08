@@ -10,7 +10,7 @@ import numpy as np
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff
 from pyxtal.wyckoff_site import atom_site, WP_merge
-from pyxtal.msg import printx
+from pyxtal.msg import printx, CompatibilityError
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.database.element import Element
@@ -189,8 +189,8 @@ class random_crystal:
             except:
                 printx(
                     (
-                        "Error: tm must either be a Tol_matrix object or "
-                        "a prototype string for initializing one."
+                     "Error: tm must either be a Tol_matrix object or "
+                     "a prototype string for initializing one."
                     ),
                     priority=1,
                 )
@@ -270,7 +270,7 @@ class random_crystal:
                     break
             p2 = p
             if n == n0:
-                return False
+                return False, False
             while True:
                 num = np.dot(n, l_mult)
                 dobackwards = False
@@ -286,7 +286,7 @@ class random_crystal:
                     break
                 # All combinations failed: return False
                 if n == n0 and p >= len(l_mult) - 1:
-                    return False
+                    return False, False
                 # Too few atoms
                 if num < numIon:
                     # Forwards routine
@@ -311,10 +311,10 @@ class random_crystal:
                             break
         if has_freedom:
             # All species passed: return True
-            return True
+            return True, True
         else:
             # All species passed, but no degrees of freedom: return 0
-            return 0
+            return True, False
 
     def check_consistency(self, site, numIon):
         num = 0
@@ -355,27 +355,21 @@ class random_crystal:
        """
         # Check the minimum number of degrees of freedom within the Wyckoff positions
         self.numattempts = 1
-        degrees = self.check_compatible(self.group, self.numIons)
-        if degrees is False:
-            msg = "Warning: the stoichiometry is incompatible with wyckoff choice"
-            printx(msg, priority=1)
+        compat, degrees = self.check_compatible(self.group, self.numIons)
+        if not compat:
+            #printx(msg, priority=1)
             self.valid = False
-            return
+            msg = "the stoichiometry is incompatible with wyckoff choice"
+            raise CompatibilityError(msg)
 
-        if degrees == 0:
+        if not degrees:
             printx("Wyckoff positions have no degrees of freedom.", priority=2)
-            # NOTE why do these need to be changed from defaults?
             self.lattice_attempts = 5
             self.coord_attempts = 5
-            #self.wyckoff_attempts = 5
         else:
-            self.lattice_attempts=40
-            self.coord_attempts=10
-            #self.wyckoff_attempts=10
+            self.lattice_attempts = 40
+            self.coord_attempts = 10
 
-        # Calculate a minimum vector length for generating a lattice
-        # NOTE Comprhys: minvector never used?
-        # minvector = max(self.tol_matrix.get_tol(s, s) for s in self.species)
         for cycle1 in range(self.lattice_attempts):
             self.cycle1 = cycle1
 
@@ -398,8 +392,8 @@ class random_crystal:
                 if self.dim != 0 and abs(self.volume - self.lattice.volume) > 1.0:
                     printx(
                         (
-                            "Error, volume is not equal to the estimated value: "
-                            "{} -> {} cell_para: {}"
+                         "Error, volume is not equal to the estimated value: "
+                         "{} -> {} cell_para: {}"
                         ).format(self.volume, self.lattice.volume, self.lattice.get_para),
                         priority=0,
                     )

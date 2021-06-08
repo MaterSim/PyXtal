@@ -15,7 +15,7 @@ from pyxtal.lattice import Lattice, cellsize
 from pyxtal.wyckoff_site import mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
 from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular
-# from pyxtal.operations import angle
+from pyxtal.msg import CompatibilityError
 
 # Define functions
 # ------------------------------
@@ -347,7 +347,7 @@ class molecular_crystal:
 
             if n == n0:
                 #print("n == n0", n, n0)
-                return False
+                return False, False
             while True:
                 num = np.dot(n, l_mult)
                 dobackwards = False
@@ -364,7 +364,7 @@ class molecular_crystal:
                 # All combinations failed: return False
                 if n == n0 and p >= len(l_mult) - 1:
                     #print("All combinations failed: return False")
-                    return False
+                    return False, False
                 # Too few atoms
                 if num < numIon:
                     # Forwards routine
@@ -389,10 +389,10 @@ class molecular_crystal:
                             break
         # All species passed: return True
         if has_freedom:
-            return True
+            return True, True
         # All species passed, but no degrees of freedom: return 0
         else:
-            return 0
+            return True, False
 
     def __str__(self):
         s = "------Random Molecular Crystal------"
@@ -439,14 +439,14 @@ class molecular_crystal:
         """
 
         # Check the minimum number of degrees of freedom within the Wyckoff positions
-        degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
-        if degrees is False:
+        compat, degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
+        if not compat:
             self.valid = False
-            #msg = "the space group is incompatible with the number of molecules"
-            #raise ValueError(msg)
-            return
+            msg = "the stoichiometry is incompatible with wyckoff choice"
+            raise CompatibilityError(msg)
+
         else:
-            if degrees == 0:
+            if not degrees:
                 self.lattice_attempts = 20
                 self.coord_attempts = 3
                 self.ori_attempts = 1

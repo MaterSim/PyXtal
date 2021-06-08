@@ -23,3 +23,18 @@ def printx(text, priority=1):
     else:
         if priority <= pyxtal_verbosity:
             print(text)
+
+class Error(Exception):
+    """Base class for exceptions in this module."""
+    pass
+
+class CompatibilityError(Error):
+    """Exception raised for errors in the Compabality.
+
+    Attributes:
+        expression -- input expression in which the error occurred
+        message -- explanation of the error
+    """
+
+    def __init__(self, message):
+        self.message = message
