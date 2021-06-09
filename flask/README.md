@@ -1,5 +1,7 @@
 # VXRD: Virtual X-Ray Diffraction
-In order to run and view VXRD locally, run the following shell commands:
+VXRD is a web interface to visualize PyXtal's [PXRD](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb) module for X-ray diffraction analysis.  The web app is currently hosted at https://vxrd.physics.unlv.edu/ for general use.
+
+To run and view the VXRD web app on your local machine, ensure PyXtal is installed (`pip install pyxtal`) and run the following shell commands:
 ```bash
 $ cd PyXtal/flask/
 $ pip install -r requirements.txt
