@@ -7,7 +7,8 @@ from app.forms import MainForm
 from werkzeug.utils import secure_filename
 from pyxtal.XRD import XRD
 from pyxtal.XRD import Similarity
-from ase.io import read
+from pyxtal import pyxtal
+#from ase.io import read
 
 @app.route('/')
 @app.route('/index')
@@ -71,6 +72,9 @@ def comparison():
 @app.route('/struct/<type>')
 def structure(type: str):
     """Return atomic structure as cif"""
+    #s = pyxtal()
+    #s.from_seed(session.get("SAVEPATH"))
+    #struct = s.to_ase()
     struct = read(session.get("SAVEPATH"))
 
     if type == 'cif':
@@ -84,6 +88,9 @@ def structure(type: str):
 def structure2(type: str):
     """Return 2nd atomic structure as cif"""
     struct2 = read(session.get("SAVEPATH2"))
+    #s = pyxtal()
+    #s.from_seed(session.get("SAVEPATH2"))
+    #struct2 = s.to_ase()
 
     if type == 'cif':
         fd = io.BytesIO()
@@ -107,7 +114,7 @@ def process_upload(form, comp=False):
 
     # Check readability
     try:
-        read(savepath) # attempt ase.io.read
+        #read(savepath) # attempt ase.io.read
 
         # Update session keys
         if comp:
@@ -228,19 +235,19 @@ def compare():
             user_kwargs=kwargs)
         xrds.append(xrd)
 
-    S = Similarity(xrds[0].spectra,
-        xrds[1].spectra,
+    S = Similarity(xrds[0].get_profile(),
+        xrds[1].get_profile(),
         l=session.get("SHIFT"))
 
-    S.calculate()
+    #S.calculate()
     title = 'PXRD Similarity {:6.3f} with shift\
         {:6.3f}'.format(S.S, S.l)
     traces = []
 
-    for i, xrd in enumerate(xrds):
-        traces.append(go.Scatter(x=xrd.spectra[0],
-            y=xrd.spectra[1],
-            name=str(files[i])))
+    #for i, xrd in enumerate(xrds):
+    #    traces.append(go.Scatter(x=xrd.spectra[0], y=xrd.spectra[1], name=str(files[i])))
+    traces.append(go.Scatter(x=S.fx, y=S.fy, name=str(files[0])))
+    traces.append(go.Scatter(x=S.fx, y=S.gy, name=str(files[1])))
     
     fig = go.Figure(data=traces)
     fig.update_layout(xaxis_title = '2&#952; ({:.4f}\
@@ -254,3 +261,8 @@ def compare():
             <i>{}</i> profiling.').format(session.get("FILENAME"),
             session.get("FILENAME2"), method), 'info')
     return fig.to_html()
+
+def read(savepath):
+    s = pyxtal()
+    s.from_seed(savepath)
+    return s.to_ase()
