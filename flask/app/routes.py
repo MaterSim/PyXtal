@@ -247,7 +247,7 @@ def compare():
     #for i, xrd in enumerate(xrds):
     #    traces.append(go.Scatter(x=xrd.spectra[0], y=xrd.spectra[1], name=str(files[i])))
     traces.append(go.Scatter(x=S.fx, y=S.fy, name=str(files[0])))
-    traces.append(go.Scatter(x=S.fx, y=S.gy, name=str(files[1])))
+    traces.append(go.Scatter(x=S.fx, y=-S.gy, name=str(files[1])))
     
     fig = go.Figure(data=traces)
     fig.update_layout(xaxis_title = '2&#952; ({:.4f}\
