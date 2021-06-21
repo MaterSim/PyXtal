@@ -55,16 +55,17 @@ class wyckoff_split:
         #print(G, H)
         self.parse_wp2(idx)
 
-        if self.G.lattice_type == self.H.lattice_type:
-            self.valid_split = False
-            for wps in self.wp2_lists:
-                for wp in wps:
-                    rotation = np.array(wp[0].as_dict()['matrix'])[:3,:3]
-                    if np.linalg.matrix_rank(rotation) > 0:
-                        self.valid_split = True
-                        break
-        else:
-            self.valid_split = True
+        # check if it is a valid split
+        #if self.G.lattice_type == self.H.lattice_type:
+        #    self.valid_split = False
+        #    for wps in self.wp2_lists:
+        #        for wp in wps:
+        #            rotation = np.array(wp[0].as_dict()['matrix'])[:3,:3]
+        #            if np.linalg.matrix_rank(rotation) > 0:
+        #                self.valid_split = True
+        #                break
+        #else:
+        self.valid_split = True
 
         #if self.valid_split:
         self.G1_orbits = []
