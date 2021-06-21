@@ -250,11 +250,13 @@ def compare():
     traces.append(go.Scatter(x=S.fx, y=-S.gy, name=str(files[1])))
     
     fig = go.Figure(data=traces)
-    fig.update_layout(xaxis_title = '2&#952; ({:.4f}\
+    fig.update_layout(
+        height=450,
+        title_text = title,
+        title_x=0.5,
+        xaxis_title = '2&#952; ({:.4f}\
         &#8491;)'.format(session.get("WAVELENGTH")),
-        yaxis_title = 'Intensity',
-        title_text = title, 
-        title_x=0.5)
+        yaxis_title = 'Intensity')
     flash(Markup('<span class="glyphicon glyphicon-info-sign"\
             aria-hidden="true"></span><span class="sr-only">Error:</span> \
             Comparing <strong>{}</strong> and <strong>{}</strong> with\
