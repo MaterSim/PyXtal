@@ -329,7 +329,7 @@ class XRD():
             plt.close()
 
 
-    def plotly_pxrd(self, profile='gaussian', minimum_I = 0.01, html=None):
+    def plotly_pxrd(self, profile='gaussian', minimum_I = 0.01, height=450, html=None):
         import plotly.graph_objects as go
 
         """
@@ -360,7 +360,8 @@ class XRD():
             trace2 = go.Scatter(x=spectra[0], y=spectra[1], name='Profile: ' + profile)
             fig = go.Figure(data=[trace2, trace1])
 
-        fig.update_layout(xaxis_title = '2&#952; ({:.4f} &#8491;)'.format(self.wavelength),
+        fig.update_layout(height=height,
+                          xaxis_title = '2&#952; ({:.4f} &#8491;)'.format(self.wavelength),
                           yaxis_title = 'Intensity',
                           title = 'PXRD of '+self.name)
 
