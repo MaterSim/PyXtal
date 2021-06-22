@@ -198,7 +198,7 @@ def plot():
             aria-hidden="true"></span><span class="sr-only">Error:</span> \
             Showing <strong>{}</strong> with <i>{}</i> profiling.').format(
             session.get("FILENAME"), method), 'info')
-    return xrd.plotly_pxrd(profile=method)
+    return xrd.plotly_pxrd(profile=method, height=450)
 
 def compare():
     """

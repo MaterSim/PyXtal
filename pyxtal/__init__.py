@@ -579,7 +579,7 @@ class pyxtal:
             return new_strucs
 
 
-    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', max_cell=4, mut_lat=True):
+    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', max_cell=4, mut_lat=True, ignore_special=False):
         """
         generate a structure with lower symmetry (for atomic crystals only)
 
@@ -628,8 +628,11 @@ class pyxtal:
                                     if len(ops) < len(splitter.H[0]):
                                         special = True
                                         break
-                        if not special:
+                        if ignore_special:
                             return self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
+                        else:
+                            if not special:
+                                return self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                     else:
                         #print("try to find the next subgroup")
                         trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
