@@ -442,7 +442,7 @@ class molecular_crystal:
         compat, degrees = self.check_compatible(self.group, self.numMols, self.valid_orientations)
         if not compat:
             self.valid = False
-            msg = "the stoichiometry is incompatible with wyckoff choice"
+            msg = "Compoisition " + str(self.numMols) + " is incompatible with symmetry " + str(self.group.number) 
             raise CompatibilityError(msg)
 
         else:

@@ -359,7 +359,7 @@ class random_crystal:
         if not compat:
             #printx(msg, priority=1)
             self.valid = False
-            msg = "the stoichiometry is incompatible with wyckoff choice"
+            msg = "Compoisition " + str(self.numIons) + " is incompatible with symmetry " + str(self.group.number) 
             raise CompatibilityError(msg)
 
         if not degrees:
