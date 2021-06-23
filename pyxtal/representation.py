@@ -150,18 +150,17 @@ class representation():
         # data for molecule
         strs += "{:d} ".format(len(self.smiles))
         for i in range(len(self.smiles)):
-            for v in x[i+1][:-1]:
-                if v-100>1e-8:
-                    strs += "{:5.1f} ".format(v)      
-                else:
-                    strs += "{:5.2f} ".format(v)      
+            for v in x[i+1][:3]:
+                strs += "{:4.2f} ".format(v)      
+            for v in x[i+1][3:-1]:
+                strs += "{:6.1f} ".format(v)      
             strs += "{:d} ".format(int(x[i+1][-1]))
 
         if time is not None:
             strs += "{:5.2f}".format(time)
 
         if eng is not None:
-            strs += "{:11.3f}".format(eng)
+            strs += "{:10.2f}".format(eng)
     
         if tag is not None:
             strs += " {:s}".format(tag)
