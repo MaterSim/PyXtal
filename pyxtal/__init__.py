@@ -1276,3 +1276,32 @@ class pyxtal:
 
         return self.to_pymatgen().density
 
+    def has_special_site(self):
+        """
+        Check if the molecular crystal has a special site
+        """
+        special = False
+        for msite in self.mol_sites:
+            if msite.wp.index > 0:
+                special = True
+                break
+        return special
+
+    def to_subgroup(self):
+        """
+        Tranform a molecular crystal with speical sites to subgroup
+        represenatation with general sites
+        """
+        if self.diag:
+            self.transform([[1,0,0],[0,1,0],[1,0,1]])
+
+        #QZ: below is a tentative solution
+        if self.group.number == 64 and s.mol_sites[0].wp.multiplicity==4:
+            s = self.subgroup_once(eps=0, mut_lat=False, H=61, group_type='k', ignore_special=True)
+        else:
+            s = deepcopy(self)
+
+        sub = s.subgroup_once(eps=0, mut_lat=False)
+        sub.optimize_lattice()
+        sub.source = "subgroup"
+        return sub

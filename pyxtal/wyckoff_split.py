@@ -475,10 +475,10 @@ class wyckoff_split:
         """
         QZ: there should be some documentation
         """
-        if 0 in self.wp1_indices 
-            wp1_id = self.wp1_indices.index(0)
-            if self.wp1_lists[wp1_id].multiplicity==4: and len(self.G2_orbits[wp1_id])==2:
-                id=self.wp1_indices.index(0)
+        if 0 in self.wp1_indices: 
+            id = self.wp1_indices.index(0)
+            #QZ: why do we need this?
+            if self.wp1_lists[id].multiplicity==4 and len(self.G2_orbits[id])==2:
                 top=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][0]]
                 bottom=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][1]]
                 disp=top[1]-top[0]
