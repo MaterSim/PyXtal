@@ -903,6 +903,13 @@ class pyxtal:
             formula += "{:s}{:d}".format(s, int(i))
         self.formula = formula
 
+    def get_zprime(self):
+        """
+        get zprime for the molecular xtal
+        """
+        mult = len(self.group[0])
+        return [c/mult for c in self.numMols]
+
     def to_ase(self, resort=True):
         """
         export to ase Atoms object.
@@ -1305,3 +1312,5 @@ class pyxtal:
         sub.optimize_lattice()
         sub.source = "subgroup"
         return sub
+
+
