@@ -259,11 +259,11 @@ class structure_from_ext():
                 tmp_ids = find_ids(centers, positions)
                 visited_ids.extend(tmp_ids)
                 mults.append(len(tmp_ids))
-                #print("check", id, tmp_ids)
+                #print("check", id, tmp_ids, mults)
 
         # add position and molecule
         # print("ids", ids, mults)
-        self.numMols = [0] * len(mults) #self.ref_mols)
+        self.numMols = [0] * len(self.ref_mols)
         self.positions = []
         self.p_mols = []
         self.wps = []
@@ -273,7 +273,9 @@ class structure_from_ext():
             for j, mol2 in enumerate(self.ref_mols):
                 match, mapping = compare_mol_connectivity(mol2.mol, mol1)
                 if match:
+                    #print(self.numMols)
                     self.numMols[j] += mults[i]
+                    #print(j, mults[i], self.numMols)
                     # rearrange the order
                     order = [mapping[at] for at in range(len(mol1))]
                     xyz = mol1.cart_coords[order] 
@@ -299,7 +301,7 @@ class structure_from_ext():
                         #print("molecule is on the special wyckoff position")
                         position, wp, _ = WP_merge(position, new_lat, self.wyc, 0.1)
                         self.wps.append(wp)
-                        self.numMols[i] = len(wp)
+                        self.numMols[j] = len(wp)
                         #print("After Merge:---"); print(position); print(wp)
                     else:
                         self.wps.append(self.wyc)

@@ -887,6 +887,7 @@ class pyxtal:
         if self.molecular:
             numspecies = self.numMols
             species = [str(mol) for mol in self.molecules]
+            #print(species, numspecies)
         else:
             specie_list = []
             for site in self.atom_sites:
