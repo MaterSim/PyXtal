@@ -156,20 +156,23 @@ class representation():
         strs = "{:3d} {:d} ".format(int(x[0][0]), int(x[0][1]))
 
         # data for cell
-        for c in x[0][2:]:
-            if c-100 > 1e-8:
-                strs += "{:5.1f} ".format(c)
-            else:
-                strs += "{:5.2f} ".format(c)
+        if x[0][0] <= 74:
+            num = 5
+        else:
+            num = 4
+        for c in x[0][2:num]:
+            strs += "{:5.2f} ".format(c)
+        for c in x[0][num:]:
+            strs += "{:5.1f} ".format(c)
         
         # data for molecule
-        strs += "{:d} ".format(len(self.smiles))
-        for i in range(len(self.smiles)):
-            for v in x[i+1][:3]:
+        strs += "{:d} ".format(len(x)-1)
+        for i in range(1, len(x)):
+            for v in x[i][:3]:
                 strs += "{:4.2f} ".format(v)      
-            for v in x[i+1][3:-1]:
+            for v in x[i][3:-1]:
                 strs += "{:6.1f} ".format(v)      
-            strs += "{:d} ".format(int(x[i+1][-1]))
+            strs += "{:d} ".format(int(x[i][-1]))
 
         if time is not None:
             strs += "{:5.2f}".format(time)
