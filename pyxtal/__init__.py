@@ -905,13 +905,22 @@ class pyxtal:
 
     def get_zprime(self, integer=False):
         """
-        get zprime for the molecular xtal
+        get zprime for molecular xtal
         """
         mult = len(self.group[0])
         comp = [c/mult for c in self.numMols]
         if integer:
             comp = [int(c) for c in comp]
         return comp
+
+    def get_num_torsions(self):
+        """
+        get number of torsions for molecular xtal
+        """
+        N_torsions = 0
+        for s in self.mol_sites:
+            N_torsions += len(s.molecule.torsionlist)
+        return N_torsions
 
     def to_ase(self, resort=True):
         """
