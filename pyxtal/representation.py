@@ -137,10 +137,10 @@ class representation():
                 dicts['reflect'] = int(v[-1])
                 site = mol_site.from_1D_dicts(dicts)
                 struc.mol_sites.append(site)
-                struc.molecules.append(site.molecule)
                 struc.numMols[i] += site.wp.multiplicity
                 #move to next rep
                 count += 1
+            struc.molecules.append(site.molecule)
 
         struc._get_formula()
         struc.source = '1D rep.'
