@@ -475,23 +475,21 @@ class wyckoff_split:
         """
         QZ: there should be some documentation
         """
-        wp1_id = self.wp1_indices.index(0)
-        if 0 in self.wp1_indices and self.wp1_lists[wp1_id].multiplicity==4 and len(self.G2_orbits[wp1_id])==2:
-            id=self.wp1_indices.index(0)
-            top=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][0]]
-            bottom=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][1]]
-            disp=top[1]-top[0]
-            one=bottom[0]+disp
-            one[one==-1.]=0.
-            two=bottom[1]+disp
-            two[two==-1.]=0.
+        if 0 in self.wp1_indices 
+            wp1_id = self.wp1_indices.index(0)
+            if self.wp1_lists[wp1_id].multiplicity==4: and len(self.G2_orbits[wp1_id])==2:
+                id=self.wp1_indices.index(0)
+                top=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][0]]
+                bottom=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][1]]
+                disp=top[1]-top[0]
+                one=bottom[0]+disp
+                one[one==-1.]=0.
+                two=bottom[1]+disp
+                two[two==-1.]=0.
 
-            if np.all(two==bottom[0]):
-                self.G1_orbits[id][1][0],self.G1_orbits[id][1][1]=self.G1_orbits[id][1][1],self.G1_orbits[id][1][0]
-                self.G2_orbits[id][1][0],self.G2_orbits[id][1][1]=self.G2_orbits[id][1][1],self.G2_orbits[id][1][0]
-
-
-
+                if np.all(two==bottom[0]):
+                    self.G1_orbits[id][1][0],self.G1_orbits[id][1][1]=self.G1_orbits[id][1][1],self.G1_orbits[id][1][0]
+                    self.G2_orbits[id][1][0],self.G2_orbits[id][1][1]=self.G2_orbits[id][1][1],self.G2_orbits[id][1][0]
 
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
@@ -531,5 +529,5 @@ def in_lists(mat1, mat2, eps=1e-2, PBC=True):
 
 if __name__ == "__main__":
 
-    sp = wyckoff_split(G=14, idx=0, wp1=['2c', '4e'], group_type='t')
+    sp = wyckoff_split(G=14, idx=1, wp1=['2c', '4e'], group_type='t')
     print(sp)
