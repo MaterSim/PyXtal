@@ -78,12 +78,22 @@ class representation():
             n_cell += n_mol
         return cls(x, smiles)
  
-    def to_pyxtal(self, smiles=None):
+    def to_pyxtal(self, smiles=None, composition=None):
         """
         convert to the pyxtal structure
+
+        Args:
+            smiles: list of smile
+            compoisition: list of composition
         """
         if smiles is None:
             smiles = self.smiles
+
+        if composition is None:
+            composition = [1] * len(smiles)
+
+        if sum(composition) + 1 != len(self.x):
+            raise ValueError("composition is inconsistent")
 
         # symmetry
         v = self.x[0]
@@ -101,31 +111,36 @@ class representation():
         struc.lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
     
         # sites
-        struc.numMols = [] 
+        struc.numMols = [0] * len(smiles) 
         struc.molecules = []
         struc.mol_sites = [] 
 
-        for i, smile in enumerate(smiles):
-            if smile.endswith('.smi'): 
-                smile=smile[:-4]
-            v = self.x[i+1]
-            dicts = {}
-            dicts['smile'] = smile
-            dicts['dim'] = 3
-            dicts['PBC'] = [1, 1, 1]
-            dicts['number'] = number
-            dicts['diag'] = struc.diag
-            dicts['index'] = 0
-            dicts['lattice'] = struc.lattice.matrix
-            dicts['lattice_type'] = ltype
-            dicts['center'] = v[:3]
-            dicts['orientation'] = np.array(v[3:6])
-            dicts['rotor'] = v[6:-1]
-            dicts['reflect'] = int(v[-1])
-            site = mol_site.from_1D_dicts(dicts)
-            struc.mol_sites.append(site)
-            struc.molecules.append(site.molecule)
-            struc.numMols.append(site.wp.multiplicity)
+        count = 1
+        for i, comp in enumerate(composition): 
+        #smile in enumerate(smiles):
+            smile = smiles[i]
+            if smile.endswith('.smi'): smile=smile[:-4]
+            for j in range(comp):
+                v = self.x[count]
+                dicts = {}
+                dicts['smile'] = smile
+                dicts['dim'] = 3
+                dicts['PBC'] = [1, 1, 1]
+                dicts['number'] = number
+                dicts['diag'] = struc.diag
+                dicts['index'] = 0
+                dicts['lattice'] = struc.lattice.matrix
+                dicts['lattice_type'] = ltype
+                dicts['center'] = v[:3]
+                dicts['orientation'] = np.array(v[3:6])
+                dicts['rotor'] = v[6:-1]
+                dicts['reflect'] = int(v[-1])
+                site = mol_site.from_1D_dicts(dicts)
+                struc.mol_sites.append(site)
+                struc.molecules.append(site.molecule)
+                struc.numMols[i] += site.wp.multiplicity
+                #move to next rep
+                count += 1
 
         struc._get_formula()
         struc.source = '1D rep.'
