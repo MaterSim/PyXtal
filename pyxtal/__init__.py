@@ -903,12 +903,15 @@ class pyxtal:
             formula += "{:s}{:d}".format(s, int(i))
         self.formula = formula
 
-    def get_zprime(self):
+    def get_zprime(self, integer=False):
         """
         get zprime for the molecular xtal
         """
         mult = len(self.group[0])
-        return [c/mult for c in self.numMols]
+        comp = [c/mult for c in self.numMols]
+        if integer:
+            comp = [int(c) for c in comp]
+        return comp
 
     def to_ase(self, resort=True):
         """
