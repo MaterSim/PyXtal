@@ -472,7 +472,11 @@ class wyckoff_split:
             raise ValueError("Cannot find the generator for wp2")
 
     def patch(self):
-        if 0 in self.wp1_indices and self.wp1_lists[self.wp1_indices.index(0)].multiplicity==4 and len(self.G2_orbits[self.wp1_indices.index(0)])==2:
+        """
+        QZ: there should be some documentation
+        """
+        wp1_id = self.wp1_indices.index(0)
+        if 0 in self.wp1_indices and self.wp1_lists[wp1_id].multiplicity==4 and len(self.G2_orbits[wp1_id])==2:
             id=self.wp1_indices.index(0)
             top=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][0]]
             bottom=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][1]]
@@ -527,6 +531,5 @@ def in_lists(mat1, mat2, eps=1e-2, PBC=True):
 
 if __name__ == "__main__":
 
-    for id in range(11):
-        sp = wyckoff_split(G=98, idx=id, wp1=['4b', '8f'], group_type='k')
-        print(sp)
+    sp = wyckoff_split(G=14, idx=0, wp1=['2c', '4e'], group_type='t')
+    print(sp)
