@@ -93,7 +93,10 @@ class representation():
             composition = [1] * len(smiles)
 
         if sum(composition) + 1 != len(self.x):
-            raise ValueError("composition is inconsistent")
+            msg = "Composition is inconsistent:\n"
+            msg += str(composition) + "\n"
+            msg += self.to_string()
+            raise ValueError(msg)
 
         # symmetry
         v = self.x[0]
