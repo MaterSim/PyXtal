@@ -81,7 +81,7 @@ class wyckoff_split:
                 G1_orbits, G2_orbits = self.split_k(wp1, self.wp2_lists[i])
             self.G1_orbits.append(G1_orbits)
             self.G2_orbits.append(G2_orbits)
-            self.patch()
+            # self.patch()
 
     def sort(self):
         """
@@ -471,25 +471,25 @@ class wyckoff_split:
             # import sys; sys.exit()
             raise ValueError("Cannot find the generator for wp2")
 
-    def patch(self):
-        """
-        QZ: there should be some documentation
-        """
-        if 0 in self.wp1_indices: 
-            id = self.wp1_indices.index(0)
-            #QZ: why do we need this?
-            if self.wp1_lists[id].multiplicity==4 and len(self.G2_orbits[id])==2:
-                top=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][0]]
-                bottom=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][1]]
-                disp=top[1]-top[0]
-                one=bottom[0]+disp
-                one[one==-1.]=0.
-                two=bottom[1]+disp
-                two[two==-1.]=0.
-
-                if np.all(two==bottom[0]):
-                    self.G1_orbits[id][1][0],self.G1_orbits[id][1][1]=self.G1_orbits[id][1][1],self.G1_orbits[id][1][0]
-                    self.G2_orbits[id][1][0],self.G2_orbits[id][1][1]=self.G2_orbits[id][1][1],self.G2_orbits[id][1][0]
+    # def patch(self):
+    #     """
+    #     QZ: there should be some documentation
+    #     """
+    #     if 0 in self.wp1_indices:
+    #         id = self.wp1_indices.index(0)
+    #         #QZ: why do we need this?
+    #         if self.wp1_lists[id].multiplicity==4 and len(self.G2_orbits[id])==2:
+    #             top=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][0]]
+    #             bottom=[np.array(x.as_dict()['matrix'])[:3,3] for x in self.G1_orbits[id][1]]
+    #             disp=top[1]-top[0]
+    #             one=bottom[0]+disp
+    #             one[one==-1.]=0.
+    #             two=bottom[1]+disp
+    #             two[two==-1.]=0.
+    #
+    #             if np.all(two==bottom[0]):
+    #                 self.G1_orbits[id][1][0],self.G1_orbits[id][1][1]=self.G1_orbits[id][1][1],self.G1_orbits[id][1][0]
+    #                 self.G2_orbits[id][1][0],self.G2_orbits[id][1][1]=self.G2_orbits[id][1][1],self.G2_orbits[id][1][0]
 
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
