@@ -43,7 +43,7 @@ class representation():
         return cls(x, smiles)
     
     @classmethod
-    def from_string(cls, inputs, smiles):
+    def from_string(cls, inputs, smiles, composition=None):
         """
         Convert the string into 1D vector
 
@@ -52,6 +52,9 @@ class representation():
             smiles: list of smiles
         """
         #parse the cell
+        if composition is None:
+            composition = [1] * len(smiles)
+
         inputs = [float(tmp) for tmp in inputs.split()]
         g, diag = int(inputs[0]), int(inputs[1])
         if g<=2:
@@ -64,18 +67,21 @@ class representation():
         
         x = [cell]
         n_site = int(inputs[n_cell])
-        if n_site != len(smiles):
-            raise ValueError("Inconsistent number of molecules")
+        if n_site != sum(composition) :
+            msg = "Composition is inconsistent: {:d}/{:d}\n".format(sum(composition), n_site)
+            msg += str(inputs)
+            raise ValueError(msg)
         n_cell += 1
 
         for i, smile in enumerate(smiles):
             if smile.endswith('.smi'): 
                 smile=smile[:-4]
-            n_torsion = len(find_id_from_smile(smile))
-            n_mol = 7 + n_torsion
-            inputs[n_cell+n_mol-1] = int(inputs[n_cell+n_mol-1])
-            x.append(inputs[n_cell:n_cell+n_mol])
-            n_cell += n_mol
+            for c in range(composition[i]):
+                n_torsion = len(find_id_from_smile(smile))
+                n_mol = 7 + n_torsion
+                inputs[n_cell+n_mol-1] = int(inputs[n_cell+n_mol-1])
+                x.append(inputs[n_cell:n_cell+n_mol])
+                n_cell += n_mol
         return cls(x, smiles)
  
     def to_pyxtal(self, smiles=None, composition=None):
