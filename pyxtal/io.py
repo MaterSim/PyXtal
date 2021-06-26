@@ -319,9 +319,9 @@ class structure_from_ext():
 
             if not matched:
                 msg = "molecule cannot be matched\n"
-                msg += "molecule from structure file\n")
+                msg += "molecule from structure file\n"
                 msg += mol1.to('xyz')
-                msg += "\nmolecule from given input\n")
+                msg += "\nmolecule from given input\n"
                 msg += mol2.mol.to('xyz')
                 raise ReadSeedError(msg)
 
