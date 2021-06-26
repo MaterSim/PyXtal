@@ -268,62 +268,61 @@ class structure_from_ext():
 
         # add position and molecule
         # print("ids", ids, mults)
+        N_sites = len(ids)
         self.numMols = [0] * len(self.ref_mols)
         self.positions = []
         self.p_mols = []
         self.wps = []
-        for i in range(len(ids)):
-            mol1 = molecules[ids[i]]
-            matched = False
-            for j, mol2 in enumerate(self.ref_mols):
-                match, mapping = compare_mol_connectivity(mol2.mol, mol1)
-                if match:
-                    #print(self.numMols)
-                    self.numMols[j] += mults[i]
-                    #print(j, mults[i], self.numMols)
-                    # rearrange the order
-                    order = [mapping[at] for at in range(len(mol1))]
-                    xyz = mol1.cart_coords[order] 
-                    frac = np.dot(xyz, inv_lat) 
-                    xyz = np.dot(frac, new_lat) 
-                    # create p_mol
-                    p_mol = mol2.copy() 
-                    center = p_mol.get_center(xyz) 
-                    #print(xyz-center)
-                    p_mol.reset_positions(xyz-center)
+        ids_done = []
+        for j, mol2 in enumerate(self.ref_mols):
+            for i in range(len(ids)):
+                mol1 = molecules[ids[i]]
+                if i not in ids_done and len(mol2.mol) == len(mol1):
+                    match, mapping = compare_mol_connectivity(mol2.mol, mol1)
+                    if match:
+                        #print(self.numMols)
+                        self.numMols[j] += mults[i]
+                        #print(j, mults[i], self.numMols)
+                        # rearrange the order
+                        order = [mapping[at] for at in range(len(mol1))]
+                        xyz = mol1.cart_coords[order] 
+                        frac = np.dot(xyz, inv_lat) 
+                        xyz = np.dot(frac, new_lat) 
+                        # create p_mol
+                        p_mol = mol2.copy() 
+                        center = p_mol.get_center(xyz) 
+                        #print(xyz-center)
+                        p_mol.reset_positions(xyz-center)
 
-                    position = np.dot(center, np.linalg.inv(new_lat))
-                    position -= np.floor(position)
-                    #print(position)
-                    #print(lat)
-                    #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
-                    # print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
+                        position = np.dot(center, np.linalg.inv(new_lat))
+                        position -= np.floor(position)
+                        #print(position)
+                        #print(lat)
+                        #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
+                        # print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
 
-                    # check if molecule is on the special wyckoff position
-                    if mults[i] < len(self.wyc):
-                        #Transform it to the conventional representation
-                        if self.diag: position = np.dot(self.perm, position).T
-                        #print("molecule is on the special wyckoff position")
-                        position, wp, _ = WP_merge(position, new_lat, self.wyc, 0.1)
-                        self.wps.append(wp)
-                        self.numMols[j] = len(wp)
-                        #print("After Merge:---"); print(position); print(wp)
-                    else:
-                        self.wps.append(self.wyc)
+                        # check if molecule is on the special wyckoff position
+                        if mults[i] < len(self.wyc):
+                            #Transform it to the conventional representation
+                            if self.diag: position = np.dot(self.perm, position).T
+                            #print("molecule is on the special wyckoff position")
+                            position, wp, _ = WP_merge(position, new_lat, self.wyc, 0.1)
+                            self.wps.append(wp)
+                            self.numMols[j] = len(wp)
+                            #print("After Merge:---"); print(position); print(wp)
+                        else:
+                            self.wps.append(self.wyc)
 
-                    self.positions.append(position)
-                    self.p_mols.append(p_mol)
-                    matched = True
-                    break
+                        self.positions.append(position)
+                        self.p_mols.append(p_mol)
+                        ids_done.append(ids[i])
 
-
-            if not matched:
-                msg = "molecule cannot be matched\n"
-                msg += "molecule from structure file\n"
-                msg += mol1.to('xyz')
-                msg += "\nmolecule from given input\n"
-                msg += mol2.mol.to('xyz')
-                raise ReadSeedError(msg)
+        if len(ids_done) < len(ids):
+            for i in ids:
+                if i not in ids_done:
+                    msg = "This molecule cannot be matched to the reference molecule\n"
+                    msg += molecules[ids[0]].to('xyz')
+                    raise ReadSeedError(msg)
 
     def addh(self, molecules):
         """
