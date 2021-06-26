@@ -317,7 +317,7 @@ class structure_from_ext():
 
 
             if not matched:
-                print("molecule from structure file")
+                print("\nmolecule from structure file")
                 print(mol1.to('xyz'))
                 print("molecule from given input")
                 print(mol2.mol.to('xyz'))
@@ -416,12 +416,15 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
             if (site1.index not in ids+ids_add):
                 if CovalentBond.is_bonded(site0, site1, tol):
                     (d, image) = site0.distance_and_image(site1)
+                    #QZ: use our own bond distance lib
                     key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
                     if d < bonds[key]:
                         site1.frac_coords += image
                         #print(d, image, site1)
                         sites_add.append(site1)
                         ids_add.append(site1.index)
+                    #else:
+                    #    print(key, d, bonds[key])
         if len(sites_add) > 0:
             visited.extend(sites_add)
 
