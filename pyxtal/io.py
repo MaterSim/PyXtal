@@ -11,6 +11,10 @@ from pyxtal.symmetry import Wyckoff_position, Group
 from pyxtal.lattice import Lattice
 from pyxtal.util import get_symmetrized_pmg
 from pyxtal.constants import deg, logo
+from pkg_resources import resource_filename
+from monty.serialization import loadfn
+
+bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 
 def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
@@ -412,10 +416,12 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
             if (site1.index not in ids+ids_add):
                 if CovalentBond.is_bonded(site0, site1, tol):
                     (d, image) = site0.distance_and_image(site1)
-                    site1.frac_coords += image
-                    #print(d, image, site1)
-                    sites_add.append(site1)
-                    ids_add.append(site1.index)
+                    key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
+                    if d < bonds[key]:
+                        site1.frac_coords += image
+                        #print(d, image, site1)
+                        sites_add.append(site1)
+                        ids_add.append(site1.index)
         if len(sites_add) > 0:
             visited.extend(sites_add)
 
