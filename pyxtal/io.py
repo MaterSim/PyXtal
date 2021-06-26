@@ -11,6 +11,7 @@ from pyxtal.symmetry import Wyckoff_position, Group
 from pyxtal.lattice import Lattice
 from pyxtal.util import get_symmetrized_pmg
 from pyxtal.constants import deg, logo
+from pyxtal.msg import ReadSeedError
 from pkg_resources import resource_filename
 from monty.serialization import loadfn
 
@@ -317,11 +318,12 @@ class structure_from_ext():
 
 
             if not matched:
-                print("\nmolecule from structure file")
-                print(mol1.to('xyz'))
-                print("molecule from given input")
-                print(mol2.mol.to('xyz'))
-                raise RuntimeError("molecule cannot be matched")
+                msg = "molecule cannot be matched\n"
+                msg += "molecule from structure file\n")
+                msg += mol1.to('xyz')
+                msg += "\nmolecule from given input\n")
+                msg += mol2.mol.to('xyz')
+                raise ReadSeedError(msg)
 
     def addh(self, molecules):
         """
