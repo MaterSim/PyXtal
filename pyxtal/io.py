@@ -76,6 +76,11 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
     lines += '_cell_angle_alpha     {:12.6f}\n'.format(alpha)
     lines += '_cell_angle_beta      {:12.6f}\n'.format(beta)
     lines += '_cell_angle_gamma     {:12.6f}\n'.format(gamma)
+    lines += '_cell_volume          {:12.6f}\n'.format(struc.lattice.volume)
+    #if struc.molecular:
+    #    lines += '_cell_formula_units_Z     {:d}\n'.format(sum(struc.numMols))
+    #else:
+    #    lines += '_cell_formula_units_Z     {:d}\n'.format(sum(struc.numIons))
 
     lines += '\nloop_\n'
     lines += ' _symmetry_equiv_pos_site_id\n'
