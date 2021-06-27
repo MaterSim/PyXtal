@@ -12,7 +12,7 @@ def pymatgen2ase(struc):
     """
     A short cut to convert between pymatgen to ase
     """
-    atoms = Atoms(symbols = struc.atomic_numbers, cell = struc.lattice.matrix)
+    atoms = Atoms(symbols = struc.atomic_numbers, cell = struc.lattice.matrix, pbc=True)
     atoms.set_scaled_positions(struc.frac_coords)
     return atoms
 
