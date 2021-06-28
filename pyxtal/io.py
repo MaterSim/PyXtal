@@ -199,7 +199,7 @@ def read_cif(filename):
 
 class structure_from_ext():
     
-    def __init__(self, struc, ref_mols, tol=0.2, relax_h=False):
+    def __init__(self, struc, ref_mols, tol=0.2, relax_H=False, ignore_HH=False):
 
         """
         extract the mol_site information from the give cif file 
@@ -209,7 +209,8 @@ class structure_from_ext():
             struc: cif/poscar file or a Pymatgen Structure object
             ref_mols: a list of reference molecule (xyz file or Pyxtal molecule)
             tol: scale factor for covalent bond distance
-            relax_h: whether or not relax the position for hydrogen atoms in structure
+            relax_H: whether or not relax the position for hydrogen atoms in structure
+            ignore_HH: whether or not ignore the short H-H distance when checking molecule
         
         """
 
@@ -233,7 +234,7 @@ class structure_from_ext():
         self.ref_mols = ref_mols
         self.tol = tol
         self.diag = False
-        self.relax_h = relax_h
+        self.relax_H = relax_H
 
         sym_struc, number = get_symmetrized_pmg(pmg_struc)
         group = Group(number)
@@ -241,8 +242,8 @@ class structure_from_ext():
         self.wyc = group[0]
         self.perm = [0,1,2]
 
-        molecules = search_molecules_in_crystal(sym_struc, self.tol)
-        if self.relax_h: molecules = self.addh(molecules)
+        molecules = search_molecules_in_crystal(sym_struc, self.tol, ignore_HH=ignore_HH)
+        if self.relax_H: molecules = self.addh(molecules)
         self.pmg_struc = sym_struc
         self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=group.lattice_type)
         self.resort(molecules)
@@ -391,7 +392,7 @@ class structure_from_ext():
             return display_molecules([self.ref_mol, self.molecule])
 
 
-def search_molecules_in_crystal(struc, tol=0.2, once=False):
+def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
     """
     Function to perform to find the molecule in a Pymatgen structure
 
@@ -399,6 +400,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
         struc: Pymatgen Structure
         tol: tolerance value to check the connectivity
         once: search only one molecule or all molecules
+        ignore_HH: whether or not ignore the short H-H distance when checking molecule
 
     Returns:
         molecules: list of pymatgen molecules
@@ -424,11 +426,18 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False):
                     (d, image) = site0.distance_and_image(site1)
                     #QZ: use our own bond distance lib
                     key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
-                    if d < bonds[key]:
-                        site1.frac_coords += image
-                        #print(d, image, site1)
-                        sites_add.append(site1)
-                        ids_add.append(site1.index)
+
+                    #sometime the H-H short distance is not avoidable
+                    if key == 'H-H': 
+                        if not ignore_HH:
+                            site1.frac_coords += image
+                            sites_add.append(site1)
+                            ids_add.append(site1.index)
+                    else:
+                        if d < bonds[key]:
+                            site1.frac_coords += image
+                            sites_add.append(site1)
+                            ids_add.append(site1.index)
                     #else:
                     #    print(key, d, bonds[key])
         if len(sites_add) > 0:
