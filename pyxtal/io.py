@@ -280,9 +280,9 @@ class structure_from_ext():
         self.wps = []
         ids_done = []
         for j, mol2 in enumerate(self.ref_mols):
-            for i in range(len(ids)):
-                mol1 = molecules[ids[i]]
-                if i not in ids_done and len(mol2.mol) == len(mol1):
+            for i, id in enumerate(ids):
+                mol1 = molecules[id]
+                if id not in ids_done and len(mol2.mol) == len(mol1):
                     match, mapping = compare_mol_connectivity(mol2.mol, mol1)
                     if match:
                         #print(self.numMols)
@@ -320,13 +320,13 @@ class structure_from_ext():
 
                         self.positions.append(position)
                         self.p_mols.append(p_mol)
-                        ids_done.append(ids[i])
+                        ids_done.append(id)
 
         if len(ids_done) < len(ids):
-            for i in ids:
-                if i not in ids_done:
+            for id in ids:
+                if id not in ids_done:
                     msg = "This molecule cannot be matched to the reference molecule\n"
-                    msg += molecules[ids[0]].to('xyz')
+                    msg += molecules[id].to('xyz')
                     raise ReadSeedError(msg)
 
     def addh(self, molecules):
