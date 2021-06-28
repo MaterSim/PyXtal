@@ -300,18 +300,26 @@ class pyxtal:
                 pass
 
 
-    def from_seed(self, seed, molecules=None, tol=1e-4, a_tol=5.0, relax_h=False, backend='pymatgen'):
+    def from_seed(self, seed, molecules=None, tol=1e-4, a_tol=5.0, relax_H=False, ignore_HH=True, backend='pymatgen'):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
+
+        Args:
+            seed: cif/poscar file or a Pymatgen Structure object
+            molecules: a list of reference molecule (xyz file or Pyxtal molecule)
+            tol: scale factor for covalent bond distance
+            relax_H: whether or not relax the position for hydrogen atoms in structure
+            ignore_HH: whether or not ignore the short H-H distance when checking molecule
+        
         """
 
         if self.molecular:
             pmols = []
             for mol in molecules:
                 pmols.append(pyxtal_molecule(mol, fix=True)) #.mol
-
-            struc = structure_from_ext(seed, pmols, relax_h=relax_h)
+            #QZ: the default choice will not work for molecular H2, which should be rare!
+            struc = structure_from_ext(seed, pmols, relax_H=relax_H, ignore_HH=ignore_HH)
             self.mol_sites = struc.make_mol_sites()
             self.group = Group(struc.wyc.number)
             self.lattice = struc.lattice
