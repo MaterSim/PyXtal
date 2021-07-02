@@ -980,6 +980,38 @@ class pyxtal:
         else:
             raise RuntimeError("No valid structure can be converted to pymatgen.")
 
+    def to_pyxtal_center(self):
+        """
+        export to PyXtal object for molecular centers only.
+        """
+
+        if self.valid and self.molecular:
+            new_struc = pyxtal()
+            new_struc.lattice = self.lattice.copy()
+            newsites = []
+            for site in self.mol_sites:
+                for i, mol in enumerate(self.molecules):
+                    if mol.name == site.molecule.name:
+                        break
+                newsites.append(atom_site(site.wp, site.position, i+1, diag=site.diag))
+            new_struc.atom_sites = newsites
+            new_struc.group = self.group
+            new_struc.diag = site.diag
+            new_struc.numIons = self.numMols
+            new_struc.species = []
+            for i in range(len(self.molecules)):
+                new_struc.species.append(i+1)
+            new_struc.valid = True
+            new_struc.factor = 1.0
+            new_struc.source = 'Mol. Center'
+            new_struc.dim = self.dim
+            new_struc.PBC = self.PBC
+            new_struc._get_formula()
+            return new_struc
+        else:
+            raise RuntimeError("No valid structure can be converted to pymatgen.")
+
+
     def get_XRD(self, **kwargs):
         """
         compute the PXRD object.
