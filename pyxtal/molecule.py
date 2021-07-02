@@ -236,11 +236,12 @@ class pyxtal_molecule:
             dims[i] = np.max(xyz[:,i]) - np.min(xyz[:,i])
             if padding is not None:
                 dims[i] += padding
+                dims[i] = max([dims[i], 2.0]) #for planar molecules
             else:
                 ids = np.argsort(xyz[:, i])
                 r = Element(mol[ids[0]].species_string).vdw_radius 
                 r += Element(mol[ids[-1]].species_string).vdw_radius 
-                dims[i] = max([dims[i]+r, 3.4]) #special case like benzene
+                dims[i] = max([dims[i]+r, 3.4]) #for planar molecules
         return Box(dims)
 
     def get_box_coordinates(self, xyz, padding=0):
