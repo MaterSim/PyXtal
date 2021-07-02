@@ -147,7 +147,7 @@ def display_molecular(struc, size=(600, 300), supercell=(1,1,1), axis=None, anim
         view.setStyle({'model':0},{'stick':{'colorscheme':'greenCarbon'}})
     return view.zoomTo()
 
-def display_molecular_site(site, id=None, size=(800, 300), axis=True, ax_id=range(3)):
+def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=range(3)):
     """
     display the Wyckoff site in the molecular crystals generated from pyxtal. 
 
@@ -162,9 +162,7 @@ def display_molecular_site(site, id=None, size=(800, 300), axis=True, ax_id=rang
         py3Dmol object
     """
     (width, height) = size
-    view = py3Dmol.view(height=height, width=width, viewergrid=(1,2))
-    view.addModel(site.mol.to(fmt='xyz'), 'xyz', viewer=(0,0))
-    view.setStyle({'stick':{'colorscheme':'blueCarbon'}}, viewer=(0,0))
+    view = py3Dmol.view(height=height, width=width)
 
     if id is None:
         ids = range(site.wp.multiplicity)
@@ -173,9 +171,9 @@ def display_molecular_site(site, id=None, size=(800, 300), axis=True, ax_id=rang
 
     for i in ids:
         mol = site.get_mol_object(i)
-        view.addModel(mol.to(fmt='xyz'), 'xyz', viewer=(0,1))
+        view.addModel(mol.to(fmt='xyz'), 'xyz')
         if axis:
-            axes = site.get_principle_axes(mol.cart_coords)
+            axes = site.molecule.get_principle_axes(mol.cart_coords)
             addlines(view, mol.cart_coords.mean(axis=0), axes.T[ax_id]*5, viewer=(0,1))
     
     addBox(view, site.lattice.matrix, viewer=(0,1))

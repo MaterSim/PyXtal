@@ -429,7 +429,7 @@ class pyxtal_molecule:
                 x,y,z = xyz[i]
                 conf1.SetAtomPosition(i,Point3D(x,y,z))
 
-            return rdmt.ComputePrincipalAxesAndMoments(conf1)
+            return rdmt.ComputePrincipalAxesAndMoments(conf1)[0]
 
     def get_torsion_angles(self, xyz, torsionlist=None):
         """
