@@ -243,7 +243,7 @@ class pyxtal_molecule:
                 dims[i] = max([dims[i]+r, 3.4]) #special case like benzene
         return Box(dims)
 
-    def get_box_coordinates(self, xyz):
+    def get_box_coordinates(self, xyz, padding=0):
         """
         create the points cloud to describe the molecular box
 
@@ -255,8 +255,9 @@ class pyxtal_molecule:
             pts: [8, 3] np.array, Cartesian coordinates to describe the box.
         """
         cell = self.get_principle_axes(xyz).T
-        center = self.get_center(xyz)
-        w, h, l = self.box.width, self.box.height, self.box.length      
+        center = self.get_center(xyz, geometry=True)
+        box = self.get_box(padding)
+        w, h, l = box.width, box.height, box.length      
         cell[0,:] *= l
         cell[1,:] *= w
         cell[2,:] *= h
@@ -418,11 +419,11 @@ class pyxtal_molecule:
         #print("return", xyz[:3])
         return xyz
 
-    def get_center(self, xyz):
+    def get_center(self, xyz, geometry=False):
         """
         get the molecular center for a transformed xyz
         """
-        if self.smile is None:
+        if geometry or self.smile is None:
             return np.mean(xyz, axis=0)
         else:
             # from rdkit
