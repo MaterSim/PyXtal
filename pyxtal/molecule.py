@@ -38,7 +38,7 @@ molecule_collection = Collection("molecules")
 
 def cleaner(list_to_clean):
     """
-    Remove duplicate torsion definion from a list of atom ind. tuples.
+    Remove duplicate torsion definion from a list of atom index tuples.
     """
     for_remove = []
     for x in reversed(range(len(list_to_clean))):
@@ -165,7 +165,7 @@ class pyxtal_molecule:
 
         self.mol = mo
         self.tm = tm
-        self.get_box()
+        self.box = self.get_box()
         self.volume = self.box.volume
         self.get_radius()
         self.get_symbols()
@@ -216,7 +216,7 @@ class pyxtal_molecule:
                 mo.add_site_property(key, self.props[key])
         return mo
 
-    def get_box(self):
+    def get_box(self, padding=None):
         """
         Given a molecule, find a minimum orthorhombic box containing it.
         Size is calculated using min and max x, y, and z values,
@@ -224,30 +224,47 @@ class pyxtal_molecule:
         For best results, call oriented_molecule first.
 
         Args:
-            mol: a pymatgen Molecule object. Should be oriented along its principle axes.
+            padding: float (default is 3.4 according to the vdw radius of C)
 
         Returns:
-            a Box object
+            box: a Box object
         """
         mol, P = reoriented_molecule(self.mol)
-        minx, miny, minz, maxx, maxy, maxz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-        for p in mol:
-            x, y, z = p.coords
-            r = Element(p.species_string).vdw_radius
-            if x - r < minx:
-                minx = x - r
-            if y - r < miny:
-                miny = y - r
-            if z - r < minz:
-                minz = z - r
-            if x + r > maxx:
-                maxx = x + r
-            if y + r > maxy:
-                maxy = y + r
-            if z + r > maxz:
-                maxz = z + r
-        self.box = Box(minx, maxx, miny, maxy, minz, maxz)
-        self.axes = P
+        xyz = mol.cart_coords
+        dims = [0, 0, 0]
+        for i in range(3):
+            dims[i] = np.max(xyz[:,i]) - np.min(xyz[:,i])
+            if padding is not None:
+                dims[i] += padding
+            else:
+                ids = np.argsort(xyz[:, i])
+                r = Element(mol[ids[0]].species_string).vdw_radius 
+                r += Element(mol[ids[-1]].species_string).vdw_radius 
+                dims[i] = max([dims[i]+r, 3.4]) #special case like benzene
+        return Box(dims)
+
+    def get_box_coordinates(self, xyz):
+        """
+        create the points cloud to describe the molecular box
+
+        Args:
+            center: molecular center position
+            orientation: orientation matrix
+
+        Return:
+            pts: [8, 3] np.array, Cartesian coordinates to describe the box.
+        """
+        cell = self.get_principle_axes(xyz).T
+        center = self.get_center(xyz)
+        w, h, l = self.box.width, self.box.height, self.box.length      
+        cell[0,:] *= l
+        cell[1,:] *= w
+        cell[2,:] *= h
+        pts = np.array([[-1/2, -1/2, -1/2], [1/2, -1/2, -1/2], [1/2, 1/2, -1/2], [-1/2, 1/2, -1/2],
+                        [-1/2, 1/2, 1/2], [-1/2, -1/2, 1/2], [1/2, -1/2, 1/2], [1/2, 1/2, 1/2]])
+        pts = pts.dot(cell)
+        pts += center
+        return pts
 
     def get_radius(self):
         """
@@ -303,6 +320,14 @@ class pyxtal_molecule:
         """
         from pyxtal.viz import display_molecules
         return display_molecules([self.mol])
+
+    def show_box(self, center=np.zeros(3), orientation=None):
+        """
+        show the molecule
+        """
+        from pyxtal.viz import display_molecule
+        
+        return display_molecules(self.mol)
 
 
     def rdkit_mol_init(self, smile, fix, torsions):
@@ -540,38 +565,31 @@ class pyxtal_molecule:
 
 class Box:
     """
-    Class for storing the binding box for a molecule. Box is oriented along the x, y, and
-    z axes.
+    Class for storing the binding box for a molecule. 
 
     Args:
-        minx: the minimum x value
-        maxx: the maximum x value
-        miny: the minimum y value
-        maxy: the maximum y value
-        minz: the minimum z value
-        maxz: the maximum z value
+        dims: [length, width, height]
     """
 
-    def __init__(self, minx, maxx, miny, maxy, minz, maxz):
-        self.minx = float(minx)
-        self.maxx = float(maxx)
-        self.miny = float(miny)
-        self.maxy = float(maxy)
-        self.minz = float(minz)
-        self.maxz = float(maxz)
+    def __init__(self, dims):
+        self.length = dims[0] #float(abs(maxy - miny))
+        self.width = dims[1] #float(abs(maxx - minx))
+        self.height = dims[2] #float(abs(maxz - minz))
+        self.volume = self.width * self.length * self.height
 
-        self.width = float(abs(maxx - minx))
-        self.length = float(abs(maxy - miny))
-        self.height = float(abs(maxz - minz))
+    def __str__(self):
+        strs = "l: {:6.2f}, w: {:6.2f}, d: {:6.2f}".format(self.length, self.width, self.height)
+        return strs
 
-        self.minl = min(self.width, self.length, self.height)
-        self.maxl = max(self.width, self.length, self.height)
-        for x in (self.width, self.length, self.height):
-            if x <= self.maxl and x >= self.minl:
-                self.midl = x
+    def operate(self, rot=np.eye(3), center=np.zeros(3)):
+        """
+        Perform operation on the box:
 
-        self.volume = float(self.width * self.length * self.height)
-
+        Args:
+            rot: 3*3 rotation matrix
+            center: center position
+        """
+        raise NotImplementedError
 
 class Orientation:
     """

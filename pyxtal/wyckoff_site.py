@@ -377,6 +377,18 @@ class mol_site:
         else:
             raise ValueError("id is greater than the number of molecules")
 
+    def show_molecule_in_box(self, id=0):
+        """
+        display molecule with box
+
+        Args:
+            id (int): molecular id
+        """
+        from pyxtal.viz import display_molecule
+        mol = self.get_mol_object(id)
+        pts = self.molecule.get_box_coordinates(mol.cart_coords)
+        return display_molecule(mol, pts)
+
     def update(self, coords, lattice=None, absolute=False, update_mol=True):
         """
         After the geometry relaxation, the returned atomic coordinates

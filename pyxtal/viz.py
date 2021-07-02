@@ -147,7 +147,7 @@ def display_molecular(struc, size=(600, 300), supercell=(1,1,1), axis=None, anim
         view.setStyle({'model':0},{'stick':{'colorscheme':'greenCarbon'}})
     return view.zoomTo()
 
-def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=range(3)):
+def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=range(3), box=False):
     """
     display the Wyckoff site in the molecular crystals generated from pyxtal. 
 
@@ -171,17 +171,26 @@ def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=rang
 
     for i in ids:
         mol = site.get_mol_object(i)
+        pts = site.molecule.get_box_coordinates(mol.cart_coords)
         view.addModel(mol.to(fmt='xyz'), 'xyz')
         if axis:
             axes = site.molecule.get_principle_axes(mol.cart_coords)
             addlines(view, mol.cart_coords.mean(axis=0), axes.T[ax_id]*5, viewer=(0,1))
-    
+        if box:
+           for edge in [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], 
+                        [6,7], [7,2], [7,4], [0,3], [0,5], [1,6]]:
+               x1, y1, z1 = pts[edge[0]]
+               x2, y2, z2 = pts[edge[1]]
+               view.addLine({"start": {"x": x1, "y": y1, "z": z1}, 
+                              "end":  {"x": x2, "y": y2, "z": z2}})
+
+   
     addBox(view, site.lattice.matrix, viewer=(0,1))
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
 
     return view.zoomTo()
 
-def display_molecules(molecules, size=(400,300), animation=False):
+def display_molecules(molecules, size=(400,300), animation=False, box=None):
     """
     display the molecules in Pymatgen object.
 
@@ -207,6 +216,43 @@ def display_molecules(molecules, size=(400,300), animation=False):
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
 
     return view.zoomTo()
+
+def display_molecule(molecule, box=None, size=(400,300)):
+    """
+    display the molecules in Pymatgen object.
+
+    Args:
+        mol: pymatgen molecule
+        box: box cooridnates, [8, 3]
+        size: (width, height) in tuple
+
+    Returns:
+        py3Dmol object
+
+    """
+    (width, height) = size
+    view = py3Dmol.view(height=height, width=width)
+    mol_strs = ""
+    mol_strs += molecule.to(fmt='xyz') + '\n'
+    view.addModels(mol_strs, 'xyz')
+    if box is not None:
+        #xyz = molecule.cart_coords.mean(axis=0)
+        #view.addBox({'center':{'x':xyz[0],'y':xyz[1],'z':xyz[2]},
+        #     'dimensions': {'w':7.08, 'h': 7.18, 'd': 3.40},
+        #     'color':'magenta',
+        #     'alpha': 0.5,
+        #    })
+        for edge in [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], 
+                     [6,7], [7,2], [7,4], [0,3], [0,5], [1,6]]:
+            x1, y1, z1 = box[edge[0]]
+            x2, y2, z2 = box[edge[1]]
+            view.addLine({"start": {"x": x1, "y": y1, "z": z1}, 
+                           "end":  {"x": x2, "y": y2, "z": z2}})
+
+    view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
+
+    return view.zoomTo()
+
 
 def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, animation='slider', interval=2000):
     """
