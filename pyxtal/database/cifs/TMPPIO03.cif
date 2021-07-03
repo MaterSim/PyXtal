@@ -1,0 +1,109 @@
+####################################################################### 
+# 
+# This file contains crystal structure data downloaded from the 
+# Cambridge Structural Database (CSD) hosted by the Cambridge 
+# Crystallographic Data Centre (CCDC).
+# 
+# Full information about CCDC data access policies and citation 
+# guidelines are available at http://www.ccdc.cam.ac.uk/access/V1 
+# 
+# Audit and citation data items may have been added by the CCDC. 
+# Please retain this information to preserve the provenance of 
+# this file and to allow appropriate attribution of the data. 
+# 
+#######################################################################
+
+data_TMPPIO03
+#This CIF has been generated from an entry in the Cambridge Structural Database
+_database_code_depnum_ccdc_archive 'CCDC 1272628'
+_database_code_CSD               TMPPIO03
+loop_
+_citation_id
+_citation_doi
+_citation_year
+1 10.1107/S0567740881006560 1981
+_audit_creation_method           'Created from the CSD'
+_audit_update_record             
+;
+2021-07-03 downloaded from the CCDC.
+;
+_database_code_NBS               538265
+_chemical_name_common            Tanane
+_chemical_formula_moiety         'C9 H18 N1 O1'
+_chemical_name_systematic        '2,2,6,6-Tetramethylpiperidine-1-oxyl radical'
+_chemical_absolute_configuration unk
+_diffrn_ambient_temperature      295
+_exptl_crystal_density_diffrn    1.052
+#These two values have been output from a single CSD field.
+_refine_ls_R_factor_gt           0.06
+_refine_ls_wR_factor_gt          0.06
+_diffrn_radiation_probe          neutron
+_diffrn_source                   'neutron radiation'
+_symmetry_cell_setting           orthorhombic
+_symmetry_space_group_name_H-M   'F d d 2'
+_symmetry_Int_Tables_number      43
+_space_group_name_Hall           'F 2 -2d'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 x,1/2+y,1/2+z
+3 1/2+x,y,1/2+z
+4 1/2+x,1/2+y,z
+5 1/4-x,1/4+y,1/4+z
+6 1/4-x,3/4+y,3/4+z
+7 3/4-x,1/4+y,3/4+z
+8 3/4-x,3/4+y,1/4+z
+9 1/4+x,1/4-y,1/4+z
+10 1/4+x,3/4-y,3/4+z
+11 3/4+x,1/4-y,3/4+z
+12 3/4+x,3/4-y,1/4+z
+13 1/2-x,-y,1/2+z
+14 1/2-x,1/2-y,z
+15 -x,-y,z
+16 -x,1/2-y,1/2+z
+_cell_length_a                   22.64(2)
+_cell_length_b                   21.71(2)
+_cell_length_c                   8.030(6)
+_cell_angle_alpha                90
+_cell_angle_beta                 90
+_cell_angle_gamma                90
+_cell_volume                     3946.86
+_cell_formula_units_Z            16
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+N1 N 0.38150 -0.12710 -0.17690
+O1 O 0.33930 -0.08920 -0.15820
+C1 C 0.37200 -0.17830 -0.29950
+C2 C 0.43130 -0.20540 -0.34740
+C3 C 0.46970 -0.22160 -0.19690
+C4 C 0.48310 -0.15940 -0.10980
+C5 C 0.42790 -0.12770 -0.04670
+C6 C 0.34120 -0.15160 -0.45060
+C7 C 0.33060 -0.22650 -0.21820
+C8 C 0.44240 -0.06030 -0.00250
+C9 C 0.40310 -0.16240 0.10390
+H1 H 0.45390 -0.17630 -0.42340
+H2 H 0.42050 -0.24860 -0.41330
+H3 H 0.45260 -0.25260 -0.11760
+H4 H 0.50940 -0.23510 -0.24180
+H5 H 0.51080 -0.16750 -0.00320
+H6 H 0.50360 -0.13060 -0.19040
+H7 H 0.36580 -0.11570 -0.50650
+H8 H 0.29920 -0.13450 -0.41930
+H9 H 0.33900 -0.18510 -0.54290
+H10 H 0.31650 -0.25630 -0.31730
+H11 H 0.35300 -0.25160 -0.12490
+H12 H 0.29180 -0.20280 -0.18090
+H13 H 0.45350 -0.03810 -0.11170
+H14 H 0.40330 -0.03880 0.05540
+H15 H 0.47770 -0.06040 0.08010
+H16 H 0.36170 -0.13870 0.14130
+H17 H 0.39870 -0.20210 0.09100
+H18 H 0.43030 -0.15330 0.20690
+
+#END
