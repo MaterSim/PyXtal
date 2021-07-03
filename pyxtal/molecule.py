@@ -253,20 +253,22 @@ class pyxtal_molecule:
             orientation: orientation matrix
 
         Return:
-            pts: [8, 3] np.array, Cartesian coordinates to describe the box.
+            cell: box axis
+            vertices: [8, 3] np.array, Cartesian coordinates to describe the box.
+            center: box center
         """
         cell = self.get_principle_axes(xyz).T
-        center = self.get_center(xyz, geometry=True)
+        center = self.get_center(xyz) #, geometry=True)
         box = self.get_box(padding)
         w, h, l = box.width, box.height, box.length      
         cell[0,:] *= l
         cell[1,:] *= w
         cell[2,:] *= h
-        pts = np.array([[-1/2, -1/2, -1/2], [1/2, -1/2, -1/2], [1/2, 1/2, -1/2], [-1/2, 1/2, -1/2],
-                        [-1/2, 1/2, 1/2], [-1/2, -1/2, 1/2], [1/2, -1/2, 1/2], [1/2, 1/2, 1/2]])
-        pts = pts.dot(cell)
-        pts += center
-        return pts
+        vertices = np.array([[-1/2, -1/2, -1/2], [1/2, -1/2, -1/2], [1/2, 1/2, -1/2], [-1/2, 1/2, -1/2],
+                            [-1/2, 1/2, 1/2], [-1/2, -1/2, 1/2], [1/2, -1/2, 1/2], [1/2, 1/2, 1/2]])
+        vertices = vertices.dot(cell)
+        vertices += center
+        return cell, vertices, center
 
     def get_radius(self):
         """

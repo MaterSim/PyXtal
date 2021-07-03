@@ -386,8 +386,8 @@ class mol_site:
         """
         from pyxtal.viz import display_molecule
         mol = self.get_mol_object(id)
-        pts = self.molecule.get_box_coordinates(mol.cart_coords)
-        return display_molecule(mol, pts)
+        cell, vertices, center = self.molecule.get_box_coordinates(mol.cart_coords)
+        return display_molecule(mol, center, cell)
 
     def update(self, coords, lattice=None, absolute=False, update_mol=True):
         """

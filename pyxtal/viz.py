@@ -171,19 +171,21 @@ def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=rang
 
     for i in ids:
         mol = site.get_mol_object(i)
-        pts = site.molecule.get_box_coordinates(mol.cart_coords)
+        cell, _, center = site.molecule.get_box_coordinates(mol.cart_coords)
         view.addModel(mol.to(fmt='xyz'), 'xyz')
         if axis:
             axes = site.molecule.get_principle_axes(mol.cart_coords)
             addlines(view, mol.cart_coords.mean(axis=0), axes.T[ax_id]*5, viewer=(0,1))
         if box:
-           for edge in [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], 
-                        [6,7], [7,2], [7,4], [0,3], [0,5], [1,6]]:
-               x1, y1, z1 = pts[edge[0]]
-               x2, y2, z2 = pts[edge[1]]
-               view.addLine({"start": {"x": x1, "y": y1, "z": z1}, 
-                              "end":  {"x": x2, "y": y2, "z": z2}})
-
+            center_spec = {'x':center[0], 'y':center[1], 'z': center[2]}
+            w_spec = {'x':cell[0,0], 'y': cell[0,1], 'z': cell[0,2]}
+            h_spec = {'x':cell[1,0], 'y': cell[1,1], 'z': cell[1,2]}
+            d_spec = {'x':cell[2,0], 'y': cell[2,1], 'z': cell[2,2]}
+            view.addBox({'center': center_spec,
+                        'dimensions': {'w': w_spec, 'h': h_spec, 'd': d_spec},
+                        'color':'magenta',
+                        'alpha': 0.5,
+                       })
    
     addBox(view, site.lattice.matrix, viewer=(0,1))
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
@@ -217,13 +219,13 @@ def display_molecules(molecules, size=(400,300), animation=False, box=None):
 
     return view.zoomTo()
 
-def display_molecule(molecule, box=None, size=(400,300)):
+def display_molecule(molecule, center, cell, size=(400,300)):
     """
     display the molecules in Pymatgen object.
 
     Args:
         mol: pymatgen molecule
-        box: box cooridnates, [8, 3]
+        center: molecular
         size: (width, height) in tuple
 
     Returns:
@@ -235,20 +237,15 @@ def display_molecule(molecule, box=None, size=(400,300)):
     mol_strs = ""
     mol_strs += molecule.to(fmt='xyz') + '\n'
     view.addModels(mol_strs, 'xyz')
-    if box is not None:
-        #xyz = molecule.cart_coords.mean(axis=0)
-        #view.addBox({'center':{'x':xyz[0],'y':xyz[1],'z':xyz[2]},
-        #     'dimensions': {'w':7.08, 'h': 7.18, 'd': 3.40},
-        #     'color':'magenta',
-        #     'alpha': 0.5,
-        #    })
-        for edge in [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], 
-                     [6,7], [7,2], [7,4], [0,3], [0,5], [1,6]]:
-            x1, y1, z1 = box[edge[0]]
-            x2, y2, z2 = box[edge[1]]
-            view.addLine({"start": {"x": x1, "y": y1, "z": z1}, 
-                           "end":  {"x": x2, "y": y2, "z": z2}})
-
+    center_spec = {'x':center[0], 'y':center[1], 'z': center[2]}
+    w_spec = {'x':cell[0,0], 'y': cell[0,1], 'z': cell[0,2]}
+    h_spec = {'x':cell[1,0], 'y': cell[1,1], 'z': cell[1,2]}
+    d_spec = {'x':cell[2,0], 'y': cell[2,1], 'z': cell[2,2]}
+    view.addBox({'center': center_spec,
+                 'dimensions': {'w': w_spec, 'h': h_spec, 'd': d_spec},
+                 'color':'magenta',
+                 'alpha': 0.5,
+                })
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
 
     return view.zoomTo()
