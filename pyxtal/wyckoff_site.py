@@ -341,7 +341,7 @@ class mol_site:
             ax = ax_vector/np.linalg.norm(ax_vector)
         else:
             xyz = self.mol.cart_coords.dot(p.as_matrix().T) 
-            ax = self.molecule.get_principle_axes(xyz).T[axis]
+            ax = self.molecule.get_principle_axes(xyz).T[ax_id]
 
         q = R.from_rotvec(ax*rad*angle)
         o = q*p
