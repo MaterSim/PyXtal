@@ -403,19 +403,18 @@ class pyxtal_molecule:
         """
         from rdkit.Chem import rdMolTransforms as rdmt
 
-        # Rotation, H2O will be skipped
-        if self.smile not in ["O", "o"]:
-            trans = rdmt.ComputeCanonicalTransform(conf)
+        # Rotation
+        if len(self.smile) > 1: 
             #QZ: it is not pure rotation
             #print("ComputeCanonicalTransform", np.linalg.det(trans[:3,:3]))
-
+            trans = rdmt.ComputeCanonicalTransform(conf)
             if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
             if reflect: trans[:3,:3] *= -1
 
             rdmt.TransformConformer(conf, trans)
-            
             #print("rot", conf.GetPositions()[:3])
             #translation
+
         pt = rdmt.ComputeCentroid(conf)
         center = np.array([pt.x, pt.y, pt.z])
         xyz = conf.GetPositions() - center
@@ -444,11 +443,10 @@ class pyxtal_molecule:
         """
         get the principle axis for a rotated xyz
         """
-        if self.smile is None:
+        if self.smile is None or len(self.smile)==1: 
             Inertia = get_inertia_tensor(xyz)
             _, matrix = np.linalg.eigh(Inertia)
             return matrix
-
         else:
             from rdkit.Geometry import Point3D
             from rdkit.Chem import rdMolTransforms as rdmt
@@ -501,47 +499,54 @@ class pyxtal_molecule:
         """
         from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolAlign, RemoveHs, rdmolfiles, rdMolTransforms
-        mol = self.rdkit_mol(self.smile)
-        
-        conf0 = mol.GetConformer(0)
-        conf1 = mol.GetConformer(1)
-        conf2 = mol.GetConformer(2)
-        angs = self.get_torsion_angles(xyz)
-        xyz0 = self.set_torsion_angles(conf0, angs) #conf0 with aligned
-        xyz1 = self.set_torsion_angles(conf0, angs, True) #conf0 with aligned
 
-        for i in range(len(self.mol)):
-            x0,y0,z0 = xyz0[i]
-            x1,y1,z1 = xyz1[i]
-            x,y,z = xyz[i]
-            conf0.SetAtomPosition(i,Point3D(x0,y0,z0))
-            conf1.SetAtomPosition(i,Point3D(x,y,z))
-            conf2.SetAtomPosition(i,Point3D(x1,y1,z1))
+        if len(self.smile) > 1: # not in ["O", "o"]:
+            mol = self.rdkit_mol(self.smile)
+            
+            conf0 = mol.GetConformer(0)
+            conf1 = mol.GetConformer(1)
+            conf2 = mol.GetConformer(2)
+            angs = self.get_torsion_angles(xyz)
+            xyz0 = self.set_torsion_angles(conf0, angs) #conf0 with aligned
+            xyz1 = self.set_torsion_angles(conf0, angs, True) #conf0 with aligned
 
-        mol = RemoveHs(mol)
-        rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
-        rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
-        tol = rtol*mol.GetNumAtoms()
+            for i in range(len(self.mol)):
+                x0,y0,z0 = xyz0[i]
+                x1,y1,z1 = xyz1[i]
+                x,y,z = xyz[i]
+                conf0.SetAtomPosition(i,Point3D(x0,y0,z0))
+                conf1.SetAtomPosition(i,Point3D(x,y,z))
+                conf2.SetAtomPosition(i,Point3D(x1,y1,z1))
 
-        #print(rmsd1, rmsd2)
-        if rmsd1 < tol:
-            trans = trans1[:3,:3].T
-            r = Rotation.from_matrix(trans)
-            return r.as_euler('zxy', degrees=True), rmsd1, False
-        elif rmsd2 < tol:
-            trans = trans2[:3,:3].T
-            r = Rotation.from_matrix(trans)
-            return r.as_euler('zxy', degrees=True), rmsd2, True
-        else:
-            print(rmsd1, rmsd2)
-            #rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
-            #rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
-            #rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
-            print(self.get_torsion_angles(xyz))   
-            print(self.get_torsion_angles(xyz0))   
-            print(self.get_torsion_angles(xyz1))   
-            raise ValueError("Problem in conformer")
+            mol = RemoveHs(mol)
+            rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
+            rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
+            tol = rtol*mol.GetNumAtoms()
 
+            #print(rmsd1, rmsd2)
+            if rmsd1 < tol:
+                trans = trans1[:3,:3].T
+                r = Rotation.from_matrix(trans)
+                return r.as_euler('zxy', degrees=True), rmsd1, False
+            elif rmsd2 < tol:
+                trans = trans2[:3,:3].T
+                r = Rotation.from_matrix(trans)
+                return r.as_euler('zxy', degrees=True), rmsd2, True
+            else:
+                #rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
+                #rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
+                #rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
+                print(rmsd1, rmsd2)
+                print(self.get_torsion_angles(xyz))   
+                print(self.get_torsion_angles(xyz0))   
+                print(self.get_torsion_angles(xyz1))   
+                raise ValueError("Problem in conformer")
+        #else:
+        #    # the orientation of CH4, NH3, H2O
+        #    Inertia = get_inertia_tensor(xyz)
+        #    _, matrix = np.linalg.eigh(Inertia)
+        #    r = Rotation.from_matrix(matrix.T)
+        #    return r.as_euler('zxy', degrees=True), 0, True
 
     def reset_positions(self, coors):
         """

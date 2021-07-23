@@ -89,7 +89,6 @@ class mol_site:
         freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
         self.dof = len(freedom[freedom==True])
 
-
     def save_dict(self):
         dict0 = {"position": self.position,
                  "number": self.wp.number,
@@ -133,7 +132,11 @@ class mol_site:
         xyz, _ = self._get_coords_and_species(absolute=True, first=True)
         xyz -= self.molecule.get_center(xyz)
         rotor = self.molecule.get_torsion_angles(xyz)
-        ori, _, reflect = self.molecule.get_orientation(xyz)
+        if len(self.molecule.smile)>1: 
+            ori, _, reflect = self.molecule.get_orientation(xyz)
+        else:
+            ori = self.orientation.r.as_euler('zxy', degrees=True)
+            reflect = False
         #print(self.molecule.mol)
         return list(self.position) + list(ori) + rotor + [reflect]
         
@@ -284,20 +287,6 @@ class mol_site:
             species: a list of atomic symbols, e.g. ['H', 'H', 'O', 'H', 'H', 'O']
         """
         return self._get_coords_and_species(absolute, PBC, unitcell=unitcell)
-
-    #def get_centers(self, absolute=False):
-    #    """
-    #    Get the coordinates for the center of mass 
-
-    #    Returns:
-    #        A numpy array of fractional 3-vectors
-    #    """
-    #    centers = apply_ops(self.position, self.wp.ops)
-    #    # centers1 = filtered_coords(centers0, self.PBC)
-    #    if not absolute:
-    #        return centers
-    #    else:
-    #        return np.dot(centers, self.lattice.matrix)
 
     def perturbate(self, lattice, trans=0.1, rot=5):
         """
