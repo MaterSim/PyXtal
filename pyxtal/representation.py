@@ -126,7 +126,6 @@ class representation():
 
         count = 1
         for i, comp in enumerate(composition): 
-        #smile in enumerate(smiles):
             smile = smiles[i]
             if smile.endswith('.smi'): smile=smile[:-4]
             for j in range(comp):
