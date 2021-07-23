@@ -52,8 +52,9 @@ setup(
         'ase>=3.18.0',
         'numba>=0.50.1',
         'scipy>=1.6.1',
+        'importlib_metadata>=1.4',
         #"openbabel>=3.0.0",
     ],
-    python_requires=">=3.6.1",
+    python_requires=">=3.7",
     license="MIT",
 )

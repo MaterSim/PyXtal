@@ -2,7 +2,6 @@
 This module handles visualization. Mostly powered by py3Dmol
 """
 
-import py3Dmol
 
 def addBox(view, vecs, viewer=None):
     pts = [
@@ -83,7 +82,7 @@ def display_atomic(struc, size=(600,300), scale=0.25, radius=0.10, supercell=(1,
     Returns:
         py3Dmol object
     """
-
+    import py3Dmol
 
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
@@ -119,6 +118,7 @@ def display_molecular(struc, size=(600, 300), supercell=(1,1,1), axis=None, anim
     Returns:
         py3Dmol object
     """
+    import py3Dmol
 
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
@@ -161,6 +161,8 @@ def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=rang
     Returns:
         py3Dmol object
     """
+    import py3Dmol
+
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
 
@@ -205,6 +207,8 @@ def display_molecules(molecules, size=(400,300), animation=False, box=None):
         py3Dmol object
 
     """
+    import py3Dmol
+
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
     mol_strs = ""
@@ -232,6 +236,8 @@ def display_molecule(molecule, center, cell, size=(400,300)):
         py3Dmol object
 
     """
+    import py3Dmol
+
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
     mol_strs = ""
@@ -264,6 +270,7 @@ def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, 
     Returns:
         py3Dmol object
     """
+    import py3Dmol
 
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
