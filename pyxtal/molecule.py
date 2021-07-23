@@ -403,19 +403,19 @@ class pyxtal_molecule:
         """
         from rdkit.Chem import rdMolTransforms as rdmt
 
-        #rotation
-        #print("check_xyz", conf.GetPositions())
-        trans = rdmt.ComputeCanonicalTransform(conf)
-        #QZ: it is not pure rotation
-        #print("ComputeCanonicalTransform", np.linalg.det(trans[:3,:3]))
+        # Rotation, H2O will be skipped
+        if self.smile not in ["O", "o"]:
+            trans = rdmt.ComputeCanonicalTransform(conf)
+            #QZ: it is not pure rotation
+            #print("ComputeCanonicalTransform", np.linalg.det(trans[:3,:3]))
 
-        if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
-        if reflect: trans[:3,:3] *= -1
+            if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
+            if reflect: trans[:3,:3] *= -1
 
-        rdmt.TransformConformer(conf, trans)
-        
-        #print("rot", conf.GetPositions()[:3])
-        #translation
+            rdmt.TransformConformer(conf, trans)
+            
+            #print("rot", conf.GetPositions()[:3])
+            #translation
         pt = rdmt.ComputeCentroid(conf)
         center = np.array([pt.x, pt.y, pt.z])
         xyz = conf.GetPositions() - center
