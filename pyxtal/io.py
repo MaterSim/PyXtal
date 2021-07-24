@@ -290,23 +290,25 @@ class structure_from_ext():
                         self.numMols[j] += mults[i]
                         #print(j, mults[i], self.numMols)
                         # rearrange the order
-                        order = [mapping[at] for at in range(len(mol1))]
-                        xyz = mol1.cart_coords[order] 
-                        frac = np.dot(xyz, inv_lat) 
-                        xyz = np.dot(frac, new_lat) 
                         # create p_mol
                         p_mol = mol2.copy() 
-                        center = p_mol.get_center(xyz) 
-                        #print(xyz-center)
-                        p_mol.reset_positions(xyz-center)
+                        if len(mol1) > 1:
+                            order = [mapping[at] for at in range(len(mol1))]
+                            xyz = mol1.cart_coords[order] 
+                            frac = np.dot(xyz, inv_lat) 
+                            xyz = np.dot(frac, new_lat) 
+                            center = p_mol.get_center(xyz) 
+                            #print(xyz-center)
+                            p_mol.reset_positions(xyz-center)
+                            position = np.dot(center, np.linalg.inv(new_lat))
+                        else:
+                            position = np.dot(mol1.cart_coords[0], np.linalg.inv(new_lat))
+                            position -= np.floor(position)
 
-                        position = np.dot(center, np.linalg.inv(new_lat))
-                        position -= np.floor(position)
                         #print(position)
                         #print(lat)
                         #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
                         # print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
-
                         # check if molecule is on the special wyckoff position
                         if mults[i] < len(self.wyc):
                             #Transform it to the conventional representation

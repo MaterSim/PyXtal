@@ -140,6 +140,7 @@ class pyxtal_molecule:
                 elif tmp[-1] == 'smi':
                     self.smile = tmp[0]
                     symbols, xyz, self.torsionlist = self.rdkit_mol_init(tmp[0], fix, torsions)
+                    #print(symbols, xyz, self.torsionlist)
                     mo = Molecule(symbols, xyz)
                     symmetrize = False
                 else:
@@ -341,46 +342,51 @@ class pyxtal_molecule:
         Args:
             smile: smile string
             fix: whether or not fix the seed
-            torsionlist: None or list
+            torsions: None or list
         """
         from rdkit import Chem
         from rdkit.Chem import AllChem
         from rdkit.Geometry import Point3D
 
-        smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
-        mol = Chem.MolFromSmiles(smile)
-        pattern_tor = Chem.MolFromSmarts(smarts_torsion)
-        torsion = list(mol.GetSubstructMatches(pattern_tor))
-        torsionlist = cleaner(torsion)
+        if smile not in ["Cl-"]:
+            smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+            mol = Chem.MolFromSmiles(smile)
+            pattern_tor = Chem.MolFromSmarts(smarts_torsion)
+            torsion = list(mol.GetSubstructMatches(pattern_tor))
+            torsionlist = cleaner(torsion)
+            mol = Chem.AddHs(mol)
+            symbols = []
+            for id in range(mol.GetNumAtoms()):
+                symbols.append(mol.GetAtomWithIdx(id).GetSymbol())
+            if fix or torsions is not None:
+                AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
+                conf = mol.GetConformer(0)
+                #print(conf.GetPositions())
+            else:
+                AllChem.EmbedMultipleConfs(mol, numConfs=20, maxAttempts=200, useRandomCoords=True, pruneRmsThresh=0.5)
+                N_confs = mol.GetNumConformers()
+                #print(N_confs)
+                conf = mol.GetConformer(choice(range(N_confs)))
 
-        mol = Chem.AddHs(mol)
-        symbols = []
-        for id in range(mol.GetNumAtoms()):
-            symbols.append(mol.GetAtomWithIdx(id).GetSymbol())
-        if fix or torsions is not None:
-            AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
-            conf = mol.GetConformer(0)
-            #print(conf.GetPositions())
+            #print("Init: ", conf.GetPositions())
+            if torsions is not None:
+                xyz = self.set_torsion_angles(conf, torsions, torsionlist=torsionlist)
+            else:
+                xyz = conf.GetPositions()
+                angs = self.get_torsion_angles(xyz, torsionlist)
+                angs *= (1+0.15*np.random.uniform(-1., 1., len(angs))) 
+                xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
+                xyz -= self.get_center(xyz)
+                #if random() > 0.5:
+                #else:
+                #    xyz = self.align(conf)
+            #print(torsions, "align", self.get_torsion_angles(xyz, torsionlist))
+            #print("Init: ", xyz[:3])
         else:
-            AllChem.EmbedMultipleConfs(mol, numConfs=20, maxAttempts=200, useRandomCoords=True, pruneRmsThresh=0.5)
-            N_confs = mol.GetNumConformers()
-            #print(N_confs)
-            conf = mol.GetConformer(choice(range(N_confs)))
-
-        #print("Init: ", conf.GetPositions())
-        if torsions is not None:
-            xyz = self.set_torsion_angles(conf, torsions, torsionlist=torsionlist)
-        else:
-            xyz = conf.GetPositions()
-            angs = self.get_torsion_angles(xyz, torsionlist)
-            angs *= (1+0.15*np.random.uniform(-1., 1., len(angs))) 
-            xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
-            xyz -= self.get_center(xyz)
-            #if random() > 0.5:
-            #else:
-            #    xyz = self.align(conf)
-        #print(torsions, "align", self.get_torsion_angles(xyz, torsionlist))
-        #print("Init: ", xyz[:3])
+            #single atom cation or anions
+            symbols = ["Cl"]
+            xyz = np.zeros([1,3])
+            torsionlist = []
         return symbols, xyz, torsionlist
 
     def rdkit_mol(self, smile):
@@ -428,16 +434,19 @@ class pyxtal_molecule:
         if geometry or self.smile is None:
             return np.mean(xyz, axis=0)
         else:
-            # from rdkit
-            from rdkit.Geometry import Point3D
-            from rdkit.Chem import rdMolTransforms as rdmt
+            if self.smile in ["Cl-"]:
+                return xyz[0]
+            else:
+                # from rdkit
+                from rdkit.Geometry import Point3D
+                from rdkit.Chem import rdMolTransforms as rdmt
 
-            conf1 = self.rdkit_mol(self.smile).GetConformer(0)
-            for i in range(conf1.GetNumAtoms()):
-                x, y, z = xyz[i]
-                conf1.SetAtomPosition(i, Point3D(x,y,z))
-            pt = rdmt.ComputeCentroid(conf1)
-            return np.array([pt.x, pt.y, pt.z])
+                conf1 = self.rdkit_mol(self.smile).GetConformer(0)
+                for i in range(conf1.GetNumAtoms()):
+                    x, y, z = xyz[i]
+                    conf1.SetAtomPosition(i, Point3D(x,y,z))
+                pt = rdmt.ComputeCentroid(conf1)
+                return np.array([pt.x, pt.y, pt.z])
 
     def get_principle_axes(self, xyz):
         """

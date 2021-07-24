@@ -75,7 +75,7 @@ class mol_site:
             )
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
-        s = "{:} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
+        s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
         s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
         s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
         s += "{:6.2f} {:6.2f} {:6.2f}".format(*self.angles)
@@ -131,10 +131,11 @@ class mol_site:
         """
         xyz, _ = self._get_coords_and_species(absolute=True, first=True)
         xyz -= self.molecule.get_center(xyz)
-        rotor = self.molecule.get_torsion_angles(xyz)
-        if len(self.molecule.smile)>1: 
+        if len(self.molecule.smile) > 1 and len(self.molecule.mol)>1: 
+            rotor = self.molecule.get_torsion_angles(xyz)
             ori, _, reflect = self.molecule.get_orientation(xyz)
         else:
+            rotor = []
             ori = self.orientation.r.as_euler('zxy', degrees=True)
             reflect = False
         #print(self.molecule.mol)
@@ -174,17 +175,17 @@ class mol_site:
         from pyxtal.molecule import pyxtal_molecule, Orientation
 
         mol = pyxtal_molecule(mol=dicts['smile']+'.smi', fix=True)
-        rdkit_mol = mol.rdkit_mol(mol.smile)
-        conf = rdkit_mol.GetConformer(0)
-        #print("try")
-        #print(conf.GetPositions()[:3])
-        #print(dicts["rotor"])
-        if dicts['reflect']:
-            mol.set_torsion_angles(conf, dicts["rotor"], False)
-        #    print(mol.set_torsion_angles(conf, dicts["rotor"], True))
-        #    #import sys; sys.exit()
-        xyz = mol.set_torsion_angles(conf, dicts["rotor"], dicts['reflect'])
-        mol.reset_positions(xyz)
+        # reset 
+        if len(mol.mol) > 1:
+            rdkit_mol = mol.rdkit_mol(mol.smile)
+            conf = rdkit_mol.GetConformer(0)
+            #print(conf.GetPositions()[:3]); print(dicts["rotor"])
+            if dicts['reflect']:
+                mol.set_torsion_angles(conf, dicts["rotor"], False)
+            #    print(mol.set_torsion_angles(conf, dicts["rotor"], True))
+            #    #import sys; sys.exit()
+            xyz = mol.set_torsion_angles(conf, dicts["rotor"], dicts['reflect'])
+            mol.reset_positions(xyz)
         g = dicts["number"]
         index = dicts["index"]
         dim = dicts["dim"]

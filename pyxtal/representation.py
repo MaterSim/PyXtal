@@ -77,7 +77,10 @@ class representation():
             if smile.endswith('.smi'): 
                 smile=smile[:-4]
             for c in range(composition[i]):
-                n_torsion = len(find_id_from_smile(smile))
+                if smile in ["Cl-"]:
+                    n_torsion = 0
+                else:
+                    n_torsion = len(find_id_from_smile(smile))
                 n_mol = 7 + n_torsion
                 inputs[n_cell+n_mol-1] = int(inputs[n_cell+n_mol-1])
                 x.append(inputs[n_cell:n_cell+n_mol])
