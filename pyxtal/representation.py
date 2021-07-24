@@ -63,6 +63,10 @@ class representation():
             n_cell = 6
         elif g<=74:
             n_cell = 5
+        elif g<=194:
+            n_cell = 4
+        else:
+            n_cell = 3 #cubic
         cell = [g, diag] + inputs[2:n_cell]
         
         x = [cell]
@@ -120,6 +124,8 @@ class representation():
             a, b, c, alpha, beta, gamma = v[2], v[3], v[4], 90, v[5], 90
         elif ltype == 'orthorhombic':
             a, b, c, alpha, beta, gamma = v[2], v[3], v[4], 90, 90, 90
+        elif ltype == 'tetragonal':
+            a, b, c, alpha, beta, gamma = v[2], v[2], v[3], 90, 90, 90
         struc.lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
     
         # sites

@@ -199,7 +199,7 @@ def read_cif(filename):
 
 class structure_from_ext():
     
-    def __init__(self, struc, ref_mols, tol=0.2, relax_H=False, ignore_HH=False):
+    def __init__(self, struc, ref_mols, tol=0.2, ignore_HH=False, add_H=False):
 
         """
         extract the mol_site information from the give cif file 
@@ -209,9 +209,8 @@ class structure_from_ext():
             struc: cif/poscar file or a Pymatgen Structure object
             ref_mols: a list of reference molecule (xyz file or Pyxtal molecule)
             tol: scale factor for covalent bond distance
-            relax_H: whether or not relax the position for hydrogen atoms in structure
             ignore_HH: whether or not ignore the short H-H distance when checking molecule
-        
+            add_H: whether or not add the H atoms
         """
 
         for ref_mol in ref_mols:
@@ -231,10 +230,13 @@ class structure_from_ext():
             print(type(struc))
             raise NameError("input structure cannot be intepretted")
 
+        # reset the hydrogen position
+        if add_H: pmg_struc.remove_species('H')
+
         self.ref_mols = ref_mols
         self.tol = tol
         self.diag = False
-        self.relax_H = relax_H
+        self.add_H = add_H
 
         sym_struc, number = get_symmetrized_pmg(pmg_struc)
         group = Group(number)
@@ -243,7 +245,7 @@ class structure_from_ext():
         self.perm = [0,1,2]
 
         molecules = search_molecules_in_crystal(sym_struc, self.tol, ignore_HH=ignore_HH)
-        if self.relax_H: molecules = self.addh(molecules)
+
         self.pmg_struc = sym_struc
         self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=group.lattice_type)
         self.resort(molecules)
@@ -281,34 +283,36 @@ class structure_from_ext():
         self.wps = []
         ids_done = []
         for j, mol2 in enumerate(self.ref_mols):
+            if self.add_H:
+                # create p_mol
+                p_mol = mol2.copy() 
+                mol2.mol.remove_species("H")
+
             for i, id in enumerate(ids):
                 mol1 = molecules[id]
                 if id not in ids_done and len(mol2.mol) == len(mol1):
                     match, mapping = compare_mol_connectivity(mol2.mol, mol1)
                     if match:
-                        #print(self.numMols)
-                        self.numMols[j] += mults[i]
-                        #print(j, mults[i], self.numMols)
-                        # rearrange the order
-                        # create p_mol
-                        p_mol = mol2.copy() 
+                        self.numMols[j] += mults[i] 
                         if len(mol1) > 1:
+                            # rearrange the order
                             order = [mapping[at] for at in range(len(mol1))]
+
                             xyz = mol1.cart_coords[order] 
+                            # add hydrogen positions here
+                            if self.add_H: xyz = self.add_Hydrogens(mol2.smile, xyz)
+                            #print(xyz)
                             frac = np.dot(xyz, inv_lat) 
                             xyz = np.dot(frac, new_lat) 
                             center = p_mol.get_center(xyz) 
-                            #print(xyz-center)
                             p_mol.reset_positions(xyz-center)
                             position = np.dot(center, np.linalg.inv(new_lat))
                         else:
                             position = np.dot(mol1.cart_coords[0], np.linalg.inv(new_lat))
                             position -= np.floor(position)
-
-                        #print(position)
-                        #print(lat)
+                        #print(position); print(lat)
                         #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
-                        # print(len(self.pmg_struc), len(self.molecule), len(self.wyc))
+
                         # check if molecule is on the special wyckoff position
                         if mults[i] < len(self.wyc):
                             #Transform it to the conventional representation
@@ -332,17 +336,34 @@ class structure_from_ext():
                     msg += molecules[id].to('xyz')
                     raise ReadSeedError(msg)
 
-    def addh(self, molecules):
+    def add_Hydrogens(self, smile, xyz):
         """
-        add hydrogen
+        add hydrogen for pymtagen molecule
         """
-        from pymatgen.io.babel import BabelMolAdaptor
-        for mol in molecules:
-            ad = BabelMolAdaptor(mol)
-            ad.add_hydrogen()        
-            ad.localopt()
-            mol = ad.pymatgen_mol
-        return molecules
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+        from rdkit.Geometry import Point3D
+
+        #print(xyz)
+        m1 = Chem.MolFromSmiles(smile)
+        m2 = Chem.AddHs(m1)
+        AllChem.EmbedMolecule(m2,randomSeed=0xf00d)
+        m2 = Chem.RemoveHs(m2)
+        conf = m2.GetConformer(0)
+
+        for i in range(conf.GetNumAtoms()):
+            x, y, z = xyz[i]
+            conf.SetAtomPosition(i, Point3D(x,y,z))
+        #Chem.MolToPDBFile(m2, 'test.pdb')
+        #conf = m2.GetConformer(0); print(conf.GetPositions())
+
+        m1 = Chem.AddHs(m1)
+        AllChem.EmbedMolecule(m1)
+        AllChem.UFFOptimizeMolecule(m1)
+        m3 = AllChem.ConstrainedEmbed(m1,m2)
+        conf = m3.GetConformer(0) #; print(conf.GetPositions())
+        
+        return conf.GetPositions()
 
     def make_mol_sites(self):
         """
