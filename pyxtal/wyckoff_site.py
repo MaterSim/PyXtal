@@ -182,8 +182,8 @@ class mol_site:
             #print(conf.GetPositions()[:3]); print(dicts["rotor"])
             if dicts['reflect']:
                 mol.set_torsion_angles(conf, dicts["rotor"], False)
-            #    print(mol.set_torsion_angles(conf, dicts["rotor"], True))
-            #    #import sys; sys.exit()
+                #print(mol.set_torsion_angles(conf, dicts["rotor"], True))
+                #import sys; sys.exit()
             xyz = mol.set_torsion_angles(conf, dicts["rotor"], dicts['reflect'])
             mol.reset_positions(xyz)
         g = dicts["number"]
@@ -199,6 +199,7 @@ class mol_site:
         diag = dicts["diag"]
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
         position = dicts["center"] #np.dot(dicts["center"], lattice.inv_matrix)
+        position, wp, _ = WP_merge(position, lattice.matrix, wp, 0.01)
 
         return cls(mol, position, orientation, wp, lattice, diag)
 

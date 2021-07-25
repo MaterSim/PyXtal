@@ -71,7 +71,7 @@ class representation():
         
         x = [cell]
         n_site = int(inputs[n_cell])
-        if n_site != sum(composition) :
+        if n_site != sum(composition):
             msg = "Composition is inconsistent: {:d}/{:d}\n".format(sum(composition), n_site)
             msg += str(inputs)
             raise ValueError(msg)
@@ -126,6 +126,10 @@ class representation():
             a, b, c, alpha, beta, gamma = v[2], v[3], v[4], 90, 90, 90
         elif ltype == 'tetragonal':
             a, b, c, alpha, beta, gamma = v[2], v[2], v[3], 90, 90, 90
+        elif ltype == 'hexagonal':
+            a, b, c, alpha, beta, gamma = v[2], v[2], v[3], 90, 90, 120
+        else:
+            a, b, c, alpha, beta, gamma = v[2], v[2], v[2], 90, 90, 90
         struc.lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
     
         # sites

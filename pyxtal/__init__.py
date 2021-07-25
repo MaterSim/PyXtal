@@ -918,7 +918,7 @@ class pyxtal:
         mult = len(self.group[0])
         comp = [c/mult for c in self.numMols]
         if integer:
-            comp = [int(c) for c in comp]
+            comp = [int(np.ceil(c)) for c in comp]
         return comp
 
     def get_num_torsions(self):

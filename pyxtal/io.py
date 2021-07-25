@@ -281,21 +281,20 @@ class structure_from_ext():
         self.p_mols = []
         self.wps = []
         ids_done = []
-        for j, mol2 in enumerate(self.ref_mols):
-            if self.add_H:
-                mol2.mol.remove_species("H")
+        for j, mol2_ref in enumerate(self.ref_mols):
+            mol2 = mol2_ref.copy()
+            if self.add_H: mol2.mol.remove_species("H")
 
             for i, id in enumerate(ids):
-                p_mol = mol2.copy() # create p_mol
                 mol1 = molecules[id]
                 if id not in ids_done and len(mol2.mol) == len(mol1):
+                    p_mol = mol2_ref.copy() # create p_mol
                     match, mapping = compare_mol_connectivity(mol2.mol, mol1)
                     if match:
                         self.numMols[j] += mults[i] 
                         if len(mol1) > 1:
                             # rearrange the order
                             order = [mapping[at] for at in range(len(mol1))]
-
                             xyz = mol1.cart_coords[order] 
                             # add hydrogen positions here
                             if self.add_H: xyz = self.add_Hydrogens(mol2.smile, xyz)
