@@ -76,9 +76,10 @@ class mol_site:
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
         s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
-        s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site symmetry {:} ==> Euler: ".format(self.site_symm)
-        s += "{:6.2f} {:6.2f} {:6.2f}".format(*self.angles)
+        s += "WP [{:d}{:s}] ".format(self.wp.multiplicity, self.wp.letter)
+        s += "Site [{:}]".format(self.site_symm.replace(" ",""))
+        if len(self.molecule.mol) > 1:
+            s += " Euler [{:6.1f} {:6.1f} {:6.1f}]".format(*self.angles)
 
         return s
 
@@ -131,15 +132,17 @@ class mol_site:
         """
         xyz, _ = self._get_coords_and_species(absolute=True, first=True)
         xyz -= self.molecule.get_center(xyz)
-        if len(self.molecule.smile) > 1 and len(self.molecule.mol)>1: 
-            rotor = self.molecule.get_torsion_angles(xyz)
-            ori, _, reflect = self.molecule.get_orientation(xyz)
+        if len(self.molecule.mol)>1: 
+            if len(self.molecule.smile) > 1:
+                rotor = self.molecule.get_torsion_angles(xyz)
+                ori, _, reflect = self.molecule.get_orientation(xyz)
+            else:
+                ori = self.orientation.r.as_euler('zxy', degrees=True)
+                reflect = False
+                rotor = []
+            return list(self.position) + list(ori) + rotor + [reflect]
         else:
-            rotor = []
-            ori = self.orientation.r.as_euler('zxy', degrees=True)
-            reflect = False
-        #print(self.molecule.mol)
-        return list(self.position) + list(ori) + rotor + [reflect]
+            return list(self.position) + [0]
         
     def to_1D_dicts(self):
         """
@@ -149,13 +152,10 @@ class mol_site:
         dict0 = {"smile": self.molecule.smile}
         dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
         dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(xyz)
-        
         angs = dict0["rotor"] 
         rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
         conf0 = rdkit_mol.GetConformer(0)
         #print(self.molecule.set_torsion_angles(conf0, angs))
-        #import sys; sys.exit()
-
         #print("save matrix"); print(self.orientation.r.as_matrix())
         #print("save angle"); print(self.orientation.r.as_euler('zxy', degrees=True))
         #print("angle"); print(dict0["orientation"])
@@ -179,22 +179,18 @@ class mol_site:
         if len(mol.mol) > 1:
             rdkit_mol = mol.rdkit_mol(mol.smile)
             conf = rdkit_mol.GetConformer(0)
-            #print(conf.GetPositions()[:3]); print(dicts["rotor"])
             if dicts['reflect']:
                 mol.set_torsion_angles(conf, dicts["rotor"], False)
-                #print(mol.set_torsion_angles(conf, dicts["rotor"], True))
-                #import sys; sys.exit()
             xyz = mol.set_torsion_angles(conf, dicts["rotor"], dicts['reflect'])
             mol.reset_positions(xyz)
+            matrix = R.from_euler('zxy', dicts["orientation"], degrees=True).as_matrix()
+            orientation = Orientation(matrix)
+        else:
+            orientation = Orientation(np.eye(3))
+
         g = dicts["number"]
         index = dicts["index"]
         dim = dicts["dim"]
-        matrix = R.from_euler('zxy', dicts["orientation"], degrees=True).as_matrix()
-        orientation = Orientation(matrix)
-        #if dicts['reflect']:
-        #    print('load'); print(xyz[:3])
-        #    print("aaaaaaaaaaaaaa"); print(xyz[:3].dot(orientation.matrix.T))
-        #    print("matrix"); print(orientation.matrix)
         wp = Wyckoff_position.from_group_and_index(g, index, dim, dicts["PBC"])
         diag = dicts["diag"]
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
@@ -701,16 +697,14 @@ class atom_site:
         self.update()
 
     def __str__(self):
-        #number, dim = self.wp.number, self.wp.dim
-        #self.site_symm = site_symm(self.wp.symmetry_m[0], number, dim=dim)
-
         if not hasattr(self, "site_symm"):
             self.site_symm = site_symm(
                 self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
             )
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
-        s += "WP: {:2d}{:s}, ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site symmetry: {:s}".format(self.site_symm)
+        s += "WP [{:}{:}] ".format(self.wp.multiplicity, self.wp.letter)
+        s += "Site [{:}]".format(self.site_symm.replace(" ",""))
+
         return s
 
     def __repr__(self):

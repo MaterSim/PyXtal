@@ -57,13 +57,13 @@ class representation():
 
         inputs = [float(tmp) for tmp in inputs.split()]
         g, diag = int(inputs[0]), int(inputs[1])
-        if g<=2:
+        if g <= 2:
             n_cell = 8
-        elif g<=15:
+        elif g <= 15:
             n_cell = 6
-        elif g<=74:
+        elif g <= 74:
             n_cell = 5
-        elif g<=194:
+        elif g <= 194:
             n_cell = 4
         else:
             n_cell = 3 #cubic
@@ -82,10 +82,11 @@ class representation():
                 smile=smile[:-4]
             for c in range(composition[i]):
                 if smile in ["Cl-"]:
-                    n_torsion = 0
+                    n_mol = 3
+                    print(len(inputs), n_cell, n_cell+n_mol-1)
                 else:
                     n_torsion = len(find_id_from_smile(smile))
-                n_mol = 7 + n_torsion
+                    n_mol = 7 + n_torsion
                 inputs[n_cell+n_mol-1] = int(inputs[n_cell+n_mol-1])
                 x.append(inputs[n_cell:n_cell+n_mol])
                 n_cell += n_mol
@@ -153,9 +154,10 @@ class representation():
                 dicts['lattice'] = struc.lattice.matrix
                 dicts['lattice_type'] = ltype
                 dicts['center'] = v[:3]
-                dicts['orientation'] = np.array(v[3:6])
-                dicts['rotor'] = v[6:-1]
-                dicts['reflect'] = int(v[-1])
+                if smile not in ["Cl-"]:
+                    dicts['orientation'] = np.array(v[3:6])
+                    dicts['rotor'] = v[6:-1]
+                    dicts['reflect'] = int(v[-1])
                 site = mol_site.from_1D_dicts(dicts)
                 struc.mol_sites.append(site)
                 struc.numMols[i] += site.wp.multiplicity
@@ -179,8 +181,11 @@ class representation():
         # data for cell
         if x[0][0] <= 74:
             num = 5
-        else:
+        elif x[0][0] <=194:
             num = 4
+        else:
+            num = 3
+
         for c in x[0][2:num]:
             strs += "{:5.2f} ".format(c)
         for c in x[0][num:]:
