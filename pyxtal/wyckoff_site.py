@@ -130,16 +130,11 @@ class mol_site:
         transform dict to 1D vector
         [x, y, z, or1, or2, or3, rotor1, rotor2, .etc]
         """
-        xyz, _ = self._get_coords_and_species(absolute=True, first=True)
-        xyz -= self.molecule.get_center(xyz)
         if len(self.molecule.mol)>1: 
-            if len(self.molecule.smile) > 1:
-                rotor = self.molecule.get_torsion_angles(xyz)
-                ori, _, reflect = self.molecule.get_orientation(xyz)
-            else:
-                ori = self.orientation.r.as_euler('zxy', degrees=True)
-                reflect = False
-                rotor = []
+            xyz, _ = self._get_coords_and_species(absolute=True, first=True)
+            #if len(xyz)==3: print("encode: \n", self.molecule.mol.cart_coords)
+            rotor = self.molecule.get_torsion_angles(xyz)
+            ori, _, reflect = self.molecule.get_orientation(xyz)
             return list(self.position) + list(ori) + rotor + [reflect]
         else:
             return list(self.position) + [0]

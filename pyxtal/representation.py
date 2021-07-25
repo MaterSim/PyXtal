@@ -82,8 +82,7 @@ class representation():
                 smile=smile[:-4]
             for c in range(composition[i]):
                 if smile in ["Cl-"]:
-                    n_mol = 3
-                    print(len(inputs), n_cell, n_cell+n_mol-1)
+                    n_mol = 4
                 else:
                     n_torsion = len(find_id_from_smile(smile))
                     n_mol = 7 + n_torsion

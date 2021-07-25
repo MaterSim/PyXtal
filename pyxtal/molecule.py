@@ -55,13 +55,17 @@ def find_id_from_smile(smile):
     """
     Find the positions of rotatable bonds in the molecule.
     """
-    from rdkit import Chem
+    #Some smiles will fail
+    if smile == "NC(=[NH2+])S/C=C/C(=O)O":
+        return [(1, 3, 4, 5), (2, 1, 3, 4), (4, 5, 6, 8), (3, 4, 5, 6)]
+    else:
+        from rdkit import Chem
 
-    smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
-    mol = Chem.MolFromSmiles(smile)
-    pattern_tor = Chem.MolFromSmarts(smarts_torsion)
-    torsion = list(mol.GetSubstructMatches(pattern_tor))
-    return cleaner(torsion)
+        smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+        mol = Chem.MolFromSmiles(smile)
+        pattern_tor = Chem.MolFromSmarts(smarts_torsion)
+        torsion = list(mol.GetSubstructMatches(pattern_tor))
+        return cleaner(torsion)
 
 def dihedral(p):
     """
@@ -140,7 +144,6 @@ class pyxtal_molecule:
                 elif tmp[-1] == 'smi':
                     self.smile = tmp[0]
                     symbols, xyz, self.torsionlist = self.rdkit_mol_init(tmp[0], fix, torsions)
-                    #print(symbols, xyz, self.torsionlist)
                     mo = Molecule(symbols, xyz)
                     symmetrize = False
                 else:
@@ -172,6 +175,7 @@ class pyxtal_molecule:
         self.get_symbols()
         self.get_tols_matrix()
         xyz = self.mol.cart_coords
+        #if len(self.mol)==3: print(xyz)
         self.reset_positions(xyz-self.get_center(xyz))
 
 
@@ -349,11 +353,12 @@ class pyxtal_molecule:
         from rdkit.Geometry import Point3D
 
         if smile not in ["Cl-"]:
-            smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+            torsionlist = find_id_from_smile(smile)
             mol = Chem.MolFromSmiles(smile)
-            pattern_tor = Chem.MolFromSmarts(smarts_torsion)
-            torsion = list(mol.GetSubstructMatches(pattern_tor))
-            torsionlist = cleaner(torsion)
+            #smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+            #pattern_tor = Chem.MolFromSmarts(smarts_torsion)
+            #torsion = list(mol.GetSubstructMatches(pattern_tor, useChirality=True))
+            #torsionlist = cleaner(torsion) 
             mol = Chem.AddHs(mol)
             symbols = []
             for id in range(mol.GetNumAtoms()):
@@ -377,9 +382,6 @@ class pyxtal_molecule:
                 angs *= (1+0.15*np.random.uniform(-1., 1., len(angs))) 
                 xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
                 xyz -= self.get_center(xyz)
-                #if random() > 0.5:
-                #else:
-                #    xyz = self.align(conf)
             #print(torsions, "align", self.get_torsion_angles(xyz, torsionlist))
             #print("Init: ", xyz[:3])
         else:
@@ -424,7 +426,15 @@ class pyxtal_molecule:
         pt = rdmt.ComputeCentroid(conf)
         center = np.array([pt.x, pt.y, pt.z])
         xyz = conf.GetPositions() - center
-        #print("return", xyz[:3])
+
+        # adjust cases like H2O
+        if len(self.smile) == 1:
+            xyz -= np.mean(xyz, axis=0)
+            A = get_inertia_tensor(xyz)
+            P = np.linalg.eigh(A)[1]
+            if np.linalg.det(P) < 0:
+                P[0] *= -1
+            xyz = np.dot(xyz, P)
         return xyz
 
     def get_center(self, xyz, geometry=False):
@@ -437,16 +447,21 @@ class pyxtal_molecule:
             if self.smile in ["Cl-"]:
                 return xyz[0]
             else:
-                # from rdkit
-                from rdkit.Geometry import Point3D
-                from rdkit.Chem import rdMolTransforms as rdmt
+                if len(self.smile) == 1:
+                    #return xyz[0]
+                    return np.mean(xyz, axis=0)
+                else:
+                    # from rdkit
+                    from rdkit.Geometry import Point3D
+                    from rdkit.Chem import rdMolTransforms as rdmt
 
-                conf1 = self.rdkit_mol(self.smile).GetConformer(0)
-                for i in range(conf1.GetNumAtoms()):
-                    x, y, z = xyz[i]
-                    conf1.SetAtomPosition(i, Point3D(x,y,z))
-                pt = rdmt.ComputeCentroid(conf1)
-                return np.array([pt.x, pt.y, pt.z])
+                    conf1 = self.rdkit_mol(self.smile).GetConformer(0)
+                    for i in range(conf1.GetNumAtoms()):
+                        x, y, z = xyz[i]
+                        conf1.SetAtomPosition(i, Point3D(x,y,z))
+                    pt = rdmt.ComputeCentroid(conf1)
+
+                    return np.array([pt.x, pt.y, pt.z])
 
     def get_principle_axes(self, xyz):
         """
@@ -502,22 +517,24 @@ class pyxtal_molecule:
         xyz = self.align(conf, reflect)
         return xyz
 
-    def get_orientation(self, xyz, rtol=0.15):
+    def get_orientation(self, xyz, rtol=0.15, reset=False):
         """
         get orientation, needs to check the tolerance
         """
-        from rdkit.Geometry import Point3D
-        from rdkit.Chem import rdMolAlign, RemoveHs, rdmolfiles, rdMolTransforms
+        xyz -= self.get_center(xyz)
 
         if len(self.smile) > 1: # not in ["O", "o"]:
+            from rdkit.Geometry import Point3D
+            from rdkit.Chem import rdMolAlign, RemoveHs, rdmolfiles, rdMolTransforms
+
             mol = self.rdkit_mol(self.smile)
-            
-            conf0 = mol.GetConformer(0)
-            conf1 = mol.GetConformer(1)
-            conf2 = mol.GetConformer(2)
+            # 3 conformers for comparison
+            conf0 = mol.GetConformer(0)  #aligned
+            conf1 = mol.GetConformer(1)  #current
+            conf2 = mol.GetConformer(2)  #aligned+reflex
             angs = self.get_torsion_angles(xyz)
             xyz0 = self.set_torsion_angles(conf0, angs) #conf0 with aligned
-            xyz1 = self.set_torsion_angles(conf0, angs, True) #conf0 with aligned
+            xyz1 = self.set_torsion_angles(conf0, angs, True) #conf0 with aligned+reflect
 
             for i in range(len(self.mol)):
                 x0,y0,z0 = xyz0[i]
@@ -532,7 +549,6 @@ class pyxtal_molecule:
             rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
             tol = rtol*mol.GetNumAtoms()
 
-            #print(rmsd1, rmsd2)
             if rmsd1 < tol:
                 trans = trans1[:3,:3].T
                 r = Rotation.from_matrix(trans)
@@ -550,12 +566,38 @@ class pyxtal_molecule:
                 print(self.get_torsion_angles(xyz0))   
                 print(self.get_torsion_angles(xyz1))   
                 raise ValueError("Problem in conformer")
-        #else:
-        #    # the orientation of CH4, NH3, H2O
-        #    Inertia = get_inertia_tensor(xyz)
-        #    _, matrix = np.linalg.eigh(Inertia)
-        #    r = Rotation.from_matrix(matrix.T)
-        #    return r.as_euler('zxy', degrees=True), 0, True
+        else:
+            # the orientation of CH4, NH3, H2O
+            ref = np.array([[-0.00111384,  0.36313718,  0.        ],
+                            [-0.82498189, -0.18196256,  0.        ], 
+                            [ 0.82609573, -0.18117463,  0.        ]])
+            Inertia = get_inertia_tensor(xyz) 
+            _, matrix = np.linalg.eigh(Inertia)
+
+            ref0 = np.dot(xyz, matrix)
+            # identify the rotation matrix
+            libs = np.array([
+                            [[1,1,1]],
+                            [[-1,1,1]],
+                            [[1,-1,1]],
+                            [[1,1,-1]],
+                            [[-1,-1,1]],
+                            [[1,-1,-1]],
+                            [[-1,1,-1]],
+                            [[-1,-1,-1]]
+                            ])
+            dists = np.zeros(8)
+            for i, lib in enumerate(libs):
+                matrix0 = matrix*np.repeat(lib, 3, axis=0)
+                res = np.dot(ref, np.linalg.inv(matrix0))
+                dists[i] = np.sum((res-xyz)**2)
+                #print(i, res)
+            id = np.argmin(dists)
+            matrix = matrix*np.repeat(libs[id], 3, axis=0)
+
+            r = Rotation.from_matrix(np.linalg.inv(matrix).T)
+            ang = r.as_euler('zxy', degrees=True)
+            return ang, 0, False
 
     def reset_positions(self, coors):
         """
@@ -809,7 +851,7 @@ class Orientation:
         return self.r.as_euler('zxy', degrees=True)
 
 
-def get_inertia_tensor(coords):
+def get_inertia_tensor(coords, weights=None):
     """
     Calculate the symmetric inertia tensor for a Molecule
     the principal axes of symmetry.
@@ -820,14 +862,15 @@ def get_inertia_tensor(coords):
     Returns:
         a 3x3 numpy array representing the inertia tensor
     """
+    if weights is None: weights = np.ones(len(coords))
     coords -= np.mean(coords, axis=0)
     Inertia = np.zeros([3,3])
-    Inertia[0,0] = np.sum(coords[:,1]**2 + coords[:,2]**2)
-    Inertia[1,1] = np.sum(coords[:,0]**2 + coords[:,2]**2)
-    Inertia[2,2] = np.sum(coords[:,0]**2 + coords[:,1]**2)
-    Inertia[0,1] = Inertia[1,0] = -np.sum(coords[:,0]*coords[:,1])
-    Inertia[0,2] = Inertia[2,0] = -np.sum(coords[:,0]*coords[:,2])
-    Inertia[1,2] = Inertia[2,1] = -np.sum(coords[:,1]*coords[:,2])
+    Inertia[0,0] = np.sum(weights*coords[:,1]**2 + weights*coords[:,2]**2)
+    Inertia[1,1] = np.sum(weights*coords[:,0]**2 + weights*coords[:,2]**2)
+    Inertia[2,2] = np.sum(weights*coords[:,0]**2 + weights*coords[:,1]**2)
+    Inertia[0,1] = Inertia[1,0] = -np.sum(weights*coords[:,0]*coords[:,1])
+    Inertia[0,2] = Inertia[2,0] = -np.sum(weights*coords[:,0]*coords[:,2])
+    Inertia[1,2] = Inertia[2,1] = -np.sum(weights*coords[:,1]*coords[:,2])
 
     return Inertia
 
@@ -850,8 +893,7 @@ def reoriented_molecule(mol): #, nested=False):
     A = get_inertia_tensor(coords)
     # Store the eigenvectors of the inertia tensor
     P = np.linalg.eigh(A)[1]
-    if np.linalg.det(P) < 0:
-        P[0] *= -1
+    if np.linalg.det(P) < 0: P[0] *= -1
     coords = np.dot(coords, P)
     return Molecule(numbers, coords), P
 
