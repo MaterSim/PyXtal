@@ -317,7 +317,7 @@ class pyxtal:
         if self.molecular:
             pmols = []
             for mol in molecules:
-                pmols.append(pyxtal_molecule(mol, fix=True)) #.mol
+                pmols.append(pyxtal_molecule(mol, fix=True))
             #QZ: the default choice will not work for molecular H2, which should be rare!
             struc = structure_from_ext(seed, pmols, ignore_HH=ignore_HH, add_H=add_H)
             self.mol_sites = struc.make_mol_sites()

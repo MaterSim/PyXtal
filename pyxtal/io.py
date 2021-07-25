@@ -274,8 +274,7 @@ class structure_from_ext():
                 mults.append(len(tmp_ids))
                 #print("check", id, tmp_ids, mults)
 
-        # add position and molecule
-        # print("ids", ids, mults)
+        # add position and molecule, print("ids", ids, mults)
         N_sites = len(ids)
         self.numMols = [0] * len(self.ref_mols)
         self.positions = []
@@ -284,11 +283,10 @@ class structure_from_ext():
         ids_done = []
         for j, mol2 in enumerate(self.ref_mols):
             if self.add_H:
-                # create p_mol
-                p_mol = mol2.copy() 
                 mol2.mol.remove_species("H")
 
             for i, id in enumerate(ids):
+                p_mol = mol2.copy() # create p_mol
                 mol1 = molecules[id]
                 if id not in ids_done and len(mol2.mol) == len(mol1):
                     match, mapping = compare_mol_connectivity(mol2.mol, mol1)
