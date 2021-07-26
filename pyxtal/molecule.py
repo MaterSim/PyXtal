@@ -58,6 +58,8 @@ def find_id_from_smile(smile):
     #Some smiles will fail
     if smile == "NC(=[NH2+])S/C=C/C(=O)O":
         return [(1, 3, 4, 5), (2, 1, 3, 4), (4, 5, 6, 8), (3, 4, 5, 6)]
+    elif smile == "C(=CC(=O)[O-])C(=O)O":
+        return [(0, 1, 2, 4), (1, 0, 5, 7), (2, 1, 0, 5)]
     elif smile in ["Cl-"]:
         return []
     else:
@@ -356,10 +358,7 @@ class pyxtal_molecule:
         if smile not in ["Cl-"]:
             torsionlist = find_id_from_smile(smile)
             mol = Chem.MolFromSmiles(smile)
-            #smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
-            #pattern_tor = Chem.MolFromSmarts(smarts_torsion)
-            #torsion = list(mol.GetSubstructMatches(pattern_tor, useChirality=True))
-            #torsionlist = cleaner(torsion) 
+            #print(torsionlist)
             mol = Chem.AddHs(mol)
             symbols = []
             for id in range(mol.GetNumAtoms()):
@@ -559,9 +558,9 @@ class pyxtal_molecule:
                 r = Rotation.from_matrix(trans)
                 return r.as_euler('zxy', degrees=True), rmsd2, True
             else:
-                #rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
-                #rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
-                #rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
+                rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
+                rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
+                rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
                 print(rmsd1, rmsd2)
                 print(self.get_torsion_angles(xyz))   
                 print(self.get_torsion_angles(xyz0))   
