@@ -434,7 +434,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
             new_members.extend(sites_add)
         return new_members, visited
     
-    def check_one_site(struc, site0, visited, rmax=2.9):
+    def check_one_site(struc, site0, visited, rmax=2.8):
         neigh_sites = struc.get_neighbors(site0, rmax)
         ids = [m.index for m in visited]
         sites_add = []
@@ -442,24 +442,34 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
 
         for site1 in neigh_sites:
             if (site1.index not in ids+ids_add):
-                if CovalentBond.is_bonded(site0, site1, tol):
-                    (d, image) = site0.distance_and_image(site1)
-                    #QZ: use our own bond distance lib
-                    key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
+                try:
+                    if CovalentBond.is_bonded(site0, site1, tol):
+                        (d, image) = site0.distance_and_image(site1)
+                        #QZ: use our own bond distance lib
+                        key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
 
-                    #sometime the H-H short distance is not avoidable
-                    if key == 'H-H': 
-                        if not ignore_HH:
-                            site1.frac_coords += image
-                            sites_add.append(site1)
-                            ids_add.append(site1.index)
-                    else:
-                        if d < bonds[key]:
-                            site1.frac_coords += image
-                            sites_add.append(site1)
-                            ids_add.append(site1.index)
-                    #else:
-                    #    print(key, d, bonds[key])
+                        #sometime the H-H short distance is not avoidable
+                        if key == 'H-H': 
+                            if not ignore_HH:
+                                site1.frac_coords += image
+                                sites_add.append(site1)
+                                ids_add.append(site1.index)
+                        else:
+                            if d < bonds[key]:
+                                site1.frac_coords += image
+                                sites_add.append(site1)
+                                ids_add.append(site1.index)
+                        #else:
+                        #    print(key, d, bonds[key])
+                except ValueError:
+                    #QZ: use our own bond distance lib
+                    (d, image) = site0.distance_and_image(site1)
+                    key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
+                    if d < bonds[key]:
+                        site1.frac_coords += image
+                        sites_add.append(site1)
+                        ids_add.append(site1.index)
+                    
         if len(sites_add) > 0:
             visited.extend(sites_add)
 
