@@ -56,19 +56,23 @@ def find_id_from_smile(smile):
     Find the positions of rotatable bonds in the molecule.
     """
     #Some smiles will fail
-    if smile == "NC(=[NH2+])S/C=C/C(=O)O":
-        return [(1, 3, 4, 5), (2, 1, 3, 4), (4, 5, 6, 8), (3, 4, 5, 6)]
-    elif smile == "C(=CC(=O)[O-])C(=O)O":
-        return [(0, 1, 2, 4), (1, 0, 5, 7), (2, 1, 0, 5)]
-    elif smile in ["Cl-"]:
+    #if smile == "NC(=[NH2+])S/C=C/C(=O)O":
+    #    return [(1, 3, 4, 5), (2, 1, 3, 4), (4, 5, 6, 8), (3, 4, 5, 6)]
+    #elif smile == "C(=CC(=O)[O-])C(=O)O":
+    #    return [(0, 1, 2, 4), (1, 0, 5, 7), (2, 1, 0, 5)]
+    if smile in ["Cl-"]:
         return []
     else:
         from rdkit import Chem
-        smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+        smarts_torsion1="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
+        smarts_torsion2="[*]~[^2]=[^2]~[*]" # C=C bonds
+
         mol = Chem.MolFromSmiles(smile)
-        pattern_tor = Chem.MolFromSmarts(smarts_torsion)
-        torsion = list(mol.GetSubstructMatches(pattern_tor))
-        return cleaner(torsion)
+        pattern_tor1 = Chem.MolFromSmarts(smarts_torsion1)
+        torsion1 = list(mol.GetSubstructMatches(pattern_tor1))
+        pattern_tor2 = Chem.MolFromSmarts(smarts_torsion2)
+        torsion2 = list(mol.GetSubstructMatches(pattern_tor2))
+        return cleaner(torsion1+torsion2)
 
 def dihedral(p):
     """
