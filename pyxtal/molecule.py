@@ -58,9 +58,10 @@ def find_id_from_smile(smile):
     #Some smiles will fail
     if smile == "NC(=[NH2+])S/C=C/C(=O)O":
         return [(1, 3, 4, 5), (2, 1, 3, 4), (4, 5, 6, 8), (3, 4, 5, 6)]
+    elif smile in ["Cl-"]:
+        return []
     else:
         from rdkit import Chem
-
         smarts_torsion="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
         mol = Chem.MolFromSmiles(smile)
         pattern_tor = Chem.MolFromSmarts(smarts_torsion)
