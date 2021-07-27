@@ -2742,3 +2742,25 @@ def get_point_group(number):
     elif 221 <= number <= 230:
         return 'm-3m'
 
+def get_close_packed_groups(pg):
+    """
+    List the close packed groups based on the molcular symmetry
+    Compiled from AIK Book, Table 2 P34
+    """
+
+    if pg == '1':
+        return [1, 2, 4, 14, 19, 29, 33, 51, 54, 61, 62]
+    elif pg == '2':
+        return [1, 15, 18, 60]
+    elif pg == 'm':
+        return [1, 26, 36, 63, 64]
+    elif pg == 'I':
+        return [1, 2, 14, 15, 61]
+    elif pg == 'mm':
+        return [42, 51, 59]
+    elif pg == '2/m':
+        return [12, 54, 64]
+    elif pg == '222':
+        return [21, 22, 23, 68]
+    elif pg == 'mmm':
+        return [65, 69, 71]
