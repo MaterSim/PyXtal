@@ -69,9 +69,14 @@ def find_id_from_smile(smile):
 
         mol = Chem.MolFromSmiles(smile)
         pattern_tor1 = Chem.MolFromSmarts(smarts_torsion1)
-        torsion1 = list(mol.GetSubstructMatches(pattern_tor1))
+        torsion1 = cleaner(list(mol.GetSubstructMatches(pattern_tor1)))
         pattern_tor2 = Chem.MolFromSmarts(smarts_torsion2)
-        torsion2 = list(mol.GetSubstructMatches(pattern_tor2))
+        torsion2 = cleaner(list(mol.GetSubstructMatches(pattern_tor2)))
+        for t in torsion2:
+            (i, j, k, l) = t
+            b = mol.GetBondBetweenAtoms(j,k)
+            if b.IsInRing():
+                torsion2.remove(t)
         return cleaner(torsion1+torsion2)
 
 def dihedral(p):
