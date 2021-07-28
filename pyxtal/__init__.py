@@ -230,6 +230,7 @@ class pyxtal:
         max_count = 10,
         torsions = None,
         force_pass = False,
+        block = None,
     ):
         if self.molecular:
             prototype = "molecular"
@@ -244,16 +245,38 @@ class pyxtal:
             count += 1
             if self.molecular:
                 if dim == 3:
-                    if numIons is None:
-                        numIons = [len(Group(group)[0])]*len(species)
-                    struc = molecular_crystal(group, species, numIons, factor, lattice=lattice, 
-                    torsions=torsions, sites=sites, conventional=conventional, diag=diag, tm=tm)
+                    if numIons is None: numIons = [len(Group(group)[0])]*len(species)
+                    struc = molecular_crystal(group, 
+                                              species, 
+                                              numIons, 
+                                              factor, 
+                                              block = block,
+                                              lattice = lattice, 
+                                              torsions = torsions, 
+                                              sites = sites, 
+                                              conventional = conventional, 
+                                              diag = diag, 
+                                              tm = tm)
                 elif dim == 2:
-                    struc = molecular_crystal_2D(group, species, numIons, factor,
-                    thickness=thickness, sites=sites, conventional=conventional, tm=tm)
+                    struc = molecular_crystal_2D(group, 
+                                                 species, 
+                                                 numIons, 
+                                                 factor, 
+                                                 block = block,
+                                                 thickness = thickness, 
+                                                 sites = sites, 
+                                                 conventional = conventional, 
+                                                 tm = tm)
                 elif dim == 1:
-                    struc = molecular_crystal_1D(group, species, numIons, factor,
-                    area=area, sites=sites, conventional=conventional, tm=tm)
+                    struc = molecular_crystal_1D(group, 
+                                                 species, 
+                                                 numIons, 
+                                                 factor, 
+                                                 block = block,
+                                                 area = area, 
+                                                 sites = sites, 
+                                                 conventional = conventional, 
+                                                 tm = tm)
             else:
                 if dim == 3:
                     struc = random_crystal(group, species, numIons, factor,

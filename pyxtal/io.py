@@ -430,7 +430,6 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
         new_members = []
         for site0 in sites0:
             sites_add, visited = check_one_site(struc, site0, visited)
-            #print(sites_add)
             new_members.extend(sites_add)
         return new_members, visited
     
@@ -439,34 +438,39 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
         ids = [m.index for m in visited]
         sites_add = []
         ids_add = []
+        pbc = isinstance(struc, Structure)
 
         for site1 in neigh_sites:
             if (site1.index not in ids+ids_add):
                 try:
                     if CovalentBond.is_bonded(site0, site1, tol):
-                        (d, image) = site0.distance_and_image(site1)
-                        #QZ: use our own bond distance lib
+                        if pbc:
+                            (d, image) = site0.distance_and_image(site1)
+                        else:
+                            d = site0.distance(site1)
                         key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
 
                         #sometime the H-H short distance is not avoidable
                         if key == 'H-H': 
                             if not ignore_HH:
-                                site1.frac_coords += image
+                                if pbc: site1.frac_coords += image
                                 sites_add.append(site1)
                                 ids_add.append(site1.index)
                         else:
                             if d < bonds[key]:
-                                site1.frac_coords += image
+                                if pbc: site1.frac_coords += image
                                 sites_add.append(site1)
                                 ids_add.append(site1.index)
-                        #else:
-                        #    print(key, d, bonds[key])
                 except ValueError:
                     #QZ: use our own bond distance lib
-                    (d, image) = site0.distance_and_image(site1)
+                    if pbc:
+                        (d, image) = site0.distance_and_image(site1)
+                    else:
+                        d = site0.distance(site1)
+
                     key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
                     if d < bonds[key]:
-                        site1.frac_coords += image
+                        if pbc: site1.frac_coords += image
                         sites_add.append(site1)
                         ids_add.append(site1.index)
                     
@@ -506,6 +510,12 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
 
 if __name__ == "__main__":
 
+    from pyxtal.database.collection import Collection
+
     pmg = Structure.from_file('pyxtal/database/cifs/resorcinol.cif')
+    mols = search_molecules_in_crystal(pmg, tol=0.2, once=False)
+    print(len(mols))
+
+    pmg = Collection("molecules")['xxv']
     mols = search_molecules_in_crystal(pmg, tol=0.2, once=False)
     print(len(mols))

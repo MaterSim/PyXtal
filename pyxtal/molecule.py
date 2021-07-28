@@ -1,12 +1,5 @@
 """
-Module for handling molecules. Uses the pymatgen.core.structure.Molecule
-class as a base. Has a function for reorienting molecules
-(reoriented_molecule), and for calculating valid orientations within a Wyckoff
-position based on symmetry (orientation_in_wyckoff_position).
-The orientation class can be used to identify
-degrees of freedom for molecules in Wyckoff positions with certain symmetry
-constraints.
-
+Module for handling molecules. 
 """
 # Imports
 import os
@@ -17,7 +10,7 @@ from random import choice, random
 import numpy as np
 from scipy.spatial.transform import Rotation
 import networkx as nx
-# ------------------------------
+
 # External Libraries
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
@@ -32,34 +25,28 @@ from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
 from pyxtal.database.collection import Collection
 
 # Define functions
-# ------------------------------
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 molecule_collection = Collection("molecules")
-
-def cleaner(list_to_clean):
-    """
-    Remove duplicate torsion definion from a list of atom index tuples.
-    """
-    for_remove = []
-    for x in reversed(range(len(list_to_clean))):
-        for y in reversed(range(x)):
-            ix1, ix2 = itemgetter(1)(list_to_clean[x]), itemgetter(2)(list_to_clean[x])
-            iy1, iy2 = itemgetter(1)(list_to_clean[y]), itemgetter(2)(list_to_clean[y])
-            if (ix1 == iy1 and ix2 == iy2) or (ix1 == iy2 and ix2 == iy1):
-                for_remove.append(y)
-    clean_list = [v for i, v in enumerate(list_to_clean)
-                  if i not in set(for_remove)]
-    return clean_list
 
 def find_id_from_smile(smile):
     """
     Find the positions of rotatable bonds in the molecule.
     """
-    #Some smiles will fail
-    #if smile == "NC(=[NH2+])S/C=C/C(=O)O":
-    #    return [(1, 3, 4, 5), (2, 1, 3, 4), (4, 5, 6, 8), (3, 4, 5, 6)]
-    #elif smile == "C(=CC(=O)[O-])C(=O)O":
-    #    return [(0, 1, 2, 4), (1, 0, 5, 7), (2, 1, 0, 5)]
+    def cleaner(list_to_clean):
+        """
+        Remove duplicate torsion from a list of atom index tuples.
+        """
+        for_remove = []
+        for x in reversed(range(len(list_to_clean))):
+            for y in reversed(range(x)):
+                ix1, ix2 = itemgetter(1)(list_to_clean[x]), itemgetter(2)(list_to_clean[x])
+                iy1, iy2 = itemgetter(1)(list_to_clean[y]), itemgetter(2)(list_to_clean[y])
+                if (ix1 == iy1 and ix2 == iy2) or (ix1 == iy2 and ix2 == iy1):
+                    for_remove.append(y)
+        clean_list = [v for i, v in enumerate(list_to_clean)
+                      if i not in set(for_remove)]
+        return clean_list
+
     if smile in ["Cl-"]:
         return []
     else:
@@ -78,37 +65,6 @@ def find_id_from_smile(smile):
             if b.IsInRing():
                 torsion2.remove(t)
         return cleaner(torsion1+torsion2)
-
-def dihedral(p):
-    """
-    dihedral from https://stackoverflow.com/questions/20305272
-    """
-    p0 = p[0]
-    p1 = p[1]
-    p2 = p[2]
-    p3 = p[3]
-
-    b0 = -1.0*(p1 - p0)
-    b1 = p2 - p1
-    b2 = p3 - p2
-
-    # normalize b1 so that it does not influence magnitude of vector
-    # rejections that come next
-    b1 /= np.linalg.norm(b1)
-
-    # vector rejections
-    # v = projection of b0 onto plane perpendicular to b1
-    #   = b0 minus component that aligns with b1
-    # w = projection of b2 onto plane perpendicular to b1
-    #   = b2 minus component that aligns with b1
-    v = b0 - np.dot(b0, b1)*b1
-    w = b2 - np.dot(b2, b1)*b1
-
-    # angle between v and w in a plane is the torsion angle
-    # v and w may not be normalized but that's fine since tan is y/x
-    x = np.dot(v, w)
-    y = np.dot(np.cross(b1, v), w)
-    return np.degrees(np.arctan2(y, x))
 
 class pyxtal_molecule:
     """
@@ -142,8 +98,9 @@ class pyxtal_molecule:
         mo = None
         self.smile = None
         self.torsionlist = None
+
+        # Parse molecules: either file or molecule name
         if type(mol) == str:
-            # Parse molecules: either file or molecule name
             tmp = mol.split(".")
             self.name = tmp[0]
             if len(tmp) > 1:
@@ -163,6 +120,7 @@ class pyxtal_molecule:
             else:
                 # print('\nLoad the molecule {:s} from collections'.format(mol))
                 mo = molecule_collection[mol]
+
         elif hasattr(mol, "sites"):  # pymatgen molecule
             self.name = str(mol.formula)
             mo = mol
