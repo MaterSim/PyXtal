@@ -40,82 +40,74 @@ class random_crystal:
 
     def __init__(
         self,
-        group=None,
-        species=None,
-        numIons=None,
-        factor=1.1,
-        lattice=None,
+        dim = 3,
+        group = 227,
+        species = ['C'],
+        numIons = 8,
+        factor = 1.1,
+        thickness = None,
+        area = None,
+        lattice = None,
         sites = None,
         conventional = True,
         tm=Tol_matrix(prototype="atomic"),
     ):
 
-        self.dim = 3 #periodic dimensions of the crystal
-        self.PBC = [1, 1, 1] #The periodic boundary axes of the crystal
-        self.thickness = None
-        self.area = None
-        self.init_common(species, numIons, factor, group, lattice, sites, conventional, tm)
-
-    def __str__(self):
-        if self.valid:
-            s = "------Crystal from {:s}------".format(self.source)
-            s += "\nComposition: {}".format(self.formula)
-            s += "\nDimension: {}".format(self.dim)
-            s += "\nGroup: {} ({})".format(self.group.symbol, self.group.number)
-            s += "\n{}".format(self.lattice)
-            s += "\nWyckoff sites:"
-            for wyc in self.atom_sites:
-                s += "\n\t{}".format(wyc)
-        else:
-            s = "\nStructure not available."
-        return s
-
-    def __repr__(self):
-        return str(self)
-
-    def init_common(self, species, numIons, factor, group, lattice, sites, conventional, tm):
-        """
-        Common init functionality for 0D-3D cases of random_crystal.
-        """
+        # Initialize
         self.source = 'Random'
         self.valid = False
-        # Check that numIons are integers greater than 0
-        for num in numIons:
-            if int(num) != num or num < 1:
-                printx("Error: composition must be positive integers.", priority=1)
-                return False
+        self.factor = factor
+
+        # Dimesion
+        self.dim = dim 
+
+        # Effective cross-sectional area for 1D
+        self.area = area 
+
+        # Thickness of 2D slab 
+        self.thickness = thickness 
+
+        #The periodic boundary condition
+        if dim == 3:
+            self.PBC = [1, 1, 1] 
+        elif dim == 2:
+            self.PBC = [1, 1, 0]
+            if self.thickness is None:
+                raise ValueError("Thickness not provided for 2D system")
+        elif dim == 1:
+            self.PBC = [0, 0, 1]
+            if self.area is None:
+                raise ValueError("Area not provided for 1D system")
+        elif dim == 0:
+            self.PBC = [0, 0, 0]
+
+        # Symmetry group
         if type(group) == Group:
             self.group = group
         else:
             self.group = Group(group, dim=self.dim)
         self.number = self.group.number
+        self.symbol = self.group.symbol
 
-        self.numattempts = 0
-        self.lattice_attempts = 0
-        self.coord_attempts = 0
-
+        # Composition
         numIons = np.array(numIons)
-        self.factor = factor
         if not conventional:
             mul = cellsize(self.group)
         else:
             mul = 1
         self.numIons = numIons * mul
-
-        formula = ""
-        for i, s in zip(self.numIons, species):
-            formula += "{:s}{:d}".format(s, int(i))
-        self.formula = formula
-
         self.species = species
-        self.set_sites(sites) 
 
-        # Set the tolerance matrix for checking inter-atomic distances
+        # Tolerance matrix 
         if type(tm) == Tol_matrix:
             self.tol_matrix = tm
         else:
             self.tol_matrix = Tol_matrix(prototype=tm)
 
+        # Wyckoff sites
+        self.set_sites(sites) 
+
+        # Lattice and coordinates
         compat, self.degrees = self._check_compatible()
         if not compat:
             self.valid = False
@@ -127,6 +119,22 @@ class random_crystal:
             self.set_volume()
             self.set_lattice(lattice)
             self.set_crystal()
+
+    def __str__(self):
+        if self.valid:
+            s = "------Crystal from {:s}------".format(self.source)
+            s += "\nDimension: {}".format(self.dim)
+            s += "\nGroup: {} ({})".format(self.symbol, self.number)
+            s += "\n{}".format(self.lattice)
+            s += "\nWyckoff sites:"
+            for wyc in self.atom_sites:
+                s += "\n\t{}".format(wyc)
+        else:
+            s = "\nStructure not available."
+        return s
+
+    def __repr__(self):
+        return str(self)
 
     def set_sites(self, sites):
         """
@@ -201,11 +209,9 @@ class random_crystal:
     def set_crystal(self):
         """
         The main code to generate a random atomic crystal. If successful,
-        stores a pymatgen.core.structure object in self.struct and sets
-        self.valid to True. If unsuccessful, sets self.valid to False and
-        outputs an error message.
-
+        `self.valid` is True (False otherwise) 
        """
+        self.numattempts = 0
         if not self.degrees:
             self.lattice_attempts = 5
             self.coord_attempts = 5
@@ -451,127 +457,3 @@ class random_crystal:
             msg += "\nfrom Wyckoff list: {:d}".format(num)
             raise ValueError(msg)
 
-
-class random_crystal_2D(random_crystal):
-    """
-    A 2d counterpart to random_crystal. Generates a random atomic crystal based
-    on a 2d layer group instead of a 3d spacegroup. Note that each layer group
-    is equal to a corresponding 3d spacegroup, but without periodicity in one
-    direction.
-
-    Args:
-        group: the layer group number (1-80), or a
-            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
-        species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
-        numIons: a list of the number of each type of atom within the
-            primitive cell (NOT the conventional cell), e.g., `[4, 2]`
-        factor (optional): volume factor used to generate the crystal
-        thickness: the thickness, in Angstroms, of the unit cell in the 3rd
-            dimension (the direction which is not repeated periodically)
-        sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
-            object to define the unit cell
-        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
-            object to define the distances
-    """
-
-    def __init__(
-        self,
-        group,
-        species,
-        numIons,
-        factor=1.1,
-        thickness=None,
-        lattice=None,
-        sites = None,
-        conventional = True,
-        tm=Tol_matrix(prototype="atomic"),
-    ):
-        self.dim = 2
-        self.PBC = [1, 1, 0]
-
-        if type(group) != Group:
-            group = Group(group, self.dim)
-        number = group.number  # The layer group number of the crystal
-        self.thickness = thickness  # in Angstroms, in the 3rd dimenion of unit cell
-        self.area = None
-        self.init_common(species, numIons, factor, number, lattice, sites, conventional, tm)
-
-
-class random_crystal_1D(random_crystal):
-    """
-    A 1d counterpart to random_crystal. Generates a random atomic crystal based
-    on a 1d Rod group instead of a 3d spacegroup.
-
-    Args:
-        group: the Rod group number (1-75), or a
-            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
-        species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
-        numIons: a list of the number of each type of atom within the
-            primitive cell (NOT the conventional cell), e.g., `[4, 2]`
-        factor (optional): volume factor used to generate the crystal
-        area: the effective cross-sectional area (A^2), of the unit cell
-        sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
-            object to define the unit cell
-        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
-            object to define the distances
-    """
-
-    def __init__(
-        self,
-        group,
-        species,
-        numIons,
-        factor=1.1,
-        area=None,
-        lattice=None,
-        sites = None,
-        conventional = True,
-        tm=Tol_matrix(prototype="atomic"),
-    ):
-        self.dim = 1
-        self.PBC = [0, 0, 1]
-        self.area = area  # the effective cross-sectional area, in A^2, of the unit cell.
-        self.thickness = None
-        self.init_common(species, numIons, factor, group, lattice, sites, conventional, tm)
-
-
-class random_cluster(random_crystal):
-    """
-    A 0d counterpart to random_crystal. Generates a random atomic cluster based
-    on a 0d Point group instead of a 3d spacegroup. The generated pymatgen
-    structure can be accessed via self.struct
-
-    Args:
-        group: the Schoenflies symbol for the point group (ex: `Oh, C5v, D3`)
-            OR the number between 1-32 for a crystallographic point group,
-            OR the `group <pyxtal.symmetry.Group.html>`_ object, see `wikipedia
-            <https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups>`_
-            for more information
-        species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
-        numIons: a list of the number of each type of atom within the
-            primitive cell (NOT the conventional cell), e.g., `[4, 2]`
-        factor (optional): volume factor used to generate the crystal
-        sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
-            object to define the unit cell
-        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
-            object to define the distances
-    """
-
-    def __init__(
-        self,
-        group,
-        species,
-        numIons,
-        factor=1.1,
-        lattice=None,
-        sites = None,
-        tm=Tol_matrix(prototype="atomic", factor=0.7),
-    ):
-        self.dim = 0
-        self.thickness = None
-        self.area = None
-        self.PBC = [0, 0, 0]
-        self.init_common(species, numIons, factor, group, lattice, sites, False, tm)

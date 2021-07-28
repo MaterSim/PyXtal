@@ -28,7 +28,7 @@ class molecular_crystal:
     constraints. 
 
     Args:
-        group: the spacegroup number (1-230)
+        group: the group number (1-75, 1-80, 1-230)
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
             or the name of molecules from the built_in 
@@ -37,7 +37,6 @@ class molecular_crystal:
             primitive cell (NOT the conventioal cell)
         volume_factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
-        block: a file storing the xyz coordinates of building block
         allow_inversion: Whether or not to allow chiral molecules to be
             inverted. If True, the final crystal may contain mirror images of
             the original molecule. Unless the chemical properties of the mirror
@@ -57,10 +56,13 @@ class molecular_crystal:
 
     def __init__(
         self,
+        dim,
         group,
         molecules,
         numMols,
-        volume_factor = 1.1,
+        factor = 1.1,
+        thickness = None,
+        area = None,
         block = None,
         select_high = True,
         allow_inversion = True,
@@ -73,58 +75,49 @@ class molecular_crystal:
         diag = False,
     ):
 
-        self.dim = 3 # The number of periodic dimensions (1,2,3)
-        self.PBC = [1, 1, 1]
-        self.thickness = None
-        self.area = None
-        self.diag = diag
-        self.selec_high = select_high
-        self.lattice_attempts = 0
-        self.coord_attempts = 0
-
-        self.init_common(
-            molecules,
-            numMols,
-            volume_factor,
-            block,
-            select_high,
-            allow_inversion,
-            orientations,
-            group,
-            lattice,
-            torsions,
-            sites,
-            conventional,
-            tm,
-        )
-
-    def init_common(
-        self,
-        molecules,
-        numMols,
-        volume_factor,
-        block,
-        select_high,
-        allow_inversion,
-        orientations,
-        group,
-        lattice,
-        torsions,
-        sites,
-        conventional,
-        tm,
-    ):
-        # init functionality which is shared by 3D, 2D, and 1D crystals
+        # Initialize
+        self.source = 'Random'
         self.valid = False
-        self.numattempts = 0 # number of attempts to generate the crystal.
+        self.factor = factor
+        self.allow_inversion = allow_inversion
+        self.select_high = select_high
+
+        # Dimesion
+        self.dim = dim 
+
+        # Effective cross-sectional area for 1D
+        self.area = area 
+
+        # Thickness of 2D slab 
+        self.thickness = thickness 
+
+        #The periodic boundary condition
+        if dim == 3:
+            self.PBC = [1, 1, 1] 
+        elif dim == 2:
+            self.PBC = [1, 1, 0]
+            if self.thickness is None:
+                raise ValueError("Thickness not provided for 2D system")
+        elif dim == 1:
+            self.PBC = [0, 0, 1]
+            if self.area is None:
+                raise ValueError("Area not provided for 1D system")
+
+        # Symmetry Group
         if type(group) == Group:
             self.group = group
         else:
             self.group = Group(group, dim=self.dim)
-        if self.diag and self.group.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
-            self.diag = False
         self.number = self.group.number
-        self.factor = volume_factor  # volume factor for the unit cell.
+        self.diag = diag
+        if self.diag and self.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
+            self.diag = False
+        if self.diag and self.group.number in [7, 14, 15]:
+            self.symbol = self.group.alias
+        else:
+            self.symbol = self.group.symbol
+
+        # Composition
         numMols = np.array(numMols)  # must convert it to np.array
         if not conventional:
             mul = cellsize(self.group)
@@ -132,16 +125,13 @@ class molecular_crystal:
             mul = 1
         self.numMols = numMols * mul
 
-        # boolean numbers
-        self.allow_inversion = allow_inversion
-        self.select_high = select_high
-
         # Tolerance matrix
         if type(tm) == Tol_matrix:
             self.tol_matrix = tm
         else:
             self.tol_matrix = Tol_matrix(prototype=tm)
 
+        # Wyckofff sites
         self.set_molecules(molecules, torsions)
         self.set_sites(sites)
         self.set_orientations(orientations)
@@ -162,11 +152,7 @@ class molecular_crystal:
     def __str__(self):
         s = "------Random Molecular Crystal------"
         s += "\nDimension: " + str(self.dim)
-        if self.group.number in [7, 14, 15] and self.diag:
-            symbol = self.group.alias
-        else:
-            symbol = self.group.symbol
-        s += "\nGroup: " + symbol
+        s += "\nGroup: " + self.symbol
         s += "\nVolume factor: " + str(self.factor)
         s += "\n" + str(self.lattice)
         if self.valid:
@@ -303,7 +289,7 @@ class molecular_crystal:
         The main code to generate a random molecular crystal. If successful,
         `self.valid` is True (False otherwise) 
         """
-
+        self.numattempts = 0
         if not self.degrees:
             self.lattice_attempts = 20
             self.coord_attempts = 3
@@ -330,7 +316,7 @@ class molecular_crystal:
             else:
                 self.lattice.reset_matrix()
 
-        printx("Couldn't generate crystal after max attempts.", priority=1)
+        printx("Cannot generate crystal after max attempts.", priority=1)
 
     def _set_coords(self):
         """
@@ -602,154 +588,3 @@ class molecular_crystal:
             msg += "\nfrom Wyckoff list: {:d}".format(num)
             raise ValueError(msg)
 
-
-class molecular_crystal_2D(molecular_crystal):
-    """
-    A 2d counterpart to molecular_crystal. Given a layer group, list of
-    molecule objects, molecular stoichiometry, and
-    a volume factor, generates a molecular crystal consistent with the given
-    constraints. This crystal is stored as a pymatgen struct via self.struct
-
-    Args:
-        group: the layer group number between 1 and 80.
-        molecules: a list of pymatgen.core.structure.Molecule objects for
-            each type of molecule. Alternatively, you may supply a file path,
-            or the name of molecules from the built_in
-            `database <pyxtal.database.collection.html>`_
-        numMols: A list of the number of each type of molecule within the
-            primitive cell (NOT the conventioal cell)
-        thickness: the thickness, in Angstroms, of the unit cell in the 3rd
-            dimension (the direction which is not repeated periodically). A
-            value of None causes a thickness to be chosen automatically. Note
-            that this constraint applies only to the molecular centers; some
-            atomic coordinates may lie outside of this range
-        volume_factor: A volume factor used to generate a larger or smaller
-            unit cell. Increasing this gives extra space between molecules
-        allow_inversion: Whether or not to allow chiral molecules to be
-            inverted. If True, the final crystal may contain mirror images of
-            the original molecule. Unless the chemical properties of the mirror
-            image are known, it is highly recommended to keep this value False
-        orientations: Once a crystal with the same spacegroup and molecular
-            stoichiometry has been generated, you may pass its
-            valid_orientations attribute here to avoid repeating the
-            calculation, but this is not required
-        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
-            object to define the unit cell
-        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_
-            object to define the distances
-    """
-
-    def __init__(
-        self,
-        group,
-        molecules,
-        numMols,
-        volume_factor = 1.1,
-        block = None,
-        select_high = True,
-        allow_inversion = True,
-        orientations = None,
-        thickness = None,
-        lattice = None,
-        sites = None,
-        conventional = True,
-        tm=Tol_matrix(prototype="molecular"),
-    ):
-
-        self.dim = 2
-        self.numattempts = 0
-        self.diag = False
-        self.thickness = thickness  # the thickness in Angstroms
-        self.area = None
-        self.PBC = [1, 1, 0]
-
-        self.init_common(
-            molecules,
-            numMols,
-            volume_factor,
-            block,
-            select_high,
-            allow_inversion,
-            orientations,
-            group,
-            lattice,
-            None,
-            sites,
-            conventional,
-            tm,
-        )
-
-
-class molecular_crystal_1D(molecular_crystal):
-    """
-    A 1d counterpart to molecular_crystal. Given a Rod group, list of
-    molecule objects, molecular stoichiometry, volume factor, and area,
-    generates a molecular crystal consistent with the given constraints.
-    The crystal is stored as a pymatgen struct via self.struct
-
-    Args:
-        group: the Rod group number between 1 and 75. OR
-            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
-        molecules: a list of pymatgen.core.structure.Molecule objects for
-            each type of molecule. Alternatively, you may supply a file path,
-            or the name of molecules from the built_in
-            `database <pyxtal.database.collection.html>`_
-        numMols: A list of the number of each type of molecule within the
-            primitive cell (NOT the conventioal cell)
-        area: cross-sectional area of the unit cell in Angstroms squared. A
-            value of None causes an area to be chosen automatically. Note that
-            this constraint applies only to the molecular centers; some atomic
-            coordinates may lie outside of this range
-        volume_factor: A volume factor used to generate a larger or smaller
-            unit cell. Increasing this gives extra space between molecules
-        allow_inversion: Whether or not to allow chiral molecules to be
-            inverted. If True, the final crystal may contain mirror images of
-            the original molecule. Unless the chemical properties of the mirror
-            image are known, it is highly recommended to keep this value False
-        orientations: Once a crystal with the same spacegroup and molecular
-            stoichiometry has been generated, you may pass its
-            valid_orientations attribute here to avoid repeating the
-            calculation, but this is not required
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
-            object to define the unit cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_
-            object to define the distances
-    """
-
-    def __init__(
-        self,
-        group,
-        molecules,
-        numMols,
-        volume_factor = 1.1,
-        block = None,
-        select_high = True,
-        allow_inversion = False,
-        orientations = None,
-        area = None,
-        lattice = None,
-        sites = None,
-        conventional = True,
-        tm=Tol_matrix(prototype="molecular"),
-    ):
-        self.dim = 1
-        self.area = area  # the effective cross-sectional area in A^2
-        self.thickness = None
-        self.diag = False
-        self.PBC = [0, 0, 1]  # The periodic axes of the crystal (1,2,3)->(x,y,z)
-
-        self.init_common(
-            molecules,
-            numMols,
-            volume_factor,
-            block,
-            select_high,
-            allow_inversion,
-            orientations,
-            group,
-            lattice,
-            None,
-            sites,
-            conventional,
-            tm,
-        )

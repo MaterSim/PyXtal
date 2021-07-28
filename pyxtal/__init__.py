@@ -13,17 +13,8 @@ from pymatgen.core.structure import Structure, Molecule
 
 # PyXtal imports #avoid *
 from pyxtal.version import __version__
-from pyxtal.molecular_crystal import (
-    molecular_crystal,
-    molecular_crystal_2D,
-    molecular_crystal_1D,
-)
-from pyxtal.crystal import (
-    random_cluster,
-    random_crystal,
-    random_crystal_1D,
-    random_crystal_2D,
-)
+from pyxtal.molecular_crystal import molecular_crystal
+from pyxtal.crystal import random_crystal
 from pyxtal.symmetry import Group, Wyckoff_position, search_matched_position
 from pyxtal.operations import apply_ops, SymmOp, get_inverse
 from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
@@ -158,7 +149,7 @@ class pyxtal:
             s = "\n------Crystal from {:s}------".format(self.source)
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
-            if self.group.number in [5, 7, 8, 9, 12, 13, 14, 15] and self.diag:
+            if self.diag and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                 symbol = self.group.alias
             else:
                 symbol = self.group.symbol
@@ -244,52 +235,34 @@ class pyxtal:
         while True:
             count += 1
             if self.molecular:
-                if dim == 3:
-                    if numIons is None: numIons = [len(Group(group)[0])]*len(species)
-                    struc = molecular_crystal(group, 
-                                              species, 
-                                              numIons, 
-                                              factor, 
-                                              block = block,
-                                              lattice = lattice, 
-                                              torsions = torsions, 
-                                              sites = sites, 
-                                              conventional = conventional, 
-                                              diag = diag, 
-                                              tm = tm)
-                elif dim == 2:
-                    struc = molecular_crystal_2D(group, 
-                                                 species, 
-                                                 numIons, 
-                                                 factor, 
-                                                 block = block,
-                                                 thickness = thickness, 
-                                                 sites = sites, 
-                                                 conventional = conventional, 
-                                                 tm = tm)
-                elif dim == 1:
-                    struc = molecular_crystal_1D(group, 
-                                                 species, 
-                                                 numIons, 
-                                                 factor, 
-                                                 block = block,
-                                                 area = area, 
-                                                 sites = sites, 
-                                                 conventional = conventional, 
-                                                 tm = tm)
+                if numIons is None: 
+                    numIons = [len(Group(group)[0])]*len(species)
+
+                struc = molecular_crystal(dim,
+                                      group, 
+                                      species, 
+                                      numIons, 
+                                      factor, 
+                                      thickness = thickness,
+                                      area = area,
+                                      lattice = lattice, 
+                                      torsions = torsions, 
+                                      sites = sites, 
+                                      conventional = conventional, 
+                                      diag = diag, 
+                                      tm = tm)
             else:
-                if dim == 3:
-                    struc = random_crystal(group, species, numIons, factor,
-                            lattice, sites, conventional, tm)
-                elif dim == 2:
-                    struc = random_crystal_2D(group, species, numIons, factor,
-                            thickness, lattice, sites, conventional, tm)
-                elif dim == 1:
-                    struc = random_crystal_1D(group, species, numIons, factor,
-                            area, lattice, sites, conventional, tm)
-                else:
-                    struc = random_cluster(group, species, numIons, factor,
-                            lattice, sites, tm)
+                struc = random_crystal(dim, 
+                                       group, 
+                                       species, 
+                                       numIons, 
+                                       factor, 
+                                       thickness, 
+                                       area, 
+                                       lattice, 
+                                       sites, 
+                                       conventional, 
+                                       tm)
             if force_pass:
                 quit = True
                 break
