@@ -84,24 +84,16 @@ class molecular_crystal:
 
         # Dimesion
         self.dim = dim 
-
-        # Effective cross-sectional area for 1D
-        self.area = area 
-
-        # Thickness of 2D slab 
-        self.thickness = thickness 
+        self.area = area  # Cross-section area for 1D
+        self.thickness = thickness # Thickness of 2D slab 
 
         #The periodic boundary condition
         if dim == 3:
             self.PBC = [1, 1, 1] 
         elif dim == 2:
             self.PBC = [1, 1, 0]
-            if self.thickness is None:
-                raise ValueError("Thickness not provided for 2D system")
         elif dim == 1:
             self.PBC = [0, 0, 1]
-            if self.area is None:
-                raise ValueError("Area not provided for 1D system")
 
         # Symmetry Group
         if type(group) == Group:
