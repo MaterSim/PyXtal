@@ -2,7 +2,6 @@
 Module for generating molecular crystals
 """
 
-
 # Standard Libraries
 import random
 from copy import deepcopy
@@ -76,6 +75,8 @@ class molecular_crystal:
 
         self.dim = 3 # The number of periodic dimensions (1,2,3)
         self.PBC = [1, 1, 1]
+        self.thickness = None
+        self.area = None
         self.diag = diag
         self.selec_high = select_high
         self.lattice_attempts = 0
@@ -288,28 +289,13 @@ class molecular_crystal:
                 unique_axis = "c"
 
             # Generate a Lattice instance
-            if self.dim == 3 or self.dim == 0:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                )
-            elif self.dim == 2:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                    thickness=self.thickness,
-                )
-            elif self.dim == 1:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                    area=self.area,
+            self.lattice = Lattice(
+                self.group.lattice_type,
+                self.volume,
+                PBC=self.PBC,
+                unique_axis=unique_axis,
+                thickness=self.thickness,
+                area=self.area,
                 )
 
     def set_crystal(self):
@@ -674,7 +660,9 @@ class molecular_crystal_2D(molecular_crystal):
         self.numattempts = 0
         self.diag = False
         self.thickness = thickness  # the thickness in Angstroms
+        self.area = None
         self.PBC = [1, 1, 0]
+
         self.init_common(
             molecules,
             numMols,
@@ -746,8 +734,10 @@ class molecular_crystal_1D(molecular_crystal):
     ):
         self.dim = 1
         self.area = area  # the effective cross-sectional area in A^2
+        self.thickness = None
         self.diag = False
         self.PBC = [0, 0, 1]  # The periodic axes of the crystal (1,2,3)->(x,y,z)
+
         self.init_common(
             molecules,
             numMols,

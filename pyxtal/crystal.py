@@ -52,11 +52,8 @@ class random_crystal:
 
         self.dim = 3 #periodic dimensions of the crystal
         self.PBC = [1, 1, 1] #The periodic boundary axes of the crystal
-        self.lattice_attempts = 0
-        self.coord_attempts = 0
-
-        if type(group) != Group:
-            group = Group(group, self.dim)
+        self.thickness = None
+        self.area = None
         self.init_common(species, numIons, factor, group, lattice, sites, conventional, tm)
 
     def __str__(self):
@@ -76,7 +73,6 @@ class random_crystal:
     def __repr__(self):
         return str(self)
 
-
     def init_common(self, species, numIons, factor, group, lattice, sites, conventional, tm):
         """
         Common init functionality for 0D-3D cases of random_crystal.
@@ -93,24 +89,11 @@ class random_crystal:
         else:
             self.group = Group(group, dim=self.dim)
         self.number = self.group.number
-        """
-        The international group number of the crystal:
-        1-230 for 3D space groups
-        1-80 for 2D layer groups
-        1-75 for 1D Rod groups
-        1-32 for crystallographic point groups
-        None otherwise
-        """
-
-        # The number of attempts to generate the crystal
-        # number of atoms
-        # volume factor for the unit cell.
-        # The number of atom in the PRIMITIVE cell
-        # The number of each type of atom in the CONVENTIONAL cell.
-        # A list of atomic symbols for the types of atoms
-        # A list of warning messages
 
         self.numattempts = 0
+        self.lattice_attempts = 0
+        self.coord_attempts = 0
+
         numIons = np.array(numIons)
         self.factor = factor
         if not conventional:
@@ -125,19 +108,72 @@ class random_crystal:
         self.formula = formula
 
         self.species = species
+        self.set_sites(sites) 
 
-        # Use the provided lattice
+        # Set the tolerance matrix for checking inter-atomic distances
+        if type(tm) == Tol_matrix:
+            self.tol_matrix = tm
+        else:
+            self.tol_matrix = Tol_matrix(prototype=tm)
+
+        compat, self.degrees = self._check_compatible()
+        if not compat:
+            self.valid = False
+            msg = "Compoisition " + str(self.numIons) 
+            msg += " not compatible with symmetry "
+            msg += str(self.group.number) 
+            raise CompatibilityError(msg)
+        else:
+            self.set_volume()
+            self.set_lattice(lattice)
+            self.set_crystal()
+
+    def set_sites(self, sites):
+        """
+        initialize Wyckoff sites
+
+        Args:
+            sites: list
+        """
+        # Symmetry sites
+        self.sites = {}
+        for i, specie in enumerate(self.species):
+            if sites is not None and sites[i] is not None:
+                self._check_consistency(sites[i], self.numIons[i])
+                self.sites[specie] = sites[i]
+            else:
+                self.sites[specie] = None
+ 
+    def set_volume(self):
+        """
+        Estimates the volume of a unit cell based on the number and types of ions.
+        Assumes each atom takes up a sphere with radius equal to its covalent bond
+        radius.
+
+        Returns:
+            a float value for the estimated volume
+        """
+        volume = 0
+        for numIon, specie in zip(self.numIons, self.species):
+            r = random.uniform(
+                Element(specie).covalent_radius, Element(specie).vdw_radius
+            )
+            volume += numIon * 4 / 3 * np.pi * r ** 3
+        self.volume = self.factor * volume
+
+    def set_lattice(self, lattice):
+        """
+        Generate the initial lattice
+        """
         if lattice is not None:
+            # Use the provided lattice
             self.lattice = lattice
             self.volume = lattice.volume
             # Make sure the custom lattice PBC axes are correct.
             if lattice.PBC != self.PBC:
                 self.lattice.PBC = self.PBC
                 printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
-
-        # Generate a Lattice instance based on a given volume estimation
-        elif lattice is None:
-
+        else:
             # Determine the unique axis
             if self.dim == 2:
                 if self.number in range(3, 8):
@@ -152,63 +188,150 @@ class random_crystal:
             else:
                 unique_axis = "c"
 
-            self.volume = self.estimate_volume()
+            # Generate a Lattice instance
+            self.lattice = Lattice(
+                self.group.lattice_type,
+                self.volume,
+                PBC=self.PBC,
+                unique_axis=unique_axis,
+                thickness=self.thickness,
+                area=self.area,
+                )
 
-            if self.dim == 3 or self.dim == 0:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                )
-            elif self.dim == 2:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                    # NOTE self.thickness is part of 2D class
-                    thickness=self.thickness,
-                )
-            elif self.dim == 1:
-                self.lattice = Lattice(
-                    self.group.lattice_type,
-                    self.volume,
-                    PBC=self.PBC,
-                    unique_axis=unique_axis,
-                    # NOTE self.area is part of 1D class
-                    area=self.area,
-                )
-        # Set the tolerance matrix for checking inter-atomic distances
-        if type(tm) == Tol_matrix:
-            self.tol_matrix = tm
+    def set_crystal(self):
+        """
+        The main code to generate a random atomic crystal. If successful,
+        stores a pymatgen.core.structure object in self.struct and sets
+        self.valid to True. If unsuccessful, sets self.valid to False and
+        outputs an error message.
+
+       """
+        if not self.degrees:
+            self.lattice_attempts = 5
+            self.coord_attempts = 5
         else:
-            try:
-                self.tol_matrix = Tol_matrix(prototype=tm)
-            # TODO Remove bare except
-            except:
-                printx(
-                    (
-                     "Error: tm must either be a Tol_matrix object or "
-                     "a prototype string for initializing one."
-                    ),
-                    priority=1,
-                )
-                self.valid = False
+            self.lattice_attempts = 40
+            self.coord_attempts = 10
+
+        if not self.lattice.allow_volume_reset:
+            self.lattice_attempts = 1
+
+        for cycle1 in range(self.lattice_attempts):
+            self.cycle1 = cycle1
+            for cycle2 in range(self.coord_attempts):
+                self.cycle2 = cycle2
+                output = self._set_coords()
+
+                if output:
+                    self.atom_sites = output
+                    break
+            if self.valid:
                 return
-
-        self.sites = {}
-        for i, specie in enumerate(self.species):
-            if sites is not None and sites[i] is not None:
-                self.check_consistency(sites[i], self.numIons[i])
-                self.sites[specie] = sites[i]
             else:
-                self.sites[specie] = None
-        # QZ: needs to check if it is compatible
+                self.lattice.reset_matrix()
 
-        self.generate_crystal()
+        return
 
-    def check_compatible(self, group, numIons):
+    def _set_coords(self):
+        """
+        generate coordinates for random crystal
+        """
+        wyks = []
+        cell = self.lattice.get_matrix() 
+        # generate coordinates for each ion type in turn
+        for numIon, specie in zip(self.numIons, self.species):
+            output = self._set_ion_wyckoffs(numIon, specie, cell, wyks)
+            if output is not None:
+                wyks.extend(output)
+            else:
+                # correct multiplicity not achieved exit and start over
+                return None
+
+        # If numIon_added correct for all specie return structure
+        self.valid = True
+        return wyks
+
+    def _set_ion_wyckoffs(self, numIon, specie, cell, wyks):
+        """
+        generates a set of wyckoff positions to accomodate a given number
+        of ions
+
+        Args:
+            numIon: Number of ions to accomodate
+            specie: Type of species being placed on wyckoff site
+            cellx: Matrix of lattice vectors
+            wyks: current wyckoff sites
+
+        Returns:
+            Sucess:
+                wyckoff_sites_tmp: list of wyckoff sites for valid sites
+            Failue:
+                None
+
+        """
+        numIon_added = 0
+        tol = self.tol_matrix.get_tol(specie, specie)
+        tol_matrix = self.tol_matrix
+        wyckoff_sites_tmp = []
+
+        # Now we start to add the specie to the wyckoff position
+        sites_list = deepcopy(self.sites[specie]) # the list of Wyckoff site
+        if sites_list is not None:
+            wyckoff_attempts = max(len(sites_list)*2, 10)
+        else:
+            # the minimum numattempts is to put all atoms to the general WPs
+            min_wyckoffs = int(numIon/len(self.group.wyckoffs_organized[0][0]))
+            wyckoff_attempts = max(2*min_wyckoffs, 10)
+
+        cycle = 0
+        while cycle < wyckoff_attempts:
+            # Choose a random WP for given multiplicity: 2a, 2b
+            if sites_list is not None:
+                site = sites_list[0]
+            else: # Selecting the merging
+                site = None
+
+            wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
+            if wp is not False:
+                # Generate a list of coords from ops
+                mult = wp.multiplicity # remember the original multiplicity
+                pt = self.lattice.generate_point()
+                # Merge coordinates if the atoms are close
+                pt, wp, _ = WP_merge(pt, cell, wp, tol)
+                # For pure planar structure
+                if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
+                    pt[-1] = 0.5
+
+                # If site the pre-assigned, do not accept merge
+                if wp is not False:
+                    if site is not None and mult != wp.multiplicity:
+                        cycle += 1
+                        continue
+                    # Use a Wyckoff_site object for the current site
+                    new_site = atom_site(wp, pt, specie)
+
+                    # Check current WP against existing WP's
+                    passed_wp_check = True
+                    for ws in wyckoff_sites_tmp + wyks:
+                        if not new_site.check_with_ws2(ws, cell, tol_matrix):
+                            passed_wp_check = False
+
+                    if passed_wp_check:
+                        if sites_list is not None:
+                            sites_list.pop(0)
+                        wyckoff_sites_tmp.append(new_site)
+                        numIon_added += new_site.multiplicity
+
+                        # Check if enough atoms have been added
+                        if numIon_added == numIon:
+                            return wyckoff_sites_tmp
+
+            cycle += 1
+            self.numattempts += 1
+
+        return None
+
+    def _check_compatible(self):
         """
         Checks if the number of atoms is compatible with the Wyckoff
         positions. Considers the number of degrees of freedom for each Wyckoff
@@ -222,13 +345,13 @@ class random_crystal:
         # Store the wp's already used that don't have any freedom
         used_indices = []
         # Loop over species
-        for numIon in numIons:
+        for numIon in self.numIons:
             # Get lists of multiplicity, maxn and freedom
             l_mult0 = []
             l_maxn0 = []
             l_free0 = []
             indices0 = []
-            for i_wp, wp in enumerate(group):
+            for i_wp, wp in enumerate(self.group):
                 indices0.append(i_wp)
                 l_mult0.append(len(wp))
                 l_maxn0.append(numIon // len(wp))
@@ -316,7 +439,7 @@ class random_crystal:
             # All species passed, but no degrees of freedom: return 0
             return True, False
 
-    def check_consistency(self, site, numIon):
+    def _check_consistency(self, site, numIon):
         num = 0
         for s in site:
             num += int(s[:-1])
@@ -327,193 +450,6 @@ class random_crystal:
             msg += "\nfrom numIons: {:d}".format(numIon)
             msg += "\nfrom Wyckoff list: {:d}".format(num)
             raise ValueError(msg)
-
-    def estimate_volume(self):
-        """
-        Estimates the volume of a unit cell based on the number and types of ions.
-        Assumes each atom takes up a sphere with radius equal to its covalent bond
-        radius.
-
-        Returns:
-            a float value for the estimated volume
-        """
-        volume = 0
-        for numIon, specie in zip(self.numIons, self.species):
-            r = random.uniform(
-                Element(specie).covalent_radius, Element(specie).vdw_radius
-            )
-            volume += numIon * 4 / 3 * np.pi * r ** 3
-        return self.factor * volume
-
-    def generate_crystal(self):
-        """
-        The main code to generate a random atomic crystal. If successful,
-        stores a pymatgen.core.structure object in self.struct and sets
-        self.valid to True. If unsuccessful, sets self.valid to False and
-        outputs an error message.
-
-       """
-        # Check the minimum number of degrees of freedom within the Wyckoff positions
-        self.numattempts = 1
-        compat, degrees = self.check_compatible(self.group, self.numIons)
-        if not compat:
-            #printx(msg, priority=1)
-            self.valid = False
-            msg = "Compoisition " + str(self.numIons) + " is incompatible with symmetry " + str(self.group.number) 
-            raise CompatibilityError(msg)
-
-        if not degrees:
-            printx("Wyckoff positions have no degrees of freedom.", priority=2)
-            self.lattice_attempts = 5
-            self.coord_attempts = 5
-        else:
-            self.lattice_attempts = 40
-            self.coord_attempts = 10
-
-        for cycle1 in range(self.lattice_attempts):
-            self.cycle1 = cycle1
-
-            # 1, Generate a lattice
-            if self.lattice.allow_volume_reset:
-                self.volume = self.estimate_volume()
-                self.lattice.volume = self.volume
-            self.lattice.reset_matrix()
-
-            try:
-                cell_matrix = self.lattice.get_matrix()
-                if cell_matrix is None:
-                    continue
-            # TODO remove bare except
-            except:
-                continue
-
-            # Check that the correct volume was generated
-            if self.lattice.random:
-                if self.dim != 0 and abs(self.volume - self.lattice.volume) > 1.0:
-                    printx(
-                        (
-                         "Error, volume is not equal to the estimated value: "
-                         "{} -> {} cell_para: {}"
-                        ).format(self.volume, self.lattice.volume, self.lattice.get_para),
-                        priority=0,
-                    )
-                    self.valid = False
-                    return
-
-            # to try to generate atomic coordinates
-            for cycle2 in range(self.coord_attempts):
-                self.cycle2 = cycle2
-                output = self._generate_coords(cell_matrix)
-
-                if output:
-                    self.atom_sites = output
-                    break
-
-            if self.valid:
-                return
-
-        return
-
-    def _generate_coords(self, cell_matrix):
-        """
-        generate coordinates for random crystal
-        """
-        wyckoff_sites_list = []
-
-        # generate coordinates for each ion type in turn
-        for numIon, specie in zip(self.numIons, self.species):
-            output = self._generate_ion_wyckoffs(
-                numIon, specie, cell_matrix, wyckoff_sites_list
-            )
-            if output is not None:
-                wyckoff_sites_list.extend(output)
-            else:
-                # correct multiplicity not achieved exit and start over
-                return None
-
-        # If numIon_added correct for all specie return structure
-        self.valid = True
-        return wyckoff_sites_list
-
-    def _generate_ion_wyckoffs(self, numIon, specie, cell_matrix, wyks):
-        """
-        generates a set of wyckoff positions to accomodate a given number
-        of ions
-
-        Args:
-            numIon: Number of ions to accomodate
-            specie: Type of species being placed on wyckoff site
-            cell_matrix: Matrix of lattice vectors
-            wyks: current wyckoff sites
-
-        Returns:
-            Sucess:
-                wyckoff_sites_tmp: list of wyckoff sites for valid sites
-            Failue:
-                None
-
-        """
-        numIon_added = 0
-        tol = self.tol_matrix.get_tol(specie, specie)
-        tol_matrix = self.tol_matrix
-        wyckoff_sites_tmp = []
-
-        # Now we start to add the specie to the wyckoff position
-        sites_list = deepcopy(self.sites[specie]) # the list of Wyckoff site
-        if sites_list is not None:
-            wyckoff_attempts = max(len(sites_list)*2, 10)
-        else:
-            # the minimum numattempts is to put all atoms to the general WPs
-            min_wyckoffs = int(numIon/len(self.group.wyckoffs_organized[0][0]))
-            wyckoff_attempts = max(2*min_wyckoffs, 10)
-
-        cycle = 0
-        while cycle < wyckoff_attempts:
-            # Choose a random WP for given multiplicity: 2a, 2b
-            if sites_list is not None:
-                site = sites_list[0]
-            else: # Selecting the merging
-                site = None
-
-            wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
-            if wp is not False:
-                # Generate a list of coords from ops
-                mult = wp.multiplicity # remember the original multiplicity
-                pt = self.lattice.generate_point()
-                # Merge coordinates if the atoms are close
-                pt, wp, _ = WP_merge(pt, cell_matrix, wp, tol)
-                # For pure planar structure
-                if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
-                    pt[-1] = 0.5
-
-                # If site the pre-assigned, do not accept merge
-                if wp is not False:
-                    if site is not None and mult != wp.multiplicity:
-                        cycle += 1
-                        continue
-                    # Use a Wyckoff_site object for the current site
-                    new_site = atom_site(wp, pt, specie)
-
-                    # Check current WP against existing WP's
-                    passed_wp_check = True
-                    for ws in wyckoff_sites_tmp + wyks:
-                        if not new_site.check_with_ws2(ws, cell_matrix, tol_matrix):
-                            passed_wp_check = False
-
-                    if passed_wp_check:
-                        if sites_list is not None:
-                            sites_list.pop(0)
-                        wyckoff_sites_tmp.append(new_site)
-                        numIon_added += new_site.multiplicity
-
-                        # Check if enough atoms have been added
-                        if numIon_added == numIon:
-                            return wyckoff_sites_tmp
-
-            cycle += 1
-            self.numattempts += 1
-
-        return None
 
 
 class random_crystal_2D(random_crystal):
@@ -558,6 +494,7 @@ class random_crystal_2D(random_crystal):
             group = Group(group, self.dim)
         number = group.number  # The layer group number of the crystal
         self.thickness = thickness  # in Angstroms, in the 3rd dimenion of unit cell
+        self.area = None
         self.init_common(species, numIons, factor, number, lattice, sites, conventional, tm)
 
 
@@ -596,6 +533,7 @@ class random_crystal_1D(random_crystal):
         self.dim = 1
         self.PBC = [0, 0, 1]
         self.area = area  # the effective cross-sectional area, in A^2, of the unit cell.
+        self.thickness = None
         self.init_common(species, numIons, factor, group, lattice, sites, conventional, tm)
 
 
@@ -633,5 +571,7 @@ class random_cluster(random_crystal):
         tm=Tol_matrix(prototype="atomic", factor=0.7),
     ):
         self.dim = 0
+        self.thickness = None
+        self.area = None
         self.PBC = [0, 0, 0]
         self.init_common(species, numIons, factor, group, lattice, sites, False, tm)
