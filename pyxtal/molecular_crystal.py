@@ -14,7 +14,8 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.wyckoff_site import mol_site, WP_merge
 from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
-from pyxtal.symmetry import Group, jk_from_i, choose_wyckoff_molecular
+from pyxtal.symmetry import Group, jk_from_i
+from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
 from pyxtal.msg import CompatibilityError
 
 # Define functions
@@ -122,13 +123,6 @@ class molecular_crystal:
         if self.diag and self.group.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
             self.diag = False
         self.number = self.group.number
-        """
-        The international group number of the crystal:
-        1-230 for 3D space groups
-        1-80 for 2D layer groups
-        1-75 for 1D Rod groups
-        1-32 for crystallographic point groups
-        """
         self.factor = volume_factor  # volume factor for the unit cell.
         numMols = np.array(numMols)  # must convert it to np.array
         if not conventional:
@@ -160,6 +154,7 @@ class molecular_crystal:
             msg += str(self.group.number) 
             raise CompatibilityError(msg)
         else:
+            self.set_volume()
             self.set_lattice(lattice)
             self.set_crystal()
 
@@ -184,33 +179,6 @@ class molecular_crystal:
     def __repr__(self):
         return str(self)
 
-    def check_consistency(self, site, numMol):
-        """
-        Check if the composition is consistent with symmetry
-        """
-        num = 0
-        for s in site:
-            num += int(s[:-1])
-        if numMol == num:
-            return True
-        else:
-            msg = "\nThe requested number of molecules is inconsistent: " + str(site)
-            msg += "\nfrom numMols: {:d}".format(numMol)
-            msg += "\nfrom Wyckoff list: {:d}".format(num)
-            raise ValueError(msg)
-
-    def estimate_volume(self):
-        """
-        Given the molecular stoichiometry, estimate the volume needed for a unit cell.
-
-        Returns:
-            the estimated volume (in cubic Angstroms) needed for the unit cell
-        """
-        volume = 0
-        for numMol, mol in zip(self.numMols, self.molecules):
-            volume += numMol * mol.volume
-        return abs(self.factor * volume)
-
     def set_sites(self, sites):
         """
         initialize Wyckoff sites
@@ -222,7 +190,7 @@ class molecular_crystal:
         self.sites = {}
         for i, mol in enumerate(self.molecules):
             if sites is not None and sites[i] is not None:
-                self.check_consistency(sites[i], self.numMols[i])
+                self._check_consistency(sites[i], self.numMols[i])
                 self.sites[i] = sites[i]
             else:
                 self.sites[i] = None
@@ -279,6 +247,19 @@ class molecular_crystal:
         else:
             self.valid_orientations = orientations
 
+    def set_volume(self):
+        """
+        Given the molecular stoichiometry, estimate the volume needed for a unit cell.
+
+        Returns:
+            the estimated volume (in cubic Angstroms) needed for the unit cell
+        """
+        volume = 0
+        for numMol, mol in zip(self.numMols, self.molecules):
+            volume += numMol * mol.volume
+        self.volume = abs(self.factor * volume)
+
+
     def set_lattice(self, lattice):
         """
         Generate the initial lattice
@@ -307,8 +288,6 @@ class molecular_crystal:
                 unique_axis = "c"
 
             # Generate a Lattice instance
-            self.volume = self.estimate_volume()
-            # The Lattice object used to generate lattice matrices
             if self.dim == 3 or self.dim == 0:
                 self.lattice = Lattice(
                     self.group.lattice_type,
@@ -353,26 +332,21 @@ class molecular_crystal:
 
         for cycle1 in range(self.lattice_attempts):
             self.cycle1 = cycle1
-            
-            # 1, Generate a lattice
-            if self.lattice.allow_volume_reset:
-                self.volume = self.estimate_volume()
-                self.lattice.volume = self.volume
-            self.lattice.reset_matrix()
-
             for cycle2 in range(self.coord_attempts):
                 self.cycle2 = cycle2
-                output = self._generate_coords()
+                output = self._set_coords()
 
                 if output:
                     self.mol_sites = output
                     break
             if self.valid:
-                break
+                return
+            else:
+                self.lattice.reset_matrix()
 
         printx("Couldn't generate crystal after max attempts.", priority=1)
 
-    def _generate_coords(self):
+    def _set_coords(self):
         """
         generate coordinates for random crystal
         """
@@ -382,7 +356,7 @@ class molecular_crystal:
         for i, numMol in enumerate(self.numMols):
             pyxtal_mol = self.molecules[i]
             valid_ori = self.valid_orientations[i]
-            output = self._generate_mol_wyckoffs(
+            output = self._set_mol_wyckoffs(
                 i, numMol, pyxtal_mol, valid_ori, mol_sites_total
             )
             if output is not None:
@@ -394,7 +368,7 @@ class molecular_crystal:
         self.valid = True
         return mol_sites_total
 
-    def _generate_mol_wyckoffs(self, id, numMol, pyxtal_mol, valid_ori, mol_wyks): 
+    def _set_mol_wyckoffs(self, id, numMol, pyxtal_mol, valid_ori, mol_wyks): 
         """
         generates a set of wyckoff positions to accomodate a given number
         of molecules
@@ -411,7 +385,6 @@ class molecular_crystal:
         """
         numMol_added = 0
         mol_sites_tmp = []
-
 
         # Now we start to add the specie to the wyckoff position
         sites_list = deepcopy(self.sites[id]) # the list of Wyckoff site
@@ -432,7 +405,7 @@ class molecular_crystal:
 
             # NOTE: The molecular version return wyckoff indices, not ops
             diff = numMol - numMol_added
-            wp = choose_wyckoff_molecular(self.group, diff, site, valid_ori, self.select_high, self.dim)
+            wp = wyc_mol(self.group, diff, site, valid_ori, self.select_high, self.dim)
 
             if wp is not False:
                 # Generate a list of coords from the wyckoff position
@@ -449,7 +422,7 @@ class molecular_crystal:
                     if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
                         pt[-1] = 0.5 
 
-                    ms0 = self._generate_orientation(pyxtal_mol, pt, oris, wp)
+                    ms0 = self._set_orientation(pyxtal_mol, pt, oris, wp)
                     if ms0 is not None:
                         # Check current WP against existing WP's  
                         passed_wp_check = True
@@ -467,11 +440,10 @@ class molecular_crystal:
                             # We have enough molecules of the current type
                             if numMol_added == numMol:
                                 return mol_sites_tmp
-
         return None
 
 
-    def _generate_orientation(self, pyxtal_mol, pt, oris, wp): 
+    def _set_orientation(self, pyxtal_mol, pt, oris, wp): 
         """
         Generate good orientations
         """
@@ -628,6 +600,21 @@ class molecular_crystal:
         # All species passed, but no degrees of freedom: return 0
         else:
             return True, False
+
+    def _check_consistency(self, site, numMol):
+        """
+        Check if the composition is consistent with symmetry
+        """
+        num = 0
+        for s in site:
+            num += int(s[:-1])
+        if numMol == num:
+            return True
+        else:
+            msg = "\nThe requested number of molecules is inconsistent: " + str(site)
+            msg += "\nfrom numMols: {:d}".format(numMol)
+            msg += "\nfrom Wyckoff list: {:d}".format(num)
+            raise ValueError(msg)
 
 
 class molecular_crystal_2D(molecular_crystal):
