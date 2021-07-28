@@ -13,7 +13,7 @@ from pymatgen.core.structure import Structure, Molecule
 
 # PyXtal imports #avoid *
 from pyxtal.version import __version__
-from pyxtal.molecular_crystal import molecular_crystal
+from pyxtal.block_crystal import block_crystal
 from pyxtal.crystal import random_crystal
 from pyxtal.symmetry import Group, Wyckoff_position, search_matched_position
 from pyxtal.operations import apply_ops, SymmOp, get_inverse
@@ -235,16 +235,14 @@ class pyxtal:
         while True:
             count += 1
             if self.molecular:
-                if numIons is None: 
-                    numIons = [len(Group(group)[0])]*len(species)
-
-                struc = molecular_crystal(dim,
+                struc = block_crystal(dim,
                                       group, 
                                       species, 
                                       numIons, 
                                       factor, 
                                       thickness = thickness,
                                       area = area,
+                                      block = block,
                                       lattice = lattice, 
                                       torsions = torsions, 
                                       sites = sites, 
@@ -271,7 +269,7 @@ class pyxtal:
                 break
 
             if count >= max_count:
-                raise RuntimeError("It takes long time to generate the structure, check inputs")
+                raise RuntimeError("long time to generate structure, check inputs")
 
         if quit:
             self.valid = struc.valid

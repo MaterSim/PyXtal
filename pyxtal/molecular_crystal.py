@@ -63,7 +63,6 @@ class molecular_crystal:
         factor = 1.1,
         thickness = None,
         area = None,
-        block = None,
         select_high = True,
         allow_inversion = True,
         orientations = None,
@@ -110,7 +109,10 @@ class molecular_crystal:
             self.symbol = self.group.symbol
 
         # Composition
-        numMols = np.array(numMols)  # must convert it to np.array
+        if numMols is None:
+            numMols = [len(self.group[0])] * len(molecules)
+        else:
+            numMols = np.array(numMols)  # must convert it to np.array
         if not conventional:
             mul = cellsize(self.group)
         else:
