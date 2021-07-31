@@ -59,12 +59,14 @@ def find_id_from_smile(smile):
         torsion1 = cleaner(list(mol.GetSubstructMatches(pattern_tor1)))
         pattern_tor2 = Chem.MolFromSmarts(smarts_torsion2)
         torsion2 = cleaner(list(mol.GetSubstructMatches(pattern_tor2)))
-        for t in torsion2:
+        tmp = cleaner(torsion1+torsion2)
+        torsions = []
+        for t in torsions:
             (i, j, k, l) = t
             b = mol.GetBondBetweenAtoms(j,k)
-            if b.IsInRing():
-                torsion2.remove(t)
-        return cleaner(torsion1+torsion2)
+            if not b.IsInRing():
+                torsions.append(t)
+        return torsions
 
 class pyxtal_molecule:
     """
@@ -337,8 +339,9 @@ class pyxtal_molecule:
             else:
                 AllChem.EmbedMultipleConfs(mol, numConfs=20, maxAttempts=200, useRandomCoords=True, pruneRmsThresh=0.5)
                 N_confs = mol.GetNumConformers()
-                #print(N_confs)
-                conf = mol.GetConformer(choice(range(N_confs)))
+                conf_id = choice(range(N_confs))
+                conf = mol.GetConformer(conf_id)
+                #print(conf_id, N_confs)
 
             #print("Init: ", conf.GetPositions())
             if torsions is not None:
@@ -380,16 +383,14 @@ class pyxtal_molecule:
 
         # Rotation
         if len(self.smile) > 1: 
-            #QZ: it is not pure rotation
             #print("ComputeCanonicalTransform", np.linalg.det(trans[:3,:3]))
             trans = rdmt.ComputeCanonicalTransform(conf)
-            if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
+            #if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
             if reflect: trans[:3,:3] *= -1
-
+            #if abs(abs(np.linalg.det(trans))-1.0)>1e-1: print(np.linalg.det(trans)); import sys; sys.exit()
             rdmt.TransformConformer(conf, trans)
-            #print("rot", conf.GetPositions()[:3])
-            #translation
 
+        # Translation
         pt = rdmt.ComputeCentroid(conf)
         center = np.array([pt.x, pt.y, pt.z])
         xyz = conf.GetPositions() - center
@@ -516,11 +517,19 @@ class pyxtal_molecule:
             rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
             tol = rtol*mol.GetNumAtoms()
 
-            if rmsd1 < tol:
+            #rdmolfiles.MolToXYZFile(mol, '01.xyz', 0)
+            #rdmolfiles.MolToXYZFile(mol, '02.xyz', 1)
+            #rdmolfiles.MolToXYZFile(mol, '03.xyz', 2)
+            #print("rmsd:", rmsd1, rmsd2)
+            #print(self.get_torsion_angles(xyz))   
+            #print(self.get_torsion_angles(xyz0))   
+            #print(self.get_torsion_angles(xyz1))   
+
+            if rmsd1 < tol and rmsd1 < rmsd2:
                 trans = trans1[:3,:3].T
                 r = Rotation.from_matrix(trans)
                 return r.as_euler('zxy', degrees=True), rmsd1, False
-            elif rmsd2 < tol:
+            elif rmsd2 < tol and rmsd2 < rmsd1:
                 trans = trans2[:3,:3].T
                 r = Rotation.from_matrix(trans)
                 return r.as_euler('zxy', degrees=True), rmsd2, True
