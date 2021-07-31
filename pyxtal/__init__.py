@@ -915,6 +915,17 @@ class pyxtal:
             comp = [int(np.ceil(c)) for c in comp]
         return comp
 
+    def get_1D_comp(self):
+        """
+        get composition for 1d rep of molecular xtal
+        """
+        comp = [0] * len(self.molecules)
+        for s in self.mol_sites:
+            for i, m in enumerate(self.molecules): 
+                if s.molecule.name == m.name:
+                    comp[i] += 1
+        return comp
+
     def get_num_torsions(self):
         """
         get number of torsions for molecular xtal

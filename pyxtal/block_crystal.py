@@ -116,7 +116,6 @@ def block_crystal(dim, group, molecules, numMols, factor, thickness,
 
         return struc
 
-
 if __name__ == "__main__":
     from pyxtal import pyxtal
     from pyxtal.representation import representation
@@ -125,27 +124,27 @@ if __name__ == "__main__":
     smiles = ["C1=C(C=C(C=C1[N+](=O)[O-])[N+](=O)[O-])C(=O)O.smi",
               "CC1=CC2=C(C=C1)N3CC4=C(C=CC(=C4)C)N(C2)C3.smi"]
     
-    for i in range(30):
-        s = pyxtal(molecular=True)
-        s.from_random(3, 14, smiles, block='xxv')
+    for block in [None, 'xxv']:
+        print("block", block)
+        for i in range(30):
+            s = pyxtal(molecular=True)
+            s.from_random(3, 14, smiles, block=block)
     
-        rep2 = representation.from_pyxtal(s)
-        strs = rep2.to_string()
-        print(i, strs)
-        
-        rep3 = representation.from_string(strs, smiles)
-        s1 = rep3.to_pyxtal()
-        
-        pmg1 = s.to_pymatgen()
-        pmg2 = s1.to_pymatgen()
-        pmg1.remove_species("H")
-        pmg2.remove_species("H")
-        if not sm.StructureMatcher().fit(pmg1, pmg2):
-            print("Mismatch")
-            print("S1", s.check_short_distances())
-            print("S2", s1.check_short_distances())
-            s.to_file('1.cif')
-            s1.to_file('2.cif')
-            break
-    
-
+            rep2 = representation.from_pyxtal(s)
+            strs = rep2.to_string()
+            print(i, strs)
+            
+            rep3 = representation.from_string(strs, smiles)
+            s1 = rep3.to_pyxtal()
+            
+            pmg1 = s.to_pymatgen()
+            pmg2 = s1.to_pymatgen()
+            pmg1.remove_species("H")
+            pmg2.remove_species("H")
+            if not sm.StructureMatcher().fit(pmg1, pmg2):
+                print("Mismatch")
+                print("S1", s.check_short_distances())
+                print("S2", s1.check_short_distances())
+                s.to_file('1.cif')
+                s1.to_file('2.cif')
+                import sys; sys.exit()

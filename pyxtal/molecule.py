@@ -385,7 +385,7 @@ class pyxtal_molecule:
         if len(self.smile) > 1: 
             #print("ComputeCanonicalTransform", np.linalg.det(trans[:3,:3]))
             trans = rdmt.ComputeCanonicalTransform(conf)
-            #if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
+            if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
             if reflect: trans[:3,:3] *= -1
             #if abs(abs(np.linalg.det(trans))-1.0)>1e-1: print(np.linalg.det(trans)); import sys; sys.exit()
             rdmt.TransformConformer(conf, trans)
