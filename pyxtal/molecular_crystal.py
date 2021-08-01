@@ -101,8 +101,10 @@ class molecular_crystal:
         # Composition
         if numMols is None:
             numMols = [len(self.group[0])] * len(molecules)
+            no_check_compability = True
         else:
             numMols = np.array(numMols)  # must convert it to np.array
+            no_check_compability = False
         if not conventional:
             mul = cellsize(self.group)
         else:
@@ -121,7 +123,10 @@ class molecular_crystal:
         self.set_orientations()
 
         # Check the minimum dof within the Wyckoff positions
-        compat, self.degrees = self._check_compatible()
+        if no_check_compability:
+            compat, self.degrees = True, True
+        else:
+            compat, self.degrees = self._check_compatible()
         if not compat:
             self.valid = False
             msg = "Compoisition " + str(self.numMols) 
@@ -187,7 +192,7 @@ class molecular_crystal:
         Calculates the valid orientations for each Molecule and Wyckoff
         position. Returns a list with 4 indices:
             - index 1: the molecular prototype's index within self.molecules
-            - index 2: the Wyckoff position's 1st index (based on multiplicity)
+            - index 2: the WP's 1st index (based on multiplicity)
             - index 3: the WP's 2nd index (within the group of equal multiplicity)
             - index 4: the index of the valid orientation for the molecule/WP pair
 
@@ -203,6 +208,9 @@ class molecular_crystal:
                 for j, wp in enumerate(x):
                     allowed = pyxtal_mol.get_orientations_in_wp(wp)
                     self.valid_orientations[-1][-1].append(allowed)
+                #terminate it asap
+                if len(allowed) == 0:
+                    break
 
     def set_volume(self):
         """
@@ -452,14 +460,15 @@ class molecular_crystal:
             for i_wp, wp in enumerate(self.group):
                 # Check that at least one valid orientation exists
                 j, k = jk_from_i(i_wp, self.group.wyckoffs_organized)
-                if len(self.valid_orientations[i_mol][j][k]) > 0:
-                    indices0.append(i_wp)
-                    l_mult0.append(len(wp))
-                    l_maxn0.append(numIon // len(wp))
-                    if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
-                        l_free0.append(False)
-                    else:
-                        l_free0.append(True)
+                if len(self.valid_orientations[i_mol]) > j:
+                    if len(self.valid_orientations[i_mol][j]) > k:
+                        indices0.append(i_wp)
+                        l_mult0.append(len(wp))
+                        l_maxn0.append(numIon // len(wp))
+                        if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
+                            l_free0.append(False)
+                        else:
+                            l_free0.append(True)
             # Remove redundant multiplicities:
             l_mult = []
             l_maxn = []

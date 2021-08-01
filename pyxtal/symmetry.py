@@ -1037,11 +1037,15 @@ class Wyckoff_position:
                     mult2 = wp0.multiplicity
                     # Check that a valid orientation exists
                     if orientations is not None:
-                        j, k = jk_from_i(i, orientations)
-                        if orientations[j][k] == []:
+                        res = jk_from_i(i, orientations)
+                        if res is None:
                             continue
                         else:
-                            valid_ori = orientations[j][k]
+                            j, k = res 
+                            if orientations[j][k] == []:
+                                continue
+                            else:
+                                valid_ori = orientations[j][k]
                     # factor = mult2 / mult1
     
                     if (mult2 < mult1) and (mult1 % mult2 == 0):
@@ -1343,10 +1347,6 @@ def jk_from_i(i, olist):
             num += 1
             if num == i:
                 return [j, k]
-    printx(
-        "Error: Incorrect Wyckoff position list or index passed to jk_from_i",
-        priority=1,
-    )
     return None
 
 
@@ -1369,10 +1369,6 @@ def i_from_jk(j, k, olist):
             num += 1
             if x == j and y == k:
                 return num
-    printx(
-        "Error: Incorrect Wyckoff position list or index passed to jk_from_i",
-        priority=1,
-    )
     return None
 
 

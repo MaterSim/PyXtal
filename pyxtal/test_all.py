@@ -81,9 +81,8 @@ class TestOptLat(unittest.TestCase):
         for diag in diags:
             for i in range(40):
                 sg = choice(sgs)
-                num = len(Group(sg)[0])
                 c1 = pyxtal(molecular=True)
-                c1.from_random(3, sg, ["aspirin"], [num], diag=diag) 
+                c1.from_random(3, sg, ["aspirin"], diag=diag) 
                 pmg1 = c1.to_pymatgen()
                 c2 = c1.copy()
                 c2.optimize_lattice(1)
@@ -94,9 +93,8 @@ class TestOptLat(unittest.TestCase):
         sgs, diag = [5, 7, 8, 12, 13, 14], False
         for i in range(40):
             sg = choice(sgs)
-            num = len(Group(sg)[0])
             c1 = pyxtal(molecular=True)
-            c1.from_random(3, sg, ["aspirin"], [num], diag=diag) 
+            c1.from_random(3, sg, ["aspirin"], diag=diag) 
             pmg1 = c1.to_pymatgen()
             c2 = c1.copy()
             c2.optimize_lattice(1)
@@ -137,7 +135,7 @@ class TestMolecular(unittest.TestCase):
     def test_single_specie(self):
         # print("test_h2o")
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 36, ["H2O"], [8], sites=[["8b"]])
+        struc.from_random(3, 36, ["H2O"], sites=[["8b"]])
         struc.to_file()
         self.assertTrue(struc.valid)
 
@@ -159,7 +157,7 @@ class TestMolecular(unittest.TestCase):
 
     def test_sites(self):
         struc = pyxtal(molecular=True)
-        struc.from_random(3, 19, ["H2O"], [4])
+        struc.from_random(3, 19, ["H2O"])
         pmg_struc = struc.to_pymatgen()
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol() == "P2_12_12_1")
@@ -192,7 +190,7 @@ class TestMolecular(unittest.TestCase):
         # print("test_big_molecule")
         for mol in ["ROY", "aspirin"]:
             struc = pyxtal(molecular=True)
-            struc.from_random(3, 19, [mol], [4], 1.2)
+            struc.from_random(3, 19, [mol], factor=1.2)
             self.assertTrue(struc.valid)
             pair = struc.check_short_distances()
             if len(pair) > 0:
@@ -226,13 +224,13 @@ class TestMolecular(unittest.TestCase):
     def test_molecular_2d(self):
         # print("test_molecular_2d")
         struc = pyxtal(molecular=True)
-        struc.from_random(2, 20, ["H2O"], [4], 1.0, conventional=False)
+        struc.from_random(2, 20, ["H2O"])
         cif = struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_molecular_1d(self):
         struc = pyxtal(molecular=True)
-        struc.from_random(1, 20, ["H2O"], [4], 1.0, conventional=False)
+        struc.from_random(1, 20, ["H2O"])
         cif = struc.to_file()
         self.assertTrue(struc.valid)
         # def test_space_groups(self):
