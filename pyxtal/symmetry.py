@@ -63,11 +63,6 @@ wyc_sets = loadfn(resource_filename("pyxtal",'database/wyckoff_sets.json'))
 
 t2h = SymmOp.from_rotation_and_translation([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0])
 Identity = SymmOp.from_xyz_string("x,y,z")
-Inversion = SymmOp.from_xyz_string("-x,-y,-z")
-op_o = SymmOp.from_xyz_string("0,0,0")
-op_x = SymmOp.from_xyz_string("x,0,0")
-op_y = SymmOp.from_xyz_string("0,y,0")
-op_z = SymmOp.from_xyz_string("0,0,z")
 
 # --------------------------- Group class -----------------------------
 class Group:
@@ -278,7 +273,6 @@ class Group:
                 if not freedom:
                     return False
         return True
-
 
     def list_wyckoff_combinations(self, numIons, quick=False):
         """
@@ -991,15 +985,13 @@ class Wyckoff_position:
         """
         Given a list of fractional coordinates, merges them within a given
         tolerance, and checks if the merged coordinates satisfy a Wyckoff
-        position. Used for merging general Wyckoff positions into special Wyckoff
-        positions within the random_crystal (and its derivative) classes.
+        position. 
     
         Args:
             pt: the originl point (3-vector)
             lattice: a 3x3 matrix representing the unit cell
             tol: the cutoff distance for merging coordinates
-            orientations: the valid orientations for a given molecule. Obtained
-                from get_sg_orientations, which is called within molecular_crystal
+            orientations: the valid orientations for a given molecule. 
     
         Returns:
             pt: 3-vector after merge
@@ -1020,7 +1012,6 @@ class Wyckoff_position:
             valid_ori = orientations[j][k]
         
         # Main loop for merging multiple times
-    
         while True:
             # Check distances of current WP. If too small, merge
             dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
@@ -1073,7 +1064,6 @@ class Wyckoff_position:
             # Distances were not too small; return True
             else:
                 return pt, wp, valid_ori
-
 
 
 # --------------------------- Wyckoff Position selection  -----------------------------
@@ -2421,7 +2411,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
     Returns:
         a list of SymmOp objects which leave the given point invariant
     """
-    if PBC == None:
+    if PBC is None:
         if type(gen_pos) == Wyckoff_position:
             PBC = gen_pos.PBC
         else:
