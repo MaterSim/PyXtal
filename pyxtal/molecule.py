@@ -958,27 +958,17 @@ def is_compatible_symmetry(mol, wp):
         wp: a pyxtal.symmetry.Wyckoff_position object
     """
     # For single atoms, there are no constraints
-    if len(mol) == 1:
+    if len(mol) == 1 or wp.index == 0:
         return True
 
-    w_symm = wp.symmetry_m
-    symm_w = w_symm[0]
     pga = PointGroupAnalyzer(mol)
-
-    # Check exact orientation
-    for op in symm_w:
+    for op in wp.symmetry_m[0]:
         if not pga.is_valid_op(op):
             return False
     return True
 
 
-def orientations_in_wp(
-    mol,
-    wp,
-    already_oriented=False,
-    allow_inversion=True,
-    rtol = 1e-2,
-):
+def orientations_in_wp(mol, wp, adjust=False, rtol=1e-2):
     """
     Tests if a molecule meets the symmetry requirements of a Wyckoff position,
     and returns the valid orientations.
@@ -986,53 +976,29 @@ def orientations_in_wp(
     Args:
         mol: a Molecule object. Orientation is arbitrary
         wp: a pyxtal.symmetry.Wyckoff_position object
-        already_oriented: whether or not to reorient the principle axes
+        adjust: whether or not to reorient the principle axes
             when calling get_symmetry. Setting to True can remove redundancy,
             but is not necessary
-        allow_inversion: whether or not to allow chiral molecules to be
-            inverted. Should only be True if the chemical and biological
-            properties of the mirror image are known to be suitable for the
-            desired application
-
     Returns:
         a list of operations.Orientation objects which can be applied to the
         molecule while allowing it to satisfy the symmetry requirements of the
         Wyckoff position. If no orientations are found, returns False.
     """
     # For single atoms, there are no constraints
-    if len(mol) == 1:
+    if len(mol) == 1 or wp.index == 0:
         return [Orientation([[1, 0, 0], [0, 1, 0], [0, 0, 1]], degrees=2)]
 
-    wyckoffs = wp.ops
-    w_symm = wp.symmetry_m
-
     # Obtain the Wyckoff symmetry
-    symm_w = w_symm[0]
+    wyckoffs = wp.ops
+    symm_w = wp.symmetry_m[0]
     pga = PointGroupAnalyzer(mol)
 
-    # Obtain molecular symmetry, exact_orientation==False
-    symm_m = get_symmetry(mol, already_oriented=already_oriented)
     # Store OperationAnalyzer objects for each molecular SymmOp
-    chiral = True
+    symm_m = get_symmetry(mol, already_oriented=adjust)
     opa_m = []
     for op_m in symm_m:
         opa = OperationAnalyzer(op_m)
         opa_m.append(opa)
-        if opa.type == "rotoinversion":
-            chiral = False
-        elif opa.type == "inversion":
-            chiral = False
-
-    # If molecule is chiral and allow_inversion is False,
-    # check if WP breaks symmetry
-    if chiral is True:
-        if allow_inversion is False:
-            for op in wyckoffs:
-                if np.linalg.det(op.rotation_matrix) < 0:
-                    printx(
-                        "Warning: cannot place chiral molecule in spagegroup", priority=2,
-                    )
-                    return False
 
     # Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
     opa_w = []
@@ -1186,7 +1152,6 @@ def orientations_in_wp(
                     if pga.is_valid_op(old_op):
                         list_i.remove(j)
                         list_j.remove(j)
-    #copies = deepcopy(orientations)
     orientations_new = []
     for i in list_i:
         orientations_new.append(orientations[i])
@@ -1200,7 +1165,6 @@ def orientations_in_wp(
         mo.apply_operation(op)
         if is_compatible_symmetry(mo, wp):
             allowed.append(o)
-        #mo, wyckoff_position, exact_orientation=True,
     return allowed
 
 def make_graph(mol, tol=0.2):

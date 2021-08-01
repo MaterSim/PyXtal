@@ -37,10 +37,6 @@ class molecular_crystal:
             primitive cell (NOT the conventioal cell)
         volume_factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
-        allow_inversion: Whether or not to allow chiral molecules to be
-            inverted. If True, the final crystal may contain mirror images of
-            the original molecule. Unless the chemical properties of the mirror
-            image are known, it is highly recommended to keep this value False
         orientations: Once a crystal with the same spacegroup and molecular
             stoichiometry has been generated, you may pass its
             valid_orientations attribute here to avoid repeating the
@@ -64,7 +60,6 @@ class molecular_crystal:
         thickness = None,
         area = None,
         select_high = True,
-        allow_inversion = True,
         orientations = None,
         lattice = None,
         torsions = None,
@@ -78,7 +73,6 @@ class molecular_crystal:
         self.source = 'Random'
         self.valid = False
         self.factor = factor
-        self.allow_inversion = allow_inversion
         self.select_high = select_high
 
         # Dimesion
@@ -215,11 +209,7 @@ class molecular_crystal:
                     self.valid_orientations[-1].append([])
                     for j, wp in enumerate(x):
                         wp_index += 1
-                        allowed = orientations_in_wp(mol, wp,
-                            already_oriented=True,
-                            allow_inversion=self.allow_inversion,
-                        )
-
+                        allowed = orientations_in_wp(mol, wp, True)
                         self.valid_orientations[-1][-1].append(allowed)
         else:
             self.valid_orientations = orientations
