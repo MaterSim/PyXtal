@@ -134,15 +134,14 @@ class pyxtal_molecule:
         self.props = mo.site_properties
 
 
-        #Symmetry analysis
+        # Molecule and symmetry analysis
         self.pga = PointGroupAnalyzer(mo)
-
-        #Molecule
         if len(mo) > 1:
             if symmetrize:
                 mo = self.pga.symmetrize_molecule()["sym_mol"]
             mo = self.add_site_props(mo)
         self.mol = mo
+        self.get_symmetry()
 
         self.tm = tm
         self.box = self.get_box()
@@ -609,6 +608,252 @@ class pyxtal_molecule:
         xyz *= -1
         self.reset_positions(xyz)
 
+    def get_symmetry(self):
+        """
+        Compute the molecule's point symmetry.
+        Note: for linear molecules, infinitessimal rotations are treated as 6-fold
+        rotations, which works for 3d and 2d point groups.
+    
+        Returns:
+            a list of SymmOp objects which leave the molecule unchanged when applied
+        """
+        mol = self.mol
+        pga = self.pga
+        # For single atoms, we cannot represent the point group using a list of operations
+        if len(mol) == 1:
+            self.symm = []
+        elif "*" in pga.sch_symbol:
+            # linear molecules
+            pg = pga.get_pointgroup()
+            symm_m = []
+            for op in pg:
+                symm_m.append(op)
+            # Add 12-fold  and reflections in place of ininitesimal rotation
+            for axis in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
+                # op = SymmOp.from_rotation_and_translation(aa2matrix(axis, np.pi/6), [0,0,0])
+                m1 = Rotation.from_rotvec(np.pi / 6 * axis).as_matrix()
+                op = SymmOp.from_rotation_and_translation(m1, [0, 0, 0])
+                if pga.is_valid_op(op):
+                    symm_m.append(op)
+                    # Any molecule with infinitesimal symmetry is linear;
+                    # Thus, it possess mirror symmetry for any axis perpendicular
+                    # To the rotational axis. pymatgen does not add this symmetry
+                    # for all linear molecules - for example, hydrogen
+                    if axis == [1, 0, 0]:
+                        symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
+                        symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
+                        #r = SymmOp.from_xyz_string("-x,y,-z")
+                    elif axis == [0, 1, 0]:
+                        symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
+                        symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
+                        #r = SymmOp.from_xyz_string("-x,-y,z")
+                    elif axis == [0, 0, 1]:
+                        symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
+                        symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
+                        #r = SymmOp.from_xyz_string("x,-y,-z")
+                    # Generate a full list of SymmOps for the molecule's pointgroup
+                    symm_m = generate_full_symmops(symm_m, 1e-3)
+                    break
+            self.symmetry = symm_m
+        else: # nonlinear molecules
+            pg = pga.get_pointgroup()
+            symm_m = []
+            for op in pg:
+                symm_m.append(op)
+            self.symmetry = symm_m
+
+    def get_orientations_in_wp(self, wp, rtol=1e-2):
+        """
+        Compute the valid orientations from a given Wyckoff site symmetry.
+    
+        Args:
+            wp: a pyxtal.symmetry.Wyckoff_position object
+        Returns:
+            a list of operations.Orientation objects 
+        """
+        # For single atoms, there are no constraints
+        if len(self.mol) == 1 or wp.index == 0:
+            return [Orientation([[1, 0, 0], [0, 1, 0], [0, 0, 1]], degrees=2)]
+        # C1 molecule cannot take specical position
+        elif wp.index > 1 and self.pga.sch_symbol == 'C1':
+            return []
+
+        symm_m = self.symmetry
+        symm_w = wp.symmetry_m[0]
+        wyckoffs = wp.ops
+    
+        opa_m = []
+        for op_m in symm_m:
+            opa = OperationAnalyzer(op_m)
+            opa_m.append(opa)
+    
+        # Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
+        opa_w = []
+        for op_w in symm_w:
+            opa_w.append(OperationAnalyzer(op_w))
+    
+        # Check for constraints from the Wyckoff symmetry...
+        # If we find ANY two constraints (SymmOps with unique axes), the molecule's
+        # point group MUST contain SymmOps which can be aligned to these particular
+        # constraints. However, there may be multiple compatible orientations of the
+        # molecule consistent with these constraints
+        constraint1 = None
+        constraint2 = None
+        for i, op_w in enumerate(symm_w):
+            if opa_w[i].axis is not None:
+                constraint1 = opa_w[i]
+                for j, op_w in enumerate(symm_w):
+                    if opa_w[j].axis is not None:
+                        dot = np.dot(opa_w[i].axis, opa_w[j].axis)
+                        if (not np.isclose(dot, 1, rtol=rtol)) and (
+                            not np.isclose(dot, -1, rtol=rtol)
+                        ):
+                            constraint2 = opa_w[j]
+                            break
+                break
+        # Indirectly store the angle between the constraint axes
+        if constraint1 is not None and constraint2 is not None:
+            dot_w = np.dot(constraint1.axis, constraint2.axis)
+        # Generate 1st consistent molecular constraints
+        constraints_m = []
+        if constraint1 is not None:
+            for i, opa1 in enumerate(opa_m):
+                if opa1.is_conjugate(constraint1):
+                    constraints_m.append([opa1, []])
+                    # Generate 2nd constraint in opposite direction
+                    extra = deepcopy(opa1)
+                    extra.axis = [opa1.axis[0] * -1, opa1.axis[1] * -1, opa1.axis[2] * -1]
+                    constraints_m.append([extra, []])
+    
+        # Remove redundancy for the first constraints
+        list_i = list(range(len(constraints_m)))
+        list_j = list(range(len(constraints_m)))
+        copy = deepcopy(constraints_m)
+        for i, c1 in enumerate(copy):
+            if i in list_i:
+                for j, c2 in enumerate(copy):
+                    if i > j and j in list_j and j in list_i:
+                        # Check if axes are colinear
+                        if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=rtol):
+                            list_i.remove(j)
+                            list_j.remove(j)
+                        # Check if axes are symmetrically equivalent
+                        else:
+                            cond1 = False
+                            # cond2 = False
+                            for opa in opa_m:
+                                if opa.type == "rotation":
+                                    op = opa.op
+                                    if np.isclose(
+                                        np.dot(op.operate(c1[0].axis), c2[0].axis),
+                                        1,
+                                        rtol=5*rtol,
+                                    ):
+                                        cond1 = True
+                                        break
+                            if cond1 is True:  # or cond2 is True:
+                                list_i.remove(j)
+                                list_j.remove(j)
+        c_m = deepcopy(constraints_m)
+        constraints_m = []
+        for i in list_i:
+            constraints_m.append(c_m[i])
+    
+        # Generate 2nd consistent molecular constraints
+        valid = list(range(len(constraints_m)))
+        if constraint2 is not None:
+            for i, c in enumerate(constraints_m):
+                opa1 = c[0]
+                for j, opa2 in enumerate(opa_m):
+                    if opa2.is_conjugate(constraint2):
+                        dot_m = np.dot(opa1.axis, opa2.axis)
+                        # Ensure that the angles are equal
+                        if abs(dot_m - dot_w) < 0.02 or abs(dot_m + dot_w) < 0.02:
+                            constraints_m[i][1].append(opa2)
+                            # Generate 2nd constraint in opposite direction
+                            extra = deepcopy(opa2)
+                            extra.axis = [
+                                opa2.axis[0] * -1,
+                                opa2.axis[1] * -1,
+                                opa2.axis[2] * -1,
+                            ]
+                            constraints_m[i][1].append(extra)
+                # If no consistent constraints are found, remove first constraint
+                if constraints_m[i][1] == []:
+                    valid.remove(i)
+        copy = deepcopy(constraints_m)
+        constraints_m = []
+        for i in valid:
+            constraints_m.append(copy[i])
+    
+        # Generate orientations consistent with the possible constraints
+        orientations = []
+        # Loop over molecular constraint sets
+        for c1 in constraints_m:
+            v1 = c1[0].axis
+            v2 = constraint1.axis
+            T = rotate_vector(v1, v2)
+            # If there is only one constraint
+            if c1[1] == []:
+                o = Orientation(T, degrees=1, axis=constraint1.axis)
+                orientations.append(o)
+            else:
+                # Loop over second molecular constraints
+                for opa in c1[1]:
+                    phi = angle(constraint1.axis, constraint2.axis)
+                    phi2 = angle(constraint1.axis, np.dot(T, opa.axis))
+                    if np.isclose(phi, phi2, rtol=rtol):
+                        r = np.sin(phi)
+                        c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
+                        theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
+                        # R = aa2matrix(constraint1.axis, theta)
+                        R = Rotation.from_rotvec(theta * constraint1.axis).as_matrix()
+                        T2 = np.dot(R, T)
+                        a = angle(np.dot(T2, opa.axis), constraint2.axis)
+                        if not np.isclose(a, 0, rtol=rtol):
+                            T2 = np.dot(np.linalg.inv(R), T)
+                        o = Orientation(T2, degrees=0)
+                        orientations.append(o)
+    
+        # Ensure the identity orientation is checked if no constraints are found
+        if constraints_m == []:
+            o = Orientation(np.identity(3), degrees=2)
+            orientations.append(o)
+    
+        # Remove redundancy from orientations
+        list_i = list(range(len(orientations)))
+        list_j = list(range(len(orientations)))
+        for i, o1 in enumerate(orientations):
+            if i in list_i:
+                for j, o2 in enumerate(orientations):
+                    if i > j and j in list_j and j in list_i:
+                        # m1 = o1.get_matrix(angle=0)
+                        # m2 = o2.get_matrix(angle=0)
+                        m1 = o1.matrix
+                        m2 = o2.matrix
+                        new_op = SymmOp.from_rotation_and_translation(
+                            np.dot(m2, np.linalg.inv(m1)), [0, 0, 0]
+                        )
+                        P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0, 0, 0])
+                        old_op = P * new_op * P.inverse
+                        if self.pga.is_valid_op(old_op):
+                            list_i.remove(j)
+                            list_j.remove(j)
+        orientations_new = []
+        for i in list_i:
+            orientations_new.append(orientations[i])
+    
+        #Check each of the found orientations for consistency with the Wyckoff pos.
+        #If consistent, put into an array of valid orientations
+        allowed = []
+        for o in orientations_new:
+            op = o.get_op()
+            mo = deepcopy(self.mol)
+            mo.apply_operation(op)
+            if is_compatible_symmetry(mo, wp):
+                allowed.append(o)
+        return allowed
+
 class Box:
     """
     Class for storing the binding box for a molecule. 
@@ -884,77 +1129,6 @@ def reoriented_molecule(mol): #, nested=False):
     return Molecule(numbers, coords), P
 
 
-def get_symmetry(mol, already_oriented=False):
-    """
-    Return a molecule's point symmetry.
-    Note: for linear molecules, infinitessimal rotations are treated as 6-fold
-    rotations, which works for 3d and 2d point groups.
-
-    Args:
-        mol: a Molecule object
-        already_oriented: whether or not the principle axes of mol are already
-            reoriented. Can save time if True, but is not required.
-
-    Returns:
-        a list of SymmOp objects which leave the molecule unchanged when applied
-    """
-    # For single atoms, we cannot represent the point group using a list of operations
-    if len(mol) == 1:
-        return []
-    pga = PointGroupAnalyzer(mol)
-    # Handle linear molecules
-    if "*" in pga.sch_symbol:
-        if not already_oriented:
-            # Reorient the molecule
-            oriented_mol, P = reoriented_molecule(mol)
-            pga = PointGroupAnalyzer(oriented_mol)
-        pg = pga.get_pointgroup()
-        symm_m = []
-        for op in pg:
-            symm_m.append(op)
-        # Add 12-fold  and reflections in place of ininitesimal rotation
-        for axis in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
-            # op = SymmOp.from_rotation_and_translation(aa2matrix(axis, np.pi/6), [0,0,0])
-            m1 = Rotation.from_rotvec(np.pi / 6 * axis).as_matrix()
-            op = SymmOp.from_rotation_and_translation(m1, [0, 0, 0])
-            if pga.is_valid_op(op):
-                symm_m.append(op)
-                # Any molecule with infinitesimal symmetry is linear;
-                # Thus, it possess mirror symmetry for any axis perpendicular
-                # To the rotational axis. pymatgen does not add this symmetry
-                # for all linear molecules - for example, hydrogen
-                if axis == [1, 0, 0]:
-                    symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
-                    symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                    #r = SymmOp.from_xyz_string("-x,y,-z")
-                elif axis == [0, 1, 0]:
-                    symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
-                    symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                    #r = SymmOp.from_xyz_string("-x,-y,z")
-                elif axis == [0, 0, 1]:
-                    symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
-                    symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
-                    #r = SymmOp.from_xyz_string("x,-y,-z")
-                # Generate a full list of SymmOps for the molecule's pointgroup
-                symm_m = generate_full_symmops(symm_m, 1e-3)
-                break
-        # Reorient the SymmOps into mol's original frame
-        if not already_oriented:
-            new = []
-            for op in symm_m:
-                new.append(P.inverse * op * P)
-            return new
-        elif already_oriented:
-            return symm_m
-    # Handle nonlinear molecules
-    else:
-        pg = pga.get_pointgroup()
-        symm_m = []
-        for op in pg:
-            symm_m.append(op)
-        return symm_m
-
-
 def is_compatible_symmetry(mol, wp):
     """
     Tests if a molecule meets the symmetry requirements of a Wyckoff position
@@ -973,208 +1147,6 @@ def is_compatible_symmetry(mol, wp):
             return False
     return True
 
-
-def orientations_in_wp(mol, wp, adjust=False, rtol=1e-2):
-    """
-    Tests if a molecule meets the symmetry requirements of a Wyckoff position,
-    and returns the valid orientations.
-
-    Args:
-        mol: a pyxtal Molecule object.
-        wp: a pyxtal.symmetry.Wyckoff_position object
-        adjust: whether or not to reorient the principle axes
-            when calling get_symmetry. Setting to True can remove redundancy,
-            but is not necessary
-    Returns:
-        a list of operations.Orientation objects which can be applied to the
-        molecule while allowing it to satisfy the symmetry requirements of the
-        Wyckoff position. If no orientations are found, returns False.
-    """
-    # For single atoms, there are no constraints
-    if len(mol.mol) == 1 or wp.index == 0:
-        return [Orientation([[1, 0, 0], [0, 1, 0], [0, 0, 1]], degrees=2)]
-    # C1 molecule cannot take specical position
-    elif wp.index > 1 and mol.pga.sch_symbol == 'C1':
-        return []
-
-    # Obtain the Wyckoff symmetry
-    wyckoffs = wp.ops
-    symm_w = wp.symmetry_m[0]
-    pga = mol.pga
-
-    # Store OperationAnalyzer objects for each molecular SymmOp
-    symm_m = get_symmetry(mol.mol, already_oriented=adjust)
-    opa_m = []
-    for op_m in symm_m:
-        opa = OperationAnalyzer(op_m)
-        opa_m.append(opa)
-
-    # Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
-    opa_w = []
-    for op_w in symm_w:
-        opa_w.append(OperationAnalyzer(op_w))
-
-    # Check for constraints from the Wyckoff symmetry...
-    # If we find ANY two constraints (SymmOps with unique axes), the molecule's
-    # point group MUST contain SymmOps which can be aligned to these particular
-    # constraints. However, there may be multiple compatible orientations of the
-    # molecule consistent with these constraints
-    constraint1 = None
-    constraint2 = None
-    for i, op_w in enumerate(symm_w):
-        if opa_w[i].axis is not None:
-            constraint1 = opa_w[i]
-            for j, op_w in enumerate(symm_w):
-                if opa_w[j].axis is not None:
-                    dot = np.dot(opa_w[i].axis, opa_w[j].axis)
-                    if (not np.isclose(dot, 1, rtol=rtol)) and (
-                        not np.isclose(dot, -1, rtol=rtol)
-                    ):
-                        constraint2 = opa_w[j]
-                        break
-            break
-    # Indirectly store the angle between the constraint axes
-    if constraint1 is not None and constraint2 is not None:
-        dot_w = np.dot(constraint1.axis, constraint2.axis)
-    # Generate 1st consistent molecular constraints
-    constraints_m = []
-    if constraint1 is not None:
-        for i, opa1 in enumerate(opa_m):
-            if opa1.is_conjugate(constraint1):
-                constraints_m.append([opa1, []])
-                # Generate 2nd constraint in opposite direction
-                extra = deepcopy(opa1)
-                extra.axis = [opa1.axis[0] * -1, opa1.axis[1] * -1, opa1.axis[2] * -1]
-                constraints_m.append([extra, []])
-
-    # Remove redundancy for the first constraints
-    list_i = list(range(len(constraints_m)))
-    list_j = list(range(len(constraints_m)))
-    copy = deepcopy(constraints_m)
-    for i, c1 in enumerate(copy):
-        if i in list_i:
-            for j, c2 in enumerate(copy):
-                if i > j and j in list_j and j in list_i:
-                    # Check if axes are colinear
-                    if np.isclose(np.dot(c1[0].axis, c2[0].axis), 1, rtol=rtol):
-                        list_i.remove(j)
-                        list_j.remove(j)
-                    # Check if axes are symmetrically equivalent
-                    else:
-                        cond1 = False
-                        # cond2 = False
-                        for opa in opa_m:
-                            if opa.type == "rotation":
-                                op = opa.op
-                                if np.isclose(
-                                    np.dot(op.operate(c1[0].axis), c2[0].axis),
-                                    1,
-                                    rtol=5*rtol,
-                                ):
-                                    cond1 = True
-                                    break
-                        if cond1 is True:  # or cond2 is True:
-                            list_i.remove(j)
-                            list_j.remove(j)
-    c_m = deepcopy(constraints_m)
-    constraints_m = []
-    for i in list_i:
-        constraints_m.append(c_m[i])
-
-    # Generate 2nd consistent molecular constraints
-    valid = list(range(len(constraints_m)))
-    if constraint2 is not None:
-        for i, c in enumerate(constraints_m):
-            opa1 = c[0]
-            for j, opa2 in enumerate(opa_m):
-                if opa2.is_conjugate(constraint2):
-                    dot_m = np.dot(opa1.axis, opa2.axis)
-                    # Ensure that the angles are equal
-                    if abs(dot_m - dot_w) < 0.02 or abs(dot_m + dot_w) < 0.02:
-                        constraints_m[i][1].append(opa2)
-                        # Generate 2nd constraint in opposite direction
-                        extra = deepcopy(opa2)
-                        extra.axis = [
-                            opa2.axis[0] * -1,
-                            opa2.axis[1] * -1,
-                            opa2.axis[2] * -1,
-                        ]
-                        constraints_m[i][1].append(extra)
-            # If no consistent constraints are found, remove first constraint
-            if constraints_m[i][1] == []:
-                valid.remove(i)
-    copy = deepcopy(constraints_m)
-    constraints_m = []
-    for i in valid:
-        constraints_m.append(copy[i])
-
-    # Generate orientations consistent with the possible constraints
-    orientations = []
-    # Loop over molecular constraint sets
-    for c1 in constraints_m:
-        v1 = c1[0].axis
-        v2 = constraint1.axis
-        T = rotate_vector(v1, v2)
-        # If there is only one constraint
-        if c1[1] == []:
-            o = Orientation(T, degrees=1, axis=constraint1.axis)
-            orientations.append(o)
-        else:
-            # Loop over second molecular constraints
-            for opa in c1[1]:
-                phi = angle(constraint1.axis, constraint2.axis)
-                phi2 = angle(constraint1.axis, np.dot(T, opa.axis))
-                if np.isclose(phi, phi2, rtol=rtol):
-                    r = np.sin(phi)
-                    c = np.linalg.norm(np.dot(T, opa.axis) - constraint2.axis)
-                    theta = np.arccos(1 - (c ** 2) / (2 * (r ** 2)))
-                    # R = aa2matrix(constraint1.axis, theta)
-                    R = Rotation.from_rotvec(theta * constraint1.axis).as_matrix()
-                    T2 = np.dot(R, T)
-                    a = angle(np.dot(T2, opa.axis), constraint2.axis)
-                    if not np.isclose(a, 0, rtol=rtol):
-                        T2 = np.dot(np.linalg.inv(R), T)
-                    o = Orientation(T2, degrees=0)
-                    orientations.append(o)
-
-    # Ensure the identity orientation is checked if no constraints are found
-    if constraints_m == []:
-        o = Orientation(np.identity(3), degrees=2)
-        orientations.append(o)
-
-    # Remove redundancy from orientations
-    list_i = list(range(len(orientations)))
-    list_j = list(range(len(orientations)))
-    for i, o1 in enumerate(orientations):
-        if i in list_i:
-            for j, o2 in enumerate(orientations):
-                if i > j and j in list_j and j in list_i:
-                    # m1 = o1.get_matrix(angle=0)
-                    # m2 = o2.get_matrix(angle=0)
-                    m1 = o1.matrix
-                    m2 = o2.matrix
-                    new_op = SymmOp.from_rotation_and_translation(
-                        np.dot(m2, np.linalg.inv(m1)), [0, 0, 0]
-                    )
-                    P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0, 0, 0])
-                    old_op = P * new_op * P.inverse
-                    if pga.is_valid_op(old_op):
-                        list_i.remove(j)
-                        list_j.remove(j)
-    orientations_new = []
-    for i in list_i:
-        orientations_new.append(orientations[i])
-
-    #Check each of the found orientations for consistency with the Wyckoff pos.
-    #If consistent, put into an array of valid orientations
-    allowed = []
-    for o in orientations_new:
-        op = o.get_op()
-        mo = deepcopy(mol.mol)
-        mo.apply_operation(op)
-        if is_compatible_symmetry(mo, wp):
-            allowed.append(o)
-    return allowed
 
 def make_graph(mol, tol=0.2):
     """

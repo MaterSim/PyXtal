@@ -12,7 +12,7 @@ from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.wyckoff_site import mol_site, WP_merge
-from pyxtal.molecule import pyxtal_molecule, orientations_in_wp
+from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group, jk_from_i
 from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
 from pyxtal.msg import CompatibilityError
@@ -37,10 +37,6 @@ class molecular_crystal:
             primitive cell (NOT the conventioal cell)
         volume_factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
-        orientations: Once a crystal with the same spacegroup and molecular
-            stoichiometry has been generated, you may pass its
-            valid_orientations attribute here to avoid repeating the
-            calculation, but this is not required
         lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
             object to define the unit cell
         conventional (optional): count the number of atoms in the conventional cell
@@ -60,7 +56,6 @@ class molecular_crystal:
         thickness = None,
         area = None,
         select_high = True,
-        orientations = None,
         lattice = None,
         torsions = None,
         tm = Tol_matrix(prototype="molecular"),
@@ -122,7 +117,7 @@ class molecular_crystal:
         # Wyckofff sites
         self.set_molecules(molecules, torsions)
         self.set_sites(sites)
-        self.set_orientations(orientations)
+        self.set_orientations()
 
         # Check the minimum dof within the Wyckoff positions
         compat, self.degrees = self._check_compatible()
@@ -186,7 +181,7 @@ class molecular_crystal:
             p_mol = pyxtal_molecule(mol, torsions=torsions[i], tm=self.tol_matrix)
             self.molecules.append(p_mol)
  
-    def set_orientations(self, orientations):
+    def set_orientations(self):
         """
         Calculates the valid orientations for each Molecule and Wyckoff
         position. Returns a list with 4 indices:
@@ -199,20 +194,16 @@ class molecular_crystal:
         orientations for self.molecules[i], in the Wyckoff position
         self.group.wyckoffs_organized[j][k]
         """
-        if orientations is None:
-            self.valid_orientations = []
-            for pyxtal_mol in self.molecules:
-                #mol = pyxtal_mol.mol
-                self.valid_orientations.append([])
-                wp_index = -1
-                for i, x in enumerate(self.group.wyckoffs_organized):
-                    self.valid_orientations[-1].append([])
-                    for j, wp in enumerate(x):
-                        wp_index += 1
-                        allowed = orientations_in_wp(pyxtal_mol, wp, True)
-                        self.valid_orientations[-1][-1].append(allowed)
-        else:
-            self.valid_orientations = orientations
+        self.valid_orientations = []
+        for pyxtal_mol in self.molecules:
+            self.valid_orientations.append([])
+            wp_index = -1
+            for i, x in enumerate(self.group.wyckoffs_organized):
+                self.valid_orientations[-1].append([])
+                for j, wp in enumerate(x):
+                    wp_index += 1
+                    allowed = pyxtal_mol.get_orientations_in_wp(wp)
+                    self.valid_orientations[-1][-1].append(allowed)
 
     def set_volume(self):
         """
