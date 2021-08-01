@@ -673,10 +673,13 @@ class pyxtal_molecule:
         elif wp.index > 1 and self.pga.sch_symbol == 'C1':
             return []
 
-        symm_m = self.symops
         symm_w = wp.symmetry_m[0]
-        wyckoffs = wp.ops
+        # molecule has fewer symops
+        if len(self.pg[0]) < len(symm_w):
+            return []
     
+        symm_m = self.symops 
+        wyckoffs = wp.ops
         opa_m = []
         for op_m in symm_m:
             opa = OperationAnalyzer(op_m)
