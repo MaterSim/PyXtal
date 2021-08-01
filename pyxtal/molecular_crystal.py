@@ -28,6 +28,7 @@ class molecular_crystal:
     constraints. 
 
     Args:
+        dim: dimenion (1, 2, 3)
         group: the group number (1-75, 1-80, 1-230)
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
@@ -35,7 +36,7 @@ class molecular_crystal:
             `database <pyxtal.database.collection.html>`_
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
-        volume_factor: A volume factor used to generate a larger or smaller
+        factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
         lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
             object to define the unit cell
@@ -206,9 +207,6 @@ class molecular_crystal:
     def set_volume(self):
         """
         Given the molecular stoichiometry, estimate the volume needed for a unit cell.
-
-        Returns:
-            the estimated volume (in cubic Angstroms) needed for the unit cell
         """
         volume = 0
         for numMol, mol in zip(self.numMols, self.molecules):
@@ -255,8 +253,8 @@ class molecular_crystal:
 
     def set_crystal(self):
         """
-        The main code to generate a random molecular crystal. If successful,
-        `self.valid` is True (False otherwise) 
+        The main code to generate a random molecular crystal. 
+        If successful, `self.valid` is True 
         """
         self.numattempts = 0
         if not self.degrees:

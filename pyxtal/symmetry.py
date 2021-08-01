@@ -1556,7 +1556,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
             return symbol
 
     # Generate needed ops
-    if complete is False:
+    if not complete:
         ops = generate_full_symmops(ops, 1e-3)
     # Get OperationAnalyzer object for all ops
     opas = []

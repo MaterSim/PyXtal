@@ -21,7 +21,6 @@ from pyxtal.operations import (
     SymmOp,
 )
 from pyxtal.symmetry import Group, Wyckoff_position
-from pyxtal.symmetry import ss_string_from_ops as site_symm
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg
 from pyxtal.lattice import Lattice
@@ -55,22 +54,15 @@ class atom_site:
         self.update()
 
     def __str__(self):
-        if not hasattr(self, "site_symm"): self._get_site_symm()
+        if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
         s += "WP [{:}{:}] ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site [{:}]".format(self.site_symm.replace(" ",""))
+        s += "Site [{:}]".format(self.wp.site_symm.replace(" ",""))
 
         return s
 
     def __repr__(self):
         return str(self)
-
-    def _get_site_symm(self):
-        """
-        Set site symmetry
-        """
-        wp = self.wp
-        self.site_symm = site_symm(wp.symmetry_m[0], wp.number, wp.dim) 
 
     def save_dict(self):
         dict0 = {"position": self.position,
@@ -270,12 +262,12 @@ class mol_site:
             self.position = project_point(self.position, wp[0])
 
     def __str__(self):
-        if not hasattr(self, "site_symm"): self._get_site_symm()
+        if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
         s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
         s += "WP [{:d}{:s}] ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site [{:}]".format(self.site_symm.replace(" ",""))
+        s += "Site [{:}]".format(self.wp.site_symm.replace(" ",""))
         if len(self.molecule.mol) > 1:
             s += " Euler [{:6.1f} {:6.1f} {:6.1f}]".format(*self.angles)
 
@@ -283,13 +275,6 @@ class mol_site:
     
     def __repr__(self):
         return str(self)
-
-    def _get_site_symm(self):
-        """
-        Set site symmetry
-        """
-        wp = self.wp
-        self.site_symm = site_symm(wp.symmetry_m[0], wp.number, wp.dim) 
 
     def _get_dof(self):
         """

@@ -14,11 +14,10 @@ import networkx as nx
 # External Libraries
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
-from pymatgen.core.bonds import CovalentBond
 from monty.serialization import loadfn
 
 # PyXtal imports
-from pyxtal.msg import printx
+from pyxtal.symmetry import Group
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.database.element import Element
 from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
@@ -131,14 +130,12 @@ class pyxtal_molecule:
             msg = "Could not create molecules from given input: {:s}".format(mol)
             raise NameError(msg)
 
-        self.props = mo.site_properties
-
-
         # Molecule and symmetry analysis
-        self.pga = PointGroupAnalyzer(mo)
+        self.props = mo.site_properties
         if len(mo) > 1:
             if symmetrize:
-                mo = self.pga.symmetrize_molecule()["sym_mol"]
+                pga = PointGroupAnalyzer(mo)
+                mo = pga.symmetrize_molecule()["sym_mol"]
             mo = self.add_site_props(mo)
         self.mol = mo
         self.get_symmetry()
@@ -610,57 +607,54 @@ class pyxtal_molecule:
 
     def get_symmetry(self):
         """
-        Compute the molecule's point symmetry.
-        Note: for linear molecules, infinitessimal rotations are treated as 6-fold
-        rotations, which works for 3d and 2d point groups.
-    
-        Returns:
-            a list of SymmOp objects which leave the molecule unchanged when applied
+        Set the molecule's point symmetry.
+            - pga: pymatgen.symmetry.analyzer.PointGroupAnalyzer object
+            - pg: pyxtal.symmetry.Group object
+            - symops: a list of SymmOp objects
         """
+
         mol = self.mol
-        pga = self.pga
+        pga = PointGroupAnalyzer(mol)
+
         # For single atoms, we cannot represent the point group using a list of operations
         if len(mol) == 1:
-            self.symm = []
-        elif "*" in pga.sch_symbol:
-            # linear molecules
-            pg = pga.get_pointgroup()
             symm_m = []
-            for op in pg:
-                symm_m.append(op)
-            # Add 12-fold  and reflections in place of ininitesimal rotation
-            for axis in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
-                # op = SymmOp.from_rotation_and_translation(aa2matrix(axis, np.pi/6), [0,0,0])
-                m1 = Rotation.from_rotvec(np.pi / 6 * axis).as_matrix()
-                op = SymmOp.from_rotation_and_translation(m1, [0, 0, 0])
-                if pga.is_valid_op(op):
-                    symm_m.append(op)
-                    # Any molecule with infinitesimal symmetry is linear;
-                    # Thus, it possess mirror symmetry for any axis perpendicular
-                    # To the rotational axis. pymatgen does not add this symmetry
-                    # for all linear molecules - for example, hydrogen
-                    if axis == [1, 0, 0]:
-                        symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
-                        symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                        #r = SymmOp.from_xyz_string("-x,y,-z")
-                    elif axis == [0, 1, 0]:
-                        symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
-                        symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                        #r = SymmOp.from_xyz_string("-x,-y,z")
-                    elif axis == [0, 0, 1]:
-                        symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
-                        symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
-                        #r = SymmOp.from_xyz_string("x,-y,-z")
-                    # Generate a full list of SymmOps for the molecule's pointgroup
-                    symm_m = generate_full_symmops(symm_m, 1e-3)
-                    break
-            self.symmetry = symm_m
-        else: # nonlinear molecules
+            symbol = 'C1'
+        else:
+            symbol = pga.sch_symbol
             pg = pga.get_pointgroup()
-            symm_m = []
-            for op in pg:
-                symm_m.append(op)
-            self.symmetry = symm_m
+            symm_m = [op for op in pg]
+
+            if "*" in symbol: # linear molecules
+                # Add 12-fold  and reflections in place of ininitesimal rotation
+                for axis in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
+                    # op = SymmOp.from_rotation_and_translation(aa2matrix(axis, np.pi/6), [0,0,0])
+                    m1 = Rotation.from_rotvec(np.pi / 6 * axis).as_matrix()
+                    op = SymmOp.from_rotation_and_translation(m1, [0, 0, 0])
+                    if pga.is_valid_op(op):
+                        symm_m.append(op)
+                        # Any molecule with infinitesimal symmetry is linear;
+                        # Thus, it possess mirror symmetry for any axis perpendicular
+                        # To the rotational axis. pymatgen does not add this symmetry
+                        # for all linear molecules - for example, hydrogen
+                        if axis == [1, 0, 0]:
+                            symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
+                            symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
+                            #r = SymmOp.from_xyz_string("-x,y,-z")
+                        elif axis == [0, 1, 0]:
+                            symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
+                            symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
+                            #r = SymmOp.from_xyz_string("-x,-y,z")
+                        elif axis == [0, 0, 1]:
+                            symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
+                            symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
+                            #r = SymmOp.from_xyz_string("x,-y,-z")
+                        # Generate a full list of SymmOps for the molecule's pointgroup
+                        symm_m = generate_full_symmops(symm_m, 1e-3)
+                        break
+        self.symops = symm_m
+        self.pga = pga
+        self.pg = Group(symbol, dim=0)
 
     def get_orientations_in_wp(self, wp, rtol=1e-2):
         """
@@ -678,7 +672,7 @@ class pyxtal_molecule:
         elif wp.index > 1 and self.pga.sch_symbol == 'C1':
             return []
 
-        symm_m = self.symmetry
+        symm_m = self.symops
         symm_w = wp.symmetry_m[0]
         wyckoffs = wp.ops
     
@@ -814,11 +808,6 @@ class pyxtal_molecule:
                             T2 = np.dot(np.linalg.inv(R), T)
                         o = Orientation(T2, degrees=0)
                         orientations.append(o)
-    
-        # Ensure the identity orientation is checked if no constraints are found
-        if constraints_m == []:
-            o = Orientation(np.identity(3), degrees=2)
-            orientations.append(o)
     
         # Remove redundancy from orientations
         list_i = list(range(len(orientations)))

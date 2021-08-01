@@ -25,8 +25,8 @@ class random_crystal:
     spacegroup's symmetry.
 
     Args:
-        group: the spacegroup number (1-230), or a
-            `pyxtal.symmetry.Group <pyxtal.symmetry.Group.html>`_ object
+        dim: dimenion (0, 1, 2, 3)
+        group: the group number (1-56, 1-75, 1-80, 1-230)
         species: a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
         numIons: a list of the number of each type of atom within the
             primitive cell (NOT the conventional cell), e.g., `[4, 2]`
@@ -200,8 +200,8 @@ class random_crystal:
 
     def set_crystal(self):
         """
-        The main code to generate a random atomic crystal. If successful,
-        `self.valid` is True (False otherwise) 
+        The main code to generate a random atomic crystal. 
+        If successful, `self.valid` is True 
        """
         self.numattempts = 0
         if not self.degrees:
