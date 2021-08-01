@@ -133,13 +133,17 @@ class pyxtal_molecule:
 
         self.props = mo.site_properties
 
+
+        #Symmetry analysis
+        self.pga = PointGroupAnalyzer(mo)
+
+        #Molecule
         if len(mo) > 1:
             if symmetrize:
-                pga = PointGroupAnalyzer(mo)
-                mo = pga.symmetrize_molecule()["sym_mol"]
+                mo = self.pga.symmetrize_molecule()["sym_mol"]
             mo = self.add_site_props(mo)
-
         self.mol = mo
+
         self.tm = tm
         self.box = self.get_box()
         self.volume = self.box.volume
@@ -147,9 +151,7 @@ class pyxtal_molecule:
         self.get_symbols()
         self.get_tols_matrix()
         xyz = self.mol.cart_coords
-        #if len(self.mol)==3: print(xyz)
         self.reset_positions(xyz-self.get_center(xyz))
-
 
     def __str__(self):
         return '[' + self.name + ']'
@@ -337,7 +339,11 @@ class pyxtal_molecule:
                 conf = mol.GetConformer(0)
                 #print(conf.GetPositions())
             else:
-                AllChem.EmbedMultipleConfs(mol, numConfs=20, maxAttempts=200, useRandomCoords=True, pruneRmsThresh=0.5)
+                AllChem.EmbedMultipleConfs(mol, 
+                                           numConfs=20, 
+                                           maxAttempts=200, 
+                                           useRandomCoords=True, 
+                                           pruneRmsThresh=0.5)
                 N_confs = mol.GetNumConformers()
                 conf_id = choice(range(N_confs))
                 conf = mol.GetConformer(conf_id)
@@ -954,7 +960,7 @@ def is_compatible_symmetry(mol, wp):
     Tests if a molecule meets the symmetry requirements of a Wyckoff position
 
     Args:
-        mol: a Molecule object. Orientation is arbitrary
+        mol: a pymatgen Molecule object.
         wp: a pyxtal.symmetry.Wyckoff_position object
     """
     # For single atoms, there are no constraints
@@ -974,7 +980,7 @@ def orientations_in_wp(mol, wp, adjust=False, rtol=1e-2):
     and returns the valid orientations.
 
     Args:
-        mol: a Molecule object. Orientation is arbitrary
+        mol: a pyxtal Molecule object.
         wp: a pyxtal.symmetry.Wyckoff_position object
         adjust: whether or not to reorient the principle axes
             when calling get_symmetry. Setting to True can remove redundancy,
@@ -985,16 +991,19 @@ def orientations_in_wp(mol, wp, adjust=False, rtol=1e-2):
         Wyckoff position. If no orientations are found, returns False.
     """
     # For single atoms, there are no constraints
-    if len(mol) == 1 or wp.index == 0:
+    if len(mol.mol) == 1 or wp.index == 0:
         return [Orientation([[1, 0, 0], [0, 1, 0], [0, 0, 1]], degrees=2)]
+    # C1 molecule cannot take specical position
+    elif wp.index > 1 and mol.pga.sch_symbol == 'C1':
+        return []
 
     # Obtain the Wyckoff symmetry
     wyckoffs = wp.ops
     symm_w = wp.symmetry_m[0]
-    pga = PointGroupAnalyzer(mol)
+    pga = mol.pga
 
     # Store OperationAnalyzer objects for each molecular SymmOp
-    symm_m = get_symmetry(mol, already_oriented=adjust)
+    symm_m = get_symmetry(mol.mol, already_oriented=adjust)
     opa_m = []
     for op_m in symm_m:
         opa = OperationAnalyzer(op_m)
@@ -1161,7 +1170,7 @@ def orientations_in_wp(mol, wp, adjust=False, rtol=1e-2):
     allowed = []
     for o in orientations_new:
         op = o.get_op()
-        mo = deepcopy(mol)
+        mo = deepcopy(mol.mol)
         mo.apply_operation(op)
         if is_compatible_symmetry(mo, wp):
             allowed.append(o)
