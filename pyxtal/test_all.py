@@ -14,7 +14,6 @@ from pymatgen.core.operations import SymmOp
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
-from pyxtal.wyckoff_site import WP_merge
 from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
 
@@ -113,10 +112,10 @@ class TestWP(unittest.TestCase):
         self.assertTrue(symbol == "4a")
 
     def test_merge(self):
-        pt, wp, _ = WP_merge([0.05, 0.7, 0.24], l1.get_matrix(), wp1, 0.5)
+        pt, wp, _ = wp1.merge([0.05, 0.7, 0.24], l1.get_matrix(), 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol == "4a")
-        pt, wp, _ = WP_merge([0.15, 0.7, 0.24], l1.get_matrix(), wp1, 0.5)
+        pt, wp, _ = wp1.merge([0.15, 0.7, 0.24], l1.get_matrix(), 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol == "8b")
 

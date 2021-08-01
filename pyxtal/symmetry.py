@@ -24,8 +24,11 @@ from pyxtal.operations import (
     apply_ops,
     get_inverse_ops,
     filtered_coords_euclidean,
+    distance,
     distance_matrix,
     OperationAnalyzer,
+    project_point,
+    check_images,
 )
 from pyxtal.database.element import Element
 from pyxtal.database.hall import hall_from_hm
@@ -983,6 +986,94 @@ class Wyckoff_position:
         Returns the general Wyckoff position
         """
         return self.Wyckoff_positions[0]
+
+    def merge(self, pt, lattice, tol, orientations=None):
+        """
+        Given a list of fractional coordinates, merges them within a given
+        tolerance, and checks if the merged coordinates satisfy a Wyckoff
+        position. Used for merging general Wyckoff positions into special Wyckoff
+        positions within the random_crystal (and its derivative) classes.
+    
+        Args:
+            pt: the originl point (3-vector)
+            lattice: a 3x3 matrix representing the unit cell
+            tol: the cutoff distance for merging coordinates
+            orientations: the valid orientations for a given molecule. Obtained
+                from get_sg_orientations, which is called within molecular_crystal
+    
+        Returns:
+            pt: 3-vector after merge
+            wp: a `pyxtal.symmetry.Wyckoff_position` object, If no matching WP, returns False. 
+            valid_ori: the valid orientations after merge
+    
+        """
+        wp = deepcopy(self)
+        index = wp.index
+        PBC = wp.PBC
+        group = Group(wp.number, wp.dim)
+        pt = project_point(pt, wp[0], lattice, PBC)
+        coor = apply_ops(pt, wp)
+        if orientations is None:
+            valid_ori = None
+        else:
+            j, k = jk_from_i(index, orientations)
+            valid_ori = orientations[j][k]
+        
+        # Main loop for merging multiple times
+    
+        while True:
+            # Check distances of current WP. If too small, merge
+            dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
+            passed_distance_check = True
+            x = np.argwhere(dm < tol)
+            for y in x:
+                # Ignore distance from atom to itself
+                if y[0] == 0 and y[1] == 0:
+                    pass
+                else:
+                    passed_distance_check = False
+                    break
+    
+            # for molecular crystal, one more check
+            if not check_images([coor[0]], [6], lattice, PBC=PBC, tol=tol):
+                passed_distance_check = False
+    
+            if not passed_distance_check:
+                mult1 = group[index].multiplicity
+                # Find possible wp's to merge into
+                possible = []
+                for i, wp0 in enumerate(group):
+                    mult2 = wp0.multiplicity
+                    # Check that a valid orientation exists
+                    if orientations is not None:
+                        j, k = jk_from_i(i, orientations)
+                        if orientations[j][k] == []:
+                            continue
+                        else:
+                            valid_ori = orientations[j][k]
+                    # factor = mult2 / mult1
+    
+                    if (mult2 < mult1) and (mult1 % mult2 == 0):
+                        possible.append(i)
+                if possible == []:
+                    return None, False, valid_ori
+                # Calculate minimum separation for each WP
+                distances = []
+                for i in possible:
+                    wp = group[i]
+                    projected_point = project_point(pt.copy(), wp[0], lattice=lattice, PBC=PBC)
+                    d = distance(pt - projected_point, lattice, PBC=PBC)
+                    distances.append(np.min(d))
+                # Choose wp with shortest translation for generating point
+                tmpindex = np.argmin(distances)
+                index = possible[tmpindex]
+                wp = group[index]
+                pt = project_point(pt, wp[0], lattice=lattice, PBC=PBC)
+                coor = apply_ops(pt, wp)
+            # Distances were not too small; return True
+            else:
+                return pt, wp, valid_ori
+
 
 
 # --------------------------- Wyckoff Position selection  -----------------------------

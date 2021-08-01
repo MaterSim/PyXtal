@@ -5,7 +5,7 @@ import numpy as np
 from pymatgen.core.structure import Structure, Molecule
 from pymatgen.core.bonds import CovalentBond
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
+from pyxtal.wyckoff_site import atom_site, mol_site
 from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
 from pyxtal.symmetry import Wyckoff_position, Group
 from pyxtal.lattice import Lattice
@@ -192,7 +192,7 @@ def read_cif(filename):
     lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, lat_type)
     sites = []
     for specie, coord in zip(species, coords):
-        pt, wp, _ = WP_merge(coord, lattice.matrix, wp0, tol=0.1)
+        pt, wp, _ = wp0.merge(coord, lattice.matrix, tol=0.1)
         sites.append(atom_site(wp, pt, specie, diag))
     return lattice, sites
 
@@ -315,7 +315,7 @@ class structure_from_ext():
                             #Transform it to the conventional representation
                             if self.diag: position = np.dot(self.perm, position).T
                             #print("molecule is on the special wyckoff position")
-                            position, wp, _ = WP_merge(position, new_lat, self.wyc, 0.1)
+                            position, wp, _ = self.wyc.merge(position, new_lat, 0.1)
                             self.wps.append(wp)
                             self.numMols[j] = len(wp)
                             #print("After Merge:---"); print(position); print(wp)

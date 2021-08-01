@@ -9,7 +9,7 @@ import numpy as np
 
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff
-from pyxtal.wyckoff_site import atom_site, WP_merge
+from pyxtal.wyckoff_site import atom_site
 from pyxtal.msg import printx, CompatibilityError
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
@@ -295,7 +295,7 @@ class random_crystal:
                 mult = wp.multiplicity # remember the original multiplicity
                 pt = self.lattice.generate_point()
                 # Merge coordinates if the atoms are close
-                pt, wp, _ = WP_merge(pt, cell, wp, tol)
+                pt, wp, _ = wp.merge(pt, cell, tol)
                 # For pure planar structure
                 if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
                     pt[-1] = 0.5

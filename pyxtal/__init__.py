@@ -17,7 +17,7 @@ from pyxtal.block_crystal import block_crystal
 from pyxtal.crystal import random_crystal
 from pyxtal.symmetry import Group, Wyckoff_position, search_matched_position
 from pyxtal.operations import apply_ops, SymmOp, get_inverse
-from pyxtal.wyckoff_site import atom_site, mol_site, WP_merge
+from pyxtal.wyckoff_site import atom_site, mol_site
 from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.molecule import pyxtal_molecule
 from pyxtal.lattice import Lattice

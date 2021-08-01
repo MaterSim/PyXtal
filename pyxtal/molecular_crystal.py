@@ -11,7 +11,7 @@ import numpy as np
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
-from pyxtal.wyckoff_site import mol_site, WP_merge
+from pyxtal.wyckoff_site import mol_site
 from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group, jk_from_i
 from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
@@ -355,7 +355,7 @@ class molecular_crystal:
 
                 # merge coordinates if the atoms are close
                 mtol = pyxtal_mol.radius * 0.5
-                pt, wp, oris = WP_merge(pt, self.lattice.matrix, wp, mtol, valid_ori)
+                pt, wp, oris = wp.merge(pt, self.lattice.matrix, mtol, valid_ori)
 
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:
