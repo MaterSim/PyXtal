@@ -61,7 +61,7 @@ def find_id_from_smile(smile):
         torsion2 = cleaner(list(mol.GetSubstructMatches(pattern_tor2)))
         tmp = cleaner(torsion1+torsion2)
         torsions = []
-        for t in torsions:
+        for t in tmp:
             (i, j, k, l) = t
             b = mol.GetBondBetweenAtoms(j,k)
             if not b.IsInRing():
@@ -686,13 +686,13 @@ class pyxtal_molecule:
         for op_m in symm_m:
             opa = OperationAnalyzer(op_m)
             opa_m.append(opa)
-    
+        
         # Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
         opa_w = []
         for op_w in symm_w:
             opa_w.append(OperationAnalyzer(op_w))
     
-        # Check for constraints from the Wyckoff symmetry...
+        # Check for constraints from the Wyckoff symmetry
         # If we find ANY two constraints (SymmOps with unique axes), the molecule's
         # point group MUST contain SymmOps which can be aligned to these particular
         # constraints. However, there may be multiple compatible orientations of the
@@ -751,7 +751,7 @@ class pyxtal_molecule:
                                     ):
                                         cond1 = True
                                         break
-                            if cond1 is True:  # or cond2 is True:
+                            if cond1:  # or cond2 is True:
                                 list_i.remove(j)
                                 list_j.remove(j)
         c_m = deepcopy(constraints_m)

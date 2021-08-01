@@ -197,11 +197,9 @@ class molecular_crystal:
         self.valid_orientations = []
         for pyxtal_mol in self.molecules:
             self.valid_orientations.append([])
-            wp_index = -1
             for i, x in enumerate(self.group.wyckoffs_organized):
                 self.valid_orientations[-1].append([])
                 for j, wp in enumerate(x):
-                    wp_index += 1
                     allowed = pyxtal_mol.get_orientations_in_wp(wp)
                     self.valid_orientations[-1][-1].append(allowed)
 

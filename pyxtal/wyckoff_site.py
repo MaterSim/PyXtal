@@ -8,7 +8,6 @@ from scipy.spatial.transform import Rotation as R
 
 # External Libraries
 from pymatgen.core import Molecule
-from pymatgen.core.structure import Structure  
 
 # PyXtal imports
 from pyxtal.tolerance import Tol_matrix
@@ -27,14 +26,217 @@ from pyxtal.symmetry import ss_string_from_ops as site_symm
 from pyxtal.database.element import Element
 from pyxtal.constants import rad, deg
 from pyxtal.lattice import Lattice
-from pyxtal.msg import printx
+
+class atom_site:
+    """
+    Class for storing atomic Wyckoff positions with a single coordinate.
+
+    Args:
+        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object 
+        coordinate: a fractional 3-vector for the generating atom's coordinate
+        specie: an Element, element name or symbol, or atomic number of the atom
+        diag: whether or not has the diagonal symmetry
+        search: to search for the optimum position for special wyckoff site
+    """
+
+    def __init__(self, wp=None, coordinate=None, specie=1, diag=False, search=False):
+        self.position = np.array(coordinate)
+        self.specie = Element(specie).short_name
+        self.diag = diag
+        self.wp = wp
+        if self.diag:
+            self.wp.diagonalize_symops()
+            #self.position = project_point(self.position, wp[0])
+
+        self._get_dof()
+        self.PBC = self.wp.PBC
+        self.multiplicity = self.wp.multiplicity
+        if search:
+            self.search_position()
+        self.update()
+
+    def __str__(self):
+        if not hasattr(self, "site_symm"): self._get_site_symm()
+        s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
+        s += "WP [{:}{:}] ".format(self.wp.multiplicity, self.wp.letter)
+        s += "Site [{:}]".format(self.site_symm.replace(" ",""))
+
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+    def _get_site_symm(self):
+        """
+        Set site symmetry
+        """
+        wp = self.wp
+        self.site_symm = site_symm(wp.symmetry_m[0], wp.number, wp.dim) 
+
+    def save_dict(self):
+        dict0 = {"position": self.position,
+                 "specie": self.specie,
+                 "number": self.wp.number,
+                 "dim": self.wp.dim,
+                 "index": self.wp.index,
+                 "PBC": self.wp.PBC,
+                }
+        return dict0
+
+    def _get_dof(self):
+        """
+        get the number of dof for the given structures:
+        """
+        freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
+        self.dof = len(freedom[freedom==True])
+
+
+    @classmethod
+    def load_dict(cls, dicts):
+        """
+        load the sites from a dictionary
+        """
+        g = dicts["number"]
+        index = dicts["index"]
+        dim = dicts["dim"]
+        PBC = dicts["PBC"]
+        position = dicts["position"]
+        specie = dicts["specie"]
+        wp = Wyckoff_position.from_group_and_index(g, index, dim, PBC)
+        return cls(wp, position, specie)
+
+    def perturbate(self, lattice, magnitude=0.1):
+        """
+        Random perturbation of the site
+        
+        Args:
+            lattice: lattice vectors
+            magnitude: the magnitude of displacement (default: 0.1 A)
+        """
+        dis = (np.random.sample(3) - 0.5).dot(lattice)
+        dis /= np.linalg.norm(dis)
+        dis *= magnitude
+        pos = self.position + dis.dot(np.linalg.inv(lattice))
+        self.update(pos)
+ 
+    def search_position(self):
+        """
+        Sometimes, the initial posiition is not the proper generator
+        Needs to find the proper generator
+        """
+        if self.wp.index > 0:
+            pos = self.position
+            coords = apply_ops(pos, Group(self.wp.number, self.wp.dim)[0])
+            for coord in coords:
+                ans = apply_ops(coord, [self.wp.ops[0]])[0]
+                diff = coord - ans
+                diff -= np.floor(diff)
+                if np.sum(diff**2)<1e-4:
+                    self.position = coord - np.floor(coord)
+                    break
+    def swap_axis(self, swap_id, shift=np.zeros(3)):
+        """
+        sometimes space groups like Pmm2 allows one to swap the a,b axes
+        to get an alternative representation
+        """
+        self.position += shift
+        self.position = self.position[swap_id]
+        self.position -= np.floor(self.position)
+        self.wp, _ = self.wp.swap_axis(swap_id)
+        self.site_symm = site_symm(
+            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
+        )
+        self.update()
+
+    def shift_by_swap(self, swap_id):
+        """
+        check if a shift is needed during swap
+        May occur for special WP in the I/A/B/C/F cases
+        e.g., in space group 71 (Immm), the permutation
+        4j(1/2,0,0.2) -> (0.2,0,1/2) -> 4f(0.7,1/2,0)
+        it requires a shift of (0.5,0.5,0.5)
+        """
+        wp, shift = self.wp.swap_axis(swap_id)
+        return shift
+
+    def equivalent_set(self, tran, indices):
+        """
+        Transform the wp to another equivalent set.
+        Needs to update both wp and positions
+
+        Args:
+            tran: affine matrix
+            indices: the list of transformed wps 
+        """
+        self.position = SymmOp(tran).operate(self.position)
+        self.position -= np.floor(self.position)
+        self.wp = self.wp.equivalent_set(indices[self.wp.index]) #update the wp index
+        self.site_symm = site_symm(
+            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
+        )
+        self.update()
+
+
+    def update(self, pos=None):
+        """
+        Used to generate coords from self.position
+        """
+        if pos is None:
+            pos = self.position
+        self.coords = apply_ops(pos, self.wp) 
+        self.position = self.coords[0]
+
+    def check_with_ws2(self, ws2, lattice, tm, same_group=True):
+        """
+        Given two Wyckoff sites, checks the inter-atomic distances between them.
+
+        Args:
+            ws2: a different Wyckoff_site object (will always return False if
+            two identical WS's are provided)
+            lattice: a 3x3 cell matrix
+            same_group: whether or not the two WS's are in the same structure.
+            Default value True reduces the calculation cost
+        Returns:
+            True if all distances are greater than the allowed tolerances.
+            False if any distance is smaller than the allowed tolerance
+        """
+        # Ensure the PBC values are valid
+        if self.PBC != ws2.PBC:
+            raise ValueError("PBC values do not match between Wyckoff sites")
+        # Get tolerance
+        tol = tm.get_tol(self.specie, ws2.specie)
+        # Symmetry shortcut method: check only some atoms
+        if same_group is True:
+            # We can either check one atom in WS1 against all WS2, or vice-versa
+            # Check which option is faster
+            if self.multiplicity > ws2.multiplicity:
+                coords1 = [self.coords[0]]
+                coords2 = ws2.coords
+            else:
+                coords1 = [ws2.coords[0]]
+                coords2 = self.coords
+            # Calculate distances
+            dm = distance_matrix(coords1, coords2, lattice, PBC=self.PBC)
+            # Check if any distances are less than the tolerance
+            if (dm < tol).any():
+                return False
+            else:
+                return True
+        # No symmetry method: check all atomic pairs
+        else:
+            dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
+            # Check if any distances are less than the tolerance
+            if (dm < tol).any():
+                return False
+            else:
+                return True
 
 class mol_site:
     """
     Class for storing molecular Wyckoff positions and orientations within
     the molecular_crystal class. Each mol_site object represenents an
-    entire Wyckoff position, not necessarily a single molecule. This is the
-    molecular version of Wyckoff_site
+    entire Wyckoff position, not necessarily a single molecule. 
+    This is the molecular version of Wyckoff_site
 
     Args:
         mol: a `pyxtal_molecule <pyxtal.molecule.pyxtal_molecule.html>`_ object
@@ -68,11 +270,7 @@ class mol_site:
             self.position = project_point(self.position, wp[0])
 
     def __str__(self):
-
-        if not hasattr(self, "site_symm"):
-            self.site_symm = site_symm(
-                self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
-            )
+        if not hasattr(self, "site_symm"): self._get_site_symm()
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
         s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
@@ -82,6 +280,16 @@ class mol_site:
             s += " Euler [{:6.1f} {:6.1f} {:6.1f}]".format(*self.angles)
 
         return s
+    
+    def __repr__(self):
+        return str(self)
+
+    def _get_site_symm(self):
+        """
+        Set site symmetry
+        """
+        wp = self.wp
+        self.site_symm = site_symm(wp.symmetry_m[0], wp.number, wp.dim) 
 
     def _get_dof(self):
         """
@@ -123,6 +331,7 @@ class mol_site:
         wp = Wyckoff_position.from_group_and_index(g, index, dim)
         diag = dicts["diag"]
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
+
         return cls(mol, position, orientation, wp, lattice, diag)
 
     def encode(self):
@@ -170,7 +379,6 @@ class mol_site:
         from pyxtal.molecule import pyxtal_molecule, Orientation
 
         mol = pyxtal_molecule(mol=dicts['smile']+'.smi', fix=True)
-        # reset 
         if len(mol.mol) > 1:
             rdkit_mol = mol.rdkit_mol(mol.smile)
             conf = rdkit_mol.GetConformer(0)
@@ -195,6 +403,9 @@ class mol_site:
         return cls(mol, position, orientation, wp, lattice, diag)
 
     def show(self, id=None, **kwargs):
+        """
+        display WP on the notebook
+        """
         from pyxtal.viz import display_molecular_site
         return display_molecular_site(self, id, **kwargs)
 
@@ -203,15 +414,13 @@ class mol_site:
         Used to generate coords and species for get_coords_and_species
 
         Args:
-            absolute: whether or not to return absolute (Euclidean)
-                coordinates. If false, return relative coordinates instead
+            absolute: return absolute or relative coordinates 
             PBC: whether or not to add coordinates in neighboring unit cells, 
-                used for distance checking
             first: whether or not to extract the information from only the first site
             unitcell: whether or not to move the molecular center to the unit cell
 
         Returns:
-            atomic coords: a numpy array of fractional coordinates for the atoms in the site
+            atomic coords: a numpy array of atomic coordinates in the site
             species: a list of atomic species for the atomic coords
         """
         coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
@@ -269,10 +478,8 @@ class mol_site:
         (with angle=0), and calculates the new positions.
 
         Args:
-            absolute: whether or not to return absolute (Euclidean)
-                coordinates. If false, return relative coordinates instead
-            PBC: whether or not to add coordinates in neighboring unit cells, used for
-                distance checking
+            absolute: return absolute or relative coordinates 
+            PBC: whether or not to add coordinates in neighboring unit cells
             unitcell: whether or not to move the molecular center to the unit cell
 
         Returns:
@@ -329,6 +536,23 @@ class mol_site:
         o = q*p
         self.orientation.r = o 
         self.orientation.matrix = o.as_matrix()
+
+    #def is_compatible_symmetry(self, tol=0.3):
+    #    """
+    #    Check if the molecular symmetry matches the site symmetry
+    #    """
+    #    mol = self.molecule.mol
+    #    if len(mol) == 1 or self.wp.index==0:
+    #        return True
+    #    else:
+    #        pga = PointGroupAnalyzer(mol, tol)
+    #        for op in self.wp.symmetry_m[0]:
+    #            if not pga.is_valid_op(op):
+    #                return False
+    #        return True
+
+    def is_valid_orientation(self):
+        pass
 
     def get_mol_object(self, id=0):
         """
@@ -664,205 +888,6 @@ class mol_site:
         return True
 
 
-class atom_site:
-    """
-    Class for storing atomic Wyckoff positions with a single coordinate.
-
-    Args:
-        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object 
-        coordinate: a fractional 3-vector for the generating atom's coordinate
-        specie: an Element, element name or symbol, or atomic number of the atom
-        search: to search for the optimum position for special wyckoff site
-    """
-
-    def __init__(self, wp=None, coordinate=None, specie=1, diag=False, search=False):
-        self.position = np.array(coordinate)
-        self.specie = Element(specie).short_name
-        self.diag = diag
-        self.wp = wp
-        if self.diag:
-            self.wp.diagonalize_symops()
-            #self.position = project_point(self.position, wp[0])
-
-        self._get_dof()
-        self.PBC = self.wp.PBC
-        self.multiplicity = self.wp.multiplicity
-        if search:
-            self.search_position()
-        self.update()
-
-    def __str__(self):
-        if not hasattr(self, "site_symm"):
-            self.site_symm = site_symm(
-                self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
-            )
-        s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
-        s += "WP [{:}{:}] ".format(self.wp.multiplicity, self.wp.letter)
-        s += "Site [{:}]".format(self.site_symm.replace(" ",""))
-
-        return s
-
-    def __repr__(self):
-        return str(self)
-
-    def save_dict(self):
-        dict0 = {"position": self.position,
-                 "specie": self.specie,
-                 "number": self.wp.number,
-                 "dim": self.wp.dim,
-                 "index": self.wp.index,
-                 "PBC": self.wp.PBC,
-                }
-        return dict0
-
-    def _get_dof(self):
-        """
-        get the number of dof for the given structures:
-        """
-        freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
-        self.dof = len(freedom[freedom==True])
-
-
-    @classmethod
-    def load_dict(cls, dicts):
-        """
-        load the sites from a dictionary
-        """
-        g = dicts["number"]
-        index = dicts["index"]
-        dim = dicts["dim"]
-        PBC = dicts["PBC"]
-        position = dicts["position"]
-        specie = dicts["specie"]
-        wp = Wyckoff_position.from_group_and_index(g, index, dim, PBC)
-        return cls(wp, position, specie)
-
-    def perturbate(self, lattice, magnitude=0.1):
-        """
-        Random perturbation of the site
-        
-        Args:
-            lattice: lattice vectors
-            magnitude: the magnitude of displacement (default: 0.1 A)
-        """
-        dis = (np.random.sample(3) - 0.5).dot(lattice)
-        dis /= np.linalg.norm(dis)
-        dis *= magnitude
-        pos = self.position + dis.dot(np.linalg.inv(lattice))
-        self.update(pos)
- 
-    def search_position(self):
-        """
-        Sometimes, the initial posiition is not the proper generator
-        Needs to find the proper generator
-        """
-        if self.wp.index > 0:
-            pos = self.position
-            coords = apply_ops(pos, Group(self.wp.number, self.wp.dim)[0])
-            for coord in coords:
-                ans = apply_ops(coord, [self.wp.ops[0]])[0]
-                diff = coord - ans
-                diff -= np.floor(diff)
-                if np.sum(diff**2)<1e-4:
-                    self.position = coord - np.floor(coord)
-                    break
-    def swap_axis(self, swap_id, shift=np.zeros(3)):
-        """
-        sometimes space groups like Pmm2 allows one to swap the a,b axes
-        to get an alternative representation
-        """
-        self.position += shift
-        self.position = self.position[swap_id]
-        self.position -= np.floor(self.position)
-        self.wp, _ = self.wp.swap_axis(swap_id)
-        self.site_symm = site_symm(
-            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
-        )
-        self.update()
-
-    def shift_by_swap(self, swap_id):
-        """
-        check if a shift is needed during swap
-        May occur for special WP in the I/A/B/C/F cases
-        e.g., in space group 71 (Immm), the permutation
-        4j(1/2,0,0.2) -> (0.2,0,1/2) -> 4f(0.7,1/2,0)
-        it requires a shift of (0.5,0.5,0.5)
-        """
-        wp, shift = self.wp.swap_axis(swap_id)
-        return shift
-
-    def equivalent_set(self, tran, indices):
-        """
-        Transform the wp to another equivalent set.
-        Needs to update both wp and positions
-
-        Args:
-            tran: affine matrix
-            indices: the list of transformed wps 
-        """
-        self.position = SymmOp(tran).operate(self.position)
-        self.position -= np.floor(self.position)
-        self.wp = self.wp.equivalent_set(indices[self.wp.index]) #update the wp index
-        self.site_symm = site_symm(
-            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
-        )
-        self.update()
-
-
-    def update(self, pos=None):
-        """
-        Used to generate coords from self.position
-        """
-        if pos is None:
-            pos = self.position
-        self.coords = apply_ops(pos, self.wp) 
-        self.position = self.coords[0]
-
-    def check_with_ws2(self, ws2, lattice, tm, same_group=True):
-        """
-        Given two Wyckoff sites, checks the inter-atomic distances between them.
-
-        Args:
-            ws2: a different Wyckoff_site object (will always return False if
-            two identical WS's are provided)
-            lattice: a 3x3 cell matrix
-            same_group: whether or not the two WS's are in the same structure.
-            Default value True reduces the calculation cost
-        Returns:
-            True if all distances are greater than the allowed tolerances.
-            False if any distance is smaller than the allowed tolerance
-        """
-        # Ensure the PBC values are valid
-        if self.PBC != ws2.PBC:
-            printx("Error: PBC values do not match between Wyckoff sites")
-            return
-        # Get tolerance
-        tol = tm.get_tol(self.specie, ws2.specie)
-        # Symmetry shortcut method: check only some atoms
-        if same_group is True:
-            # We can either check one atom in WS1 against all WS2, or vice-versa
-            # Check which option is faster
-            if self.multiplicity > ws2.multiplicity:
-                coords1 = [self.coords[0]]
-                coords2 = ws2.coords
-            else:
-                coords1 = [ws2.coords[0]]
-                coords2 = self.coords
-            # Calculate distances
-            dm = distance_matrix(coords1, coords2, lattice, PBC=self.PBC)
-            # Check if any distances are less than the tolerance
-            if (dm < tol).any():
-                return False
-            else:
-                return True
-        # No symmetry method: check all atomic pairs
-        else:
-            dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
-            # Check if any distances are less than the tolerance
-            if (dm < tol).any():
-                return False
-            else:
-                return True
 
 def WP_merge(pt, lattice, wp, tol, orientations=None):
     """
