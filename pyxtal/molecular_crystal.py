@@ -12,7 +12,7 @@ from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.wyckoff_site import mol_site, WP_merge
-from pyxtal.molecule import pyxtal_molecule, orientation_in_wyckoff_position
+from pyxtal.molecule import pyxtal_molecule, orientations_in_wp
 from pyxtal.symmetry import Group, jk_from_i
 from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
 from pyxtal.msg import CompatibilityError
@@ -208,23 +208,19 @@ class molecular_crystal:
         if orientations is None:
             self.valid_orientations = []
             for pyxtal_mol in self.molecules:
+                mol = pyxtal_mol.mol
                 self.valid_orientations.append([])
                 wp_index = -1
                 for i, x in enumerate(self.group.wyckoffs_organized):
                     self.valid_orientations[-1].append([])
                     for j, wp in enumerate(x):
                         wp_index += 1
-                        allowed = orientation_in_wyckoff_position(
-                            pyxtal_mol.mol,
-                            wp,
+                        allowed = orientations_in_wp(mol, wp,
                             already_oriented=True,
                             allow_inversion=self.allow_inversion,
                         )
 
-                        if allowed:
-                            self.valid_orientations[-1][-1].append(allowed)
-                        else:
-                            self.valid_orientations[-1][-1].append([])
+                        self.valid_orientations[-1][-1].append(allowed)
         else:
             self.valid_orientations = orientations
 

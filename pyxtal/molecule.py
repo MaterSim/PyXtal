@@ -383,11 +383,15 @@ class pyxtal_molecule:
 
         # Rotation
         if len(self.smile) > 1: 
-            #print("ComputeCanonicalTransform", np.linalg.det(trans[:3,:3]))
             trans = rdmt.ComputeCanonicalTransform(conf)
-            if np.linalg.det(trans[:3,:3]) < 0: trans[:3,:3] *= -1
+            if abs(abs(np.linalg.det(trans))-1.0)>1e-1: 
+                print("Bug in trans", np.linalg.det(trans))
+                import sys; sys.exit()
+            elif np.linalg.det(trans[:3,:3]) < 0: 
+                trans[:3,:3] *= -1
+
+            # add reflection if needed    
             if reflect: trans[:3,:3] *= -1
-            #if abs(abs(np.linalg.det(trans))-1.0)>1e-1: print(np.linalg.det(trans)); import sys; sys.exit()
             rdmt.TransformConformer(conf, trans)
 
         # Translation
@@ -945,11 +949,32 @@ def get_symmetry(mol, already_oriented=False):
         return symm_m
 
 
-def orientation_in_wyckoff_position(
+def is_compatible_symmetry(mol, wp):
+    """
+    Tests if a molecule meets the symmetry requirements of a Wyckoff position
+
+    Args:
+        mol: a Molecule object. Orientation is arbitrary
+        wp: a pyxtal.symmetry.Wyckoff_position object
+    """
+    # For single atoms, there are no constraints
+    if len(mol) == 1:
+        return True
+
+    w_symm = wp.symmetry_m
+    symm_w = w_symm[0]
+    pga = PointGroupAnalyzer(mol)
+
+    # Check exact orientation
+    for op in symm_w:
+        if not pga.is_valid_op(op):
+            return False
+    return True
+
+
+def orientations_in_wp(
     mol,
-    wyckoff_position,
-    randomize=True,
-    exact_orientation=False,
+    wp,
     already_oriented=False,
     allow_inversion=True,
     rtol = 1e-2,
@@ -960,12 +985,7 @@ def orientation_in_wyckoff_position(
 
     Args:
         mol: a Molecule object. Orientation is arbitrary
-        wyckoff_position: a pyxtal.symmetry.Wyckoff_position object
-        randomize: whether or not to apply a random rotation consistent with
-            the symmetry requirements
-        exact_orientation: whether to only check compatibility for the provided
-            orientation of the molecule. Used within general case for checking.
-            If True, this function only returns True or False
+        wp: a pyxtal.symmetry.Wyckoff_position object
         already_oriented: whether or not to reorient the principle axes
             when calling get_symmetry. Setting to True can remove redundancy,
             but is not necessary
@@ -983,24 +1003,12 @@ def orientation_in_wyckoff_position(
     if len(mol) == 1:
         return [Orientation([[1, 0, 0], [0, 1, 0], [0, 0, 1]], degrees=2)]
 
-    wyckoffs = wyckoff_position.ops
-    w_symm = wyckoff_position.symmetry_m
+    wyckoffs = wp.ops
+    w_symm = wp.symmetry_m
 
     # Obtain the Wyckoff symmetry
     symm_w = w_symm[0]
     pga = PointGroupAnalyzer(mol)
-
-    # Check exact orientation
-    if exact_orientation is True:
-        mo = deepcopy(mol)
-        valid = True
-        for op in symm_w:
-            if not pga.is_valid_op(op):
-                valid = False
-        if valid is True:
-            return True
-        elif valid is False:
-            return False
 
     # Obtain molecular symmetry, exact_orientation==False
     symm_m = get_symmetry(mol, already_oriented=already_oriented)
@@ -1187,21 +1195,13 @@ def orientation_in_wyckoff_position(
     #If consistent, put into an array of valid orientations
     allowed = []
     for o in orientations_new:
-        if randomize is True:
-            op = o.get_op()
-        elif randomize is False:
-            op = o.get_op() #do not change
+        op = o.get_op()
         mo = deepcopy(mol)
         mo.apply_operation(op)
-        if orientation_in_wyckoff_position(
-                mo, wyckoff_position, exact_orientation=True,
-                randomize=False, allow_inversion=allow_inversion
-        ):
+        if is_compatible_symmetry(mo, wp):
             allowed.append(o)
-    if allowed == []:
-        return False
-    else:
-        return allowed
+        #mo, wyckoff_position, exact_orientation=True,
+    return allowed
 
 def make_graph(mol, tol=0.2):
     """
