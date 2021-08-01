@@ -624,10 +624,11 @@ class pyxtal_molecule:
             symbol = pga.sch_symbol
             pg = pga.get_pointgroup()
             symm_m = [op for op in pg]
-
+    
             if "*" in symbol: # linear molecules
+                symbol = symbol.replace('*','6')
                 # Add 12-fold  and reflections in place of ininitesimal rotation
-                for axis in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
+                for i, axis in enumerate(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])):
                     # op = SymmOp.from_rotation_and_translation(aa2matrix(axis, np.pi/6), [0,0,0])
                     m1 = Rotation.from_rotvec(np.pi / 6 * axis).as_matrix()
                     op = SymmOp.from_rotation_and_translation(m1, [0, 0, 0])
@@ -637,15 +638,15 @@ class pyxtal_molecule:
                         # Thus, it possess mirror symmetry for any axis perpendicular
                         # To the rotational axis. pymatgen does not add this symmetry
                         # for all linear molecules - for example, hydrogen
-                        if axis == [1, 0, 0]:
+                        if i == 0:
                             symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
                             symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
                             #r = SymmOp.from_xyz_string("-x,y,-z")
-                        elif axis == [0, 1, 0]:
+                        elif i == 1:
                             symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
                             symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
                             #r = SymmOp.from_xyz_string("-x,-y,z")
-                        elif axis == [0, 0, 1]:
+                        elif i == 2:
                             symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
                             symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
                             #r = SymmOp.from_xyz_string("x,-y,-z")
