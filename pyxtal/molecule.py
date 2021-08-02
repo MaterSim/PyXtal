@@ -538,11 +538,11 @@ class pyxtal_molecule:
             #print(self.get_torsion_angles(xyz0))   
             #print(self.get_torsion_angles(xyz1))   
 
-            if rmsd1 < tol and rmsd1 < rmsd2:
+            if rmsd1 < tol and rmsd1 <= rmsd2:
                 trans = trans1[:3,:3].T
                 r = Rotation.from_matrix(trans)
                 return r.as_euler('zxy', degrees=True), rmsd1, False
-            elif rmsd2 < tol and rmsd2 < rmsd1:
+            elif rmsd2 < tol and rmsd2 <= rmsd1:
                 trans = trans2[:3,:3].T
                 r = Rotation.from_matrix(trans)
                 return r.as_euler('zxy', degrees=True), rmsd2, True
