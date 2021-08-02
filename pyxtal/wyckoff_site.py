@@ -342,8 +342,8 @@ class mol_site:
         dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
         dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(xyz)
         angs = dict0["rotor"] 
-        rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
-        conf0 = rdkit_mol.GetConformer(0)
+        #rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
+        #conf0 = rdkit_mol.GetConformer(0)
         #print(self.molecule.set_torsion_angles(conf0, angs))
         #print("save matrix"); print(self.orientation.r.as_matrix())
         #print("save angle"); print(self.orientation.r.as_euler('zxy', degrees=True))
@@ -365,8 +365,7 @@ class mol_site:
 
         mol = pyxtal_molecule(mol=dicts['smile']+'.smi', fix=True)
         if len(mol.mol) > 1:
-            rdkit_mol = mol.rdkit_mol(mol.smile)
-            conf = rdkit_mol.GetConformer(0)
+            conf = mol.rdkit_mol().GetConformer(0)
             if dicts['reflect']:
                 mol.set_torsion_angles(conf, dicts["rotor"], False)
             xyz = mol.set_torsion_angles(conf, dicts["rotor"], dicts['reflect'])

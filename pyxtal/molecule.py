@@ -113,7 +113,8 @@ class pyxtal_molecule:
                         raise NameError("{:s} is not a valid path".format(mol))
                 elif tmp[-1] == 'smi':
                     self.smile = tmp[0]
-                    symbols, xyz, self.torsionlist = self.rdkit_mol_init(tmp[0], fix, torsions)
+                    res = self.rdkit_mol_init(tmp[0], fix, torsions)
+                    (symbols, xyz, self.torsionlist) = res
                     mo = Molecule(symbols, xyz)
                     symmetrize = False
                 else:
@@ -143,8 +144,8 @@ class pyxtal_molecule:
         self.tm = tm
         self.box = self.get_box()
         self.volume = self.box.volume
-        self.get_radius()
         self.get_symbols()
+        self.get_radius()
         self.get_tols_matrix()
         xyz = self.mol.cart_coords
         self.reset_positions(xyz-self.get_center(xyz))
@@ -158,12 +159,6 @@ class pyxtal_molecule:
         """
         return self.mol.as_dict()
 
-    def copy(self):
-        """
-        simply copy the structure
-        """
-        return deepcopy(self)
-
     @classmethod
     def load_dict(cls, dicts):
         """
@@ -171,6 +166,12 @@ class pyxtal_molecule:
         """
         mol = Molecule.from_dict(dicts)
         return cls(mol)
+
+    def copy(self):
+        """
+        simply copy the structure
+        """
+        return deepcopy(self)
 
     def swap_axis(self, ax):
         """
@@ -239,8 +240,14 @@ class pyxtal_molecule:
         cell[0,:] *= l
         cell[1,:] *= w
         cell[2,:] *= h
-        vertices = np.array([[-1/2, -1/2, -1/2], [1/2, -1/2, -1/2], [1/2, 1/2, -1/2], [-1/2, 1/2, -1/2],
-                            [-1/2, 1/2, 1/2], [-1/2, -1/2, 1/2], [1/2, -1/2, 1/2], [1/2, 1/2, 1/2]])
+        vertices = np.array([[-1/2, -1/2, -1/2], 
+                             [1/2, -1/2, -1/2], 
+                             [1/2, 1/2, -1/2], 
+                             [-1/2, 1/2, -1/2],
+                             [-1/2, 1/2, 1/2], 
+                             [-1/2, -1/2, 1/2], 
+                             [1/2, -1/2, 1/2], 
+                             [1/2, 1/2, 1/2]])
         vertices = vertices.dot(cell)
         vertices += center
         return cell, vertices, center
@@ -258,21 +265,10 @@ class pyxtal_molecule:
                 r_max = radius
         self.radius = r_max
         # reestimate the radius if it has stick shape
-        rmax = max([self.box.width,self.box.height,self.box.length])
-        rmin = min([self.box.width,self.box.height,self.box.length])
+        rmax = max([self.box.width, self.box.height, self.box.length])
+        rmin = min([self.box.width, self.box.height, self.box.length])
         if rmax/rmin > 3 and rmax >12:
             self.radius = rmin
-
-    def has_stick_shape(self):
-        """
-        check if the molecule is stick-like
-        """
-        sizes = [self.box.width,self.box.height,self.box.length]
-        sizes.sort()
-        if sizes[2]>15: #and sizes[2]/sizes[0]>2 and sizes[2]/sizes[1]>2:
-            return True
-        else:
-            return False
 
     def get_symbols(self):
         self.symbols = [specie.name for specie in self.mol.species]
@@ -305,8 +301,21 @@ class pyxtal_molecule:
         show the molecule
         """
         from pyxtal.viz import display_molecule
-        
         return display_molecules(self.mol)
+
+
+    def rdkit_mol(self, N_confs=1):
+        """
+        initialize the mol xyz and torsion list
+        """
+        from rdkit import Chem
+
+        mol = Chem.MolFromMolBlock(self.rdkit_mb, removeHs=False)
+        if N_confs > 1:
+            conf = mol.GetConformer(0)
+            for i in range(N_confs-1):
+                mol.AddConformer(conf, True)
+        return mol
 
 
     def rdkit_mol_init(self, smile, fix, torsions):
@@ -320,42 +329,46 @@ class pyxtal_molecule:
         """
         from rdkit import Chem
         from rdkit.Chem import AllChem
-        from rdkit.Geometry import Point3D
+        from rdkit.Chem import rdMolTransforms as rdmt
 
         if smile not in ["Cl-"]:
             torsionlist = find_id_from_smile(smile)
             mol = Chem.MolFromSmiles(smile)
-            #print(torsionlist)
             mol = Chem.AddHs(mol)
             symbols = []
             for id in range(mol.GetNumAtoms()):
                 symbols.append(mol.GetAtomWithIdx(id).GetSymbol())
-            if fix or torsions is not None:
-                AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
-                conf = mol.GetConformer(0)
-                #print(conf.GetPositions())
+
+            AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
+            self.rdkit_mb = Chem.MolToMolBlock(mol)
+            ref_conf = mol.GetConformer(0) #always the reference molecule
+
+            if fix or torsions is not None or len(torsionlist)==0:
+                conf = ref_conf
             else:
                 AllChem.EmbedMultipleConfs(mol, 
-                                           numConfs=20, 
+                                           numConfs=max([1, 4*len(torsionlist)]), 
                                            maxAttempts=200, 
                                            useRandomCoords=True, 
                                            pruneRmsThresh=0.5)
                 N_confs = mol.GetNumConformers()
                 conf_id = choice(range(N_confs))
                 conf = mol.GetConformer(conf_id)
-                #print(conf_id, N_confs)
 
-            #print("Init: ", conf.GetPositions())
+            # set tosion angles from random or pre-defined values
             if torsions is not None:
                 xyz = self.set_torsion_angles(conf, torsions, torsionlist=torsionlist)
             else:
                 xyz = conf.GetPositions()
-                angs = self.get_torsion_angles(xyz, torsionlist)
-                angs *= (1+0.15*np.random.uniform(-1., 1., len(angs))) 
-                xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
-                xyz -= self.get_center(xyz)
-            #print(torsions, "align", self.get_torsion_angles(xyz, torsionlist))
-            #print("Init: ", xyz[:3])
+                if len(torsionlist) > 0:
+                    angs = self.get_torsion_angles(xyz, torsionlist)
+                    #slightly perturb the coordinates
+                    angs *= (1+0.1*np.random.uniform(-1., 1., len(angs))) 
+                    xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
+                    xyz -= self.get_center(xyz)
+                else:
+                    pt = rdmt.ComputeCentroid(conf)
+                    xyz -= np.array([pt.x, pt.y, pt.z])
         else:
             #single atom cation or anions
             symbols = ["Cl"]
@@ -363,18 +376,6 @@ class pyxtal_molecule:
             torsionlist = []
         return symbols, xyz, torsionlist
 
-    def rdkit_mol(self, smile):
-        """
-        initialize the mol xyz and torsion list
-        """
-        from rdkit import Chem
-        from rdkit.Chem import AllChem
-
-        mol = Chem.MolFromSmiles(smile)
-        mol = Chem.AddHs(mol)
-        AllChem.EmbedMultipleConfs(mol, numConfs=3, randomSeed=0xf00d)
-        #print("To_dict", mol.GetConformer(0).GetPositions())
-        return mol
 
     def align(self, conf, reflect=False, torsionlist=None):
         """
@@ -428,12 +429,12 @@ class pyxtal_molecule:
                     # from rdkit
                     from rdkit.Geometry import Point3D
                     from rdkit.Chem import rdMolTransforms as rdmt
-
-                    conf1 = self.rdkit_mol(self.smile).GetConformer(0)
-                    for i in range(conf1.GetNumAtoms()):
+                    
+                    conf = self.rdkit_mol().GetConformer(0)
+                    for i in range(len(xyz)):
                         x, y, z = xyz[i]
-                        conf1.SetAtomPosition(i, Point3D(x,y,z))
-                    pt = rdmt.ComputeCentroid(conf1)
+                        conf.SetAtomPosition(i, Point3D(x,y,z))
+                    pt = rdmt.ComputeCentroid(conf)
 
                     return np.array([pt.x, pt.y, pt.z])
 
@@ -449,7 +450,7 @@ class pyxtal_molecule:
             from rdkit.Geometry import Point3D
             from rdkit.Chem import rdMolTransforms as rdmt
 
-            conf1 = self.rdkit_mol(self.smile).GetConformer(0)
+            conf1 = self.rdkit_mol().GetConformer(0)
             for i in range(len(self.mol)):
                 x,y,z = xyz[i]
                 conf1.SetAtomPosition(i,Point3D(x,y,z))
@@ -462,19 +463,19 @@ class pyxtal_molecule:
         """
         from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolTransforms as rdmt
-        mol = self.rdkit_mol(self.smile)
-        conf = mol.GetConformer(0)
 
         if torsionlist is None: torsionlist=self.torsionlist
 
-        for i in range(len(xyz)):
-            x,y,z = xyz[i]
-            conf.SetAtomPosition(i,Point3D(x,y,z))
-
         angs = []
-        for torsion in torsionlist:
-            (i, j, k, l) = torsion
-            angs.append(rdmt.GetDihedralDeg(conf, i, j, k, l))
+        if len(torsionlist) > 0:
+            conf = self.rdkit_mol().GetConformer(0)
+            for i in range(len(xyz)):
+                x,y,z = xyz[i]
+                conf.SetAtomPosition(i,Point3D(x,y,z))
+
+            for torsion in torsionlist:
+                (i, j, k, l) = torsion
+                angs.append(rdmt.GetDihedralDeg(conf, i, j, k, l))
         return angs
     
     def set_torsion_angles(self, conf, angles, reflect=False, torsionlist=None):
@@ -491,38 +492,44 @@ class pyxtal_molecule:
         xyz = self.align(conf, reflect)
         return xyz
 
-    def get_orientation(self, xyz, rtol=0.15, reset=False):
+    def get_orientation(self, xyz, rtol=0.15):
         """
-        get orientation, needs to check the tolerance
+        For the given xyz, compute the orientation
+
+        Args:
+            xyz: molecular xyz
         """
+        
         xyz -= self.get_center(xyz)
 
         if len(self.smile) > 1: # not in ["O", "o"]:
+            from rdkit import Chem
             from rdkit.Geometry import Point3D
-            from rdkit.Chem import rdMolAlign, RemoveHs, rdmolfiles, rdMolTransforms
+            from rdkit.Chem import rdMolAlign, RemoveHs, rdmolfiles
 
-            mol = self.rdkit_mol(self.smile)
+            mol = self.rdkit_mol(3)
             # 3 conformers for comparison
-            conf0 = mol.GetConformer(0)  #aligned
-            conf1 = mol.GetConformer(1)  #current
-            conf2 = mol.GetConformer(2)  #aligned+reflex
+            conf0 = mol.GetConformer(0)
+            conf1 = mol.GetConformer(1)  #reference+reflection
+            conf2 = mol.GetConformer(2)  #trial xyz
             angs = self.get_torsion_angles(xyz)
             xyz0 = self.set_torsion_angles(conf0, angs) #conf0 with aligned
             xyz1 = self.set_torsion_angles(conf0, angs, True) #conf0 with aligned+reflect
 
+            # reset the xyz
             for i in range(len(self.mol)):
                 x0,y0,z0 = xyz0[i]
                 x1,y1,z1 = xyz1[i]
                 x,y,z = xyz[i]
                 conf0.SetAtomPosition(i,Point3D(x0,y0,z0))
-                conf1.SetAtomPosition(i,Point3D(x,y,z))
-                conf2.SetAtomPosition(i,Point3D(x1,y1,z1))
+                conf1.SetAtomPosition(i,Point3D(x1,y1,z1))
+                conf2.SetAtomPosition(i,Point3D(x,y,z))
 
             mol = RemoveHs(mol)
-            rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
-            rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 2)
+            rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 0)
+            rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 1)
             tol = rtol*mol.GetNumAtoms()
-
+            
             #rdmolfiles.MolToXYZFile(mol, '01.xyz', 0)
             #rdmolfiles.MolToXYZFile(mol, '02.xyz', 1)
             #rdmolfiles.MolToXYZFile(mol, '03.xyz', 2)
