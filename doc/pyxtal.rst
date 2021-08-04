@@ -20,6 +20,7 @@ Submodules
 .. toctree::
 
    pyxtal.crystal
+   pyxtal.block_crystal
    pyxtal.molecular_crystal
    pyxtal.wyckoff_site
    pyxtal.wyckoff_split

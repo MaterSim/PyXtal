@@ -30,7 +30,10 @@ class representation():
     @classmethod
     def from_pyxtal(cls, struc):
         """
-        Convert the crystal into 1D vector
+        Initialize 1D rep. from the pyxtal object
+
+        Args:
+            struc: pyxtal object
         """
         symmetry = [struc.group.number, struc.diag]
         lat = struc.lattice.encode()
@@ -45,7 +48,7 @@ class representation():
     @classmethod
     def from_string(cls, inputs, smiles, composition=None):
         """
-        Convert the string into 1D vector
+        Initialize 1D rep. from the string
 
         Args:
             inputs: input string 
@@ -93,10 +96,10 @@ class representation():
  
     def to_pyxtal(self, smiles=None, composition=None):
         """
-        convert to the pyxtal structure
+        Export the pyxtal structure
 
         Args:
-            smiles: list of smile
+            smiles: list of smiles
             compoisition: list of composition
         """
         if smiles is None:
@@ -172,7 +175,12 @@ class representation():
     
     def to_string(self, time=None, eng=None, tag=None):
         """
-        string representation
+        Export string representation
+
+        Args:
+            time: float
+            eng: float
+            tag: string
         """
         x = self.x
         strs = "{:3d} {:d} ".format(int(x[0][0]), int(x[0][1]))

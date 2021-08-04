@@ -338,8 +338,10 @@ class pyxtal_molecule:
             symbols = []
             for id in range(mol.GetNumAtoms()):
                 symbols.append(mol.GetAtomWithIdx(id).GetSymbol())
-
-            AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
+            if len(smile) > 100: #a tmp fix for KEKULN10
+                AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=3)
+            else:
+                AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
             self.rdkit_mb = Chem.MolToMolBlock(mol)
             ref_conf = mol.GetConformer(0) #always the reference molecule
 

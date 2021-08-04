@@ -26,9 +26,9 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         struc: pyxtal structure object
         filename: path of the structure file 
         header: additional information
-        permission: write('w') or append('a+') to the given file
+        permission: write(`w`) or append(`a+`) to the given file
         sym_num: the number of symmetry operations, None means writing all symops
-        style: "icsd" or "mp" (used in pymatgen)
+        style: `icsd` or `mp` (used in pymatgen)
 
     """
     if sym_num is None:
@@ -344,7 +344,10 @@ class structure_from_ext():
         #print(xyz)
         m1 = Chem.MolFromSmiles(smile)
         m2 = Chem.AddHs(m1)
-        AllChem.EmbedMolecule(m2,randomSeed=0xf00d)
+        if len(smile) > 100:
+            AllChem.EmbedMolecule(m2,randomSeed=3)
+        else:
+            AllChem.EmbedMolecule(m2,randomSeed=0xf00d)
         m2 = Chem.RemoveHs(m2)
         conf = m2.GetConformer(0)
 
