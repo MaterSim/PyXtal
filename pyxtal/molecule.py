@@ -821,7 +821,12 @@ class pyxtal_molecule:
                             T2 = np.dot(np.linalg.inv(R), T)
                         o = Orientation(T2, degrees=0)
                         orientations.append(o)
-    
+
+        # Ensure the identity orientation is checked if no constraints are found
+        if constraints_m == []:
+            o = Orientation(np.identity(3), degrees=2)
+            orientations.append(o)
+
         # Remove redundancy from orientations
         list_i = list(range(len(orientations)))
         list_j = list(range(len(orientations)))

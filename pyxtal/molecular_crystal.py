@@ -205,12 +205,16 @@ class molecular_crystal:
             self.valid_orientations.append([])
             for i, x in enumerate(self.group.wyckoffs_organized):
                 self.valid_orientations[-1].append([])
+                skip = True
                 for j, wp in enumerate(x):
                     allowed = pyxtal_mol.get_orientations_in_wp(wp)
                     self.valid_orientations[-1][-1].append(allowed)
-                #terminate it asap
-                if len(allowed) == 0:
+                    if len(allowed) > 0:
+                        skip = False
+                if skip:
                     break
+        #print("ori")
+        #print(self.valid_orientations)
 
     def set_volume(self):
         """
@@ -233,7 +237,7 @@ class molecular_crystal:
             # Make sure the custom lattice PBC axes are correct.
             if lattice.PBC != self.PBC:
                 self.lattice.PBC = self.PBC
-                printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
+                raise ValueError("PBC is incompatible " + str(self.PBC))
         else:
             # Determine the unique axis
             if self.dim == 2:

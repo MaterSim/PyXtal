@@ -6,7 +6,7 @@ a Wyckoff_Position class. These classes are used for generation of random struct
 # ------------------------------
 # Standard Libraries
 import numpy as np
-from pkg_resources import resource_filename
+from pkg_resources import resource_filename as rf
 from copy import deepcopy
 import random
 import itertools
@@ -35,31 +35,22 @@ from pyxtal.database.hall import hall_from_hm
 from pyxtal.constants import letters
 # ------------------------------ Constants ---------------------------------------
 
-wyckoff_df = read_csv(resource_filename("pyxtal", "database/wyckoff_list.csv"))
-wyckoff_symmetry_df = read_csv(
-    resource_filename("pyxtal", "database/wyckoff_symmetry.csv")
-)
-wyckoff_generators_df = read_csv(
-    resource_filename("pyxtal", "database/wyckoff_generators.csv")
-)
-layer_df = read_csv(resource_filename("pyxtal", "database/layer.csv"))
-layer_symmetry_df = read_csv(resource_filename("pyxtal", "database/layer_symmetry.csv"))
-layer_generators_df = read_csv(
-    resource_filename("pyxtal", "database/layer_generators.csv")
-)
-rod_df = read_csv(resource_filename("pyxtal", "database/rod.csv"))
-rod_symmetry_df = read_csv(resource_filename("pyxtal", "database/rod_symmetry.csv"))
-rod_generators_df = read_csv(resource_filename("pyxtal", "database/rod_generators.csv"))
-point_df = read_csv(resource_filename("pyxtal", "database/point.csv"))
-point_symmetry_df = read_csv(resource_filename("pyxtal", "database/point_symmetry.csv"))
-point_generators_df = read_csv(
-    resource_filename("pyxtal", "database/point_generators.csv")
-)
-symbols = loadfn(resource_filename("pyxtal", "database/symbols.json"))
-
-t_subgroup = loadfn(resource_filename("pyxtal",'database/t_subgroup.json'))
-k_subgroup = loadfn(resource_filename("pyxtal",'database/k_subgroup.json'))
-wyc_sets = loadfn(resource_filename("pyxtal",'database/wyckoff_sets.json'))
+wyckoff_df = read_csv(rf("pyxtal", "database/wyckoff_list.csv"))
+wyckoff_symmetry_df = read_csv(rf("pyxtal", "database/wyckoff_symmetry.csv"))
+wyckoff_generators_df = read_csv(rf("pyxtal", "database/wyckoff_generators.csv"))
+layer_df = read_csv(rf("pyxtal", "database/layer.csv"))
+layer_symmetry_df = read_csv(rf("pyxtal", "database/layer_symmetry.csv"))
+layer_generators_df = read_csv(rf("pyxtal", "database/layer_generators.csv"))
+rod_df = read_csv(rf("pyxtal", "database/rod.csv"))
+rod_symmetry_df = read_csv(rf("pyxtal", "database/rod_symmetry.csv"))
+rod_generators_df = read_csv(rf("pyxtal", "database/rod_generators.csv"))
+point_df = read_csv(rf("pyxtal", "database/point.csv"))
+point_symmetry_df = read_csv(rf("pyxtal", "database/point_symmetry.csv"))
+point_generators_df = read_csv(rf("pyxtal", "database/point_generators.csv"))
+symbols = loadfn(rf("pyxtal", "database/symbols.json"))
+t_subgroup = loadfn(rf("pyxtal",'database/t_subgroup.json'))
+k_subgroup = loadfn(rf("pyxtal",'database/k_subgroup.json'))
+wyc_sets = loadfn(rf("pyxtal",'database/wyckoff_sets.json'))
 
 t2h = SymmOp.from_rotation_and_translation([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0])
 Identity = SymmOp.from_xyz_string("x,y,z")
@@ -148,7 +139,7 @@ class Group:
         if dim == 3:
             if self.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                 self.alias = self.symbol.replace("c","n")
-                self.alias = self.alias.replace("C","I")
+                #self.alias = self.alias.replace("C","I")
             self.wyckoffs = get_wyckoffs(self.number) 
             self.w_symm = get_wyckoff_symmetry(self.number)
             self.wyckoff_generators = get_wyckoff_generators(self.number)
@@ -1390,7 +1381,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
             are present. If False, we generate the rest
 
     Returns:
-        a string representing the site symmetry. Ex: ``2mm``
+        a string representing the site symmetry (e.g., `2mm`)
     """
     # TODO: Automatically detect which symm_type to use based on ops
     # Determine which notation to use
@@ -2184,9 +2175,10 @@ def get_wyckoff_generators(sg, PBC=[1, 1, 1], molecular=False):
         coor = np.array(coor)
     wyckoffs = get_wyckoffs(sg, PBC=PBC)
 
-    P = SymmOp.from_rotation_and_translation(
-        [[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
-    )
+    P = t2h #defined in the beginning
+    #P = SymmOp.from_rotation_and_translation(
+    #    [[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
+    #)
     generator_strings = eval(wyckoff_generators_df["0"][sg])
     generators = []
     convert = False
@@ -2257,10 +2249,7 @@ def get_layer_generators(num, molecular=False):
         a 2d list of SymmOp objects which can be used to generate a Wyckoff position given a
         single fractional (x,y,z) coordinate
     """
-
-    P = SymmOp.from_rotation_and_translation(
-        [[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
-    )
+    P = t2h
     generator_strings = eval(layer_generators_df["0"][num])
     generators = []
     convert = False
@@ -2273,12 +2262,12 @@ def get_layer_generators(num, molecular=False):
         # Loop over ops
         for y in x:
             op = SymmOp.from_xyz_string(y)
-            if convert is True:
+            if convert:
                 # Convert non-orthogonal trigonal/hexagonal operations
                 op = P * op * P.inverse
-            if molecular is False:
+            if not molecular:
                 generators[-1].append(op)
-            elif molecular is True:
+            else:
                 op = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0])
                 generators[-1].append(op)
     return generators
@@ -2307,9 +2296,7 @@ def get_rod_generators(num, molecular=False):
         single fractional (x,y,z) coordinate
     """
 
-    P = SymmOp.from_rotation_and_translation(
-        [[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
-    )
+    P = t2h
     generator_strings = eval(rod_generators_df["0"][num])
     generators = []
     convert = False
@@ -2322,12 +2309,12 @@ def get_rod_generators(num, molecular=False):
         # Loop over ops
         for y in x:
             op = SymmOp.from_xyz_string(y)
-            if convert is True:
+            if convert:
                 # Convert non-orthogonal trigonal/hexagonal operations
                 op = P * op * P.inverse
-            if molecular is False:
+            if not molecular:
                 generators[-1].append(op)
-            elif molecular is True:
+            else:
                 op = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0])
                 generators[-1].append(op)
     return generators
@@ -2366,12 +2353,11 @@ def get_point_generators(num):
 
 def general_position(number, dim=3):
     """
-    Returns a Wyckoff_position object for the general Wyckoff position of the given
-    group.
+    Returns a Wyckoff_position object for the given group.
 
     Args:
         number: the international number of the group
-        dim: the dimension of the group 3: space group, 2: layer group, 1: Rod group
+        dim: 3: space group, 2: layer group, 1: Rod group
 
     Returns:
         a Wyckoff_position object for the general position
@@ -2459,6 +2445,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
         points: a list of 3d coordinates or SymmOps to check
         group: a Group object
         tol: the max distance between equivalent points
+
     Returns:
         index, p: index is a single index for the Wyckoff position within
         the sg. If no matching WP is found, returns False. point is a
@@ -2498,7 +2485,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
                     failed = True
                     break
 
-            if failed is True:
+            if failed:
                 continue
             # Check each column for a zero
             for column in dw.T:
@@ -2515,7 +2502,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
             if num > 0:
                 failed = True
 
-            if failed is True:
+            if failed:
                 continue
             return i, p
     return False, None

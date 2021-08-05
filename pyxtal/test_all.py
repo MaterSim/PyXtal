@@ -13,6 +13,7 @@ from pymatgen.core.operations import SymmOp
 
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
+from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
 from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
@@ -122,7 +123,6 @@ class TestWP(unittest.TestCase):
             get_wyckoffs(i)
             get_wyckoffs(i, organized=True)
 
-    # to add test from string
 class TestDof(unittest.TestCase):
     def test_atomic(self):
         s = pyxtal() 
@@ -131,9 +131,16 @@ class TestDof(unittest.TestCase):
         self.assertTrue(s.lattice.dof == 1)
         self.assertTrue(ans == 1)
 
+class TestMolecule(unittest.TestCase):
+    def test_get_orientations_in_wp(self):
+        m = pyxtal_molecule('Benzene')
+        g = Group(61)
+        self.assertTrue(len(m.get_orientations_in_wp(g[0])) == 1)
+        self.assertTrue(len(m.get_orientations_in_wp(g[1])) == 1)
+        self.assertTrue(len(m.get_orientations_in_wp(g[2])) == 1)
+
 class TestMolecular(unittest.TestCase):
     def test_single_specie(self):
-        # print("test_h2o")
         struc = pyxtal(molecular=True)
         struc.from_random(3, 36, ["H2O"], sites=[["8b"]])
         struc.to_file()
@@ -144,7 +151,6 @@ class TestMolecular(unittest.TestCase):
         sga = SpacegroupAnalyzer(pmg_struc)
         # print(sga.get_space_group_symbol())
         self.assertTrue(sga.get_space_group_number() >= 36)
-        # print(pmg_struc.frac_coords[:3])
 
         # test rotation
         ax = struc.mol_sites[0].orientation.axis
@@ -179,12 +185,6 @@ class TestMolecular(unittest.TestCase):
         C = struc.subgroup_once(eps=0, H=4)
         pmg_s2 = C.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
-
-    #def test_ice(self):
-    #    struc = pyxtal(molecular=True)
-    #    struc.from_seed(seed=cif_path+"ice.cif", molecule='H2O')
-    #    N = struc.check_short_distances_by_dict({"H-H": 1.0, "O-O": 2.0})
-    #    self.assertTrue(N==0)
 
     def test_big_molecule(self):
         # print("test_big_molecule")
@@ -225,20 +225,22 @@ class TestMolecular(unittest.TestCase):
         # print("test_molecular_2d")
         struc = pyxtal(molecular=True)
         struc.from_random(2, 20, ["H2O"])
-        cif = struc.to_file()
         self.assertTrue(struc.valid)
 
     def test_molecular_1d(self):
         struc = pyxtal(molecular=True)
         struc.from_random(1, 20, ["H2O"])
-        cif = struc.to_file()
         self.assertTrue(struc.valid)
-        # def test_space_groups(self):
 
     def test_preassigned_sites(self):
         sites = [["4a", "4a"]]
         struc = pyxtal(molecular=True)
         struc.from_random(3, 36, ["H2O"], [8], sites=sites)
+        self.assertTrue(struc.valid)
+
+    def test_special_sites(self):
+        struc = pyxtal(molecular=True)
+        struc.from_random(3, 61, ["Benzene"], [4])
         self.assertTrue(struc.valid)
 
 class TestAtomic3D(unittest.TestCase):
@@ -547,8 +549,6 @@ class Test_operations(unittest.TestCase):
     def test_wyc_sets(self):
         for i in range(1,229):
             res = Group(i).get_alternatives()['No.']
-
-# class TestIO(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
