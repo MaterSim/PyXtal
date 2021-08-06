@@ -826,7 +826,6 @@ class pyxtal_molecule:
         if constraints_m == []:
             o = Orientation(np.identity(3), degrees=2)
             orientations.append(o)
-
         # Remove redundancy from orientations
         list_i = list(range(len(orientations)))
         list_j = list(range(len(orientations)))
@@ -852,11 +851,13 @@ class pyxtal_molecule:
     
         #Check each of the found orientations for consistency with the Wyckoff pos.
         #If consistent, put into an array of valid orientations
+        #print("======", orientations_new)
         allowed = []
         for o in orientations_new:
             op = o.get_op()
             mo = deepcopy(self.mol)
             mo.apply_operation(op)
+            #print(mo)
             if is_compatible_symmetry(mo, wp):
                 allowed.append(o)
         return allowed
@@ -1150,6 +1151,7 @@ def is_compatible_symmetry(mol, wp):
 
     pga = PointGroupAnalyzer(mol)
     for op in wp.symmetry_m[0]:
+        #print("XXXX", pga.is_valid_op(op), op.as_xyz_string())
         if not pga.is_valid_op(op):
             return False
     return True

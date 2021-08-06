@@ -358,7 +358,10 @@ class structure_from_ext():
         #conf = m2.GetConformer(0); print(conf.GetPositions())
 
         m1 = Chem.AddHs(m1)
-        AllChem.EmbedMolecule(m1)
+        if len(smile) > 100:
+            AllChem.EmbedMolecule(m1, randomSeed=3)
+        else:
+            AllChem.EmbedMolecule(m1, randomSeed=0xf00d)
         AllChem.UFFOptimizeMolecule(m1)
         m3 = AllChem.ConstrainedEmbed(m1,m2)
         conf = m3.GetConformer(0) #; print(conf.GetPositions())

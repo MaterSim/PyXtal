@@ -56,7 +56,6 @@ class molecular_crystal:
         factor = 1.1,
         thickness = None,
         area = None,
-        select_high = True,
         lattice = None,
         torsions = None,
         tm = Tol_matrix(prototype="molecular"),
@@ -69,7 +68,6 @@ class molecular_crystal:
         self.source = 'Random'
         self.valid = False
         self.factor = factor
-        self.select_high = select_high
 
         # Dimesion
         self.dim = dim 
@@ -201,20 +199,20 @@ class molecular_crystal:
         self.group.wyckoffs_organized[j][k]
         """
         self.valid_orientations = []
-        for pyxtal_mol in self.molecules:
+        for i, pyxtal_mol in enumerate(self.molecules):
             self.valid_orientations.append([])
-            for i, x in enumerate(self.group.wyckoffs_organized):
+            for x in self.group.wyckoffs_organized:
                 self.valid_orientations[-1].append([])
-                skip = True
+                skip = False
                 for j, wp in enumerate(x):
-                    allowed = pyxtal_mol.get_orientations_in_wp(wp)
+                    #Don't check the wp with high multiplicity
+                    if len(wp) > self.numMols[i]:
+                        allowed = []
+                    else:
+                        allowed = pyxtal_mol.get_orientations_in_wp(wp)
+                        #print(wp, allowed)
                     self.valid_orientations[-1][-1].append(allowed)
-                    if len(allowed) > 0:
-                        skip = False
-                if skip:
-                    break
-        #print("ori")
-        #print(self.valid_orientations)
+        #import sys; sys.exit()
 
     def set_volume(self):
         """
@@ -356,7 +354,7 @@ class molecular_crystal:
 
             # NOTE: The molecular version return wyckoff indices, not ops
             diff = numMol - numMol_added
-            wp = wyc_mol(self.group, diff, site, valid_ori, self.select_high, self.dim)
+            wp = wyc_mol(self.group, diff, site, valid_ori, True, self.dim)
 
             if wp is not False:
                 # Generate a list of coords from the wyckoff position

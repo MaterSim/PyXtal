@@ -12,10 +12,8 @@ from pymatgen.core import Molecule
 # PyXtal imports
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.operations import (
-    apply_ops, 
     check_images,
     distance_matrix, 
-    project_point, 
     filtered_coords, 
     create_matrix,
     SymmOp,
@@ -116,10 +114,11 @@ class atom_site:
         Needs to find the proper generator
         """
         if self.wp.index > 0:
+            wp0 = Group(self.wp.number, self.wp.dim)[0]
             pos = self.position
-            coords = apply_ops(pos, Group(self.wp.number, self.wp.dim)[0])
+            coords = wp0.apply_ops(pos)
             for coord in coords:
-                ans = apply_ops(coord, [self.wp.ops[0]])[0]
+                ans = self.wp.ops[0].operate(coord)
                 diff = coord - ans
                 diff -= np.floor(diff)
                 if np.sum(diff**2)<1e-4:
@@ -175,7 +174,7 @@ class atom_site:
         """
         if pos is None:
             pos = self.position
-        self.coords = apply_ops(pos, self.wp) 
+        self.coords = self.wp.apply_ops(pos) 
         self.position = self.coords[0]
 
     def check_with_ws2(self, ws2, lattice, tm, same_group=True):
@@ -259,7 +258,7 @@ class mol_site:
 
         if self.diag:
             self.wp.diagonalize_symops()
-            self.position = project_point(self.position, wp[0])
+            self.position = self.wp.project(self.position)
 
     def __str__(self):
         if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
@@ -498,7 +497,7 @@ class mol_site:
         if absolute:
             disp = disp.dot(self.lattice.inv_matrix)
         position = self.position + disp
-        self.position = project_point(position, self.wp[0])
+        self.position = self.wp.project(position)
 
     def rotate(self, ax_id=0, ax_vector=None, angle=180):
         """
@@ -649,7 +648,7 @@ class mol_site:
 
         pos = self.position
         wp0 = self.wp
-        pos0 = apply_ops(pos, wp0)
+        pos0 = wp0.apply_ops(pos)
 
         if len(wp0) == 2:
             if self.diag: # P21/n -> Pn
@@ -658,7 +657,7 @@ class mol_site:
                 wp1.diagonalize_symops()
                 axes = [[0,1,2],[2,1,0]]
                 for ax in axes:
-                    pos1 = apply_ops(pos[ax], wp1)
+                    pos1 = wp1.apply_ops(pos[ax])
                     diff = (pos1[:, ax] - pos0)[1]
                     diff -= np.floor(diff)
                     if len(diff[diff==0]) >= 2:
@@ -674,7 +673,7 @@ class mol_site:
                 for group in groups:
                     wp1 = Wyckoff_position.from_group_and_index(group, 0)
                     for ax in axes:
-                        pos1 = apply_ops(pos[ax], wp1)
+                        pos1 = wp1.apply_ops(pos[ax])
                         diff = (pos1[:, ax] - pos0)[1]
                         diff -= np.floor(diff)
                         if len(diff[diff==0]) >= 2:

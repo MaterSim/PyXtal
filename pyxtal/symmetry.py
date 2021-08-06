@@ -23,11 +23,12 @@ from pyxtal.operations import (
     SymmOp,
     apply_ops,
     get_inverse_ops,
+    filtered_coords,
     filtered_coords_euclidean,
     distance,
     distance_matrix,
+    create_matrix,
     OperationAnalyzer,
-    project_point,
     check_images,
 )
 from pyxtal.database.element import Element
@@ -994,7 +995,7 @@ class Wyckoff_position:
         index = wp.index
         PBC = wp.PBC
         group = Group(wp.number, wp.dim)
-        pt = project_point(pt, wp[0], lattice, PBC)
+        pt = self.project(pt, lattice, PBC)
         coor = apply_ops(pt, wp)
         if orientations is None:
             valid_ori = None
@@ -1047,20 +1048,77 @@ class Wyckoff_position:
                 distances = []
                 for i in possible:
                     wp = group[i]
-                    projected_point = project_point(pt.copy(), wp[0], lattice=lattice, PBC=PBC)
-                    d = distance(pt - projected_point, lattice, PBC=PBC)
+                    projected_pt = wp.project(pt.copy(), lattice, PBC)
+                    d = distance(pt - projected_pt, lattice, PBC=PBC)
                     distances.append(np.min(d))
                 # Choose wp with shortest translation for generating point
                 tmpindex = np.argmin(distances)
                 index = possible[tmpindex]
                 wp = group[index]
-                pt = project_point(pt, wp[0], lattice=lattice, PBC=PBC)
-                coor = apply_ops(pt, wp)
+                pt = wp.project(pt, lattice, PBC)
+                coor = wp.apply_ops(pt)
             # Distances were not too small; return True
             else:
                 return pt, wp, valid_ori
 
+    def apply_ops(self, pt):
+        """
+        apply symmetry operation
+        """
+        return apply_ops(pt, self.ops)
 
+    def project(self, point, cell=np.eye(3), PBC=[1, 1, 1], id=0):
+        """
+        Given a 3-vector and a Wyckoff position operator, 
+        returns the projection onto the axis, plane, or point.
+    
+        >>> wp.project_point([0,0.3,0.1], 
+        array([0. , 0.3, 0.1])
+    
+        Args:
+            point: a 3-vector (numeric list, tuple, or array)
+            cell: 3x3 matrix describing the unit cell vectors
+            PBC: A periodic boundary condition list, 
+                where 1 means periodic, 0 means not periodic.
+                Ex: [1,1,1] -> full 3d periodicity, 
+                    [0,0,1] -> periodicity along the z axis
+    
+        Returns:
+            a transformed 3-vector (numpy array)
+        """
+        op = self.ops[id]
+        rot = op.rotation_matrix
+        trans = op.translation_vector
+    
+        def project_single(point, rot, trans):
+            # move the point in the opposite direction of the translation
+            point -= trans
+            new_vector = np.zeros(3)
+            # Loop over basis vectors of the symmetry element
+            for basis_vector in rot.T:
+                # b = np.linalg.norm(basis_vector)
+                b = np.sqrt(basis_vector.dot(basis_vector))  # a faster version?
+                #if not np.isclose(b, 0):
+                if b > 1e-3:
+                    new_vector += basis_vector * (np.dot(point, basis_vector) / (b ** 2))
+            new_vector += trans
+            return new_vector
+
+        if PBC == [0, 0, 0]:
+            return project_single(point, rot, trans)
+        else:
+            pt = filtered_coords(point)
+            m = create_matrix(PBC=PBC)
+            new_vectors = []
+            distances = []
+            for v in m:
+                new_vector = project_single(pt, rot, trans+v)
+                new_vectors.append(new_vector)
+                tmp = (new_vector-point).dot(cell)
+                distances.append(np.linalg.norm(tmp))
+            i = np.argmin(distances)
+            return filtered_coords(new_vectors[i], PBC=PBC)
+    
 # --------------------------- Wyckoff Position selection  -----------------------------
 
 def choose_wyckoff(group, number=None, site=None, dim=3):
