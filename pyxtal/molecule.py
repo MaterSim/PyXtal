@@ -363,10 +363,10 @@ class pyxtal_molecule:
             else:
                 xyz = conf.GetPositions()
                 if len(torsionlist) > 0:
-                    angs = self.get_torsion_angles(xyz, torsionlist)
                     #slightly perturb the coordinates
-                    angs *= (1+0.1*np.random.uniform(-1., 1., len(angs))) 
-                    xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
+                    #angs = self.get_torsion_angles(xyz, torsionlist)
+                    #angs *= (1+0.1*np.random.uniform(-1., 1., len(angs))) 
+                    #xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
                     xyz -= self.get_center(xyz)
                 else:
                     pt = rdmt.ComputeCentroid(conf)

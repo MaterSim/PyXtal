@@ -15,7 +15,7 @@ from pyxtal.io import search_molecules_in_crystal
 from pyxtal.wyckoff_site import mol_site
 
 def block_crystal(dim, group, molecules, numMols, factor, thickness,
-    area, block, lattice, torsions, sites, conventional, diag, tm):
+    area, block, num_block, lattice, torsions, sites, conventional, diag, tm):
     
     # If block is None, directly generate mol. xtal.
     # Otherwise, generate crystal from building block
@@ -74,7 +74,7 @@ def block_crystal(dim, group, molecules, numMols, factor, thickness,
             struc = mol_xtal(dim,
                              group, 
                              [mol], 
-                             None,
+                             [num_block],
                              factor, 
                              thickness = thickness,
                              area = area,

@@ -222,6 +222,7 @@ class pyxtal:
         torsions = None,
         force_pass = False,
         block = None,
+        num_block = None,
     ):
         if self.molecular:
             prototype = "molecular"
@@ -243,6 +244,7 @@ class pyxtal:
                                       thickness = thickness,
                                       area = area,
                                       block = block,
+                                      num_block = num_block,
                                       lattice = lattice, 
                                       torsions = torsions, 
                                       sites = sites, 

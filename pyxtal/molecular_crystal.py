@@ -118,23 +118,24 @@ class molecular_crystal:
         # Wyckofff sites
         self.set_molecules(molecules, torsions)
         self.set_sites(sites)
-        self.set_orientations()
+        valid_orientation = self.set_orientations()
 
-        # Check the minimum dof within the Wyckoff positions
-        if no_check_compability:
-            compat, self.degrees = True, True
-        else:
-            compat, self.degrees = self._check_compatible()
-        if not compat:
-            self.valid = False
-            msg = "Compoisition " + str(self.numMols) 
-            msg += " not compatible with symmetry "
-            msg += str(self.group.number) 
-            raise CompatibilityError(msg)
-        else:
-            self.set_volume()
-            self.set_lattice(lattice)
-            self.set_crystal()
+        if valid_orientation:
+            # Check the minimum dof within the Wyckoff positions
+            if no_check_compability:
+                compat, self.degrees = True, True
+            else:
+                compat, self.degrees = self._check_compatible()
+            if not compat:
+                self.valid = False
+                msg = "Compoisition " + str(self.numMols) 
+                msg += " not compatible with symmetry "
+                msg += str(self.group.number) 
+                raise CompatibilityError(msg)
+            else:
+                self.set_volume()
+                self.set_lattice(lattice)
+                self.set_crystal()
 
     def __str__(self):
         s = "------Random Molecular Crystal------"
@@ -198,6 +199,7 @@ class molecular_crystal:
         orientations for self.molecules[i], in the Wyckoff position
         self.group.wyckoffs_organized[j][k]
         """
+        valid_ori = False
         self.valid_orientations = []
         for i, pyxtal_mol in enumerate(self.molecules):
             self.valid_orientations.append([])
@@ -210,9 +212,10 @@ class molecular_crystal:
                         allowed = []
                     else:
                         allowed = pyxtal_mol.get_orientations_in_wp(wp)
-                        #print(wp, allowed)
+                        if len(allowed) > 0:
+                            valid_ori = True
                     self.valid_orientations[-1][-1].append(allowed)
-        #import sys; sys.exit()
+        return valid_ori
 
     def set_volume(self):
         """
