@@ -10,7 +10,7 @@ import numpy as np
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff
 from pyxtal.wyckoff_site import atom_site
-from pyxtal.msg import printx, CompatibilityError
+from pyxtal.msg import Comp_CompatibilityError
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.database.element import Element
@@ -106,7 +106,7 @@ class random_crystal:
             msg = "Compoisition " + str(self.numIons) 
             msg += " not compatible with symmetry "
             msg += str(self.group.number) 
-            raise CompatibilityError(msg)
+            raise Comp_CompatibilityError(msg)
         else:
             self.set_volume()
             self.set_lattice(lattice)
@@ -172,7 +172,6 @@ class random_crystal:
             # Make sure the custom lattice PBC axes are correct.
             if lattice.PBC != self.PBC:
                 self.lattice.PBC = self.PBC
-                printx("\n  Warning: converting custom lattice PBC to " + str(self.PBC))
         else:
             # Determine the unique axis
             if self.dim == 2:

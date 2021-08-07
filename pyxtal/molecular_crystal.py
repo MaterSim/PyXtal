@@ -15,7 +15,7 @@ from pyxtal.wyckoff_site import mol_site
 from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group, jk_from_i
 from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
-from pyxtal.msg import CompatibilityError
+from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError
 
 # Define functions
 # ------------------------------
@@ -127,15 +127,20 @@ class molecular_crystal:
             else:
                 compat, self.degrees = self._check_compatible()
             if not compat:
-                self.valid = False
                 msg = "Compoisition " + str(self.numMols) 
                 msg += " not compatible with symmetry "
                 msg += str(self.group.number) 
-                raise CompatibilityError(msg)
+                raise Comp_CompatibilityError(msg)
             else:
                 self.set_volume()
                 self.set_lattice(lattice)
                 self.set_crystal()
+        else:
+            msg = "Molecular symmetry is compatible with WP site\n"
+            for mol in self.molecules:
+                msg += str(mol) + ": "
+                msg += mol.pga.sch_symbol
+            raise Symm_CompatibilityError(msg)
 
     def __str__(self):
         s = "------Random Molecular Crystal------"
