@@ -46,7 +46,7 @@ def find_id_from_smile(smile):
                       if i not in set(for_remove)]
         return clean_list
 
-    if smile in ["Cl-"]:
+    if smile in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
         return []
     else:
         from rdkit import Chem
@@ -93,12 +93,15 @@ class pyxtal_molecule:
                  mol=None, 
                  symmetrize=True, 
                  fix=False, 
-                 torsions=None, 
+                 torsions=None,
+                 seed = None,
                  tm=Tol_matrix(prototype="molecular")):
 
         mo = None
         self.smile = None
         self.torsionlist = None
+        if seed is None: seed = 0xf00d
+        self.seed = seed
 
         # Parse molecules: either file or molecule name
         if type(mol) == str:
@@ -135,9 +138,8 @@ class pyxtal_molecule:
         self.props = mo.site_properties
         if len(mo) > 1:
             if symmetrize:
-                pga = PointGroupAnalyzer(mo)
+                pga = PointGroupAnalyzer(mo, 0.5)
                 mo = pga.symmetrize_molecule()["sym_mol"]
-            mo = self.add_site_props(mo)
         self.mol = mo
         self.get_symmetry()
 
@@ -179,18 +181,17 @@ class pyxtal_molecule:
         """
         coords = self.mol.cart_coords[:, ax]
         mo = Molecule(self.symbols, coords)
-        mo = self.add_site_props(mo)
 
         return pyxtal_molecule(mo, self.tm)
 
-    def add_site_props(self, mo):
-        """
-        add site properties
-        """
-        if len(self.props) > 0:
-            for key in self.props.keys():
-                mo.add_site_property(key, self.props[key])
-        return mo
+    #def add_site_props(self, mo):
+    #    """
+    #    add site properties
+    #    """
+    #    if len(self.props) > 0:
+    #        for key in self.props.keys():
+    #            mo.add_site_property(key, self.props[key])
+    #    return mo
 
     def get_box(self, padding=None):
         """
@@ -331,7 +332,7 @@ class pyxtal_molecule:
         from rdkit.Chem import AllChem
         from rdkit.Chem import rdMolTransforms as rdmt
 
-        if smile not in ["Cl-"]:
+        if smile in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
             torsionlist = find_id_from_smile(smile)
             mol = Chem.MolFromSmiles(smile)
             mol = Chem.AddHs(mol)
@@ -340,10 +341,17 @@ class pyxtal_molecule:
                 symbols.append(mol.GetAtomWithIdx(id).GetSymbol())
             if len(smile) > 100: #a tmp fix for KEKULN10
                 AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=3)
+                cid = 0
             else:
-                AllChem.EmbedMultipleConfs(mol, numConfs=1, randomSeed=0xf00d)
+                ps = AllChem.ETKDGv3()
+                ps.randomSeed=self.seed
+                AllChem.EmbedMultipleConfs(mol, 1, ps)
+                res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+                engs = [c[1] for c in res]
+                cid = engs.index(min(engs))
+                #print(self.seed, cid, engs[cid])
             self.rdkit_mb = Chem.MolToMolBlock(mol)
-            ref_conf = mol.GetConformer(0) #always the reference molecule
+            ref_conf = mol.GetConformer(cid) #always the reference molecule
 
             if fix or torsions is not None or len(torsionlist)==0:
                 conf = ref_conf
@@ -356,21 +364,16 @@ class pyxtal_molecule:
                 N_confs = mol.GetNumConformers()
                 conf_id = choice(range(N_confs))
                 conf = mol.GetConformer(conf_id)
+                #xyz = conf.GetPositions()
+                #res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+                #print("Eng", res[conf_id])
 
             # set tosion angles from random or pre-defined values
             if torsions is not None:
                 xyz = self.set_torsion_angles(conf, torsions, torsionlist=torsionlist)
             else:
                 xyz = conf.GetPositions()
-                if len(torsionlist) > 0:
-                    #slightly perturb the coordinates
-                    #angs = self.get_torsion_angles(xyz, torsionlist)
-                    #angs *= (1+0.1*np.random.uniform(-1., 1., len(angs))) 
-                    #xyz = self.set_torsion_angles(conf, angs, torsionlist=torsionlist)
-                    xyz -= self.get_center(xyz)
-                else:
-                    pt = rdmt.ComputeCentroid(conf)
-                    xyz -= np.array([pt.x, pt.y, pt.z])
+                xyz -= self.get_center(xyz)
         else:
             #single atom cation or anions
             symbols = ["Cl"]
@@ -378,6 +381,15 @@ class pyxtal_molecule:
             torsionlist = []
         return symbols, xyz, torsionlist
 
+    def perturb_torsion(self, xyz):
+        """
+        slightly perturb the torsion
+        """
+        angs = self.get_torsion_angles(xyz, self.torsionlist)
+        angs *= (1+0.1*np.random.uniform(-1., 1., len(angs))) 
+        xyz = self.set_torsion_angles(conf, angs, torsionlist=self.torsionlist)
+        xyz -= self.get_center(xyz)
+        return xyz
 
     def align(self, conf, reflect=False, torsionlist=None):
         """
@@ -421,7 +433,7 @@ class pyxtal_molecule:
         if geometry or self.smile is None:
             return np.mean(xyz, axis=0)
         else:
-            if self.smile in ["Cl-"]:
+            if self.smile in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
                 return xyz[0]
             else:
                 if len(self.smile) == 1:
@@ -622,8 +634,11 @@ class pyxtal_molecule:
             - symops: a list of SymmOp objects
         """
 
-        mol = self.mol
+        mol = deepcopy(self.mol)
+        if self.smile is not None:
+            mol.remove_species('H')
         pga = PointGroupAnalyzer(mol)
+        self.mol_no_h = mol
 
         # For single atoms, we cannot represent the point group using a list of operations
         if len(mol) == 1:
@@ -665,6 +680,24 @@ class pyxtal_molecule:
         self.symops = symm_m
         self.pga = pga
         self.pg = Group(symbol, dim=0)
+
+    def get_orientations_in_wps(self, wps, rtol=1e-2):
+        """
+        Compute the valid orientations from a given Wyckoff site symmetry.
+    
+        Args:
+            wp: a pyxtal.symmetry.Wyckoff_position object
+        Returns:
+            a list of operations.Orientation objects 
+        """
+        valid = False
+        valid_oris = []
+        for wp in wps:
+            allowed = self.get_orientations_in_wp(wp, rtol)
+            if len(allowed) > 0:
+                valid = True
+            valid_oris.append(allowed)
+        return valid_oris, valid
 
     def get_orientations_in_wp(self, wp, rtol=1e-2):
         """
@@ -855,7 +888,7 @@ class pyxtal_molecule:
         allowed = []
         for o in orientations_new:
             op = o.get_op()
-            mo = deepcopy(self.mol)
+            mo = deepcopy(self.mol_no_h)
             mo.apply_operation(op)
             #print(mo)
             if is_compatible_symmetry(mo, wp):

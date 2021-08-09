@@ -45,6 +45,7 @@ class molecular_crystal:
             object to define the distances
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
         diag (optional): if use the nonstandart setting (P21/n, Pn, C2/n)?
+        seed (optional): seeds
     """
 
     def __init__(
@@ -62,12 +63,14 @@ class molecular_crystal:
         sites = None,
         conventional = True,
         diag = False,
+        seed = None,
     ):
 
         # Initialize
         self.source = 'Random'
         self.valid = False
         self.factor = factor
+        self.seed = seed
 
         # Dimesion
         self.dim = dim 
@@ -188,7 +191,11 @@ class molecular_crystal:
 
         self.molecules = []  
         for i, mol in enumerate(molecules):
-            p_mol = pyxtal_molecule(mol, torsions=torsions[i], tm=self.tol_matrix)
+            # already a pyxtal_molecule object
+            if isinstance(mol, pyxtal_molecule):
+                p_mol = mol
+            else:
+                p_mol = pyxtal_molecule(mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix)
             self.molecules.append(p_mol)
  
     def set_orientations(self):
@@ -210,7 +217,6 @@ class molecular_crystal:
             self.valid_orientations.append([])
             for x in self.group.wyckoffs_organized:
                 self.valid_orientations[-1].append([])
-                skip = False
                 for j, wp in enumerate(x):
                     #Don't check the wp with high multiplicity
                     if len(wp) > self.numMols[i]:

@@ -14,8 +14,22 @@ from pyxtal.molecule import pyxtal_molecule, compare_mol_connectivity, Orientati
 from pyxtal.io import search_molecules_in_crystal
 from pyxtal.wyckoff_site import mol_site
 
-def block_crystal(dim, group, molecules, numMols, factor, thickness,
-    area, block, num_block, lattice, torsions, sites, conventional, diag, tm):
+def block_crystal(dim, 
+                  group, 
+                  molecules, 
+                  numMols, 
+                  factor, 
+                  thickness, 
+                  area, 
+                  block, 
+                  num_block, 
+                  lattice, 
+                  torsions, 
+                  sites, 
+                  conventional, 
+                  diag, 
+                  tm,
+                  seed):
     
     # If block is None, directly generate mol. xtal.
     # Otherwise, generate crystal from building block
@@ -32,7 +46,9 @@ def block_crystal(dim, group, molecules, numMols, factor, thickness,
                          sites = sites, 
                          conventional = conventional, 
                          diag = diag, 
-                         tm = tm)
+                         tm = tm,
+                         seed = seed,
+                         )
         return struc
 
     else:

@@ -223,6 +223,7 @@ class pyxtal:
         force_pass = False,
         block = None,
         num_block = None,
+        seed = None,
     ):
         if self.molecular:
             prototype = "molecular"
@@ -250,7 +251,9 @@ class pyxtal:
                                       sites = sites, 
                                       conventional = conventional, 
                                       diag = diag, 
-                                      tm = tm)
+                                      tm = tm,
+                                      seed = seed,
+                                      )
             else:
                 struc = random_crystal(dim, 
                                        group, 
