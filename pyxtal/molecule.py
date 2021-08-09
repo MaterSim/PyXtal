@@ -332,7 +332,7 @@ class pyxtal_molecule:
         from rdkit.Chem import AllChem
         from rdkit.Chem import rdMolTransforms as rdmt
 
-        if smile in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
+        if smile not in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
             torsionlist = find_id_from_smile(smile)
             mol = Chem.MolFromSmiles(smile)
             mol = Chem.AddHs(mol)
@@ -346,11 +346,11 @@ class pyxtal_molecule:
                 ps = AllChem.ETKDGv3()
                 ps.randomSeed=self.seed
                 AllChem.EmbedMultipleConfs(mol, 1, ps)
-                res = AllChem.MMFFOptimizeMoleculeConfs(mol)
-                engs = [c[1] for c in res]
-                cid = engs.index(min(engs))
-                #print(self.seed, cid, engs[cid])
+            res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+            engs = [c[1] for c in res]
+            cid = engs.index(min(engs))
             self.rdkit_mb = Chem.MolToMolBlock(mol)
+            self.energy = engs[cid]
             ref_conf = mol.GetConformer(cid) #always the reference molecule
 
             if fix or torsions is not None or len(torsionlist)==0:
@@ -706,7 +706,7 @@ class pyxtal_molecule:
         Args:
             wp: a pyxtal.symmetry.Wyckoff_position object
         Returns:
-            a list of operations.Orientation objects 
+            a list of pyxtal.molecule.Orientation objects 
         """
         # For single atoms, there are no constraints
         if len(self.mol) == 1 or wp.index == 0:
