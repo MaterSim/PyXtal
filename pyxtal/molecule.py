@@ -624,7 +624,7 @@ class pyxtal_molecule:
 
         if len(self.smile) > 1: # not in ["O", "o"]:
             rmsd, trans, reflect = self.get_rmsd(xyz)
-            tol = rtol*mol.GetNumAtoms()
+            tol = rtol*len(xyz)
             
             if rmsd < tol:
                 trans = trans[:3,:3].T

@@ -1,7 +1,6 @@
 from pyxtal import pyxtal
 from pyxtal.interface.vasp import optimize
 from ase.db import connect
-import os
 from random import randint
 from time import time
 import warnings
