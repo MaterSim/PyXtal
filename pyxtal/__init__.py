@@ -1365,7 +1365,7 @@ class pyxtal:
             self.transform([[1,0,0],[0,1,0],[1,0,1]])
 
         #QZ: below is a tentative solution
-        if self.group.number == 64 and s.mol_sites[0].wp.multiplicity==4:
+        if self.group.number == 64 and self.mol_sites[0].wp.multiplicity==4:
             s = self.subgroup_once(eps=0, mut_lat=False, H=61, group_type='k', ignore_special=True)
         else:
             s = deepcopy(self)
