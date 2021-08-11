@@ -611,7 +611,6 @@ class mol_site:
         if match:
             #position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
             position = center.dot(self.lattice.inv_matrix)
-            #position -= np.floor(position)
             self.position = position - np.floor(position)
             if update_mol:
                 self.orientation = Orientation(np.eye(3))

@@ -84,13 +84,14 @@ def block_crystal(dim,
             coords[count:count+len(m)] += m.cart_coords[order]
             count += len(m)
         mol = Molecule(numbers, coords)
+        if num_block is not None: num_block = [num_block]
         #print(mol.to('xyz')); import sys; sys.exit()
 
         for i in range(10):
             struc = mol_xtal(dim,
                              group, 
                              [mol], 
-                             [num_block],
+                             num_block,
                              factor, 
                              thickness = thickness,
                              area = area,

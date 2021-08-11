@@ -706,6 +706,7 @@ class pyxtal_molecule:
         mol = deepcopy(self.mol)
         if self.smile is not None:
             mol.remove_species('H')
+            mol._spin_multiplicity = None #don't check spin
         pga = PointGroupAnalyzer(mol)#0.3)
         self.mol_no_h = mol
 

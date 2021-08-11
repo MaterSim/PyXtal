@@ -306,7 +306,7 @@ class structure_from_ext():
                             position = np.dot(center, np.linalg.inv(new_lat))
                         else:
                             position = np.dot(mol1.cart_coords[0], np.linalg.inv(new_lat))
-                            position -= np.floor(position)
+                        position -= np.floor(position)
                         #print(position); print(lat)
                         #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
 
