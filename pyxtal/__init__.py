@@ -1044,7 +1044,7 @@ class pyxtal:
         else:
             return display_atomic(self, **kwargs)
 
-    def optimize_lattice(self, iterations=3, force=False):
+    def optimize_lattice(self, iterations=5, force=False):
         """
         optimize the lattice if the cell has a bad inclination angles
         """
@@ -1367,6 +1367,8 @@ class pyxtal:
         #QZ: below is a tentative solution
         if self.group.number == 64 and self.mol_sites[0].wp.multiplicity==4:
             s = self.subgroup_once(eps=0, mut_lat=False, H=61, group_type='k', ignore_special=True)
+        elif self.group.number == 113 and self.mol_sites[0].wp.multiplicity==2:
+            s = self.subgroup_once(eps=0, mut_lat=False, H=18, group_type='t', ignore_special=True)
         else:
             s = deepcopy(self)
 

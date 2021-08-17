@@ -197,9 +197,12 @@ class Lattice:
             diffs = []
             for tran in trans:
                 cell_new = np.dot(tran, self.matrix)
-                lat_new = Lattice.from_matrix(cell_new)
-                _, _, _, alpha, beta, gamma = lat_new.get_para()
-                diffs.append(np.max(abs(np.array([alpha, beta, gamma])-np.pi/2)))
+                try:
+                    lat_new = Lattice.from_matrix(cell_new)
+                    _, _, _, alpha, beta, gamma = lat_new.get_para()
+                    diffs.append(np.max(abs(np.array([alpha, beta, gamma])-np.pi/2)))
+                except:
+                    diffs.append(100)
             id = np.array(diffs).argmin()
             tran = trans[id]
             cell = np.dot(tran, self.matrix)
