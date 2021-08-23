@@ -136,7 +136,11 @@ class representation():
             a, b, c, alpha, beta, gamma = v[2], v[2], v[3], 90, 90, 120
         else:
             a, b, c, alpha, beta, gamma = v[2], v[2], v[2], 90, 90, 90
-        struc.lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+        try:
+            struc.lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+        except:
+            print(a, b, c, alpha, beta, gamma, ltype)
+            raise ValueError("Problem in Lattice")
     
         # sites
         struc.numMols = [0] * len(smiles) 
