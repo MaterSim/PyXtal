@@ -22,6 +22,7 @@ from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.molecule import pyxtal_molecule
 from pyxtal.lattice import Lattice
 from pyxtal.tolerance import Tol_matrix
+from pyxtal.representation import representation
 from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.XRD import XRD
 from pyxtal.constants import letters
@@ -1063,6 +1064,12 @@ class pyxtal:
         follow standard space group notation
         """
         pass
+
+    def get_1D_representation(self):
+        """
+        Get the 1D representation class for molecular crystals
+        """
+        return representation.from_pyxtal(self)
 
     def transform(self, trans, lattice=None):
         """

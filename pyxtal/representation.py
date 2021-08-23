@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from pyxtal import pyxtal
 from pyxtal.symmetry import Group
 from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import mol_site
@@ -26,6 +25,9 @@ class representation():
         else:
             self.smiles = None
         self.x = x
+
+    def __str__(self):
+        return self.to_string()
 
     @classmethod
     def from_pyxtal(cls, struc):
@@ -102,6 +104,7 @@ class representation():
             smiles: list of smiles
             compoisition: list of composition
         """
+        from pyxtal import pyxtal
         if smiles is None:
             smiles = self.smiles
 
