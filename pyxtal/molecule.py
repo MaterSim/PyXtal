@@ -53,6 +53,7 @@ def find_id_from_smile(smile):
         from rdkit import Chem
         smarts_torsion1="[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
         smarts_torsion2="[*]~[^2]=[^2]~[*]" # C=C bonds
+        #smarts_torsion2="[*]~[^1]#[^1]~[*]" # C-C triples bonds, to be fixed
 
         mol = Chem.MolFromSmiles(smile)
         pattern_tor1 = Chem.MolFromSmarts(smarts_torsion1)
@@ -85,15 +86,7 @@ def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
         ps.randomSeed=seed
         ps.runeRmsThresh=tol
         AllChem.EmbedMultipleConfs(mol, max([4, 4*len(torsionlist)]), ps)
-        #AllChem.EmbedMultipleConfs(mol, 1, ps)
         return mol
-        #engs = [c[1] for c in res]
-        #N_confs = mol.GetNumConformers()
-        #xyzs = []
-        #for conf_id in range(N_confs):
-        #    conf = mol.GetConformer(conf_id)
-        #    xyzs.append(conf.GetPositions())
-        #return xyzs
 
     m0 = pyxtal_molecule(smile+'.smi', fix=True)
     _, valid = m0.get_orientations_in_wps(wps)
@@ -109,7 +102,7 @@ def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
             m = m0.copy()
             xyz = m.align(conf)
             m.reset_positions(xyz)
-            m.get_symmetry()
+            m.get_symmetry(True)
             m.energy = res[id][1]
             _, valid = m.get_orientations_in_wps(wps)
             if valid:
@@ -570,12 +563,47 @@ class pyxtal_molecule:
         xyz = self.align(conf, reflect)
         return xyz
 
+    def relax(self, xyz, align=False):
+        """
+        Relax the input xyz coordinates with rdit MMFF
+
+        Args:
+            xyz: 3D coordinates
+            align: whether or not align the xyz
+
+        Returns:
+            xyz: new xyz
+            eng: energy value
+        """
+
+        from rdkit.Chem import AllChem
+        from rdkit.Geometry import Point3D
+
+        mol = self.rdkit_mol(1)
+        conf0 = mol.GetConformer(0)
+        # reset the xyz
+        for i in range(len(self.mol)):
+            x,y,z = xyz[i]
+            conf0.SetAtomPosition(i,Point3D(x,y,z))
+        res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+        if align:
+            xyz = self.align(conf0)
+        else:   
+            xyz = mol.GetConformer(0).GetPositions()
+        return xyz, res[0][1]
+
+
     def get_rmsd(self, xyz):
         """
         Compute the rmsd with another 3D xyz coordinates
 
         Args:
             xyz: 3D coordinates
+
+        Returns:
+            rmsd:
+            transition matrix:
+            match:
         """
 
         from rdkit import Chem
@@ -695,18 +723,25 @@ class pyxtal_molecule:
         xyz *= -1
         self.reset_positions(xyz)
 
-    def get_symmetry(self):
+    def get_symmetry(self, symmetrize=False):
         """
         Set the molecule's point symmetry.
             - pga: pymatgen.symmetry.analyzer.PointGroupAnalyzer object
             - pg: pyxtal.symmetry.Group object
             - symops: a list of SymmOp objects
-        """
 
+        Args:
+            symmetrize: boolean, whether or not symmetrize the coordinates
+        """
         mol = deepcopy(self.mol)
         if self.smile is not None:
             mol.remove_species('H')
             mol._spin_multiplicity = None #don't check spin
+
+        if symmetrize:
+            pga = PointGroupAnalyzer(mol)
+            mol = pga.symmetrize_molecule()["sym_mol"]
+
         pga = PointGroupAnalyzer(mol)#0.3)
         self.mol_no_h = mol
 
@@ -1254,7 +1289,6 @@ def is_compatible_symmetry(mol, wp):
     # For single atoms, there are no constraints
     if len(mol) == 1 or wp.index == 0:
         return True
-
     pga = PointGroupAnalyzer(mol)
     for op in wp.symmetry_m[0]:
         #print("XXXX", pga.is_valid_op(op), op.as_xyz_string())
