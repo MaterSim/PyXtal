@@ -45,7 +45,7 @@ setup(
     ],
     install_requires=[
         "spglib>=1.10.4",
-        "pymatgen>=2020.1.28",
+        "pymatgen>=2022.0.12",
         "pandas>=0.24.2",
         "networkx>=2.3",
         "py3Dmol>=0.8.0",
