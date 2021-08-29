@@ -17,6 +17,15 @@ from monty.serialization import loadfn
 
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 
+def in_merged_coords(wp, pt, pts):   
+    """
+    Whether or not the pt in within the pts
+    """
+    for pt0 in pts:
+        if wp.is_equivalent(pt, pt0):
+            return True
+    return False
+
 def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
     Export the structure in cif format
@@ -110,7 +119,29 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         letter = site.wp.letter
         if molecule:
             if sym_num is None:
-                coords, species = site._get_coords_and_species(first=True)
+                coord0s, specie0s = site._get_coords_and_species(first=True)
+                if struc.has_special_site():
+                    #print("#Check if the mul is consistent!")
+                    muls = []
+                    coords = []
+                    species = []
+                    merged_coords = []
+                    
+                    for coord, specie in zip(coord0s, specie0s):
+                        _, wp, _ = G1.merge(coord, struc.lattice.matrix, 0.01)
+                        if len(wp) > mul:
+                            if not in_merged_coords(G1, coord, merged_coords):
+                                coords.append(coord)
+                                species.append(specie)
+                                muls.append(len(wp))
+                                merged_coords.append(coord)
+                        else:
+                            coords.append(coord)
+                            species.append(specie)
+                            muls.append(mul)
+                else:
+                    coords, species = coord0s, specie0s 
+                    muls = [mul] * len(coords)
             else:
                 coords = None
                 species = []
@@ -122,10 +153,12 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
                     else:
                         coords = np.append(coords, tmp, axis=0)
                     species.extend([s.value for s in mol.species])
+                muls = [mul] * len(coords)
                 #coords, species = site._get_coords_and_species(ids=sym_num)
         else:
-            coords, species = [site.position], [site.specie]
-        for specie, coord in zip(species, coords):
+            coords, species, muls = [site.position], [site.specie], [mul]
+
+        for specie, coord, mul in zip(species, coords, muls):
             lines += '{:6s} {:6s} {:3d} '.format(specie, specie, mul)
             if style != 'mp':
                 lines += '{:s} '.format(letter)

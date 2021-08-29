@@ -973,6 +973,22 @@ class Wyckoff_position:
         """
         return self.Wyckoff_positions[0]
 
+    def is_equivalent(self, pt1, pt2, tol=0.01):
+        """
+        Check two pts are equivalent
+        """
+        pt1 = np.array(pt1)
+        pt2 = np.array(pt2)
+        pt1 -= np.floor(pt1)
+        pts = self.apply_ops(pt1)
+        diffs = pts - pts
+        diffs -= np.round(diffs)
+        dists = np.linalg.norm(diffs, axis=1)
+        if len(dists[dists<tol]) > 0:
+            return True
+        else:
+            return False
+        
     def merge(self, pt, lattice, tol, orientations=None):
         """
         Given a list of fractional coordinates, merges them within a given
