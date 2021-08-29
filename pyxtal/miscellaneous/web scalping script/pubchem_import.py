@@ -29,10 +29,6 @@ def check_for_ccdc_structures(cids):
 
     Returns:
     List of the the given CIDs that have CCDC crystal structure data
-
-    This assumes your system has google chrome v.92 installed. If not, change the chromedriver.exe in the folder.
-    Drivers can be found on the selenium project website.
-
     '''''''''
     good_list=[]
 
@@ -61,9 +57,63 @@ def check_for_ccdc_structures(cids):
     return good_list
 
 
-if __name__ == "__main__":
-    s=get_similar_cids(2244,5) #2244 is aspirins PubChem CID. First 5 similar compounds are gathered and checked.
-    print(s)
 
-    crystal_cids=check_for_ccdc_structures(s)
-    print(crystal_cids)
+
+def ccdcid_scalper(cids):
+    ''''''''''
+    Parameters:
+    cids: list of PubChem cids
+
+    Returns:
+    List of lists. Primary axis same dimension as input list of cids.
+    Each element is a list of all the CCDC Numbers provided in the PubChem Page for each PubChem CID.
+    If there is no crystal structure data on the PubChem Page for a particular CID, there will be an empty list.
+
+
+
+    On CCDC website, bulk cif downloads can be done with using a comma separated list of CCDC numbers.
+    Flatten the returned list of this function to get that.
+    '''''''''
+    CCDC_numbers=[]
+
+    for cid in cids:
+        cid=str(cid)
+        start="https://pubchem.ncbi.nlm.nih.gov/"
+        driver=webdriver.chrome.webdriver.WebDriver()
+        driver.get(start)
+        time.sleep(2)
+        elem=driver.find_element_by_css_selector('input')
+        elem.send_keys(cid)
+        elem.send_keys(Keys.RETURN)
+
+        time.sleep(3)
+
+        elem=driver.find_element_by_link_text(cid)
+        elem.click()
+
+        time.sleep(4)
+
+        elems=driver.find_elements_by_partial_link_text("Ccdcid=")
+        urls=[elem.text for elem in elems]
+        ccdcids=[url[url.index("=")+1:] for url in urls]
+        ccdcids=[int(ccdcid) for ccdcid in ccdcids]
+
+        CCDC_numbers.append(ccdcids)
+        driver.quit()
+    return CCDC_numbers
+
+
+
+if __name__ == "__main__":
+    s=get_similar_cids(2244,150) #2244 is aspirins PubChem CID
+    print('List of CIDs of Similar PubChem Compounds to Aspirin: ,',s)
+
+    print('\nCCDC Numbers listed on PubChem Page for each PubChem CID')
+    ccdc_numbers=ccdcid_scalper(s)
+
+    for i,x in enumerate(ccdc_numbers):
+        print(s[i],': ',x)
+
+    input=[]
+    [input.extend(x) for x in ccdc_numbers]
+    print('\nFlattened array for CCDC bulk search and download: ', input)
