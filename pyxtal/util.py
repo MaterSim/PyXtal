@@ -211,7 +211,7 @@ def get_similar_cids_from_pubchem(base, MaxRecords):
                              MaxRecords=MaxRecords)
     results = []
     for x in cids:
-        csd_codes = check_for_ccdc_structures(x.cid)
+        csd_codes = search_ccdc_structures(x.cid)
         if len(csd_codes)>0:
             d = {"cid": x.cid,
                  "smiles": x.canonical_smiles,
@@ -221,7 +221,7 @@ def get_similar_cids_from_pubchem(base, MaxRecords):
             print(d)
     return results
 
-def check_for_ccdc_structures(cid):
+def search_ccdc_structures(cid):
     """
     Args:
         cid: PubChem cid
@@ -237,16 +237,33 @@ def check_for_ccdc_structures(cid):
     url = url0 + cid + '/JSON'
     csd_codes = []
 
-    try:
-        response = urllib.request.urlopen(url)
-        data = json.loads(response.read())
+    """
+    Args:
+        cid: PubChem cid
+
+    Returns:
+        CIDs that have CCDC crystal structure data
+    """
+
+    import urllib
+    import json
+    from monty.json import MontyDecoder
+
+    url0 = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/'
+    cid=str(cid)
+    url = url0 + cid + '/JSON'
+    csd_codes = []
+
+    response = urllib.request.urlopen(url)
+    data = json.loads(response.read(), cls=MontyDecoder)
+    #data = loadfn(response.read())
+    if 'Section' in data['Record']['Section'][0].keys():
         if len(data['Record']['Section'][0]['Section']) == 3:
             infos = data['Record']['Section'][0]['Section'][2]['Section'][0]['Information']
             for info in infos:
                 csd_codes.append(info['Value']['StringWithMarkup'][0]['String'])
-    except:
-        print('Fail to parse the following url', url)
     return csd_codes
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
