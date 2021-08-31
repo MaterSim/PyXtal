@@ -320,6 +320,8 @@ class structure_from_ext():
 
             for i, id in enumerate(ids):
                 mol1 = molecules[id]
+                #print(id, ids_done, len(mol2.mol), len(mol1))
+                #print(mol2.mol.to('xyz'))
                 if id not in ids_done and len(mol2.mol) == len(mol1):
                     p_mol = mol2_ref.copy() # create p_mol
                     match, mapping = compare_mol_connectivity(mol2.mol, mol1)
@@ -363,7 +365,10 @@ class structure_from_ext():
             for id in ids:
                 if id not in ids_done:
                     msg = "This molecule cannot be matched to the reference molecule\n"
-                    msg += molecules[id].to('xyz')
+                    msg += 'Molecules extracted from the structure\n'
+                    msg += molecules[id].to('xyz') + '\n'
+                    msg += "Reference molecule from smiles or xyz\n"
+                    msg += mol2.mol.to('xyz')
                     raise ReadSeedError(msg)
 
     def add_Hydrogens(self, smile, xyz):

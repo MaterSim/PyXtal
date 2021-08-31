@@ -7,6 +7,15 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
 from pymatgen.core.structure import Structure
 from ase import Atoms
 from pyxtal.symmetry import Group
+import re
+
+def listToString(s): 
+    # initialize an empty string
+    #str1 = " " 
+    str1 = "" 
+    # return string  
+    return (str1.join(s))
+
 
 def pymatgen2ase(struc):
     """
@@ -68,8 +77,8 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0):
     Returns:
         pymatgen structure with symmetrized lattice
     """
-
-    atoms = (pmg.lattice.matrix, pmg.frac_coords, pmg.atomic_numbers)
+    numbers = [site.species.elements[0].Z for site in pmg.sites]
+    atoms = (pmg.lattice.matrix, pmg.frac_coords, numbers)
     dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol)
     hn = Group(dataset['number'], 3).hall_number
     if hn != dataset['hall_number']:
@@ -121,7 +130,123 @@ def extract_ase_db(db_file, id):
             my.from_seed(s)
             print(my)
 
+def parse_cif(filename, header=False, spg=False, eng=False, csd=False):
+    """
+    read structures from a cif (our own format with #END)
+    Args:
+        filename: string
+        header: bool, whether or not return header
+        spg: bool, whether or not return the spg
+    """
+    strings = []
+    headers = []
+    spgs = []
+    engs = []
+    csds = []
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        start = None
+        end = None
+        for i in range(len(lines)):
+            if lines[i].find("data_") == 0:
+                end = i
+                if start is not None:
+                    tmp = []
+                    for l in lines[start:end-1]:
+                        if len(re.findall(r"[0-9][B-C]", l))>0 or \
+                        len(re.findall(r"[A-Z][0-9]\' [0-9]", l))>0:
+                            #print(l) #; import sys; sys.exit()
+                            continue
+                        tmp.append(l)
+                    cif = listToString(tmp)
+                    strings.append(cif)
+                start = i
+                headers.append(lines[i])
+            elif lines[i].find("_symmetry_Int_Tables_number") == 0:
+                spgs.append(int(lines[i].split()[-1]))
+            elif lines[i].find("#Energy") == 0:
+                engs.append(float(lines[i].split()[1]))
+            elif lines[i].find("_database_code") == 0:
+                tmp = lines[i].split()[-1]
+                csds.append(tmp[:-1])
 
+        #Last one
+        tmp = []
+        for l in lines[start:]:
+            if len(re.findall(r"[0-9][B-D]", l))>0 or \
+            len(re.findall(r"[A-Z][0-9]\' [0-9]", l))>0:
+                #print(l); 
+                continue
+            tmp.append(l)
+        cif = listToString(tmp)
+        strings.append(cif)
+
+    if header:
+        return strings, headers
+    elif spg:
+        return strings, spgs
+    elif eng:
+        return strings, engs
+    elif csd:
+        return strings, csds
+    else:
+        return strings
+
+def get_similar_cids_from_pubchem(base, MaxRecords):
+
+    """
+    Args:
+        base: PubChem CID of Starting chemical
+        MaxRecords: Number of Similar Compounds
+
+    Returns:
+        List of the CIDs of PubChem compounds similar to the base compound.
+    """
+
+    import pubchempy as pcp
+
+    if type(base) == int: base = str(base)
+    cids = pcp.get_compounds(base, 
+                             searchtype="similarity", 
+                             MaxRecords=MaxRecords)
+    results = []
+    for x in cids:
+        csd_codes = check_for_ccdc_structures(x.cid)
+        if len(csd_codes)>0:
+            d = {"cid": x.cid,
+                 "smiles": x.canonical_smiles,
+                 "name": x.iupac_name,
+                 "csd_codes": csd_codes}
+            results.append(d)
+            print(d)
+    return results
+
+def check_for_ccdc_structures(cid):
+    """
+    Args:
+        cid: PubChem cid
+
+    Returns:
+        CIDs that have CCDC crystal structure data
+    """
+
+    import urllib, json
+
+    url0 = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/'
+    cid=str(cid)
+    url = url0 + cid + '/JSON'
+    csd_codes = []
+
+    try:
+        response = urllib.request.urlopen(url)
+        data = json.loads(response.read())
+        if len(data['Record']['Section'][0]['Section']) == 3:
+            infos = data['Record']['Section'][0]['Section'][2]['Section'][0]['Information']
+            for info in infos:
+                csd_codes.append(info['Value']['StringWithMarkup'][0]['String'])
+    except:
+        print('Fail to parse the following url', url)
+    return csd_codes
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
