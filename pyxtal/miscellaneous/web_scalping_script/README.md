@@ -15,7 +15,7 @@ Then find the corresponding version number in this link here, [https://chromedri
 Unzip the executable file, and find the absolute path to the chromedriver.exe file. The script takes the absolute path as an argument
 
 ```bash
-python pubchem_import.py "/Users/kevinparrish/Downloads/chromedriver"
+python3 pubchem_import.py "/Users/kevinparrish/Downloads/chromedriver"
 ```
 
 ### NOTE
