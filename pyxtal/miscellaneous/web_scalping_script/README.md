@@ -24,7 +24,7 @@ Your system may block the the executable. Be sure to allow the executable permis
 ## Workflow
 The script relies on two functionalities: 
 
-`get_similiar_cids' accepts a PubChem Compound CID and a Maximium threshold as arguments. It then uses the PubChem python API `pubchempy` to search through pubchem database the the threshold number of similar structure compounds. It returns a list of the similar compound CIDs.
+`get_similiar_cids` accepts a PubChem Compound CID and a Maximium threshold as arguments. It then uses the PubChem python API `pubchempy` to search through pubchem database the the threshold number of similar structure compounds. It returns a list of the similar compound CIDs.
 
 `ccdcid_scalper` then takes the list and uses selenium to systematically search the PubChem website for these CIDs, where it will identify any potential links to the CCDC website attached to the page. It will grab all the CDC Numbers available, and return a final list of comma separated CDC Numbers that represent CIF files of crystals similar in structure to the starting input.
 
