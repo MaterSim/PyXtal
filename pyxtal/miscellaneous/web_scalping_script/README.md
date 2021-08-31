@@ -21,3 +21,12 @@ python pubchem_import.py "/Users/kevinparrish/Downloads/chromedriver"
 ### NOTE
 Your system may block the the executable. Be sure to allow the executable permission to run.
 
+## Workflow
+The script relies on two functionalities: 
+
+`get_similiar_cids' accepts a PubChem Compound CID and a Maximium threshold as arguments. It then uses the PubChem python API `pubchempy` to search through pubchem database the the threshold number of similar structure compounds. It returns a list of the similar compound CIDs.
+
+`ccdcid_scalper` then takes the list and uses selenium to systematically search the PubChem website for these CIDs, where it will identify any potential links to the CCDC website attached to the page. It will grab all the CDC Numbers available, and return a final list of comma separated CDC Numbers that represent CIF files of crystals similar in structure to the starting input.
+
+Then, the comma separated list can be taken and put into the Identifiers field here [https://www.ccdc.cam.ac.uk/structures/Home/EditSearchForm?ccdc-check=52d8db2b85f6380110d1d48a537426b2](https://www.ccdc.cam.ac.uk/structures/Home/EditSearchForm?ccdc-check=52d8db2b85f6380110d1d48a537426b2). Check only the CSD database to search. The resulting list of cif files can be downloaded all at once through the button in the top left.
+
