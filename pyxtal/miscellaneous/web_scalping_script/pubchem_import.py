@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import time
 import pubchempy as pcp
+import sys
 
 def get_similar_cids(base,MaxRecords):
     '''''''''
@@ -35,7 +36,7 @@ def check_for_ccdc_structures(cids):
     for cid in cids:
         cid=str(cid)
         start="https://pubchem.ncbi.nlm.nih.gov/"
-        driver=webdriver.chrome.webdriver.WebDriver()
+        driver=webdriver.chrome.webdriver.WebDriver("/Users/kevinparrish/github/PyXtal/pyxtal/miscellaneous/web_scalping_script/chromedriver.exe")
         driver.get(start)
         time.sleep(2)
         elem=driver.find_element_by_css_selector('input')
@@ -79,7 +80,8 @@ def ccdcid_scalper(cids):
     for cid in cids:
         cid=str(cid)
         start="https://pubchem.ncbi.nlm.nih.gov/"
-        driver=webdriver.chrome.webdriver.WebDriver()
+        driver_location=sys.argv[1]
+        driver=webdriver.chrome.webdriver.WebDriver(executable_path=str(driver_location))
         driver.get(start)
         time.sleep(2)
         elem=driver.find_element_by_css_selector('input')
