@@ -230,21 +230,6 @@ def search_ccdc_structures(cid):
         CIDs that have CCDC crystal structure data
     """
 
-    import urllib, json
-
-    url0 = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/'
-    cid=str(cid)
-    url = url0 + cid + '/JSON'
-    csd_codes = []
-
-    """
-    Args:
-        cid: PubChem cid
-
-    Returns:
-        CIDs that have CCDC crystal structure data
-    """
-
     import urllib
     import json
     from monty.json import MontyDecoder
@@ -255,13 +240,18 @@ def search_ccdc_structures(cid):
     csd_codes = []
 
     response = urllib.request.urlopen(url)
-    data = json.loads(response.read(), cls=MontyDecoder)
-    #data = loadfn(response.read())
-    if 'Section' in data['Record']['Section'][0].keys():
-        if len(data['Record']['Section'][0]['Section']) == 3:
-            infos = data['Record']['Section'][0]['Section'][2]['Section'][0]['Information']
-            for info in infos:
-                csd_codes.append(info['Value']['StringWithMarkup'][0]['String'])
+    contents = response.read()
+    try:
+        if contents.decode().find('CCDC') > 0:
+            data = json.loads(contents, cls=MontyDecoder)
+            if 'Section' in data['Record']['Section'][0].keys():
+                if len(data['Record']['Section'][0]['Section']) == 3:
+                    infos = data['Record']['Section'][0]['Section'][2]['Section'][0]['Information']
+                    for info in infos:
+                        csd_codes.append(info['Value']['StringWithMarkup'][0]['String'])
+    except:
+        print('Failed to parse json', url, '\n')
+
     return csd_codes
 
 
