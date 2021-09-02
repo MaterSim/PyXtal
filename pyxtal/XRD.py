@@ -329,7 +329,7 @@ class XRD():
             plt.close()
 
 
-    def plotly_pxrd(self, profile='gaussian', minimum_I = 0.01, height=450, html=None):
+    def plotly_pxrd(self, profile='gaussian', minimum_I=0.01, res=0.02, FWHM=0.1, height=450, html=None):
         import plotly.graph_objects as go
 
         """
@@ -356,7 +356,7 @@ class XRD():
         if profile is None:
             fig = go.Figure(data=[trace1])
         else:
-            spectra = self.get_profile(method=profile)
+            spectra = self.get_profile(method=profile, res=res, user_kwargs={"FWHM": FWHM})
             trace2 = go.Scatter(x=spectra[0], y=spectra[1], name='Profile: ' + profile)
             fig = go.Figure(data=[trace2, trace1])
 
@@ -398,7 +398,7 @@ class Profile:
         user_kwargs (dict): The parameters for the profiling method.
     """
 
-    def __init__(self, method='mod_pseudo-voigt', res = 0.02, user_kwargs=None):
+    def __init__(self, method='mod_pseudo-voigt', res=0.02, user_kwargs=None):
 
         self.method = method
         self.user_kwargs = user_kwargs
@@ -415,7 +415,7 @@ class Profile:
                       'eta_l': 0.611844,
                      }
         elif method in ['gaussian', 'lorentzian', 'pseudo-voigt']:
-            _kwargs = {'FWHM': 0.05}
+            _kwargs = {'FWHM': 0.1}
 
         else:
             msg = method + " isn't supported."
