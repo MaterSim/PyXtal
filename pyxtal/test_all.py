@@ -457,14 +457,14 @@ class TestPXRD(unittest.TestCase):
         p1 = xrd1.get_profile()
         p2 = xrd2.get_profile()
         s = Similarity(p1, p2, x_range=[15, 90])
-        self.assertTrue( 0.9 <s.S <1.001)
+        self.assertTrue( 0.9 <s.value <1.001)
      
 
         C2.apply_perturbation(1e-3, 1e-3)
         xrd3 = C2.get_XRD()
         p3 = xrd3.get_profile()
         s = Similarity(p1, p2, x_range=[15, 90])
-        self.assertTrue( 0.95 <s.S <1.001)
+        self.assertTrue( 0.95 <s.value <1.001)
 
 class TestLoad(unittest.TestCase):
     def test_atomic(self):

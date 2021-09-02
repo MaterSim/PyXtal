@@ -542,10 +542,10 @@ class Similarity():
         Npts = len(self.fx)
         d = self.fx[1] - self.fx[0]
 
-        self.S = similarity_calculate(self.r, w, d, Npts, self.fy, self.gy)
+        self.value = similarity_calculate(self.r, w, d, Npts, self.fy, self.gy)
 
     def __str__(self):
-        s = "The similarity between two PXRDs is {:.4f}".format(self.S)
+        s = "The similarity between two PXRDs is {:.4f}".format(self.value)
         return s
 
     def __repr__(self):
@@ -599,7 +599,7 @@ class Similarity():
         residuals = self.gy - self.fy
         fig1.add_axes((.1,.1,.8,.2))
         plt.plot(self.gx, residuals, '.r', markersize = 0.5)
-        plt.title("{:6f}".format(self.S))
+        plt.title("{:6f}".format(self.value))
 
         if filename is None:
             plt.show()
