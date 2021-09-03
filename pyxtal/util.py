@@ -239,9 +239,14 @@ def search_ccdc_structures(cid):
     url = url0 + cid + '/JSON'
     csd_codes = []
 
-    response = urllib.request.urlopen(url)
-    contents = response.read()
     try:
+        response = urllib.request.urlopen(url)
+    except urllib.error.HTTPError:
+        print("Problem in http connection", url)
+        return None
+
+    try:
+        contents = response.read()
         if contents.decode().find('CCDC') > 0:
             data = json.loads(contents, cls=MontyDecoder)
             if 'Section' in data['Record']['Section'][0].keys():
