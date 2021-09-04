@@ -244,6 +244,9 @@ def search_ccdc_structures(cid):
     except urllib.error.HTTPError:
         print("Problem in http connection", url)
         return None
+    except urllib.error.URLError:
+        print("Problem in parsing", url)
+        return None
 
     try:
         contents = response.read()
