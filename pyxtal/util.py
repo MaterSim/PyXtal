@@ -130,7 +130,7 @@ def extract_ase_db(db_file, id):
             my.from_seed(s)
             print(my)
 
-def parse_cif(filename, header=False, spg=False, eng=False, csd=False):
+def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False):
     """
     read structures from a cif (our own format with #END)
     Args:
@@ -143,12 +143,15 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False):
     spgs = []
     engs = []
     csds = []
+    sims = []
     with open(filename, 'r') as f:
         lines = f.readlines()
         start = None
         end = None
         for i in range(len(lines)):
             if lines[i].find("data_") == 0:
+                if sim:
+                    sims.append(float(lines[i].split(':')[-1]))
                 end = i
                 if start is not None:
                     tmp = []
@@ -189,6 +192,8 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False):
         return strings, engs
     elif csd:
         return strings, csds
+    elif sim:
+        return strings, sims
     else:
         return strings
 
