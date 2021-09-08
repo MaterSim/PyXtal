@@ -403,6 +403,29 @@ class pyxtal:
             #if not sm.StructureMatcher().fit(struc, pmg1):
             #    raise RuntimeError("The structure is inconsistent after conversion")
 
+    def check_H_coordination(self, r=1.12):
+        """
+        A function to check short if H is connected to more than one atom
+        Mainly used for debug, powered by pymatgen
+
+        Args:
+            r: the given cutoff distances
+
+        Returns:
+            True or False
+        """
+        if self.dim > 0:
+            pairs = []
+            pmg_struc = self.to_pymatgen()
+            res = pmg_struc.get_all_neighbors(r)
+            for i, neighs in enumerate(res):
+                if pmg_struc.sites[i].specie.number==1 and len(neighs)>1:
+                    return True
+        else:
+            raise NotImplementedError("Does not support cluster for now")
+        return False
+
+
     def check_short_distances(self, r=0.7, exclude_H = True):
         """
         A function to check short distance pairs
