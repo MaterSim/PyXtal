@@ -218,7 +218,7 @@ class representation():
             strs += "{:5.2f}".format(time)
 
         if eng is not None:
-            strs += "{:10.2f}".format(eng)
+            strs += "{:11.3f}".format(eng)
     
         if tag is not None:
             strs += " {:s}".format(tag)

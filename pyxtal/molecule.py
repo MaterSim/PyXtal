@@ -278,36 +278,74 @@ class pyxtal_molecule:
                 dims[i] = max([dims[i]+r, 3.4]) #for planar molecules
         return Box(dims)
 
-    def get_box_coordinates(self, xyz, padding=0):
+    def get_box_coordinates(self, xyz, padding=0, resolution=1.0):
         """
         create the points cloud to describe the molecular box
 
         Args:
             center: molecular center position
             orientation: orientation matrix
+            padding: padding of the box
+            resolution: float in angstrom
 
         Return:
             cell: box axis
-            vertices: [8, 3] np.array, Cartesian coordinates to describe the box.
+            vertices: [N, 3] np.array, Cartesian coordinates to describe the box.
             center: box center
         """
         cell = self.get_principle_axes(xyz).T
         center = self.get_center(xyz) #, geometry=True)
         box = self.get_box(padding)
+        #print(box)
         w, h, l = box.width, box.height, box.length      
         cell[0,:] *= l
         cell[1,:] *= w
         cell[2,:] *= h
-        vertices = np.array([[-1/2, -1/2, -1/2], 
-                             [1/2, -1/2, -1/2], 
-                             [1/2, 1/2, -1/2], 
-                             [-1/2, 1/2, -1/2],
-                             [-1/2, 1/2, 1/2], 
-                             [-1/2, -1/2, 1/2], 
-                             [1/2, -1/2, 1/2], 
-                             [1/2, 1/2, 1/2]])
+        x_ = np.linspace(-1/2, 1/2, int(l/resolution)+1)
+        y_ = np.linspace(-1/2, 1/2, int(w/resolution)+1)
+        z_ = np.linspace(-1/2, 1/2, int(h/resolution)+1)
+        
+        #XY
+        #print(len(x_), len(y_), len(z_))
+        x, y = np.meshgrid(x_, y_, indexing='ij')
+        size = len(x.flatten())
+        xy = np.zeros([size*2, 3])
+        xy[:size,0] = x.flatten()
+        xy[size:,0] = x.flatten()
+        xy[:size,1] = y.flatten()
+        xy[size:,1] = y.flatten()
+        xy[:size,2] = -0.5
+        xy[size:,2] = 0.5
+        #print(xy.shape)
+        #print(xy)
+
+        y, z = np.meshgrid(y_, z_, indexing='ij')
+        size = len(y.flatten())
+        yz = np.zeros([size*2, 3])
+        yz[:size,1] = y.flatten()
+        yz[size:,1] = y.flatten()
+        yz[:size,2] = z.flatten()
+        yz[size:,2] = z.flatten()
+        yz[:size,0] = -0.5
+        yz[size:,0] = 0.5
+
+        x, z = np.meshgrid(x_, z_, indexing='ij')
+        size = len(z.flatten())
+        xz = np.zeros([size*2, 3])
+        xz[:size,0] = x.flatten()
+        xz[size:,0] = x.flatten()
+        xz[:size,2] = z.flatten()
+        xz[size:,2] = z.flatten()
+        xz[:size,1] = -0.5
+        xz[size:,1] = 0.5
+
+        vertices = np.zeros([len(xy)+len(yz)+len(xz), 3])
+        vertices[:len(xy),:] = xy
+        vertices[len(xy):len(xy)+len(yz),:] = yz
+        vertices[len(xy)+len(yz):,:] = xz
         vertices = vertices.dot(cell)
         vertices += center
+
         return cell, vertices, center
 
     def get_radius(self):
