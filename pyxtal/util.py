@@ -197,6 +197,26 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
     else:
         return strings
 
+def process_csd_cif(cif, remove_H=False):
+    """
+    process cif from CSD, sometimes it contains multiple 
+    """
+    lines = cif.split('\n')
+    tmp = []
+    for l in lines:
+        if len(re.findall(r"[0-9][A-Z]", l))>0 or len(re.findall(r"[A-Z]\?", l))>0 or \
+            len(re.findall(r"[0-9]\?", l))>0 or \
+            len(re.findall(r"[A-Z][0-9]\' [0-9]", l))>0:
+            #len(re.findall(r"[0-9]_[0-9]", l))>0 or \
+            #print(l) #; import sys; sys.exit()
+            continue
+        else:
+            if remove_H and len(re.findall(r" H ", l))>0:
+                continue
+            else:
+                tmp.append(l+'\n')
+    return listToString(tmp)
+
 def get_similar_cids_from_pubchem(base, MaxRecords):
 
     """

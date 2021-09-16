@@ -441,6 +441,9 @@ class pyxtal_molecule:
                 ps = AllChem.ETKDGv3()
                 ps.randomSeed=self.seed
                 AllChem.EmbedMultipleConfs(mol, 1, ps)
+                if mol.GetNumConformers() == 0:
+                    AllChem.EmbedMultipleConfs(mol, 3, ps)
+
             res = AllChem.MMFFOptimizeMoleculeConfs(mol)
             engs = [c[1] for c in res]
             cid = engs.index(min(engs))
@@ -761,7 +764,7 @@ class pyxtal_molecule:
         xyz *= -1
         self.reset_positions(xyz)
 
-    def get_symmetry(self, symmetrize=False):
+    def get_symmetry(self, symmetrize=False, rtol=0.30):
         """
         Set the molecule's point symmetry.
             - pga: pymatgen.symmetry.analyzer.PointGroupAnalyzer object
@@ -777,12 +780,12 @@ class pyxtal_molecule:
             mol._spin_multiplicity = None #don't check spin
 
         if symmetrize:
-            pga = PointGroupAnalyzer(mol)
+            pga = PointGroupAnalyzer(mol, rtol, eigen_tolerance=1e-3)
             mol = pga.symmetrize_molecule()["sym_mol"]
-
-        pga = PointGroupAnalyzer(mol)#0.3)
+        pga = PointGroupAnalyzer(mol, rtol, eigen_tolerance=1e-3)
         self.mol_no_h = mol
 
+        #print(mol.to(fmt='xyz'), pga.sch_symbol)
         # For single atoms, we cannot represent the point group using a list of operations
         if len(mol) == 1:
             symm_m = []
@@ -822,6 +825,7 @@ class pyxtal_molecule:
                         break
         self.symops = symm_m
         self.pga = pga
+        if symbol == 'S2': symbol = 'Ci'
         self.pg = Group(symbol, dim=0)
 
     def get_orientations_in_wps(self, wps=None, rtol=1e-2):
