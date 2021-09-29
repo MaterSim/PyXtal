@@ -568,7 +568,7 @@ class Wyckoff_position:
         #wp.get_site_symmetry()
         return wp
 
-    def __str__(self):
+    def __str__(self, supress=False):
         if self.dim not in list(range(4)):
             return "invalid crystal dimension. Must be a number between 0 and 3."
         s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
@@ -586,8 +586,11 @@ class Wyckoff_position:
         s += " with site symmetry " + ss_string_from_ops(
                 self.symmetry_m[0], self.number, dim=self.dim
         )
-        for op in self.ops:
-            s += "\n" + op.as_xyz_string()
+
+        if not supress:
+            for op in self.ops:
+                s += "\n" + op.as_xyz_string()
+
         self.string = s
         return self.string
 
