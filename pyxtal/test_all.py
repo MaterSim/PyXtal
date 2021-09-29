@@ -36,6 +36,30 @@ class TestGroup(unittest.TestCase):
         a2, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
 
+    def test_spg_symmetry(self):
+        N_polar, N_centro, N_chiral = 0, 0, 0
+        for sg in range(1, 231):
+            g = Group(sg)
+            pg, polar, centro, chiral =g.point_group, g.polar, g.inversion, g.chiral
+            #pg, polar, centro, chiral = get_point_group(sg)
+            if polar:
+                N_polar += 1
+            if centro:
+                N_centro += 1
+            if chiral:
+                N_chiral += 1
+        
+        self.assertTrue(N_polar == 68)
+        self.assertTrue(N_centro == 92)
+        self.assertTrue(N_chiral == 65)
+
+    def test_ferroelectric(self):
+        pairs = [(4, 1), (187, 5), (222, 6)]
+        for pair in pairs:
+            (sg, N) = pair
+            self.assertTrue(len(Group(sg).get_ferroelectric_groups()) == N)
+
+
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):
         c1 = pyxtal()

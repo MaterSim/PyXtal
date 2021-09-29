@@ -147,7 +147,7 @@ class Group:
             self.w_symm_m = get_wyckoff_symmetry(self.number, molecular=True)
             self.wyckoff_generators_m = get_wyckoff_generators(self.number, molecular=True) 
             self.hall_number = hall_from_hm(self.number)
-            self.point_group = get_point_group(self.number)
+            self.point_group, self.polar, self.inversion, self.chiral = get_point_group(self.number)
         elif dim == 2:
             self.wyckoffs = get_layer(self.number)
             self.w_symm = get_layer_symmetry(self.number)
@@ -222,6 +222,12 @@ class Group:
 
     def __len__(self):
         return len(self.wyckoffs)
+
+    def get_ferroelectric_groups(self):
+        """
+        return the list of possible ferroelectric point groups
+        """
+        return para2ferro(self.point_group)
 
     def get_site_dof(self, sites):
         """
@@ -2812,78 +2818,98 @@ def search_cloest_wp(G, wp, op, pos):
 
 def get_point_group(number):
     """
-    return the point group for the given space group
+    Parse the point group symmetry info from space group 
+    http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm
+    Among 32(230) point(space) groups, there are
+    10(68) polar groups,
+    11(92) centrosymmetric groups,
+    11(65) enantiomorphic groups
+
+    Args:
+        number: space group number
+
+    Return:
+        point group symbol
+        polar: 1, 2, m, mm2, 3, 3m, 4, 4mm, 6, 6mm
+        centrosymmetry: -1, 2/m, mmm, 4/m, 4/mmm, -3, -3m, 6/m, 6/mmm, m-3, m-3m
+        enantiomorphic: 1, 2, 222, 4, 422, 3, 32, 6, 622, 23, 432
     """
 
     if number == 1:
-        return '1'
+        return '1', True, False, True
     elif number == 2:
-        return '-1'
+        return '-1', False, True, False
     elif 3 <= number <= 5:
-        return '2'
+        return '2', True, False, True
     elif 6 <= number <= 9:
-        return 'm'
+        return 'm', True, False, False
     elif 10 <= number <= 15:
-        return '2/m'
+        return '2/m', False, True, False
     elif 16 <= number <= 24:
-        return '222'
+        return '222', False, False, True
     elif 25 <= number <= 46:
-        return 'mm2'
+        return 'mm2', True, False, False
     elif 47 <= number <= 74:
-        return 'mmm'
+        return 'mmm', False, True, False
     elif 75 <= number <= 80:
-        return '4'
+        return '4', True, False, True
     elif 81 <= number <= 82:
-        return '-4'
+        return '-4', False, False, False
     elif 83 <= number <= 88:
-        return '4/m'
+        return '4/m', False, True, False
     elif 89 <= number <= 98:
-        return '422'
+        return '422', False, False, True
     elif 99 <= number <= 110:
-        return '4mm'
+        return '4mm', True, False, False
     elif 111 <= number <= 122:
-        return '-42m'
+        return '-42m', False, False, False
     elif 123 <= number <= 142:
-        return '4/mmm'
+        return '4/mmm', False, True, False
     elif 143 <= number <= 146:
-        return '3'
+        return '3', True, False, True
     elif 147 <= number <= 148:
-        return '-3'
+        return '-3', False, True, False
     elif 149 <= number <= 155:
-        return '32'
+        return '32', False, False, True
     elif 156 <= number <= 161:
-        return '3m'
+        return '3m', True, False, False
     elif 162 <= number <= 167:
-        return '-3m'
+        return '-3m', False, True, False
     elif 168 <= number <= 173:
-        return '6'
+        return '6', True, False, True
     elif number == 174:
-        return '-6'
+        return '-6', False, False, False
     elif 175 <= number <= 176:
-        return '6/m'
+        return '6/m', False, True, False
     elif 177 <= number <= 182:
-        return '622'
+        return '622', False, False, True
     elif 183 <= number <= 186:
-        return '6mm'
+        return '6mm', True, False, False
     elif 187 <= number <= 190:
-        return '-6m2'
+        return '-62m', False, False, False
     elif 191 <= number <= 194:
-        return '6/mmm'
+        return '6/mmm', False, True, False
     elif 195 <= number <= 199:
-        return '23'
+        return '23', False, False, True
     elif 200 <= number <= 206:
-        return 'm-3'
+        return 'm-3', False, True, False
     elif 207 <= number <= 214:
-        return '432'
+        return '432', False, False, True
     elif 215 <= number <= 220:
-        return '-43m'
+        return '-43m', False, False, False
     elif 221 <= number <= 230:
-        return 'm-3m'
+        return 'm-3m', False, True, False
 
 def get_close_packed_groups(pg):
     """
     List the close packed groups based on the molcular symmetry
     Compiled from AIK Book, Table 2 P34
+
+    Args:
+        pg: point group symbol
+
+    Return
+        list of space group numbers
     """
 
     if pg == '1':
@@ -2902,3 +2928,83 @@ def get_close_packed_groups(pg):
         return [21, 22, 23, 68]
     elif pg == 'mmm':
         return [65, 69, 71]
+
+def para2ferro(pg):
+    """
+    88 potential paraelectric-to-ferroelectric phase transitions
+    https://journals.aps.org/prb/abstract/10.1103/PhysRevB.2.754
+    https://pubs.rsc.org/en/content/articlelanding/2016/cs/c5cs00308c
+
+    Args:
+        paraelectric point group 
+
+    Returns:
+        list of ferroelectric point groups
+    """
+    #Triclinic: 1
+    if pg == '-1': #2
+        return ['1'] 
+    #Monoclinic: 5
+    elif pg in ['2', 'm']: #2
+        return '1'
+    elif pg == '2/m': #3
+        return ['1', 'm', '2']
+    #Orthorhombic: #7
+    elif pg == '222': #2
+        return ['1', '2'] 
+    elif pg == 'mm2': #2
+        return ['1', 'm'] 
+    elif pg == 'mmm': #3
+        return ['1', 'm', 'mm2']
+    #Tetragonal: 20
+    elif pg == '4': #1
+        return ['1']
+    elif pg == '-4': #2
+        return ['1', '2']
+    elif pg == '4/m': #3
+        return ['1', '2', '4']
+    elif pg == '422': #3
+        return ['1', '2(s)', '4']
+    elif pg == '4mm': #2
+        return ['1', 'm']
+    elif pg == '-42m': #4
+        return ['1', '2(s)', 'm', 'mm2']
+    elif pg == '4/mmm': #5
+        return ['1', 'm(s)', 'm(p)', 'mm2(s)', '4mm']
+    #Trigonal: 12
+    elif pg == '3': #1
+        return ['1']
+    elif pg == '-3': #2
+        return ['1', '3']
+    elif pg == '32': #3
+        return ['1', '2', '3']
+    elif pg == '3m': #2
+        return ['1', 'm']
+    elif pg == '-3m': #4
+        return ['1', '2', 'm', '3m']
+    #Hexagonal: 22
+    elif pg == '6': #1
+        return ['1']
+    elif pg == '-6': #3
+        return ['1', 'm', '3']
+    elif pg == '6/m': #3
+        return ['1', 'm', '6']
+    elif pg == '622': #3
+        return ['1', '2(s)', '6']
+    elif pg == '6mm': #2
+        return ['1', '2']
+    elif pg in ['-62m', '-6m2']: #5
+        return ['1', 'm(s)', 'm(p)', 'mm2', '3m']
+    elif pg == '6/mmm': #5
+        return ['1', 'm(s)', 'm(p)', 'mm2(s)', '6mm']
+    #Cubic: 21
+    elif pg == '23': #3
+        return ['1', '2', '3']
+    elif pg == 'm-3': #4
+        return ['1', 'm', 'mm2', '3']
+    elif pg == '432': #4
+        return ['1', '2(s)', '4', '3']
+    elif pg == '-43m': #4
+        return ['1', 'm', 'mm2', '3m']
+    elif pg == 'm-3m': #6
+        return ['1', 'm(s)', 'm(p)', 'mm2', '4mm', '3m']
