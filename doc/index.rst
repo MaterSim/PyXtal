@@ -43,7 +43,6 @@ Tutorial
    Installation
    COMMAND_MODE
    Usage
-   Others
    Background
    Algorithm
    Settings

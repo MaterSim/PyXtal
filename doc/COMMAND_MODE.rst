@@ -265,4 +265,4 @@ This is very useful for molecules with high internal symmetry. During crystalliz
  
 How to define the molecules?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-For the specification of molecule, please ref to the section of `Working with Molecules <Others.html#working-with-molecules>`_.
+For the specification of molecule, please ref to the section of `Molecule in PyXtal <Usage.html#molecule-in-pyxtal>`_.
