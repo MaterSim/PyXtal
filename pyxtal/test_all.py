@@ -54,7 +54,7 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(N_chiral == 65)
 
     def test_ferroelectric(self):
-        pairs = [(4, 1), (187, 5), (222, 6)]
+        pairs = [(4, 1), (187, 4), (222, 5)]
         for pair in pairs:
             (sg, N) = pair
             self.assertTrue(len(Group(sg).get_ferroelectric_groups()) == N)
