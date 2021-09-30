@@ -2967,13 +2967,16 @@ def para2ferro(pg):
     elif pg == '4/m': #3
         return ['1', '2', '4']
     elif pg == '422': #3
-        return ['1', '2(s)', '4']
+        #return ['1', '2(s)', '4']
+        return ['1', '2', '4']
     elif pg == '4mm': #2
         return ['1', 'm']
     elif pg == '-42m': #4
-        return ['1', '2(s)', 'm', 'mm2']
+        #return ['1', '2(s)', 'm', 'mm2']
+        return ['1', '2', 'm', 'mm2']
     elif pg == '4/mmm': #5
-        return ['1', 'm(s)', 'm(p)', 'mm2(s)', '4mm']
+        #return ['1', 'm(s)', 'm(p)', 'mm2(s)', '4mm']
+        return ['1', 'm', 'mm2', '4mm']
     #Trigonal: 12
     elif pg == '3': #1
         return ['1']
@@ -2993,21 +2996,26 @@ def para2ferro(pg):
     elif pg == '6/m': #3
         return ['1', 'm', '6']
     elif pg == '622': #3
-        return ['1', '2(s)', '6']
+        #return ['1', '2(s)', '6']
+        return ['1', '2', '6']
     elif pg == '6mm': #2
         return ['1', '2']
     elif pg in ['-62m', '-6m2']: #5
-        return ['1', 'm(s)', 'm(p)', 'mm2', '3m']
+        #return ['1', 'm(s)', 'm(p)', 'mm2', '3m']
+        return ['1', 'm', 'mm2', '3m']
     elif pg == '6/mmm': #5
-        return ['1', 'm(s)', 'm(p)', 'mm2(s)', '6mm']
+        #return ['1', 'm(s)', 'm(p)', 'mm2(s)', '6mm']
+        return ['1', 'm', 'mm2', '6mm']
     #Cubic: 21
     elif pg == '23': #3
         return ['1', '2', '3']
     elif pg == 'm-3': #4
         return ['1', 'm', 'mm2', '3']
     elif pg == '432': #4
-        return ['1', '2(s)', '4', '3']
+        #return ['1', '2(s)', '4', '3']
+        return ['1', '2', '4', '3']
     elif pg == '-43m': #4
         return ['1', 'm', 'mm2', '3m']
     elif pg == 'm-3m': #6
-        return ['1', 'm(s)', 'm(p)', 'mm2', '4mm', '3m']
+        #return ['1', 'm(s)', 'm(p)', 'mm2', '4mm', '3m']
+        return ['1', 'm', 'mm2', '4mm', '3m']
