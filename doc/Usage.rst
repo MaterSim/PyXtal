@@ -229,7 +229,7 @@ From here, you can alter the tolerance between certain inter-atomic pairs. Addit
     >>> tol_m_1.to_file("custom_matrix_file")
     'Output file to custom_matrix_file.npy'
     >>> reloaded_tol_matrix = Tol_matrix.from_file("custom_matrix_file.npy")
-    >>> reloaded_tol_matrix.print_all()
+    >>> print(reloaded_tol_matrix)
     --Tol_matrix class object--
       Prototype: molecular
       Atomic radius type: covalent
