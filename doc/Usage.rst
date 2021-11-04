@@ -215,7 +215,7 @@ When generating random crystals, PyXtal performs inter-atomic distances checks t
 
 .. code-block:: Python
 
-    from pyxtal.crystal import Tol_matrix
+    from pyxtal.tolerance import Tol_matrix
     tol_m_1 = Tol_matrix(prototype="molecular", factor=2.0)
     tol_m_2 = Tol_matrix.from_radii(some_custom_list_of_atomic_radii)
     tol_m_3 = Tol_matrix.from_matrix(some_custom_2D_tolerance_matrix)
