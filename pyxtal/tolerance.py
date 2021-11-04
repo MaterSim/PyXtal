@@ -218,26 +218,25 @@ class Tol_matrix:
         new_index = Element.number_from_specie(index)
         return self.matrix[index]
 
-    def print_all(self):
-        print("--Tol_matrix class object--")
-        print("  Prototype: " + str(self.prototype))
-        print("  Atomic radius type: " + str(self.radius_type))
-        print("  Radius scaling factor: " + str(self.f))
+    def __str__(self):
+        s = "\n--Tol_matrix class object--"
+        s += "\nPrototype: " + str(self.prototype)
+        s += "\nAtomic radius type: " + str(self.radius_type)
+        s += "\nRadius scaling factor: " + str(self.f)
         if self.prototype == "single value":
-            print("  Custom tolerance value: " + str(self.matrix([0][0])))
+            s += "\nCustom tolerance value: " + str(self.matrix([0][0]))
         else:
             if self.custom_values == []:
-                print("  Custom tolerance values: None")
+                s += "\nCustom tolerance values: None"
             else:
-                print("  Custom tolerance values:")
+                s += "\nCustom tolerance values:"
                 for tup in self.custom_values:
                     name1 = str(Element(tup[0]).short_name)
                     name2 = str(Element(tup[1]).short_name)
-                    # print("    " + name1+ ", " + name2 + ": " +str(self.get_tol(tup[0],tup[1])))
                     s += "\n{:s}-{:s}: {:6.3f}".format(
                         name1, name2, self.get_tol(tup[0], tup[1])
                     )
-                print(s)
+        return s
 
     def to_file(self, filename=None):
         """

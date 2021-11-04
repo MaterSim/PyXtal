@@ -225,12 +225,15 @@ class pyxtal:
         block = None,
         num_block = None,
         seed = None,
+        tm = None,
     ):
         if self.molecular:
             prototype = "molecular"
         else:
             prototype = "atomic"
-        tm = Tol_matrix(prototype=prototype, factor=t_factor)
+
+        if tm is None:
+            tm = Tol_matrix(prototype=prototype, factor=t_factor)
 
         count = 0
         quit = False
