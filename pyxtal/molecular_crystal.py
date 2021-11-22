@@ -13,7 +13,7 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.wyckoff_site import mol_site
 from pyxtal.molecule import pyxtal_molecule
-from pyxtal.symmetry import Group, jk_from_i
+from pyxtal.symmetry import Group
 from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
 from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError
 
@@ -128,7 +128,7 @@ class molecular_crystal:
             if no_check_compability:
                 compat, self.degrees = True, True
             else:
-                compat, self.degrees = self._check_compatible()
+                compat, self.degrees = self.group.check_compatible(self.numMols, self.valid_orientations)
             if not compat:
                 msg = "Compoisition " + str(self.numMols) 
                 msg += " not compatible with symmetry "
@@ -455,115 +455,6 @@ class molecular_crystal:
                         angle_lo, fun_lo = angle, fun
 
         return None
-
-    def _check_compatible(self):
-        """
-        Checks if the number of molecules is compatible with the Wyckoff
-        positions. Considers the number of degrees of freedom for each Wyckoff
-        position, and makes sure at least one valid combination of WP's exists.
-        """
-        # Store whether or not at least one degree of freedom exists
-        has_freedom = False
-        # Store the wp's already used that don't have any freedom
-        used_indices = []
-        # Loop over species
-        for i_mol, numIon in enumerate(self.numMols):
-            # Get lists of multiplicity, maxn and freedom
-            l_mult0 = []
-            l_maxn0 = []
-            l_free0 = []
-            indices0 = []
-            for i_wp, wp in enumerate(self.group):
-                # Check that at least one valid orientation exists
-                j, k = jk_from_i(i_wp, self.group.wyckoffs_organized)
-                if len(self.valid_orientations[i_mol]) > j:
-                    if len(self.valid_orientations[i_mol][j]) > k:
-                        indices0.append(i_wp)
-                        l_mult0.append(len(wp))
-                        l_maxn0.append(numIon // len(wp))
-                        if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
-                            l_free0.append(False)
-                        else:
-                            l_free0.append(True)
-            # Remove redundant multiplicities:
-            l_mult = []
-            l_maxn = []
-            l_free = []
-            indices = []
-            for mult, maxn, free, i_wp in zip(l_mult0, l_maxn0, l_free0, indices0):
-                if free:
-                    if mult not in l_mult:
-                        l_mult.append(mult)
-                        l_maxn.append(maxn)
-                        l_free.append(True)
-                        indices.append(i_wp)
-                #elif not free and i_wp not in used_indices:
-                elif i_wp not in used_indices:
-                    l_mult.append(mult)
-                    l_maxn.append(1)
-                    l_free.append(False)
-                    indices.append(i_wp)
-            # Loop over possible combinations
-            # Create pointer variable to move through lists
-            p = 0
-            # Store the number of each WP, used across possible WP combinations
-            n0 = [0] * len(l_mult)
-            n = deepcopy(n0)
-            for i, mult in enumerate(l_mult):
-                if l_maxn[i] != 0:
-                    p = i
-                    n[i] = l_maxn[i]
-                    break
-            p2 = p
-
-            if n == n0:
-                #print("n == n0", n, n0)
-                return False, False
-            while True:
-                num = np.dot(n, l_mult)
-                dobackwards = False
-                # The combination works: move to next species
-                if num == numIon:
-                    # Check if at least one degree of freedom exists
-                    for val, free, i_wp in zip(n, l_free, indices):
-                        if val > 0:
-                            if free is True:
-                                has_freedom = True
-                            elif free is False:
-                                indices.append(i_wp)
-                    break
-                # All combinations failed: return False
-                if n == n0 and p >= len(l_mult) - 1:
-                    #print("All combinations failed: return False")
-                    return False, False
-                # Too few atoms
-                if num < numIon:
-                    # Forwards routine
-                    # Move p to the right and max out
-                    if p < len(l_mult) - 1:
-                        p += 1
-                        n[p] = min((numIon - num) // l_mult[p], l_maxn[p])
-                    else:
-                        # p is already at last position: trigger backwards routine
-                        dobackwards = True
-                # Too many atoms
-                if num > numIon or dobackwards is True:
-                    # Backwards routine
-                    # Set n[p] to 0, move p backwards to non-zero, and decrease by 1
-                    n[p] = 0
-                    while p > 0 and p > p2:
-                        p -= 1
-                        if n[p] != 0:
-                            n[p] -= 1
-                            if n[p] == 0 and p == p2:
-                                p2 = p + 1
-                            break
-        # All species passed: return True
-        if has_freedom:
-            return True, True
-        # All species passed, but no degrees of freedom: return 0
-        else:
-            return True, False
 
     def _check_consistency(self, site, numMol):
         """

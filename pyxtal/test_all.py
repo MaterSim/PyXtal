@@ -59,6 +59,11 @@ class TestGroup(unittest.TestCase):
             (sg, N) = pair
             self.assertTrue(len(Group(sg).get_ferroelectric_groups()) == N)
 
+    def test_check_compatible(self):
+        self.assertTrue(Group(225).check_compatible([64, 28, 24]) == (True, True))
+        self.assertTrue(Group(227).check_compatible([8]) == (True, False))
+        self.assertTrue(Group(227).check_compatible([4]) == (False, False))
+        self.assertTrue(Group(19).check_compatible([6]) == (False, False))
 
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):
