@@ -123,6 +123,7 @@ class Group:
     [12, 14, 15, 20, 36, 39, 41]
 
     or check if a given composition is compatible with the list of wyckoff position
+
     >>> g = Group(225)
     >>> g.check_compatible([64, 28, 24])
     (True, True)
@@ -741,6 +742,9 @@ class Wyckoff_position:
         #wp.get_site_symmetry()
         return wp
 
+    def get_dof(self):
+        return np.linalg.matrix_rank(self.ops[0].rotation_matrix)
+
     def __str__(self, supress=False):
         if self.dim not in list(range(4)):
             return "invalid crystal dimension. Must be a number between 0 and 3."
@@ -1287,6 +1291,7 @@ class Wyckoff_position:
         op = self.ops[id]
         rot = op.rotation_matrix
         trans = op.translation_vector
+        point = np.array(point, dtype=float)
     
         def project_single(point, rot, trans):
             # move the point in the opposite direction of the translation

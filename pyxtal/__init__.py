@@ -1294,6 +1294,61 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
+    def build(self, group, species, numIons, lattice, sites):
+        """
+        Build a atomic crystal based on the necessary input
+
+        Args:
+            group: 225
+            species: ['Na', 'Cl']
+            numIons: [4, 4]
+            lattice: 
+            sites: [{"4a": [0.0, 0.0, 0.0]}, {"4b": [0.5, 0.5, 0.5]}]
+        """
+
+        from pyxtal.symmetry import choose_wyckoff 
+
+        if self.molecular:
+            raise RuntimeError("Doesnot support the molecular crystal")
+
+        self.group = Group(group)
+        self.lattice = lattice
+        self.dim = 3
+        self.factor = 1.0
+        self.PBC = [1, 1, 1]
+        self.numIons = numIons
+        _sites = []
+
+        if len(sites) != len(species):
+            raise RuntimeError("Doesnot support the molecular crystal")
+
+        for sp, wps in zip(species, sites):
+            if type(wps) is dict:
+                for pair in wps.items():
+                    (key, pos) = pair
+                    _wp = choose_wyckoff(self.group, site=key)
+                    if _wp is not False:
+                        if _wp.get_dof() == 0: #fixed pos
+                            pt = [0.0, 0.0, 0.0]
+                        else:
+                            pt = _wp.get_all_positions(pos)[0]
+                        _sites.append(atom_site(_wp, pt, sp))
+                    else:
+                        raise RuntimeError("Cannot interpret site", key)
+            else: #List of atomic coordinates
+                wp0 = self.group[0]
+                for pos in wps:
+                    pt, _wp, _ = wp0.merge(pos, lattice.matrix, tol=0.1)
+                    _sites.append(atom_site(_wp, pt, sp))
+
+        self.atom_sites = _sites
+        self.diag = False
+        self.valid = True
+        self.source = 'Build'
+        self._get_formula()
+
+
+
     def get_alternatives(self, include_self=True):
         """
         get alternative structure representations
