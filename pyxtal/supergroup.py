@@ -259,7 +259,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None, ortho=True):
 
     return pos, dist
 
-def find_xyz(G2_op,coord,quadrant=[0,0,0]):
+def find_xyz(G2_op, coord, quadrant=[0,0,0]):
     """
     Finds the x,y,z free parameter values for positions in the G_2 basis.
 
@@ -268,8 +268,6 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
         coord: the coordinate that matches G2_op
         quadrant: a 3 item list (ex:[1,1,-1]) that contains information
                   on the orientation of the molecule
-
-
 
     Returns:
         G2_holder: The corresponding x,y,z parameters written in the G2 basis
@@ -281,7 +279,6 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
             else:
                 quadrant[i]=-1
 
-
     #prepare the rotation matrix and translation vector seperately
     G2_holder=[1,1,1]
     G2_op=np.array(G2_op.as_dict()['matrix'])
@@ -290,8 +287,6 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
     b=coord-tau_G2
     for k in range(3):
         b[k]=b[k]%quadrant[k]
-
-
 
     #eliminate any unused free parameters in G2
     #The goal is to reduce the symmetry operations to be a full rank matrix
@@ -314,8 +309,6 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
 
 
     #Must come back later and add Schwarz Inequality check to elininate any dependent vectors
-
-
     #solves a linear system to find the free parameters
     if set(G2_holder)=={0.}:
         return np.array(G2_holder)
@@ -333,8 +326,6 @@ def find_xyz(G2_op,coord,quadrant=[0,0,0]):
 
         except:
             raise RuntimeError('unable to find free parameters using this operation')
-
-
 
 
 def new_structure(struc, refs):
@@ -527,7 +518,7 @@ def search_paths(H, G, max_layers=5):
     """
 
     layers={}
-    layers[0]={'groups':[G],'subgroups':[]}
+    layers[0]={'groups':[G], 'subgroups':[]}
     final=[]
     traversed=[]
 
@@ -633,8 +624,8 @@ class supergroups():
             for i, p in enumerate(self.path[1:]):
                 s += " -> {:d}[{:5.3f}]".format(p, self.strucs[i+1].disp)
             s += '\n'
-            #for struc in self.strucs:
-            #    s += str(struc)
+            for struc in self.strucs:
+                s += str(struc)
         return s
 
     def __repr__(self):
@@ -1114,7 +1105,7 @@ class supergroup():
 
                 coord_H=[atom_sites_H[ordered_mapping[x]].position.copy() for x in range(n)]
 
-             #Finds the correct quadrant that the coordinates lie in to easily generate all possible_wycs
+                #Finds the correct quadrant that the coordinates lie in to easily generate all possible_wycs
                 #translations when trying to match
                 quadrant=np.array(splitter.G2_orbits[i][0][0].as_dict()['matrix'])[:3,3]
                 for k in range(3):
@@ -1386,3 +1377,5 @@ if __name__ == "__main__":
                 #sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
             print(sup)
             print("{:6.3f} seconds".format(time()-t0))
+            for i, struc in enumerate(sup.strucs):
+                struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')
