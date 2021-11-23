@@ -11,9 +11,8 @@ class Tol_matrix:
 
     Args:
         prototype: a string representing the type of radii to use
-            ("atomic", "molecular", or "metallic")
-        factor: a float to scale the distances by. A smaller value means a smaller
-            tolerance for distance checking
+            (`atomic`, `molecular`, `vdW` or `metallic`)
+        factor: a float to scale the distances by. 
         tuples: a list or tuple of tuples, which define custom tolerance values. Each tuple
             should be of the form (specie1, specie2, value), where value is the tolerance
             in Angstroms, and specie1 and specie2 can be strings, integers, Element objects,
@@ -35,8 +34,12 @@ class Tol_matrix:
             attrindex = 7
             self.radius_type = "metallic"
             f *= 0.5
+        elif prototype == "vdW":
+            attrindex = 6
+            self.radius_type = "vdW"
         else:
             self.radius_type = "N/A"
+
         self.f = f
         H = Element("H")
         m = [[0.0] * (len(H.elements_list) + 1)]
@@ -65,23 +68,17 @@ class Tol_matrix:
                 else:
                     # If no radius is found for either atom, set tolerance to None
                     m[-1].append(None)
-        self.matrix = np.array(
-            m
-        )  # A symmetric np matrix storing the tolerance between specie pairs
-        self.custom_values = (
-            []
-        )  # A list of tuples storing which species pair tolerances have custom values
+        self.matrix = np.array(m)  # A symmetric matrix between specie pairs
+        self.custom_values = ([])  # A list of tuples storing customized pair tolerances
 
         try:
             for tup in tuples:
                 self.set_tol(*tup)
         except:
-            printx(
-                "Error: Could not set custom tolerance value(s).\n"
-                + "All custom entries should be entered using the following form:\n"
-                + "(specie1, specie2, value), where value is the tolerance in Angstroms.",
-                priority=1,
-            )
+            msg = "Error: Could not set custom tolerance value(s).\n"
+            msg += "All custom entries should be entered using the following form:\n"
+            msg += "(specie1, specie2, value), where value is the tolerance in Angstroms.",
+            raise RuntimeError(msg)
 
         self.radius_list = []
         for i in range(len(self.matrix)):
@@ -95,7 +92,7 @@ class Tol_matrix:
         Returns the tolerance between two species.
         
         Args:
-            specie1, specie2: the atomic number (int or float), name (str), symbol (str),
+            specie1/2: atomic number (int or float), name (str), symbol (str),
                 an Element object, or a pymatgen Specie object
 
         Returns:
@@ -115,7 +112,7 @@ class Tol_matrix:
         Sets the distance tolerance between two species.
         
         Args:
-            specie1, specie2: the atomic number (int or float), name (str), symbol (str),
+            specie1/2: atomic number (int or float), name (str), symbol (str),
                 an Element object, or a pymatgen Specie object
             value:
                 the tolerance (in Angstroms) to set to
@@ -283,9 +280,15 @@ class Tol_matrix:
             if type(tm) == Tol_matrix:
                 return tm
             else:
-                printx("Error: invalid file for Tol_matrix.", priority=0)
-                return
+                raise RuntimeError("invalid file for Tol_matrix: ", filename)
         except:
-            printx("Error: Could not load Tol_matrix from file.", priority=0)
-            return
+            raise RuntimeError("Could not load Tol_matrix from file: ", filename)
 
+
+if __name__ == "__main__":
+    from pyxtal.molecule import pyxtal_molecule
+    for p in ['atomic', 'molecular', 'vdW', 'metallic']:
+        tm = Tol_matrix(prototype=p)
+        print(p, tm.get_tol('C', 'H'))
+        m = pyxtal_molecule('aspirin', tm=tm)
+        print(m.tols_matrix)

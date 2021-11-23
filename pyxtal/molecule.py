@@ -205,7 +205,7 @@ class pyxtal_molecule:
         self.volume = self.box.volume
         self.get_symbols()
         self.get_radius()
-        self.get_tols_matrix()
+        self.tols_matrix = self.get_tols_matrix()
         xyz = self.mol.cart_coords
         self.reset_positions(xyz-self.get_center(xyz))
 
@@ -369,21 +369,27 @@ class pyxtal_molecule:
     def get_symbols(self):
         self.symbols = [specie.name for specie in self.mol.species]
 
-    def get_tols_matrix(self):
+    def get_tols_matrix(self, tm=None):
         """
-        Returns: a 2D matrix which is used internally for distance checking.
+        Compute the 2D tolerance matrix
+
+        Returns: 
+            a 2D matrix which is used internally for distance checking.
         """
+        if tm is None:
+            tm = self.tm
         numbers = self.mol.atomic_numbers
         tols = np.zeros((len(numbers), len(numbers)))
         for i1, number1 in enumerate(numbers):
             for i2, number2 in enumerate(numbers):
-                tols[i1][i2] = self.tm.get_tol(number1, number2)
+                tols[i1][i2] = tm.get_tol(number1, number2)
                 # allow hydrogen bond
                 if [number1, number2] in [[1,7], [1,8], [1,9], [7,1], [8,1], [9,1]]:
                     tols[i1][i2] *= 0.9
+
         if len(self.mol)==1:
             tols *= 0.8 # if only one atom, reduce the tolerance
-        self.tols_matrix = tols
+        return tols
 
     def show(self):
         """

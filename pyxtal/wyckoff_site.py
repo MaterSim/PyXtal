@@ -775,9 +775,43 @@ class mol_site:
 
         return True
 
+    def find_neighbors(self, factor=1.1):
+        """
+        Find the neigboring molecules
+
+        Returns
+            min_ds: list of shortest distances
+            neighs: list of neighboring molecular xyzs
+        """
+
+        tm=Tol_matrix(prototype="vdW", factor=factor)
+        m_length = len(self.numbers)
+        tols_matrix = self.molecule.get_tols_matrix(tm)
+
+        min_ds = []
+        neighs = []
+
+        # Check periodic images
+        d, coord2 = self.compute_dists_image()
+        for i in range(d.shape[0]):
+            if (d[i] < tols_matrix).any():
+                #print('self', i, np.min(d[i]))
+                min_ds.append(np.min(d[i]))
+                neighs.append(coord2[i])
+
+        if self.wp.multiplicity > 1:
+            d, coord2 = self.compute_dists_WP()
+            for i in range(d.shape[0]):
+                if (d[i] < tols_matrix).any():
+                    #print('rest', i, np.min(d[i]))
+                    min_ds.append(np.min(d[i]))
+                    neighs.append(coord2[i])
+
+        return min_ds, neighs
+
     def short_dist_with_wp2(self, wp2, factor=1.0, tm=Tol_matrix(prototype="molecular")):
         """
-        Checks whether or not the molecules of two wp sites overlap. Uses
+        Check whether or not the molecules of two wp sites overlap. Uses
         ellipsoid overlapping approximation to check. 
     
         Args:
