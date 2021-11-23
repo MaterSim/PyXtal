@@ -265,24 +265,15 @@ def create_matrix(PBC=[1, 1, 1], omit=False):
     points in cells adjacent to and diagonal to the original cell
 
     Args:
-        PBC: A periodic boundary condition list, 
-            where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        PBC: A periodic boundary condition list (1: periodic; 0: nonperiodic).
 
     Returns:
-        A numpy array of matrices which can be multiplied by a set of
-        coordinates
+        A numpy array which can be multiplied by a set of coordinates
     """
     matrix = []
-    i_list = [-1, 0, 1]
-    j_list = [-1, 0, 1]
-    k_list = [-1, 0, 1]
-    if not PBC[0]:
-        i_list = [0]
-    if not PBC[1]:
-        j_list = [0]
-    if not PBC[2]:
-        k_list = [0]
+    i_list = [-1, 0, 1] if PBC[0] else [0]
+    j_list = [-1, 0, 1] if PBC[1] else [0]
+    k_list = [-1, 0, 1] if PBC[2] else [0]
     for i in i_list:
         for j in j_list:
             for k in k_list:
@@ -296,26 +287,18 @@ def create_matrix(PBC=[1, 1, 1], omit=False):
 
 def filtered_coords(coords, PBC=[1, 1, 1]):
     """
-    Given an array of 3d fractional coordinates or a single 3d point, transform
-    all coordinates to less than 1 and greater than 0. If one axis is not
-    periodic, does not transform the coordinates along that axis. For example,
-    for the point [1.2,1.6, -.4] with periodicity along the x and z axes, but
-    not the y axis (PBC=[1,0,1]), the function would return [0.2, 1.6, 0.6].
+    Transform all coordinates to [0, 1] interval if PBC is allowed 
+    For example, [1.2, 1.6, -.4] becomes 
+    [0.2, 0.6, 0.6] when PBC=[1,1,1]
+    [0.2, 1.6, 0.6] when PBC=[1,0,1]
 
     Args:
-        coords: an array of real 3d vectors. The shape does not matter
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        coords: an array of real 3d vectors. 
+        PBC: A periodic boundary condition list (1: periodic; 0: nonperiodic).
 
     Returns:
         an array of filtered coords with the same shape as coords
     """
-
-    #def filter_vector(vector):
-    #    f = np.floor(vector)
-    #    return vector - np.multiply(f, PBC)
-
-    #return np.apply_along_axis(filter_vector, -1, coords)
 
     if isinstance(coords, list):
         coords = np.array(coords)
@@ -337,8 +320,7 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
     
     Args:
         coords: an array of real 3d vectors. The shape does not matter
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        PBC: A periodic boundary condition list (1: periodic; 0: nonperiodic).
 
     Returns:
         an array of filtered coords with the same shape as coords

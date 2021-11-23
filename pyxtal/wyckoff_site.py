@@ -5,6 +5,7 @@ Module for handling Wyckoff sites for both atom and molecule
 # Standard Libraries
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from scipy.spatial.distance import cdist
 
 # External Libraries
 from pymatgen.core import Molecule
@@ -641,103 +642,37 @@ class mol_site:
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
    
-    def _find_gen_wyckoff_in_subgroup(self, groups=None):
-        """
-        Symmetry transformation
-        group -> subgroup
-        At the moment we only consider 
-        for multiplicity 2: P-1, P21, P2, Pm and Pc
-        to add: for multiplicity 4: P21/c, P212121
-        Permutation is allowed
-        """
-        from pyxtal.symmetry import Wyckoff_position
-
-        pos = self.position
-        wp0 = self.wp
-        pos0 = wp0.apply_ops(pos)
-
-        if len(wp0) == 2:
-            if self.diag: # P21/n -> Pn
-                #print("----------P21n----------")
-                wp1 = Wyckoff_position.from_group_and_index(7, 0)
-                wp1.diagonalize_symops()
-                axes = [[0,1,2],[2,1,0]]
-                for ax in axes:
-                    pos1 = wp1.apply_ops(pos[ax])
-                    diff = (pos1[:, ax] - pos0)[1]
-                    diff -= np.floor(diff)
-                    if len(diff[diff==0]) >= 2:
-                        #return wp1, ax, pos[ax] - 0.5*diff
-                        return Wyckoff_position.from_group_and_index(7, 0), ax, pos[ax]-0.5*diff
-            else:
-                if groups is None:
-                    groups = [4, 3, 6, 7, 2]
-                if 15 < wp0.number < 71:
-                    axes = [[0,1,2],[0,2,1],[1,0,2],[2,1,0]]
-                elif wp0.number < 15:
-                    axes = [[0,1,2],[2,1,0]]
-                for group in groups:
-                    wp1 = Wyckoff_position.from_group_and_index(group, 0)
-                    for ax in axes:
-                        pos1 = wp1.apply_ops(pos[ax])
-                        diff = (pos1[:, ax] - pos0)[1]
-                        diff -= np.floor(diff)
-                        if len(diff[diff==0]) >= 2:
-                            return wp1, ax, pos[ax]-0.5*diff
-
-    def make_gen_wyckoff_site(self):
-
-        if self.wp.index > 0:
-            wp, ax, pos = self._find_gen_wyckoff_in_subgroup()
-            ori = self.orientation.rotate_by_matrix(np.eye(3)[ax])
-            lat = self.lattice.swap_axis(ids=ax)
-            lat.ltype = Group(wp.number).lattice_type
-            return mol_site(self.molecule, pos, ori, wp, lat, self.diag)
-        else:
-            print("This is already a general position")
-            return self
-
-    def _create_matrix(self):
+    def _create_matrix(self, center=False):
         """
         Used for calculating distances in lattices with periodic boundary
         conditions. When multiplied with a set of points, generates additional
         points in cells adjacent to and diagonal to the original cell
+
         Returns:
             A numpy array of matrices which can be multiplied by a set of
             coordinates
         """
-        matrix = []
-        [a, b, c] = np.linalg.norm(self.lattice.matrix, axis=1)
-        if a > 20 and self.radius<10:
-            i_list = [0]
-        elif a < 6.5:
-            i_list = [-1,0,2]
-        else:
-            i_list = [-1, 0, 1]
+        abc = [self.lattice.a, self.lattice.b, self.lattice.c]
+
+        ijk_lists = []
+        for id in range(3):
+            if self.PBC[id]:
+                if abc[id] > 20 and self.radius<10:
+                    ijk_lists.append([0])
+                elif abc[id] < 6.5:
+                    ijk_lists.append([-1, 0, 2])
+                else:
+                    ijk_lists.append([-1, 0, 1])
+            else:
+                ijk_lists.append([0])
             
-        if b > 20 and self.radius<10:
-            j_list = [0]
-        elif b < 6.5:
-            j_list = [-1, 0, 2]
+        if center:
+            matrix = [[0,0,0]]
         else:
-            j_list = [-1, 0, 1]
-            
-        if c > 20 and self.radius<10:
-            k_list = [0]
-        elif c < 6.5:
-            k_list = [-1, 0, 2]
-        else:
-            k_list = [-1, 0, 1]
-        
-        if not self.PBC[0]:
-            i_list = [0]
-        if not self.PBC[1]:
-            j_list = [0]
-        if not self.PBC[2]:
-            k_list = [0]
-        for i in i_list:
-            for j in j_list:
-                for k in k_list:
+            matrix = []
+        for i in ijk_lists[0]:
+            for j in ijk_lists[1]:
+                for k in ijk_lists[2]:
                     if [i, j, k] != [0, 0, 0]:
                         matrix.append([i, j, k])
         #In case a,b,c are all greater than 20
@@ -745,105 +680,122 @@ class mol_site:
             matrix = [[1,0,0]]
         return np.array(matrix, dtype=float)
 
-    def compute_distances(self):
+    def compute_dists_image(self):
         """
-        compute if the atoms in the Wyckoff position are too close to each other
-        or not. Does not check distances between atoms in the same molecule. Uses
-        crystal.check_distance as the base code.
+        Compute the distances between the periodic images
 
         Returns:
-            minimum distances
+            a distance matrix (M, N, N)
+            list of molecular xyz (M, N, 3)
+        """
+        m_length = len(self.numbers)
+        coord1, _ = self._get_coords_and_species(first=True)
+
+        m = self._create_matrix() #PBC matrix
+        coord2 = np.vstack([coord1 + v for v in m])
+
+        coord1 = np.dot(coord1, self.lattice.matrix)
+        coord2 = np.dot(coord2, self.lattice.matrix)
+
+        d = cdist(coord1, coord2)
+        d = d.T.reshape([len(m), m_length, m_length])
+        return d, coord2.reshape([len(m), m_length, 3])
+
+    def compute_dists_WP(self):
+        """
+        Compute the distances within the WP sites
+
+        Returns:
+            a distance matrix (M, N, N)
+            list of molecular xyz (M, N, 3)
         """
         m_length = len(self.symbols)
-        # TODO: Use tm instead of tols lists
-        # Get coords of WP with PBC
+        N2 = self.wp.multiplicity - 1
+
         coords, _ = self._get_coords_and_species()
+        coord1 = coords[:m_length] #1st molecular coords
+        coord2 = coords[m_length:] #rest molecular coords
 
-        # Get coords of the generating molecule
-        coords_mol = coords[:m_length]
-        # Remove generating molecule's coords from large array
-        coords = coords[m_length:]
-        min_ds = []
+        #peridoic images
+        m = self._create_matrix(True) #PBC matrix
+        coord2 = np.vstack([coord2 + v for v in m])
 
-        # Check periodic images
-        m = self._create_matrix()
-        coords_PBC = np.vstack([coords_mol + v for v in m])
-        d = distance_matrix(coords_mol, coords_PBC, self.lattice.matrix, [0, 0, 0], True)
-        if d < 0.9:
-            return d
+        #absolute xyz
+        coord1 = np.dot(coord1, self.lattice.matrix)
+        coord2 = np.dot(coord2, self.lattice.matrix)
+
+        d = cdist(coord1, coord2)
+        d = d.T.reshape([len(m)*N2, m_length, m_length])
+        return d, coord2.reshape([len(m)*N2, m_length, 3])
+
+    def get_min_dist(self):
+        """
+        Compute the minimum interatomic distance within the WP.
+
+        Returns:
+            minimum distance
+        """
+        #Self image
+        ds, _ = self.compute_dists_image()
+        min_dist = np.min(ds)
+
+        if min_dist < 0.9:
+            #terminate earlier
+            return min_dist
         else:
-            min_ds.append(d)
+            #Other molecules
+            if self.wp.multiplicity > 1:
+                ds, _ = self.compute_dists_WP()
+                if min_dist > np.min(ds):
+                    min_dist = np.min(ds)
+            return min_dist
 
-        if self.wp.multiplicity > 1:
-            # Check inter-atomic distances
-            d = distance_matrix(coords_mol, coords, self.lattice.matrix, self.PBC, True)
-            min_ds.append(d)
-        return min(min_ds)
-
-    def check_distances(self):
+    def short_dist(self):
         """
-        Checks if the atoms in the Wyckoff position are too close to each other
-        or not. Does not check distances between atoms in the same molecule. Uses
-        crystal.check_distance as the base code.
+        Check if the atoms are too close within the WP. 
 
         Returns:
-            True if the atoms are not too close together, False otherwise
+            True or False 
         """
-        m_length = len(self.symbols)
-        coords, _ = self._get_coords_and_species()
-
-        # Get coords of the generating molecule
-        coords_mol = coords[:m_length]
-        # Remove generating molecule's coords from large array
-        coords = coords[m_length:]
-
+        m_length = len(self.numbers)
+        tols_matrix = self.tols_matrix
         # Check periodic images
-        m = self._create_matrix()
-        coords_PBC = np.vstack([coords_mol + v for v in m])
-        d = distance_matrix(coords_PBC, coords_mol, self.lattice.matrix, PBC=[0, 0, 0])
-        # only check if small distance is detected
-        if np.min(d) < np.max(self.tols_matrix):
-            tols = np.min(d.reshape([len(m), m_length, m_length]), axis=0)
-            if (tols < self.tols_matrix).any():
+        d, coord2 = self.compute_dists_image()
+        if np.min(d) < np.max(tols_matrix):
+            tols = np.min(d, axis=0)
+            if (tols < tols_matrix).any():
                 return False
 
         if self.wp.multiplicity > 1:
-            # Check inter-atomic distances
-            d = distance_matrix(coords, coords_mol, self.lattice.matrix, PBC=self.PBC)
-            if np.min(d) < np.max(self.tols_matrix):
-                tols = np.min(
-                    d.reshape([self.wp.multiplicity - 1, m_length, m_length]), axis=0
-                )
-                if (tols < self.tols_matrix).any():
+            d, _ = self.compute_dists_WP()
+            if np.min(d) < np.max(tols_matrix):
+                tols = np.min(d, axis=0) #N*N matrix
+                if (tols < tols_matrix).any():
                     return False
 
         return True
 
-
-
-    def check_with_ms2(self, ms2, factor=1.0, tm=Tol_matrix(prototype="molecular")):
+    def short_dist_with_wp2(self, wp2, factor=1.0, tm=Tol_matrix(prototype="molecular")):
         """
-        Checks whether or not the molecules of two mol sites overlap. Uses
-        ellipsoid overlapping approximation to check. Takes PBC and lattice
-        into consideration.
+        Checks whether or not the molecules of two wp sites overlap. Uses
+        ellipsoid overlapping approximation to check. 
     
         Args:
-            ms1: a mol_site object
-            ms2: another mol_site object
+            wp2: the 2nd wp sites
             factor: the distance factor to pass to check_distances. (only for
                 inter-atomic distance checking)
             tm: a Tol_matrix object (or prototype string) for distance checking
     
         Returns:
-            False if the Wyckoff positions overlap. True otherwise
+            True or False
         """
         # Get coordinates for both mol_sites
         c1, _ = self.get_coords_and_species()
-        c2, _ = ms2.get_coords_and_species()
+        c2, _ = wp2.get_coords_and_species()
     
         # Calculate which distance matrix is smaller/faster
         m_length1 = len(self.numbers)
-        m_length2 = len(ms2.numbers)
+        m_length2 = len(wp2.numbers)
         wp_length1 = len(c1)
         wp_length2 = len(c2)
         size1 = m_length1 * wp_length2
@@ -855,9 +807,9 @@ class mol_site:
             # Calculate tol matrix for species pairs
             tols = np.zeros((m_length1, m_length2))
             for i1, number1 in enumerate(self.numbers):
-                for i2, number2 in enumerate(ms2.numbers):
+                for i2, number2 in enumerate(wp2.numbers):
                     tols[i1][i2] = tm.get_tol(number1, number2)
-            tols = np.repeat(tols, ms2.wp.multiplicity, axis=1)
+            tols = np.repeat(tols, wp2.wp.multiplicity, axis=1)
             d = distance_matrix(coords_mol, c2, self.lattice.matrix, PBC=self.PBC)
     
         # Case 2
@@ -865,7 +817,7 @@ class mol_site:
             coords_mol = c2[:m_length2]
             # Calculate tol matrix for species pairs
             tols = np.zeros((m_length2, m_length1))
-            for i1, number1 in enumerate(ms2.numbers):
+            for i1, number1 in enumerate(wp2.numbers):
                 for i2, number2 in enumerate(self.numbers):
                     tols[i1][i2] = tm.get_tol(number1, number2)
             tols = np.repeat(tols, self.wp.multiplicity, axis=1)

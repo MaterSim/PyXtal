@@ -1430,7 +1430,6 @@ class pyxtal:
         """
         compute density
         """
-
         return self.to_pymatgen().density
 
     def has_special_site(self):

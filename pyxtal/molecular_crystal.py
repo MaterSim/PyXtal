@@ -390,7 +390,7 @@ class molecular_crystal:
                         # Check current WP against existing WP's  
                         passed_wp_check = True
                         for ms1 in mol_sites_tmp + mol_wyks:
-                            if not ms0.check_with_ms2(ms1, tm=self.tol_matrix):
+                            if not ms0.short_dist_with_wp2(ms1, tm=self.tol_matrix):
                                 passed_wp_check = False
                         
                         if passed_wp_check:
@@ -416,7 +416,7 @@ class molecular_crystal:
         ori.change_orientation(flip=True)
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice, self.diag)
         # Check distances within the WP
-        if ms0.check_distances():
+        if ms0.short_dist():
             return ms0
         else:
             # Maximize the smallest distance for the general
@@ -434,7 +434,7 @@ class molecular_crystal:
                         self.lattice,
                         self.diag,
                     )
-                    d = ms0.compute_distances()
+                    d = ms0.get_min_dist()
                     return d
 
                 angle_lo = ori.angle
@@ -444,7 +444,7 @@ class molecular_crystal:
                 fun = fun_hi
                 for it in range(self.ori_attempts):
                     self.numattempts += 1
-                    if (fun > 0.8) & (ms0.check_distances()):
+                    if (fun > 0.8) & (ms0.short_dist()):
                         return ms0
                     angle = (angle_lo + angle_hi) / 2
                     fun = fun_dist(angle, ori, pyxtal_mol, pt)
