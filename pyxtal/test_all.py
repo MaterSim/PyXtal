@@ -406,6 +406,29 @@ class TestSymmetry(unittest.TestCase):
         wyc, perm = Wyckoff_position.from_symops(strs)
         self.assertTrue(wyc.number == 14)
 
+class TestNeighbour(unittest.TestCase):
+    def test_packing(self):
+        c = pyxtal(molecular=True)
+        for data in [("aspirin", 14),
+                     ("WEXBOS", 14),
+                     ("MERQIM", 12),
+                     ("LAGNAL", 12),
+                     ("YICMOP", 14),
+                     ("LUFHAW", 18),
+                     ("coumarin", 14),
+                     ("HAHCOI", 14),
+                     ("JAPWIH", 10),
+                     ("AXOSOW01", 13),
+                     ("PAHYON01", 13),
+                     ("xxvi", 12),
+                     ("resorcinol", 12),
+                    ]:
+ 
+            (name, CN) = data
+            c.from_seed(seed=cif_path+name+".cif", molecules=[name])
+            ds, neighs = c.get_neighboring_molecules(0, 1.5)
+            self.assertTrue(len(ds) == CN)
+ 
 class TestSubgroup(unittest.TestCase):
     def test_cubic_cubic(self):
         sites = ['8a', '32e']
@@ -458,7 +481,7 @@ class TestSubgroup(unittest.TestCase):
             for C in Cs:
                 pmg_s2 = C.to_pymatgen()
                 self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s2))
- 
+
     def test_hydrate(self):
         # glycine dihydrate
         cif = cif_path + "gdh.cif"
