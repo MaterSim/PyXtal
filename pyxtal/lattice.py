@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 # PyXtal imports
-from pyxtal.msg import printx
+from pyxtal.msg import printx, VolumeError
 from pyxtal.operations import angle, create_matrix
 from pyxtal.constants import deg, rad
 
@@ -298,8 +298,6 @@ class Lattice:
             para = self.generate_para()
             if para is not None:
                 return para2matrix(para)
-        printx("Error: Could not generate lattice matrix.", priority=1)
-        return
 
     def get_matrix(self):
         """
@@ -852,15 +850,11 @@ def generate_lattice(
                 and c / b < max_ratio
             ):
                 return np.array([a, b, c, alpha, beta, gamma])
+
     # If maxattempts tries have been made without success
-    printx(
-        "Could not generate lattice after "
-        + str(n + 1)
-        + " attempts for volume "
-        + str(volume),
-        priority=2,
-    )
-    return
+    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
+    raise VolumeError(msg)
+    #return
 
 
 def generate_lattice_2D(

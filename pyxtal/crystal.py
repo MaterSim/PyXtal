@@ -10,7 +10,7 @@ import numpy as np
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff
 from pyxtal.wyckoff_site import atom_site
-from pyxtal.msg import Comp_CompatibilityError
+from pyxtal.msg import Comp_CompatibilityError, VolumeError
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice, cellsize
 from pyxtal.database.element import Element
@@ -57,6 +57,7 @@ class random_crystal:
         self.source = 'Random'
         self.valid = False
         self.factor = factor
+        self.min_density = 0.75
 
         # Dimesion
         self.dim = dim 
@@ -149,6 +150,9 @@ class random_crystal:
         Estimates the volume of a unit cell based on the number and types of ions.
         Assumes each atom takes up a sphere with radius equal to its covalent bond
         radius.
+        0.50 A -> 0.52 A^3
+        0.62 A -> 1.00 A^3
+        0.75 A -> 1.76 A^3
 
         Returns:
             a float value for the estimated volume
@@ -160,6 +164,10 @@ class random_crystal:
             )
             volume += numIon * 4 / 3 * np.pi * r ** 3
         self.volume = self.factor * volume
+
+        #make sure the volume is not too small
+        if self.volume/sum(self.numIons) < self.min_density: 
+            self.volume = sum(self.numIons) * self.min_density 
 
     def set_lattice(self, lattice):
         """
@@ -188,14 +196,30 @@ class random_crystal:
                 unique_axis = "c"
 
             # Generate a Lattice instance
-            self.lattice = Lattice(
-                self.group.lattice_type,
-                self.volume,
-                PBC=self.PBC,
-                unique_axis=unique_axis,
-                thickness=self.thickness,
-                area=self.area,
-                )
+            good_lattice = False
+            for cycle in range(10):
+                try:
+                    self.lattice = Lattice(
+                        self.group.lattice_type,
+                        self.volume,
+                        PBC=self.PBC,
+                        unique_axis=unique_axis,
+                        thickness=self.thickness,
+                        area=self.area,
+                        )
+                    good_lattice = True
+                    break
+                except VolumeError:
+                    self.volume *= 1.1
+                    msg = "Warning: increase the volume by 1.1 times: "
+                    msg += "{:.2f}".format(self.volume)
+                    print(msg)
+
+            if not good_lattice:
+                msg = "Volume estimation {:.2f} is very bad".format(self.volume)
+                msg += " with the given composition "
+                msg += str(self.numIons)
+                raise RuntimeError(msg)
 
     def set_crystal(self):
         """
