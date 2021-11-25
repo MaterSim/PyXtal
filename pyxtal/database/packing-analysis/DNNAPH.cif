@@ -1,0 +1,50 @@
+
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC 
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge 
+# Structural Database, then it will include bibliographic, chemical, 
+# crystal, experimental, refinement or atomic coordinate data resulting 
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_DNNAPH
+_symmetry_cell_setting           monoclinic
+_symmetry_space_group_name_H-M   'P 21/a'
+_symmetry_Int_Tables_number      14
+_space_group_name_Hall           '-P 2yab'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 1/2-x,1/2+y,-z
+3 -x,-y,-z
+4 1/2+x,1/2-y,z
+_cell_length_a                   7.760
+_cell_length_b                   16.320
+_cell_length_c                   3.700
+_cell_angle_alpha                90
+_cell_angle_beta                 101.80
+_cell_angle_gamma                90
+_cell_volume                     458.678
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.08700 0.01600 0.07800
+C2 C 0.11700 0.09900 -0.01700
+C3 C -0.00900 0.15200 -0.20900
+C4 C -0.18200 0.12100 -0.31900
+C5 C 0.21300 -0.04100 0.25600
+N1 N 0.29500 0.13600 0.09200
+O1 O 0.41800 0.09700 0.02800
+O2 O 0.30700 0.20000 0.27100
+
+#END

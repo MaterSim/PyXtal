@@ -139,6 +139,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
                             coords.append(coord)
                             species.append(specie)
                             muls.append(mul)
+
                 else:
                     coords, species = coord0s, specie0s 
                     muls = [mul] * len(coords)

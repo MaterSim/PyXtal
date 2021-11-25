@@ -1453,9 +1453,11 @@ class pyxtal:
 
         #QZ: below is a tentative solution
         if self.group.number == 64 and self.mol_sites[0].wp.multiplicity==4:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=61, group_type='k', ignore_special=True)
+            s = self.subgroup_once(eps=0, mut_lat=False, H=61, \
+                    group_type='k', ignore_special=True)
         elif self.group.number == 113 and self.mol_sites[0].wp.multiplicity==2:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=18, group_type='t', ignore_special=True)
+            s = self.subgroup_once(eps=0, mut_lat=False, H=18, \
+                    group_type='t', ignore_special=True)
         else:
             s = deepcopy(self)
 
@@ -1465,3 +1467,27 @@ class pyxtal:
         return sub
 
 
+    def get_neighboring_molecules(self, site_id, factor, max_d=4.0):
+        """
+        For molecular crystals, get the neighboring molecules for a given WP
+
+        Args:
+            site_id: the index of reference site
+            factor: factor of vdw tolerance
+
+        Returns:
+            min_ds: list of shortest distances
+            neighs: list of neighboring molecular xyzs
+        """
+        min_ds = []
+        neighs = []
+
+        site0 = self.mol_sites[site_id]
+        for id0, site1 in enumerate(self.mol_sites):
+            if id0 == site_id:
+                min_d0, neigh0 = site0.get_neighbors_auto(factor, max_d)
+            else:
+                min_d0, neigh0 = site0.get_neighbors_wp2(site1, factor, max_d) 
+            neighs.extend(neigh0)
+            min_ds.extend(min_d0)
+        return min_ds, neighs

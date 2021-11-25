@@ -1,0 +1,88 @@
+
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC 
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge 
+# Structural Database, then it will include bibliographic, chemical, 
+# crystal, experimental, refinement or atomic coordinate data resulting 
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_HXMTAM
+_symmetry_cell_setting           cubic
+_symmetry_space_group_name_H-M   'I -4 3 m'
+_symmetry_Int_Tables_number      217
+_space_group_name_Hall           'I -4 2 3'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 1/2+x,1/2+y,1/2+z
+3 z,x,y
+4 y,z,x
+5 1/2+z,1/2+x,1/2+y
+6 1/2+y,1/2+z,1/2+x
+7 -y,x,-z
+8 1/2-y,1/2+x,1/2-z
+9 -x,z,-y
+10 -z,y,-x
+11 1/2-x,1/2+z,1/2-y
+12 1/2-z,1/2+y,1/2-x
+13 x,-y,-z
+14 1/2+x,1/2-y,1/2-z
+15 z,-x,-y
+16 y,-z,-x
+17 1/2+z,1/2-x,1/2-y
+18 1/2+y,1/2-z,1/2-x
+19 -y,-x,z
+20 1/2-y,1/2-x,1/2+z
+21 -x,-z,y
+22 -z,-y,x
+23 1/2-x,1/2-z,1/2+y
+24 1/2-z,1/2-y,1/2+x
+25 -x,y,-z
+26 1/2-x,1/2+y,1/2-z
+27 -z,x,-y
+28 -y,z,-x
+29 1/2-z,1/2+x,1/2-y
+30 1/2-y,1/2+z,1/2-x
+31 y,x,z
+32 1/2+y,1/2+x,1/2+z
+33 x,z,y
+34 z,y,x
+35 1/2+x,1/2+z,1/2+y
+36 1/2+z,1/2+y,1/2+x
+37 -x,-y,z
+38 1/2-x,1/2-y,1/2+z
+39 -z,-x,y
+40 -y,-z,x
+41 1/2-z,1/2-x,1/2+y
+42 1/2-y,1/2-z,1/2+x
+43 y,-x,-z
+44 1/2+y,1/2-x,1/2-z
+45 x,-z,-y
+46 z,-y,-x
+47 1/2+x,1/2-z,1/2-y
+48 1/2+z,1/2-y,1/2-x
+_cell_length_a                   7.021
+_cell_length_b                   7.021
+_cell_length_c                   7.021
+_cell_angle_alpha                90
+_cell_angle_beta                 90
+_cell_angle_gamma                90
+_cell_volume                     346.096
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.23780 0.00000 0.00000
+H1 H 0.32750 0.08850 -0.08850
+N1 N 0.12320 0.12320 0.12320
+#END

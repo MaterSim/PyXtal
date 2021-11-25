@@ -369,19 +369,29 @@ class pyxtal_molecule:
     def get_symbols(self):
         self.symbols = [specie.name for specie in self.mol.species]
 
-    def get_tols_matrix(self, tm=None):
+    def get_tols_matrix(self, mol2=None, tm=None):
         """
-        Compute the 2D tolerance matrix
+        Compute the 2D tolerance matrix between the current and other molecules
+
+        Args:
+            mol2: the 2nd pyxtal_molecule object
+            tm: tolerance class
 
         Returns: 
             a 2D matrix which is used internally for distance checking.
         """
         if tm is None:
             tm = self.tm
-        numbers = self.mol.atomic_numbers
-        tols = np.zeros((len(numbers), len(numbers)))
-        for i1, number1 in enumerate(numbers):
-            for i2, number2 in enumerate(numbers):
+
+        numbers1 = self.mol.atomic_numbers
+        if mol2 is None:
+            numbers2 = self.mol.atomic_numbers
+        else:
+            numbers2 = mol2.mol.atomic_numbers
+
+        tols = np.zeros((len(numbers1), len(numbers2)))
+        for i1, number1 in enumerate(numbers1):
+            for i2, number2 in enumerate(numbers2):
                 tols[i1][i2] = tm.get_tol(number1, number2)
                 # allow hydrogen bond
                 if [number1, number2] in [[1,7], [1,8], [1,9], [7,1], [8,1], [9,1]]:

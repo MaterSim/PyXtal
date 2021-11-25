@@ -660,7 +660,7 @@ class mol_site:
                 if abc[id] > 20 and self.radius<10:
                     ijk_lists.append([0])
                 elif abc[id] < 6.5:
-                    ijk_lists.append([-1, 0, 2])
+                    ijk_lists.append([-2, -1, 0, 1, 2])
                 else:
                     ijk_lists.append([-1, 0, 1])
             else:
@@ -680,7 +680,41 @@ class mol_site:
             matrix = [[1,0,0]]
         return np.array(matrix, dtype=float)
 
-    def compute_dists_image(self):
+
+    def get_distances(self, coord1, coord2, m2=None, center=True):
+        """
+        Compute the distance matrix between the center molecule (m1 length) and 
+        neighbors (m2 length) within the PBC consideration (pbc)
+
+        Args:
+            coord1: fractional coordinates of the center molecule
+            coord2: fractional coordinates of the reference neighbors
+            m2: the length of reference molecule
+            center: whether or not consider the self image for coord2
+
+        Returns:
+            distance matrix: [m1*m2*pbc, m1, m2]
+            coord2 under PBC: [pbc, m2, 3]
+        """
+        m1 = len(coord1)
+        if m2 is None:
+            m2 = m1
+        N2 = int(len(coord2)/m2)
+
+        #peridoic images
+        m = self._create_matrix(center) #PBC matrix
+        coord2 = np.vstack([coord2 + v for v in m])
+
+        #absolute xyz
+        coord1 = np.dot(coord1, self.lattice.matrix)
+        coord2 = np.dot(coord2, self.lattice.matrix)
+
+        d = cdist(coord1, coord2)
+        d = d.T.reshape([len(m)*N2, m1, m2])
+        return d, coord2.reshape([len(m)*N2, m2, 3])
+
+
+    def get_dists_auto(self):
         """
         Compute the distances between the periodic images
 
@@ -689,19 +723,11 @@ class mol_site:
             list of molecular xyz (M, N, 3)
         """
         m_length = len(self.numbers)
-        coord1, _ = self._get_coords_and_species(first=True)
+        coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
 
-        m = self._create_matrix() #PBC matrix
-        coord2 = np.vstack([coord1 + v for v in m])
+        return self.get_distances(coord1, coord1, center=False)
 
-        coord1 = np.dot(coord1, self.lattice.matrix)
-        coord2 = np.dot(coord2, self.lattice.matrix)
-
-        d = cdist(coord1, coord2)
-        d = d.T.reshape([len(m), m_length, m_length])
-        return d, coord2.reshape([len(m), m_length, 3])
-
-    def compute_dists_WP(self):
+    def get_dists_WP(self):
         """
         Compute the distances within the WP sites
 
@@ -710,23 +736,11 @@ class mol_site:
             list of molecular xyz (M, N, 3)
         """
         m_length = len(self.symbols)
-        N2 = self.wp.multiplicity - 1
-
-        coords, _ = self._get_coords_and_species()
+        coords, _ = self._get_coords_and_species(unitcell=True)
         coord1 = coords[:m_length] #1st molecular coords
         coord2 = coords[m_length:] #rest molecular coords
 
-        #peridoic images
-        m = self._create_matrix(True) #PBC matrix
-        coord2 = np.vstack([coord2 + v for v in m])
-
-        #absolute xyz
-        coord1 = np.dot(coord1, self.lattice.matrix)
-        coord2 = np.dot(coord2, self.lattice.matrix)
-
-        d = cdist(coord1, coord2)
-        d = d.T.reshape([len(m)*N2, m_length, m_length])
-        return d, coord2.reshape([len(m)*N2, m_length, 3])
+        return self.get_distances(coord1, coord2) 
 
     def get_min_dist(self):
         """
@@ -736,7 +750,7 @@ class mol_site:
             minimum distance
         """
         #Self image
-        ds, _ = self.compute_dists_image()
+        ds, _ = self.get_dists_auto()
         min_dist = np.min(ds)
 
         if min_dist < 0.9:
@@ -745,7 +759,7 @@ class mol_site:
         else:
             #Other molecules
             if self.wp.multiplicity > 1:
-                ds, _ = self.compute_dists_WP()
+                ds, _ = self.get_dists_WP()
                 if min_dist > np.min(ds):
                     min_dist = np.min(ds)
             return min_dist
@@ -760,14 +774,14 @@ class mol_site:
         m_length = len(self.numbers)
         tols_matrix = self.tols_matrix
         # Check periodic images
-        d, coord2 = self.compute_dists_image()
+        d, _ = self.get_dists_auto()
         if np.min(d) < np.max(tols_matrix):
             tols = np.min(d, axis=0)
             if (tols < tols_matrix).any():
                 return False
 
         if self.wp.multiplicity > 1:
-            d, _ = self.compute_dists_WP()
+            d, _ = self.get_dists_WP()
             if np.min(d) < np.max(tols_matrix):
                 tols = np.min(d, axis=0) #N*N matrix
                 if (tols < tols_matrix).any():
@@ -775,7 +789,45 @@ class mol_site:
 
         return True
 
-    def find_neighbors(self, factor=1.1):
+    def short_dist_with_wp2(self, wp2, tm=Tol_matrix(prototype="molecular")):
+        """
+        Check whether or not the molecules of two wp sites overlap. Uses
+        ellipsoid overlapping approximation to check. 
+    
+        Args:
+            wp2: the 2nd wp sites
+            tm: a Tol_matrix object (or prototype string) for distance checking
+        Returns:
+            True or False
+        """
+
+        # Get coordinates for both mol_sites
+        c1, _ = self.get_coords_and_species()
+        c2, _ = wp2.get_coords_and_species()
+        m_length1 = len(self.numbers)
+        m_length2 = len(wp2.numbers)
+
+        # choose wp with bigger molecule as the center
+        if len(c2) <= len(c1):
+            coord1 = c1[:m_length1]
+            coord2 = c2 #rest molecular coords
+            tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
+            m2 = m_length2
+        else:
+            coord1 = c2[:m_length2]
+            coord2 = c1
+            tols_matrix = wp2.molecule.get_tols_matrix(self.molecule, tm)
+            m2 = m_length1
+
+        # compute the distance matrix
+        d, _ = self.get_distances(coord1, coord2, m2) 
+        if np.min(d) < np.max(tols_matrix):
+            tols = np.min(d, axis=0)
+            if (tols < tols_matrix).any():
+                return False
+        return True
+
+    def get_neighbors_auto(self, factor=1.1, max_d=4.0):
         """
         Find the neigboring molecules
 
@@ -786,80 +838,62 @@ class mol_site:
 
         tm=Tol_matrix(prototype="vdW", factor=factor)
         m_length = len(self.numbers)
-        tols_matrix = self.molecule.get_tols_matrix(tm)
+        tols_matrix = self.molecule.get_tols_matrix(tm=tm)
 
         min_ds = []
         neighs = []
 
         # Check periodic images
-        d, coord2 = self.compute_dists_image()
+        d, coord2 = self.get_dists_auto()
         for i in range(d.shape[0]):
-            if (d[i] < tols_matrix).any():
+            if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
                 #print('self', i, np.min(d[i]))
                 min_ds.append(np.min(d[i]))
                 neighs.append(coord2[i])
 
         if self.wp.multiplicity > 1:
-            d, coord2 = self.compute_dists_WP()
+            d, coord2 = self.get_dists_WP()
             for i in range(d.shape[0]):
-                if (d[i] < tols_matrix).any():
+                #if i==0: print(np.min(d[i]), d[i][:5,:5])
+                if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
                     #print('rest', i, np.min(d[i]))
                     min_ds.append(np.min(d[i]))
                     neighs.append(coord2[i])
 
         return min_ds, neighs
 
-    def short_dist_with_wp2(self, wp2, factor=1.0, tm=Tol_matrix(prototype="molecular")):
+    def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0):
         """
-        Check whether or not the molecules of two wp sites overlap. Uses
-        ellipsoid overlapping approximation to check. 
-    
-        Args:
-            wp2: the 2nd wp sites
-            factor: the distance factor to pass to check_distances. (only for
-                inter-atomic distance checking)
-            tm: a Tol_matrix object (or prototype string) for distance checking
-    
-        Returns:
-            True or False
+        Find the neigboring molecules from a 2nd wp site
+
+        Returns
+            min_ds: list of shortest distances
+            neighs: list of neighboring molecular xyzs
         """
+
+        tm=Tol_matrix(prototype="vdW", factor=factor)
+        m_length1 = len(self.numbers)
+        m_length2 = len(wp2.numbers)
+            
         # Get coordinates for both mol_sites
         c1, _ = self.get_coords_and_species()
         c2, _ = wp2.get_coords_and_species()
-    
-        # Calculate which distance matrix is smaller/faster
-        m_length1 = len(self.numbers)
-        m_length2 = len(wp2.numbers)
-        wp_length1 = len(c1)
-        wp_length2 = len(c2)
-        size1 = m_length1 * wp_length2
-        size2 = m_length2 * wp_length1
-    
-        # Case 1
-        if size1 <= size2:
-            coords_mol = c1[:m_length1]
-            # Calculate tol matrix for species pairs
-            tols = np.zeros((m_length1, m_length2))
-            for i1, number1 in enumerate(self.numbers):
-                for i2, number2 in enumerate(wp2.numbers):
-                    tols[i1][i2] = tm.get_tol(number1, number2)
-            tols = np.repeat(tols, wp2.wp.multiplicity, axis=1)
-            d = distance_matrix(coords_mol, c2, self.lattice.matrix, PBC=self.PBC)
-    
-        # Case 2
-        elif size1 > size2:
-            coords_mol = c2[:m_length2]
-            # Calculate tol matrix for species pairs
-            tols = np.zeros((m_length2, m_length1))
-            for i1, number1 in enumerate(wp2.numbers):
-                for i2, number2 in enumerate(self.numbers):
-                    tols[i1][i2] = tm.get_tol(number1, number2)
-            tols = np.repeat(tols, self.wp.multiplicity, axis=1)
-            d = distance_matrix(coords_mol, c1, self.lattice.matrix, PBC=self.PBC)
-    
-        # Check if distances are smaller than tolerances
-        if (d < tols).any():
-            return False
-        return True
+
+        coord1 = c1[:m_length1]
+        coord2 = c2 #rest molecular coords
+        tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
+
+        # compute the distance matrix
+        d, coord2 = self.get_distances(coord1, coord2, m_length2) 
+        min_ds = []
+        neighs = []
+
+        for i in range(d.shape[0]):
+            if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
+                #print('rest', i, np.min(d[i]))
+                min_ds.append(np.min(d[i]))
+                neighs.append(coord2[i])
+
+        return min_ds, neighs
 
 

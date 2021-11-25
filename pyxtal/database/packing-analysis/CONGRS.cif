@@ -1,0 +1,68 @@
+
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC 
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge 
+# Structural Database, then it will include bibliographic, chemical, 
+# crystal, experimental, refinement or atomic coordinate data resulting 
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_CONGRS
+_symmetry_cell_setting           cubic
+_symmetry_space_group_name_H-M   'P a 3'
+_symmetry_Int_Tables_number      205
+_space_group_name_Hall           '-P 2ac 2ab 3'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 z,x,y
+3 y,z,x
+4 -x,1/2+y,1/2-z
+5 -z,1/2+x,1/2-y
+6 -y,1/2+z,1/2-x
+7 1/2-x,-y,1/2+z
+8 1/2-z,-x,1/2+y
+9 1/2-y,-z,1/2+x
+10 1/2+x,1/2-y,-z
+11 1/2+z,1/2-x,-y
+12 1/2+y,1/2-z,-x
+13 -x,-y,-z
+14 -z,-x,-y
+15 -y,-z,-x
+16 x,1/2-y,1/2+z
+17 z,1/2-x,1/2+y
+18 y,1/2-z,1/2+x
+19 1/2+x,y,1/2-z
+20 1/2+z,x,1/2-y
+21 1/2+y,z,1/2-x
+22 1/2-x,1/2+y,z
+23 1/2-z,1/2+x,y
+24 1/2-y,1/2+z,x
+_cell_length_a                   10.109
+_cell_length_b                   10.109
+_cell_length_c                   10.109
+_cell_angle_alpha                90
+_cell_angle_beta                 90
+_cell_angle_gamma                90
+_cell_volume                     1033.06
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.13330 0.13330 0.13330
+C2 C 0.21930 0.04560 0.04340
+C3 C 0.13120 -0.04210 -0.04380
+H1 H 0.19070 0.19070 0.19070
+H2 H 0.25870 0.09730 -0.03200
+H3 H 0.25230 -0.01200 0.09110
+H4 H 0.18240 -0.10850 -0.09200
+#END
