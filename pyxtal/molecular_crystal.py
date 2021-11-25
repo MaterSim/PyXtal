@@ -10,12 +10,12 @@ import numpy as np
 # PyXtal imports
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.lattice import Lattice, cellsize
+from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import mol_site
 from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group
 from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
-from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError
+from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError, VolumeError
 
 # Define functions
 # ------------------------------
@@ -107,7 +107,7 @@ class molecular_crystal:
             numMols = np.array(numMols)  # must convert it to np.array
             no_check_compability = False
         if not conventional:
-            mul = cellsize(self.group)
+            mul = self.group.cellsize()
         else:
             mul = 1
         self.numMols = numMols * mul
@@ -237,7 +237,6 @@ class molecular_crystal:
             volume += numMol * mol.volume
         self.volume = abs(self.factor * volume)
 
-
     def set_lattice(self, lattice):
         """
         Generate the initial lattice
@@ -266,14 +265,30 @@ class molecular_crystal:
                 unique_axis = "c"
 
             # Generate a Lattice instance
-            self.lattice = Lattice(
-                self.group.lattice_type,
-                self.volume,
-                PBC=self.PBC,
-                unique_axis=unique_axis,
-                thickness=self.thickness,
-                area=self.area,
-                )
+            good_lattice = False
+            for cycle in range(10):
+                try:
+                    self.lattice = Lattice(
+                        self.group.lattice_type,
+                        self.volume,
+                        PBC=self.PBC,
+                        unique_axis=unique_axis,
+                        thickness=self.thickness,
+                        area=self.area,
+                        )
+                    good_lattice = True
+                    break
+                except VolumeError:
+                    self.volume *= 1.1
+                    msg = "Warning: increase the volume by 1.1 times: "
+                    msg += "{:.2f}".format(self.volume)
+                    print(msg)
+
+            if not good_lattice:
+                msg = "Volume estimation {:.2f} is very bad".format(self.volume)
+                msg += " with the given composition "
+                msg += str(self.numMols)
+                raise RuntimeError(msg)
 
     def set_crystal(self):
         """

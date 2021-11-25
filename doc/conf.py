@@ -24,9 +24,9 @@ copyright = "2018-2021, Qiang Zhu, Scott Fredericks, Kevin Parrish"
 author = "Qiang Zhu, Scott Fredericks, Kevin Parrish"
 
 # The short X.Y version
-version = "0.3.7"
+version = "0.3.8"
 # The full version, including alpha/beta/rc tags
-release = "0.3.7"
+release = "0.3.8"
 
 
 # -- General configuration ---------------------------------------------------

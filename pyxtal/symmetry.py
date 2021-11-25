@@ -689,6 +689,31 @@ class Group:
             # All species passed, but no degrees of freedom: return 0
             return True, False
 
+    def cellsize(self):
+        """
+        Returns the number of duplicate atoms in the conventional lattice (in
+        contrast to the primitive cell). Based on the type of cell centering (P,
+        A, C, I, R, or F)
+        """
+        if self.dim in [0, 1]:
+            # Rod and point groups
+            return 1
+        elif self.dim == 2:
+            # Layer groups
+            if self.number in [10, 13, 18, 22, 26, 35, 36, 47, 48]:
+                return 2
+            else:
+                return 1
+        else:
+            # space groups
+            if self.symbol[0] == 'P':
+                return 1 # P
+            elif self.symbol[0] == 'R':
+                return 3 # R
+            elif self.symbol[0] == 'F':
+                return 4 # F
+            else:
+                return 2  # A, C, I
 
     @classmethod
     def list_groups(cls, dim=3):

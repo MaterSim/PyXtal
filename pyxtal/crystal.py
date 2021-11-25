@@ -12,7 +12,7 @@ from pyxtal.symmetry import Group, choose_wyckoff
 from pyxtal.wyckoff_site import atom_site
 from pyxtal.msg import Comp_CompatibilityError, VolumeError
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.lattice import Lattice, cellsize
+from pyxtal.lattice import Lattice
 from pyxtal.database.element import Element
 
 # Define functions
@@ -85,7 +85,7 @@ class random_crystal:
         # Composition
         numIons = np.array(numIons)
         if not conventional:
-            mul = cellsize(self.group)
+            mul = self.group.cellsize()
         else:
             mul = 1
         self.numIons = numIons * mul

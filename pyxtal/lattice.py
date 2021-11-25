@@ -367,20 +367,6 @@ class Lattice:
         if self.allow_volume_reset is True:
             self.volume = volume
 
-    #def transform(self, tran):
-    #    """
-    #    Transform the lattice, assuming the symmetry does not change
-    #    mostly designed for alternative wyckoff set
-
-    #    Args: 
-    #        tran: 3*3 matrix
-    #    """
-    #    # only applied to triclinic/monoclinic/orthorhombic
-    #    matrix = tran.dot(self.matrix)
-    #    (a,b,c,alpha,beta,gamma) = matrix2para(matrix)
-    #    alpha, beta, gamma = alpha*deg, beta*deg, gamma*deg
-    #    return self.from_para(a, b, c, alpha, beta, gamma, self.ltype)
-
     def swap_axis(self, random=False, ids=None):
         """
         For the lattice
@@ -674,13 +660,6 @@ class Lattice:
         return l
 
     def __str__(self):
-        # s = str(self.ltype)+" lattice:"
-        # s += "\na: "+str(self.a)
-        # s += "\nb: "+str(self.b)
-        # s += "\nc: "+str(self.c)
-        # s += "\nalpha: "+str(self.alpha*deg)
-        # s += "\nbeta: "+str(self.beta*deg)
-        # s += "\ngamma: "+str(self.gamma*deg)
         s = "{:s} lattice: {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(
             str(self.ltype),
             self.a,
@@ -694,7 +673,6 @@ class Lattice:
 
     def __repr__(self):
         return str(self)
-
 
 def generate_lattice(
     ltype,
@@ -1068,15 +1046,8 @@ def generate_lattice_2D(
                 return para
 
     # If maxattempts tries have been made without success
-    printx(
-        "Could not generate lattice after "
-        + str(n + 1)
-        + " attempts for volume "
-        + str(volume),
-        priority=2,
-    )
-    return
-
+    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
+    raise VolumeError(msg)
 
 def generate_lattice_1D(
     ltype,
@@ -1289,14 +1260,8 @@ def generate_lattice_1D(
                 return para
 
     # If maxattempts tries have been made without success
-    printx(
-        "Could not generate lattice after "
-        + str(n + 1)
-        + " attempts for volume "
-        + str(volume),
-        priority=2,
-    )
-    return
+    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
+    raise VolumeError(msg)
 
 
 def generate_lattice_0D(
@@ -1339,12 +1304,6 @@ def generate_lattice_0D(
         # Use a cubic lattice with altered volume
         a = b = c = np.cbrt((3 * volume) / (4 * np.pi))
         alpha = beta = gamma = 0.5 * np.pi
-        if a < minvec:
-            printx(
-                "Could not generate spherical lattice; volume too small compared to minvec",
-                priority=2,
-            )
-            return
         return np.array([a, b, c, alpha, beta, gamma])
     if ltype == "ellipsoidal":
         # Use a matrix with only on-diagonal elements, with a = b
@@ -1356,8 +1315,10 @@ def generate_lattice_0D(
             a = b = np.sqrt((volume / x) / c)
             if (a / c < 10.0) and (c / a < 10.0):
                 return np.array([a, b, c, alpha, beta, gamma])
-        return
 
+    # If maxattempts tries have been made without success
+    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
+    raise VolumeError(msg)
 
 def matrix2para(matrix, radians=True):
     """
@@ -1460,126 +1421,6 @@ def para2matrix(cell_para, radians=True, format="upper"):
         matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
         #pass
     return matrix
-
-
-def cellsize(group, dim=3):
-    """
-    Returns the number of duplicate atoms in the conventional lattice (in
-    contrast to the primitive cell). Based on the type of cell centering (P,
-    A, C, I, R, or F)
-
-    Args:
-        group: a Group object, or the space group number of the group
-        dim: the dimension of the group (3 for space group, 2 for layer group,
-            1 for Rod group, or 0 for 3D point group). If group is a Group
-            object, dim will be overridden by group's value for dim
-    
-    Returns:
-        an integer between 1 and 4, telling how many atoms are in the conventional cell
-    """
-    # Get the group dimension and number
-    if type(group) == int:
-        num = group
-    else:
-        num = group.number
-        dim = group.dim
-
-    if dim == 0 or dim == 1:
-        # Rod and point groups
-        return 1
-    elif dim == 2:
-        # Layer groups
-        if num in [10, 13, 18, 22, 26, 35, 36, 47, 48]:
-            return 2
-        else:
-            return 1
-    elif dim == 3:
-        # space groups
-        if num in [
-            22,
-            42,
-            43,
-            69,
-            70,
-            196,
-            202,
-            203,
-            209,
-            210,
-            216,
-            219,
-            225,
-            226,
-            227,
-            228,
-        ]:
-            return 4  # F
-        elif num in [146, 148, 155, 160, 161, 166, 167]:
-            return 3  # R
-        elif num in [
-            5,
-            8,
-            9,
-            12,
-            15,
-            20,
-            21,
-            23,
-            24,
-            35,
-            36,
-            37,
-            38,
-            39,
-            40,
-            41,
-            44,
-            45,
-            46,
-            63,
-            64,
-            65,
-            66,
-            67,
-            68,
-            71,
-            72,
-            73,
-            74,
-            79,
-            80,
-            82,
-            87,
-            88,
-            97,
-            98,
-            107,
-            108,
-            109,
-            110,
-            119,
-            120,
-            121,
-            122,
-            139,
-            140,
-            141,
-            142,
-            197,
-            199,
-            204,
-            206,
-            211,
-            214,
-            217,
-            220,
-            229,
-            230,
-        ]:
-            return 2  # A, C, I
-        else:
-            return 1  # P
-
 
 def gaussian(min, max, sigma=3.0):
     """
