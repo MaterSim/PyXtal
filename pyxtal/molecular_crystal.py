@@ -128,7 +128,8 @@ class molecular_crystal:
             if no_check_compability:
                 compat, self.degrees = True, True
             else:
-                compat, self.degrees = self.group.check_compatible(self.numMols, self.valid_orientations)
+                compat, self.degrees = self.group.check_compatible(self.numMols, \
+                        self.valid_orientations)
             if not compat:
                 msg = "Compoisition " + str(self.numMols) 
                 msg += " not compatible with symmetry "
@@ -195,7 +196,8 @@ class molecular_crystal:
             if isinstance(mol, pyxtal_molecule):
                 p_mol = mol
             else:
-                p_mol = pyxtal_molecule(mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix)
+                p_mol = pyxtal_molecule(mol, seed=self.seed, \
+                        torsions=torsions[i], tm=self.tol_matrix)
             self.molecules.append(p_mol)
  
     def set_orientations(self):
@@ -352,8 +354,10 @@ class molecular_crystal:
         of molecules
 
         Args:
+            id: molecular id
             numMol: Number of ions to accomodate
             pyxtal_mol: Type of species being placed on wyckoff site
+            valid_ori: list of valid orientations
             mol_wyks: current wyckoff sites
 
         Returns:
@@ -411,7 +415,8 @@ class molecular_crystal:
                         if passed_wp_check:
                             if sites_list is not None:
                                 sites_list.pop(0)
-
+                            
+                            ms0.type = id
                             mol_sites_tmp.append(ms0)
                             numMol_added += len(ms0.wp)
 

@@ -426,7 +426,7 @@ class TestNeighbour(unittest.TestCase):
  
             (name, CN) = data
             c.from_seed(seed=cif_path+name+".cif", molecules=[name])
-            ds, neighs = c.get_neighboring_molecules(0, 1.5)
+            ds, _, _ = c.get_neighboring_molecules(0, 1.5)
             self.assertTrue(len(ds) == CN)
  
 class TestSubgroup(unittest.TestCase):

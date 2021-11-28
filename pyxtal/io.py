@@ -313,8 +313,11 @@ class structure_from_ext():
         self.numMols = [0] * len(self.ref_mols)
         self.positions = []
         self.p_mols = []
+        self.ids = []
         self.wps = []
         ids_done = []
+
+        #search for the matched molecules
         for j, mol2_ref in enumerate(self.ref_mols):
             mol2 = mol2_ref.copy()
             if self.add_H: mol2.mol.remove_species("H")
@@ -360,8 +363,10 @@ class structure_from_ext():
 
                         self.positions.append(position)
                         self.p_mols.append(p_mol)
+                        self.ids.append(j)
                         ids_done.append(id)
 
+        # check if some molecules cannot be matched
         if len(ids_done) < len(ids):
             for id in ids:
                 if id not in ids_done:
@@ -413,8 +418,9 @@ class structure_from_ext():
         """
         ori = Orientation(np.eye(3))
         sites = []
-        for mol, pos, wp in zip(self.p_mols, self.positions, self.wps):
+        for id, mol, pos, wp in zip(self.ids, self.p_mols, self.positions, self.wps):
             site = mol_site(mol, pos, ori, wp, self.lattice, self.diag)
+            site.type = id
             #print(pos)
             #print(self.lattice.matrix)
             #print([a.value for a in site.molecule.mol.species])

@@ -846,7 +846,7 @@ class mol_site:
         # Check periodic images
         d, coord2 = self.get_dists_auto()
         for i in range(d.shape[0]):
-            if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
+            if np.min(d[i])<max_d and (d[i]<tols_matrix).any():
                 #print('self', i, np.min(d[i]))
                 min_ds.append(np.min(d[i]))
                 neighs.append(coord2[i])
@@ -885,13 +885,14 @@ class mol_site:
 
         # compute the distance matrix
         d, coord2 = self.get_distances(coord1, coord2, m_length2) 
+        #[m1*m2*pbc, m1, m2]
         min_ds = []
         neighs = []
 
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
-                #print('rest', i, np.min(d[i]))
-                min_ds.append(np.min(d[i]))
+                #print('rest', i, np.min(d[i, :, :], axis=0))
+                min_ds.append(np.min(d[i,:,:]))
                 neighs.append(coord2[i])
 
         return min_ds, neighs

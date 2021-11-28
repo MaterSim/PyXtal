@@ -194,7 +194,7 @@ def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=rang
 
     return view.zoomTo()
 
-def display_molecules(molecules, size=(400,300), animation=False, box=None):
+def display_molecules(molecules, size=(400,300), animation=False, center=False):
     """
     display the molecules in Pymatgen object.
 
@@ -202,6 +202,7 @@ def display_molecules(molecules, size=(400,300), animation=False, box=None):
         molecules: a list of pymatgen molecules
         size: (width, height) in tuple
         animation: whether or not display animation
+        center: highlight center or not
 
     Returns:
         py3Dmol object
@@ -294,3 +295,29 @@ def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, 
        
 
 
+def display_cluster(molecules, size=(400,300), style='sphere'):
+    import py3Dmol
+    models = {}
+    
+    view = py3Dmol.view()
+    mol_str = ""
+    mol_str += molecules[0].to(fmt='xyz') + '\n'
+    view.addModel(mol_str, 'xyz')
+    model = view.getModel()
+    model.setStyle({}, {"sphere": {'colorscheme':'greenCarbon', 
+                                   'scale':0.7}})
+    
+    for mol in molecules[1:]:
+        mol_strs = ""
+        mol_strs += mol.to(fmt='xyz') + '\n'
+        view.addModel(mol_strs, 'xyz')
+        model = view.getModel()
+        if style == 'sphere':
+            model.setStyle({}, {"sphere": {'colorscheme':'cyanCarbon',
+                                           'scale':0.5,
+                                           'opacity': 0.75}})
+        else:
+            model.setStyle({}, {"stick": {'colorscheme':'greenCarbon', 
+                                          'radius': 0.1,
+                                          'opacity': 0.75}})
+    return view.zoomTo({"model": list(models.values())})

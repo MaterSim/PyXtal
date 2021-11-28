@@ -26,7 +26,7 @@ from pyxtal.representation import representation
 from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.XRD import XRD
 from pyxtal.constants import letters
-from pyxtal.viz import display_molecular, display_atomic
+from pyxtal.viz import display_molecular, display_atomic, display_cluster
 
 # name = "pyxtal"
 
@@ -802,7 +802,9 @@ class pyxtal:
                 wp1 = site.wp
                 ori.reset_matrix(np.eye(3))
                 id = 0
-                for g1s, ops1, ops2 in zip(splitter.G1_orbits[i], splitter.G2_orbits[i], splitter.H_orbits[i]):
+                for g1s, ops1, ops2 in zip(splitter.G1_orbits[i], \
+                                           splitter.G2_orbits[i], \
+                                           splitter.H_orbits[i]):
                     if site.wp.multiplicity == len(self.group[0]):
                         #general wyc
                         rot = g1s[0].affine_matrix[:3,:3].T
@@ -829,7 +831,9 @@ class pyxtal:
                     pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
                     diag = self.diag
-                    split_sites.append(mol_site(_mol, pos0, ori, wp, lattice, diag))
+                    _site = mol_site(_mol, pos0, ori, wp, lattice, diag)
+                    _site.type = site.type
+                    split_sites.append(_site)
                     id += wp.multiplicity
             new_struc.mol_sites = split_sites
             new_struc.numMols = [int(multiples*numMol) for numMol in self.numMols]
@@ -1062,15 +1066,6 @@ class pyxtal:
 
         return XRD(self.to_ase(), **kwargs)
 
-    def show(self, **kwargs):
-        """
-        display the crystal structure
-        """
-        if self.molecular:
-            return display_molecular(self, **kwargs)
-        else:
-            return display_atomic(self, **kwargs)
-
     def optimize_lattice(self, iterations=5, force=False):
         """
         optimize the lattice if the cell has a bad inclination angles
@@ -1204,6 +1199,7 @@ class pyxtal:
                         #print(self.group.symbol, wp)
                         mol = site.molecule
                         sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag)
+                        sites[j].type = site.type
                     else:
                         sites[j] = atom_site(wp, pos_frac, site.specie, diag)
                 else:
@@ -1466,8 +1462,7 @@ class pyxtal:
         sub.source = "subgroup"
         return sub
 
-
-    def get_neighboring_molecules(self, site_id, factor, max_d=4.0):
+    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=4.0):
         """
         For molecular crystals, get the neighboring molecules for a given WP
 
@@ -1481,13 +1476,45 @@ class pyxtal:
         """
         min_ds = []
         neighs = []
-
+        comps = []
         site0 = self.mol_sites[site_id]
         for id0, site1 in enumerate(self.mol_sites):
             if id0 == site_id:
                 min_d0, neigh0 = site0.get_neighbors_auto(factor, max_d)
             else:
                 min_d0, neigh0 = site0.get_neighbors_wp2(site1, factor, max_d) 
+            comp = [site1.type]*len(min_d0)
             neighs.extend(neigh0)
             min_ds.extend(min_d0)
-        return min_ds, neighs
+            comps.extend(comp)
+        return min_ds, neighs, comps
+
+    def show(self, **kwargs):
+        """
+        display the crystal structure
+        """
+        if self.molecular:
+            return display_molecular(self, **kwargs)
+        else:
+            return display_atomic(self, **kwargs)
+
+
+    def show_molecular_cluster(self, id, factor=1.5, max_d=4.0, **kwargs):
+        """
+        display the crystal structure
+        """
+        min_ds, neighs, comps = self.get_neighboring_molecules(id, factor, max_d)
+        print("Number of neighboring molecules", len(min_ds))
+        print(np.sort(min_ds))
+        site0 = self.mol_sites[id]
+        coord0, specie0 = site0._get_coords_and_species(absolute=True, first=True)
+        
+        molecules = [Molecule(specie0, coord0)]
+        for neigh, typ in zip(neighs, comps):
+            specie0 = self.molecules[typ].mol.atomic_numbers
+            molecules.append(Molecule(specie0, neigh))
+
+        return display_cluster(molecules, **kwargs)
+
+
+
