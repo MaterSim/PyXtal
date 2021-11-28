@@ -344,7 +344,7 @@ You may use a list with any of the following input types:
     mol = pyxtal_molecule('h2o.xyz')
 
 
-4) a smile string representing the molecule. For example, 'C1=CC=CC=C1.smi' means a benzene molecule. Note that the `.smi` suffix must be included to indicate that this is a smile string. In this case, **RDKit must be installed to use this function.**. One can install RDKit by simply typing ``$ conda install -c conda-forge rdkit==2021.03.5``. Note that the current code is designed for version no later than ``2021.03.5``.
+4) a smile string representing the molecule. For example, 'C1=CC=CC=C1.smi' means a benzene molecule. Note that the `.smi` suffix must be included to indicate that this is a smile string. In this case, **RDKit must be installed to use this function.**. One can install RDKit by simply typing ``$ conda install -c conda-forge rdkit==2021.09.2``. Note that the current code is designed for version no later than ``2021.09.2``.
 
 .. code-block:: Python
 
