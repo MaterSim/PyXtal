@@ -50,7 +50,7 @@ setup(
         "networkx>=2.3",
         "py3Dmol>=0.8.0",
         'ase>=3.18.0',
-        'numba>=0.50.1',
+        'numba<=0.53.0rc2', #prevent the numpy conflict
         'scipy>=1.6.1',
         'importlib_metadata>=1.4',
         #"openbabel>=3.0.0",
