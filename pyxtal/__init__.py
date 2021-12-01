@@ -1545,6 +1545,7 @@ class pyxtal:
         if entry.has_3d_structure:
             smi = entry.molecule.smiles
             cif = entry.to_string(format='cif')
+            smiles = [s+'.smi' for s in smi.split('.')]
 
             try:
                 pmg = Structure.from_str(cif, fmt='cif')
@@ -1571,10 +1572,10 @@ class pyxtal:
                 raise CSDError(msg)
             else:
                 try:
-                    self.from_seed(pmg, [smi+'.smi'])
+                    self.from_seed(pmg, smiles)
                 except ReadSeedError:
                     try:
-                        self.from_seed(pmg, [smi+'.smi'], add_H=True)
+                        self.from_seed(pmg, smiles, add_H=True)
                     except:
                         msg = 'unknown problems in Reading CSD file'
                         raise CSDError(msg)
