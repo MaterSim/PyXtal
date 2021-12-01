@@ -1517,4 +1517,71 @@ class pyxtal:
         return display_cluster(molecules, **kwargs)
 
 
+    def from_CSD(self, csd_code):
+        """
+        Download the crystal from CCDC 
+        if csd_code is given, return the single pyxtal object
+        if csd_family is given, perform the grouping analysis and ignore high pressure form
 
+        Args:
+            csd_code: e.g., ACSALA01
+
+        """
+        from pyxtal.util import process_csd_cif
+        from pyxtal.msg import ReadSeedError, CSDError
+
+        try:
+            from ccdc import io
+        except:
+            msg = 'No CSD-python api is available'
+            raise CSDError(msg)
+
+        try:
+            entry = io.EntryReader('CSD').entry(csd_code)
+        except:
+            msg = 'Unknown CSD entry: ' + csd_code
+            raise CSDError(msg)
+
+        if entry.has_3d_structure:
+            smi = entry.molecule.smiles
+            cif = entry.to_string(format='cif')
+
+            try:
+                pmg = Structure.from_str(cif, fmt='cif')
+            except:
+                print("Pymatgen cannot read the cif, remove H")
+                cif = process_csd_cif(cif, remove_H=True)
+                try:
+                    pmg = Structure.from_str(cif, fmt='cif')
+                except:
+                    print(cif)
+                    msg = "Problem in parsing CSD cif"
+                    raise CSDError(msg)
+
+            organic = True
+            for ele in pmg.composition.elements:
+                if ele.symbol == 'D':
+                    pmg.replace_species({ele: Element("H")})
+                elif ele.value not in ["C", "H", "O", "N", "S", "F", "Cl", "Br", "I", "P"]:
+                    organic = False
+                    break
+            if not organic:
+                msg = "Cannot handle the organometallic entry from CSD: "
+                msg += entry.formula
+                raise CSDError(msg)
+            else:
+                try:
+                    self.from_seed(pmg, [smi+'.smi'])
+                except ReadSeedError:
+                    try:
+                        self.from_seed(pmg, [smi+'.smi'], add_H=True)
+                    except:
+                        msg = 'unknown problems in Reading CSD file'
+                        raise CSDError(msg)
+                except:
+                    msg = 'unknown problems in Reading CSD file'
+                    raise CSDError(msg)
+            self.source = 'CSD: ' + csd_code
+        else:
+            msg = csd_code + ' does not have 3D structure'
+            raise CSDError(msg)
