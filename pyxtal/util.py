@@ -246,7 +246,7 @@ def get_similar_cids_from_pubchem(base, MaxRecords):
             print(d)
     return results
 
-def search_ccdc_structures(cid):
+def search_csd_code_by_pubchem(cid):
     """
     Args:
         cid: PubChem cid
@@ -286,6 +286,42 @@ def search_ccdc_structures(cid):
         print('Failed to parse json', url, '\n')
 
     return csd_codes
+
+def search_csd_entries_by_code(code):
+    """
+    Args:
+        code: CSD code, e.g., ACSALA
+
+    Returns:
+        list of csd ids
+    """
+
+    from ccdc.search import TextNumericSearch
+    from ccdc.crystal import PackingSimilarity as PS
+
+    def new_cryst(cryst, crysts, n_max):
+        spg1 = cryst.spacegroup_number_and_setting[0]
+        for ref in crysts:
+            spg2 = ref.spacegroup_number_and_setting[0]
+            if spg1 == spg2:
+                h = PS().compare(cryst, ref)
+                #print(cryst.identifier, ref.identifier, h.nmatched_molecules)
+                if h is not None and h.nmatched_molecules == n_max:
+                    return False
+        return True
+
+    n_max = PS().settings.packing_shell_size
+    query = TextNumericSearch()
+    query.add_identifier(code)
+    hits = query.search()
+    unique_crysts = []
+    for hit in hits:
+        if hit.entry.has_3d_structure and hit.entry.pressure is None:
+            if new_cryst(hit.crystal, unique_crysts, n_max):
+                unique_crysts.append(hit.crystal)
+                #print(hit.entry.identifier, hit.entry.deposition_date)
+
+    return [c.identifier for c in unique_crysts]
 
 
 if __name__ == "__main__":
