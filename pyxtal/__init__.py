@@ -1199,7 +1199,7 @@ class pyxtal:
                         #print(self.group.symbol, wp)
                         mol = site.molecule
                         sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag)
-                        sites[j].type = site.type
+                        #sites[j].type = site.type
                     else:
                         sites[j] = atom_site(wp, pos_frac, site.specie, diag)
                 else:
@@ -1418,7 +1418,7 @@ class pyxtal:
         """
         if self.molecular:
             for ms in self.mol_sites:
-                if not ms.check_distances():
+                if not ms.short_dist():
                     return False
             return True
 
