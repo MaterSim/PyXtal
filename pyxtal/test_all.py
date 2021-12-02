@@ -153,6 +153,16 @@ class TestWP(unittest.TestCase):
             get_wyckoffs(i)
             get_wyckoffs(i, organized=True)
 
+    def is_equivalent(self):
+        wp = Group(15)[0]
+        a = [ 0.10052793,  0.12726851,  0.27405404],
+        b = [-0.10052642, -0.12726848, -0.27405526]
+        c = [ 0.60052642,  -0.12726848+0.5,  0.27405526]
+        d = [4.22024472e-06, 2.54537267e-01, 3.24121580e-06]
+        self.assertTrue(wp.is_equivalent(a,b))
+        self.assertTrue(wp.is_equivalent(b,c))
+        self.assertFalse(wp.is_equivalent(a,d))
+
 class TestDof(unittest.TestCase):
     def test_atomic(self):
         s = pyxtal() 

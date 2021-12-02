@@ -1184,17 +1184,20 @@ class Wyckoff_position:
         """
         return self.Wyckoff_positions[0]
 
-    def is_equivalent(self, pt1, pt2, tol=0.01):
+    def is_equivalent(self, pt1, pt2, cell=np.eye(3), tol=0.01):
         """
         Check two pts are equivalent
         """
-        pt1 = np.array(pt1)
-        pt2 = np.array(pt2)
-        pt1 -= np.floor(pt1)
-        pts = self.apply_ops(pt1)
-        diffs = pts - pts
+        pt1 = np.array(pt1); pt1 -= np.floor(pt1)
+        pt2 = np.array(pt2); pt2 -= np.floor(pt2)
+        pts = self.apply_ops(pt1); pts -= np.floor(pts)
+        #print(pt2); print(pts)
+        diffs = pt2 - pts
         diffs -= np.round(diffs)
-        dists = np.linalg.norm(diffs, axis=1)
+        diffs = np.dot(diffs, cell)
+        #print(diffs)
+        dists = np.linalg.norm(diffs, axis=0)
+        #print(dists)
         if len(dists[dists<tol]) > 0:
             return True
         else:
