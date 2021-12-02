@@ -78,7 +78,8 @@ class XRD():
         3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)
         """
 
-        rec_matrix = crystal.get_reciprocal_cell()
+        #rec_matrix = crystal.get_reciprocal_cell()
+        rec_matrix = crystal.cell.reciprocal()
         d_min = self.wavelength/np.sin(self.max2theta/2)/2
 
         # This block is to find the shortest d_hkl

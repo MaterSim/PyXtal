@@ -200,6 +200,7 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
 def process_csd_cif(cif, remove_H=False):
     """
     process cif from CSD, sometimes it contains multiple 
+    e.g., C2
     """
     lines = cif.split('\n')
     tmp = []

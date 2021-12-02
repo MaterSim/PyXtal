@@ -17,14 +17,18 @@ from monty.serialization import loadfn
 
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 
-def in_merged_coords(wp, pt, pts):   
+def in_merged_coords(wp, pt, pts, cell):   
     """
     Whether or not the pt in within the pts
     """
+    (c, s) = pt
     for pt0 in pts:
-        if wp.is_equivalent(pt, pt0):
+        (c0, s0) = pt0
+        if s == s0 and wp.is_equivalent(c, c0, cell):
+            #print(c, c0, 'equivalent')
             return True
     return False
+
 
 def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
@@ -125,16 +129,17 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
                     muls = []
                     coords = []
                     species = []
-                    merged_coords = []
+                    merges = []
                     
                     for coord, specie in zip(coord0s, specie0s):
-                        _, wp, _ = G1.merge(coord, struc.lattice.matrix, 0.01)
+                        _, wp, _ = G1.merge(coord, struc.lattice.matrix, 0.05)
+                        #print(coord, wp)
                         if len(wp) > mul:
-                            if not in_merged_coords(G1, coord, merged_coords):
+                            if not in_merged_coords(G1, [coord, specie], merges, struc.lattice.matrix):
                                 coords.append(coord)
                                 species.append(specie)
                                 muls.append(len(wp))
-                                merged_coords.append(coord)
+                                merges.append((coord, specie))
                         else:
                             coords.append(coord)
                             species.append(specie)
@@ -269,20 +274,20 @@ class structure_from_ext():
 
         self.ref_mols = ref_mols
         self.tol = tol
-        self.diag = False
         self.add_H = add_H
 
         sym_struc, number = get_symmetrized_pmg(pmg_struc)
         group = Group(number)
         self.group = group
         self.wyc = group[0]
-        self.perm = [0,1,2]
 
         molecules = search_molecules_in_crystal(sym_struc, self.tol, ignore_HH=ignore_HH)
 
         self.pmg_struc = sym_struc
         self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=group.lattice_type)
         self.resort(molecules)
+        if len(self.ids) == 0:
+            raise RuntimeError('Cannot extract molecules')
 
     def resort(self, molecules):
         from pyxtal.operations import apply_ops, find_ids
@@ -295,18 +300,28 @@ class structure_from_ext():
         for i in range(len(molecules)):
             positions[i, :] = np.dot(molecules[i].cart_coords.mean(axis=0), inv_lat) 
 
+        self.wps = []
+
         ids = []  #id for the generator
-        mults = [] #the corresponding multiplicities
         visited_ids = []
         for id, pos in enumerate(positions):
             if id not in visited_ids:
-                ids.append(id)
-                #print("pos", pos); print(self.wyc)
                 centers = apply_ops(pos, self.wyc)
                 tmp_ids = find_ids(centers, positions)
                 visited_ids.extend(tmp_ids)
-                mults.append(len(tmp_ids))
-                #print("check", id, tmp_ids, mults)
+                if len(tmp_ids) == len(self.wyc):
+                    self.wps.append(self.wyc)
+                    ids.append(id)
+                else: #special sites
+                    for id0 in tmp_ids:
+                        p0 = positions[id0]
+                        p1, wp, _ = self.wyc.merge(p0, new_lat, 0.1)
+                        diff = p1 - p0
+                        diff -= np.round(diff)
+                        if np.abs(diff).sum() < 0.01: #sort position by mapping
+                            self.wps.append(wp)
+                            ids.append(id0) #find the right ids
+                            break
 
         # add position and molecule, print("ids", ids, mults)
         N_sites = len(ids)
@@ -314,7 +329,6 @@ class structure_from_ext():
         self.positions = []
         self.p_mols = []
         self.ids = []
-        self.wps = []
         ids_done = []
 
         #search for the matched molecules
@@ -330,7 +344,6 @@ class structure_from_ext():
                     p_mol = mol2_ref.copy() # create p_mol
                     match, mapping = compare_mol_connectivity(mol2.mol, mol1)
                     if match:
-                        self.numMols[j] += mults[i] 
                         if len(mol1) > 1:
                             # rearrange the order
                             order = [mapping[at] for at in range(len(mol1))]
@@ -346,25 +359,12 @@ class structure_from_ext():
                         else:
                             position = np.dot(mol1.cart_coords[0], np.linalg.inv(new_lat))
                         position -= np.floor(position)
-                        #print(position); print(lat)
-                        #print(p_mol.mol.cart_coords[:10] + np.dot(position, new_lat))
-
-                        # check if molecule is on the special wyckoff position
-                        if mults[i] < len(self.wyc):
-                            #Transform it to the conventional representation
-                            if self.diag: position = np.dot(self.perm, position).T
-                            #print("molecule is on the special wyckoff position")
-                            position, wp, _ = self.wyc.merge(position, new_lat, 0.1)
-                            self.wps.append(wp)
-                            self.numMols[j] = len(wp)
-                            #print("After Merge:---"); print(position); print(wp)
-                        else:
-                            self.wps.append(self.wyc)
 
                         self.positions.append(position)
                         self.p_mols.append(p_mol)
                         self.ids.append(j)
                         ids_done.append(id)
+                        self.numMols[j] += len(self.wps[i])
 
         # check if some molecules cannot be matched
         if len(ids_done) < len(ids):
@@ -419,7 +419,7 @@ class structure_from_ext():
         ori = Orientation(np.eye(3))
         sites = []
         for id, mol, pos, wp in zip(self.ids, self.p_mols, self.positions, self.wps):
-            site = mol_site(mol, pos, ori, wp, self.lattice, self.diag)
+            site = mol_site(mol, pos, ori, wp, self.lattice)
             site.type = id
             #print(pos)
             #print(self.lattice.matrix)

@@ -299,7 +299,7 @@ class Lattice:
             if para is not None:
                 return para2matrix(para)
 
-    def get_matrix(self):
+    def get_matrix(self, shape='upper'):
         """
         Returns a 3x3 numpy array representing the lattice vectors.
         """
@@ -333,6 +333,7 @@ class Lattice:
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
         self.volume = np.linalg.det(self.matrix)
 
+
     def set_para(self, para=None, radians=False):
         if para is not None:
             if radians is False:
@@ -343,7 +344,7 @@ class Lattice:
         else:
             self.set_matrix()
 
-    def reset_matrix(self):
+    def reset_matrix(self, shape='upper'):
         if self.random:
             for i in range(3):
                 m = self.generate_matrix()
@@ -361,7 +362,7 @@ class Lattice:
         else:
             # a small utility to convert the cell shape
             para = matrix2para(self.matrix)
-            self.matrix = para2matrix(para)
+            self.matrix = para2matrix(para, format=shape)
 
     def set_volume(self, volume):
         if self.allow_volume_reset is True:
@@ -583,7 +584,7 @@ class Lattice:
         return l
 
     @classmethod
-    def from_matrix(self, matrix, reset=True, ltype="triclinic", PBC=[1, 1, 1], **kwargs):
+    def from_matrix(self, matrix, reset=True, shape='upper', ltype="triclinic", PBC=[1, 1, 1], **kwargs):
         """
         Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
         are available. Unless specified by the keyword random=True, does not create a
@@ -644,7 +645,7 @@ class Lattice:
                 alpha = gamma = np.pi/2
             
             # reset matrix according to the symmetry
-            m = para2matrix([a, b, c, alpha, beta, gamma], format="upper")
+            m = para2matrix([a, b, c, alpha, beta, gamma], format=shape)
         
         # Initialize a Lattice instance
         volume = np.linalg.det(m)
