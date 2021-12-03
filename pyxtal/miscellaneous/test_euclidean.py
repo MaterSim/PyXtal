@@ -12,15 +12,20 @@ def test(spg, pt, cell):
         print(sg, wp.symbol, wp.euclidean)
         for i in range(len(wp)):
             op0 = wp[i]
-            rot, _ = wp.get_euclidean_rotation(i)
-            #print(op0.affine_matrix[:3, :3].T)
-            #print(rot)
             p1 = op0.operate(pt)
-            p2 = np.dot(np.dot(p0, rot), cell.inv_matrix) + op0.translation_vector
+            
+            op1 = wp.get_euclidean_rotation(cell.matrix, i)
+            if wp.euclidean:
+                p2 = np.dot(op1.operate(p0), cell.inv_matrix)
+            else:
+                p2 = np.dot(op1.apply_rotation_only(p0), cell.inv_matrix) 
+                p2 += op1.translation_vector
+
             diff = p1-p2
             diff -= np.round(diff)
             if np.linalg.norm(diff) > 0.02:
                 res = '{:2d} {:28s}'.format(i, op0.as_xyz_string())
+                res += ' {:28s}'.format(op1.as_xyz_string())
                 res += '{:6.3f} {:6.3f} {:6.3f} -> '.format(*p1)
                 res += '{:6.3f} {:6.3f} {:6.3f} -> '.format(*p2)
                 res += '{:6.3f} {:6.3f} {:6.3f}'.format(*diff)

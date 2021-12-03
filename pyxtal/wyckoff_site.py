@@ -427,14 +427,14 @@ class mol_site:
 
             # Rotate the molecule (Euclidean metric)
             #op2_m = self.wp.generators_m[point_index]
-            #rot = op2_m.affine_matrix[:3, :3].T
 
-            rot, tau0 = self.wp.get_euclidean_rotation(point_index)
-            if self.diag and self.wp.index > 0:
-                tau = op2.translation_vector
-            else:
-                tau = tau0
-            tmp = np.dot(coord0, rot) + tau
+            op2_m = self.wp.get_euclidean_rotation(self.lattice.matrix, point_index)
+            rot = op2_m.affine_matrix[:3, :3].T
+            #if self.diag and self.wp.index > 0:
+            #    tau = op2.translation_vector
+            #else:
+            #    tau = op2_m.translation_vector
+            tmp = np.dot(coord0, rot) #+ tau
 
             # Add absolute center to molecule
             tmp += center_absolute
@@ -564,14 +564,14 @@ class mol_site:
             op = self.wp.generators[id]
             center_relative = op.operate(self.position)
             center_relative -= np.floor(center_relative)
-            #print(center_relative)
             center_absolute = np.dot(center_relative, self.lattice.matrix)
             # Rotate the molecule (Euclidean metric)
             #op_m = self.wp.generators_m[id]
             #rot = op_m.affine_matrix[0:3][:, 0:3].T
             #tau = op_m.affine_matrix[0:3][:, 3]
-            rot, tau = self.wp.get_euclidean_rotation(point_index)
-            tmp = np.dot(coord0, rot) + tau
+            op0 = self.wp.get_euclidean_rotation(self.lattice.matrix, id)
+            rot = op0.rotation_matrix.T
+            tmp = np.dot(coord0, rot) 
             # Add absolute center to molecule
             tmp += center_absolute
             return Molecule(self.symbols, tmp)           

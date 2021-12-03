@@ -1275,20 +1275,23 @@ class Wyckoff_position:
             else:
                 return pt, wp, valid_ori
 
-    def get_euclidean_rotation(self, idx=0):
+    def get_euclidean_rotation(self, cell, idx=0):
         """
-        For 3,6-fold rotation in hexagonal lattice
+        return the symmetry operation object at the Euclidean space 
+
+        Args:
+            cell: 3*3 cell matrix
+            idx: the index of wp generator
+
+        Returns:
+            pymatgen SymmOp object
         """
         op = self.generators[idx]
         if self.euclidean:
-            #bug, only works for rotation along [0, 0, 1]
-            op = t2h * op * t2h.inverse
-            #if idx == 3:
-            #    print(op.affine_matrix[:3, :3].T)
-            #    op = SymmOp.from_origin_axis_angle([0,0,0], [-1/2,np.sqrt(3)/2,0], 180)
-            #    print(op.affine_matrix[:3, :3].T)
-            op = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0,0,0])
-        return op.affine_matrix[:3, :3].T, [0,0,0]
+            hat = SymmOp.from_rotation_and_translation(cell.T, [0, 0, 0])
+            op = hat * op * hat.inverse
+
+        return op
 
     def set_euclidean(self):
         convert = False

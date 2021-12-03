@@ -811,7 +811,8 @@ class pyxtal:
                     else:
                         #for special wyc, needs to get better treatment
                         #rot = wp1.generators_m[id].affine_matrix[:3,:3].T
-                        rot, tau0 = wp1.get_euclidean_rotation(id)
+                        op = wp1.get_euclidean_rotation(self.lattice.matrix, id)
+                        rot = op.affine_matrix[:3, :3].T 
 
                     # xyz in new lattice
                     #coord1 = np.dot(coord0, rot)
@@ -1619,12 +1620,14 @@ class pyxtal:
             #pmg0 = Structure.from_str(self.to_file(), fmt='cif')
             pmg0 = Structure.from_str(pmg0.to(fmt='cif'), fmt='cif')
             print(cif)
-            #pmg0.remove_species('H'); pmg0.remove_species('O')
-            #pmg.remove_species('H'); pmg.remove_species('O')
+            print(self)
+            print(pmg0)
+            pmg0.remove_species('H'); pmg0.remove_species('O')
+            pmg.remove_species('H'); pmg.remove_species('O')
             #print(pmg0.to(fmt='cif'))
             print(sm.StructureMatcher().fit(pmg0, pmg))
-            #print(pmg) #reference
-            #print(pmg0) #pyxtal
+            print(pmg) #reference
+            print(pmg0) #pyxtal
             #print(cif)
             #print(self.to_file())
             print("Wrong", csd_code); import sys; sys.exit()
