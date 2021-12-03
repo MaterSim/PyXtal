@@ -1547,7 +1547,6 @@ class pyxtal:
             msg = 'Unknown CSD entry: ' + csd_code
             raise CSDError(msg)
 
-        remove_H = False
 
         if entry.has_3d_structure:
             smi = entry.molecule.smiles
@@ -1559,20 +1558,16 @@ class pyxtal:
                         'publication': entry.publication, 
                        }
             
+            cif = process_csd_cif(cif) #, remove_H=True)
+            pmg = Structure.from_str(cif, fmt='cif')
+            remove_H = False
+            #print(cif)
             try:
-                cif = process_csd_cif(cif) #, remove_H=True)
                 pmg = Structure.from_str(cif, fmt='cif')
             except:
-                print("Pymatgen cannot read the cif, remove H")
-                cif = process_csd_cif(cif, remove_H=True)
-                remove_H = True
-                #print(cif)
-                try:
-                    pmg = Structure.from_str(cif, fmt='cif')
-                except:
-                    print(cif)
-                    msg = "Problem in parsing CSD cif"
-                    raise CSDError(msg)
+                print(cif)
+                msg = "Problem in parsing CSD cif"
+                raise CSDError(msg)
 
             organic = True
             for ele in pmg.composition.elements:
@@ -1591,6 +1586,7 @@ class pyxtal:
                 except ReadSeedError:
                     try:
                         self.from_seed(pmg, smiles, add_H=True)
+                        remove_H = True
                     except:
                         msg = 'unknown problems in Reading CSD file'
                         raise CSDError(msg)
@@ -1613,6 +1609,7 @@ class pyxtal:
         #check if the structure is consistent with the origin
         pmg0 = self.to_pymatgen() #shape='lower')
         if remove_H:
+            print("REMOVE H")
             pmg.remove_species('H')
             pmg0.remove_species('H')
 
@@ -1621,8 +1618,13 @@ class pyxtal:
             pmg = Structure.from_str(cif, fmt='cif')
             #pmg0 = Structure.from_str(self.to_file(), fmt='cif')
             pmg0 = Structure.from_str(pmg0.to(fmt='cif'), fmt='cif')
-            print(pmg0.to(fmt='cif'))
+            print(cif)
+            #pmg0.remove_species('H'); pmg0.remove_species('O')
+            #pmg.remove_species('H'); pmg.remove_species('O')
+            #print(pmg0.to(fmt='cif'))
             print(sm.StructureMatcher().fit(pmg0, pmg))
+            #print(pmg) #reference
+            #print(pmg0) #pyxtal
             #print(cif)
             #print(self.to_file())
             print("Wrong", csd_code); import sys; sys.exit()

@@ -1277,18 +1277,23 @@ class Wyckoff_position:
 
     def get_euclidean_rotation(self, idx=0):
         """
-        For 3,6 folder rotation in hexagonal lattice
+        For 3,6-fold rotation in hexagonal lattice
         """
         op = self.generators[idx]
         if self.euclidean:
+            #bug, only works for rotation along [0, 0, 1]
             op = t2h * op * t2h.inverse
+            #if idx == 3:
+            #    print(op.affine_matrix[:3, :3].T)
+            #    op = SymmOp.from_origin_axis_angle([0,0,0], [-1/2,np.sqrt(3)/2,0], 180)
+            #    print(op.affine_matrix[:3, :3].T)
             op = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0,0,0])
         return op.affine_matrix[:3, :3].T, [0,0,0]
 
     def set_euclidean(self):
         convert = False
         if self.dim == 3:
-            if 143 < self.number < 195:
+            if 143 <= self.number < 195:
                 convert = True
         elif self.dim == 2:
             if self.number >= 65:
