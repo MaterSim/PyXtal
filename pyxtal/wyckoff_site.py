@@ -136,7 +136,7 @@ class atom_site:
         self.position -= np.floor(self.position)
         self.wp, _ = self.wp.swap_axis(swap_id)
         self.site_symm = site_symm(
-            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
+            self.wp.symmetry[0], self.wp.number, dim=self.wp.dim
         )
         self.update()
 
@@ -428,7 +428,7 @@ class mol_site:
             # Rotate the molecule (Euclidean metric)
             #op2_m = self.wp.generators_m[point_index]
 
-            op2_m = self.wp.get_euclidean_rotation(self.lattice.matrix, point_index)
+            op2_m = self.wp.get_euclidean_operation(self.lattice.matrix, point_index)
             rot = op2_m.affine_matrix[:3, :3].T
             #if self.diag and self.wp.index > 0:
             #    tau = op2.translation_vector
@@ -569,7 +569,7 @@ class mol_site:
             #op_m = self.wp.generators_m[id]
             #rot = op_m.affine_matrix[0:3][:, 0:3].T
             #tau = op_m.affine_matrix[0:3][:, 3]
-            op0 = self.wp.get_euclidean_rotation(self.lattice.matrix, id)
+            op0 = self.wp.get_euclidean_operation(self.lattice.matrix, id)
             rot = op0.rotation_matrix.T
             tmp = np.dot(coord0, rot) 
             # Add absolute center to molecule

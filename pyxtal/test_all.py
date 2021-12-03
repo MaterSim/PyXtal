@@ -118,7 +118,7 @@ class TestOptLat(unittest.TestCase):
     def test_molecular_diag(self):
         sgs, diags = [5, 7, 8, 12, 13, 14], [True, False]
         for diag in diags:
-            for i in range(40):
+            for i in range(20):
                 sg = choice(sgs)
                 c1 = pyxtal(molecular=True)
                 c1.from_random(3, sg, ["aspirin"], diag=diag) 
@@ -130,7 +130,7 @@ class TestOptLat(unittest.TestCase):
 
     def test_molecular_nodiag(self):
         sgs, diag = [5, 7, 8, 12, 13, 14], False
-        for i in range(40):
+        for i in range(20):
             sg = choice(sgs)
             c1 = pyxtal(molecular=True)
             c1.from_random(3, sg, ["aspirin"], diag=diag) 
@@ -206,7 +206,7 @@ class TestWP(unittest.TestCase):
                     op0 = wp[i]
                     p1 = op0.operate(pt)
                     
-                    op1 = wp.get_euclidean_rotation(cell.matrix, i)
+                    op1 = wp.get_euclidean_operation(cell.matrix, i)
                     if wp.euclidean:
                         p2 = np.dot(op1.operate(p0), cell.inv_matrix)
                     else:

@@ -30,7 +30,6 @@ from pyxtal.operations import (
     OperationAnalyzer,
     check_images,
 )
-from pyxtal.database.element import Element
 from pyxtal.database.hall import hall_from_hm
 from pyxtal.constants import letters
 # ------------------------------ Constants ---------------------------------------
@@ -52,8 +51,6 @@ t_subgroup = loadfn(rf("pyxtal",'database/t_subgroup.json'))
 k_subgroup = loadfn(rf("pyxtal",'database/k_subgroup.json'))
 wyc_sets = loadfn(rf("pyxtal",'database/wyckoff_sets.json'))
 
-t2h = SymmOp.from_rotation_and_translation([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0])
-Identity = SymmOp.from_xyz_string("x,y,z")
 
 # --------------------------- Group class -----------------------------
 class Group:
@@ -149,21 +146,17 @@ class Group:
                 #self.alias = self.alias.replace("C","I")
             self.wyckoffs = get_wyckoffs(self.number) 
             self.w_symm = get_wyckoff_symmetry(self.number)
-            self.w_symm_m = get_wyckoff_symmetry(self.number, molecular=True)
             self.hall_number = hall_from_hm(self.number)
             self.point_group, self.polar, self.inversion, self.chiral = get_point_group(self.number)
         elif dim == 2:
             self.wyckoffs = get_layer(self.number)
             self.w_symm = get_layer_symmetry(self.number)
-            self.w_symm_m = get_layer_symmetry(self.number, molecular=True)
         elif dim == 1:
             self.wyckoffs = get_rod(self.number)
             self.w_symm = get_rod_symmetry(self.number)
-            self.w_symm_m = get_rod_symmetry(self.number, molecular=True)
         elif dim == 0:
             self.wyckoffs = get_point(self.number)
             self.w_symm = get_point_symmetry(self.number)
-            self.w_symm_m = self.w_symm
 
         self.wyckoff_generators = get_generators(self.number, self.dim)
 
@@ -175,7 +168,6 @@ class Group:
                 "multiplicity": len(self.wyckoffs[i]),
                 "symmetry": self.w_symm[i],
                 "generators": self.wyckoff_generators[i],
-                "symmetry_m": self.w_symm_m[i],
                 "PBC": self.PBC,
                 "dim": self.dim,
                 "number": self.number,
@@ -809,6 +801,13 @@ class Wyckoff_position:
                 self.ops[j] = op1  
         #In, I2/n
 
+    def get_site_symm_wo_translation(self):
+        ops = []
+        for op in self.symmetry[0]:
+            op = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0])
+            ops.append(op)
+        return ops
+
     def equivalent_set(self, index):
         """
         Transform the wp to another equivalent set.
@@ -985,7 +984,6 @@ class Wyckoff_position:
 
             wp.multiplicity = len(wp.ops)
             wp.symmetry = get_wyckoff_symmetry(wp.number)[wp.index]
-            wp.symmetry_m = get_wyckoff_symmetry(wp.number, molecular=True)[wp.index]
             wp.generators = get_generators(wp.number, dim)[wp.index]
 
         elif dim == 2:
@@ -1002,7 +1000,6 @@ class Wyckoff_position:
 
             wp.multiplicity = len(wp.ops)
             wp.symmetry = get_layer_symmetry(wp.number)[wp.index]
-            wp.symmetry_m = get_layer_symmetry(wp.number, molecular=True)[wp.index]
             wp.generators = get_generators(wp.number, dim)[wp.index]
 
         elif dim == 1:
@@ -1019,7 +1016,6 @@ class Wyckoff_position:
 
             wp.multiplicity = len(wp.ops)
             wp.symmetry = get_rod_symmetry(wp.number)[wp.index]
-            wp.symmetry_m = get_rod_symmetry(wp.number, molecular=True)[wp.index]
             wp.generators = get_generators(wp.number, dim)[wp.index]
 
         elif dim == 0:
@@ -1071,6 +1067,7 @@ class Wyckoff_position:
                         m2[i][j] = 0
             return SymmOp(m2)
 
+        Identity = SymmOp.from_xyz_string("x,y,z")
         # new_ops = [filter_zeroes(op*gen_op) for op in gen_pos]
         new_ops = [
             filter_zeroes(SymmOp(np.dot(op.affine_matrix, gen_op.affine_matrix)))
@@ -1156,7 +1153,7 @@ class Wyckoff_position:
         return self.multiplicity
 
     def get_site_symmetry(self):
-        self.site_symm = ss_string_from_ops(self.symmetry_m[0], self.number, dim=self.dim)
+        self.site_symm = ss_string_from_ops(self.symmetry[0], self.number, dim=self.dim)
 
     def gen_pos(self):
         """
@@ -1275,7 +1272,7 @@ class Wyckoff_position:
             else:
                 return pt, wp, valid_ori
 
-    def get_euclidean_rotation(self, cell, idx=0):
+    def get_euclidean_operation(self, cell, idx=0):
         """
         return the symmetry operation object at the Euclidean space 
 
@@ -2301,7 +2298,7 @@ def get_point(num, organized=False):
         return wyckoffs
 
 
-def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
+def get_wyckoff_symmetry(sg, PBC=[1, 1, 1]):
     #QZ: to get rid of something
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
@@ -2312,11 +2309,6 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
     Args:
         sg: the international spacegroup number
         PBC: A periodic boundary condition list, Ex: [1,1,1] -> full 3d periodic
-        molecular: whether or not to return the Euclidean point symmetry
-            operations. If True, cuts off translational part of operation, and
-            converts non-orthogonal operations (3-fold and 6-fold rotations)
-            to (orthogonal) pure rotations. Should be used when dealing with
-            molecular crystals
 
     Returns:
         a 3d list of SymmOp objects representing the site symmetry of each
@@ -2333,8 +2325,6 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
 
     symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
     symmetry = []
-    convert = False
-    if molecular and 143 <= sg <= 194: convert = True
     # Loop over Wyckoff positions
     for x, w in zip(symmetry_strings, wyckoffs):
         if PBC != [1, 1, 1]:
@@ -2353,15 +2343,7 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
                     # Loop over ops
                     for z in y:
                         op = SymmOp.from_xyz_string(z)
-                        # Convert non-orthogonal trigonal/hexagonal operations
-                        if convert: op = t2h * op * t2h.inverse
-                        if not molecular:
-                            symmetry[-1][-1].append(op)
-                        else:
-                            op = SymmOp.from_rotation_and_translation(
-                                op.rotation_matrix, [0, 0, 0]
-                            )
-                            symmetry[-1][-1].append(op)
+                        symmetry[-1][-1].append(op)
         else:
             symmetry.append([])
             # Loop over points in WP
@@ -2370,20 +2352,11 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1], molecular=False):
                 # Loop over ops
                 for z in y:
                     op = SymmOp.from_xyz_string(z)
-                    if convert:
-                        # Convert non-orthogonal trigonal/hexagonal operations
-                        op = t2h * op * t2h.inverse
-                    if not molecular:
-                        symmetry[-1][-1].append(op)
-                    else:
-                        op = SymmOp.from_rotation_and_translation(
-                            op.rotation_matrix, [0, 0, 0]
-                        )
-                        symmetry[-1][-1].append(op)
+                    symmetry[-1][-1].append(op)
     return symmetry
 
 
-def get_layer_symmetry(num, molecular=False):
+def get_layer_symmetry(num):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
     - 1st index: index of WP in group (0 is the WP with largest multiplicity)
@@ -2392,11 +2365,6 @@ def get_layer_symmetry(num, molecular=False):
 
     Args:
         num: the layer group number
-        molecular: whether or not to return the Euclidean point symmetry
-            operations. If True, cuts off translational part of operation, and
-            converts non-orthogonal operations (3-fold and 6-fold rotations)
-            to (orthogonal) pure rotations. Should be used when dealing with
-            molecular crystals
 
     Returns:
         a 3d list of SymmOp objects representing the site symmetry of each
@@ -2406,7 +2374,6 @@ def get_layer_symmetry(num, molecular=False):
     symmetry_strings = eval(layer_symmetry_df["0"][num])
     symmetry = []
     convert = False
-    if molecular and num >= 65: convert = True
     # Loop over Wyckoff positions
     for x in symmetry_strings:
         symmetry.append([])
@@ -2416,20 +2383,11 @@ def get_layer_symmetry(num, molecular=False):
             # Loop over ops
             for z in y:
                 op = SymmOp.from_xyz_string(z)
-                if convert:
-                    # Convert non-orthogonal trigonal/hexagonal operations
-                    op = t2h * op * t2h.inverse
-                if not molecular:
-                    symmetry[-1][-1].append(op)
-                else:
-                    op = SymmOp.from_rotation_and_translation(
-                        op.rotation_matrix, [0, 0, 0]
-                    )
-                    symmetry[-1][-1].append(op)
+                symmetry[-1][-1].append(op)
     return symmetry
 
 
-def get_rod_symmetry(num, molecular=False):
+def get_rod_symmetry(num):
     """
     Returns a list of Wyckoff position site symmetry for a given Rod group.
     1st index: index of WP in group (0 is the WP with largest multiplicity)
@@ -2438,11 +2396,6 @@ def get_rod_symmetry(num, molecular=False):
 
     Args:
         num: the Rod group number
-        molecular: whether or not to return the Euclidean point symmetry
-            operations. If True, cuts off translational part of operation, and
-            converts non-orthogonal operations (3-fold and 6-fold rotations)
-            to (orthogonal) pure rotations. Should be used when dealing with
-            molecular crystals
 
     Returns:
         a 3d list of SymmOp objects representing the site symmetry of each
@@ -2451,8 +2404,6 @@ def get_rod_symmetry(num, molecular=False):
 
     symmetry_strings = eval(rod_symmetry_df["0"][num])
     symmetry = []
-    convert = False
-    if molecular and num >= 42: convert = True
     # Loop over Wyckoff positions
     for x in symmetry_strings:
         symmetry.append([])
@@ -2462,15 +2413,7 @@ def get_rod_symmetry(num, molecular=False):
             # Loop over ops
             for z in y:
                 op = SymmOp.from_xyz_string(z)
-                    # Convert non-orthogonal trigonal/hexagonal operations
-                if convert: op = t2h * op * t2h.inverse
-                if not molecular:
-                    symmetry[-1][-1].append(op)
-                else:
-                    op = SymmOp.from_rotation_and_translation(
-                        op.rotation_matrix, [0, 0, 0]
-                    )
-                    symmetry[-1][-1].append(op)
+                symmetry[-1][-1].append(op)
     return symmetry
 
 
@@ -2483,8 +2426,6 @@ def get_point_symmetry(num):
 
     Args:
         num: the point group number
-        molecular: whether or not to convert to Euclidean reference frame
-            (for hexagonal lattices: point groups 16-27)
 
     Returns:
         a 3d list of SymmOp objects representing the site symmetry of each
@@ -3166,6 +3107,5 @@ def para2ferro(pg):
     elif pg == 'm-3m': #6
         #return ['1', 'm(s)', 'm(p)', 'mm2', '4mm', '3m']
         return ['1', 'm', 'mm2', '4mm', '3m']
-
 
 

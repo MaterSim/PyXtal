@@ -881,7 +881,7 @@ class pyxtal_molecule:
         elif wp.index > 1 and self.pga.sch_symbol == 'C1':
             return []
 
-        symm_w = wp.symmetry_m[0]
+        symm_w = wp.get_site_symm_wo_translation() #symmetry without translation 
         # molecule has fewer symops
         if len(self.pg[0]) < len(symm_w):
             return []
@@ -1348,7 +1348,7 @@ def is_compatible_symmetry(mol, wp):
     if len(mol) == 1 or wp.index == 0:
         return True
     pga = PointGroupAnalyzer(mol)
-    for op in wp.symmetry_m[0]:
+    for op in wp.get_site_symm_wo_translation(): #symmetry without translation
         #print("XXXX", pga.is_valid_op(op), op.as_xyz_string())
         if not pga.is_valid_op(op):
             return False
