@@ -328,7 +328,7 @@ class pyxtal:
             self.lattice = struc.lattice
             self.molecules = pmols
             self.numMols = struc.numMols
-            self.diag = struc.diag
+            self.diag = False #struc.diag
             self.valid = True # Need to add a check function
             self.optimize_lattice()
         else:
@@ -810,7 +810,8 @@ class pyxtal:
                         rot = g1s[0].affine_matrix[:3,:3].T
                     else:
                         #for special wyc, needs to get better treatment
-                        rot = wp1.generators_m[id].affine_matrix[:3,:3].T
+                        #rot = wp1.generators_m[id].affine_matrix[:3,:3].T
+                        rot, tau0 = wp1.get_euclidean_rotation(id)
 
                     # xyz in new lattice
                     #coord1 = np.dot(coord0, rot)
@@ -997,7 +998,7 @@ class pyxtal:
         else:
             raise RuntimeError("No valid structure can be converted to ase.")
 
-    def to_pymatgen(self, resort=True):
+    def to_pymatgen(self, resort=True, shape='upper'):
         """
         export to Pymatgen structure object.
         """
@@ -1005,6 +1006,7 @@ class pyxtal:
         if self.valid:
             if self.dim > 0:
                 lattice = self.lattice.copy()
+                #lattice.reset_matrix(shape)
                 coords, species = self._get_coords_and_species()
                 if resort:
                     permutation = sorted(range(len(species)),key=species.__getitem__)
@@ -1109,6 +1111,9 @@ class pyxtal:
             sites = self.mol_sites
         else:
             sites = self.atom_sites
+
+        lattice0 = lattice
+        diag = False
 
         change_lat = True
         for j, site in enumerate(sites):
@@ -1542,22 +1547,27 @@ class pyxtal:
             msg = 'Unknown CSD entry: ' + csd_code
             raise CSDError(msg)
 
+
         if entry.has_3d_structure:
             smi = entry.molecule.smiles
             cif = entry.to_string(format='cif')
             smiles = [s+'.smi' for s in smi.split('.')]
-
+            self.tag = {'smiles': smi, 
+                        'csd_code': csd_code,
+                        'ccdc_number': entry.ccdc_number,
+                        'publication': entry.publication, 
+                       }
+            
+            cif = process_csd_cif(cif) #, remove_H=True)
+            pmg = Structure.from_str(cif, fmt='cif')
+            remove_H = False
+            #print(cif)
             try:
                 pmg = Structure.from_str(cif, fmt='cif')
             except:
-                print("Pymatgen cannot read the cif, remove H")
-                cif = process_csd_cif(cif, remove_H=True)
-                try:
-                    pmg = Structure.from_str(cif, fmt='cif')
-                except:
-                    print(cif)
-                    msg = "Problem in parsing CSD cif"
-                    raise CSDError(msg)
+                print(cif)
+                msg = "Problem in parsing CSD cif"
+                raise CSDError(msg)
 
             organic = True
             for ele in pmg.composition.elements:
@@ -1576,6 +1586,7 @@ class pyxtal:
                 except ReadSeedError:
                     try:
                         self.from_seed(pmg, smiles, add_H=True)
+                        remove_H = True
                     except:
                         msg = 'unknown problems in Reading CSD file'
                         raise CSDError(msg)
@@ -1586,3 +1597,36 @@ class pyxtal:
         else:
             msg = csd_code + ' does not have 3D structure'
             raise CSDError(msg)
+
+        #check if the dumped cif is correct
+        cif0 = self.to_file()
+        try:
+            pmg_c = Structure.from_str(cif0, fmt='cif')
+        except:
+            print(cif0)
+            import sys; sys.exit()
+
+        #check if the structure is consistent with the origin
+        pmg0 = self.to_pymatgen() #shape='lower')
+        if remove_H:
+            print("REMOVE H")
+            pmg.remove_species('H')
+            pmg0.remove_species('H')
+
+        import pymatgen.analysis.structure_matcher as sm
+        if not sm.StructureMatcher().fit(pmg0, pmg): 
+            pmg = Structure.from_str(cif, fmt='cif')
+            #pmg0 = Structure.from_str(self.to_file(), fmt='cif')
+            pmg0 = Structure.from_str(pmg0.to(fmt='cif'), fmt='cif')
+            print(cif)
+            #pmg0.remove_species('H'); pmg0.remove_species('O')
+            #pmg.remove_species('H'); pmg.remove_species('O')
+            #print(pmg0.to(fmt='cif'))
+            print(sm.StructureMatcher().fit(pmg0, pmg))
+            #print(pmg) #reference
+            #print(pmg0) #pyxtal
+            #print(cif)
+            #print(self.to_file())
+            print("Wrong", csd_code); import sys; sys.exit()
+
+

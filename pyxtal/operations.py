@@ -827,6 +827,9 @@ class OperationAnalyzer(SymmOp):
         return opa1.is_conjugate(op2)
 
 def find_ids(coords, ref):
+    """
+    find the refernce ids that can match
+    """
     ids = []
     #print('ref', ref)
     for coord in coords:

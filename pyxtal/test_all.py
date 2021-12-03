@@ -18,6 +18,9 @@ from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
 from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
 
+#import warnings
+#warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 cif_path = resource_filename("pyxtal", "database/cifs/")
 l0 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
 l1 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
@@ -26,6 +29,9 @@ l3 = Lattice.from_para(4.08, 7.13, 5.50, 90, 38, 90, ltype="monoclinic")
 l4 = Lattice.from_para( 71.3649,   9.1273,  10.0753,  90.0000,  20.7978,  90.0000, ltype="monoclinic")
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_index(36, "4a")
+
+wp6 = Wyckoff_position.from_group_and_index(167, 0)
+l6 = Lattice.from_para(9.647000, 9.647000, 7.281000, 90, 90, 120, ltype="rhombohedral")
 
 
 class TestGroup(unittest.TestCase):
@@ -134,7 +140,7 @@ class TestOptLat(unittest.TestCase):
 
 
 class TestWP(unittest.TestCase):
-    def test_wp(self):
+    def test_wp_label(self):
         symbol = str(wp1.multiplicity) + wp1.letter
         self.assertTrue(symbol == "8b")
         symbol = str(wp2.multiplicity) + wp2.letter
@@ -148,20 +154,46 @@ class TestWP(unittest.TestCase):
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol == "8b")
 
+        wp = Group(167)[0]
+        cell = np.diag([9, 9, 7])
+        for pt in [[0.12, 0, 0.25], [0, 0.1316, 0.25]]:
+            _, wpt, _ = wp.merge(pt, cell, 0.1)
+            symbol = str(wpt.multiplicity) + wpt.letter
+            self.assertTrue(symbol == "18e")
+
+        for pt in [[0, 0, 3/4], [2/3, 1/3, 7/12]]:
+            _, wpt, _ = wp.merge(pt, cell, 0.1)
+            symbol = str(wpt.multiplicity) + wpt.letter
+            self.assertTrue(symbol == "6a")
+
+    def test_search_generator(self):
+        wp = Group(167)[1]
+        for pt in [[0, 0.13, 0.25], [0.13, 0, 0.25]]:
+            _, dist = wp.search_generator(pt)
+            self.assertTrue(dist<1e-3)
+
     def test_get_wyckoff(self):
         for i in [1, 2, 229, 230]:
             get_wyckoffs(i)
             get_wyckoffs(i, organized=True)
 
-    def is_equivalent(self):
+    def test_is_equivalent(self):
         wp = Group(15)[0]
-        a = [ 0.10052793,  0.12726851,  0.27405404],
+        a = [ 0.10052793,  0.12726851,  0.27405404]
         b = [-0.10052642, -0.12726848, -0.27405526]
-        c = [ 0.60052642,  -0.12726848+0.5,  0.27405526]
-        d = [4.22024472e-06, 2.54537267e-01, 3.24121580e-06]
+        c = [ 0.60052642,  0.62726848,  0.27405526]
+        d = [-0.60052642, -0.62726848, -0.27405526]
+        e = [0, 2.54537267e-01, 0]
         self.assertTrue(wp.is_equivalent(a,b))
         self.assertTrue(wp.is_equivalent(b,c))
-        self.assertFalse(wp.is_equivalent(a,d))
+        self.assertTrue(wp.is_equivalent(d,a))
+        self.assertFalse(wp.is_equivalent(a,e))
+
+        wp = Group(15)[1]
+        a = [ 0.00,  0.127,  0.254]
+        b = [-0.01, -0.127, -0.250]
+        self.assertTrue(wp.is_equivalent(a,b))
+
 
 class TestDof(unittest.TestCase):
     def test_atomic(self):
