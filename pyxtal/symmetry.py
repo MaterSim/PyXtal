@@ -51,7 +51,6 @@ t_subgroup = loadfn(rf("pyxtal",'database/t_subgroup.json'))
 k_subgroup = loadfn(rf("pyxtal",'database/k_subgroup.json'))
 wyc_sets = loadfn(rf("pyxtal",'database/wyckoff_sets.json'))
 
-
 # --------------------------- Group class -----------------------------
 class Group:
     """
@@ -138,27 +137,18 @@ class Group:
         self.symbol, self.number = get_symbol_and_number(group, dim)
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
         self.alias = None
+
         # Wyckoff positions, site_symmetry, generator
-        # QZ: check if we can just use the get_wyckoff_symmetry function
+        self.wyckoffs = get_wyckoffs(self.number, dim=dim) 
+        self.w_symm = get_wyckoff_symmetry(self.number, dim=dim)
+        self.wyckoff_generators = get_generators(self.number, self.dim)
+
         if dim == 3:
             if self.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                 self.alias = self.symbol.replace("c","n")
                 #self.alias = self.alias.replace("C","I")
-            self.wyckoffs = get_wyckoffs(self.number) 
-            self.w_symm = get_wyckoff_symmetry(self.number)
             self.hall_number = hall_from_hm(self.number)
             self.point_group, self.polar, self.inversion, self.chiral = get_point_group(self.number)
-        elif dim == 2:
-            self.wyckoffs = get_layer(self.number)
-            self.w_symm = get_layer_symmetry(self.number)
-        elif dim == 1:
-            self.wyckoffs = get_rod(self.number)
-            self.w_symm = get_rod_symmetry(self.number)
-        elif dim == 0:
-            self.wyckoffs = get_point(self.number)
-            self.w_symm = get_point_symmetry(self.number)
-
-        self.wyckoff_generators = get_generators(self.number, self.dim)
 
         wpdicts = [
             {
@@ -2083,7 +2073,7 @@ def symmetry_element_from_axis(axis):
     return SymmOp(m)
 
 
-def get_wyckoffs(sg, organized=False, PBC=[1, 1, 1]):
+def get_wyckoffs(num, organized=False, PBC=[1, 1, 1], dim=3):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
     organize the list based on multiplicity (this is used for
@@ -2106,7 +2096,8 @@ def get_wyckoffs(sg, organized=False, PBC=[1, 1, 1]):
     list.
 
     Args:
-        sg: the international spacegroup number
+        num: the international group number
+        dim: dimension [0, 1, 2, 3]
         organized: whether or not to organize the list based on multiplicity
         PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
@@ -2114,192 +2105,79 @@ def get_wyckoffs(sg, organized=False, PBC=[1, 1, 1]):
     Returns: 
         a list of Wyckoff positions, each of which is a list of SymmOp's
     """
-    if PBC != [1, 1, 1]:
-        coor = [0, 0, 0]
-        for i, a in enumerate(PBC):
-            if not a:
-                coor[i] = 0.5
-        coor = np.array(coor)
-
-    wyckoff_strings = eval(wyckoff_df["0"][sg])
-    wyckoffs = []
-    for x in wyckoff_strings:
+    if dim == 3:
         if PBC != [1, 1, 1]:
-            op = SymmOp.from_xyz_string(x[0])
-            coor1 = op.operate(coor)
-            invalid = False
+            coor = [0, 0, 0]
             for i, a in enumerate(PBC):
                 if not a:
-                    if not abs(coor1[i] - 0.5) < 1e-2:
-                        # invalid wyckoffs for layer group
-                        invalid = True
-            if invalid is False:
+                    coor[i] = 0.5
+            coor = np.array(coor)
+
+        wyckoff_strings = eval(wyckoff_df["0"][num])
+        wyckoffs = []
+        for x in wyckoff_strings:
+            if PBC != [1, 1, 1]:
+                op = SymmOp.from_xyz_string(x[0])
+                coor1 = op.operate(coor)
+                invalid = False
+                for i, a in enumerate(PBC):
+                    if not a:
+                        if not abs(coor1[i] - 0.5) < 1e-2:
+                            # invalid wyckoffs for layer group
+                            invalid = True
+                if invalid is False:
+                    wyckoffs.append([])
+                    for y in x:
+                        wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+            else:
                 wyckoffs.append([])
                 for y in x:
                     wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+        if organized:
+            wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
+            old = len(wyckoffs[0])
+            for wp in wyckoffs:
+                mult = len(wp)
+                if mult != old:
+                    wyckoffs_organized.append([])
+                    old = mult
+                wyckoffs_organized[-1].append(wp)
+            return wyckoffs_organized
         else:
+            return wyckoffs
+
+    else:
+        if dim == 2:
+            wyckoff_strings = eval(layer_df["0"][num])
+        elif dim == 1:
+            wyckoff_strings = eval(rod_df["0"][num])
+        elif dim == 0:
+            wyckoff_strings = eval(point_df["0"][num])
+
+        wyckoffs = []
+        for x in wyckoff_strings:
             wyckoffs.append([])
             for y in x:
-                wyckoffs[-1].append(SymmOp.from_xyz_string(y))
-    if organized:
-        wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
-        old = len(wyckoffs[0])
-        for wp in wyckoffs:
-            mult = len(wp)
-            if mult != old:
-                wyckoffs_organized.append([])
-                old = mult
-            wyckoffs_organized[-1].append(wp)
-        return wyckoffs_organized
-    else:
-        return wyckoffs
+                if dim == 0:
+                    wyckoffs[-1].append(SymmOp(y))
+                else:
+                    wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+        if organized:
+            wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
+            old = len(wyckoffs[0])
+            for wp in wyckoffs:
+                mult = len(wp)
+                if mult != old:
+                    wyckoffs_organized.append([])
+                    old = mult
+                wyckoffs_organized[-1].append(wp)
+            return wyckoffs_organized
+        else:
+            return wyckoffs
 
 
-def get_layer(num, organized=False):
-    """
-    Returns a list of Wyckoff positions for a given 2D layer group. Has
-    option to organize the list based on multiplicity (this is used for
-    random_crystal_2D.wyckoffs) 
-    
-    For an unorganized list:
 
-        - 1st index: index of WP in layer group (0 is the WP with largest multiplicity)
-        - 2nd index: a SymmOp object in the WP
-
-    For an organized list:
-
-        - 1st index: specifies multiplicity (0 is the largest multiplicity)
-        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
-        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
-
-    You may switch between organized and unorganized lists using the methods
-    i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
-    entry in an unorganized list, it will be the [j][k] entry in an organized
-    list.
-
-    For layer groups with more than one possible origin, origin choice 2 is
-    used.
-
-    Args:
-        num: the international layer group number
-        organized: whether or not to organize the list based on multiplicity
-    
-    Returns: 
-        a list of Wyckoff positions, each of which is a list of SymmOp's
-    """
-    wyckoff_strings = eval(layer_df["0"][num])
-    wyckoffs = []
-    for x in wyckoff_strings:
-        wyckoffs.append([])
-        for y in x:
-            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
-    if organized:
-        wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
-        old = len(wyckoffs[0])
-        for wp in wyckoffs:
-            mult = len(wp)
-            if mult != old:
-                wyckoffs_organized.append([])
-                old = mult
-            wyckoffs_organized[-1].append(wp)
-        return wyckoffs_organized
-    else:
-        return wyckoffs
-
-
-def get_rod(num, organized=False):
-    """
-    Returns a list of Wyckoff positions for a given 1D Rod group. Has option to
-    organize the list based on multiplicity (this is used for
-    random_crystal_1D.wyckoffs) 
-    
-    For an unorganized list:
-
-        - 1st index: index of WP in layer group (0 is the WP with largest multiplicity)
-        - 2nd index: a SymmOp object in the WP
-
-    For an organized list:
-
-        - 1st index: specifies multiplicity (0 is the largest multiplicity)
-        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
-        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
-
-    You may switch between organized and unorganized lists using the methods
-    i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
-    entry in an unorganized list, it will be the [j][k] entry in an organized
-    list.
-
-    For Rod groups with more than one possible setting, setting choice 1
-    is used.
-
-    Args:
-        num: the international Rod group number
-        organized: whether or not to organize the list based on multiplicity
-    
-    Returns: 
-        a list of Wyckoff positions, each of which is a list of SymmOp's
-    """
-    wyckoff_strings = eval(rod_df["0"][num])
-    wyckoffs = []
-    for x in wyckoff_strings:
-        wyckoffs.append([])
-        for y in x:
-            wyckoffs[-1].append(SymmOp.from_xyz_string(y))
-    if organized:
-        wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
-        old = len(wyckoffs[0])
-        for wp in wyckoffs:
-            mult = len(wp)
-            if mult != old:
-                wyckoffs_organized.append([])
-                old = mult
-            wyckoffs_organized[-1].append(wp)
-        return wyckoffs_organized
-    else:
-        return wyckoffs
-
-
-def get_point(num, organized=False):
-    """
-    Returns a list of Wyckoff positions for a given crystallographic point group.
-    Has option to organize the list based on multiplicity.
-
-    1st index: index of WP in layer group (0 is the WP with largest multiplicity)
-    2nd index: a SymmOp object in the WP
-    For point groups except T, Th, O, Td, and Oh, unique axis z is used.
-
-    Args:
-        num: the point group number (see bottom of source code for a list)
-        organized: whether or not to organize the list based on multiplicity
-        molecular: whether or not to convert to Euclidean reference frame
-            (for hexagonal lattices: point groups 16-27)
-    
-    Returns: 
-        a list of Wyckoff positions, each of which is a list of SymmOp's
-    """
-    wyckoff_strings = eval(point_df["0"][num])
-    wyckoffs = []
-    for x in wyckoff_strings:
-        wyckoffs.append([])
-        for y in x:
-            op = SymmOp(y)
-            wyckoffs[-1].append(op)
-    if organized:
-        wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
-        old = len(wyckoffs[0])
-        for wp in wyckoffs:
-            mult = len(wp)
-            if mult != old:
-                wyckoffs_organized.append([])
-                old = mult
-            wyckoffs_organized[-1].append(wp)
-        return wyckoffs_organized
-    else:
-        return wyckoffs
-
-
-def get_wyckoff_symmetry(sg, PBC=[1, 1, 1]):
-    #QZ: to get rid of something
+def get_wyckoff_symmetry(num, dim=3, PBC=[1, 1, 1]):
     """
     Returns a list of Wyckoff position site symmetry for a given space group.
     1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -2308,34 +2186,44 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1]):
 
     Args:
         sg: the international spacegroup number
+        dim: 0, 1, 2, 3
         PBC: A periodic boundary condition list, Ex: [1,1,1] -> full 3d periodic
 
     Returns:
         a 3d list of SymmOp objects representing the site symmetry of each
         point in each Wyckoff position
     """
-    if PBC != [1, 1, 1]:
-        coor = [0, 0, 0]
-        for i, a in enumerate(PBC):
-            if not a:
-                coor[i] = 0.5
-        coor = np.array(coor)
-    wyckoffs = get_wyckoffs(sg, PBC=PBC)
-
-
-    symmetry_strings = eval(wyckoff_symmetry_df["0"][sg])
-    symmetry = []
-    # Loop over Wyckoff positions
-    for x, w in zip(symmetry_strings, wyckoffs):
+    if dim == 3:
         if PBC != [1, 1, 1]:
-            op = w[0]
-            coor1 = op.operate(coor)
-            invalid = False
+            coor = [0, 0, 0]
             for i, a in enumerate(PBC):
                 if not a:
-                    if not abs(coor1[i] - 0.5) < 1e-2:
-                        invalid = True
-            if not invalid:
+                    coor[i] = 0.5
+            coor = np.array(coor)
+        wyckoffs = get_wyckoffs(num, PBC=PBC)
+
+        symmetry_strings = eval(wyckoff_symmetry_df["0"][num])
+        symmetry = []
+        # Loop over Wyckoff positions
+        for x, w in zip(symmetry_strings, wyckoffs):
+            if PBC != [1, 1, 1]:
+                op = w[0]
+                coor1 = op.operate(coor)
+                invalid = False
+                for i, a in enumerate(PBC):
+                    if not a:
+                        if not abs(coor1[i] - 0.5) < 1e-2:
+                            invalid = True
+                if not invalid:
+                    symmetry.append([])
+                    # Loop over points in WP
+                    for y in x:
+                        symmetry[-1].append([])
+                        # Loop over ops
+                        for z in y:
+                            op = SymmOp.from_xyz_string(z)
+                            symmetry[-1][-1].append(op)
+            else:
                 symmetry.append([])
                 # Loop over points in WP
                 for y in x:
@@ -2344,107 +2232,32 @@ def get_wyckoff_symmetry(sg, PBC=[1, 1, 1]):
                     for z in y:
                         op = SymmOp.from_xyz_string(z)
                         symmetry[-1][-1].append(op)
-        else:
+        return symmetry
+
+    else:
+        if dim == 2:
+            symmetry_strings = eval(layer_symmetry_df["0"][num])
+        elif dim == 1:
+            symmetry_strings = eval(rod_symmetry_df["0"][num])
+        elif dim == 0:
+            symmetry_strings = eval(point_symmetry_df["0"][num])
+
+        symmetry = []
+        # Loop over Wyckoff positions
+        for x in symmetry_strings:
             symmetry.append([])
             # Loop over points in WP
             for y in x:
                 symmetry[-1].append([])
                 # Loop over ops
                 for z in y:
-                    op = SymmOp.from_xyz_string(z)
+                    if dim == 0:
+                        op = SymmOp(z)
+                    else:
+                        op = SymmOp.from_xyz_string(z)
                     symmetry[-1][-1].append(op)
-    return symmetry
-
-
-def get_layer_symmetry(num):
-    """
-    Returns a list of Wyckoff position site symmetry for a given space group.
-    - 1st index: index of WP in group (0 is the WP with largest multiplicity)
-    - 2nd index: a point within the WP
-    - 3rd index: a site symmetry SymmOp of the point
-
-    Args:
-        num: the layer group number
-
-    Returns:
-        a 3d list of SymmOp objects representing the site symmetry of each
-        point in each Wyckoff position
-    """
-
-    symmetry_strings = eval(layer_symmetry_df["0"][num])
-    symmetry = []
-    convert = False
-    # Loop over Wyckoff positions
-    for x in symmetry_strings:
-        symmetry.append([])
-        # Loop over points in WP
-        for y in x:
-            symmetry[-1].append([])
-            # Loop over ops
-            for z in y:
-                op = SymmOp.from_xyz_string(z)
-                symmetry[-1][-1].append(op)
-    return symmetry
-
-
-def get_rod_symmetry(num):
-    """
-    Returns a list of Wyckoff position site symmetry for a given Rod group.
-    1st index: index of WP in group (0 is the WP with largest multiplicity)
-    2nd index: a point within the WP
-    3rd index: a site symmetry SymmOp of the point
-
-    Args:
-        num: the Rod group number
-
-    Returns:
-        a 3d list of SymmOp objects representing the site symmetry of each
-        point in each Wyckoff position
-    """
-
-    symmetry_strings = eval(rod_symmetry_df["0"][num])
-    symmetry = []
-    # Loop over Wyckoff positions
-    for x in symmetry_strings:
-        symmetry.append([])
-        # Loop over points in WP
-        for y in x:
-            symmetry[-1].append([])
-            # Loop over ops
-            for z in y:
-                op = SymmOp.from_xyz_string(z)
-                symmetry[-1][-1].append(op)
-    return symmetry
-
-
-def get_point_symmetry(num):
-    """
-    Returns a list of Wyckoff position site symmetry for a given point group.
-    1st index: index of WP in group (0 is the WP with largest multiplicity)
-    2nd index: a point within the WP
-    3rd index: a site symmetry SymmOp of the point
-
-    Args:
-        num: the point group number
-
-    Returns:
-        a 3d list of SymmOp objects representing the site symmetry of each
-        point in each Wyckoff position
-    """
-    symmetry_strings = eval(point_symmetry_df["0"][num])
-    symmetry = []
-    # Loop over Wyckoff positions
-    for wp in symmetry_strings:
-        symmetry.append([])
-        # Loop over points in WP
-        for point in wp:
-            symmetry[-1].append([])
-            # Loop over ops
-            for m in point:
-                op = SymmOp(m)
-                symmetry[-1][-1].append(op)
-    return symmetry
-
+        return symmetry
+        
 
 def get_generators(num, dim=3, PBC=[1, 1, 1]):
     """
@@ -2522,20 +2335,6 @@ def get_generators(num, dim=3, PBC=[1, 1, 1]):
         return generators
 
 
-def general_position(number, dim=3):
-    """
-    Returns a Wyckoff_position object for the given group.
-
-    Args:
-        number: the international number of the group
-        dim: 3: space group, 2: layer group, 1: Rod group
-
-    Returns:
-        a Wyckoff_position object for the general position
-    """
-    return Wyckoff_position.from_group_and_index(number, 0, dim=dim)
-
-
 def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
     """
     Given a point and a general Wyckoff position, return the list of symmetry
@@ -2551,7 +2350,6 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
             point's orientaion
         gen_pos: the general position of the spacegroup. Can be a Wyckoff_position
             object or list of SymmOp objects.
-            Can be obtained using general_position()
         tol:
             the numberical tolerance for determining equivalent positions and
             orientations.
