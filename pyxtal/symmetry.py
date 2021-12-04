@@ -50,7 +50,7 @@ symbols = loadfn(rf("pyxtal", "database/symbols.json"))
 t_subgroup = loadfn(rf("pyxtal",'database/t_subgroup.json'))
 k_subgroup = loadfn(rf("pyxtal",'database/k_subgroup.json'))
 wyc_sets = loadfn(rf("pyxtal",'database/wyckoff_sets.json'))
-
+hex_cell = np.array([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]])
 # --------------------------- Group class -----------------------------
 class Group:
     """
@@ -742,6 +742,7 @@ class Wyckoff_position:
     def __str__(self, supress=False):
         if self.dim not in list(range(4)):
             return "invalid crystal dimension. Must be a number between 0 and 3."
+        if not hasattr(self, "site_symm"): self.get_site_symmetry()   
         s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
         if self.dim == 3:
             s += "space "
@@ -753,10 +754,7 @@ class Wyckoff_position:
             s += "Point group " + self.symbol
         if self.dim != 0:
             s += "group " + str(self.number)
-        #s += " with site symmetry " + self.site_symm
-        s += " with site symmetry " + ss_string_from_ops(
-                self.symmetry_m[0], self.number, dim=self.dim
-        )
+        s += " with site symmetry " + self.site_symm
 
         if not supress:
             for op in self.ops:
@@ -1143,7 +1141,31 @@ class Wyckoff_position:
         return self.multiplicity
 
     def get_site_symmetry(self):
-        self.site_symm = ss_string_from_ops(self.symmetry[0], self.number, dim=self.dim)
+        if self.euclidean:
+            ops = self.get_euclidean_symmetries()
+        else:
+            ops = self.symmetry[0]
+        self.site_symm = ss_string_from_ops(ops, self.number, dim=self.dim)
+
+
+    def get_euclidean_symmetries(self):
+        """
+        return the symmetry operation object at the Euclidean space 
+
+        Returns:
+            list of pymatgen SymmOp object
+        """
+        ops = []
+        for op in self.symmetry[0]:
+            hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
+            ops.append(hat * op * hat.inverse)
+        return ops
+
+    def print_ops(self, ops=None):
+        if ops is None:
+            ops = self.ops
+        for op in ops:
+            print(op.as_xyz_string())
 
     def gen_pos(self):
         """
@@ -1262,7 +1284,7 @@ class Wyckoff_position:
             else:
                 return pt, wp, valid_ori
 
-    def get_euclidean_operation(self, cell, idx=0):
+    def get_euclidean_generator(self, cell, idx=0):
         """
         return the symmetry operation object at the Euclidean space 
 
@@ -1279,6 +1301,7 @@ class Wyckoff_position:
             op = hat * op * hat.inverse
 
         return op
+
 
     def set_euclidean(self):
         convert = False

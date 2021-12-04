@@ -142,6 +142,17 @@ class TestOptLat(unittest.TestCase):
 
 
 class TestWP(unittest.TestCase):
+    def test_wp_site_symm(self):
+        data = [(143, 1, '3 . .'), 
+                (230, 6, '. 3 2'), 
+                (160, 1, '. . m'),
+                (160, 2, '3 m .')]
+        for d in data:
+            (sg, i, symbol) = d
+            wp = Group(sg)[i]
+            wp.get_site_symmetry()
+            self.assertTrue(wp.site_symm == symbol)
+
     def test_wp_label(self):
         symbol = str(wp1.multiplicity) + wp1.letter
         self.assertTrue(symbol == "8b")
@@ -206,7 +217,7 @@ class TestWP(unittest.TestCase):
                     op0 = wp[i]
                     p1 = op0.operate(pt)
                     
-                    op1 = wp.get_euclidean_operation(cell.matrix, i)
+                    op1 = wp.get_euclidean_generator(cell.matrix, i)
                     if wp.euclidean:
                         p2 = np.dot(op1.operate(p0), cell.inv_matrix)
                     else:

@@ -810,7 +810,7 @@ class pyxtal:
                         rot = g1s[0].affine_matrix[:3,:3].T
                     else:
                         #for special wyc, needs to get better treatment
-                        op = wp1.get_euclidean_operation(self.lattice.matrix, id)
+                        op = wp1.get_euclidean_generator(self.lattice.matrix, id)
                         rot = op.affine_matrix[:3, :3].T 
 
                     # xyz in new lattice
