@@ -625,10 +625,10 @@ class pyxtal:
             max_cell: maximum cell reconstruction (float)
 
         Returns:
-            a list of pyxtal structures with lower symmetries
+            a pyxtal structure with lower symmetries
         """
         idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell)
-
+    
         # Try 100 times to see if a valid split can be found
         count = 0
         while count < 100:
@@ -636,7 +636,7 @@ class pyxtal:
             gtype = (t_types+k_types)[id]
             if gtype == 'k':
                 id -= len(t_types)
-            #print(self.group.number, sites, id, gtype)
+            #print(self.group.number, sites, id, gtype, idx)
             splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
             if not splitter.error:
                 if permutations is not None:
@@ -654,6 +654,7 @@ class pyxtal:
                     else:
                         return self._apply_substitution(splitter, permutations)
                 else:
+                    #print('permuation')
                     if splitter.valid_split:
                         special = False
                         if self.molecular:
@@ -734,7 +735,7 @@ class pyxtal:
 
         if idx is None:
             idx = []
-            if not self.molecular:
+            if not self.molecular or self.group.number>142:
                 for i, tran in enumerate(trans):
                     if np.linalg.det(tran[:3,:3])<=max_cell:
                         idx.append(i)
@@ -1458,6 +1459,15 @@ class pyxtal:
                     group_type='k', ignore_special=True)
         elif self.group.number == 113 and self.mol_sites[0].wp.multiplicity==2:
             s = self.subgroup_once(eps=0, mut_lat=False, H=18, \
+                    group_type='t', ignore_special=True)
+        elif self.group.number == 205 and self.mol_sites[0].wp.multiplicity==4:
+            s = self.subgroup_once(eps=0, mut_lat=False, H=61, \
+                    group_type='t', ignore_special=True)
+        elif self.group.number == 167 and self.mol_sites[0].wp.multiplicity==6:
+            s = self.subgroup_once(eps=0, mut_lat=False, H=15, \
+                    group_type='t', ignore_special=True)
+        elif self.group.number == 217 and self.mol_sites[0].wp.multiplicity==2:
+            s = self.subgroup_once(eps=0, mut_lat=False, H=121, \
                     group_type='t', ignore_special=True)
         else:
             s = deepcopy(self)
