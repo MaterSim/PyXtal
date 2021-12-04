@@ -1588,7 +1588,7 @@ class pyxtal:
                         self.from_seed(pmg, smiles, add_H=True)
                         remove_H = True
                     except:
-                        msg = 'unknown problems in Reading CSD file'
+                        msg = 'unknown problems in Reading CSD file ' + csd_code
                         raise CSDError(msg)
                 except:
                     msg = 'unknown problems in Reading CSD file'

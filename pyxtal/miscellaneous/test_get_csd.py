@@ -6,10 +6,22 @@ from pyxtal import pyxtal
 from pyxtal.util import search_csd_entries_by_code
 
 strucs = []
-for csd in [#'GLYCIN01', 
-            #'GLYMSN10', 
-            'TROXAN', #'GOBFAF', 'GOBZOO', 
-            'PYRZIN', 'ACETAC', 'ADAMAN01', 
+for csd in [#'GLYCIN01',  'HUSVUM', 'HIHDUZ', 'DOPSIK', 'TABQOG03', 'DUPXOD', 
+            #'GLYMSN10', 'GOBFAF', 'GOBZOO', 'ARAZEZ','HMBENZ21', 'BEMQUF', 'KUZJIB', 
+            #NUMRET long
+            'SUZGUS', 'MABCOL', 'UMEQUB', 'XACXOS', 'AMBZPH',
+            'AMISAS', 'APAPOY', 'HIWZIZ', 'OHUXEV', 'QOJPAI',
+            'HOWTOF', 'NUGCOI', 'NUJMAH', 'NUNJIP', 'ZUZCEF',
+            'VITRUL', 'VOLCOP', 'VOLCOP', 'QOLXEX02', 'UKULAQ',
+            'ACEMID02', 'AFIPIP', 'BUTHEE', 'CELKEK', 'HAHDID',
+            'HEXWIQ01', 'HIFWOJ', 'HIFZIF', 'HIRBAM', 'EHINOB',
+            'HUKYIW', 'HYQUIN06', 'ISIVIR', 'JATBIQ', 'JUDBUI',
+            'AFUVAZ', 'BZCBNL01', 'NUDREK',
+            'HEVRUV', 'JAPCIM', 'TCYETY02', 'ZZZWOU01', 'ELIFOX',
+            'GADLOQ', 'GAJLAI', 'MAMFIT', 'OKIXIS', 'NOLRUC',
+            'PACNOA', 'SABQEV', 'SAJWEJ', 'HAMQOC', 'NUMRET',
+            'HCHXDO', 'HETVUY', 'HIRYOY', 'HIYLOQ01', 'HONWIQ'
+            'TROXAN', 'PYRZIN', 'ACETAC', 'ADAMAN01', 
             'TRIZIN', 'HXMTAM', 'PYRZOL', 'CYHEXO', 'CYTSIN', 
             'IMAZOL01', 'URACIL', 'CYANAM01', 'FORMAM', 'SUCACB02',
             'ECARBM01', 'XAFQAZ', 'KONTIQ', 'XATJOT', 'XAFQON'
