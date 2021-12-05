@@ -1562,7 +1562,16 @@ class pyxtal:
             smi = entry.molecule.smiles
             cif = entry.to_string(format='cif')
             smiles = [s+'.smi' for s in smi.split('.')]
-            self.tag = {'smiles': smi, 
+
+            # remove duplicates
+            smiles = list(set(smiles))
+            smi1 = ''
+            for i, s in enumerate(smiles): 
+                smi1 += s[:-4]
+                if i + 1 < len(smiles): 
+                    smi1 += '.'
+
+            self.tag = {'smiles': smi1, 
                         'csd_code': csd_code,
                         'ccdc_number': entry.ccdc_number,
                         'publication': entry.publication, 
