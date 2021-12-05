@@ -155,6 +155,7 @@ class representation():
                 v = self.x[count]
                 dicts = {}
                 dicts['smile'] = smile
+                dicts['type'] = i
                 dicts['dim'] = 3
                 dicts['PBC'] = [1, 1, 1]
                 dicts['number'] = number
@@ -168,6 +169,7 @@ class representation():
                     dicts['rotor'] = v[6:-1]
                     dicts['reflect'] = int(v[-1])
                 site = mol_site.from_1D_dicts(dicts)
+                site.type = i
                 struc.mol_sites.append(site)
                 struc.numMols[i] += site.wp.multiplicity
                 #move to next rep
