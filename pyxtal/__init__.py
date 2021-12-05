@@ -613,7 +613,8 @@ class pyxtal:
             return new_strucs
 
 
-    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', max_cell=4, mut_lat=True, ignore_special=False):
+    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', \
+            max_cell=4, mut_lat=True, ignore_special=False):
         """
         generate a structure with lower symmetry (for atomic crystals only)
 
@@ -745,7 +746,8 @@ class pyxtal:
                     tran = np.abs(tran[:3,:3])
                     good = True
                     # only accepts trans like [a, b, c] [b, c, a]
-                    if abs(abs(np.linalg.det(tran))-1)>1e-3: 
+                    if self.group.number != 5 and abs(abs(np.linalg.det(tran))-1)>1e-3: 
+                        #print(self.group.number, np.linalg.det(tran))
                         good = False
                     if good:
                         #print(np.linalg.det(tran), tran)
@@ -1454,6 +1456,7 @@ class pyxtal:
             self.transform([[1,0,0],[0,1,0],[1,0,1]])
 
         #QZ: below is a tentative solution
+        g_type = 't'
         if self.group.number == 64 and self.mol_sites[0].wp.multiplicity==4:
             s = self.subgroup_once(eps=0, mut_lat=False, H=61, \
                     group_type='k', ignore_special=True)
@@ -1466,13 +1469,24 @@ class pyxtal:
         elif self.group.number == 167 and self.mol_sites[0].wp.multiplicity==6:
             s = self.subgroup_once(eps=0, mut_lat=False, H=15, \
                     group_type='t', ignore_special=True)
+        elif self.group.number == 204 and self.mol_sites[0].wp.multiplicity==6:
+            s = self.subgroup_once(eps=0, mut_lat=False, H=197, \
+                    group_type='t', ignore_special=True)
+        elif self.group.number == 82 and self.mol_sites[0].wp.multiplicity==4:
+            s = self.subgroup_once(eps=0, mut_lat=False, H=81, \
+                    group_type='k', ignore_special=True)
         elif self.group.number == 217 and self.mol_sites[0].wp.multiplicity==2:
             s = self.subgroup_once(eps=0, mut_lat=False, H=121, \
                     group_type='t', ignore_special=True)
+            s = s.subgroup_once(eps=0, mut_lat=False, H=23, \
+                    group_type='t', ignore_special=True)
+            s = s.subgroup_once(eps=0, mut_lat=False, H=5, \
+                    group_type='t', ignore_special=True)
+            g_type = 'k'
         else:
             s = deepcopy(self)
 
-        sub = s.subgroup_once(eps=0, mut_lat=False)
+        sub = s.subgroup_once(eps=0, group_type=g_type, mut_lat=False)
         sub.optimize_lattice()
         sub.source = "subgroup"
         return sub
