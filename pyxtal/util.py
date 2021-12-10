@@ -9,13 +9,22 @@ from ase import Atoms
 from pyxtal.symmetry import Group
 import re
 
+def find_dir(dirs):
+    """
+    a short function to find the correct dir from a list
+    """
+    skf_dir = None
+    for d in dirs:
+        if os.path.isdir(d):
+            return d
+    raise RuntimeError("Cannot find the dirtory for dftb parameters")
+
 def listToString(s): 
     # initialize an empty string
     #str1 = " " 
     str1 = "" 
     # return string  
     return (str1.join(s))
-
 
 def pymatgen2ase(struc):
     """

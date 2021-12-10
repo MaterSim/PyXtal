@@ -1530,7 +1530,7 @@ class pyxtal:
 
     def show_molecular_cluster(self, id, factor=1.5, max_d=4.0, **kwargs):
         """
-        display the crystal structure
+        display the local packing environment for a selected molecule
         """
         min_ds, neighs, comps = self.get_neighboring_molecules(id, factor, max_d)
         print("Number of neighboring molecules", len(min_ds))
@@ -1574,6 +1574,9 @@ class pyxtal:
 
         if entry.has_3d_structure:
             smi = entry.molecule.smiles
+            if len(smi) > 200:
+                raise CSDError("long smile", smi)
+
             cif = entry.to_string(format='cif')
             smiles = [s+'.smi' for s in smi.split('.')]
 

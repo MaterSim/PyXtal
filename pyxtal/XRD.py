@@ -330,7 +330,9 @@ class XRD():
             plt.close()
 
 
-    def plotly_pxrd(self, profile='gaussian', minimum_I=0.01, res=0.02, FWHM=0.1, height=450, html=None):
+    def plotly_pxrd(self, profile='gaussian', minimum_I=0.01, res=0.02, \
+            FWHM=0.1, height=450, html=None):
+
         import plotly.graph_objects as go
 
         """

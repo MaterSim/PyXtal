@@ -646,7 +646,7 @@ class mol_site:
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
    
-    def _create_matrix(self, center=False):
+    def _create_matrix(self, center=False, ignore=False):
         """
         Used for calculating distances in lattices with periodic boundary
         conditions. When multiplied with a set of points, generates additional
@@ -661,7 +661,7 @@ class mol_site:
         ijk_lists = []
         for id in range(3):
             if self.PBC[id]:
-                if abc[id] > 20 and self.radius<10:
+                if not ignore and abc[id] > 20 and self.radius<10:
                     ijk_lists.append([0])
                 elif abc[id] < 6.5:
                     ijk_lists.append([-2, -1, 0, 1, 2])
@@ -685,7 +685,7 @@ class mol_site:
         return np.array(matrix, dtype=float)
 
 
-    def get_distances(self, coord1, coord2, m2=None, center=True):
+    def get_distances(self, coord1, coord2, m2=None, center=True, ignore=False):
         """
         Compute the distance matrix between the center molecule (m1 length) and 
         neighbors (m2 length) within the PBC consideration (pbc)
@@ -706,7 +706,7 @@ class mol_site:
         N2 = int(len(coord2)/m2)
 
         #peridoic images
-        m = self._create_matrix(center) #PBC matrix
+        m = self._create_matrix(center, ignore) #PBC matrix
         coord2 = np.vstack([coord2 + v for v in m])
 
         #absolute xyz
@@ -718,7 +718,7 @@ class mol_site:
         return d, coord2.reshape([len(m)*N2, m2, 3])
 
 
-    def get_dists_auto(self):
+    def get_dists_auto(self, ignore=False):
         """
         Compute the distances between the periodic images
 
@@ -729,9 +729,9 @@ class mol_site:
         m_length = len(self.numbers)
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
 
-        return self.get_distances(coord1, coord1, center=False)
+        return self.get_distances(coord1, coord1, center=False, ignore=ignore)
 
-    def get_dists_WP(self):
+    def get_dists_WP(self, ignore=False):
         """
         Compute the distances within the WP sites
 
@@ -744,7 +744,7 @@ class mol_site:
         coord1 = coords[:m_length] #1st molecular coords
         coord2 = coords[m_length:] #rest molecular coords
 
-        return self.get_distances(coord1, coord2) 
+        return self.get_distances(coord1, coord2, ignore=ignore) 
 
     def get_min_dist(self):
         """
@@ -848,23 +848,33 @@ class mol_site:
         neighs = []
 
         # Check periodic images
-        d, coord2 = self.get_dists_auto()
+        d, coord2 = self.get_dists_auto(ignore=True)
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i]<tols_matrix).any():
-                #print('self', i, np.min(d[i]))
-                min_ds.append(np.min(d[i]))
+                tmp = d[i]/tols_matrix
+                _d = tmp[tmp < 1.0]
+                id = np.argmin(tmp.flatten())
+                d_min = d[i].flatten()[id]
+                min_ds.append(d_min)
                 neighs.append(coord2[i])
+                print('self {:2d} {:6.3f} {:6.3f} {:6.3f}'.format(i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
 
+        count2 = 0
         if self.wp.multiplicity > 1:
-            d, coord2 = self.get_dists_WP()
+            d, coord2 = self.get_dists_WP(ignore=True)
             for i in range(d.shape[0]):
-                #if i==0: print(np.min(d[i]), d[i][:5,:5])
                 if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
-                    #print('rest', i, np.min(d[i]))
-                    min_ds.append(np.min(d[i]))
-                    neighs.append(coord2[i])
-
-        return min_ds, neighs
+                    tmp = d[i]/tols_matrix
+                    _d = tmp[tmp < 1]
+                    id = np.argmin(tmp.flatten())
+                    d_min = d[i].flatten()[id]
+                    if d_min < max_d:
+                        print('rest {:2d} {:6.3f} {:6.3f} {:6.3f}'.format(i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
+                        min_ds.append(d_min)
+                        neighs.append(coord2[i])
+                        count2 += 1
+        print("parallel======================", count2)
+        return min_ds, neighs, 
 
     def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0):
         """
@@ -888,14 +898,14 @@ class mol_site:
         tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
 
         # compute the distance matrix
-        d, coord2 = self.get_distances(coord1, coord2, m_length2) 
+        d, coord2 = self.get_distances(coord1, coord2, m_length2, ignore=True) 
         #[m1*m2*pbc, m1, m2]
         min_ds = []
         neighs = []
 
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
-                #print('rest', i, np.min(d[i, :, :], axis=0))
+                #print('rest', i, d[i][d[i]<tols_matrix])
                 min_ds.append(np.min(d[i,:,:]))
                 neighs.append(coord2[i])
 
