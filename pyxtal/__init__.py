@@ -1491,33 +1491,6 @@ class pyxtal:
         sub.source = "subgroup"
         return sub
 
-    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=4.0):
-        """
-        For molecular crystals, get the neighboring molecules for a given WP
-
-        Args:
-            site_id: the index of reference site
-            factor: factor of vdw tolerance
-
-        Returns:
-            min_ds: list of shortest distances
-            neighs: list of neighboring molecular xyzs
-        """
-        min_ds = []
-        neighs = []
-        comps = []
-        site0 = self.mol_sites[site_id]
-        for id0, site1 in enumerate(self.mol_sites):
-            if id0 == site_id:
-                min_d0, neigh0 = site0.get_neighbors_auto(factor, max_d)
-            else:
-                min_d0, neigh0 = site0.get_neighbors_wp2(site1, factor, max_d) 
-            comp = [site1.type]*len(min_d0)
-            neighs.extend(neigh0)
-            min_ds.extend(min_d0)
-            comps.extend(comp)
-        return min_ds, neighs, comps
-
     def show(self, **kwargs):
         """
         display the crystal structure
@@ -1528,22 +1501,62 @@ class pyxtal:
             return display_atomic(self, **kwargs)
 
 
-    def show_molecular_cluster(self, id, factor=1.5, max_d=4.0, **kwargs):
+    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=4.0, sort=True):
+        """
+        For molecular crystals, get the neighboring molecules for a given WP
+
+        Args:
+            site_id: the index of reference site
+            factor: factor of vdw tolerance
+
+        Returns:
+            min_ds: list of shortest distances
+            neighs: list of neighboring molecular xyzs
+            comps: list of molecular types
+        """
+        min_ds = []
+        neighs = []
+        comps = []
+        Ps = []
+        site0 = self.mol_sites[site_id]
+        site0.get_ijk_lists()
+        for id0, site1 in enumerate(self.mol_sites):
+            if id0 == site_id:
+                min_d0, neigh0, P = site0.get_neighbors_auto(factor, max_d)
+            else:
+                min_d0, neigh0 = site0.get_neighbors_wp2(site1, factor, max_d) 
+                P = [1]*len(neigh0)
+            comp = [site1.type]*len(min_d0)
+            neighs.extend(neigh0)
+            min_ds.extend(min_d0)
+            Ps.extend(P)
+            comps.extend(comp)
+
+        ids = np.argsort(min_ds)
+        neighs = [neighs[i] for i in ids] 
+        comps = [comps[i] for i in ids]
+        min_ds = [min_ds[i] for i in ids]
+        Ps = [Ps[i] for i in ids]
+        return min_ds, neighs, comps, Ps
+
+
+    def show_molecular_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, **kwargs):
         """
         display the local packing environment for a selected molecule
         """
-        min_ds, neighs, comps = self.get_neighboring_molecules(id, factor, max_d)
+        min_ds, neighs, comps, Ps = self.get_neighboring_molecules(id, factor, max_d)
         print("Number of neighboring molecules", len(min_ds))
-        print(np.sort(min_ds))
+        print(min_ds)
+
         site0 = self.mol_sites[id]
         coord0, specie0 = site0._get_coords_and_species(absolute=True, first=True)
-        
         molecules = [Molecule(specie0, coord0)]
+    
         for neigh, typ in zip(neighs, comps):
             specie0 = self.molecules[typ].mol.atomic_numbers
             molecules.append(Molecule(specie0, neigh))
 
-        return display_cluster(molecules, **kwargs)
+        return display_cluster(molecules, Ps, N_cut, **kwargs)
 
 
     def from_CSD(self, csd_code):

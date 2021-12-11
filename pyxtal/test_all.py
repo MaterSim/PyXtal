@@ -517,21 +517,21 @@ class TestNeighbour(unittest.TestCase):
         for data in [("aspirin", 14),
                      ("WEXBOS", 14),
                      ("MERQIM", 12),
-                     ("LAGNAL", 12),
+                     ("LAGNAL", 16),
                      ("YICMOP", 14),
                      ("LUFHAW", 18),
                      ("coumarin", 14),
                      ("HAHCOI", 14),
-                     ("JAPWIH", 10),
+                     ("JAPWIH", 14),
                      ("AXOSOW01", 13),
                      ("PAHYON01", 13),
-                     ("xxvi", 12),
-                     ("resorcinol", 12),
+                     ("xxvi", 15),
+                     ("resorcinol", 14),
                     ]:
  
             (name, CN) = data
             c.from_seed(seed=cif_path+name+".cif", molecules=[name])
-            ds, _, _ = c.get_neighboring_molecules(0, 1.5)
+            ds, _, _, _ = c.get_neighboring_molecules(0, 1.5)
             self.assertTrue(len(ds) == CN)
  
 class TestSubgroup(unittest.TestCase):

@@ -657,19 +657,23 @@ class mol_site:
             coordinates
         """
         abc = [self.lattice.a, self.lattice.b, self.lattice.c]
-
-        ijk_lists = []
-        for id in range(3):
-            if self.PBC[id]:
-                if not ignore and abc[id] > 20 and self.radius<10:
-                    ijk_lists.append([0])
-                elif abc[id] < 6.5:
-                    ijk_lists.append([-2, -1, 0, 1, 2])
+        
+        # QZ: This should be based on the occupation of current molecule
+        if hasattr(self, 'ijk_lists'):
+            ijk_lists = self.ijk_lists
+        else:
+            ijk_lists = []
+            for id in range(3):
+                if self.PBC[id]:
+                    if not ignore and abc[id] > 20 and self.radius<10:
+                        ijk_lists.append([0])
+                    elif abc[id] < 7.0:
+                        ijk_lists.append([-3, -2, -1, 0, 1, 2, 3])
+                    else:
+                        ijk_lists.append([-1, 0, 1])
                 else:
-                    ijk_lists.append([-1, 0, 1])
-            else:
-                ijk_lists.append([0])
-            
+                    ijk_lists.append([0])
+         
         if center:
             matrix = [[0,0,0]]
         else:
@@ -731,7 +735,7 @@ class mol_site:
 
         return self.get_distances(coord1, coord1, center=False, ignore=ignore)
 
-    def get_dists_WP(self, ignore=False):
+    def get_dists_WP(self, ignore=False, id=None):
         """
         Compute the distances within the WP sites
 
@@ -742,7 +746,10 @@ class mol_site:
         m_length = len(self.symbols)
         coords, _ = self._get_coords_and_species(unitcell=True)
         coord1 = coords[:m_length] #1st molecular coords
-        coord2 = coords[m_length:] #rest molecular coords
+        if id is None:
+            coord2 = coords[m_length:] #rest molecular coords
+        else:
+            coord2 = coords[m_length*(id):m_length*(id+1)] #rest molecular coords
 
         return self.get_distances(coord1, coord2, ignore=ignore) 
 
@@ -846,6 +853,7 @@ class mol_site:
 
         min_ds = []
         neighs = []
+        Ps = []
 
         # Check periodic images
         d, coord2 = self.get_dists_auto(ignore=True)
@@ -855,26 +863,32 @@ class mol_site:
                 _d = tmp[tmp < 1.0]
                 id = np.argmin(tmp.flatten())
                 d_min = d[i].flatten()[id]
-                min_ds.append(d_min)
+                min_ds.append(min(_d)*factor)
                 neighs.append(coord2[i])
-                print('self {:2d} {:6.3f} {:6.3f} {:6.3f}'.format(i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
+                Ps.append(0)
+                #print('S {:3d} {:6.3f} {:6.3f} {:6.3f}'.format(\
+                #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
 
-        count2 = 0
         if self.wp.multiplicity > 1:
-            d, coord2 = self.get_dists_WP(ignore=True)
-            for i in range(d.shape[0]):
-                if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
-                    tmp = d[i]/tols_matrix
-                    _d = tmp[tmp < 1]
-                    id = np.argmin(tmp.flatten())
-                    d_min = d[i].flatten()[id]
-                    if d_min < max_d:
-                        print('rest {:2d} {:6.3f} {:6.3f} {:6.3f}'.format(i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
-                        min_ds.append(d_min)
-                        neighs.append(coord2[i])
-                        count2 += 1
-        print("parallel======================", count2)
-        return min_ds, neighs, 
+            for idx in range(1, self.wp.multiplicity):
+                if self.wp.is_pure_translation(idx):
+                    P = 0
+                else:
+                    P = 1
+                d, coord2 = self.get_dists_WP(ignore=True, id=idx)
+                for i in range(d.shape[0]):
+                    if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
+                        tmp = d[i]/tols_matrix
+                        _d = tmp[tmp < 1]
+                        id = np.argmin(tmp.flatten())
+                        d_min = d[i].flatten()[id]
+                        if d_min < max_d:
+                            #print('R {:3d} {:6.3f} {:6.3f} {:6.3f}'.format(\
+                            #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
+                            min_ds.append(min(_d)*factor)
+                            neighs.append(coord2[i])
+                            Ps.append(P)
+        return min_ds, neighs, Ps 
 
     def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0):
         """
@@ -899,16 +913,45 @@ class mol_site:
 
         # compute the distance matrix
         d, coord2 = self.get_distances(coord1, coord2, m_length2, ignore=True) 
-        #[m1*m2*pbc, m1, m2]
         min_ds = []
         neighs = []
 
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
-                #print('rest', i, d[i][d[i]<tols_matrix])
-                min_ds.append(np.min(d[i,:,:]))
-                neighs.append(coord2[i])
-
+                tmp = d[i]/tols_matrix
+                _d = tmp[tmp < 1]
+                id = np.argmin(tmp.flatten())
+                d_min = d[i].flatten()[id]
+                if d_min < max_d:
+                    #print('R {:3d} {:6.3f} {:6.3f} {:6.3f}'.format(\
+                    #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
+                    min_ds.append(min(_d)*factor)
+                    neighs.append(coord2[i])
         return min_ds, neighs
 
+    def get_ijk_lists(self, value=None):
+        """
+        Get the occupatation in the unit cell for the generating molecule
+        This can be used to estimate the supercell size for finding neighbors
+
+        Returns
+            PBC
+        """
+
+        # Get coordinates for both mol_sites
+        if value is None:
+            ijk_lists = []
+            c1, _ = self.get_coords_and_species(absolute=False)
+            for id in range(3):
+                if self.PBC[id]:
+                    m1 = np.min(c1[:,id])
+                    m2 = np.max(c1[:,id])
+                    max_id = int(np.ceil(2*m2-m1))
+                    min_id = int(np.floor(-m2))
+                    ijk_lists.append(list(range(min_id-1, max_id+1)))
+                else:
+                    ijk_lists.append([0])
+            self.ijk_lists = ijk_lists
+        else:
+            self.ijk_lists = value
 

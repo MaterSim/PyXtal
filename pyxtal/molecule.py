@@ -566,11 +566,11 @@ class pyxtal_molecule:
 
                     return np.array([pt.x, pt.y, pt.z])
 
-    def get_principle_axes(self, xyz):
+    def get_principle_axes(self, xyz, rdmt=True):
         """
         get the principle axis for a rotated xyz
         """
-        if self.smile is None or len(self.smile)==1: 
+        if self.smile is None or len(self.smile)==1 or not rdmt: 
             Inertia = get_inertia_tensor(xyz)
             _, matrix = np.linalg.eigh(Inertia)
             return matrix
@@ -780,7 +780,7 @@ class pyxtal_molecule:
         xyz *= -1
         self.reset_positions(xyz)
 
-    def get_symmetry(self, symmetrize=False, rtol=0.30):
+    def get_symmetry(self, xyz=None, symmetrize=False, rtol=0.30):
         """
         Set the molecule's point symmetry.
             - pga: pymatgen.symmetry.analyzer.PointGroupAnalyzer object
@@ -790,7 +790,11 @@ class pyxtal_molecule:
         Args:
             symmetrize: boolean, whether or not symmetrize the coordinates
         """
-        mol = deepcopy(self.mol)
+        if xyz is None:
+            mol = deepcopy(self.mol)
+        else:
+            mol = Molecule(self.symbols, xyz)
+
         if self.smile is not None:
             mol.remove_species('H')
             mol._spin_multiplicity = None #don't check spin

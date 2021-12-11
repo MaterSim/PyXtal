@@ -181,7 +181,7 @@ class Group:
             s += "# " + str(self.number) + " (" + self.symbol + ")--"
 
             for wp in self.Wyckoff_positions:
-                ops = ss_string_from_ops(wp.symmetry_m[0], self.number, dim=self.dim)
+                ops = ss_string_from_ops(wp.symmetry[0], self.number, dim=self.dim)
                 s += ("\n" + str(wp.multiplicity) + wp.letter + "\tsite symm: " + ops)
             self.string = s
 
@@ -815,6 +815,17 @@ class Wyckoff_position:
                 return G[index]
         return self
 
+    def is_pure_translation(self, id):
+        """
+        Check if the operation is equivalent to pure translation
+        """
+        op = self.generators[id]
+        diff = op.rotation_matrix - np.eye(3)
+        if np.sum(diff.flatten()**2) < 1e-4:
+            return True
+        else:
+            ops = self.get_site_symm_wo_translation()
+            return (op in ops)
 
     def swap_axis(self, swap_id):
         """

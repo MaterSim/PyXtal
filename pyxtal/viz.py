@@ -295,7 +295,7 @@ def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, 
        
 
 
-def display_cluster(molecules, size=(400,300), style='sphere'):
+def display_cluster(molecules, Ps, N_cut=12, size=(400,300), style='sphere'):
     import py3Dmol
     models = {}
     
@@ -304,20 +304,37 @@ def display_cluster(molecules, size=(400,300), style='sphere'):
     mol_str += molecules[0].to(fmt='xyz') + '\n'
     view.addModel(mol_str, 'xyz')
     model = view.getModel()
-    model.setStyle({}, {"sphere": {'colorscheme':'greenCarbon', 
+    model.setStyle({}, {"sphere": {'colorscheme':'grayCarbon', 
                                    'scale':0.7}})
-    
-    for mol in molecules[1:]:
+        
+    for i in range(1, len(molecules)):
+        mol = molecules[i]
         mol_strs = ""
         mol_strs += mol.to(fmt='xyz') + '\n'
         view.addModel(mol_strs, 'xyz')
         model = view.getModel()
-        if style == 'sphere':
-            model.setStyle({}, {"sphere": {'colorscheme':'cyanCarbon',
-                                           'scale':0.5,
-                                           'opacity': 0.75}})
+        if sum(Ps) > 0:
+            if Ps[i-1] == 0:
+                ctype = 1
+            else:
+                ctype = 2
         else:
-            model.setStyle({}, {"stick": {'colorscheme':'greenCarbon', 
+            if i > N_cut:
+                ctype = 1
+            else:
+                ctype = 2
+        if ctype == 1:
+            color = 'greenCarbon'
+            opacity = 0.65
+        else:
+            color = 'cyanCarbon'
+            opacity = 0.65
+        if style == 'sphere':
+            model.setStyle({}, {"sphere": {'colorscheme':color,
+                                           'scale':0.5,
+                                           'opacity': opacity}})
+        else:
+            model.setStyle({}, {"stick": {'colorscheme':color, 
                                           'radius': 0.1,
-                                          'opacity': 0.75}})
+                                          'opacity': opacity}})
     return view.zoomTo({"model": list(models.values())})
