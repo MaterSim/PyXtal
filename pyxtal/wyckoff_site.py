@@ -873,8 +873,8 @@ class mol_site:
                 neighs.append(coord2[i])
                 Ps.append(0)
                 engs.append(eng)
-                print('S {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                        i, min(_d)*factor, d_min, tols_matrix.flatten()[id],eng))
+                #print('S {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
+                #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id],eng))
 
         if self.wp.multiplicity > 1:
             for idx in range(1, self.wp.multiplicity):
@@ -891,8 +891,8 @@ class mol_site:
                         id = np.argmin(tmp.flatten())
                         d_min = d[i].flatten()[id]
                         if d_min < max_d:
-                            print('R {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                                    i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
+                            #print('R {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
+                            #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
                             min_ds.append(min(_d)*factor)
                             neighs.append(coord2[i])
                             Ps.append(P)
@@ -919,7 +919,7 @@ class mol_site:
         coord1 = c1[:m_length1]
         coord2 = c2 #rest molecular coords
         tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
-        coef_matrix = self.molecule.get_coefs_matrix(wp2_molecule)
+        coef_matrix = self.molecule.get_coefs_matrix(wp2.molecule)
         A = coef_matrix[:,:,0]
         B = -coef_matrix[:,:,1]
         C = coef_matrix[:,:,2]
