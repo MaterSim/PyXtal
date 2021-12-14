@@ -850,15 +850,21 @@ class mol_site:
         tm=Tol_matrix(prototype="vdW", factor=factor)
         m_length = len(self.numbers)
         tols_matrix = self.molecule.get_tols_matrix(tm=tm)
+        coef_matrix = self.molecule.get_coefs_matrix()
+        A = coef_matrix[:,:,0]
+        B = -coef_matrix[:,:,1]
+        C = coef_matrix[:,:,2]
 
         min_ds = []
         neighs = []
         Ps = []
+        engs = []
 
         # Check periodic images
         d, coord2 = self.get_dists_auto(ignore=True)
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i]<tols_matrix).any():
+                eng = np.sum(A*np.exp(B*d[i])-C/(d[i]**6))
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1.0]
                 id = np.argmin(tmp.flatten())
@@ -866,8 +872,9 @@ class mol_site:
                 min_ds.append(min(_d)*factor)
                 neighs.append(coord2[i])
                 Ps.append(0)
-                #print('S {:3d} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
+                engs.append(eng)
+                print('S {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
+                        i, min(_d)*factor, d_min, tols_matrix.flatten()[id],eng))
 
         if self.wp.multiplicity > 1:
             for idx in range(1, self.wp.multiplicity):
@@ -878,17 +885,19 @@ class mol_site:
                 d, coord2 = self.get_dists_WP(ignore=True, id=idx)
                 for i in range(d.shape[0]):
                     if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
+                        eng = np.sum(A*np.exp(B*d[i])-C/(d[i]**6))
                         tmp = d[i]/tols_matrix
                         _d = tmp[tmp < 1]
                         id = np.argmin(tmp.flatten())
                         d_min = d[i].flatten()[id]
                         if d_min < max_d:
-                            #print('R {:3d} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                            #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
+                            print('R {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
+                                    i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
                             min_ds.append(min(_d)*factor)
                             neighs.append(coord2[i])
                             Ps.append(P)
-        return min_ds, neighs, Ps 
+                            engs.append(eng)
+        return min_ds, neighs, Ps, engs
 
     def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0):
         """
@@ -910,24 +919,30 @@ class mol_site:
         coord1 = c1[:m_length1]
         coord2 = c2 #rest molecular coords
         tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
+        coef_matrix = self.molecule.get_coefs_matrix(wp2_molecule)
+        A = coef_matrix[:,:,0]
+        B = -coef_matrix[:,:,1]
+        C = coef_matrix[:,:,2]
+
 
         # compute the distance matrix
         d, coord2 = self.get_distances(coord1, coord2, m_length2, ignore=True) 
         min_ds = []
         neighs = []
+        engs = []
 
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
+                eng = np.sum(A*np.exp(B*d[i])-C/(d[i]**6))
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1]
                 id = np.argmin(tmp.flatten())
                 d_min = d[i].flatten()[id]
                 if d_min < max_d:
-                    #print('R {:3d} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                    #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id]))
                     min_ds.append(min(_d)*factor)
                     neighs.append(coord2[i])
-        return min_ds, neighs
+                    engs.append(eng)
+        return min_ds, neighs, engs
 
     def get_ijk_lists(self, value=None):
         """

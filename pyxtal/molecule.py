@@ -392,14 +392,84 @@ class pyxtal_molecule:
         tols = np.zeros((len(numbers1), len(numbers2)))
         for i1, number1 in enumerate(numbers1):
             for i2, number2 in enumerate(numbers2):
-                tols[i1][i2] = tm.get_tol(number1, number2)
+                tols[i1, i2] = tm.get_tol(number1, number2)
                 # allow hydrogen bond
                 if [number1, number2] in [[1,7], [1,8], [1,9], [7,1], [8,1], [9,1]]:
-                    tols[i1][i2] *= 0.9
+                    tols[i1, i2] *= 0.9
 
         if len(self.mol)==1:
             tols *= 0.8 # if only one atom, reduce the tolerance
         return tols
+
+    def get_coefs_matrix(self, mol2=None):
+        """
+        Get the Atom-Atom potential parameters
+        E = A*exp(-B*r) - C*R^(-6)
+        according to Gavezotti, Acc. Chem. Res., 27, 1994
+
+        Args:
+            mol2: the 2nd pyxtal_molecule object
+            tm: tolerance class
+
+        Returns: 
+            a 3D matrix for computing the intermolecular energy
+        """
+        numbers1 = self.mol.atomic_numbers
+        if mol2 is None:
+            numbers2 = self.mol.atomic_numbers
+        else:
+            numbers2 = mol2.mol.atomic_numbers
+
+        coefs = np.zeros([len(numbers1), len(numbers2), 3])
+        for i1, number1 in enumerate(numbers1):
+            for i2, number2 in enumerate(numbers2):
+                if [number1, number2] in [[1,1]]:              #H-H
+                    coefs[i1, i2, :] = [5774, 4.01, 26.1]
+                elif [number1, number2] in [[1,6], [6,1]]:     #H-C
+                    coefs[i1, i2, :] = [28870, 4.10, 113.]
+                elif [number1, number2] in [[1,7], [7,1]]:     #H-N
+                    coefs[i1, i2, :] = [54560, 4.52, 120.]
+                elif [number1, number2] in [[1,8], [8,1]]:     #H-O
+                    coefs[i1, i2, :] = [70610, 4.82, 105.]
+                elif [number1, number2] in [[1,16],[16,1]]:    #H-S
+                    coefs[i1, i2, :] = [64190, 4.03, 279.]
+                elif [number1, number2] in [[1,17],[17,1]]:    #H-Cl
+                    coefs[i1, i2, :] = [70020, 4.09, 279.]
+                elif [number1, number2] in [[6,6]]:            #C-C
+                    coefs[i1, i2, :] = [54050, 3.47, 578.]
+                elif [number1, number2] in [[6,7], [7,6]]:     #C-N
+                    coefs[i1, i2, :] = [117470, 3.86, 667.]
+                elif [number1, number2] in [[6,8], [8,6]]:     #C-O
+                    coefs[i1, i2, :] = [93950, 3.74, 641.]
+                elif [number1, number2] in [[6,16], [16,6]]:   #C-S
+                    coefs[i1, i2, :] = [126460, 3.41, 1504.]
+                elif [number1, number2] in [[6,8], [8,6]]:     #C-Cl
+                    coefs[i1, i2, :] = [93370, 3.52, 923.]
+                elif [number1, number2] in [[7,7]]:            #N-N
+                    coefs[i1, i2, :] = [87300, 3.65, 691.]
+                elif [number1, number2] in [[7,8], [8,7]]:     #N-O
+                    coefs[i1, i2, :] = [64190, 3.86, 364.]     
+                elif [number1, number2] in [[8,8]]:            #O-O
+                    coefs[i1, i2, :] = [46680, 3.74, 319.]     
+                elif [number1, number2] in [[8,16], [16,8]]:   #O-S
+                    coefs[i1, i2, :] = [110160, 3.63, 906.]     
+                elif [number1, number2] in [[8,17], [17,8]]:   #O-Cl
+                    coefs[i1, i2, :] = [80855, 3.63, 665.]   
+                elif [number1, number2] in [[16, 16]]:         #S-S
+                    coefs[i1, i2, :] = [259960, 3.52, 2571]  
+                elif [number1, number2] in [[16,17], [17,16]]: #S-S
+                    coefs[i1, i2, :] = [1800000, 3.52, 2000]   #made  
+                elif [number1, number2] in [[17,17]]:          #Cl-Cl
+                    coefs[i1, i2, :] = [140050, 3.52, 1385]  
+                #todo add H-bonds
+                #HB-O(amides):   3607810, 7.78, 238
+                #HB-O(acids):    6313670, 8.75, 205
+                #HB-O(alcohols): 4509750, 7.78, 298
+                #HB-N(-N-H-N):   7215600, 7.78, 476
+                #HB-N(-NH2-N):   1803920, 7.37, 165
+                else:
+                    return None
+        return coefs
 
     def show(self):
         """
@@ -1064,6 +1134,14 @@ class pyxtal_molecule:
             if is_compatible_symmetry(mo, wp):
                 allowed.append(o)
         return allowed
+
+    def get_energy(self, xyz1, xyz2):
+        """
+        Get packing energy between two neighboring molecules
+        """
+        dists = cdist(xyz1-xyz2)
+
+
 
 class Box:
     """

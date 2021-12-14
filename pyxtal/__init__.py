@@ -1501,7 +1501,7 @@ class pyxtal:
             return display_atomic(self, **kwargs)
 
 
-    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=4.0, sort=True):
+    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, CN=None, sort=True):
         """
         For molecular crystals, get the neighboring molecules for a given WP
 
@@ -1518,35 +1518,74 @@ class pyxtal:
         neighs = []
         comps = []
         Ps = []
+        engs = []
         site0 = self.mol_sites[site_id]
         site0.get_ijk_lists()
         for id0, site1 in enumerate(self.mol_sites):
             if id0 == site_id:
-                min_d0, neigh0, P = site0.get_neighbors_auto(factor, max_d)
+                min_d0, neigh0, P, eng = site0.get_neighbors_auto(factor, max_d)
             else:
-                min_d0, neigh0 = site0.get_neighbors_wp2(site1, factor, max_d) 
+                min_d0, neigh0, eng = site0.get_neighbors_wp2(site1, factor, max_d) 
                 P = [1]*len(neigh0)
             comp = [site1.type]*len(min_d0)
             neighs.extend(neigh0)
             min_ds.extend(min_d0)
             Ps.extend(P)
             comps.extend(comp)
-
-        ids = np.argsort(min_ds)
+            engs.extend(eng)
+        ids = np.argsort(engs) #min_ds)
+        if CN is not None and len(ids) > CN:
+            ids = ids[:CN]
         neighs = [neighs[i] for i in ids] 
         comps = [comps[i] for i in ids]
         min_ds = [min_ds[i] for i in ids]
         Ps = [Ps[i] for i in ids]
-        return min_ds, neighs, comps, Ps
+        engs = [engs[i] for i in ids]
+        return min_ds, neighs, comps, Ps, engs
 
 
-    def show_molecular_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, **kwargs):
+    def show_molecular_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, plot=True, **kwargs):
         """
         display the local packing environment for a selected molecule
         """
         min_ds, neighs, comps, Ps = self.get_neighboring_molecules(id, factor, max_d)
         print("Number of neighboring molecules", len(min_ds))
         print(min_ds)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            #from scipy.ndimage.filters import gaussian_filter1d
+
+            plt.figure()
+            x_min, x_max, size = 0, 2.5, 100
+            res = (x_max-x_min)/size
+            plt.gca()
+            x = np.linspace(x_min, x_max, size)
+            y = np.zeros([size, 2]) 
+            for d, p in zip(min_ds, Ps):
+                j = round(d/res)
+                if p == 0:
+                    y[j, 0] += 1 
+                else:
+                    y[j, 1] += 1
+            #y[:, 1] = gaussian_filter1d(y[:, 0], 0.2)
+            plt.plot(x, y[:,0], c='g', label='Self({:d})'.format(int(sum(y[:,0]))))
+            if np.sum(y[:,1]) > 1e-1:
+                plt.plot(x, y[:,1], c='c', label='Other({:d})'.format(int(sum(y[:,1]))))
+
+            if len(min_ds) >= N_cut:
+                cut = min_ds[N_cut-1] 
+                CN = N_cut
+            else:
+                cut = min_ds[-1]
+                CN = len(min_ds)
+
+            plt.axvline(x=cut, c='r', ls=':', label='Cutoff_{:d}'.format(CN))
+            plt.legend()
+            plt.xlim([x_min, x_max])
+            plt.xlabel('R')
+            plt.ylabel('Intensity')
+            plt.show()
 
         site0 = self.mol_sites[id]
         coord0, specie0 = site0._get_coords_and_species(absolute=True, first=True)
@@ -1556,7 +1595,7 @@ class pyxtal:
             specie0 = self.molecules[typ].mol.atomic_numbers
             molecules.append(Molecule(specie0, neigh))
 
-        return display_cluster(molecules, Ps, N_cut, **kwargs)
+        return display_cluster(molecules, self.lattice.matrix, Ps, N_cut, **kwargs)
 
 
     def from_CSD(self, csd_code):

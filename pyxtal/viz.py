@@ -251,7 +251,8 @@ def display_molecule(molecule, center, cell, size=(400,300)):
     view.addBox({'center': center_spec,
                  'dimensions': {'w': w_spec, 'h': h_spec, 'd': d_spec},
                  'color':'magenta',
-                 'alpha': 0.5,
+                 'opacity': 0.4,
+                 #'alpha': 0.6,
                 })
     view.setStyle({'stick':{'colorscheme':'greenCarbon'}})
 
@@ -295,7 +296,7 @@ def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, 
        
 
 
-def display_cluster(molecules, Ps, N_cut=12, size=(400,300), style='sphere'):
+def display_cluster(molecules, cell, Ps, N_cut=12, size=(400,300), style='sphere'):
     import py3Dmol
     models = {}
     
@@ -306,7 +307,20 @@ def display_cluster(molecules, Ps, N_cut=12, size=(400,300), style='sphere'):
     model = view.getModel()
     model.setStyle({}, {"sphere": {'colorscheme':'grayCarbon', 
                                    'scale':0.7}})
-        
+
+    center = molecules[0].center_of_mass
+    center_spec = {'x':center[0], 'y':center[1], 'z': center[2]}
+    w_spec = {'x':cell[0,0], 'y': cell[0,1], 'z': cell[0,2]}
+    h_spec = {'x':cell[1,0], 'y': cell[1,1], 'z': cell[1,2]}
+    d_spec = {'x':cell[2,0], 'y': cell[2,1], 'z': cell[2,2]}
+    #view.addBox({'center': center_spec,
+    #             'dimensions': {'w': w_spec, 'h': h_spec, 'd': d_spec},
+    #             'color':'magenta',
+    #             'alpha': 0.5,
+    #             #'opacity': 0.1,
+    #            })
+    addBox(view, cell)
+       
     for i in range(1, len(molecules)):
         mol = molecules[i]
         mol_strs = ""
