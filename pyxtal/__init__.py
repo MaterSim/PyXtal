@@ -1501,7 +1501,7 @@ class pyxtal:
             return display_atomic(self, **kwargs)
 
 
-    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, CN=None, sort=True):
+    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, CN=None):
         """
         For molecular crystals, get the neighboring molecules for a given WP
 
@@ -1533,7 +1533,10 @@ class pyxtal:
             Ps.extend(P)
             comps.extend(comp)
             engs.extend(eng)
-        ids = np.argsort(engs) #min_ds)
+        if engs[0] is None: #sort by distance
+            ids = np.argsort(min_ds)
+        else: #sort by energy
+            ids = np.argsort(engs) #min_ds)
         if CN is not None and len(ids) > CN:
             ids = ids[:CN]
         neighs = [neighs[i] for i in ids] 

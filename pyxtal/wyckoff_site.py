@@ -851,9 +851,10 @@ class mol_site:
         m_length = len(self.numbers)
         tols_matrix = self.molecule.get_tols_matrix(tm=tm)
         coef_matrix = self.molecule.get_coefs_matrix()
-        A = coef_matrix[:,:,0]
-        B = -coef_matrix[:,:,1]
-        C = coef_matrix[:,:,2]
+        if coef_matrix is not None:
+            A = coef_matrix[:,:,0]
+            B = coef_matrix[:,:,1]
+            C = coef_matrix[:,:,2]
 
         min_ds = []
         neighs = []
@@ -864,7 +865,10 @@ class mol_site:
         d, coord2 = self.get_dists_auto(ignore=True)
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i]<tols_matrix).any():
-                eng = np.sum(A*np.exp(B*d[i])-C/(d[i]**6))
+                if coef_matrix is not None:
+                    eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                else:
+                    eng = None
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1.0]
                 id = np.argmin(tmp.flatten())
@@ -885,7 +889,10 @@ class mol_site:
                 d, coord2 = self.get_dists_WP(ignore=True, id=idx)
                 for i in range(d.shape[0]):
                     if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
-                        eng = np.sum(A*np.exp(B*d[i])-C/(d[i]**6))
+                        if coef_matrix is not None:
+                            eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                        else:
+                            eng = None
                         tmp = d[i]/tols_matrix
                         _d = tmp[tmp < 1]
                         id = np.argmin(tmp.flatten())
@@ -920,9 +927,10 @@ class mol_site:
         coord2 = c2 #rest molecular coords
         tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
         coef_matrix = self.molecule.get_coefs_matrix(wp2.molecule)
-        A = coef_matrix[:,:,0]
-        B = -coef_matrix[:,:,1]
-        C = coef_matrix[:,:,2]
+        if coef_matrix is not None:
+            A = coef_matrix[:,:,0]
+            B = coef_matrix[:,:,1]
+            C = coef_matrix[:,:,2]
 
 
         # compute the distance matrix
@@ -933,7 +941,10 @@ class mol_site:
 
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
-                eng = np.sum(A*np.exp(B*d[i])-C/(d[i]**6))
+                if coef_matrix is not None:
+                    eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                else:
+                    eng = None
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1]
                 id = np.argmin(tmp.flatten())
