@@ -1413,7 +1413,7 @@ def reoriented_molecule(mol): #, nested=False):
     A = get_inertia_tensor(coords)
     # Store the eigenvectors of the inertia tensor
     P = np.linalg.eigh(A)[1]
-    if np.linalg.det(P) < 0: P[0] *= -1
+    if np.linalg.det(P) < 0: P[:,0] *= -1
     coords = np.dot(coords, P)
     return Molecule(numbers, coords), P
 
