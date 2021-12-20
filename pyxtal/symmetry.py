@@ -968,12 +968,18 @@ class Wyckoff_position:
                 if c.isalpha():
                     index = c
                     break
+        if dim > 0:
+            if dim == 3:
+                if wp.PBC is None:
+                    wp.PBC = [1, 1, 1]
+            elif dim == 2:
+                if wp.PBC is None:
+                    wp.PBC = [1, 1, 0]
+            elif dim == 1:
+                if wp.PBC is None:
+                    wp.PBC = [0, 0, 1]
 
-        if dim == 3:
-            if wp.PBC is None:
-                wp.PBC = [1, 1, 1]
-
-            ops_all = get_wyckoffs(wp.number)
+            ops_all = get_wyckoffs(wp.number, dim=dim)
             if use_letter:
                 wp.index = index_from_letter(index, ops_all, dim=dim)
                 wp.letter = index
@@ -982,39 +988,7 @@ class Wyckoff_position:
             wp.ops = ops_all[wp.index]
 
             wp.multiplicity = len(wp.ops)
-            wp.symmetry = get_wyckoff_symmetry(wp.number)[wp.index]
-            wp.generators = get_generators(wp.number, dim)[wp.index]
-
-        elif dim == 2:
-            if wp.PBC is None:
-                wp.PBC = [1, 1, 0]
-
-            ops_all = get_layer(wp.number)
-            if use_letter:
-                wp.index = index_from_letter(index, ops_all, dim=dim)
-                wp.letter = index
-            else:
-                wp.letter = letter_from_index(wp.index, ops_all, dim=dim)
-            wp.ops = ops_all[wp.index]
-
-            wp.multiplicity = len(wp.ops)
-            wp.symmetry = get_layer_symmetry(wp.number)[wp.index]
-            wp.generators = get_generators(wp.number, dim)[wp.index]
-
-        elif dim == 1:
-            if wp.PBC is None:
-                wp.PBC = [0, 0, 1]
-
-            ops_all = get_rod(wp.number)
-            if use_letter:
-                wp.index = index_from_letter(index, ops_all, dim=dim)
-                wp.letter = index
-            else:
-                wp.letter = letter_from_index(wp.index, ops_all, dim=dim)
-            wp.ops = ops_all[wp.index]
-
-            wp.multiplicity = len(wp.ops)
-            wp.symmetry = get_rod_symmetry(wp.number)[wp.index]
+            wp.symmetry = get_wyckoff_symmetry(wp.number, dim)[wp.index]
             wp.generators = get_generators(wp.number, dim)[wp.index]
 
         elif dim == 0:
