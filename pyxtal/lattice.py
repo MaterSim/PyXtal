@@ -660,6 +660,34 @@ class Lattice:
         l.allow_volume_reset = False
         return l
 
+
+    def check_mismatch(self, trans, l_type, tol=1.0, a_tol=10):
+        """
+        check if the lattice mismatch is big after a transformation
+        This is mostly used in supergroup function
+        QZ: to fix ===============
+
+        Args:
+            trans: 3*3 matrix
+            l_type: lattice_type like orthrhombic
+            tol: tolerance in a, b, c
+            a_tol: tolerance in alpha, beta, gamma
+
+        Returns:
+            True or False
+        """
+        matrix = np.dot(trans.T, self.get_matrix())
+        l1 = Lattice.from_matrix(matrix)
+        l2 = Lattice.from_matrix(matrix, ltype=l_type)
+        (a1, b1, c1, alpha1, beta1, gamma1) = l1.get_para(degree=True)
+        (a2, b2, c2, alpha2, beta2, gamma2) = l2.get_para(degree=True)
+        abc_diff = np.abs(np.array([a2-a1, b2-b1, c2-c1])).max()
+        ang_diff = np.abs(np.array([alpha2-alpha1, beta2-beta1, gamma2-gamma1])).max()
+        if abc_diff > tol or ang_diff > a_tol:
+            return False
+        else:
+            return True
+
     def __str__(self):
         s = "{:s} lattice: {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(
             str(self.ltype),
