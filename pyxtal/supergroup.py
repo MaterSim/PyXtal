@@ -75,74 +75,6 @@ def find_mapping_per_element(sites1, sites2,max_num=720):
     return unique_solutions
 
 
-    #depreciated  mapping function
-#     print('sites1=',sites1)
-#     print('sites2=',sites2)
-#     unique_solutions = []
-#     solution_template = [[None]*len(site2) for site2 in sites2]
-#     assigned_ids = []
-
-#     # first identify the unique assignment
-#     for i, site2 in enumerate(sites2):
-#         wp_letters = set(site2)
-#         if len(wp_letters) == len(site2): #site2: ['a', 'b'] or ['a']
-#             for j, s2 in enumerate(site2):
-#                 ids = [id for id, s1 in enumerate(sites1) if s1==s2]
-#                 if len(ids) == 1:
-#                     solution_template[i][j] = ids[0]
-#                     assigned_ids.append(ids[0])
-#         elif len(wp_letters)==1: #site2: ['a','a'] or ['a','a','a']
-#             ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[0]]
-#             if len(ids) == len(site2):
-#                 solution_template[i] = ids
-#                 assigned_ids.extend(ids)
-#         elif len(wp_letters)==2: #site2: ['a','a','b']
-#             count = 0
-#             for j in range(2):
-#                 ids = [id for id, s1 in enumerate(sites1) if s1==list(wp_letters)[j]]
-#                 if len(ids) == site2.count(list(wp_letters)[j]):
-#                     solution_template[i][count:count+len(ids)] = ids
-#                     assigned_ids.extend(ids)
-#                     count += len(ids)
-#             #raise NotImplementedError("unsupported:", site2)
-#     #print(assigned_ids)
-
-#     ids = [id for id, site in enumerate(sites1) if id not in assigned_ids]
-
-#     all_permutations = list(itertools.permutations(ids))
-#     if len(all_permutations) > max_num:
-#         print("Warning: ignore some mapping: ", str(len(all_permutations)-max_num))
-#         print(solution_template)
-#         all_permutations = sample(all_permutations, max_num)
-
-#     print('allpermuataions')
-#     for x in all_permutations:
-#         print(x)
-#     #print(solution_template)
-#     for perm in all_permutations:
-#         solution = deepcopy(solution_template)
-#         perm = list(perm)
-#         valid = True
-#         count = 0
-#         for i, sol in enumerate(solution):
-#             if None in sol:
-#                 for j, s2 in enumerate(sites2[i]):
-#                     if sol[j] is None:
-#                         if s2 == sites1[perm[count]]:
-#                             solution[i][j] = deepcopy(perm[count])
-#                             count += 1
-#                         else:
-#                             valid = False
-#                             break
-#                 if not valid:
-#                     break
-#         if valid and new_solution(solution, unique_solutions):
-#             unique_solutions.append(solution)
-#     print('unique_solutions')
-#     for x in unique_solutions:
-#         print(x)
-#     return unique_solutions
-
 def find_mapping(atom_sites, splitter, max_num=720):
     """
     search for all mappings for a given splitter
@@ -160,14 +92,18 @@ def find_mapping(atom_sites, splitter, max_num=720):
     # loop over the mapping for each element
     # then propogate the possible mapping via itertools.product
     lists = []
+
     for ele in eles:
+
         # ids of atom sites
         site_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
+
         # ids to be assigned
         wp2_ids = [id for id, e in enumerate(splitter.elements) if e==ele]
 
         letters1 = [atom_sites[id].wp.letter for id in site_ids]
         letters2 = []
+
         for id in wp2_ids:
             wp2 = splitter.wp2_lists[id]
             letters2.append([wp.letter for wp in wp2])
@@ -175,6 +111,7 @@ def find_mapping(atom_sites, splitter, max_num=720):
         res = find_mapping_per_element(letters1, letters2, max_num=720)
         lists.append(res)
     mappings = list(itertools.product(*lists))
+
     # resort the mapping
     ordered_mappings = []
     for mapping in mappings:
@@ -279,7 +216,7 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
             else:
                 quadrant[i]=-1
 
-    #prepare the rotation matrix and translation vector seperately
+    # prepare the rotation matrix and translation vector seperately
     G2_holder=[1,1,1]
     G2_op=np.array(G2_op.as_dict()['matrix'])
     rot_G2=G2_op[:3,:3].T
@@ -288,16 +225,16 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
     for k in range(3):
         b[k]=b[k]%quadrant[k]
 
-    #eliminate any unused free parameters in G2
-    #The goal is to reduce the symmetry operations to be a full rank matrix
-    #any free parameter that is not used has its spot deleted from the rotation matrix and translation vector
+    # eliminate any unused free parameters in G2
+    # The goal is to reduce the symmetry operations to be a full rank matrix
+    # any free parameter that is not used has its spot deleted from the rotation matrix and translation vector
     for i,x in reversed(list(enumerate(rot_G2))):
         if set(x)=={0.}:
             G2_holder[i]=0
             rot_G2=np.delete(rot_G2,i,0)
             quadrant=np.delete(quadrant,i)
 
-    #eliminate any leftover empty rows to have fulll rank matrix
+    # eliminate any leftover empty rows to have fulll rank matrix
     rot_G2=rot_G2.T
     for i,x in reversed(list(enumerate(rot_G2))):
         if set(x)=={0.}:
@@ -308,8 +245,8 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
         b=np.delete(b,len(b)-1)
 
 
-    #Must come back later and add Schwarz Inequality check to elininate any dependent vectors
-    #solves a linear system to find the free parameters
+    # Must come back later and add Schwarz Inequality check to elininate any dependent vectors
+    # solves a linear system to find the free parameters
     if set(G2_holder)=={0.}:
         return np.array(G2_holder)
 
@@ -504,8 +441,8 @@ def check_compatibility(G, relation, sites, elements):
 def search_paths(H, G, max_layers=5):
     """
     Search function throws away paths that take a roundabout. if
-    path1:a>>e>>f>>g
-    path2:a>>b>>c>>e>>f>>g
+    - path1 is a>>e>>f>>g
+    - path2 is a>>b>>c>>e>>f>>g
     path 2 will not be counted as there is already a shorter path from a>>e
 
     Args:
@@ -522,7 +459,7 @@ def search_paths(H, G, max_layers=5):
     final=[]
     traversed=[]
 
-    # searches for every subgroup of the the groups from the previous layer.
+    # Searches for every subgroup of the the groups from the previous layer.
     # Stores the possible groups of each layer and their subgroups
     # in a dictinoary to avoid redundant calculations.
     # Starts from G and goes down to H
@@ -551,7 +488,7 @@ def search_paths(H, G, max_layers=5):
                 final.extend(paths)
                 subgroups.append([])
 
-            #will continue to generate a layer of groups if the path to H has not been found.
+            # Continue to generate a layer of groups if the path to H has not been found.
             else:
                 subgroups.append(subgroup_numbers)
                 [groups.append(x) for x in subgroup_numbers if (x not in groups) and (x not in traversed)]
@@ -642,7 +579,6 @@ class supergroups():
             working_path.append(G)
             H = G_strucs[0].group.number
             #print(G, H)
-            #if G != H:
             if sym.get_point_group(G) == sym.get_point_group(H):
                 group_type = 'k'
             else:
@@ -954,7 +890,7 @@ class supergroup():
                 ops_H = splitter.H_orbits[i][0]
                 base = atom_sites_H[mapping[i][0]].position.copy()
 
-                #choose the best coord1_H
+                # choose the best coord1_H
                 coord1s_H = apply_ops(base, ops_H)
                 ds = []
                 for coord1_H in coord1s_H:
@@ -1061,7 +997,8 @@ class supergroup():
                     #coord2_G1 = sym.search_cloest_wp(splitter.G, wp1, op_G12, coord2_G1)
                     #print("G1(symm1)", coord1_G1, coord2_G1)
                     #import sys; sys.exit()
-                    #find the best match
+
+                    # find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
                     #tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
@@ -1076,7 +1013,6 @@ class supergroup():
 
                     coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H+disp, self.cell, ortho)
                     coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H+disp, self.cell, ortho)
-
 
                     if max([dist1, dist2]) > np.sqrt(2)*d_tol:
                         #import sys; sys.exit()
@@ -1093,8 +1029,8 @@ class supergroup():
                     mask = [0, 1, 2]
 
 
-                #organizes the numbers from the mapping to be in same order as the positions in splitter.wp2_lists
-                #so that the positions from atoms_sites_H are in the correct assigned position.
+                # organizes the numbers in the order as the positions in splitter.wp2_lists
+                # so that the positions from atoms_sites_H are in the correct assigned position.
                 letters=[atom_sites_H[mapping[i][x]].wp.letter for x in range(n)]
                 ordered_letter_index=[]
                 for pos in splitter.wp2_lists[i]:
@@ -1105,8 +1041,8 @@ class supergroup():
 
                 coord_H=[atom_sites_H[ordered_mapping[x]].position.copy() for x in range(n)]
 
-                #Finds the correct quadrant that the coordinates lie in to easily generate all possible_wycs
-                #translations when trying to match
+                # Finds the correct quadrant to easily generate all possible_wycs
+                # translations when trying to match
                 quadrant=np.array(splitter.G2_orbits[i][0][0].as_dict()['matrix'])[:3,3]
                 for k in range(3):
                     if quadrant[k]>=0.:
@@ -1118,8 +1054,8 @@ class supergroup():
                     for k in range(3):
                         coord_G2[j][k]=coord_G2[j][k]%quadrant[k]
 
-                #uses 1st coordinate and 1st wyckoff position as starting example.
-                #Finds the matching G2 operation bcased on nearest G1 search
+                # uses 1st coordinate and 1st wyckoff position as starting example.
+                # Finds the matching G2 operation bcased on nearest G1 search
                 dist_list=[]
                 coord_list=[]
                 index=[]
@@ -1133,11 +1069,11 @@ class supergroup():
                 index.append(np.argmin(dist_list))
                 corresponding_ops.append(splitter.G2_orbits[i][0][index[0]])
 
-                #Finds the free parameters xyz in the G2 basis for this coordinate
+                # Finds the free parameters xyz in the G2 basis for this coordinate
                 G2_xyz.append(find_xyz(corresponding_ops[0],coord_G2[0],quadrant))
 
-                #systematically generates possible G2 positions to match the remainding coordinates
-                #with. Also finds the corresponding G2 free parameters xyz for each coordinate
+                # Systematically generates possible G2 positions to match the remaining coordinates
+                # Also finds the corresponding G2 free parameters xyz for each coordinate
 
                 for j in range(1,n):
                     possible_coords=[x.operate(G2_xyz[0]) for x in splitter.G2_orbits[i][j]]
@@ -1146,8 +1082,8 @@ class supergroup():
                     corresponding_ops.append(splitter.G2_orbits[i][j][index[j]])
                     G2_xyz.append(find_xyz(corresponding_ops[j],coord_G2[j],quadrant))
 
-                #Finds the average free parameters between all the coordinates as the best set of free
-                #parameters that all coordinates must match
+                # Finds the average free parameters between all the coordinates as the best set of free
+                # parameters that all coordinates must match
                 final_xyz=np.sum(G2_xyz,axis=0)/n
 
 
@@ -1157,62 +1093,10 @@ class supergroup():
                     G2_coord,dist=search_G2(inv_rot, -tran, G1_coord,coord_H[j]+disp,self.cell)
                     dist_list.append(dist)
 
-
-
                 if max(dist_list) > np.sqrt(3)*d_tol:
                     return 10000, None, mask
                 else:
                     max_disps.append(max(dist_list))
-
-                #depreciated merging for specifically k_type 3->1 merge
-                # if splitter.group_type == 'k':
-                #     #This functionality uses the fact that, in a k type transitinos, atoms must be displaced such that
-                #     #there is just 1 set of rotation matrices with n different trnaslation vectors
-                #     #where n is the index of the splitting
-                #     ops_H1 = splitter.H_orbits[i][0]
-                #     op_G21 = splitter.G2_orbits[i][0][0]
-                #
-                #     ops_G22 = splitter.G2_orbits[i][1]
-                #
-                #     #tries to find the two translation vectors (along with [0,0,0]) specific to this
-                #     #splitting.
-                #     for op_G22 in ops_G22:
-                #         diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
-                #         if np.sum(diff**2) < 1e-3:
-                #             trans2 = op_G22.translation_vector - op_G21.translation_vector
-                #             trans3 = 2*deepcopy(trans2)
-                #             for k in range(3):
-                #                 trans2[k]=trans2[k]%quadrant[k]
-                #                 trans3[k]=trans3[k]%quadrant[k]
-                #             translations=[trans2,trans3]
-                #             translations.append(np.array([0,0,0]))
-                #             translations=np.array(translations)
-                #             break
-                #
-                #
-                #     #Generates all rotation matrices by applying every operation of the wyckoff position of the
-                #     #1st coordinate to the 1st coordinate.
-                #     coords11 = apply_ops(coord1_G2,ops_H1)
-                #     for j in range(len(coords11)):
-                #         for k in range(3):
-                #             coords11[j][k]=coords11[j][k]%quadrant[k]
-                #
-                #     #Generates all the new possible positions using the translations
-                #     possible_coord_G2=[]
-                #     for coordinate in coords11:
-                #         for translation in translations:
-                #             t=coordinate+translation
-                #             for j in range(3):
-                #                 t[j]=t[j]%quadrant[j]
-                #             possible_coord_G2.append(t)
-                #
-                #
-                #     tmp12,dist12=get_best_match(possible_coord_G2,coord2_G2,self.cell)
-                #     tmp13,dist13=get_best_match(possible_coord_G2,coord3_G2,self.cell)
-                #     if max([dist12,dist13]) > np.sqrt(3)*d_tol:
-                #         return 10000, None, mask
-                #     else:
-                #         max_disps.append(max([dist12,dist13]))
 
         return max(max_disps), disp, mask
 
@@ -1241,6 +1125,7 @@ class supergroup():
         tran = splitter.R[:3,3] # needs to check
         inv_rot = np.linalg.inv(rot)
         ops_G1  = splitter.G[0]
+
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
 
@@ -1249,7 +1134,7 @@ class supergroup():
                 ops_H = splitter.H_orbits[i][0]
                 base = atom_sites_H[mapping[i][0]].position.copy()
 
-                #choose the best coord1_H
+                # choose the best coord1_H
                 coord1s_H = apply_ops(base, ops_H)
                 ds = []
                 for coord1_H in coord1s_H:
@@ -1315,7 +1200,7 @@ class supergroup():
                     coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
                     coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
 
-                    #find the best match
+                    # find the best match
                     coords11 = apply_ops(coord1_G1, ops_G1)
                     tmp, dist = get_best_match(coords11, coord2_G1, cell)
                     tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
@@ -1341,41 +1226,40 @@ class supergroup():
 
 if __name__ == "__main__":
 
+    from pyxtal import pyxtal
+    from time import time
+    data = {
+            #"PVO": [12, 166],
+            #"PPO": [12],
+            #"BTO": [123, 221],
+            #"lt_cristobalite": [98, 210, 227],
+            #"MPWO": [59, 71, 139, 225],
+            #"BTO-Amm2": [65, 123, 221],
+            #"NaSb3F10": [186, 194],
+            #"GeF2": 62,
+            #"NiS-Cm": 160,
+            #"lt_quartz": 180,
+            #"BTO-Amm2": 221,
+            #"BTO": 221,
+            #"lt_cristobalite": 227,
+            #"NaSb3F10": 194,
+            "MPWO": 225,
+            #"NbO2": 141,
+           }
+    cif_path = "pyxtal/database/cifs/"
 
-        from pyxtal import pyxtal
-        from time import time
-        data = {
-                #"PVO": [12, 166],
-                #"PPO": [12],
-                #"BTO": [123, 221],
-                #"lt_cristobalite": [98, 210, 227],
-                #"MPWO": [59, 71, 139, 225],
-                #"BTO-Amm2": [65, 123, 221],
-                #"NaSb3F10": [186, 194],
-                #"GeF2": 62,
-                #"NiS-Cm": 160,
-                #"lt_quartz": 180,
-                #"BTO-Amm2": 221,
-                #"BTO": 221,
-                #"lt_cristobalite": 227,
-                #"NaSb3F10": 194,
-                "MPWO": 225,
-                #"NbO2": 141,
-               }
-        cif_path = "pyxtal/database/cifs/"
-
-        for cif in data.keys():
-            t0 = time()
-            print("===============", cif, "===============")
-            s = pyxtal()
-            s.from_seed(cif_path+cif+'.cif')
-            if isinstance(data[cif], list):
-                #sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
-                sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
-            else:
-                sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
-                #sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
-            print(sup)
-            print("{:6.3f} seconds".format(time()-t0))
-            for i, struc in enumerate(sup.strucs):
-                struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')
+    for cif in data.keys():
+        t0 = time()
+        print("===============", cif, "===============")
+        s = pyxtal()
+        s.from_seed(cif_path+cif+'.cif')
+        if isinstance(data[cif], list):
+            #sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
+            sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
+        else:
+            sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
+            #sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
+        print(sup)
+        print("{:6.3f} seconds".format(time()-t0))
+        for i, struc in enumerate(sup.strucs):
+            struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')

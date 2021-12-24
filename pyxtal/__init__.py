@@ -1420,6 +1420,20 @@ class pyxtal:
         new_struc.source = "Alt. Wyckoff Set: " + xyz_string
         return new_struc, ids
 
+    #def _get_alternative_from_H(self, H):
+    #    """
+    #    get alternative structure representation that is compatible with supergroup H
+    #
+    #    Args:
+    #        number: integer space group number
+
+    #    Returns:
+    #        a new pyxtal structure after transformation
+    #    """
+    #    strucs
+    #    return new_struc, ids
+
+
     def check_distance(self):
         """
         check intermolecular distance for molecular crystal
