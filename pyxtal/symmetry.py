@@ -123,6 +123,13 @@ class Group:
     >>> g.check_compatible([64, 28, 24])
     (True, True)
 
+    or check the possible transition paths to a given supergroup
+
+    >>> g = Group(59)
+    >>> g.search_supergroup_paths(139, 2)
+    [[71, 139], [129, 139], [137, 139]]
+
+
 
     Args:
         group: the group symbol or international number
@@ -656,6 +663,105 @@ class Group:
         else:
             # All species passed, but no degrees of freedom: return 0
             return True, False
+
+    def search_supergroup_paths(self, H, max_layers=5):
+        """
+        Search paths to transit to super group H. if
+        - path1 is a>>e
+        - path2 is a>>b>>c>>e
+        path 2 will not be counted since path 1 exists
+    
+        Args:
+            H: final supergroup number
+            max_layers: the number of supergroup calculations needed.
+    
+        Return:
+            list of possible paths ordered from G to H
+        """
+    
+        layers = {}
+        layers[0] = {'groups': [H], 
+                     'subgroups': [],
+                   }
+        final = []
+        traversed = []
+    
+        # Searches for every subgroup of the the groups from the previous layer.
+        # Stores the possible groups of each layer and their subgroups
+        # in a dictinoary to avoid redundant calculations.
+        for l in range(1, max_layers+1):
+            previous_layer_groups=layers[l-1]['groups']
+            groups = []
+            subgroups = []
+            for g in previous_layer_groups:
+                subgroup_numbers=np.unique(Group(g).get_max_subgroup_numbers())
+    
+                # If a subgroup list has been found with H
+                # trace a path through the dictionary to build the path
+                if self.number in subgroup_numbers:
+                    paths=[[g]]
+                    for j in reversed(range(l-1)):
+                        holder=[]
+                        for path in paths:
+                            tail_number=path[-1]
+                            indices=[]
+                            for idx, numbers in enumerate(layers[j]['subgroups']):
+                                if tail_number in numbers:
+                                    indices.append(idx)
+                            for idx in indices:
+                                holder.append(path+[layers[j]['groups'][idx]])
+                        paths=deepcopy(holder)
+                    final.extend(paths)
+                    subgroups.append([])
+    
+                # Continue to generate next layer if the path to H has not been found.
+                else:
+                    subgroups.append(subgroup_numbers)
+                    for x in subgroup_numbers:
+                        if (x not in groups) and (x not in traversed):
+                            groups.append(x)
+    
+            traversed.extend(groups)
+            layers[l] = {'groups': deepcopy(groups), 
+                         'subgroups':[]}
+            layers[l-1]['subgroups'] = deepcopy(subgroups)
+        return final
+
+    def search_subgroup_paths(self, G, max_layers=5):
+        """
+        Search paths to transit to subgroup H. if
+        - path1 is a>>e
+        - path2 is a>>b>>c>>e
+        path 2 will not be counted since path 1 exists
+    
+        Args:
+            G: final subgroup number
+            max_layers: the number of supergroup calculations needed.
+    
+        Return:
+            list of possible paths ordered from H to G
+        """
+        raise NotImplementedError
+
+    def get_valid_solutions(self, solutions):
+        """
+        check if the solutions are valid
+        a special WP such as (0,0,0) cannot be occupied twice
+
+        Args:
+            solutions: list of solutions about the distibution of WP sites
+
+        Returns:
+            the filtered solutions that are vaild
+        """
+        valid_solutions = []
+        for solution in solutions:
+            sites = []
+            for s in solution:
+                sites.extend(s)
+            if self.is_valid_combination(sites):
+                valid_solutions.append(solution)
+        return valid_solutions
 
     def cellsize(self):
         """

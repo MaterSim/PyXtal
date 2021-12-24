@@ -71,6 +71,16 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(Group(227).check_compatible([4]) == (False, False))
         self.assertTrue(Group(19).check_compatible([6]) == (False, False))
 
+    def test_search_supergroup_paths(self):
+        paths = Group(59).search_supergroup_paths(139, 2) 
+        self.assertTrue(paths == [[71, 139], [129, 139], [137, 139]])
+
+    #def test_search_subgroup_paths(self):
+    #    self.assertTrue(Group(139).search_supergroup_paths(59) == [[71, 59], [129, 59], [137, 59]])
+
+    #def test_get_valid_solutions(self):
+        
+
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):
         c1 = pyxtal()

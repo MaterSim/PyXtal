@@ -298,21 +298,6 @@ def get_best_match(positions, ref, cell):
     id = np.argmin(dists)
     return positions[id], dists[id]
 
-def check_freedom(G, solutions):
-    """
-    check if the solutions are valid
-    a special WP such as (0,0,0) cannot be occupied twice
-    """
-    valid_solutions = []
-    #G = sym.Group(G)
-    for solution in solutions:
-        sites = []
-        for s in solution:
-            sites.extend(s)
-        if G.is_valid_combination(sites):
-            valid_solutions.append(solution)
-    return valid_solutions
-
 def check_lattice(G, trans, struc, tol=1.0, a_tol=10):
     """
     check if the lattice mismatch is big
@@ -438,65 +423,6 @@ def check_compatibility(G, relation, sites, elements):
     #     print(good_splittings_list[0])
     return good_splittings_list
 
-def search_paths(H, G, max_layers=5):
-    """
-    Search function throws away paths that take a roundabout. if
-    - path1 is a>>e>>f>>g
-    - path2 is a>>b>>c>>e>>f>>g
-    path 2 will not be counted as there is already a shorter path from a>>e
-
-    Args:
-        H: starting structure IT group number
-        G: final supergroup IT Group number
-        max_layers: the number of supergroup calculations needed.
-
-    Return:
-        list of possible paths ordered from smallest to biggest
-    """
-
-    layers={}
-    layers[0]={'groups':[G], 'subgroups':[]}
-    final=[]
-    traversed=[]
-
-    # Searches for every subgroup of the the groups from the previous layer.
-    # Stores the possible groups of each layer and their subgroups
-    # in a dictinoary to avoid redundant calculations.
-    # Starts from G and goes down to H
-    for l in range(1,max_layers+1):
-        previous_layer_groups=layers[l-1]['groups']
-        groups=[]
-        subgroups=[]
-        for g in previous_layer_groups:
-            subgroup_numbers=np.unique(sym.Group(g).get_max_subgroup_numbers())
-
-            # If a subgroup list has been found with H, will trace
-            # a path through the dictionary to build the path
-            if H in subgroup_numbers:
-                paths=[[g]]
-                for j in reversed(range(l-1)):
-                    holder=[]
-                    for path in paths:
-                        tail_number=path[-1]
-                        indices=[]
-                        for idx, numbers in enumerate(layers[j]['subgroups']):
-                            if tail_number in numbers:
-                                indices.append(idx)
-                        for idx in indices:
-                            holder.append(path+[layers[j]['groups'][idx]])
-                    paths=deepcopy(holder)
-                final.extend(paths)
-                subgroups.append([])
-
-            # Continue to generate a layer of groups if the path to H has not been found.
-            else:
-                subgroups.append(subgroup_numbers)
-                [groups.append(x) for x in subgroup_numbers if (x not in groups) and (x not in traversed)]
-
-        traversed.extend(groups)
-        layers[l]={'groups':deepcopy(groups),'subgroups':[]}
-        layers[l-1]['subgroups']=deepcopy(subgroups)
-    return final
 
 def new_path(path, paths):
     """
@@ -525,7 +451,7 @@ class supergroups():
         self.d_tol = d_tol
         self.max_per_G = max_per_G
         if path is None:
-            paths = search_paths(struc.group.number, G, max_layers=5)
+            paths = struc.group.search_supergroup_paths(G, max_layers=5)
         else:
             paths = [path]
 
@@ -652,7 +578,7 @@ class supergroup():
                     results = check_compatibility(G, relation, sites, elements)
                     if results is not None:
                         sols = list(itertools.product(*results))
-                        trials = check_freedom(G, sols)
+                        trials = G.get_valid_solutions(sols)
                         sol = {'group': G, 'id': id, 'splits': trials}
                         solutions.append(sol)
 
