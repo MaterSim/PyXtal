@@ -18,6 +18,24 @@ from pyxtal.wyckoff_site import atom_site
 from pyxtal.operations import apply_ops, get_best_match
 from pyxtal.wyckoff_split import wyckoff_split
 
+def write_poscars(H_struc, G_struc, mapping, splitter, N_images=3):
+    """
+    Write the intermediate POSCARs betwee H and G structure
+
+    Args:
+        H_struc: PyXtal low symmetry structure
+        G_struc: PyXtal high symmetry structure
+        mapping: atomic mapping between H and G
+        splitter: splitter object
+        N_images: number of intermediate structures between H and G
+
+    Return:
+        a list of POSCARs
+    """
+    raise NotImplementedError
+
+
+
 def new_structure(struc, refs):
     """
     check if struc is already in the reference solutions
@@ -341,9 +359,25 @@ class supergroups():
     def __repr__(self):
         return str(self)
 
+    def write_poscar(self):
+        """
+        dump the poscar with the same order of atom mapping
+        """
+        file1, file2 = 'POSCAR_1', 'POSCAR_2'
+        #do something
+
+
     def struc_along_path(self, path):
         """
         search for the super group structure along a given path
+        
+        Args: 
+            - path: [59, 71, 139]
+
+        Returns:
+            - strucs: list of structures along the path
+            - working_path:
+            - valid: True or False
         """
         strucs = []
         G_strucs = [self.struc0]
@@ -445,7 +479,7 @@ class supergroup():
             solutions: list of tuples (splitter, mapping, disp)
             show_detail (bool): print out the detail
         Returns:
-            list of pyxtal structures
+            list of pyxtal structures + the mapping relation
         """
         G_strucs = []
 
@@ -488,13 +522,23 @@ class supergroup():
                 G_struc._get_formula()
                 G_struc.disp = mae
 
+
                 if new_structure(G_struc, G_strucs):
+                    # store mapping information
+                    G_struc.tag = {
+                                   'mapping': mapping,
+                                   'splitter': sp,
+                                   'disp': mae,
+                                  }
+                    #print(G_struc.tag)
                     G_strucs.append(G_struc)
                     if show_detail:
                         self.print_detail(coords_H1, coords_G2, elements, disp)
                         print(G_struc)
 
         return G_strucs
+
+
 
     def get_displacement(self, split_id, solution, d_tol):
         """
@@ -559,7 +603,7 @@ class supergroup():
         """
         print out the details of tranformation
         """
-        print("Valid structure", self.G)
+        print("Valid structure", self.G.number)
         disps = []
         for x, y, ele in zip(coords_H1, coords_G1, elements):
             dis = y-(x+disp)
