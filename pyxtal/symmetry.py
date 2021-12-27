@@ -775,7 +775,7 @@ class Group:
             # All species passed, but no degrees of freedom: return 0
             return True, False
 
-    def search_supergroup_paths(self, H, max_layers=5):
+    def search_supergroup_paths(self, H, max_layer=5):
         """
         Search paths to transit to super group H. if
         - path1 is a>>e
@@ -784,7 +784,7 @@ class Group:
     
         Args:
             H: final supergroup number
-            max_layers: the number of supergroup calculations needed.
+            max_layer: the number of supergroup calculations needed.
     
         Return:
             list of possible paths ordered from G to H
@@ -800,7 +800,7 @@ class Group:
         # Searches for every subgroup of the the groups from the previous layer.
         # Stores the possible groups of each layer and their subgroups
         # in a dictinoary to avoid redundant calculations.
-        for l in range(1, max_layers+1):
+        for l in range(1, max_layer+1):
             previous_layer_groups=layers[l-1]['groups']
             groups = []
             subgroups = []
@@ -838,7 +838,7 @@ class Group:
             layers[l-1]['subgroups'] = deepcopy(subgroups)
         return final
 
-    def search_subgroup_paths(self, G, max_layers=5):
+    def search_subgroup_paths(self, G, max_layer=5):
         """
         Search paths to transit to subgroup H. if
         - path1 is a>>e
@@ -847,7 +847,7 @@ class Group:
     
         Args:
             G: final subgroup number
-            max_layers: the number of supergroup calculations needed.
+            max_layer: the number of supergroup calculations needed.
     
         Return:
             list of possible paths ordered from H to G
