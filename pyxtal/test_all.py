@@ -78,8 +78,12 @@ class TestGroup(unittest.TestCase):
     #def test_search_subgroup_paths(self):
     #    self.assertTrue(Group(139).search_supergroup_paths(59) == [[71, 59], [129, 59], [137, 59]])
 
-    #def test_get_valid_solutions(self):
-        
+    def test_get_splitters(self):
+        s = pyxtal()
+        s.from_seed(cif_path+'3-G139.cif')
+        g = Group(225)
+        solutions = g.get_splitters_from_structure(s, 't')
+        self.assertTrue(len(solutions)==3)
 
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):

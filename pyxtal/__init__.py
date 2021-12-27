@@ -1515,6 +1515,29 @@ class pyxtal:
             return display_atomic(self, **kwargs)
 
 
+    def _get_elements_and_sites(self):
+        """
+        Sometimes, the atoms are not arranged in order
+        group the elements, sites
+        
+        Returns:
+            sites: [['4b'], ['4a','4a']]
+            elements: ['Si', 'O']
+        """
+        elements = []
+        sites = []
+        for at_site in self.atom_sites:
+            e = at_site.specie
+            site = str(at_site.wp.multiplicity) + at_site.wp.letter
+            if e not in elements:
+                elements.append(e)
+                sites.append([site])
+            else:
+                id = elements.index(e)
+                sites[id].append(site)
+        return elements, sites
+
+
     def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, CN=None):
         """
         For molecular crystals, get the neighboring molecules for a given WP
@@ -1735,5 +1758,4 @@ class pyxtal:
             #print(cif)
             #print(self.to_file())
             print("Wrong", csd_code); import sys; sys.exit()
-
 

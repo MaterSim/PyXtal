@@ -412,15 +412,6 @@ class Group:
             ops = self.w_symm[index][0]
         return ss_string_from_ops(ops, self.number, dim=self.dim)
 
-    def get_max_t_subgroup(self):
-        """
-        Returns the maximal t-subgroups as a dictionary
-        """
-        if self.dim == 3:
-            return t_subgroup[str(self.number)]
-        else:
-            raise NotImplementedError("Now we only support the subgroups for space group")
-    
     def get_alternatives(self):
         """
         Get the alternative settings as a dictionary
@@ -447,7 +438,127 @@ class Group:
             return t_subgroup[str(self.number)]
         else:
             raise NotImplementedError("Now we only support the subgroups for space group")
- 
+
+    def get_wp_list(self, reverse=False):
+        """
+        Get the reversed list of wps
+        """
+        wp_list = [(str(x.multiplicity)+x.letter) for x in self.Wyckoff_positions]
+        if reverse: wp_list.reverse()
+        return wp_list
+
+    def get_splitters_from_structure(self, struc, group_type='t'):
+        """
+        Get the valid symmetry relations for a structure to transit to its supergroup
+        e.g., 
+        
+        Args:
+            - struc: pyxtal structure
+            - group_type: `t` or `k`
+        Returns:
+            list of valid transitions [(id, (['4a'], ['4b'], [['4a'], ['4c']])]
+        """
+
+        if group_type=='t':
+            dicts = self.get_max_t_subgroup()
+        else:
+            dicts = self.get_max_k_subgroup()
+
+        # search for the compatible solutions
+        solutions = []
+        for i, sub in enumerate(dicts['subgroup']):
+            if sub == struc.group.number:
+                # extract the relation
+                relation = dicts['relations'][i]
+                trans = np.linalg.inv(dicts['transformation'][i][:,:3])
+                if struc.lattice.check_mismatch(trans, self.lattice_type):
+                    results = self.get_splitters_from_relation(struc, relation)
+                    if results is not None:
+                        sols = list(itertools.product(*results))
+                        trials = self.get_valid_solutions(sols)
+                        solutions.append((i, trials))
+        return solutions
+
+    def get_splitters_from_relation(self, struc, relation):        
+        """
+        Get the valid symmetry relations for a structure to transit to its supergroup
+        e.g., 
+        
+        Args:
+            - struc: pyxtal structure
+            - group_type: `t` or `k`
+        Returns:
+            list of valid transitions 
+        """
+
+        elements, sites = struc._get_elements_and_sites()
+        wp_list = self.get_wp_list(reverse=True)
+
+        good_splittings_list=[]
+
+        # search for all valid compatible relations
+        # each element is solved one at a time
+        for site in sites:
+            # ['4a', '4a', '2b'] -> ['4a', '2b']
+            _site = np.unique(site)
+            _site_counts = [site.count(x) for x in _site]
+            wp_indices = []
+
+            # the sum of all positions should be fixed.
+            total_units = 0
+            for j, x in enumerate(_site):
+                total_units += int(x[:-1])*_site_counts[j]
+
+            # collect all possible supergroup transitions
+            for j, split in enumerate(relation):
+                if np.all([x in site for x in split]):
+                    wp_indices.append(j)
+
+            wps = [wp_list[x] for x in wp_indices]
+            blocks = [np.array([relation[j].count(s) for s in _site]) for j in wp_indices]
+            block_units = [sum([int(x[:-1])*block[j] for j,x in enumerate(_site)]) for block in blocks]
+
+            # below is a brute force search for the valid combinations
+            combo_storage = [np.zeros(len(block_units))]
+            good_list = []
+            while len(combo_storage) > 0:
+                holder = []
+                for j, x in enumerate(combo_storage):
+                    for k in range(len(block_units)):
+                        trial = np.array(deepcopy(x)) # trial solution
+                        trial[k] += 1
+                        if trial.tolist() in holder:
+                            continue
+                        sum_units = np.dot(trial, block_units)
+                        if sum_units > total_units:
+                            continue
+                        elif sum_units < total_units:
+                            holder.append(trial.tolist())
+                        else:
+                            tester = np.zeros(len(_site_counts))
+                            for l, z in enumerate(trial):
+                                tester += z*blocks[l]
+                            if np.all(tester == _site_counts):
+                                G_sites = []
+                                for l, number in enumerate(trial):
+                                    if number == 0:
+                                        continue
+                                    elif number == 1:
+                                        G_sites.append(wps[l])
+                                    else:
+                                        for i in range(int(number)):
+                                            G_sites.append(wps[l])
+                                if G_sites not in good_list:
+                                    good_list.append(G_sites)
+                combo_storage=holder
+
+            if len(good_list) == 0:
+                return None
+            else:
+                good_splittings_list.append(good_list)
+        return good_splittings_list
+
+
     def get_min_supergroup(self, group_type='t', G=None):
         """
         Returns the minimal supergroups as a dictionary

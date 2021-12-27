@@ -15,22 +15,29 @@ import pymatgen.analysis.structure_matcher as sm
 import pyxtal.symmetry as sym
 from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import atom_site
-from pyxtal.operations import apply_ops
+from pyxtal.operations import apply_ops, get_best_match
 from pyxtal.wyckoff_split import wyckoff_split
 
-def new_solution(A, refs):
+def new_structure(struc, refs):
     """
-    check if A is already in the reference solutions
+    check if struc is already in the reference solutions
     """
-    for B in refs:
-        match = True
-        for a, b in zip(A, B):
-            a.sort()
-            b.sort()
-            if a != b:
-                match = False
-                break
-        if match:
+    g1 = struc.group.number
+    pmg1 = struc.to_pymatgen()
+    for ref in refs:
+        g2 = ref.group.number
+        if g1 == g2:
+            pmg2 = ref.to_pymatgen()
+            if sm.StructureMatcher().fit(pmg1, pmg2):
+                return False
+    return True
+
+def new_path(path, paths):
+    """
+    check if struc is already in the reference solutions
+    """
+    for ref in paths:
+        if path[:len(ref)] == ref:
             return False
     return True
 
@@ -73,7 +80,6 @@ def find_mapping_per_element(sites1, sites2,max_num=720):
     for i in range(1,len(combo_list)):
         unique_solutions=[x+[y] for x in unique_solutions for y in combo_list[i] if len(set(sum(x,[])).intersection(y))==0]
     return unique_solutions
-
 
 def find_mapping(atom_sites, splitter, max_num=720):
     """
@@ -130,6 +136,13 @@ def find_mapping(atom_sites, splitter, max_num=720):
     return ordered_mappings
 
 def search_G1(G, rot, tran, pos, wp1, op):
+    """
+    apply symmetry operation on pos1 when it involves cell change.
+    e.g., when the transformation is (a+b, a-b, c),
+    trial translation needs to be considered to minimize the
+    difference between the transformed pos1 and reference pos2
+    """
+
     if np.linalg.det(rot) < 1:
         shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
     else:
@@ -162,6 +175,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None, ortho=True):
     trial translation needs to be considered to minimize the
     difference between the transformed pos1 and reference pos2
     """
+
     pos1 -= np.round(pos1)
     if np.linalg.det(rot) < 1:
         shifts = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
@@ -227,7 +241,7 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
 
     # eliminate any unused free parameters in G2
     # The goal is to reduce the symmetry operations to be a full rank matrix
-    # any free parameter that is not used has its spot deleted from the rotation matrix and translation vector
+    # any free parameter that is not used has its spot deleted from the rotation and translation 
     for i,x in reversed(list(enumerate(rot_G2))):
         if set(x)=={0.}:
             G2_holder[i]=0
@@ -265,155 +279,6 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
             raise RuntimeError('unable to find free parameters using this operation')
 
 
-def new_structure(struc, refs):
-    """
-    check if struc is already in the reference solutions
-    """
-    g1 = struc.group.number
-    pmg1 = struc.to_pymatgen()
-    for ref in refs:
-        g2 = ref.group.number
-        if g1 == g2:
-            pmg2 = ref.to_pymatgen()
-            if sm.StructureMatcher().fit(pmg1, pmg2):
-                return False
-    return True
-
-def get_best_match(positions, ref, cell):
-    """
-    find the best match with the reference from a set of positions
-
-    Args:
-        positions: N*3 array
-        ref: 1*3 array
-
-    Returns:
-        position: matched position
-        id: matched id
-    """
-    diffs = positions - ref
-    diffs -= np.round(diffs)
-    diffs = np.dot(diffs, cell)
-    dists = np.linalg.norm(diffs, axis=1)
-    id = np.argmin(dists)
-    return positions[id], dists[id]
-
-def check_compatibility(G, relation, sites, elements):
-    """
-    find the compatible splitter to let the atoms of subgroup H fit the group G.
-
-    Args:
-        G: the target space group with high symmetry
-        relation: a dictionary to describe the relation between G and H
-    """
-    #G = sym.Group(G)
-
-    #results = {}
-    wyc_list = [(str(x.multiplicity)+x.letter) for x in G]
-    wyc_list.reverse()
-
-    good_splittings_list=[]
-
-    # A lot of integer math below.
-    # The goal is to find all the integer combinations of supergroup
-    # wyckoff positions with the same number of atoms
-
-    # each element is solved one at a time
-    for i in range(len(elements)):
-
-        site = np.unique(sites[i])
-        site_counts = [sites[i].count(x) for x in site]
-        possible_wyc_indices = []
-
-        # the sum of all positions should be fixed.
-        total_units = 0
-        for j, x in enumerate(site):
-            total_units += int(x[:-1])*site_counts[j]
-
-
-        # collect all possible supergroup transitions
-        # make sure all sites are included in the split
-        for j, split in enumerate(relation):
-            # print(j, split)
-            if np.all([x in site for x in split]):
-                possible_wyc_indices.append(j)
-        # for the case of 173 ['2b'] -> 176
-        # print(possible_wyc_indices) [2, 3, 5]
-
-        # a vector to represent the possible combinations of positions
-        # when the site is [6c, 2b]
-        # the split from [6c, 6c] to [12i] will be counted as [2,0].
-        # a entire split from [6c, 6c, 6c, 2b] will need [3, 1]
-
-        possible_wycs = [wyc_list[x] for x in possible_wyc_indices]
-        blocks = [np.array([relation[j].count(s) for s in site]) for j in possible_wyc_indices]
-        block_units = [sum([int(x[:-1])*block[j] for j,x in enumerate(site)]) for block in blocks]
-
-        # print(possible_wycs)  # ['2c', '2d', '4f']
-        # print(blocks) # [array([1]), array([1]), array([2])]
-        # print(block_units) # [2, 2, 4]
-
-        # the position_block_units stores the total sum multiplicty
-        # from the available G's wyckoff positions.
-        # below is a brute force search for the valid combinations
-
-        combo_storage = [np.zeros(len(block_units))]
-        good_list = []
-        # print(combo_storage)
-        # print(block_units)
-        # print(blocks)
-        # print(possible_wycs)
-        # print(total_units)
-        # print(site_counts)
-        while len(combo_storage)!=0:
-            holder = []
-            for j, x in enumerate(combo_storage):
-                for k in range(len(block_units)):
-                    trial = np.array(deepcopy(x)) # trial solution
-                    trial[k] += 1
-                    if trial.tolist() in holder:
-                        continue
-                    sum_units = np.dot(trial, block_units)
-                    if sum_units > total_units:
-                        continue
-                    elif sum_units < total_units:
-                        holder.append(trial.tolist())
-                    else:
-                        tester = np.zeros(len(site_counts))
-                        for l, z in enumerate(trial):
-                            tester += z*blocks[l]
-                        if np.all(tester == site_counts):
-                            G_sites = []
-                            for l, number in enumerate(trial):
-                                if number==0:
-                                    continue
-                                elif number==1:
-                                    G_sites.append(possible_wycs[l])
-                                else:
-                                    for i in range(int(number)):
-                                        G_sites.append(possible_wycs[l])
-                            if G_sites not in good_list:
-                                good_list.append(G_sites)
-            combo_storage=holder
-
-        if len(good_list)==0:
-            # print("cannot find the valid split, quit the search asap")
-            return None
-        else:
-            good_splittings_list.append(good_list)
-    # if len(good_splittings_list[0])==1:
-    #     print(good_splittings_list[0])
-    return good_splittings_list
-
-
-def new_path(path, paths):
-    """
-    check if struc is already in the reference solutions
-    """
-    for ref in paths:
-        if path[:len(ref)] == ref:
-            return False
-    return True
 
 class supergroups():
     """
@@ -493,7 +358,7 @@ class supergroups():
                 group_type = 't'
 
             for G_struc in G_strucs:
-                my = supergroup(G_struc, [G], group_type)
+                my = supergroup(G_struc, G, group_type)
                 solutions = my.search_supergroup(self.d_tol, self.max_per_G)
                 new_G_strucs = my.make_supergroup(solutions, show_detail=self.show)
                 if len(new_G_strucs) > 0:
@@ -522,62 +387,26 @@ class supergroup():
         G: list of possible supergroup numbers, default is None
         group_type: `t` or `k`
     """
-    def __init__(self, struc, G=None, group_type='t'):
+    def __init__(self, struc, G, group_type='t'):
 
         # initilize the necesary parameters
         self.group_type = group_type
-        self.error = False
-
-        # extract the supergroup information
-        self.wyc_supergroups = struc.group.get_min_supergroup(group_type, G)
+        self.solutions = []
+        self.error = True
+        self.G = sym.Group(G)
 
         # list of all alternative wycsets
         strucs = struc.get_alternatives()
         for struc in strucs:
-            # group the elements, sites, positions
-            elements = []
-            sites = []
-            for at_site in struc.atom_sites:
-                e = at_site.specie
-                site = str(at_site.wp.multiplicity) + at_site.wp.letter
-                if e not in elements:
-                    elements.append(e)
-                    sites.append([site])
-                else:
-                    id = elements.index(e)
-                    sites[id].append(site)
-
-            # search for the compatible solutions
-            solutions = []
-            for idx in range(len(self.wyc_supergroups['supergroup'])):
-                G = sym.Group(self.wyc_supergroups['supergroup'][idx])
-                relation = self.wyc_supergroups['relations'][idx]
-                id = self.wyc_supergroups['idx'][idx]
-                trans = np.linalg.inv(self.wyc_supergroups['transformation'][idx][:,:3])
-
-                if struc.lattice.check_mismatch(trans, G.lattice_type):
-                    results = check_compatibility(G, relation, sites, elements)
-                    if results is not None:
-                        sols = list(itertools.product(*results))
-                        trials = G.get_valid_solutions(sols)
-                        sol = {'group': G, 'id': id, 'splits': trials}
-                        solutions.append(sol)
-
+            solutions = self.G.get_splitters_from_structure(struc, group_type)
             if len(solutions) > 0:
-                # exit if one solution is found
+                #print(struc)
+                self.struc = struc
+                self.elements, self.sites = struc._get_elements_and_sites()
+                self.solutions = solutions
+                self.cell = struc.lattice.matrix
+                self.error = False
                 break
-
-        if len(solutions) == 0:
-            self.solutions = []
-            self.error = True
-            #print("No compatible solution exists")
-        else:
-            #print(struc)
-            self.sites = sites
-            self.elements = elements
-            self.struc = struc
-            self.solutions = solutions
-            self.cell = struc.lattice.matrix
 
     def search_supergroup(self, d_tol=1.0, max_per_G=2500):
         """
@@ -594,7 +423,7 @@ class supergroup():
         if len(self.solutions) > 0:
             # extract the valid
             for sols in self.solutions:
-                G, id, sols = sols['group'], sols['id'], sols['splits']
+                (id, sols) = sols
                 if len(sols) > max_per_G:
                     print("Warning: ignore some solutions: ", len(sols)-max_per_G)
                     sols = sample(sols, max_per_G)
@@ -602,7 +431,7 @@ class supergroup():
                 #sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
                 for sol in sols:
                     #print(sol)
-                    mae, disp, mapping, sp = self.get_displacement(G, id, sol, d_tol*1.1)
+                    mae, disp, mapping, sp = self.get_displacement(id, sol, d_tol*1.1)
                     #print(G.number, sol, mae, disp)
                     if mae < d_tol:
                         valid_solutions.append((sp, mapping, disp, mae))
@@ -662,18 +491,16 @@ class supergroup():
                 if new_structure(G_struc, G_strucs):
                     G_strucs.append(G_struc)
                     if show_detail:
-                        G = sp.G.number
-                        self.print_detail(G, coords_H1, coords_G2, elements, disp)
+                        self.print_detail(coords_H1, coords_G2, elements, disp)
                         print(G_struc)
 
         return G_strucs
 
-    def get_displacement(self, G, split_id, solution, d_tol):
+    def get_displacement(self, split_id, solution, d_tol):
         """
         For a given solution, search for the possbile supergroup structure
 
         Args:
-            G: group object
             split_id (int): integer
             solution (list): e.g., [['2d'], ['6h'], ['2c', '6h', '12i']]
             d_tol (float): tolerance
@@ -694,8 +521,7 @@ class supergroup():
         ids = np.argsort(np.array(muls))
         elements = [elements[id] for id in ids]
         sites_G = [sites_G[id] for id in ids]
-        #print(G, self.struc.group.number, sites_G)
-        splitter = wyckoff_split(G, split_id, sites_G, self.group_type, elements)
+        splitter = wyckoff_split(self.G, split_id, sites_G, self.group_type, elements)
         mappings = find_mapping(self.struc.atom_sites, splitter)
         dists = []
         disps = []
@@ -729,11 +555,11 @@ class supergroup():
             return 1000, None, None, None
 
 
-    def print_detail(self, G, coords_H1, coords_G1, elements, disp):
+    def print_detail(self, coords_H1, coords_G1, elements, disp):
         """
         print out the details of tranformation
         """
-        print("Valid structure", G)
+        print("Valid structure", self.G)
         disps = []
         for x, y, ele in zip(coords_H1, coords_G1, elements):
             dis = y-(x+disp)
@@ -748,7 +574,6 @@ class supergroup():
 
 
     def symmetrize_dist(self, splitter, mapping, disp=None, mask=None, d_tol=1.2):
-
         """
         For a given solution, search for the possbile supergroup structure
 
@@ -763,6 +588,7 @@ class supergroup():
             distortion
             cell translation
         """
+
         if splitter.H.number <= 15 or 143<= splitter.H.number <= 194:
             ortho = False
         else:
@@ -935,7 +761,6 @@ class supergroup():
                     disp = np.zeros(3)
                     mask = [0, 1, 2]
 
-
                 # organizes the numbers in the order as the positions in splitter.wp2_lists
                 # so that the positions from atoms_sites_H are in the correct assigned position.
                 letters=[atom_sites_H[mapping[i][x]].wp.letter for x in range(n)]
@@ -992,7 +817,6 @@ class supergroup():
                 # Finds the average free parameters between all the coordinates as the best set of free
                 # parameters that all coordinates must match
                 final_xyz=np.sum(G2_xyz,axis=0)/n
-
 
                 dist_list=[]
                 for j in range(n):
@@ -1140,7 +964,7 @@ if __name__ == "__main__":
             #"PPO": [12],
             #"BTO": [123, 221],
             #"lt_cristobalite": [98, 210, 227],
-            #"MPWO": [59, 71, 139, 225],
+            "MPWO": [59, 71, 139, 225],
             #"BTO-Amm2": [65, 123, 221],
             #"NaSb3F10": [186, 194],
             #"GeF2": 62,
@@ -1150,7 +974,7 @@ if __name__ == "__main__":
             #"BTO": 221,
             #"lt_cristobalite": 227,
             #"NaSb3F10": 194,
-            "MPWO": 225,
+            #"MPWO": 225,
             #"NbO2": 141,
            }
     cif_path = "pyxtal/database/cifs/"
@@ -1161,12 +985,10 @@ if __name__ == "__main__":
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
         if isinstance(data[cif], list):
-            #sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
             sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
         else:
             sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
-            #sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
         print(sup)
         print("{:6.3f} seconds".format(time()-t0))
-        for i, struc in enumerate(sup.strucs):
-            struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')
+        #for i, struc in enumerate(sup.strucs):
+        #    struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')

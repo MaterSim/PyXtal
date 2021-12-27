@@ -844,6 +844,27 @@ def find_ids(coords, ref):
     return ids
 
 
+def get_best_match(positions, ref, cell):
+    """
+    find the best match with the reference from a set of positions
+
+    Args:
+        positions: N*3 array
+        ref: 1*3 array
+        cell: cell matrix 3*3 array
+
+    Returns:
+        position: matched position
+        id: matched id
+    """
+    diffs = positions - ref
+    diffs -= np.round(diffs)
+    diffs = np.dot(diffs, cell)
+    dists = np.linalg.norm(diffs, axis=1)
+    id = np.argmin(dists)
+    return positions[id], dists[id]
+
+
 
 # Test Functionality
 if __name__ == "__main__":
