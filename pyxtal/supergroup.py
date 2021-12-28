@@ -138,7 +138,7 @@ def new_path(path, paths):
             return False
     return True
 
-def find_mapping_per_element(sites1, sites2,max_num=720):
+def find_mapping_per_element(sites1, sites2, max_num=720):
     """
     search for all mappings for a given splitter
 
@@ -473,7 +473,7 @@ class supergroup():
 
             for solution in solutions:
                 (sp, mapping, translation, max_disp) = solution
-                lat1 = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.struc.lattice.matrix)
+                lat1 = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.cell)
                 lattice = Lattice.from_matrix(lat1, ltype=sp.G.lattice_type)
 
                 details = self.symmetrize(sp, mapping, translation)
@@ -508,8 +508,8 @@ class supergroup():
                     G_strucs.append(G_struc)
                     if show_detail:
                         self.print_detail(coords_H1, coords_G2, elements, translation)
-                        print(G_struc)
-                        import sys; sys.exit()
+                        #print(G_struc)
+                        #import sys; sys.exit()
 
         return G_strucs
 
@@ -550,9 +550,11 @@ class supergroup():
             mask = self.get_initial_mask(splitter)
             for mapping in mappings:
                 dist, translation, mask = self.symmetrize_dist(splitter, mapping, mask, None, d_tol)
+                #Maybe collect only valuable
                 dists.append(dist)
                 translations.append(translation)
                 masks.append(mask)
+
             dists = np.array(dists)
             max_disp = np.min(dists)
             id = np.argmin(dists)
@@ -582,8 +584,21 @@ class supergroup():
             else:
                 if wp2[0].get_dof() == 0:
                     return [0, 1, 2]
+        #print(splitter); import sys; sys.exit()
         return None
 
+    def get_coord_H(self, splitter, id, atom_sites_H, mapping):
+        # number of split sites for a given WP
+        n = len(splitter.wp2_lists[id])
+        letters = [atom_sites_H[mapping[id][x]].wp.letter for x in range(n)]
+        ordered_letter_index = []
+        for pos in splitter.wp2_lists[id]:
+            indice = letters.index(pos.letter)
+            ordered_letter_index.append(indice)
+            letters[indice] = 0
+        ordered_mapping = [mapping[id][x] for x in ordered_letter_index]
+        coord_H = [atom_sites_H[ordered_mapping[x]].position.copy() for x in range(n)]
+        return coord_H
 
     def symmetrize_dist(self, splitter, mapping, mask, translation=None, d_tol=1.2):
         """
@@ -603,221 +618,35 @@ class supergroup():
         """
 
         max_disps = []
-        atom_sites_H = self.struc.atom_sites
-        rot = splitter.R[:3,:3] # inverse coordinate transformation
-        tran = splitter.R[:3,3] # needs to check
-        inv_rot = np.linalg.inv(rot)
-        cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
-        ops_G1 = splitter.G[0]
-
-        if mask is not None and translation is not None:
-            translation[mask] = 0
-
-        for i, wp1 in enumerate(splitter.wp1_lists):
-            if len(splitter.wp2_lists[i]) == 1:
-                op_G1 = splitter.G1_orbits[i][0][0]
-                ops_H = splitter.H_orbits[i][0]
-                base = atom_sites_H[mapping[i][0]].position.copy()
-
-                # choose the best coord1_H
-                coord1s_H = apply_ops(base, ops_H)
-                ds = []
-                for coord1_H in coord1s_H:
-                    if translation is not None:
-                        coord1_G2 = coord1_H + translation
-                    else:
-                        coord1_G2 = coord1_H
-                    coord1_G1, diff = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G1)
-                    ds.append(diff)
-
-                ds = np.array(ds)
-                minID = np.argmin(ds)
-                coord1_H = coord1s_H[minID]
-
-                if translation is not None:
-                    coord1_G2 = coord1_H + translation
-                else:
-                    coord1_G2 = coord1_H
-
-                tmp, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G1)
-
-                # initial guess on disp
-                if translation is None:
-                    coord1_G2, dist1 = search_G2(inv_rot, -tran, tmp, coord1_H, None)
-                    diff = coord1_G2 - coord1_H
-                    diff -= np.round(diff)
-                    translation = diff.copy()
-                    mask = []
-                    for m in range(3):
-                        if abs(diff[m])<1e-4:
-                            mask.append(m)
-                    dist = 0
-                else:
-                    coord1_H += translation
-                    coord1_G2, dist = search_G2(inv_rot, -tran, tmp, coord1_H, self.cell)
-
-                #print("--------", wp1.letter, tmp, coord1_G2, coord1_H+disp, dist)
-                if dist < d_tol:
-                    #if dist >0: print(dist, coord1_G2, coord1_H+disp)
-                    max_disps.append(dist)
-                else:
-                    #import sys; sys.exit()
-                    return 10000, None, None
-
-            elif len(splitter.wp2_lists[i]) == 2:
-                # H->G2->G1
-                if atom_sites_H[mapping[i][0]].wp.letter == splitter.wp2_lists[i][0].letter:
-                    coord1_H = atom_sites_H[mapping[i][0]].position.copy()
-                    coord2_H = atom_sites_H[mapping[i][1]].position.copy()
-                else:
-                    coord2_H = atom_sites_H[mapping[i][0]].position.copy()
-                    coord1_H = atom_sites_H[mapping[i][1]].position.copy()
-
-                #print("\n\n\nH", coord1_H, coord2_H)
-
-                coord1_G2 = coord1_H + translation
-                coord2_G2 = coord2_H + translation
-
-                if splitter.group_type == 'k':
-                    # For t-type splitting, restore the translation symmetry:
-                    # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
-                    # then find the best_match between coord1 and coord2,
-
-                    ops_H1 = splitter.H_orbits[i][0]
-                    op_G21 = splitter.G2_orbits[i][0][0]
-                    ops_G22 = splitter.G2_orbits[i][1]
-                    for op_G22 in ops_G22:
-                        diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
-                        if np.sum(diff**2) < 1e-3:
-                            trans = op_G22.translation_vector - op_G21.translation_vector
-                            break
-                    trans -= np.round(trans)
-                    coords11 = apply_ops(coord1_G2, ops_H1)
-                    coords11 += trans
-                    tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
-                    if dist > np.sqrt(2)*d_tol:
-                        #print("disp:", disp)
-                        #print("G21:", coords11)
-                        #print("G22:", coord2_G2)
-                        #print("start: ", coord1_H, coord2_H)
-                        #res = tmp - coord2_G2
-                        #res -= np.round(res)
-                        #print("kkkk", wp1.letter, dist, tmp, coord2_G2, "diff", res)
-                        return 10000, None, mask
-                    else:
-                        d = coord2_G2 - tmp
-                        d -= np.round(d)
-                        max_disps.append(np.linalg.norm(np.dot(d/2, self.cell)))
-
-                else:
-                    #print("disp", disp)
-                    #print("G2", coord1_G2, coord2_G2)
-                    op_G11 = splitter.G1_orbits[i][0][0]
-                    op_G12 = splitter.G1_orbits[i][1][0]
-                    coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
-                    coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
-
-                    #print("G1", coord1_G1, coord2_G1, op_G12.as_xyz_string())
-                    #print(splitter.wp1_lists[i].index, coord2_G1, op_G12.as_xyz_string())
-                    #coord2_G1 = sym.search_cloest_wp(splitter.G, wp1, op_G12, coord2_G1)
-                    #print("G1(symm1)", coord1_G1, coord2_G1)
-                    #import sys; sys.exit()
-
-                    # find the best match
-                    coords11 = apply_ops(coord1_G1, ops_G1)
-                    tmp, dist = get_best_match(coords11, coord2_G1, cell)
-                    #tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
-
-                    # G1->G2->H
-                    d = coord2_G1 - tmp
-                    d -= np.round(d)
-                    #print("dist", np.linalg.norm(d), "d", d, tmp, coord2_G1)
-
-                    coord2_G1 -= d/2
-                    coord1_G1 += d/2
-
-                    coord1_H += translation
-                    coord2_H += translation
-                    _, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H, self.cell)
-                    _, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H, self.cell)
-
-                    if max([dist1, dist2]) > np.sqrt(2)*d_tol:
-                        #import sys; sys.exit()
-                        return 10000, None, mask
-                    else:
-                        max_disps.append(max([dist1, dist2]))
-
+        if mask is not None: 
+            if translation is not None:
+                translation[mask] = 0
             else:
-                # for mergings greater than 2
-                # organizes the numbers in the order as the positions in splitter.wp2_lists
-                # so that the positions from atoms_sites_H are in the correct assigned position.
-                n = len(splitter.wp2_lists[i])
-                letters=[atom_sites_H[mapping[i][x]].wp.letter for x in range(n)]
-                ordered_letter_index=[]
-                for pos in splitter.wp2_lists[i]:
-                    indice = letters.index(pos.letter)
-                    ordered_letter_index.append(indice)
-                    letters[indice] = 0
-                ordered_mapping = [mapping[i][x] for x in ordered_letter_index]
+                translation = np.zeros(3)
 
-                coord_H=[atom_sites_H[ordered_mapping[x]].position.copy() for x in range(n)]
+        for i in range(len(splitter.wp1_lists)):
 
-                # Finds the correct quadrant to easily generate all possible_wycs
-                # translations when trying to match
-                quadrant=np.array(splitter.G2_orbits[i][0][0].as_dict()['matrix'])[:3,3]
-                for k in range(3):
-                    if quadrant[k] >= 0.:
-                        quadrant[k] = 1
-                    else:
-                        quadrant[k] = -1
-                coord_G2 = [x+translation for x in coord_H]
-                for j, x in enumerate(coord_G2):
-                    for k in range(3):
-                        coord_G2[j][k] = coord_G2[j][k]%quadrant[k]
+            n = len(splitter.wp2_lists[i])
+            coord_H = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
-                # uses 1st coordinate and 1st wyckoff position as starting example.
-                # Finds the matching G2 operation bcased on nearest G1 search
-                dist_list = []
-                coord_list = []
-                index = []
-                corresponding_ops = []
-                G2_xyz = []
-                for op in splitter.G1_orbits[i][0]:
-                    coord,dist = search_G1(splitter.G,rot,tran,coord_G2[0],wp1,op)
-                    dist_list.append(dist)
-                    coord_list.append(coord)
-                dist_list=np.array(dist_list)
-                index.append(np.argmin(dist_list))
-                corresponding_ops.append(splitter.G2_orbits[i][0][index[0]])
-
-                # Finds the free parameters xyz in the G2 basis for this coordinate
-                G2_xyz.append(find_xyz(corresponding_ops[0],coord_G2[0],quadrant))
-
-                # Systematically generates possible G2 positions to match the remaining coordinates
-                # Also finds the corresponding G2 free parameters xyz for each coordinate
-
-                for j in range(1, n):
-                    possible_coords = [x.operate(G2_xyz[0]) for x in splitter.G2_orbits[i][j]]
-                    corresponding_coord, _ = get_best_match(possible_coords,coord_G2[j],cell)
-                    index.append([np.all(x==corresponding_coord) for x in possible_coords].index(True))
-                    corresponding_ops.append(splitter.G2_orbits[i][j][index[j]])
-                    G2_xyz.append(find_xyz(corresponding_ops[j],coord_G2[j],quadrant))
-
-                # Finds the average free parameters between all the coordinates as the best set 
-                # of free parameters that all coordinates must match
-                final_xyz = np.sum(G2_xyz,axis=0)/n
-
-                dist_list = []
-                for j in range(n):
-                    G1_coord = splitter.G1_orbits[i][j][index[j]].operate(final_xyz)
-                    tmp = coord_H[j] + translation
-                    G2_coord,dist = search_G2(inv_rot, -tran, G1_coord, tmp, self.cell)
-                    dist_list.append(dist)
-
-                if max(dist_list) > np.sqrt(3)*d_tol:
-                    return 10000, None, mask
+            if n == 1:
+                dist, _tran, _mask = self.symmetrize_site_single(splitter, i, coord_H[0], translation)
+                if translation is None:
+                    translation = _tran
+                    mask = _mask
+            elif n == 2:
+                if splitter.group_type == 'k':
+                    dist = self.symmetrize_site_double_k(splitter, i, coord_H, translation)
                 else:
-                    max_disps.append(max(dist_list))
+                    dist = self.symmetrize_site_double_t(splitter, i, coord_H, translation)
+            else:
+                dist = self.symmetrize_site_multi(splitter, i, coord_H, translation)
+
+            #print(self.G.number, 'id', i, 'number', n, dist, translation, mask)
+            if dist < d_tol:
+                max_disps.append(dist)
+            else:
+                return 10000, None, mask
 
         return max(max_disps), translation, mask
 
@@ -836,119 +665,269 @@ class supergroup():
             coords_H1: coordinates in H
             elements: list of elements
         """
-        cell = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.struc.lattice.matrix)
-        atom_sites_H = self.struc.atom_sites
         coords_G1 = [] # position in G
         coords_G2 = [] # position in G on the subgroup bais
         coords_H1 = [] # position in H
         elements = []
-        rot = splitter.R[:3,:3] # inverse coordinate transformation
-        tran = splitter.R[:3,3] # needs to check
-        inv_rot = np.linalg.inv(rot)
-        ops_G1  = splitter.G[0]
 
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
 
-            if len(splitter.wp2_lists[i]) == 1:
-                op_G1 = splitter.G1_orbits[i][0][0]
-                ops_H = splitter.H_orbits[i][0]
-                base = atom_sites_H[mapping[i][0]].position.copy()
+            n = len(splitter.wp2_lists[i])
+            coord_H = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
-                # choose the best coord1_H
-                coord1s_H = apply_ops(base, ops_H)
-                ds = []
-                for coord1_H in coord1s_H:
-                    coord1_G2 = coord1_H + translation
-                    coord1_G1, diff = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G1)
-                    ds.append(diff)
-
-                ds = np.array(ds)
-                minID = np.argmin(ds)
-                coord1_H = coord1s_H[minID]
-    
-                # symmetrize coord_G1
-                tmp, _ = search_G1(splitter.G, rot, tran, coord1_H+translation, wp1, op_G1)
-
-                coords_G1.append(tmp)
-                coord1_G2, _ = search_G2(inv_rot, -tran, tmp, coord1_H+translation, self.cell)
-                #print("G2", wp1.letter, coord1_G2, tmp)
-                coords_G2.append(coord1_G2)
-                coords_H1.append(coord1_H)
-
+            if n == 1:
+                res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)       
             else:
-
-                if atom_sites_H[mapping[i][0]].wp.letter == splitter.wp2_lists[i][0].letter:
-                    coord1_H = atom_sites_H[mapping[i][0]].position.copy()
-                    coord2_H = atom_sites_H[mapping[i][1]].position.copy()
-                else:
-                    coord2_H = atom_sites_H[mapping[i][0]].position.copy()
-                    coord1_H = atom_sites_H[mapping[i][1]].position.copy()
-
-                coord1_G2 = coord1_H + translation
-                coord2_G2 = coord2_H + translation
-                op_G11 = splitter.G1_orbits[i][0][0]
-                op_G12 = splitter.G1_orbits[i][1][0]
-
                 if splitter.group_type == 'k':
-                    ops_H1 = splitter.H_orbits[i][0]
-                    op_G21 = splitter.G2_orbits[i][0][0]
-                    ops_G22 = splitter.G2_orbits[i][1]
-
-                    coord11 = coord1_H + translation
-                    coord22 = coord2_H + translation
-
-                    for op_G22 in ops_G22:
-                        diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
-                        if np.sum(diff**2) < 1e-3:
-                            trans = op_G22.translation_vector - op_G21.translation_vector
-                            break
-                    trans -= np.round(trans)
-                    coords11 = apply_ops(coord1_G2, ops_H1)
-                    coords11 += trans
-                    tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
-                    #print("G1:", tmp)
-                    d = coord2_G2 - tmp
-                    d -= np.round(d)
-                    coord2_G2 -= d/2
-                    coord1_G2 += d/2
-                    coord1_G1, _ = search_G1(splitter.G, rot, tran, tmp, wp1, op_G11)
-                    #print(coord1_G2, coord2_G2, np.dot(rot, tmp).T + tran.T)
-                    coords_G1.append(coord1_G1)
-
+                    res = self.symmetrize_site_double_k(splitter, i, coord_H, translation, 0)
                 else:
-                    # H->G2->G1
-                    coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
-                    coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
+                    res = self.symmetrize_site_double_t(splitter, i, coord_H, translation, 0)
 
-                    # find the best match
-                    coords11 = apply_ops(coord1_G1, ops_G1)
-                    tmp, dist = get_best_match(coords11, coord2_G1, cell)
-                    tmp = sym.search_cloest_wp(splitter.G, wp1, op_G12, tmp)
-
-                    # G1->G2->H
-                    d = coord2_G1 - tmp
-                    d -= np.round(d)
-                    coord2_G1 -= d/2
-                    coord1_G1 += d/2
-                    coords_G1.append(tmp)
-
-                    coord1_H += translation
-                    coord2_H += translation
-                    coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H, self.cell)
-                    coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H, self.cell)
-
-                coords_G2.append(coord1_G2)
-                coords_G2.append(coord2_G2)
-                coords_H1.append(coord1_H)
-                coords_H1.append(coord2_H)
-
-            elements.extend([splitter.elements[i]]*len(splitter.wp2_lists[i]))
+            coord_G1, coord_G2, coord_H1 = res
+            coords_G1.append(coord_G1)
+            coords_G2.extend(coord_G2)
+            coords_H1.extend(coord_H1)
+            elements.extend([splitter.elements[i]]*n)
 
         coords_G1 = np.array(coords_G1)
         coords_G2 = np.array(coords_G2)
         coords_H1 = np.array(coords_H1)
         return coords_G1, coords_G2, coords_H1, elements
+
+
+    def symmetrize_site_single(self, splitter, id, base, translation, run_type=1):
+        """
+        symmetrize one WP to another with higher symmetry 
+
+        Args:
+            splitter:
+            id: 
+            base: atomic position of site in H
+            translation: translation vector
+            run_type: return distance or coordinates
+        """
+        # Some necessary items
+        mask = []
+        op_G1 = splitter.G1_orbits[id][0][0]
+        ops_H = splitter.H_orbits[id][0]
+        wp1 = splitter.wp1_lists[id]
+        rot = splitter.R[:3,:3]
+        tran = splitter.R[:3,3]
+        inv_rot = np.linalg.inv(rot)
+
+        # choose the best coord1_H
+        coords_H = apply_ops(base, ops_H)
+
+        ds = []
+        for coord_H in coords_H:
+            if translation is not None:
+                coord_G2 = coord_H + translation
+            else:
+                coord_G2 = coord_H
+            coord_G1, diff = search_G1(splitter.G, rot, tran, coord_G2, wp1, op_G1)
+            ds.append(diff)
+
+        ds = np.array(ds)
+        minID = np.argmin(ds)
+        coord_H = coords_H[minID]
+
+        if run_type == 1:
+            if translation is not None:
+                coord_G2 = coord_H + translation
+            else:
+                coord_G2 = coord_H
+
+            tmp, _ = search_G1(splitter.G, rot, tran, coord_G2, wp1, op_G1)
+
+            # initial guess on disp
+            if translation is None:
+                coord_G2, dist1 = search_G2(inv_rot, -tran, tmp, coord_H, None)
+                diff = coord_G2 - coord_H
+                diff -= np.round(diff)
+                translation = diff.copy()
+                for m in range(3):
+                    if abs(diff[m])<1e-4:
+                        mask.append(m)
+                dist = 0
+            coord_G2, dist = search_G2(inv_rot, -tran, tmp, coord_H+translation, self.cell)
+
+            return dist, translation, mask
+        else:
+            # symmetrize coord_G1
+            tmp, _ = search_G1(splitter.G, rot, tran, coord_H+translation, wp1, op_G1)
+            coord_G2, _ = search_G2(inv_rot, -tran, tmp, coord_H+translation, self.cell)
+            return tmp, [coord_G2], [coord_H]
+
+    def symmetrize_site_double_k(self, splitter, id, coord_H, translation, run_type=1):
+        """
+        symmetrize two WPs to another with higher symmetry 
+        assuming a zero translation
+
+        Args:
+            splitter:
+            id:
+            coord1_H:
+            coord2_H:
+            run_type: return distance or coordinates
+        """
+        # For k-type splitting, restore the translation symmetry:
+        # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
+        # then find the best_match between coord1 and coord2,
+
+        rot = splitter.R[:3,:3]
+        tran = splitter.R[:3,3]
+        inv_rot = np.linalg.inv(rot)
+
+        wp1 = splitter.wp1_lists[id]
+        ops_H1 = splitter.H_orbits[id][0]
+        op_G21 = splitter.G2_orbits[id][0][0]
+        ops_G22 = splitter.G2_orbits[id][1]
+
+        coord1_H, coord2_H = coord_H[0], coord_H[1]
+        coord1_G2, coord2_G2  = coord1_H + translation, coord2_H + translation
+
+        for op_G22 in ops_G22:
+            diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
+            if np.sum(diff**2) < 1e-3:
+                trans = op_G22.translation_vector - op_G21.translation_vector
+                break
+        trans -= np.round(trans)
+        coords11 = apply_ops(coord1_G2, ops_H1)
+        coords11 += trans
+        tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
+
+        d = coord2_G2 - tmp
+        d -= np.round(d)
+
+        if run_type == 1:
+            return np.linalg.norm(np.dot(d/2, self.cell))
+        else:
+            op_G11 = splitter.G1_orbits[id][0][0]
+            coord2_G2 -= d/2
+            coord1_G2 += d/2
+            coord1_G1, _ = search_G1(splitter.G, rot, tran, tmp, wp1, op_G11)
+            return coord1_G1, [coord1_G2, coord2_G2], [coord1_H, coord2_H]
+
+    def symmetrize_site_double_t(self, splitter, id, coord_H, translation, run_type=1):
+        """
+        symmetrize two WPs to another with higher symmetry 
+        assuming a zero translation
+
+        Args:
+            splitter:
+            id:
+            coord1_H:
+            coord2_H:
+            run_type: return distance or coordinates
+        """
+
+        rot = splitter.R[:3,:3]
+        tran = splitter.R[:3,3]
+        inv_rot = np.linalg.inv(rot)
+        cell_G = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.cell)
+        wp1 = splitter.wp1_lists[id]
+        op_G11 = splitter.G1_orbits[id][0][0]
+        op_G12 = splitter.G1_orbits[id][1][0]
+        ops_G1 = splitter.G[0]
+
+        coord1_H, coord2_H = coord_H[0], coord_H[1]
+        coord1_G2, coord2_G2  = coord1_H, coord2_H 
+
+        coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
+        coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
+
+        # find the best match
+        coords11 = apply_ops(coord1_G1, ops_G1)
+        tmp, dist = get_best_match(coords11, coord2_G1, cell_G)
+
+        # G1->G2->H
+        d = coord2_G1 - tmp
+        d -= np.round(d)
+
+        coord2_G1 -= d/2
+        coord1_G1 += d/2
+
+        _, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H, self.cell)
+        _, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H, self.cell)
+
+        if run_type == 1:
+            return max([dist1, dist2])
+        else:
+            return tmp, [coord1_G2, coord2_G2], [coord1_H, coord2_H]
+
+    def symmetrize_site_multi(self, splitter, id, coords_H, run_type=1):
+        """
+        symmetrize two WPs to another with higher symmetry 
+        assuming a zero translation
+
+        Args:
+            splitter:
+            id:
+            coord1_H:
+            coord2_H:
+            run_type: return distance or coordinates
+        """
+        n = len(splitter.wp2_lists[id])
+        rot = splitter.R[:3,:3]
+        tran = splitter.R[:3,3]
+        inv_rot = np.linalg.inv(rot)
+        cell_G = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.cell)
+        wp1 = splitter.wp1_lists[id]
+
+        # Finds the correct quadrant to easily generate all possible_wycs
+        # translations when trying to match
+        quadrant = np.array(splitter.G2_orbits[id][0][0].as_dict()['matrix'])[:3,3]
+        for k in range(3):
+            if quadrant[k] >= 0.:
+                quadrant[k] = 1
+            else:
+                quadrant[k] = -1
+        coord_G2 = [x+translation for x in coord_H]
+        for j, x in enumerate(coord_G2):
+            for k in range(3):
+                coord_G2[j][k] = coord_G2[j][k]%quadrant[k]
+
+        # uses 1st coordinate and 1st wyckoff position as starting example.
+        # Finds the matching G2 operation bcased on nearest G1 search
+        dist_list = []
+        coord_list = []
+        index = []
+        corresponding_ops = []
+        G2_xyz = []
+        for op in splitter.G1_orbits[id][0]:
+            coord,dist = search_G1(splitter.G, rot, tran, coord_G2[0], wp1, op)
+            dist_list.append(dist)
+            coord_list.append(coord)
+        dist_list = np.array(dist_list)
+        index.append(np.argmin(dist_list))
+        corresponding_ops.append(splitter.G2_orbits[id][0][index[0]])
+
+        # Finds the free parameters xyz in the G2 basis for this coordinate
+        G2_xyz.append(find_xyz(corresponding_ops[0], coord_G2[0], quadrant))
+
+        # Systematically generates possible G2 positions to match the remaining coordinates
+        # Also finds the corresponding G2 free parameters xyz for each coordinate
+
+        for j in range(1, n):
+            possible_coords = [x.operate(G2_xyz[0]) for x in splitter.G2_orbits[id][j]]
+            corresponding_coord, _ = get_best_match(possible_coords, coord_G2[j], cell_G)
+            index.append([np.all(x==corresponding_coord) for x in possible_coords].index(True))
+            corresponding_ops.append(splitter.G2_orbits[i][j][index[j]])
+            G2_xyz.append(find_xyz(corresponding_ops[j],coord_G2[j],quadrant))
+
+        # Finds the average free parameters between all the coordinates as the best set 
+        # of free parameters that all coordinates must match
+        final_xyz = np.sum(G2_xyz,axis=0)/n
+
+        dist_list = []
+        for j in range(n):
+            G1_coord = splitter.G1_orbits[id][j][index[j]].operate(final_xyz)
+            tmp = coord_H[j] + translation
+            G2_coord, dist = search_G2(inv_rot, -tran, G1_coord, tmp, self.cell)
+            dist_list.append(dist)
+    
+        return max(dist_list)
 
     def print_detail(self, coords_H1, coords_G1, elements, translation):
         """
@@ -966,7 +945,6 @@ class supergroup():
             disps.append(dis_abs)
             print(output)
         print("cell: {:8.4f}{:8.4f}{:8.4f}, disp (A): {:8.4f}".format(*translation, max(disps)))
-
 
 class supergroups():
     """
@@ -1085,18 +1063,18 @@ if __name__ == "__main__":
             #"PPO": [12],
             #"BTO": [123, 221],
             #"lt_cristobalite": [98, 210, 227],
-            "MPWO": [59, 71, 139, 225],
             #"BTO-Amm2": [65, 123, 221],
             #"NaSb3F10": [186, 194],
-            #"GeF2": 62,
-            #"NiS-Cm": 160,
-            #"lt_quartz": 180,
-            #"BTO-Amm2": 221,
-            #"BTO": 221,
-            #"lt_cristobalite": 227,
-            #"NaSb3F10": 194,
+            "NbO2": 141,
+            "GeF2": 62,
+            "NiS-Cm": 160,
+            "lt_quartz": 180,
+            "BTO-Amm2": 221,
+            "BTO": 221,
+            "lt_cristobalite": 227,
+            "NaSb3F10": 194,
             #"MPWO": 225,
-            #"NbO2": 141,
+            #"MPWO": [59, 71, 139, 225],
            }
     cif_path = "pyxtal/database/cifs/"
 

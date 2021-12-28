@@ -17,6 +17,7 @@ from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
 from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
+from pyxtal.supergroup import supergroups
 
 #import warnings
 #warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -84,6 +85,25 @@ class TestGroup(unittest.TestCase):
         g = Group(225)
         solutions = g.get_splitters_from_structure(s, 't')
         self.assertTrue(len(solutions)==3)
+
+class TestSupergroup(unittest.TestCase):
+    def test_quick(self):
+        data = {
+                "NbO2": 141,
+                "GeF2": 62,
+                "NiS-Cm": 160,
+                "lt_quartz": 180,
+                "BTO-Amm2": 221,
+                "BTO": 221,
+                "lt_cristobalite": 227,
+                #"NaSb3F10": 194,
+                #"MPWO": 225,
+               }
+        for cif in data.keys():
+            s = pyxtal()
+            s.from_seed(cif_path+cif+'.cif')
+            sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
+            self.assertFalse(sup.strucs is None)
 
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):
