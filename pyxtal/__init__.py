@@ -1313,7 +1313,7 @@ class pyxtal:
         from pyxtal.symmetry import choose_wyckoff 
 
         if self.molecular:
-            raise RuntimeError("Doesnot support the molecular crystal")
+            raise RuntimeError("Cannot support the molecular crystal")
 
         self.group = Group(group)
         self.lattice = lattice
@@ -1324,7 +1324,7 @@ class pyxtal:
         _sites = []
 
         if len(sites) != len(species):
-            raise RuntimeError("Doesnot support the molecular crystal")
+            raise RuntimeError("Inconsistency between sites and species")
 
         for sp, wps in zip(species, sites):
             if type(wps) is dict:

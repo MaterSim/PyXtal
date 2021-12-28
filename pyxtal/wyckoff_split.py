@@ -116,6 +116,7 @@ class wyckoff_split:
         inv_t = np.dot(self.inv_R[:3,:3], trans[:,3].T)
         self.inv_R[:3,3] = -1*inv_t.T
         self.R[:3,3] = trans[:3,3]
+        self.multi = np.linalg.det(self.R[:3, :3])
 
         wp2_lists = []
         for wp1_index in self.wp1_indices:
@@ -151,7 +152,7 @@ class wyckoff_split:
 
         G1_orbits = []
         G2_orbits = []
-        factor = max([1,np.linalg.det(self.R)])
+        factor = max([1, np.linalg.det(self.R)])
 
         if quadrant is None:
             quadrant=deepcopy(self.inv_R[:3,3])

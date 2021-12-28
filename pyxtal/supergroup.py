@@ -84,35 +84,6 @@ def (H_struc, G_struc):
         for s[i] = None
 
     for s0 in s.get_alts():
-    
-        
-
-https://www.educative.io/edpresso/how-to-implement-depth-first-search-in-python
-#some depth first search
-
-graph = {
-    'A' : wyc_ids,
-    'B' : ['D', 'E'],
-    'C' : ['F'],
-    'D' : [],
-    'E' : ['F'],
-    'F' : []
-}
-
-visited = set()
-def dfs(visited, graph, node):
-    if node not in visited:
-        print (node)
-        visited.add(node)
-        for neighbour in graph[node]:
-            dfs(visited, graph, neighbour)
-
-
-visited = set()
-def dfs(visited, )
-
-# Driver Code
-dfs(visited, graph, 'A')
 """
 
 def new_structure(struc, refs):
@@ -428,7 +399,7 @@ class supergroup():
                 self.error = False
                 break
 
-    def search_supergroup(self, d_tol=1.0, max_per_G=2500):
+    def search_supergroup(self, d_tol=1.0, max_per_G=2500, max_solutions=None):
         """
         search for valid supergroup transition
 
@@ -436,10 +407,9 @@ class supergroup():
             d_tol (float): tolerance for atomic displacement
             max_per_G (int): maximum number of possible solution for each G
         Returns:
-            valid_solutions: dictionary
+            solutions: list of solutions with small displacements
         """
-        #self.d_tol = d_tol
-        valid_solutions = []
+        solutions = []
         if len(self.solutions) > 0:
             # extract the valid
             for sols in self.solutions:
@@ -449,74 +419,44 @@ class supergroup():
                     sols = sample(sols, max_per_G)
                     #sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
                 for sol in sols:
-                    #print(sol)
-                    mae, disp, mapping, sp = self.get_displacement(id, sol, d_tol*1.1)
+                    max_disp, trans, mapping, sp = self.calc_disps(id, sol, d_tol*1.1)
                     #print(G.number, sol, mae, disp)
-                    if mae < d_tol:
-                        valid_solutions.append((sp, mapping, disp, mae))
-        return valid_solutions
+                    if max_disp < d_tol:
+                        solutions.append((sp, mapping, trans, max_disp))
+                        if max_solutions is not None and len(solutions) == max_solutions:
+                            break
+        return solutions
 
     def make_supergroup(self, solutions, show_detail=False):
         """
-        create supergroup structures based on the list of solutions
+        create unique supergroup structures from a list of solutions
 
         Args:
-            solutions: list of tuples (splitter, mapping, disp)
+            solutions: list of tuples (splitter, mapping, translation, disp)
             show_detail (bool): print out the detail
 
         Returns:
-            list of pyxtal structures + mapping relation
+            list of pyxtal structures
         """
         G_strucs = []
+        for solution in solutions:
+            (sp, mapping, translation, max_disp) = solution
 
-        if len(solutions) > 0:
-
-            for solution in solutions:
-                (sp, mapping, translation, max_disp) = solution
-                lat1 = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.cell)
-                lattice = Lattice.from_matrix(lat1, ltype=sp.G.lattice_type)
-
-                details = self.symmetrize(sp, mapping, translation)
-                coords_G1, coords_G2, coords_H1, elements = details
-                G_struc = self.struc.copy()
-                G_struc.group = sp.G
-
-                G_sites = []
-                for i, wp in enumerate(sp.wp1_lists):
-                    pos = coords_G1[i]
-                    pos -= np.floor(pos)
-                    pos1 = sym.search_matched_position(sp.G, wp, pos)
-                    if pos1 is not None:
-                        site = atom_site(wp, pos1, sp.elements[i])
-                        G_sites.append(site)
-                    else:
-                        print(">>>>>>>>>>>>>>")
-                        print(self.struc.group.number); print(pos); print(wp)
-                        print(">>>>>>>>>>>>>>")
-                        raise RuntimeError("cannot assign the right wp")
-
-                G_struc.atom_sites = G_sites
+            details = self.symmetrize(sp, mapping, translation)
+            coords_G1, coords_G2, coords_H1, elements = details
+            G_struc = self._make_pyxtal(sp, coords_G1)
+            if new_structure(G_struc, G_strucs):
+                if show_detail:
+                    self.print_detail(solution, coords_H1, coords_G2, elements)
                 G_struc.source = 'supergroup {:6.3f}'.format(max_disp)
-                G_struc.lattice = lattice
-                G_struc.numIons *= int(round(np.abs(np.linalg.det(sp.R[:3,:3]))))
-                G_struc._get_formula()
                 G_struc.disp = max_disp
-
-                if new_structure(G_struc, G_strucs):
-                    # store mapping information
-                    G_struc.tag = {'mapping': mapping, 'splitter': sp}
-                    G_strucs.append(G_struc)
-                    if show_detail:
-                        self.print_detail(coords_H1, coords_G2, elements, translation)
-                        #print(G_struc)
-                        #import sys; sys.exit()
-
+                G_strucs.append(G_struc)
         return G_strucs
 
-    def get_displacement(self, split_id, solution, d_tol):
+
+    def calc_disps(self, split_id, solution, d_tol):
         """
-        For a given solution, search for the possbile supergroup structure with
-        minimum displacement by adusting `translation`.
+        For a given solution, compute the minimum displacement by adusting `translation`.
 
         Args:
             split_id (int): integer
@@ -927,7 +867,7 @@ class supergroup():
 
         # Finds the average free parameters between all the coordinates as the best set 
         # of free parameters that all coordinates must match
-        final_xyz = np.sum(G2_xyz,axis=0)/n
+        final_xyz = np.sum(G2_xyz, axis=0)/n
 
         dist_list = []
         for j in range(n):
@@ -938,22 +878,136 @@ class supergroup():
     
         return max(dist_list)
 
-    def print_detail(self, coords_H1, coords_G1, elements, translation):
+    def print_detail(self, solution, coords_H, coords_G, elements):
         """
         print out the details of tranformation
         """
-        print("Valid structure", self.struc.group.number, '->', self.G.number)
+        print("\nTransition: ", self.struc.group.number, '->', self.G.number)
+        (sp, mapping, translation, max_disp) = solution
+        print('Maximum displacement: {:6.3f}'.format(max_disp))
+        print('Mapping:', mapping)
+
+        count = 0
         disps = []
-        for x, y, ele in zip(coords_H1, coords_G1, elements):
-            dis = y - x - translation
-            dis -= np.round(dis)
-            dis_abs = np.linalg.norm(dis.dot(self.cell))
-            output = "{:2s} {:8.4f}{:8.4f}{:8.4f}".format(ele, *x)
-            output += " -> {:8.4f}{:8.4f}{:8.4f}".format(*y)
-            output += " -> {:8.4f}{:8.4f}{:8.4f} {:8.4f}".format(*dis, dis_abs)
-            disps.append(dis_abs)
-            print(output)
+        for i, wp2 in enumerate(sp.wp2_lists):
+            wp1 = sp.wp1_lists[i]
+            strs = ''
+            for wp in wp2:
+                x, y, ele = coords_H[count], coords_G[count], elements[count]
+                label = str(wp.multiplicity) + wp.letter + '->' 
+                label += str(wp1.multiplicity) + wp1.letter 
+                dis = y - x - translation
+                dis -= np.round(dis)
+                dis_abs = np.linalg.norm(dis.dot(self.cell))
+                output = "{:2s}[{:8s}] {:8.4f}{:8.4f}{:8.4f}".format(ele, label, *x)
+                output += " -> {:8.4f}{:8.4f}{:8.4f}".format(*y)
+                output += " -> {:8.4f}{:8.4f}{:8.4f} {:8.4f}".format(*dis, dis_abs)
+                count += 1
+                disps.append(dis_abs)
+                print(output)
         print("cell: {:8.4f}{:8.4f}{:8.4f}, disp (A): {:8.4f}".format(*translation, max(disps)))
+
+    def make_pyxtals_in_subgroup(self, solution, N_images=5):
+        """
+        make the pyxtal according to the given solution
+
+        Args: 
+            - solution: a tuple of (sp, mapping, translation, max_disp)
+            - N_images: number of images
+
+        Return:
+            a list of pyxtal structures in low symmetry
+        """
+        (sp, mapping, translation, max_disp) = solution
+        details = self.symmetrize(sp, mapping, translation)
+        coords_G1, coords_G2, coords_H1, elements = details
+        
+        # Get the list of atomic displacements
+        disps = []
+        count = 0
+        for wp2 in sp.wp2_lists:
+            for wp in wp2:
+                x, y, ele = coords_H1[count], coords_G2[count], elements[count]
+                disp = y - x - translation
+                disp -= np.round(disp)
+                disps.append(disp)
+                count += 1
+        # Create the PyXtals
+        strucs = []
+        disps = np.array(disps)
+        disps /= (N_images-1)
+        max_disp = np.max(np.linalg.norm(disps.dot(self.cell), axis=1))
+
+        for i in range(N_images):
+            coords = coords_H1 + i*disps + translation #+ [0,0,-1/3]
+            struc = self._make_pyxtal(sp, coords, 1, False)
+            struc.source = 'supergroup {:d} {:6.3f}'.format(i, max_disp*i)
+            strucs.append(struc)
+        return strucs
+
+    def make_pyxtal_in_supergroup(self, solution):
+        """
+        make the pyxtal according to the given solution
+
+        Args: 
+            - solution: a tuple of (sp, mapping, translation, max_disp)
+
+        Return:
+            a pyxtal structure in high symmetry
+        """
+        (sp, mapping, translation, max_disp) = solution
+        details = self.symmetrize(sp, mapping, translation)
+        coords_G1, coords_G2, coords_H1, elements = details
+        struc = self._make_pyxtal(sp, coords_G1)
+        struc.source = 'supergroup {:6.3f}'.format(max_disp)
+        struc.disp = max_disp
+        return struc
+
+    def _make_pyxtal(self, sp, coords, run_type=0, check=True):
+        """
+        create the pyxtal with high/low symmetries
+
+        Args:
+            sp: splitter object
+            coords: coordinates for each WP
+            run_type: 0: high symmetry, otherwise low symmetry
+
+        Return:
+            pyxtal structure
+        """
+        # Create the pyxtal
+        struc = self.struc.copy()
+        cell_G = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.cell)
+
+        # Collect the atom_sites
+        if run_type == 0:
+            G_sites = []
+            for i, wp in enumerate(sp.wp1_lists):
+                pos = coords[i]
+                pos -= np.floor(pos)
+                if check:
+                    pos1 = sym.search_matched_position(sp.G, wp, pos)
+                    if pos1 is not None:
+                        site = atom_site(wp, pos1, sp.elements[i])
+                        G_sites.append(site)
+                    else:
+                        print(self.struc.group.number); print(pos); print(wp)
+                        raise RuntimeError("cannot assign the right wp")
+                else:
+                    pos1 = pos
+            # Update space group and lattice
+            struc.group = sp.G
+            struc.lattice = Lattice.from_matrix(cell_G, ltype=sp.G.lattice_type)
+            struc.atom_sites = G_sites
+            struc._get_formula()
+        else:
+            
+            cell = Lattice.from_matrix(cell_G, ltype=sp.G.lattice_type).matrix
+            cell_U = np.dot(sp.R[:3, :3].T, cell)
+            struc.lattce = Lattice.from_matrix(cell_U, ltype=sp.H.lattice_type)
+            for i, coord in enumerate(coords):
+                struc.atom_sites[i].update(coord)
+        return struc
 
 class supergroups():
     """
@@ -1062,6 +1116,13 @@ class supergroups():
             valid = False
         return strucs, working_path, valid
 
+    def write_cifs(self):
+        """
+        Dump the cif files in sequence
+        """
+        for i, struc in enumerate(self.strucs):
+            struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')
+
 
 if __name__ == "__main__":
 
@@ -1076,12 +1137,12 @@ if __name__ == "__main__":
             #"NaSb3F10": [186, 194],
             "NbO2": 141,
             "GeF2": 62,
-            "NiS-Cm": 160,
             "lt_quartz": 180,
-            "BTO-Amm2": 221,
-            "BTO": 221,
-            "lt_cristobalite": 227,
-            "NaSb3F10": 194,
+            #"NiS-Cm": 160,
+            #"BTO-Amm2": 221,
+            #"BTO": 221,
+            #"lt_cristobalite": 227,
+            #"NaSb3F10": 194,
             #"MPWO": 225,
             #"MPWO": [59, 71, 139, 225],
            }
@@ -1092,13 +1153,24 @@ if __name__ == "__main__":
         print("===============", cif, "===============")
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
-        if isinstance(data[cif], list):
-            sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
-        else:
-            sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
-        print(sup)
-        strs = "================================================================"
-        strs += "{:6.3f} seconds".format(time()-t0)
-        print(strs)
-        #for i, struc in enumerate(sup.strucs):
-        #    struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')
+        #if isinstance(data[cif], list):
+        #    sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
+        #else:
+        #    sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
+        #print(sup)
+        #strs = "====================================================="
+        #strs += "==============={:12.3f} seconds".format(time()-t0)
+        #print(strs)
+        my = supergroup(s, data[cif])
+        sols = my.search_supergroup(max_solutions=12)
+        #my.make_supergroup(sols, show_detail=True)
+        for sol in sols:
+            print("+++++++++++++++++++++++++++++++++++++++")
+            struc_high = my.make_pyxtal_in_supergroup(sol)
+            strucs = my.make_pyxtals_in_subgroup(sol)
+            pmg1 = struc_high.to_pymatgen()
+            pmg2 = strucs[-1].to_pymatgen()
+            if not sm.StructureMatcher().fit(pmg1, pmg2):
+                print(struc_high)
+                print(strucs[-1])
+                print(pmg1); print(pmg2)
