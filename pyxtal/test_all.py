@@ -89,14 +89,14 @@ class TestGroup(unittest.TestCase):
 class TestSupergroup(unittest.TestCase):
     def test_quick(self):
         data = {
-                "NbO2": 141,
+                #"NbO2": 141,
                 "GeF2": 62,
                 "NiS-Cm": 160,
                 "lt_quartz": 180,
                 "BTO-Amm2": 221,
                 "BTO": 221,
                 "lt_cristobalite": 227,
-                #"NaSb3F10": 194,
+                "NaSb3F10": 194,
                 #"MPWO": 225,
                }
         for cif in data.keys():
@@ -104,6 +104,39 @@ class TestSupergroup(unittest.TestCase):
             s.from_seed(cif_path+cif+'.cif')
             sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
             self.assertFalse(sup.strucs is None)
+
+    def test_long(self):
+        paras = (
+                 #["P4_332", 155, 't'], #1-4 splitting
+                 ['I4_132',98,'t'],
+                 ["P4_332", 96, 't'],
+                 ["R-3", 147, 'k'],
+                 ["P3_112", 5, 't'],
+                 ["P6_422", 21, 't'],
+                 ["Fd3", 70, 't'],
+                 ["Fd3m", 166, 't'],
+                 ["R-3c", 15, 't'],
+                 ["R32", 5, 't'],
+                 ["Pm3", 47, 't'],
+                )
+        for para in paras:
+            name, H, gtype = para
+            name = cif_path + name + ".cif"
+            s = pyxtal()
+            s.from_seed(name)
+            pmg_s1 = s.to_pymatgen()
+            G = s.group.number
+            struc_h = s.subgroup_once(eps=0.15, H=H, group_type=gtype, mut_lat=False, max_cell=4)
+            sup = supergroups(struc_h, G=G, d_tol=0.2, show=False, max_per_G=500)
+            self.assertFalse(sup.strucs is None)
+            match = False
+            for struc in sup.strucs:
+                pmg_g = struc.to_pymatgen()
+                if sm.StructureMatcher().fit(pmg_g, pmg_s1):
+                    match = True
+                    break
+            self.assertTrue(match)
+
 
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):

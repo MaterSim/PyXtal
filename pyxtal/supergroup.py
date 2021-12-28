@@ -579,10 +579,11 @@ class supergroup():
     def get_initial_mask(self, splitter):
         for wp2 in splitter.wp2_lists:
             # if split into 2 sites
-            if len(wp2) >= 2: 
-                return [0, 1, 2]
-            else:
-                if wp2[0].get_dof() == 0:
+            #if len(wp2) >= 2: 
+            #    return [0, 1, 2]
+            #else:
+            for wp in wp2:
+                if wp.get_dof() == 0:
                     return [0, 1, 2]
         #print(splitter); import sys; sys.exit()
         return None
@@ -621,8 +622,6 @@ class supergroup():
         if mask is not None: 
             if translation is not None:
                 translation[mask] = 0
-            else:
-                translation = np.zeros(3)
 
         for i in range(len(splitter.wp1_lists)):
 
@@ -630,19 +629,28 @@ class supergroup():
             coord_H = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
-                dist, _tran, _mask = self.symmetrize_site_single(splitter, i, coord_H[0], translation)
+                factor = 1.0
+                res = self.symmetrize_site_single(splitter, i, coord_H[0], translation)
+                (dist, _tran, _mask) = res
                 if translation is None:
                     translation = _tran
                     mask = _mask
             elif n == 2:
+                factor = np.sqrt(2)
                 if splitter.group_type == 'k':
                     dist = self.symmetrize_site_double_k(splitter, i, coord_H, translation)
                 else:
                     dist = self.symmetrize_site_double_t(splitter, i, coord_H, translation)
             else:
+                factor = np.sqrt(3)
                 dist = self.symmetrize_site_multi(splitter, i, coord_H, translation)
 
             #print(self.G.number, 'id', i, 'number', n, dist, translation, mask)
+            #if self.G.number==194 and n==2: import sys; sys.exit()
+
+            if i == 0 and translation is None:
+                translation = np.zeros(3)
+
             if dist < d_tol:
                 max_disps.append(dist)
             else:
@@ -775,6 +783,7 @@ class supergroup():
         # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
         # then find the best_match between coord1 and coord2,
 
+        if translation is None: translation = np.zeros(3)
         rot = splitter.R[:3,:3]
         tran = splitter.R[:3,3]
         inv_rot = np.linalg.inv(rot)
@@ -822,6 +831,7 @@ class supergroup():
             run_type: return distance or coordinates
         """
 
+        if translation is None: translation = np.zeros(3)
         rot = splitter.R[:3,:3]
         tran = splitter.R[:3,3]
         inv_rot = np.linalg.inv(rot)
@@ -832,7 +842,7 @@ class supergroup():
         ops_G1 = splitter.G[0]
 
         coord1_H, coord2_H = coord_H[0], coord_H[1]
-        coord1_G2, coord2_G2  = coord1_H, coord2_H 
+        coord1_G2, coord2_G2  = coord1_H+translation, coord2_H+translation 
 
         coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
         coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
@@ -844,19 +854,18 @@ class supergroup():
         # G1->G2->H
         d = coord2_G1 - tmp
         d -= np.round(d)
-
         coord2_G1 -= d/2
         coord1_G1 += d/2
-
-        _, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_H, self.cell)
-        _, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_H, self.cell)
+        coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
+        coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
+        #print("dist", np.linalg.norm(d), dist1, dist2, "d", d, tmp, coord2_G1)
 
         if run_type == 1:
             return max([dist1, dist2])
         else:
             return tmp, [coord1_G2, coord2_G2], [coord1_H, coord2_H]
 
-    def symmetrize_site_multi(self, splitter, id, coords_H, run_type=1):
+    def symmetrize_site_multi(self, splitter, id, coord_H, translation, run_type=1):
         """
         symmetrize two WPs to another with higher symmetry 
         assuming a zero translation
@@ -864,10 +873,10 @@ class supergroup():
         Args:
             splitter:
             id:
-            coord1_H:
-            coord2_H:
+            coord_H:
             run_type: return distance or coordinates
         """
+        if translation is None: translation = np.zeros(3)
         n = len(splitter.wp2_lists[id])
         rot = splitter.R[:3,:3]
         tran = splitter.R[:3,3]
@@ -886,7 +895,7 @@ class supergroup():
         coord_G2 = [x+translation for x in coord_H]
         for j, x in enumerate(coord_G2):
             for k in range(3):
-                coord_G2[j][k] = coord_G2[j][k]%quadrant[k]
+                coord_G2[j][k] = coord_G2[j][k] % quadrant[k]
 
         # uses 1st coordinate and 1st wyckoff position as starting example.
         # Finds the matching G2 operation bcased on nearest G1 search
@@ -913,7 +922,7 @@ class supergroup():
             possible_coords = [x.operate(G2_xyz[0]) for x in splitter.G2_orbits[id][j]]
             corresponding_coord, _ = get_best_match(possible_coords, coord_G2[j], cell_G)
             index.append([np.all(x==corresponding_coord) for x in possible_coords].index(True))
-            corresponding_ops.append(splitter.G2_orbits[i][j][index[j]])
+            corresponding_ops.append(splitter.G2_orbits[id][j][index[j]])
             G2_xyz.append(find_xyz(corresponding_ops[j],coord_G2[j],quadrant))
 
         # Finds the average free parameters between all the coordinates as the best set 
@@ -933,7 +942,7 @@ class supergroup():
         """
         print out the details of tranformation
         """
-        print("Valid structure", self.G.number)
+        print("Valid structure", self.struc.group.number, '->', self.G.number)
         disps = []
         for x, y, ele in zip(coords_H1, coords_G1, elements):
             dis = y - x - translation
@@ -1088,6 +1097,8 @@ if __name__ == "__main__":
         else:
             sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
         print(sup)
-        print("{:6.3f} seconds".format(time()-t0))
+        strs = "================================================================"
+        strs += "{:6.3f} seconds".format(time()-t0)
+        print(strs)
         #for i, struc in enumerate(sup.strucs):
         #    struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')
