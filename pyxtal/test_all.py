@@ -92,7 +92,7 @@ class TestSupergroup(unittest.TestCase):
                 "NbO2": 141,
                 "GeF2": 62,
                 "lt_quartz": 180,
-                #"NiS-Cm": 160,
+                "NiS-Cm": 160, #9b->2a+4b
                }
         for cif in data.keys():
             s = pyxtal()
@@ -124,16 +124,16 @@ class TestSupergroup(unittest.TestCase):
     def test_long(self):
         paras = (
                  #["P4_332", 155, 't'], #1-4 splitting
-                 ['I4_132',98,'t'],
-                 ["P4_332", 96, 't'],
-                 ["R-3", 147, 'k'],
-                 ["P3_112", 5, 't'],
-                 ["P6_422", 21, 't'],
-                 ["Fd3", 70, 't'],
+                 #['I4_132', 98, 't'], #1-3
+                 #["R-3", 147, 'k'], #1-3
+                 #["P3_112", 5, 't'], #1-3
+                 #["P6_422", 21, 't'], #1-3
+                 #["Fd3", 70, 't'], #1-3
+                 #["P4_332", 96, 't'], #1-3
+                 #["Pm3", 47, 't'], #1-3
                  ["Fd3m", 166, 't'],
                  ["R-3c", 15, 't'],
                  ["R32", 5, 't'],
-                 ["Pm3", 47, 't'],
                 )
         for para in paras:
             name, H, gtype = para

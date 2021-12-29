@@ -186,8 +186,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
     """
     For a given `pos`, apply the transformation due to (rot+tran),
     search for the cloest wp which satisfies the symmetry of op
-    within the 
-    trial translation needs to be considered to minimize the
+    within the trial translation needs to be considered to minimize the
     difference between the transformed pos1 and reference pos2
 
     Args:
@@ -515,7 +514,7 @@ class supergroup():
             letters[indice] = 0
         ordered_mapping = [mapping[id][x] for x in ordered_letter_index]
         coord_H = [atom_sites_H[ordered_mapping[x]].position.copy() for x in range(n)]
-        return coord_H
+        return coord_H, ordered_mapping
 
     def symmetrize_dist(self, splitter, mapping, mask, translation=None, d_tol=1.2):
         """
@@ -542,7 +541,7 @@ class supergroup():
         for i in range(len(splitter.wp1_lists)):
 
             n = len(splitter.wp2_lists[i])
-            coord_H = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
+            coord_H, _ = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
                 res = self.symmetrize_site_single(splitter, i, coord_H[0], translation)
@@ -595,7 +594,7 @@ class supergroup():
         for i, wp1 in enumerate(splitter.wp1_lists):
 
             n = len(splitter.wp2_lists[i])
-            coord_H = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
+            coord_H, orders = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
                 res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)       
@@ -606,6 +605,12 @@ class supergroup():
                     res = self.symmetrize_site_double_t(splitter, i, coord_H, translation, 0)
 
             coord_G1, coord_G2, coord_H1 = res
+            # retrive the order
+            if n > 1:
+                #print(orders, len(coord_G2))
+                seq = list(map(lambda x: orders.index(x), sorted(orders)))
+                coord_G2 = [coord_G2[j] for j in seq] 
+                coord_H1 = [coord_H1[j] for j in seq]
             coords_G1.append(coord_G1)
             coords_G2.extend(coord_G2)
             coords_H1.extend(coord_H1)
@@ -776,10 +781,13 @@ class supergroup():
         coords22 = apply_ops(coord2_G1, ops_G1)
         coord1_G1, dist = get_best_match(coords22, coord1_G1, cell_G)
         #coord1_G1 += d/2
-
+        l1 = str(splitter.wp2_lists[id][0].multiplicity) + splitter.wp2_lists[id][0].letter
+        l2 = str(splitter.wp2_lists[id][1].multiplicity) + splitter.wp2_lists[id][1].letter
+        #print("in G", l1, coord1_G1, l2, coord2_G1)
         # backward search (G->H)
         coord1_G2, dist = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
         coord2_G2, dist = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
+        #print("in G1", l1, coord1_G2, l2, coord2_G2)
         
         #coords22 = apply_ops(coord2_G2, ops_G11)
         #coord1_G2, dist = get_best_match(coords22, coord1_G1, cell_G)
@@ -904,7 +912,7 @@ class supergroup():
         """
         (sp, mapping, translation, max_disp) = solution
         details = self.symmetrize(sp, mapping, translation)
-        coords_G1, coords_G2, coords_H1, elements = details
+        _, coords_G2, coords_H1, elements = details
         
         # Get the list of atomic displacements
         disps = []
@@ -923,7 +931,7 @@ class supergroup():
         max_disp = np.max(np.linalg.norm(disps.dot(self.cell), axis=1))
 
         for i in range(N_images):
-            coords = coords_H1 + i*disps + translation #+ [0,0,-1/3]
+            coords = coords_H1 + i*disps + translation 
             struc = self._make_pyxtal(sp, coords, 1, False)
             struc.source = 'supergroup {:d} {:6.3f}'.format(i, max_disp*i)
             strucs.append(struc)
@@ -962,6 +970,7 @@ class supergroup():
         # Create the pyxtal
         struc = self.struc.copy()
         cell_G = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.cell)
+        lattice_G = Lattice.from_matrix(cell_G, ltype=sp.G.lattice_type)
 
         # Collect the atom_sites
         if run_type == 0:
@@ -981,14 +990,12 @@ class supergroup():
                     pos1 = pos
             # Update space group and lattice
             struc.group = sp.G
-            struc.lattice = Lattice.from_matrix(cell_G, ltype=sp.G.lattice_type)
+            struc.lattice = lattice_G
             struc.atom_sites = G_sites
             struc._get_formula()
         else:
-            
-            cell = Lattice.from_matrix(cell_G, ltype=sp.G.lattice_type).matrix
-            cell_U = np.dot(sp.R[:3, :3].T, cell)
-            struc.lattce = Lattice.from_matrix(cell_U, ltype=sp.H.lattice_type)
+            cell_U = np.dot(sp.R[:3, :3].T, lattice_G.matrix)
+            struc.lattice = Lattice.from_matrix(cell_U, ltype=sp.H.lattice_type)
             for i, coord in enumerate(coords):
                 struc.atom_sites[i].update(coord)
         return struc
@@ -1153,11 +1160,13 @@ if __name__ == "__main__":
             strucs = my.make_pyxtals_in_subgroup(sol)
             pmg1 = struc_high.to_pymatgen()
             pmg2 = strucs[-1].to_pymatgen()
-            s0 = pyxtal()
-            s0.from_seed(pmg2, tol=1e-2)
             rms = sm.StructureMatcher().get_rms_dist(pmg1, pmg2)
             print('========================================', rms)
             if not sm.StructureMatcher().fit(pmg1, pmg2):
                 print(struc_high)
                 print(strucs[-1])
+                a = struc_high.subgroup_once(H=8, eps=0)
+                print(a)
+                s0 = pyxtal()
+                s0.from_seed(pmg2, tol=1e-2)
                 print(s0)
