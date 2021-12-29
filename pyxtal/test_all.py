@@ -17,7 +17,7 @@ from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
 from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
-from pyxtal.supergroup import supergroups
+from pyxtal.supergroup import supergroups, supergroup
 
 #import warnings
 #warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -87,12 +87,28 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(len(solutions)==3)
 
 class TestSupergroup(unittest.TestCase):
+    def test_make_pyxtal(self):
+        data = {
+                "NbO2": 141,
+                "GeF2": 62,
+                "lt_quartz": 180,
+                #"NiS-Cm": 160,
+               }
+        for cif in data.keys():
+            s = pyxtal()
+            s.from_seed(cif_path+cif+'.cif')
+            my = supergroup(s, G=data[cif])
+            sols = my.search_supergroup(max_solutions=6)
+            for sol in sols:
+                struc_high = my.make_pyxtal_in_supergroup(sol)
+                strucs = my.make_pyxtals_in_subgroup(sol, 3) 
+                pmg1 = struc_high.to_pymatgen()
+                pmg2 = strucs[-1].to_pymatgen()
+                rms = sm.StructureMatcher().get_rms_dist(pmg1, pmg2)[0]
+                self.assertTrue(rms < 1e-4)
+
     def test_quick(self):
         data = {
-                #"NbO2": 141,
-                "GeF2": 62,
-                "NiS-Cm": 160,
-                "lt_quartz": 180,
                 "BTO-Amm2": 221,
                 "BTO": 221,
                 "lt_cristobalite": 227,
@@ -392,7 +408,7 @@ class TestMolecular(unittest.TestCase):
         # print("test_big_molecule")
         for mol in ["ROY", "aspirin"]:
             struc = pyxtal(molecular=True)
-            struc.from_random(3, 19, [mol], factor=1.2)
+            struc.from_random(3, 19, [mol], factor=1.4)
             self.assertTrue(struc.valid)
             pair = struc.check_short_distances()
             if len(pair) > 0:

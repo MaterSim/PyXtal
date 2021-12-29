@@ -20,31 +20,6 @@ from pyxtal.wyckoff_split import wyckoff_split
 
 ALL_SHIFTS = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
 
-def write_poscars_intermediate(H_struc, G_struc, mapping, splitter, N_images=3):
-    """
-    Write the intermediate POSCARs betwee H and G structure,
-    while assuming H is the maximum subgroup of G
-    The key is to represent G in the subgroup representation
-    Knowing the mapping, one just need to obtain the displacement
-
-    Args:
-        H_struc: PyXtal low symmetry structure
-        G_struc: PyXtal high symmetry structure
-        mapping: atomic mapping between H and G
-        splitter: splitter object
-        wyc_set: wyc_set transformation
-        N_images: number of intermediate structures between H and G
-
-    Return:
-        a list of POSCARs
-    """
-    
-    # 1, transform G_struc into a different set
-    # 2, represent G in subgroup rep
-    # 3, compute the displacement
-    # 4, write a seriers of POSCAR by varying disp
-    raise NotImplementedError
-
 def write_poscars(H_struc, G_struc, mappings, splitters, wyc_sets, N_images=3):
     """
     Write the intermediate POSCARs betwee H and G structure,
@@ -209,22 +184,22 @@ def find_mapping(atom_sites, splitter, max_num=720):
 
 def search_G1(G, rot, tran, pos, wp1, op):
     """
-    apply symmetry operation on pos1 when it involves cell change.
-    e.g., when the transformation is (a+b, a-b, c),
+    For a given `pos`, apply the transformation due to (rot+tran),
+    search for the cloest wp which satisfies the symmetry of op
+    within the 
     trial translation needs to be considered to minimize the
     difference between the transformed pos1 and reference pos2
 
     Args:
-        G:
-        rot:
-        tran:
-        pos:
-        wp1:
-        op:
+        G: the target space group object
+        rot: rotation, 3*3 matrix
+        tran: translation, 1*3 vector
+        pos: starting position
+        wp1: wyckoff symmetry
+        op: one symmetry operation
 
     Return:
-        tmp:
-        diff:
+        the cloest position and the distance
     """
 
     if np.linalg.det(rot) < 1:
@@ -234,6 +209,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
 
     diffs = []
     coords = []
+    # loop over all nearby translations
     for shift in shifts:
         res = np.dot(rot, pos + shift) + tran.T
         tmp = sym.search_cloest_wp(G, wp1, op, res)
@@ -244,7 +220,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
         coords.append(tmp)
         if dist < 1e-1:
             break
-
+    # choose the one returns minimum difference
     diffs = np.array(diffs)
     minID = np.argmin(diffs)
     tmp = coords[minID]
@@ -569,20 +545,17 @@ class supergroup():
             coord_H = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
-                factor = 1.0
                 res = self.symmetrize_site_single(splitter, i, coord_H[0], translation)
                 (dist, _tran, _mask) = res
                 if translation is None:
                     translation = _tran
                     mask = _mask
             elif n == 2:
-                factor = np.sqrt(2)
                 if splitter.group_type == 'k':
                     dist = self.symmetrize_site_double_k(splitter, i, coord_H, translation)
                 else:
                     dist = self.symmetrize_site_double_t(splitter, i, coord_H, translation)
             else:
-                factor = np.sqrt(3)
                 dist = self.symmetrize_site_multi(splitter, i, coord_H, translation)
 
             #print(self.G.number, 'id', i, 'number', n, dist, translation, mask)
@@ -709,14 +682,13 @@ class supergroup():
 
     def symmetrize_site_double_k(self, splitter, id, coord_H, translation, run_type=1):
         """
-        symmetrize two WPs to another with higher symmetry 
-        assuming a zero translation
+        symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry 
 
         Args:
-            splitter:
-            id:
-            coord1_H:
-            coord2_H:
+            splitter: splitter object
+            id: index of splitter
+            coord_H: 2*3 coordinates
+            translation: 1*3 transaltion vector 
             run_type: return distance or coordinates
         """
         # For k-type splitting, restore the translation symmetry:
@@ -728,14 +700,16 @@ class supergroup():
         tran = splitter.R[:3,3]
         inv_rot = np.linalg.inv(rot)
 
-        wp1 = splitter.wp1_lists[id]
-        ops_H1 = splitter.H_orbits[id][0]
-        op_G21 = splitter.G2_orbits[id][0][0]
-        ops_G22 = splitter.G2_orbits[id][1]
+        wp1 = splitter.wp1_lists[id]          # wp_G
+        ops_H1 = splitter.H_orbits[id][0]     # operations of wp_h1
+        op_G21 = splitter.G2_orbits[id][0][0] # operation 1 of wp_h1 in subgroup
+        ops_G22 = splitter.G2_orbits[id][1]   # operations of wp_h2 in subgroup
 
         coord1_H, coord2_H = coord_H[0], coord_H[1]
         coord1_G2, coord2_G2  = coord1_H + translation, coord2_H + translation
-
+        
+        # since rotation does not change, search for the closest match on rotation
+        # then we can get the translation vector
         for op_G22 in ops_G22:
             diff = (op_G22.rotation_matrix - op_G21.rotation_matrix).flatten()
             if np.sum(diff**2) < 1e-3:
@@ -746,6 +720,7 @@ class supergroup():
         coords11 += trans
         tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
 
+        # needed displacement 
         d = coord2_G2 - tmp
         d -= np.round(d)
 
@@ -760,14 +735,13 @@ class supergroup():
 
     def symmetrize_site_double_t(self, splitter, id, coord_H, translation, run_type=1):
         """
-        symmetrize two WPs to another with higher symmetry 
+        symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry 
         assuming a zero translation
 
         Args:
-            splitter:
-            id:
-            coord1_H:
-            coord2_H:
+            splitter: splitter object
+            id: the id in the splitter
+            coord_H: coordinates to work on
             run_type: return distance or coordinates
         """
 
@@ -776,18 +750,21 @@ class supergroup():
         tran = splitter.R[:3,3]
         inv_rot = np.linalg.inv(rot)
         cell_G = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.cell)
-        wp1 = splitter.wp1_lists[id]
-        op_G11 = splitter.G1_orbits[id][0][0]
-        op_G12 = splitter.G1_orbits[id][1][0]
-        ops_G1 = splitter.G[0]
+        wp1 = splitter.wp1_lists[id]          # wp_G
+        ops_G11 = splitter.G1_orbits[id][0]   # operations of wp_h1 in subgroup
+        ops_G12 = splitter.G1_orbits[id][1]   # operations of wp_h2 in subgroup
+        ops_G1 = splitter.G[0]               # general operations of G
 
-        coord1_H, coord2_H = coord_H[0], coord_H[1]
-        coord1_G2, coord2_G2  = coord1_H+translation, coord2_H+translation 
+        coord1_H, coord2_H = coord_H[0], coord_H[1] #coordinates in H
+        coord1_G2, coord2_G2  = coord1_H+translation, coord2_H+translation # in G
 
-        coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, op_G11)
-        coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, op_G12)
 
-        # find the best match
+        # forward search for the best generator for wp_h1 and wp_h2 in subgroup
+        coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, ops_G11[0])
+        coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, ops_G12[0])
+
+        # apply the operations in G 
+        # find the position that is closest to coord2_G1 
         coords11 = apply_ops(coord1_G1, ops_G1)
         tmp, dist = get_best_match(coords11, coord2_G1, cell_G)
 
@@ -795,15 +772,22 @@ class supergroup():
         d = coord2_G1 - tmp
         d -= np.round(d)
         coord2_G1 -= d/2
-        coord1_G1 += d/2
-        coord1_G2, dist1 = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
-        coord2_G2, dist2 = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
-        #print("dist", np.linalg.norm(d), dist1, dist2, "d", d, tmp, coord2_G1)
 
+        coords22 = apply_ops(coord2_G1, ops_G1)
+        coord1_G1, dist = get_best_match(coords22, coord1_G1, cell_G)
+        #coord1_G1 += d/2
+
+        # backward search (G->H)
+        coord1_G2, dist = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
+        coord2_G2, dist = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
+        
+        #coords22 = apply_ops(coord2_G2, ops_G11)
+        #coord1_G2, dist = get_best_match(coords22, coord1_G1, cell_G)
+        
         if run_type == 1:
-            return max([dist1, dist2])
+            return dist
         else:
-            return tmp, [coord1_G2, coord2_G2], [coord1_H, coord2_H]
+            return coord2_G1, [coord1_G2, coord2_G2], [coord1_H, coord2_H]
 
     def symmetrize_site_multi(self, splitter, id, coord_H, translation, run_type=1):
         """
@@ -1138,7 +1122,7 @@ if __name__ == "__main__":
             "NbO2": 141,
             "GeF2": 62,
             "lt_quartz": 180,
-            #"NiS-Cm": 160,
+            "NiS-Cm": 160,
             #"BTO-Amm2": 221,
             #"BTO": 221,
             #"lt_cristobalite": 227,
@@ -1165,12 +1149,15 @@ if __name__ == "__main__":
         sols = my.search_supergroup(max_solutions=12)
         #my.make_supergroup(sols, show_detail=True)
         for sol in sols:
-            print("+++++++++++++++++++++++++++++++++++++++")
             struc_high = my.make_pyxtal_in_supergroup(sol)
             strucs = my.make_pyxtals_in_subgroup(sol)
             pmg1 = struc_high.to_pymatgen()
             pmg2 = strucs[-1].to_pymatgen()
+            s0 = pyxtal()
+            s0.from_seed(pmg2, tol=1e-2)
+            rms = sm.StructureMatcher().get_rms_dist(pmg1, pmg2)
+            print('========================================', rms)
             if not sm.StructureMatcher().fit(pmg1, pmg2):
                 print(struc_high)
                 print(strucs[-1])
-                print(pmg1); print(pmg2)
+                print(s0)
