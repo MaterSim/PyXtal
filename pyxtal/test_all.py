@@ -98,14 +98,15 @@ class TestSupergroup(unittest.TestCase):
             s = pyxtal()
             s.from_seed(cif_path+cif+'.cif')
             my = supergroup(s, G=data[cif])
-            sols = my.search_supergroup(max_solutions=6)
+            sols = my.search_supergroup(max_solutions=2)
             for sol in sols:
                 struc_high = my.make_pyxtal_in_supergroup(sol)
                 strucs = my.make_pyxtals_in_subgroup(sol, 3) 
                 pmg1 = struc_high.to_pymatgen()
                 pmg2 = strucs[-1].to_pymatgen()
                 rms = sm.StructureMatcher().get_rms_dist(pmg1, pmg2)[0]
-                self.assertTrue(rms < 1e-4)
+                print(cif, rms)
+                self.assertTrue(rms < 1e-3)
 
     def test_quick(self):
         data = {
@@ -128,9 +129,9 @@ class TestSupergroup(unittest.TestCase):
                  #["R-3", 147, 'k'], #1-3
                  #["P3_112", 5, 't'], #1-3
                  #["P6_422", 21, 't'], #1-3
-                 #["Fd3", 70, 't'], #1-3
-                 #["P4_332", 96, 't'], #1-3
-                 #["Pm3", 47, 't'], #1-3
+                 ["P4_332", 96, 't'], #1-3
+                 ["Fd3", 70, 't'], #1-3
+                 ["Pm3", 47, 't'], #1-3
                  ["Fd3m", 166, 't'],
                  ["R-3c", 15, 't'],
                  ["R32", 5, 't'],

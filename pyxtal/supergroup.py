@@ -201,10 +201,8 @@ def search_G1(G, rot, tran, pos, wp1, op):
         the cloest position and the distance
     """
 
-    if np.linalg.det(rot) < 1:
-        shifts = ALL_SHIFTS
-    else:
-        shifts = np.array([[0,0,0]])
+    #if np.linalg.det(rot) < 1:
+    shifts = ALL_SHIFTS
 
     diffs = []
     coords = []
@@ -229,17 +227,16 @@ def search_G1(G, rot, tran, pos, wp1, op):
 
 def search_G2(rot, tran, pos1, pos2, cell=None):
     """
-    apply symmetry operation on pos1 when it involves cell change.
-    e.g., when the transformation is (a+b, a-b, c),
+
     trial translation needs to be considered to minimize the
     difference between the transformed pos1 and reference pos2
 
     Args:
         rot:
         tran:
-        pos1:
-        pos2:
-        cell:
+        pos1: position in G1
+        pos2: reference position in G2
+        cell: 3*3 matrix
 
     Return:
         pos:
@@ -247,7 +244,10 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     """
 
     pos1 -= np.round(pos1)
-    shifts = ALL_SHIFTS
+    if np.linalg.det(rot) < 1: 
+        shifts = [[0,0,0]]
+    else:
+        shifts = ALL_SHIFTS
 
     dists = []
     for shift in shifts:
@@ -262,6 +262,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     dist = np.min(dists)
     shift = shifts[np.argmin(dists)]
     pos = np.dot(rot, pos1 + shift + tran.T)
+    
 
     diff = pos - pos2
     diff -= np.round(diff)
@@ -284,7 +285,7 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
                   on the orientation of the molecule
 
     Returns:
-        G2_holder: The corresponding x,y,z parameters written in the G2 basis
+        G2_holder: x,y,z parameters written in the G2 basis
     """
     if np.all(quadrant == [0,0,0]):
         for i,n in enumerate(coord):
@@ -321,12 +322,10 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
         rot_G2 = np.delete(rot_G2,len(rot_G2)-1,0)
         b = np.delete(b,len(b)-1)
 
-
     # Must come back later and add Schwarz Inequality check to elininate any dependent vectors
     # solves a linear system to find the free parameters
     if set(G2_holder) == {0.}:
         return np.array(G2_holder)
-
     else:
         try:
             G2_basis_xyz = np.linalg.solve(rot_G2,b)
@@ -506,15 +505,21 @@ class supergroup():
     def get_coord_H(self, splitter, id, atom_sites_H, mapping):
         # number of split sites for a given WP
         n = len(splitter.wp2_lists[id])
-        letters = [atom_sites_H[mapping[id][x]].wp.letter for x in range(n)]
-        ordered_letter_index = []
-        for pos in splitter.wp2_lists[id]:
-            indice = letters.index(pos.letter)
-            ordered_letter_index.append(indice)
-            letters[indice] = 0
-        ordered_mapping = [mapping[id][x] for x in ordered_letter_index]
+        if n > 1:
+            letters = [atom_sites_H[mapping[id][x]].wp.letter for x in range(n)]
+            letters_wp = [wp.letter for wp in splitter.wp2_lists[id]]
+            seq = [] #list(map(lambda x: letters.index(x), letters_wp))
+            for l in letters_wp:
+                index = letters.index(l)
+                seq.append(index)
+                letters[index] = 0
+
+            ordered_mapping = [mapping[id][x] for x in seq]
+            #print(letters, mapping[id], '->', letters_wp, ordered_mapping)
+        else:
+            ordered_mapping = mapping[id]
         coord_H = [atom_sites_H[ordered_mapping[x]].position.copy() for x in range(n)]
-        return coord_H, ordered_mapping
+        return np.array(coord_H), ordered_mapping
 
     def symmetrize_dist(self, splitter, mapping, mask, translation=None, d_tol=1.2):
         """
@@ -587,8 +592,9 @@ class supergroup():
         """
         coords_G1 = [] # position in G
         coords_G2 = [] # position in G on the subgroup bais
-        coords_H1 = [] # position in H
+        coords_H = [] # position in H
         elements = []
+        #orders = []
 
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
@@ -598,28 +604,31 @@ class supergroup():
 
             if n == 1:
                 res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)       
-            else:
+            elif n==2:
                 if splitter.group_type == 'k':
                     res = self.symmetrize_site_double_k(splitter, i, coord_H, translation, 0)
                 else:
                     res = self.symmetrize_site_double_t(splitter, i, coord_H, translation, 0)
+            else:
+                res = self.symmetrize_site_multi(splitter, i, coord_H, translation, 0)
 
-            coord_G1, coord_G2, coord_H1 = res
+            coord_G1, coord_G2, coord_H = res
             # retrive the order
-            if n > 1:
-                #print(orders, len(coord_G2))
-                seq = list(map(lambda x: orders.index(x), sorted(orders)))
-                coord_G2 = [coord_G2[j] for j in seq] 
-                coord_H1 = [coord_H1[j] for j in seq]
+            #if n > 1:
+            #    print(orders, coord_G2)
+            #    seq = list(map(lambda x: orders.index(x), sorted(orders)))
+            #    coord_G2 = [coord_G2[j] for j in seq] 
+            #    coord_H = [coord_H[j] for j in seq]
             coords_G1.append(coord_G1)
             coords_G2.extend(coord_G2)
-            coords_H1.extend(coord_H1)
+            coords_H.extend(coord_H)
             elements.extend([splitter.elements[i]]*n)
-
+        
         coords_G1 = np.array(coords_G1)
         coords_G2 = np.array(coords_G2)
-        coords_H1 = np.array(coords_H1)
-        return coords_G1, coords_G2, coords_H1, elements
+        coords_H = np.array(coords_H)
+        
+        return coords_G1, coords_G2, coords_H, elements
 
 
     def symmetrize_site_single(self, splitter, id, base, translation, run_type=1):
@@ -627,10 +636,10 @@ class supergroup():
         symmetrize one WP to another with higher symmetry 
 
         Args:
-            splitter:
-            id: 
+            splitter: splitter object
+            id: index of splitter
             base: atomic position of site in H
-            translation: translation vector
+            translation: 1*3 translation vector
             run_type: return distance or coordinates
         """
         # Some necessary items
@@ -682,7 +691,8 @@ class supergroup():
         else:
             # symmetrize coord_G1
             tmp, _ = search_G1(splitter.G, rot, tran, coord_H+translation, wp1, op_G1)
-            coord_G2, _ = search_G2(inv_rot, -tran, tmp, coord_H+translation, self.cell)
+            coord_G2, dist = search_G2(inv_rot, -tran, tmp, coord_H+translation, self.cell)
+            #print('XXXXXXXXX', coord_H+translation, tmp, coord_G2, dist)
             return tmp, [coord_G2], [coord_H]
 
     def symmetrize_site_double_k(self, splitter, id, coord_H, translation, run_type=1):
@@ -736,7 +746,7 @@ class supergroup():
             coord2_G2 -= d/2
             coord1_G2 += d/2
             coord1_G1, _ = search_G1(splitter.G, rot, tran, tmp, wp1, op_G11)
-            return coord1_G1, [coord1_G2, coord2_G2], [coord1_H, coord2_H]
+            return coord1_G1, [coord1_G2, coord2_G2], coord_H
 
     def symmetrize_site_double_t(self, splitter, id, coord_H, translation, run_type=1):
         """
@@ -747,6 +757,7 @@ class supergroup():
             splitter: splitter object
             id: the id in the splitter
             coord_H: coordinates to work on
+            translation: 1*3 transaltion vector 
             run_type: return distance or coordinates
         """
 
@@ -791,24 +802,25 @@ class supergroup():
         
         #coords22 = apply_ops(coord2_G2, ops_G11)
         #coord1_G2, dist = get_best_match(coords22, coord1_G1, cell_G)
-        
         if run_type == 1:
             return dist
         else:
-            return coord2_G1, [coord1_G2, coord2_G2], [coord1_H, coord2_H]
+            return coord2_G1, [coord1_G2, coord2_G2], coord_H
 
     def symmetrize_site_multi(self, splitter, id, coord_H, translation, run_type=1):
         """
-        symmetrize two WPs to another with higher symmetry 
-        assuming a zero translation
+        symmetrize multiple WPs to another with higher symmetry 
 
         Args:
-            splitter:
-            id:
-            coord_H:
+            splitter: splitter object
+            id: the id in the splitter
+            coord_H: coordinates to work on
+            translation: 1*3 transaltion vector 
             run_type: return distance or coordinates
         """
+
         if translation is None: translation = np.zeros(3)
+        
         n = len(splitter.wp2_lists[id])
         rot = splitter.R[:3,:3]
         tran = splitter.R[:3,3]
@@ -817,58 +829,67 @@ class supergroup():
         wp1 = splitter.wp1_lists[id]
 
         # Finds the correct quadrant to easily generate all possible_wycs
-        # translations when trying to match
+        # add translations when trying to match
         quadrant = np.array(splitter.G2_orbits[id][0][0].as_dict()['matrix'])[:3,3]
         for k in range(3):
             if quadrant[k] >= 0.:
                 quadrant[k] = 1
             else:
                 quadrant[k] = -1
-        coord_G2 = [x+translation for x in coord_H]
-        for j, x in enumerate(coord_G2):
-            for k in range(3):
-                coord_G2[j][k] = coord_G2[j][k] % quadrant[k]
+
+        coord_G2 = coord_H + translation
+        coord_G2 %= quadrant
 
         # uses 1st coordinate and 1st wyckoff position as starting example.
-        # Finds the matching G2 operation bcased on nearest G1 search
+        # Finds the matching G2 operation based on the nearest G1 search
         dist_list = []
         coord_list = []
         index = []
+        G2_xyz = np.zeros([n,3])
         corresponding_ops = []
-        G2_xyz = []
+
         for op in splitter.G1_orbits[id][0]:
-            coord,dist = search_G1(splitter.G, rot, tran, coord_G2[0], wp1, op)
+            coord, dist = search_G1(splitter.G, rot, tran, coord_G2[0], wp1, op)
             dist_list.append(dist)
             coord_list.append(coord)
+
         dist_list = np.array(dist_list)
         index.append(np.argmin(dist_list))
         corresponding_ops.append(splitter.G2_orbits[id][0][index[0]])
 
         # Finds the free parameters xyz in the G2 basis for this coordinate
-        G2_xyz.append(find_xyz(corresponding_ops[0], coord_G2[0], quadrant))
+        G2_xyz[0] += find_xyz(corresponding_ops[0], coord_G2[0], quadrant)
 
         # Systematically generates possible G2 positions to match the remaining coordinates
         # Also finds the corresponding G2 free parameters xyz for each coordinate
-
         for j in range(1, n):
             possible_coords = [x.operate(G2_xyz[0]) for x in splitter.G2_orbits[id][j]]
             corresponding_coord, _ = get_best_match(possible_coords, coord_G2[j], cell_G)
             index.append([np.all(x==corresponding_coord) for x in possible_coords].index(True))
             corresponding_ops.append(splitter.G2_orbits[id][j][index[j]])
-            G2_xyz.append(find_xyz(corresponding_ops[j],coord_G2[j],quadrant))
+            G2_xyz[j] += find_xyz(corresponding_ops[j], coord_G2[j], quadrant)
+        #print(G2_xyz)
 
         # Finds the average free parameters between all the coordinates as the best set 
         # of free parameters that all coordinates must match
-        final_xyz = np.sum(G2_xyz, axis=0)/n
+        final_xyz = np.mean(G2_xyz, axis=0)
 
+        coords_G1 = np.zeros([n, 3]) #xyz in G1
+        coords_G2 = np.zeros([n, 3]) #xyz in G2
         dist_list = []
         for j in range(n):
-            G1_coord = splitter.G1_orbits[id][j][index[j]].operate(final_xyz)
+            coords_G1[j] = splitter.G1_orbits[id][j][index[j]].operate(final_xyz)
             tmp = coord_H[j] + translation
-            G2_coord, dist = search_G2(inv_rot, -tran, G1_coord, tmp, self.cell)
+            coords_G2[j], dist = search_G2(inv_rot, -tran, coords_G1[j], tmp, self.cell)
             dist_list.append(dist)
-    
-        return max(dist_list)
+        #print("dist", dist)
+        #print("G1", coords_G1)#; import sys; sys.exit()
+        #print("G2", coords_G2)#; import sys; sys.exit()
+
+        if run_type == 1:
+            return max(dist_list)
+        else:
+            return coords_G1[0], coords_G2, coord_H
 
     def print_detail(self, solution, coords_H, coords_G, elements):
         """
@@ -914,6 +935,9 @@ class supergroup():
         details = self.symmetrize(sp, mapping, translation)
         _, coords_G2, coords_H1, elements = details
         
+        #print(coords_G2)
+        #print(coords_H1)
+        #self.print_detail(solution, coords_H1, coords_G2, elements)
         # Get the list of atomic displacements
         disps = []
         count = 0
@@ -929,10 +953,10 @@ class supergroup():
         disps = np.array(disps)
         disps /= (N_images-1)
         max_disp = np.max(np.linalg.norm(disps.dot(self.cell), axis=1))
-
+        #print('AAAAAAAAAAAAAAAAAAA', elements)
         for i in range(N_images):
             coords = coords_H1 + i*disps + translation 
-            struc = self._make_pyxtal(sp, coords, 1, False)
+            struc = self._make_pyxtal(sp, coords, elements, 1, False)
             struc.source = 'supergroup {:d} {:6.3f}'.format(i, max_disp*i)
             strucs.append(struc)
         return strucs
@@ -955,7 +979,7 @@ class supergroup():
         struc.disp = max_disp
         return struc
 
-    def _make_pyxtal(self, sp, coords, run_type=0, check=True):
+    def _make_pyxtal(self, sp, coords, elements=None, run_type=0, check=True):
         """
         create the pyxtal with high/low symmetries
 
@@ -973,8 +997,8 @@ class supergroup():
         lattice_G = Lattice.from_matrix(cell_G, ltype=sp.G.lattice_type)
 
         # Collect the atom_sites
+        G_sites = []
         if run_type == 0:
-            G_sites = []
             for i, wp in enumerate(sp.wp1_lists):
                 pos = coords[i]
                 pos -= np.floor(pos)
@@ -984,20 +1008,38 @@ class supergroup():
                         site = atom_site(wp, pos1, sp.elements[i])
                         G_sites.append(site)
                     else:
-                        print(self.struc.group.number); print(pos); print(wp)
+                        print("Group:", self.struc.group.number)
+                        print("Position:", pos)
+                        print(wp)
                         raise RuntimeError("cannot assign the right wp")
                 else:
                     pos1 = pos
             # Update space group and lattice
             struc.group = sp.G
             struc.lattice = lattice_G
-            struc.atom_sites = G_sites
-            struc._get_formula()
         else:
+            count = 0
+            for wp2 in sp.wp2_lists:
+                for wp in wp2:
+                    pos = coords[count]
+                    pos -= np.floor(pos)
+                    pos1 = sym.search_matched_position(sp.H, wp, pos)
+                    if pos1 is not None:
+                        site = atom_site(wp, pos1, elements[count])
+                        G_sites.append(site)
+                        count += 1
+                    else:
+                        print("Position:", pos)
+                        print(wp)
+                        raise RuntimeError("cannot assign the right wp")
+
             cell_U = np.dot(sp.R[:3, :3].T, lattice_G.matrix)
             struc.lattice = Lattice.from_matrix(cell_U, ltype=sp.H.lattice_type)
-            for i, coord in enumerate(coords):
-                struc.atom_sites[i].update(coord)
+            #for i, coord in enumerate(coords):
+            #    struc.atom_sites[i].specie = elements[i]
+            #    struc.atom_sites[i].update(coord)
+        struc.atom_sites = G_sites
+        struc._get_formula()
         return struc
 
 class supergroups():
@@ -1127,9 +1169,9 @@ if __name__ == "__main__":
             #"BTO-Amm2": [65, 123, 221],
             #"NaSb3F10": [186, 194],
             "NbO2": 141,
-            "GeF2": 62,
-            "lt_quartz": 180,
-            "NiS-Cm": 160,
+            #"GeF2": 62,
+            #"lt_quartz": 180,
+            #"NiS-Cm": 160,
             #"BTO-Amm2": 221,
             #"BTO": 221,
             #"lt_cristobalite": 227,
@@ -1165,8 +1207,3 @@ if __name__ == "__main__":
             if not sm.StructureMatcher().fit(pmg1, pmg2):
                 print(struc_high)
                 print(strucs[-1])
-                a = struc_high.subgroup_once(H=8, eps=0)
-                print(a)
-                s0 = pyxtal()
-                s0.from_seed(pmg2, tol=1e-2)
-                print(s0)
