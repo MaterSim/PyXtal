@@ -714,7 +714,12 @@ class pyxtal:
         #transform from p21/n to p21/n
         if self.diag:
             self.transform([[1,0,0],[0,1,0],[1,0,1]])
-
+        
+        if H is not None:
+            if Group(H).point_group == self.group.point_group:
+                group_type = 'k'
+            else:
+                group_type = 't'
         t_types = []
         k_types = []
         if group_type == 't':

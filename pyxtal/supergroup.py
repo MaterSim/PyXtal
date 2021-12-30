@@ -244,10 +244,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     """
 
     pos1 -= np.round(pos1)
-    if np.linalg.det(rot) < 1: 
-        shifts = [[0,0,0]]
-    else:
-        shifts = ALL_SHIFTS
+    shifts = ALL_SHIFTS
 
     dists = []
     for shift in shifts:
@@ -392,7 +389,8 @@ class supergroup():
                     print("Warning: ignore some solutions: ", len(sols)-max_per_G)
                     sols = sample(sols, max_per_G)
                     #sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
-                for sol in sols:
+                for i, sol in enumerate(sols):
+                    #print("+++++++++++++++++++++", i, sol)
                     max_disp, trans, mapping, sp = self.calc_disps(id, sol, d_tol*1.1)
                     #print(G.number, sol, mae, disp)
                     if max_disp < d_tol:
@@ -561,9 +559,8 @@ class supergroup():
                     dist = self.symmetrize_site_double_t(splitter, i, coord_H, translation)
             else:
                 dist = self.symmetrize_site_multi(splitter, i, coord_H, translation)
-
-            #print(self.G.number, 'id', i, 'number', n, dist, translation, mask)
-            #if self.G.number==194 and n==2: import sys; sys.exit()
+    
+            #strs = self.print_wp(splitter, i); print(strs, dist)
 
             if i == 0 and translation is None:
                 translation = np.zeros(3)
@@ -594,13 +591,12 @@ class supergroup():
         coords_G2 = [] # position in G on the subgroup bais
         coords_H = [] # position in H
         elements = []
-        #orders = []
 
         # wp1 stores the wyckoff position object of ['2c', '6h', '12i']
         for i, wp1 in enumerate(splitter.wp1_lists):
 
             n = len(splitter.wp2_lists[i])
-            coord_H, orders = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
+            coord_H, _ = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
                 res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)       
@@ -612,24 +608,30 @@ class supergroup():
             else:
                 res = self.symmetrize_site_multi(splitter, i, coord_H, translation, 0)
 
+
             coord_G1, coord_G2, coord_H = res
-            # retrive the order
-            #if n > 1:
-            #    print(orders, coord_G2)
-            #    seq = list(map(lambda x: orders.index(x), sorted(orders)))
-            #    coord_G2 = [coord_G2[j] for j in seq] 
-            #    coord_H = [coord_H[j] for j in seq]
             coords_G1.append(coord_G1)
             coords_G2.extend(coord_G2)
             coords_H.extend(coord_H)
             elements.extend([splitter.elements[i]]*n)
         
+            #self.print_wp(splitter, i)
+            #print(coord_G1)
+            #print(coord_G2)
+ 
         coords_G1 = np.array(coords_G1)
         coords_G2 = np.array(coords_G2)
         coords_H = np.array(coords_H)
         
         return coords_G1, coords_G2, coords_H, elements
 
+    def print_wp(self, splitter, id):
+        wp1 = splitter.wp1_lists[id]
+        l = str(wp1.multiplicity) + wp1.letter + '->'
+        for wp in splitter.wp2_lists[id]:
+            l += str(wp.multiplicity) + wp.letter + ','
+        strs = '{:2s}{:s} ID-{:d} {:s}'.format(splitter.elements[id], splitter.group_type, id, l)
+        return strs
 
     def symmetrize_site_single(self, splitter, id, base, translation, run_type=1):
         """
@@ -784,28 +786,25 @@ class supergroup():
         coords11 = apply_ops(coord1_G1, ops_G1)
         tmp, dist = get_best_match(coords11, coord2_G1, cell_G)
 
-        # G1->G2->H
-        d = coord2_G1 - tmp
-        d -= np.round(d)
-        coord2_G1 -= d/2
-
-        coords22 = apply_ops(coord2_G1, ops_G1)
-        coord1_G1, dist = get_best_match(coords22, coord1_G1, cell_G)
-        #coord1_G1 += d/2
-        l1 = str(splitter.wp2_lists[id][0].multiplicity) + splitter.wp2_lists[id][0].letter
-        l2 = str(splitter.wp2_lists[id][1].multiplicity) + splitter.wp2_lists[id][1].letter
-        #print("in G", l1, coord1_G1, l2, coord2_G1)
-        # backward search (G->H)
-        coord1_G2, dist = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
-        coord2_G2, dist = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
-        #print("in G1", l1, coord1_G2, l2, coord2_G2)
-        
-        #coords22 = apply_ops(coord2_G2, ops_G11)
-        #coord1_G2, dist = get_best_match(coords22, coord1_G1, cell_G)
+        #self.print_wp(splitter, id)
         if run_type == 1:
-            return dist
+            return dist/2
         else:
-            return coord2_G1, [coord1_G2, coord2_G2], coord_H
+            # G1->G2->H
+            d = coord2_G1 - tmp
+            d -= np.round(d)
+            coord2_G1 -= d/2
+
+            coords22 = apply_ops(coord2_G1, ops_G1)
+            coord1_G1, dist = get_best_match(coords22, coord1_G1, cell_G)
+            #print("in G", l1, coord1_G1, l2, coord2_G1)
+
+            # backward search (G->H)
+            coord1_G2, dist = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
+            coord2_G2, dist = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
+            #print("in G1", l1, coord1_G2, l2, coord2_G2, dist)
+            
+            return coord2_G1, np.array([coord1_G2, coord2_G2]), coord_H
 
     def symmetrize_site_multi(self, splitter, id, coord_H, translation, run_type=1):
         """
@@ -874,21 +873,24 @@ class supergroup():
         # of free parameters that all coordinates must match
         final_xyz = np.mean(G2_xyz, axis=0)
 
-        coords_G1 = np.zeros([n, 3]) #xyz in G1
-        coords_G2 = np.zeros([n, 3]) #xyz in G2
-        dist_list = []
-        for j in range(n):
-            coords_G1[j] = splitter.G1_orbits[id][j][index[j]].operate(final_xyz)
-            tmp = coord_H[j] + translation
-            coords_G2[j], dist = search_G2(inv_rot, -tran, coords_G1[j], tmp, self.cell)
-            dist_list.append(dist)
-        #print("dist", dist)
-        #print("G1", coords_G1)#; import sys; sys.exit()
-        #print("G2", coords_G2)#; import sys; sys.exit()
-
         if run_type == 1:
+            dist_list = []
+            for j in range(n):
+                d = np.dot(G2_xyz[j] - final_xyz, cell_G)
+                dist_list.append(np.linalg.norm(d))
             return max(dist_list)
         else:
+            coords_G1 = np.zeros([n, 3]) #xyz in G1
+            coords_G2 = np.zeros([n, 3]) #xyz in G2
+            #dist_list = []
+            for j in range(n):
+                coords_G1[j] = splitter.G1_orbits[id][j][index[j]].operate(final_xyz)
+                tmp = coord_H[j] + translation
+                coords_G2[j], dist = search_G2(inv_rot, -tran, coords_G1[j], tmp, self.cell)
+                #dist_list.append(dist)
+            #print("dist", dist)
+            #print("G1", coords_G1)#; import sys; sys.exit()
+            #print("G2", coords_G2)#; import sys; sys.exit()
             return coords_G1[0], coords_G2, coord_H
 
     def print_detail(self, solution, coords_H, coords_G, elements):
@@ -953,9 +955,9 @@ class supergroup():
         disps = np.array(disps)
         disps /= (N_images-1)
         max_disp = np.max(np.linalg.norm(disps.dot(self.cell), axis=1))
-        #print('AAAAAAAAAAAAAAAAAAA', elements)
         for i in range(N_images):
             coords = coords_H1 + i*disps + translation 
+            #print('sub', i, coords_H1, translation, coords)
             struc = self._make_pyxtal(sp, coords, elements, 1, False)
             struc.source = 'supergroup {:d} {:6.3f}'.format(i, max_disp*i)
             strucs.append(struc)
@@ -1031,6 +1033,7 @@ class supergroup():
                     else:
                         print("Position:", pos)
                         print(wp)
+                        print(sp)
                         raise RuntimeError("cannot assign the right wp")
 
             cell_U = np.dot(sp.R[:3, :3].T, lattice_G.matrix)
@@ -1168,7 +1171,8 @@ if __name__ == "__main__":
             #"lt_cristobalite": [98, 210, 227],
             #"BTO-Amm2": [65, 123, 221],
             #"NaSb3F10": [186, 194],
-            "NbO2": 141,
+            "NaSb3F10": [176, 194],
+            #"NbO2": 141,
             #"GeF2": 62,
             #"lt_quartz": 180,
             #"NiS-Cm": 160,
@@ -1186,24 +1190,24 @@ if __name__ == "__main__":
         print("===============", cif, "===============")
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
-        #if isinstance(data[cif], list):
-        #    sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
-        #else:
-        #    sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
-        #print(sup)
-        #strs = "====================================================="
-        #strs += "==============={:12.3f} seconds".format(time()-t0)
-        #print(strs)
-        my = supergroup(s, data[cif])
-        sols = my.search_supergroup(max_solutions=12)
-        #my.make_supergroup(sols, show_detail=True)
-        for sol in sols:
-            struc_high = my.make_pyxtal_in_supergroup(sol)
-            strucs = my.make_pyxtals_in_subgroup(sol)
-            pmg1 = struc_high.to_pymatgen()
-            pmg2 = strucs[-1].to_pymatgen()
-            rms = sm.StructureMatcher().get_rms_dist(pmg1, pmg2)
-            print('========================================', rms)
-            if not sm.StructureMatcher().fit(pmg1, pmg2):
-                print(struc_high)
-                print(strucs[-1])
+        if isinstance(data[cif], list):
+            sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
+        else:
+            sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
+        print(sup)
+        strs = "====================================================="
+        strs += "==============={:12.3f} seconds".format(time()-t0)
+        print(strs)
+        #my = supergroup(s, data[cif])
+        #sols = my.search_supergroup(max_solutions=12)
+        ##my.make_supergroup(sols, show_detail=True)
+        #for sol in sols:
+        #    struc_high = my.make_pyxtal_in_supergroup(sol)
+        #    strucs = my.make_pyxtals_in_subgroup(sol)
+        #    pmg1 = struc_high.to_pymatgen()
+        #    pmg2 = strucs[-1].to_pymatgen()
+        #    rms = sm.StructureMatcher().get_rms_dist(pmg1, pmg2)
+        #    print('========================================', rms)
+        #    if not sm.StructureMatcher().fit(pmg1, pmg2):
+        #        print(struc_high)
+        #        print(strucs[-1])

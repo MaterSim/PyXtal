@@ -98,7 +98,7 @@ class TestSupergroup(unittest.TestCase):
             s = pyxtal()
             s.from_seed(cif_path+cif+'.cif')
             my = supergroup(s, G=data[cif])
-            sols = my.search_supergroup(max_solutions=2)
+            sols = my.search_supergroup(max_solutions=1)
             for sol in sols:
                 struc_high = my.make_pyxtal_in_supergroup(sol)
                 strucs = my.make_pyxtals_in_subgroup(sol, 3) 
@@ -124,34 +124,38 @@ class TestSupergroup(unittest.TestCase):
 
     def test_long(self):
         paras = (
-                 #["P4_332", 155, 't'], #1-4 splitting
-                 #['I4_132', 98, 't'], #1-3
-                 #["R-3", 147, 'k'], #1-3
-                 #["P3_112", 5, 't'], #1-3
-                 #["P6_422", 21, 't'], #1-3
-                 ["P4_332", 96, 't'], #1-3
-                 ["Fd3", 70, 't'], #1-3
-                 ["Pm3", 47, 't'], #1-3
-                 ["Fd3m", 166, 't'],
-                 ["R-3c", 15, 't'],
-                 ["R32", 5, 't'],
+                 ["P4_332", 155], #1-4 splitting
+                 ['I4_132', 98], #1-3
+                 ["P3_112", 5], #1-3
+                 ["P6_422", 21], #1-3
+                 ["Fd3", 70], #1-3
+                 ["Pm3", 47], #1-3
+                 ["Fd3m", 166],
+                 ["R-3c", 15],
+                 ["R32", 5],
+                 ["R-3", 147], #1-3, k
+                 #["P4_332", 96], #1-3
                 )
         for para in paras:
-            name, H, gtype = para
+            name, H = para
             name = cif_path + name + ".cif"
             s = pyxtal()
             s.from_seed(name)
             pmg_s1 = s.to_pymatgen()
             G = s.group.number
-            struc_h = s.subgroup_once(eps=0.15, H=H, group_type=gtype, mut_lat=False, max_cell=4)
+            struc_h = s.subgroup_once(eps=0.05, H=H, mut_lat=False)
             sup = supergroups(struc_h, G=G, d_tol=0.2, show=False, max_per_G=500)
+
+            if sup.strucs is None: print("Problem in ", name)
             self.assertFalse(sup.strucs is None)
+
             match = False
             for struc in sup.strucs:
                 pmg_g = struc.to_pymatgen()
                 if sm.StructureMatcher().fit(pmg_g, pmg_s1):
                     match = True
                     break
+            if not match: print("Problem in ", name)
             self.assertTrue(match)
 
 
