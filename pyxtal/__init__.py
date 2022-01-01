@@ -27,6 +27,7 @@ from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.XRD import XRD
 from pyxtal.constants import letters
 from pyxtal.viz import display_molecular, display_atomic, display_cluster
+from pyxtal.constants import letters
 
 # name = "pyxtal"
 
@@ -1377,11 +1378,20 @@ class pyxtal:
 
         wyc_sets = self.group.get_alternatives()
         No = len(wyc_sets['No.'])
+        letters = wyc_sets['Transformed WP'][0]
         if No > 1:
             # skip the first setting since it is identity
             for no in range(1, No):
-                new_struc = self._get_alternative(wyc_sets, no)
-                new_strucs.append(new_struc)
+                if same_letters:
+                    if wyc_sets['Transformed WP'][no] == letters:
+                        add = True
+                    else:
+                        add = False
+                else:
+                    add = True
+                if add:
+                    new_struc = self._get_alternative(wyc_sets, no)
+                    new_strucs.append(new_struc)
         return new_strucs
 
     def _get_alternative(self, wyc_sets, index):
@@ -1400,11 +1410,9 @@ class pyxtal:
         xyz_string = wyc_sets['Coset Representative'][index]
         op = get_inverse(SymmOp.from_xyz_string(xyz_string))
 
-        ids = []
         for i, site in enumerate(new_struc.atom_sites):
             id = len(self.group) - site.wp.index - 1
             letter = wyc_sets['Transformed WP'][index].split()[id]
-            ids.append(letters.index(letter))
             wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
             pos = op.operate(site.position)
             pos1 = search_matched_position(self.group, wp, pos)
@@ -1424,6 +1432,52 @@ class pyxtal:
         new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
 
         return new_struc
+
+    def _get_alternative_back(self, index):
+        """
+        Get alternative structure representations
+
+        Args:
+            index: the index of target wyc_set
+
+        Returns:
+            a new pyxtal structure after transformation
+        """
+        new_struc = self.copy()
+        wyc_sets = self.group.get_alternatives() 
+
+        # xyz_string like 'x+1/4,y+1/4,z+1/4'
+        xyz_string = wyc_sets['Coset Representative'][index]
+        op = SymmOp.from_xyz_string(xyz_string)
+        #op = get_inverse(SymmOp.from_xyz_string(xyz_string))
+        letters = wyc_sets['Transformed WP'][0].split()
+        letters1 = wyc_sets['Transformed WP'][index].split()
+
+        for i, site in enumerate(new_struc.atom_sites):
+            #id = len(self.group) - site.wp.index - 1
+            letter1 = site.wp.letter
+            letter = letters[letters1.index(letter1)]
+            #print("transition", letter1, '->', letter)
+            wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
+            pos = op.operate(site.position)
+            pos1 = search_matched_position(self.group, wp, pos)
+            if pos1 is not None:
+                new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
+            else:
+                print(pos)
+                print(wp)
+                raise RuntimeError("Cannot find the right pos")
+
+        new_struc.source = "Alt. Wyckoff Set [{:d}]: {:s}".format(index, xyz_string)
+        new_struc.wyc_set_id = index
+
+        # transform lattice
+        R = op.affine_matrix[:3,:3] #rotation
+        matrix = np.dot(R, self.lattice.matrix)
+        new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
+
+        return new_struc
+
 
     #def _get_alternative_from_H(self, H):
     #    """
@@ -1533,26 +1587,41 @@ class pyxtal:
                 break
         return free_axis
 
-    def get_disps_single(self, ref_struc):
+    def get_disps_single(self, ref_struc, d_tol=0.9):
         """
         Compute the displacement w.r.t. the reference structure
         
         Args:
             ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            check_mapping: 
 
         Returns:
             Atomic displacements in np.array
             translation: 
         """
         axis = self.get_free_axis()
-
+        cell = self.lattice.matrix
         disps = []
         trans = None
-        for site1, site2 in zip(self.atom_sites, ref_struc.atom_sites):
-            disp, trans = site1.get_disp(site2.position, self.lattice.matrix, trans, axis)
-            disps.append(disp)
+        orders = list(range(len(self.atom_sites)))
+        for site1 in self.atom_sites:
+            match = False
+            for i in orders:
+                site2 = ref_struc.atom_sites[i]
+                if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
+                    disp, dist, trans = site1.get_disp(site2.position, cell, trans, axis)
+                    if dist < d_tol:
+                        match = True
+                if match:
+                    disps.append(disp)
+                    orders.remove(i)
+                    break
+            #print(site1, match)
+            if not match:
+                return None, None, False
+
         disps = np.array(disps)
-        return disps, trans
+        return disps, trans, True
 
     def get_disps_sets(self, ref_struc):
         """
@@ -1564,18 +1633,14 @@ class pyxtal:
         Returns:
             Atomic displacements in np.array
         """
-        ref_strucs = ref_struc.get_alternatives() #same_letters=True)
-        disps = []
-        max_disps = []
+        ref_strucs = ref_struc.get_alternatives(same_letters=True)
         for i, ref_struc in enumerate(ref_strucs):
-            disp, tran = self.get_disps_single(ref_struc)
-            max_disp = max(np.linalg.norm(disp.dot(self.lattice.matrix), axis=0))
-            max_disps.append(max_disp)
-            disps.append(disp)
-            #print(i, disp, tran)
-        max_disps = np.array(max_disps)
-        min_id = np.argmin(max_disps)
-        return disps[min_id], ref_strucs[min_id]
+            disp, tran, valid = self.get_disps_single(ref_struc)
+            #print(i, disp, tran, valid)
+            if valid:
+                #max_disp = max(np.linalg.norm(disp.dot(self.lattice.matrix), axis=0))
+                return disp, ref_struc
+        return None, None
 
 
     def make_transitions(self, disps, lattice=None, translation=None, N_images=3):

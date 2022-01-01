@@ -1144,23 +1144,23 @@ class supergroups():
             a series of pyxtal structures
         """
         #self.print_solutions()
-        #pmg0 = self.strucs[-1].to_pymatgen()
         # derive the backward subgroup representation
         struc0 = self.strucs[-1]
         for i in range(1, len(self.solutions)+1):
             (sp, mapping, trans, wyc_set_id, max_disp) = self.solutions[-i]
-            #0, to the subgroup and +++atomic mapping
             struc0 = struc0._subgroup_by_splitter(sp, eps=0)
-            #pmg1 = struc0.to_pymatgen()
-            #match = sm.StructureMatcher().fit(pmg0, pmg1)
-            #print(i, sp.G.number, sp.H.number, wyc_set_id, match, trans)
-            #print("new=================================", mapping)
             seq = list(map(lambda x: mapping.index(x), list(range(len(mapping)))))
             struc0.atom_sites = [struc0.atom_sites[i] for i in seq]
+            if wyc_set_id > 0:
+                struc0 = struc0._get_alternative_back(wyc_set_id)
             #print(struc0)
-
+            #print(i, sp.G.number, sp.H.number, wyc_set_id, match, trans)
+        #print(self.struc_H)
         disps, _ = self.struc_H.get_disps_sets(struc0)
-        return self.struc_H.make_transitions(disps, N_images=N_images)
+        if disps is not None:
+            return self.struc_H.make_transitions(disps, lattice=struc0.lattice.matrix, N_images=N_images)
+        else:
+            raise RuntimeError("Cannot find the match between H and G")
     
     def struc_along_path(self, path):
         """
@@ -1230,15 +1230,15 @@ if __name__ == "__main__":
             "NaSb3F10": [186, 194],
             "NaSb3F10": [176, 194],
             "MPWO": [59, 71, 139, 225],
-            "NbO2": 141,
-            "GeF2": 62,
-            "lt_quartz": 180,
-            "NiS-Cm": 160,
-            "BTO-Amm2": 221,
-            "BTO": 221,
-            "lt_cristobalite": 227,
-            "NaSb3F10": 194,
-            "MPWO": 225,
+            #"NbO2": 141,
+            #"GeF2": 62,
+            #"lt_quartz": 180,
+            #"NiS-Cm": 160,
+            #"BTO-Amm2": 221,
+            #"BTO": 221,
+            #"lt_cristobalite": 227,
+            #"NaSb3F10": 194,
+            #"MPWO": 225,
            }
     cif_path = "pyxtal/database/cifs/"
 
@@ -1248,23 +1248,23 @@ if __name__ == "__main__":
         s = pyxtal()
         s.from_seed(cif_path+cif+'.cif')
         if isinstance(data[cif], list):
-            sup = supergroups(s, path=data[cif], show=True, max_per_G=2500)
+            sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
         else:
-            sup = supergroups(s, G=data[cif], show=True, max_per_G=2500)
+            sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
         if len(sup.strucs) > 0:
             #print(sup.strucs[-1])
-            #strucs = sup.get_transformation()
-            #pmg_0, pmg_1 = s.to_pymatgen(), sup.strucs[-1].to_pymatgen()
-            #pmg_2, pmg_3 = strucs[0].to_pymatgen(), strucs[1].to_pymatgen()
-            #print(strucs)
-            #print("seed-sub", sm.StructureMatcher().fit(pmg_0, pmg_2))
-            #print("end-super", sm.StructureMatcher().fit(pmg_1, pmg_3))
-            #dist1 = sm.StructureMatcher().get_rms_dist(pmg_0, pmg_2)[0]
-            #dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
-            
-            #print(sup)
+            strucs = sup.get_transformation()
+            pmg_0, pmg_1 = s.to_pymatgen(), sup.strucs[-1].to_pymatgen()
+            pmg_2, pmg_3 = strucs[0].to_pymatgen(), strucs[1].to_pymatgen()
+            print(strucs)
+            dist1 = sm.StructureMatcher().get_rms_dist(pmg_0, pmg_2)[0]
+            dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
             strs = "====================================================="
             strs += "==============={:12.3f} seconds".format(time()-t0)
             print(strs)
+            if dist1 > 1e-3 or dist2 > 1e-3:
+                print("+++++++++++++++++++++++++++++++Problem in ", cif)
+                break
         else:
-            print("==================Problem in ", cif)
+            print("+++++++++++++++++++++++++++++++++++Problem in ", cif)
+            break

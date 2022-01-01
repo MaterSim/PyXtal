@@ -203,7 +203,7 @@ class TestSupergroup(unittest.TestCase):
                 "BTO-Amm2": [65, 123, 221],
                 "NaSb3F10": [186, 194],
                 "NaSb3F10": [176, 194],
-                #"MPWO": [59, 71, 139, 225],
+                "MPWO": [59, 71, 139, 225],
                }
         for cif in data.keys():
             s = pyxtal()

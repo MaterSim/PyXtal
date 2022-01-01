@@ -201,7 +201,7 @@ class atom_site:
             dists = np.linalg.norm(diffs.dot(lattice), axis=1)
             id = np.argmin(dists)
         #print("++++++++", dists[id], id, diffs[id], translation) #; import sys; sys.exit()
-        return diffs[id], translation
+        return diffs[id], dists[id], translation
 
     def check_with_ws2(self, ws2, lattice, tm, same_group=True):
         """
