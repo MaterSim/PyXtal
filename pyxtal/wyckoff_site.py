@@ -168,7 +168,6 @@ class atom_site:
         )
         self.update()
 
-
     def update(self, pos=None):
         """
         Used to generate coords from self.position
@@ -177,6 +176,32 @@ class atom_site:
             pos = self.position
         self.coords = self.wp.apply_ops(pos) 
         self.position = self.coords[0]
+
+    def get_disp(self, pos, lattice, translation, axis):
+        """
+        return the displacement towards the reference positions
+
+        Args:
+            pos: reference position (1*3 vector)
+            lattice: 3*3 matrix
+        """
+        if translation is None:
+            translation = np.zeros(3)
+            diffs0 = pos - self.coords
+            diffs = diffs0.copy() #real diff
+            diffs[:, axis] = 0     #
+            diffs -= np.round(diffs)
+            dists = np.linalg.norm(diffs.dot(lattice), axis=1)
+            id = np.argmin(dists)
+            translation = diffs[id] - diffs0[id]
+        else:
+            coords = self.wp.apply_ops(pos + translation)
+            diffs = coords - self.position 
+            diffs -= np.round(diffs)
+            dists = np.linalg.norm(diffs.dot(lattice), axis=1)
+            id = np.argmin(dists)
+        #print("++++++++", dists[id], id, diffs[id], translation) #; import sys; sys.exit()
+        return diffs[id], translation
 
     def check_with_ws2(self, ws2, lattice, tm, same_group=True):
         """

@@ -954,7 +954,37 @@ class Wyckoff_position:
         return wp
 
     def get_dof(self):
+        """
+        Simply return the degree of freedom
+        """
         return np.linalg.matrix_rank(self.ops[0].rotation_matrix)
+
+    def get_frozen_axis(self):
+        if self.index == 0:
+            return []
+        elif self.get_dof() == 0:
+            return [0, 1, 2]
+        else:
+            if self.number >=75:
+                if self.ops[0].rotation_matrix[2,2] == 1:
+                    return [0, 1]
+                else:
+                    return [0, 1, 2]
+            else:
+                if self.get_dof() == 1:
+                    if self.ops[0].rotation_matrix[2,2] == 1:
+                        return [0, 1]
+                    elif self.ops[0].rotation_matrix[1,1] == 1:
+                        return [0, 2]
+                    elif self.ops[0].rotation_matrix[0,0] == 1:
+                        return [1, 2]
+                else:
+                    if self.ops[0].rotation_matrix[2,2] != 1:
+                        return [2]
+                    elif self.ops[0].rotation_matrix[1,1] != 1:
+                        return [1]
+                    elif self.ops[0].rotation_matrix[0,0] != 1:
+                        return [0]
 
     def __str__(self, supress=False):
         if self.dim not in list(range(4)):

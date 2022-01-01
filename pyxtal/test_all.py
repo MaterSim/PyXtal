@@ -108,32 +108,34 @@ class TestSupergroup(unittest.TestCase):
                 print(cif, rms)
                 self.assertTrue(rms < 1e-3)
 
-    def test_quick(self):
+    def test_by_group(self):
         data = {
                 "BTO-Amm2": 221,
                 "BTO": 221,
                 "lt_cristobalite": 227,
                 "NaSb3F10": 194,
-                #"MPWO": 225,
                }
         for cif in data.keys():
             s = pyxtal()
             s.from_seed(cif_path+cif+'.cif')
-            sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
+            sup = supergroups(s, G=data[cif], show=False)
+            self.assertFalse(sup.strucs is None)
+
+    def test_by_path(self):
+        data = {
+                "MPWO": [59, 71, 139, 225],
+               }
+        for cif in data.keys():
+            s = pyxtal()
+            s.from_seed(cif_path+cif+'.cif')
+            sup = supergroups(s, path=data[cif], show=False)
             self.assertFalse(sup.strucs is None)
 
     def test_long(self):
         paras = (
-                 ["P4_332", 155], #1-4 splitting
                  ['I4_132', 98], #1-3
                  ["P3_112", 5], #1-3
                  ["P6_422", 21], #1-3
-                 ["Fd3", 70], #1-3
-                 ["Pm3", 47], #1-3
-                 ["Fd3m", 166],
-                 ["R-3c", 15],
-                 ["R32", 5],
-                 ["R-3", 147], #1-3, k
                  #["P4_332", 96], #1-3
                 )
         for para in paras:
@@ -157,6 +159,63 @@ class TestSupergroup(unittest.TestCase):
                     break
             if not match: print("Problem in ", name)
             self.assertTrue(match)
+
+    def test_long2(self):
+        paras = (
+                 ["P4_332", 155], #1-4 splitting
+                 ["Fd3", 70], #1-3
+                 ["Pm3", 47], #1-3
+                 ["Fd3m", 166],
+                 ["R-3c", 15],
+                 ["R32", 5],
+                 ["R-3", 147], #1-3, k
+                 ["P4_332", 96], #1-3
+                )
+        for para in paras:
+            name, H = para
+            name = cif_path + name + ".cif"
+            s = pyxtal()
+            s.from_seed(name)
+            pmg_s1 = s.to_pymatgen()
+            G = s.group.number
+            struc_h = s.subgroup_once(eps=0, H=H, mut_lat=False)
+            my = supergroup(struc_h, G=G)
+            sols = my.search_supergroup(max_solutions=1)
+
+            if len(sols) == 0: print("problem", name)
+            self.assertTrue(len(sols) > 0)
+
+            struc_high = my.make_pyxtal_in_supergroup(sols[0])
+            struc_sub = my.make_pyxtals_in_subgroup(sols[0], 3)[-1]
+
+            pmg_high = struc_high.to_pymatgen()
+            pmg_sub = struc_sub.to_pymatgen()
+
+            dist1 = sm.StructureMatcher().get_rms_dist(pmg_high, pmg_sub)[0]
+            dist2 = sm.StructureMatcher().get_rms_dist(pmg_s1, pmg_high)[0]
+            self.assertTrue(dist1 < 1e-3)
+            self.assertTrue(dist2 < 1e-3)
+
+    def test_multi(self):
+        data = {
+                "BTO": [123, 221],
+                "lt_cristobalite": [98, 210, 227],
+                "BTO-Amm2": [65, 123, 221],
+                "NaSb3F10": [186, 194],
+                "NaSb3F10": [176, 194],
+                #"MPWO": [59, 71, 139, 225],
+               }
+        for cif in data.keys():
+            s = pyxtal()
+            s.from_seed(cif_path+cif+'.cif')
+            sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
+            strucs = sup.get_transformation()
+            pmg_0, pmg_1 = s.to_pymatgen(), sup.strucs[-1].to_pymatgen()
+            pmg_2, pmg_3 = strucs[0].to_pymatgen(), strucs[1].to_pymatgen()
+            dist1 = sm.StructureMatcher().get_rms_dist(pmg_0, pmg_2)[0]
+            dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
+            self.assertTrue(dist1 < 1e-3)
+            self.assertTrue(dist2 < 1e-3)
 
 
 class TestOptLat(unittest.TestCase):
