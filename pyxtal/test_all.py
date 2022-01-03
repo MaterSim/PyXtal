@@ -46,7 +46,7 @@ class TestGroup(unittest.TestCase):
     def test_spg_symmetry(self):
         N_polar, N_centro, N_chiral = 0, 0, 0
         for sg in range(1, 231):
-            g = Group(sg)
+            g = Group(sg, quick=True)
             pg, polar, centro, chiral =g.point_group, g.polar, g.inversion, g.chiral
             #pg, polar, centro, chiral = get_point_group(sg)
             if polar:
@@ -64,7 +64,7 @@ class TestGroup(unittest.TestCase):
         pairs = [(4, 1), (187, 4), (222, 5)]
         for pair in pairs:
             (sg, N) = pair
-            self.assertTrue(len(Group(sg).get_ferroelectric_groups()) == N)
+            self.assertTrue(len(Group(sg, quick=True).get_ferroelectric_groups()) == N)
 
     def test_check_compatible(self):
         self.assertTrue(Group(225).check_compatible([64, 28, 24]) == (True, True))
@@ -73,11 +73,8 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(Group(19).check_compatible([6]) == (False, False))
 
     def test_search_supergroup_paths(self):
-        paths = Group(59).search_supergroup_paths(139, 2) 
+        paths = Group(59, quick=True).search_supergroup_paths(139, 2) 
         self.assertTrue(paths == [[71, 139], [129, 139], [137, 139]])
-
-    #def test_search_subgroup_paths(self):
-    #    self.assertTrue(Group(139).search_supergroup_paths(59) == [[71, 59], [129, 59], [137, 59]])
 
     def test_get_splitters(self):
         s = pyxtal()
@@ -136,7 +133,6 @@ class TestSupergroup(unittest.TestCase):
                  ['I4_132', 98], #1-3
                  ["P3_112", 5], #1-3
                  ["P6_422", 21], #1-3
-                 #["P4_332", 96], #1-3
                 )
         for para in paras:
             name, H = para
@@ -203,7 +199,7 @@ class TestSupergroup(unittest.TestCase):
                 "BTO-Amm2": [65, 123, 221],
                 "NaSb3F10": [186, 194],
                 "NaSb3F10": [176, 194],
-                "MPWO": [59, 71, 139, 225],
+                #"MPWO": [59, 71, 139, 225],
                }
         for cif in data.keys():
             s = pyxtal()
@@ -364,7 +360,8 @@ class TestWP(unittest.TestCase):
             get_wyckoffs(i, organized=True)
 
     def test_is_equivalent(self):
-        wp = Group(15)[0]
+        g = Group(15)
+        wp = g[0]
         a = [ 0.10052793,  0.12726851,  0.27405404]
         b = [-0.10052642, -0.12726848, -0.27405526]
         c = [ 0.60052642,  0.62726848,  0.27405526]
@@ -375,7 +372,7 @@ class TestWP(unittest.TestCase):
         self.assertTrue(wp.is_equivalent(d,a))
         self.assertFalse(wp.is_equivalent(a,e))
 
-        wp = Group(15)[1]
+        wp = g[1]
         a = [ 0.00,  0.127,  0.254]
         b = [-0.01, -0.127, -0.250]
         self.assertTrue(wp.is_equivalent(a,b))
@@ -884,14 +881,11 @@ class Test_operations(unittest.TestCase):
             strucs = s.get_alternatives()
             for struc in strucs:
                 pmg_s2 = struc.to_pymatgen()
-                #if not sm.StructureMatcher().fit(pmg_s1, pmg_s2):
-                #    print(struc)
-                #    print(s)
                 self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
     def test_wyc_sets(self):
-        for i in range(1,229):
-            res = Group(i).get_alternatives()['No.']
+        for i in range(1, 229):
+            res = Group(i, quick=True).get_alternatives()['No.']
 
 if __name__ == "__main__":
     unittest.main()
