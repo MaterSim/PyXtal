@@ -134,9 +134,10 @@ class Group:
     Args:
         group: the group symbol or international number
         dim: the periodic dimension of the group
+        quick: whether or not ignore the wyckoff information
     """
 
-    def __init__(self, group, dim=3):
+    def __init__(self, group, dim=3, quick=False):
         
         self.dim = dim
         names = ['Point', 'Rod', 'Layer', 'Space']
@@ -145,39 +146,42 @@ class Group:
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
         self.alias = None
 
-        # Wyckoff positions, site_symmetry, generator
-        self.wyckoffs = get_wyckoffs(self.number, dim=dim) 
-        self.w_symm = get_wyckoff_symmetry(self.number, dim=dim)
-        self.wyckoff_generators = get_generators(self.number, self.dim)
-
         if dim == 3:
-            if self.number in [5, 7, 8, 9, 12, 13, 14, 15]:
-                self.alias = self.symbol.replace("c","n")
-                #self.alias = self.alias.replace("C","I")
-            self.hall_number = hall_from_hm(self.number)
             self.point_group, self.polar, self.inversion, self.chiral = get_point_group(self.number)
 
-        wpdicts = [
-            {
-                "index": i,
-                "letter": letter_from_index(i, self.wyckoffs, dim=self.dim),
-                "ops": self.wyckoffs[i],
-                "multiplicity": len(self.wyckoffs[i]),
-                "symmetry": self.w_symm[i],
-                "generators": self.wyckoff_generators[i],
-                "PBC": self.PBC,
-                "dim": self.dim,
-                "number": self.number,
-                "symbol": self.symbol,
-            }
-            for i in range(len(self.wyckoffs))
-        ]
+        if not quick:
+            if dim == 3:
+                if self.number in [5, 7, 8, 9, 12, 13, 14, 15]:
+                    self.alias = self.symbol.replace("c","n")
+                    #self.alias = self.alias.replace("C","I")
+                self.hall_number = hall_from_hm(self.number)
 
-        # A list of Wyckoff_position objects, sorted by descending multiplicity
-        self.Wyckoff_positions = [Wyckoff_position.from_dict(wpdict) for wpdict in wpdicts]
+            # Wyckoff positions, site_symmetry, generator
+            self.wyckoffs = get_wyckoffs(self.number, dim=dim) 
+            self.w_symm = get_wyckoff_symmetry(self.number, dim=dim)
+            self.wyckoff_generators = get_generators(self.number, dim)
 
-        # A 2D list of Wyckoff_position objects, grouped and sorted by multiplicity
-        self.wyckoffs_organized = organized_wyckoffs(self)
+            wpdicts = [
+                {
+                    "index": i,
+                    "letter": letter_from_index(i, self.wyckoffs, dim=self.dim),
+                    "ops": self.wyckoffs[i],
+                    "multiplicity": len(self.wyckoffs[i]),
+                    "symmetry": self.w_symm[i],
+                    "generators": self.wyckoff_generators[i],
+                    "PBC": self.PBC,
+                    "dim": self.dim,
+                    "number": self.number,
+                    "symbol": self.symbol,
+                }
+                for i in range(len(self.wyckoffs))
+            ]
+
+            # A list of Wyckoff_position objects, sorted by descending multiplicity
+            self.Wyckoff_positions = [Wyckoff_position.from_dict(wpdict) for wpdict in wpdicts]
+
+            # A 2D list of Wyckoff_position objects, grouped and sorted by multiplicity
+            self.wyckoffs_organized = organized_wyckoffs(self)
 
 
     def __str__(self):
@@ -440,11 +444,13 @@ class Group:
             raise NotImplementedError("Only supports the subgroups for space group")
 
     def get_max_subgroup(self, H):
-        if self.point_group == Group(H).point_group:
+        if self.point_group == Group(H, quick=True).point_group:
+            g_type = 'k'
             dicts = self.get_max_k_subgroup()
         else:
+            g_type = 't'
             dicts = self.get_max_t_subgroup()
-        return dicts
+        return dicts, g_type
 
     def get_wp_list(self, reverse=False):
         """
@@ -585,11 +591,11 @@ class Group:
                 subgroups = None
                 if group_type == 't':
                     if sg>self.number:
-                        subgroups = Group(sg).get_max_t_subgroup()
+                        subgroups = Group(sg, quick=True).get_max_t_subgroup()
                 else:
                     g1 = Group(sg)
                     if g1.point_group == self.point_group:
-                        subgroups = Group(sg).get_max_k_subgroup()
+                        subgroups = Group(sg, quick=True).get_max_k_subgroup()
                 if subgroups is not None:
                     for i, sub in enumerate(subgroups['subgroup']): 
                         if sub == self.number:
@@ -812,7 +818,7 @@ class Group:
             groups = []
             subgroups = []
             for g in previous_layer_groups:
-                subgroup_numbers=np.unique(Group(g).get_max_subgroup_numbers())
+                subgroup_numbers=np.unique(Group(g, quick=True).get_max_subgroup_numbers())
     
                 # If a subgroup list has been found with H
                 # trace a path through the dictionary to build the path
@@ -859,7 +865,7 @@ class Group:
         Returns:
             list of possible paths ordered from H to G
         """
-        paths = Group(G).search_supergroup_paths(self.number, max_layer=max_layer)
+        paths = Group(G, quick=True).search_supergroup_paths(self.number, max_layer=max_layer)
         for p in paths:
             p.reverse()
             p.append(G)
@@ -1130,7 +1136,7 @@ class Wyckoff_position:
 
         Args:
             ops: a list of symmetry operations
-            group: the space group number
+            group: the space group number or Group object
 
         Returns:
             `Wyckoff_position`
@@ -1156,7 +1162,11 @@ class Wyckoff_position:
             groups = [group]
 
         for i in groups:
-            for wyc in Group(i):
+            if len(groups) == 1:
+                G_ops = i
+            else:
+                G_ops = Group(i)
+            for wyc in G_ops:
                 if len(wyc) == N_sym:
                     wyc.PBC = [1, 1, 1]
                     wyc.dim = 3
@@ -1192,8 +1202,7 @@ class Wyckoff_position:
                         if set(str3) == set(str1):
                             return wyc, trans
                 elif len(wyc) < N_sym:
-                    continue #break since it won'
-
+                    continue #break
 
         return None, None
 
