@@ -613,6 +613,34 @@ class pyxtal:
                 new_strucs.append(new_struc)
             return new_strucs
 
+    def subgroup_by_path(self, path, ids, eps=0, mut_lat=False):
+        """
+        Generate a structure with lower symmetry (for atomic crystals only)
+
+        Args:
+            path: list of transition paths, e.g. [71, 59, 62]
+            idx: list of ids for the splitter
+            eps: degree of displacement
+            mut_lat: mutate the lattice of not
+
+        Returns:
+            a pyxtal structure with lower symmetries
+        """
+        G = self.group.number
+        struc = self.copy()
+
+        for p, id in zip(path, ids):
+            sites = [site.wp.index for site in struc.atom_sites]
+
+            if Group(p).point_group == Group(G).point_group:
+                g_type = 'k'
+            else:
+                g_type = 't'
+            #print(G, p, id, g_type)
+            splitter = wyckoff_split(G, wp1=sites, idx=id, group_type=g_type)
+            struc = struc._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
+            G = splitter.H.number
+        return struc
 
     def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', \
             max_cell=4, mut_lat=True, ignore_special=False):
@@ -1610,6 +1638,7 @@ class pyxtal:
                 site2 = ref_struc.atom_sites[i]
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
                     disp, dist, trans = site1.get_disp(site2.position, cell, trans, axis)
+                    #print(site1.specie, site1.position, site2.position, disp, trans)
                     if dist < d_tol:
                         match = True
                 if match:
@@ -1623,7 +1652,7 @@ class pyxtal:
         disps = np.array(disps)
         return disps, trans, True
 
-    def get_disps_sets(self, ref_struc):
+    def get_disps_sets(self, ref_struc, check_mapping=False):
         """
         Compute the displacement w.r.t. the reference structure (considering all wycsets)
         
@@ -1633,15 +1662,143 @@ class pyxtal:
         Returns:
             Atomic displacements in np.array
         """
+        if check_mapping:
+            same_letters=False
+        else:
+            same_letters=True
+
         ref_strucs = ref_struc.get_alternatives(same_letters=True)
         for i, ref_struc in enumerate(ref_strucs):
             disp, tran, valid = self.get_disps_single(ref_struc)
-            #print(i, disp, tran, valid)
             if valid:
                 #max_disp = max(np.linalg.norm(disp.dot(self.lattice.matrix), axis=0))
-                return disp, ref_struc
-        return None, None
+                #import sys; sys.exit()
+                #print(disp)
+                return disp, tran, ref_struc
+        return None, None, None
 
+    def _get_elements_and_sites(self):
+        """
+        Sometimes, the atoms are not arranged in order
+        group the elements, sites
+        
+        Returns:
+            elements: ['Si', 'O']
+            sites: [['4b'], ['4a','4a']]
+        """
+        elements = []
+        sites = []
+        for at_site in self.atom_sites:
+            e = at_site.specie
+            site = str(at_site.wp.multiplicity) + at_site.wp.letter
+            if e not in elements:
+                elements.append(e)
+                sites.append([site])
+            else:
+                id = elements.index(e)
+                sites[id].append(site)
+        return elements, sites
+
+    def get_transition_by_path(self, path, ref_struc):
+        """
+        Get the splitted wyckoff information along a given path:
+
+        Args:
+            path: a list of transition path
+            ref_struc: structure with subgroup symmetry
+
+        Returns:
+            displacements and struc_H in subgroup
+            If not a match, return None
+        """
+        import string
+
+        # Here we only check symbols
+        elements0, sites_G = self._get_elements_and_sites()
+        elements1, sites_H = ref_struc._get_elements_and_sites()
+
+        # resort sites_H based on elements0
+        seq = list(map(lambda x: elements1.index(x), elements0))
+        sites_H = [sites_H[i] for i in seq]
+        numIons_H = []
+        for site in sites_H:
+            numIons_H.append(sum([int(l[:-1]) for l in site]))
+                
+        #print("numIons", ref_struc.numIons)
+        # elements: ["Si", "O"]
+        # sites: [['4b'], ['4a','4a']]
+
+        # enumerate all possible solution space
+        G = self.group
+        ids = []
+        for p in path[1:]:
+            dicts = G.get_max_subgroup(p)
+            _ids = []
+            for i, sub in enumerate(dicts['subgroup']):
+                tran = dicts['transformation'][i]
+                #relation = G.get_max_subgroup(p)['relations'][i]
+                if sub == p and np.linalg.det(tran[:3,:3])<=4:
+                    _ids.append(i)
+            ids.append(_ids)
+            G = Group(p)
+        
+        #print(ids)
+        sols = list(itertools.product(*ids))
+        for sol in sols:
+            _sites = deepcopy(sites_G) 
+            G = self.group
+            sol = list(sol)
+            for p, s in zip(path[1:], sol):
+                _sites0 = []
+                dicts = G.get_max_subgroup(p)
+                relation = dicts['relations'][s]
+                tran = dicts['transformation'][s]
+                # add site for each element
+                for site in _sites:
+                    _site = []
+                    for label in site:
+                        index = string.ascii_lowercase.index(label[-1])
+                        _site.extend(relation[index])
+                    _sites0.append(_site)
+                _sites = deepcopy(_sites0)
+                G = Group(p)
+                #print(p, _sites)
+
+            # match in sites and numbers
+            match = True
+            #print(_sites)
+            for i, site in enumerate(_sites):
+                # sites
+                if len(site) != len(sites_H[i]):
+                    #print("bad sites", site)
+                    match = False
+                    break
+                # composition
+                else:
+                    number = sum([int(l[:-1]) for l in site])
+                    if number != numIons_H[i]:
+                        #print("bad number", site, number, numIons_H[i])
+                        match = False
+                        break
+            
+            #make subgroup
+            if match:
+                good = False
+                s = self.subgroup_by_path(path=path[1:], ids=sol, eps=0)
+                disp, tran, s = ref_struc.get_disps_sets(s, True)
+                if disp is not None:
+                    good = True
+                    break
+        if good:
+            cell = s.lattice.matrix
+            strucs = ref_struc.make_transitions(disp, cell, tran, 2)
+            #print(strucs)
+            return strucs, disp, tran
+        return None, None, None
+
+    def translate(self, trans):
+        for site in self.atom_sites:
+            site.update(site.position + trans)
 
     def make_transitions(self, disps, lattice=None, translation=None, N_images=3):
         """
@@ -1663,7 +1820,7 @@ class pyxtal:
         if lattice is None: 
             l_disps = np.zeros([3, 3])
         else:
-            l_disps = (cell - lattice) / (N_images - 1)
+            l_disps = (lattice - cell) / (N_images - 1)
 
         if translation is None:
             translation = np.zeros([3])
@@ -1677,28 +1834,6 @@ class pyxtal:
             struc.lattice.set_matrix(cell + i*l_disps)
             strucs.append(struc)
         return strucs
-
-    def _get_elements_and_sites(self):
-        """
-        Sometimes, the atoms are not arranged in order
-        group the elements, sites
-        
-        Returns:
-            sites: [['4b'], ['4a','4a']]
-            elements: ['Si', 'O']
-        """
-        elements = []
-        sites = []
-        for at_site in self.atom_sites:
-            e = at_site.specie
-            site = str(at_site.wp.multiplicity) + at_site.wp.letter
-            if e not in elements:
-                elements.append(e)
-                sites.append([site])
-            else:
-                id = elements.index(e)
-                sites[id].append(site)
-        return elements, sites
 
 
     def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, CN=None):

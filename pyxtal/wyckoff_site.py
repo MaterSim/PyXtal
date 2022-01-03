@@ -193,14 +193,18 @@ class atom_site:
             diffs -= np.round(diffs)
             dists = np.linalg.norm(diffs.dot(lattice), axis=1)
             id = np.argmin(dists)
-            translation = diffs[id] - diffs0[id]
+            translation = diffs0[id] - diffs[id]
         else:
-            coords = self.wp.apply_ops(pos + translation)
-            diffs = coords - self.position 
+            coords = self.wp.apply_ops(pos)
+            diffs = coords - (self.position + translation)
+            #coords = self.wp.apply_ops(self.position + translation)
+            #diffs = pos - coords 
+
             diffs -= np.round(diffs)
             dists = np.linalg.norm(diffs.dot(lattice), axis=1)
             id = np.argmin(dists)
-        #print("++++++++", dists[id], id, diffs[id], translation) #; import sys; sys.exit()
+
+        #print("++++++++", id, dists[id], id, diffs[id], translation) #; import sys; sys.exit()
         return diffs[id], dists[id], translation
 
     def check_with_ws2(self, ws2, lattice, tm, same_group=True):

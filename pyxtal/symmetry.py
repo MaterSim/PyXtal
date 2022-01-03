@@ -419,7 +419,7 @@ class Group:
         if self.dim == 3:
             return wyc_sets[str(self.number)]
         else:
-            raise NotImplementedError("Now we only support the subgroups for space group")
+            raise NotImplementedError("Only supports the subgroups for space group")
 
     def get_max_k_subgroup(self):
         """
@@ -428,7 +428,7 @@ class Group:
         if self.dim == 3:
             return k_subgroup[str(self.number)]
         else:
-            raise NotImplementedError("Now we only support the subgroups for space group")
+            raise NotImplementedError("Only supports the subgroups for space group")
 
     def get_max_t_subgroup(self):
         """
@@ -437,7 +437,14 @@ class Group:
         if self.dim == 3:
             return t_subgroup[str(self.number)]
         else:
-            raise NotImplementedError("Now we only support the subgroups for space group")
+            raise NotImplementedError("Only supports the subgroups for space group")
+
+    def get_max_subgroup(self, H):
+        if self.point_group == Group(H).point_group:
+            dicts = self.get_max_k_subgroup()
+        else:
+            dicts = self.get_max_t_subgroup()
+        return dicts
 
     def get_wp_list(self, reverse=False):
         """
@@ -516,7 +523,7 @@ class Group:
 
             wps = [wp_list[x] for x in wp_indices]
             blocks = [np.array([relation[j].count(s) for s in _site]) for j in wp_indices]
-            block_units = [sum([int(x[:-1])*block[j] for j,x in enumerate(_site)]) for block in blocks]
+            block_units = [sum([int(x[:-1])*block[j] for j, x in enumerate(_site)]) for block in blocks]
 
             # below is a brute force search for the valid combinations
             combo_storage = [np.zeros(len(block_units))]
@@ -594,7 +601,7 @@ class Group:
                             dicts['idx'].append(i)
             return dicts
         else:
-            raise NotImplementedError("Now we only support the supergroups for space group")
+            raise NotImplementedError("Only supports the supergroups for space group")
 
     def get_max_subgroup_numbers(self):
         """
@@ -606,7 +613,7 @@ class Group:
             t = t_subgroup[str(self.number)]['subgroup']
             return k+t
         else:
-            raise NotImplementedError("Now we only support the supergroups for space group")
+            raise NotImplementedError("Only supports the supergroups for space group")
 
 
     def get_lists(self, numIon, used_indices):
@@ -786,7 +793,7 @@ class Group:
             H: final supergroup number
             max_layer: the number of supergroup calculations needed.
     
-        Return:
+        Returns:
             list of possible paths ordered from G to H
         """
     
@@ -798,7 +805,7 @@ class Group:
         traversed = []
     
         # Searches for every subgroup of the the groups from the previous layer.
-        # Stores the possible groups of each layer and their subgroups
+        # stores the possible groups of each layer and their subgroups
         # in a dictinoary to avoid redundant calculations.
         for l in range(1, max_layer+1):
             previous_layer_groups=layers[l-1]['groups']
@@ -849,10 +856,14 @@ class Group:
             G: final subgroup number
             max_layer: the number of supergroup calculations needed.
     
-        Return:
+        Returns:
             list of possible paths ordered from H to G
         """
-        raise NotImplementedError
+        paths = Group(G).search_supergroup_paths(self.number, max_layer=max_layer)
+        for p in paths:
+            p.reverse()
+            p.append(G)
+        return paths
 
     def get_valid_solutions(self, solutions):
         """
@@ -1054,7 +1065,7 @@ class Wyckoff_position:
         if self.index > 0:
             G = Group(self.number)
             if len(G[index]) != len(G[self.index]):
-                msg = "Spg {:d}, Invalid switch in Wyckoff Position\n".format(self.number)
+                msg = "Spg {:d}, Invalid switch in Wyckoff Pos\n".format(self.number)
                 msg += str(self)
                 msg += "\n"+str(G[index])
                 raise ValueError(msg)
@@ -1264,7 +1275,7 @@ class Wyckoff_position:
         def is_valid_generator(op):
             m = op.affine_matrix
             # Check for x,y+ax,z+bx+cy format
-            # Make sure y, z are not referred to before second and third slots, respectively
+            # Make sure y, z are not referred to before second and third slots
             if (np.array([m[0][1], m[0][2], m[1][2]]) != 0.0).any():
                 if (np.array([m[2][0], m[2][1], m[1][0]]) != 0.0).any():
                     return False
@@ -1441,7 +1452,7 @@ class Wyckoff_position:
     
         Returns:
             pt: 3-vector after merge
-            wp: a `pyxtal.symmetry.Wyckoff_position` object, If no matching WP, returns False. 
+            wp: a `pyxtal.symmetry.Wyckoff_position` object, If no match, returns False. 
             valid_ori: the valid orientations after merge
     
         """
@@ -1558,8 +1569,10 @@ class Wyckoff_position:
         """
         For a given special wp, (e.g., [(x, 0, 1/4), (0, x, 1/4)]),
         return the first position according to the symmetry operation
-
-        wp.search
+        
+        Args:
+            pt: 1*3 vector
+            lattice: 3*3 matrix
 
         Returns:
             pt: the best matched pt
@@ -1858,8 +1871,6 @@ def are_equivalent_ops(op1, op2, tol=1e-2):
         return False
         
 
-
-# TODO: Use Group object instead of organized array
 def letter_from_index(index, group, dim=3):
     """
     Given a Wyckoff position's index within a spacegroup, return its number
@@ -2342,7 +2353,7 @@ def get_wyckoffs(num, organized=False, PBC=[1, 1, 1], dim=3):
     For an organized list:
 
         - 1st index: specifies multiplicity (0 is the largest multiplicity)
-        - 2nd index: corresponds to a Wyckoff position within the group of equal multiplicity.
+        - 2nd index: corresponds to a WP within the group of equal multiplicity.
         - 3nd index: corresponds to a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
@@ -2354,7 +2365,7 @@ def get_wyckoffs(num, organized=False, PBC=[1, 1, 1], dim=3):
         num: the international group number
         dim: dimension [0, 1, 2, 3]
         organized: whether or not to organize the list based on multiplicity
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+        PBC: A periodic boundary condition list, 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
     
     Returns: 
@@ -2610,7 +2621,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
             orientations.
         lattice:
             a 3x3 matrix representing the lattice vectors of the unit cell
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
+        PBC: A periodic boundary condition list, 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis.
             Need not be defined here if gen_pos is a Wyckoff_position object.
 
