@@ -115,6 +115,45 @@ class pyxtal:
      133.720     0.838   [ 4  4  0]     9.80       12
      148.177     0.802   [ 5  3  1]    28.27       48
 
+    One can also try to get the transition path between two pyxtals 
+    that are symmetry related via the `get_transition` function
+
+    >>> s1 = pyxtal()
+    >>> s2 = pyxtal()
+    >>> s1.from_seed("pyxtal/database/cifs/0-G62.cif") #structure with low symmetry
+    >>> s2.from_seed("pyxtal/database/cifs/2-G71.cif") #structure with high symmetry
+    >>> strucs, _, _ = s2.get_transition(s1) # get the transition from high to low
+    >>> strucs
+    [
+    ------Crystal from Transition 0  0.000------
+    Dimension: 3
+    Composition: O24Mg4W4Pb8
+    Group: Pnma (62)
+    orthorhombic lattice:  11.6075   8.0526   5.8010  90.0000  90.0000  90.0000
+    Wyckoff sites:
+    	Mg @ [ 0.8750  0.2500  0.7500], WP [4c] Site [.m.]
+    	Pb @ [ 0.6406  0.0053  0.7856], WP [8d] Site [1]
+    	 W @ [ 0.6119  0.2500  0.2483], WP [4c] Site [.m.]
+    	 O @ [ 0.6292  0.0083  0.2235], WP [8d] Site [1]
+    	 O @ [ 0.4966  0.2500  0.0093], WP [4c] Site [.m.]
+    	 O @ [ 0.5055  0.2500  0.4897], WP [4c] Site [.m.]
+    	 O @ [ 0.7308  0.2500  0.9717], WP [4c] Site [.m.]
+    	 O @ [ 0.7467  0.2500  0.4570], WP [4c] Site [.m.], 
+    ------Crystal from Transition 1  0.323------
+    Dimension: 3
+    Composition: O24Mg4W4Pb8
+    Group: Pnma (62)
+    orthorhombic lattice:  11.6020   8.0526   5.8038  90.0000  90.0000  90.0000
+    Wyckoff sites:
+    	Mg @ [ 0.8750  0.2500  0.7500], WP [4c] Site [.m.]
+    	Pb @ [ 0.6250 -0.0053  0.7500], WP [8d] Site [1]
+    	 W @ [ 0.6250  0.2500  0.2500], WP [4c] Site [.m.]
+    	 O @ [ 0.6250  0.0083  0.2500], WP [8d] Site [1]
+    	 O @ [ 0.5158  0.2500 -0.0068], WP [4c] Site [.m.]
+    	 O @ [ 0.5158  0.2500  0.5068], WP [4c] Site [.m.]
+    	 O @ [ 0.7342  0.2500  0.9932], WP [4c] Site [.m.]
+    	 O @ [ 0.7342  0.2500  0.5068], WP [4c] Site [.m.]]
+
     Finally, the structure can be saved to different formats
 
     >>> struc.to_file('my.cif')
@@ -1690,17 +1729,42 @@ class pyxtal:
                 sites[id].append(site)
         return elements, sites
 
-    def get_transition_by_path(self, path, ref_struc):
+    def get_transition(self, ref_struc, N_images=2):
         """
         Get the splitted wyckoff information along a given path:
 
         Args:
-            path: a list of transition path
             ref_struc: structure with subgroup symmetry
+            N_images (int): number of images along the transition
 
         Returns:
-            displacements and struc_H in subgroup
-            If not a match, return None
+            - strucs: 
+            - displacements:
+            - cell translation:
+        """
+        paths = self.group.search_subgroup_paths(ref_struc.group.number) 
+        if len(paths) == 0:
+            return None, None, None
+        else:
+            for p in paths:
+                res = self.get_transition_by_path(ref_struc, p, N_images)
+                strucs, disp, tran = res
+                if strucs is not None:
+                    return strucs, disp, tran
+        return None, None, None
+
+    def get_transition_by_path(self, ref_struc, path, N_images=2):
+        """
+        Get the splitted wyckoff information along a given path:
+
+        Args:
+            ref_struc: structure with subgroup symmetry
+            path: a list of transition path
+
+        Returns:
+            - strucs: 
+            - displacements:
+            - cell translation:
         """
         import string
 
@@ -1774,7 +1838,7 @@ class pyxtal:
                 disp, tran, s = ref_struc.get_disps_sets(s, True)
                 if disp is not None:
                     cell = s.lattice.matrix
-                    strucs = ref_struc.make_transitions(disp, cell, tran, 2)
+                    strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
                     return strucs, disp, tran
         return None, None, None
 

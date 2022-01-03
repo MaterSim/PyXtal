@@ -219,19 +219,20 @@ class TestSupergroup(unittest.TestCase):
 
     def test_similarity(self):
         paras = [
-                ('0-G62', '2-G71', 0),
-                ('0-G62', '3-G139', 2),
-                ('0-G62', '4-G225', 4),
+                ('0-G62', '2-G71'),
+                ('0-G62', '3-G139'),
+                #('0-G62', '4-G225'),
                ]
         for para in paras:
-            (cif1, cif2, p) = para
+            (cif1, cif2) = para
             s1 = pyxtal()
             s2 = pyxtal()
             s1.from_seed('pyxtal/database/cifs/'+cif1+'.cif')
             s2.from_seed('pyxtal/database/cifs/'+cif2+'.cif')
             pmg_s2 = s2.to_pymatgen()
-            path = s2.group.search_subgroup_paths(s1.group.number)[p]
-            strucs, _, _ = s2.get_transition_by_path(path, s1)
+
+            strucs, _, _ = s2.get_transition(s1)
+
             if strucs is None:
                 print("Problem between ", cif1, cif2) 
             else:
