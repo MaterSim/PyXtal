@@ -689,7 +689,7 @@ class Lattice:
             return True
 
     def __str__(self):
-        s = "{:s} lattice: {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(
+        s = "{:s}: {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(
             str(self.ltype),
             self.a,
             self.b,

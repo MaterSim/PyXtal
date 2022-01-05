@@ -102,7 +102,7 @@ def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
             m = m0.copy()
             xyz = m.align(conf)
             m.reset_positions(xyz)
-            m.get_symmetry(True)
+            m.get_symmetry(symmetrize=True)
             m.energy = res[id][1]
             _, valid = m.get_orientations_in_wps(wps)
             if valid:
