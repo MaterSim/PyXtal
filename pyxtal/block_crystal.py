@@ -126,9 +126,10 @@ def block_crystal(dim,
             position = np.dot(center, np.linalg.inv(struc.lattice.matrix))
             position -= np.floor(position)
             m_site = mol_site(mol, position, ori, b_site.wp, struc.lattice, struc.diag)
+            m_site.type = i
             mol_sites.append(m_site)
             count += len(mol.mol)
-
+            
         struc.mol_sites = mol_sites
 
         return struc
