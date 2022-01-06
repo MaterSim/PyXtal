@@ -1729,6 +1729,11 @@ class pyxtal:
                 sites[id].append(site)
         return elements, sites
 
+    def sort_sites_by_mult(self):
+        mults = np.array([site.wp.multiplicity for site in self.atom_sites])
+        seq = np.argsort(mults)
+        self.atom_sites = [self.atom_sites[i] for i in seq]
+
     def get_transition(self, ref_struc, N_images=2):
         """
         Get the splitted wyckoff information along a given path:
@@ -1742,8 +1747,11 @@ class pyxtal:
             - displacements:
             - cell translation:
         """
+        #ref_struc.sort_sites_by_mult()
+        #self.sort_sites_by_mult()
         paths = self.group.search_subgroup_paths(ref_struc.group.number) 
         if len(paths) == 0:
+            print("No valid paths between the structure pairs")
             return None, None, None
         else:
             for p in paths:
@@ -1768,6 +1776,7 @@ class pyxtal:
         """
         import string
 
+        print("Searching the transition path.....", path)
         # Here we only check symbols
         elements0, sites_G = self._get_elements_and_sites()
         elements1, sites_H = ref_struc._get_elements_and_sites()
