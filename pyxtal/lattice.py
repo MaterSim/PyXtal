@@ -3,9 +3,9 @@ import numpy as np
 import random
 
 # PyXtal imports
-from pyxtal.msg import printx, VolumeError
+from pyxtal.msg import VolumeError
 from pyxtal.operations import angle, create_matrix
-from pyxtal.constants import deg, rad
+from pyxtal.constants import deg, rad, ltype_keywords
 
 class Lattice:
     """
@@ -18,17 +18,14 @@ class Lattice:
     Args:
         ltype: a string representing the type of lattice (from the above list)
         volume: the volume, in Angstroms cubed, of the lattice
-        PBC: A periodic boundary condition list, where 1 means periodic,
-            0 means not periodic.
-            Ex: [1, 1, 1] -> full 3d periodicity, [0, 0, 1] -> periodicity
-            along the z axis
+        matrix: matrix in 3*3 form
+        PBC: A periodic boundary condition list, where 1 is periodic,
+            Ex: [1, 1, 1] -> 3d periodicity, [0, 0, 1] -> periodic at z axis
         kwargs: various values which may be defined. If none are defined,
             random ones will be generated. Values will be passed to
             generate_lattice. Options include:
-            area: The cross-sectional area (in Angstroms squared). Only used
-                to generate 1D crystals
-            thickness: The unit cell's non-periodic thickness (in Angstroms).
-                Only used to generate 2D crystals
+            area: The cross-sectional area (in Ang^2). Only for 1D crystals
+            thickness: The cell's thickness (in Angstroms) for 2D crystals
             unique_axis: The unique axis for certain symmetry (and especially
                 layer) groups. Because the symmetry operations are not also
                 transformed, you should use the default values for random
@@ -48,25 +45,16 @@ class Lattice:
                 should be reset during each crystal generation attempt
     """
 
-    def __init__(self, ltype, volume, PBC=[1, 1, 1], **kwargs):
+    def __init__(self, ltype, volume=None, matrix=None, PBC=[1, 1, 1], **kwargs):
         # Set required parameters
-        if ltype in [
-            "triclinic", "Triclinic",
-            "monoclinic", "Monoclinic",
-            "orthorhombic", "Orthorhombic",
-            "tetragonal", "Tetragonal",
-            "trigonal", "Trigonal",
-            "hexagonal", "Hexagonal",
-            "cubic", "Cubic",
-            "spherical", "Spherical",
-            "ellipsoidal", "Ellipsoidal",
-        ]:
+        if ltype in ltype_keywords:
             self.ltype = ltype
         elif ltype == None:
             self.ltype = "triclinic"
         else:
-            printx("Error: Invalid lattice type.", priority=1)
-            return
+            msg = "Invalid lattice type: " + ltype
+            raise ValueError(msg)
+
         self.volume = float(volume)
         self.PBC = PBC
         self.dim = sum(PBC)
@@ -89,46 +77,54 @@ class Lattice:
                 if key == "allow_volume_reset":
                     if value == False:
                         self.allow_volume_reset = False
-        try:
-            self.unique_axis
-        except:
+
+        if not hasattr(self, 'unique_axis'):
             self.unique_axis = "c"
+
         # Set stress normalization info
         if self.ltype == "triclinic":
-            self.stress_normalization_matrix = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
+            norm_matrix = np.ones([3, 3])
+
         elif self.ltype == "monoclinic":
             if self.PBC == [1, 1, 1]:
-                self.stress_normalization_matrix = np.array(
-                    [[1, 0, 0], [0, 1, 0], [1, 0, 1]]
-                )
+                norm_matrix = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 1]])
             else:
                 if self.unique_axis == "a":
-                    self.stress_normalization_matrix = np.array(
-                        [[1, 0, 0], [0, 1, 0], [0, 1, 1]]
-                    )
+                    norm_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 1, 1]])
                 elif self.unique_axis == "b":
-                    self.stress_normalization_matrix = np.array(
-                        [[1, 0, 0], [0, 1, 0], [1, 0, 1]]
-                    )
+                    norm_matrix = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 1]])
                 elif self.unique_axis == "c":
-                    self.stress_normalization_matrix = np.array(
-                        [[1, 0, 0], [1, 1, 0], [0, 0, 1]]
-                    )
-        elif self.ltype in ["orthorhombic", "tetragonal", "trigonal", "hexagonal", "cubic",
-                            "Orthorhombic", "Tetragonal", "Trigonal", "Hexagonal", "Cubic",]:
-            self.stress_normalization_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+                    norm_matrix = np.array([[1, 0, 0], [1, 1, 0], [0, 0, 1]])
+
+        elif self.ltype in ["orthorhombic", "Orthorhombic", 
+                            "tetragonal", "Tetragonal", 
+                            "trigonal", "Trigonal", 
+                            "hexagonal", "Hexagonal", 
+                            "cubic", "Cubic",]:
+            norm_matrix = np.eye(3)
+
         elif self.ltype in ["spherical", "ellipsoidal"]:
-            self.stress_normalization_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+            norm_matrix = np.zeros([3, 3])
+
+        self.stress_normalization_matrix = norm_matrix
+
         # Set info for on-diagonal stress symmetrization
         if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral",
                           "Tetragonal", "Trigonal", "Hexagonal", "Rhombohedral"]:
             self.stress_indices = [(0, 0), (1, 1)]
+
         elif self.ltype in ["cubic", "Cubic"]:
             self.stress_indices = [(0, 0), (1, 1), (2, 2)]
+
         else:
             self.stress_indices = []
+
         # Set values for the matrix
-        self.reset_matrix()
+        if matrix is None:
+            self.reset_matrix()
+        else:
+            self.set_matrix(matrix)
+
         self._get_dof()
 
     def _get_dof(self):
@@ -226,7 +222,9 @@ class Lattice:
         a, b, c, alpha, beta, gamma = self.get_para(degree=True)
         if self.ltype in ['cubic', 'Cubic']:
             return [a]
-        elif self.ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal', 'tetragonal', 'Tetragonal']:
+        elif self.ltype in ['hexagonal', 'trigonal', 
+                            'Hexagonal', 'Trigonal', 
+                            'tetragonal', 'Tetragonal']:
             return [a, c]
         elif self.ltype in ['orthorhombic', 'Orthorhombic']:
             return [a, b, c]
@@ -303,12 +301,7 @@ class Lattice:
         """
         Returns a 3x3 numpy array representing the lattice vectors.
         """
-        try:
-            return self.matrix
-        # TODO remove bare except
-        except:
-            printx("Error: Lattice matrix undefined.", priority=1)
-            return
+        return self.matrix
 
     def get_para(self, degree=False):
         """
@@ -326,13 +319,14 @@ class Lattice:
                 self.matrix = m
                 self.inv_matrix = np.linalg.inv(m)
             else:
-                printx("Error: matrix must be a 3x3 numpy array or list", priority=1)
+                print(matrix)
+                msg = "Error: matrix must be a 3x3 numpy array or list"
+                raise ValueError(msg)
         else:
             self.reset_matrix()
         para = matrix2para(self.matrix)
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
         self.volume = np.linalg.det(self.matrix)
-
 
     def set_para(self, para=None, radians=False):
         if para is not None:
@@ -346,7 +340,8 @@ class Lattice:
 
     def reset_matrix(self, shape='upper'):
         if self.random:
-            for i in range(3):
+            success = False
+            for i in range(5):
                 m = self.generate_matrix()
                 if m is not None:
                     self.matrix = m
@@ -358,14 +353,18 @@ class Lattice:
                     self.alpha = alpha
                     self.beta = beta
                     self.gamma = gamma
+                    success = True
                     break
+            if not success:
+                msg = "Cannot generate a good matrix"
+                raise ValueError(msg)
         else:
             # a small utility to convert the cell shape
             para = matrix2para(self.matrix)
             self.matrix = para2matrix(para, format=shape)
 
     def set_volume(self, volume):
-        if self.allow_volume_reset is True:
+        if self.allow_volume_reset:
             self.volume = volume
 
     def swap_axis(self, random=False, ids=None):
@@ -374,9 +373,10 @@ class Lattice:
         """
         # only applied to triclinic/monoclinic/orthorhombic
         if self.ltype in ["triclinic", "Triclinic", "orthorhombic", "Orthorhombic"]:
-            allowed_ids = [[0,1,2],[1,0,2],[0,2,1],[2,1,0],[1,2,0],[2,0,1]]
-        elif self.ltype == "monoclinic":
-            if abs(self.beta-90*rad) > 1e-3:
+            allowed_ids = [[0,1,2], [1,0,2], [0,2,1], [2,1,0], [1,2,0], [2,0,1]]
+
+        elif self.ltype in ["monoclinic", "Monoclinic"]:
+            if abs(self.beta - 90*rad) > 1e-3:
                 allowed_ids = [[0,1,2],[2,1,0]]
             else:
                 allowed_ids = [[0,1,2],[1,0,2],[0,2,1],
@@ -568,8 +568,8 @@ class Lattice:
         try:
             cell_matrix = factor*para2matrix((a, b, c, alpha, beta, gamma), radians=radians)
         except:
-            printx("Error: invalid cell parameters for lattice.", priority=1)
-            return
+            msg = "Error: invalid cell parameters for lattice."
+            raise ValueError(msg)
         volume = np.linalg.det(cell_matrix)
         # Initialize a Lattice instance
         l = Lattice(ltype, volume, PBC=PBC, **kwargs)
@@ -592,39 +592,35 @@ class Lattice:
         crystals with a specific choice of unit cell.
 
         Args:
-            matrix: a 3x3 real matrix (numpy array or nested list) describing the cell vectors
-            ltype: the lattice type ("cubic, tetragonal, etc."). Also available are "spherical",
-                which confines generated points to lie within a sphere, and "ellipsoidal", which
-                confines generated points to lie within an ellipsoid (oriented about the z axis)
-            PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-            kwargs: various values which may be defined. If none are defined, random ones
-                will be generated. Values will be passed to generate_lattice. Options include:
-                area: The cross-sectional area (in Angstroms squared). Only used to generate 1D
-                    crystals
-                thickness: The unit cell's non-periodic thickness (in Angstroms). Only used to
-                    generate 2D crystals
-                unique_axis: The unique axis for certain symmetry (and especially layer) groups.
-                    Because the symmetry operations are not also transformed, you should use the
-                    default values for random crystal generation
-                random: If False, keeps the stored values for the lattice geometry even applying
-                    reset_matrix. To alter the matrix, use set_matrix() or set_para
+            matrix: a 3x3 real matrix (numpy array or nested list) for the cell
+            ltype: the lattice type ("cubic, tetragonal, etc."). Also available are 
+                - "spherical", confines points to lie within a sphere,
+                - "ellipsoidal", points to lie within an ellipsoid (about the z axis)
+            PBC: A periodic boundary condition list, where 1 is periodic
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity at z axis
+            kwargs: various values which may be defined. Random ones if None
+                Values will be passed to generate_lattice. Options include:
+                `area: The cross-sectional area (in Ang^2) for 1D crystals
+                `thickness`: The cell's thickness (in Ang) for 2D crystals
+                `unique_axis`: The unique axis for layer groups.
+                `random`: If False, keeps the stored values for the lattice geometry 
+                even applying reset_matrix. To alter the matrix, use `set_matrix()` 
+                or `set_para`
                 'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
                     equivalent to the other two
-                'min_l': the smallest allowed cell vector. The smallest vector must be larger
-                    than this.
-                'mid_l': the second smallest allowed cell vector. The second smallest vector
-                    must be larger than this.
-                'max_l': the third smallest allowed cell vector. The largest cell vector must
-                    be larger than this.
+                'min_l': the smallest allowed cell vector. 
+                'mid_l': the second smallest allowed cell vector. 
+                'max_l': the third smallest allowed cell vector. 
 
         Returns:
             a Lattice object with the specified parameters
         """
         m = np.array(matrix)
         if np.shape(m) != (3, 3):
-            printx("Error: Lattice matrix must be 3x3", priority=1)
-            return
+            print(matrix)
+            msg = "Error: matrix must be a 3x3 numpy array or list"
+            raise ValueError(msg)
+ 
         [a, b, c, alpha, beta, gamma] = matrix2para(m)
 
         # symmetrize the lattice
@@ -649,7 +645,7 @@ class Lattice:
         
         # Initialize a Lattice instance
         volume = np.linalg.det(m)
-        l = Lattice(ltype, volume, PBC=PBC, **kwargs)
+        l = Lattice(ltype, volume, m, PBC=PBC, **kwargs)
         l.a, l.b, l.c = a, b, c
         l.alpha, l.beta, l.gamma = alpha, beta, gamma
         l.matrix = m
@@ -660,6 +656,17 @@ class Lattice:
         l.allow_volume_reset = False
         return l
 
+    def is_valid_matrix(self):
+        """
+        check if the cell parameter is reasonable or not 
+        """
+
+        try:
+            paras = [self.a, self.b, self.c, self.alpha, self.beta, self.gamma]
+            matrix = para2matrix(paras)
+            return True
+        except:
+            return False
 
     def check_mismatch(self, trans, l_type, tol=1.0, a_tol=10):
         """
@@ -676,7 +683,7 @@ class Lattice:
         Returns:
             True or False
         """
-        matrix = np.dot(trans.T, self.get_matrix())
+        matrix = np.dot(trans.T, self.matrix)
         l1 = Lattice.from_matrix(matrix)
         l2 = Lattice.from_matrix(matrix, ltype=l_type)
         (a1, b1, c1, alpha1, beta1, gamma1) = l1.get_para(degree=True)
@@ -728,12 +735,9 @@ def generate_lattice(
         kwargs: a dictionary of optional values. These include:
             'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
                 equivalent to the other two
-            'min_l': the smallest allowed cell vector. The smallest vector must be larger
-                than this.
-            'mid_l': the second smallest allowed cell vector. The second smallest vector
-                must be larger than this.
-            'max_l': the third smallest allowed cell vector. The largest cell vector must
-                be larger than this.
+            'min_l': the smallest allowed cell vector. 
+            'mid_l': the second smallest allowed cell vector. 
+            'max_l': the third smallest allowed cell vector. 
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -859,10 +863,10 @@ def generate_lattice(
                 return np.array([a, b, c, alpha, beta, gamma])
 
     # If maxattempts tries have been made without success
-    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
+    msg = "lattice fails after {:d} cycles".format(maxattempts)
+    msg += "for volume {:.2f}".format(volume)
     raise VolumeError(msg)
     #return
-
 
 def generate_lattice_2D(
     ltype,

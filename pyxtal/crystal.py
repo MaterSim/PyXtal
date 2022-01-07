@@ -258,7 +258,7 @@ class random_crystal:
         generate coordinates for random crystal
         """
         wyks = []
-        cell = self.lattice.get_matrix() 
+        cell = self.lattice.matrix
         # generate coordinates for each ion type in turn
         for numIon, specie in zip(self.numIons, self.species):
             output = self._set_ion_wyckoffs(numIon, specie, cell, wyks)

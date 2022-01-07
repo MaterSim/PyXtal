@@ -30,10 +30,7 @@ l3 = Lattice.from_para(4.08, 7.13, 5.50, 90, 38, 90, ltype="monoclinic")
 l4 = Lattice.from_para( 71.3649,   9.1273,  10.0753,  90.0000,  20.7978,  90.0000, ltype="monoclinic")
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_index(36, "4a")
-
 wp6 = Wyckoff_position.from_group_and_index(167, 0)
-l6 = Lattice.from_para(9.647000, 9.647000, 7.281000, 90, 90, 120, ltype="rhombohedral")
-
 
 class TestGroup(unittest.TestCase):
     def test_list_wyckoff_combinations(self):
@@ -329,10 +326,10 @@ class TestWP(unittest.TestCase):
         self.assertTrue(symbol == "4a")
 
     def test_merge(self):
-        pt, wp, _ = wp1.merge([0.05, 0.7, 0.24], l1.get_matrix(), 0.5)
+        pt, wp, _ = wp1.merge([0.05, 0.7, 0.24], l1.matrix, 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol == "4a")
-        pt, wp, _ = wp1.merge([0.15, 0.7, 0.24], l1.get_matrix(), 0.5)
+        pt, wp, _ = wp1.merge([0.15, 0.7, 0.24], l1.matrix, 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol == "8b")
 

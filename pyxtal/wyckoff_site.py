@@ -383,7 +383,7 @@ class mol_site:
         dict0["PBC"] = self.wp.PBC
         dict0["dim"] = self.wp.dim
         dict0["diag"] = self.diag
-        dict0["lattice"] = self.lattice.get_matrix()
+        dict0["lattice"] = self.lattice.matrix
         dict0["lattice_type"] = self.lattice.ltype
 
         return dict0
