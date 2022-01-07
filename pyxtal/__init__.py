@@ -1455,6 +1455,7 @@ class pyxtal:
                     new_struc = self._get_alternative(wyc_sets, no, ref_cell)
                     if new_struc is not None:
                         new_strucs.append(new_struc)
+        #print("Numbers===============", len(new_strucs)); import sys; sys.exit()
         return new_strucs
 
     def _get_alternative(self, wyc_sets, index, ref_cell=None):
@@ -1476,9 +1477,11 @@ class pyxtal:
 
         # transform lattice
         R = op.affine_matrix[:3,:3] #rotation
-        matrix = np.dot(R, self.lattice.matrix)
-
+        cell = self.lattice.matrix
+        new_lat = Lattice.from_matrix(np.dot(R, cell), ltype=self.lattice.ltype)
+        matrix = new_lat.matrix
         if ref_cell is not None and np.max(np.abs(ref_cell - matrix)) > 1.0:
+            #print('bad setting', new_lat); print(ref_cell); print(matrix)
             return None
 
         new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
@@ -1640,7 +1643,7 @@ class pyxtal:
                 break
         return free_axis
 
-    def get_disps_single(self, ref_struc, d_tol=0.9):
+    def get_disps_single(self, ref_struc, trans=None, d_tol=1.0):
         """
         Compute the displacement w.r.t. the reference structure
 
@@ -1657,30 +1660,47 @@ class pyxtal:
         cell2 = ref_struc.lattice.matrix
         #check lattice match
         if np.max(np.abs(cell1-cell2)) > 1.2*d_tol:
+            #print("mismatched lattice")
+            #print(self.lattice)
+            #print(ref_struc.lattice)
             return None, None, False
 
         disps = []
-        trans = None
         orders = list(range(len(self.atom_sites)))
         for site1 in self.atom_sites:
             match = False
             for i in orders:
                 site2 = ref_struc.atom_sites[i]
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
-                    disp, dist, trans = site1.get_disp(site2.position, cell1, trans, axis)
+                    disp, dist, trans0 = site1.get_disp(site2.position, cell1, trans, axis)
                     #print(site1.specie, site1.position, site2.position, disp, trans)
                     if dist < d_tol:
                         match = True
+                        trans = trans0
                 if match:
                     disps.append(disp)
                     orders.remove(i)
                     break
             #print(site1, match)
             if not match:
+                #print("mismatched site", site1, trans)
                 return None, None, False
+            #else:
+            #    print("matched site", site1, trans)
 
         disps = np.array(disps)
         return disps, trans, True
+
+    def get_disps_optim(self, ref_struc, trans, d_tol=1.5):
+        from scipy.optimize import minimize
+        def fun(translation, ref_struc, d_tol):
+            disps, _, _ = self.get_disps_single(ref_struc, trans, d_tol)
+            dist = np.dot(disps, ref_struc.lattice.matrix)
+            return np.max(np.linalg.norm(dist, axis=0))
+
+        res = minimize(fun, trans, args=(ref_struc, d_tol),
+                method='Nelder-Mead', options={'maxiter': 10})
+        print("Best_dist", res.fun)
 
     def get_disps_sets(self, ref_struc, check_mapping=False):
         """
@@ -1693,14 +1713,17 @@ class pyxtal:
             Atomic displacements in np.array
         """
         if check_mapping:
-            same_letters=False
+            same_letters = False
         else:
-            same_letters=True
+            same_letters = True
 
-        ref_strucs = ref_struc.get_alternatives(same_letters=True, ref_cell=self.lattice.matrix)
+        ref_strucs = ref_struc.get_alternatives(same_letters=same_letters, \
+                                                ref_cell=self.lattice.matrix)
         for i, ref_struc in enumerate(ref_strucs):
+            #print("\n-------------------->", i, len(ref_strucs), ref_struc)
             disp, tran, valid = self.get_disps_single(ref_struc)
             if valid:
+                #self.get_disps_optim(ref_struc, tran, d_tol=1.5)
                 #max_disp = max(np.linalg.norm(disp.dot(self.lattice.matrix), axis=0))
                 #import sys; sys.exit()
                 #print(disp)
@@ -1734,7 +1757,7 @@ class pyxtal:
         seq = np.argsort(mults)
         self.atom_sites = [self.atom_sites[i] for i in seq]
 
-    def get_transition(self, ref_struc, N_images=2,try_alternatives=False):
+    def get_transition(self, ref_struc, N_images=2):
         """
         Get the splitted wyckoff information along a given path:
 
@@ -1755,17 +1778,10 @@ class pyxtal:
             return None, None, None
         else:
             for p in paths:
-                if not try_alternatives:
-                    res = self.get_transition_by_path(ref_struc, p, N_images)
-                    strucs, disp, tran = res
-                    if strucs is not None:
-                        return strucs, disp, tran
-                else:
-                    for alt_struc in ref_struc.get_alternatives():
-                        res = self.get_transition_by_path(alt_struc, p, N_images)
-                        strucs, disp, tran = res
-                        if strucs is not None:
-                            return strucs, disp, tran
+                res = self.get_transition_by_path(ref_struc, p, N_images)
+                strucs, disp, tran = res
+                if strucs is not None:
+                    return strucs, disp, tran
 
         return None, None, None
 
@@ -1784,7 +1800,7 @@ class pyxtal:
         """
         import string
 
-        print("Searching the transition path.....", path)
+        #print("Searching the transition path.....", path)
         # Here we only check symbols
         elements0, sites_G = self._get_elements_and_sites()
         elements1, sites_H = ref_struc._get_elements_and_sites()
@@ -1852,11 +1868,14 @@ class pyxtal:
             # make subgroup
             if match:
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
+                #print(ref_struc); print(s)
                 disp, tran, s = ref_struc.get_disps_sets(s, True)
                 if disp is not None:
                     cell = s.lattice.matrix
                     strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
                     return strucs, disp, tran
+                #else:
+                #    import sys; sys.exit()
         return None, None, None
 
     def translate(self, trans):
@@ -1900,6 +1919,7 @@ class pyxtal:
                 coord = site.position + i*disps[j] + translation
                 struc.atom_sites[j].update(coord)
             struc.source = 'Transition {:d} {:6.3f}'.format(i, max_disp*i)
+            struc.disp = max_disp*i
             struc.lattice.set_matrix(cell + i*l_disps)
             strucs.append(struc)
         return strucs
