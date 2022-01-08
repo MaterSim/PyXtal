@@ -177,35 +177,43 @@ class atom_site:
         self.coords = self.wp.apply_ops(pos) 
         self.position = self.coords[0]
 
-    def get_disp(self, pos, lattice, translation, axis):
+    def get_translations(self, pos, axis):
         """
         return the displacement towards the reference positions
 
         Args:
             pos: reference position (1*3 vector)
             lattice: 3*3 matrix
+            translation: 
+            axis: 
         """
-        if translation is None:
-            translation = np.zeros(3)
-            diffs0 = pos - self.coords
-            diffs = diffs0.copy() #real diff
-            diffs[:, axis] = 0     #
-            diffs -= np.round(diffs)
-            dists = np.linalg.norm(diffs.dot(lattice), axis=1)
-            id = np.argmin(dists)
-            translation = diffs0[id] - diffs[id]
-        else:
-            coords = self.wp.apply_ops(pos)
-            diffs = coords - (self.position + translation)
-            #coords = self.wp.apply_ops(self.position + translation)
-            #diffs = pos - coords 
+        diffs0 = pos - self.coords
+        diffs = diffs0.copy() 
+        diffs -= np.round(diffs)
+        diffs[:, axis] = 0    
+        translations = diffs0 - diffs
+        return translations
 
-            diffs -= np.round(diffs)
-            dists = np.linalg.norm(diffs.dot(lattice), axis=1)
-            id = np.argmin(dists)
+    def get_disp(self, pos, lattice, translation):
+        """
+        return the displacement towards the reference positions
 
-        #print("++++++++", id, dists[id], id, diffs[id], translation) #; import sys; sys.exit()
-        return diffs[id], dists[id], translation
+        Args:
+            pos: reference position (1*3 vector)
+            lattice: 3*3 matrix
+            translation: 
+        """
+        coords = self.wp.apply_ops(pos)
+        diffs = coords - (self.position + translation)
+        #coords = self.wp.apply_ops(self.position + translation)
+        #diffs = pos - coords 
+
+        diffs -= np.round(diffs)
+        dists = np.linalg.norm(diffs.dot(lattice), axis=1)
+        id = np.argmin(dists)
+
+        #print("++++", id, dists[id], id, diffs[id], translation) #; import sys; sys.exit()
+        return diffs[id], dists[id]
 
     def check_with_ws2(self, ws2, lattice, tm, same_group=True):
         """

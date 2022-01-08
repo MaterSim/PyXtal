@@ -17,7 +17,7 @@ from pyxtal.wyckoff_site import atom_site
 from pyxtal.operations import apply_ops, get_best_match
 from pyxtal.wyckoff_split import wyckoff_split
 
-ALL_SHIFTS = np.array([[0,0,0],[0,1,0],[1,0,0],[0,0,1],[0,1,1],[1,1,0],[1,0,1],[1,1,1]])
+ALL_SHIFTS = np.array([[0,0,0], [0,1,0], [1,0,0], [0,0,1], [0,1,1], [1,1,0], [1,0,1], [1,1,1]])
 
 def write_poscars(H_struc, G_struc, mappings, splitters, wyc_sets, N_images=3):
     """
@@ -1160,7 +1160,7 @@ class supergroups():
             #print(struc0)
             #print(i, sp.G.number, sp.H.number, wyc_set_id, match, trans)
         #print(self.struc_H)
-        disps, _, _ = self.struc_H.get_disps_sets(struc0)
+        disps, _, _ = self.struc_H.get_disps_sets(struc0, d_tol=1.0)
         if disps is not None:
             cell = struc0.lattice.matrix
             return self.struc_H.make_transitions(disps, lattice=cell, N_images=N_images)
