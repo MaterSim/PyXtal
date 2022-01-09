@@ -651,6 +651,13 @@ class TestLattice(unittest.TestCase):
         l0.set_para([5, 5, 5, 90, 90, 90])
         self.assertTrue(l0.a == 5)
 
+    def test_search_transformation(self):
+        l6 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 105.80, 90.00, ltype='monoclinic')
+        l7 = Lattice.from_para(6.028, 3.419, 6.028, 90.00, 146.92, 90.00, ltype='monoclinic')
+        l7, _, _ =l7.optimize()
+        tran = l7.search_transformation(l6)
+        l7 = l7.transform(tran, True)
+        self.assertTrue(np.abs(l7.matrix-l6.matrix).sum())
 
 class TestSymmetry(unittest.TestCase):
     def test_P21(self):

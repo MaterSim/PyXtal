@@ -155,6 +155,30 @@ class Lattice:
         mat = np.dot(mat, self.matrix)
         return mat, np.linalg.norm(mat, axis=1)
 
+    def search_transformation(self, lat_ref, d_tol=1.0):
+        """
+        search the closest match to the reference lattice object
+
+        Args:
+            lat_ref
+
+        Returns:
+            transformation matrix if possible
+        """
+        trans = np.array([[[1,0,0],[0,1,0],[0,0,1]],
+                          [[1,0,0],[0,1,0],[1,0,1]],
+                          [[1,0,0],[0,1,0],[-1,0,1]],
+                          [[1,0,1],[0,1,0],[0,0,1]],
+                          [[1,0,-1],[0,1,0],[0,0,1]]])
+        
+        cell1 = lat_ref.matrix
+        for tran in trans:
+            tmp = np.dot(tran, self.matrix)
+            cell2 = Lattice.from_matrix(tmp).matrix
+            if np.max(np.abs(cell1-cell2)) < 1.2*d_tol: 
+                return tran
+        return None
+
     def optimize(self):
         """
         Optimize the lattice's inclination angles

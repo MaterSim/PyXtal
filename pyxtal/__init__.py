@@ -1288,28 +1288,33 @@ class pyxtal:
                 diag = False
                 #print(self.group.symbol)
                 #print(lattice.matrix)
-                if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
-                    site.lattice = lattice
-                    xyz, _ = sites[j]._get_coords_and_species(absolute=False, first=True)
-                    lattice0 = Lattice.from_matrix(lattice.matrix,
-                                              ltype=lattice.ltype,
-                                              reset=True)
-                    xyz = np.dot(xyz, lattice0.matrix)
-                else:
-                    lattice0 = lattice
-                    xyz, _ = sites[j]._get_coords_and_species(absolute=True, first=True)
-                #print(lattice0.matrix)
+                if self.molecular:
+                    if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
+                        site.lattice = lattice
+                        xyz, _ = sites[j]._get_coords_and_species(absolute=False, first=True)
+                        lattice0 = Lattice.from_matrix(lattice.matrix,
+                                                  ltype=lattice.ltype,
+                                                  reset=True)
+                        xyz = np.dot(xyz, lattice0.matrix)
+                    else:
+                        lattice0 = lattice
+                        xyz, _ = sites[j]._get_coords_and_species(absolute=True, first=True)
+                    #print(lattice0.matrix)
 
-                center = sites[j].molecule.get_center(xyz)
-                sites[j].molecule.reset_positions(xyz-center)
-                sites[j].orientation.reset_matrix(np.eye(3))
-                sites[j].position = pos_frac
-                sites[j].lattice = lattice0
+                    center = sites[j].molecule.get_center(xyz)
+                    sites[j].molecule.reset_positions(xyz-center)
+                    sites[j].orientation.reset_matrix(np.eye(3))
+                    sites[j].position = pos_frac
+                    sites[j].lattice = lattice0
+                else:
+                    sites[j] = atom_site(site.wp, pos_frac, site.specie, diag)
+
 
         if change_lat:
             if self.molecular:
                 self.lattice = lattice0
             else:
+                lattice.reset_matrix()
                 self.lattice = lattice
             self.diag = diag
 
@@ -1643,7 +1648,36 @@ class pyxtal:
                 break
         return free_axis
 
-    def get_disps_single(self, ref_struc, trans, d_tol=1.2, check_lattice=False):
+    def find_matched_lattice(self, ref_struc, d_tol=1.2):
+        """
+        Compute the displacement w.r.t. the reference structure
+
+        Args:
+            ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            d_tol: tolerence of mismatch
+
+        Returns:
+            ref_struc with matched lattice
+        """
+        cell1 = self.lattice.matrix
+        ref_struc.optimize_lattice()
+        #print(ref_struc)
+        cell2 = ref_struc.lattice.matrix
+
+        if np.max(np.abs(cell1-cell2)) > 1.2*d_tol:
+            if self.group.number <= 15:
+                l1 = self.lattice
+                l2 = ref_struc.lattice
+                tran = l2.search_transformation(l1, 1.2*d_tol)
+                if tran is None:
+                    return None
+                else:
+                    ref_struc.transform(tran)
+            else:
+                return None
+        return ref_struc
+
+    def get_disps_single(self, ref_struc, trans, d_tol=1.2):
         """
         Compute the displacement w.r.t. the reference structure
 
@@ -1657,15 +1691,6 @@ class pyxtal:
             translation:
         """
         cell1 = self.lattice.matrix
-        #print(self); print(ref_struc) #=============================Debug
-        if check_lattice:
-            cell2 = ref_struc.lattice.matrix
-            if np.max(np.abs(cell1-cell2)) > 1.2*d_tol:
-                #print("mismatched lattice")
-                #print(self.lattice)
-                #print(ref_struc.lattice)
-                return None, None, False
-        
         disps = []
         orders = list(range(len(self.atom_sites)))
 
@@ -1676,14 +1701,14 @@ class pyxtal:
                 site2 = ref_struc.atom_sites[i]
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
                     disp, dist = site1.get_disp(site2.position, cell1, trans)
-                    #print(site1.specie, site1.position, site2.position, disp)
-                    if dist < d_tol:
+                    #print(site1.specie, site1.position, site2.position, disp, dist)
+                    if dist < d_tol*1.2:
                         match = True
                 if match:
                     disps.append(disp)
                     orders.remove(i)
                     break
-            #print(match, site1, trans)
+            #print(match, site1, site2, trans, dist)
             if not match:
                 return None, 10, False
 
@@ -1751,34 +1776,40 @@ class pyxtal:
         all_ds = []
         for i, ref_struc in enumerate(ref_strucs):
             #print("\n-------------------->", i, len(ref_strucs), ref_struc)
-            trans = self.get_init_translations(ref_struc)
-            if len(trans) > 0:
-                disps = []
-                ds = np.zeros(len(trans))
-                for j, tran in enumerate(trans):
-                    disp, d, valid = self.get_disps_single(ref_struc, tran, d_tol)
-                    if valid:
-                        #print(i, j, "dist: {:6.3f} [{:6.3f} {:6.3f} {:6.3f}]".format(d, *tran))
-                        if d > 0.3 and len(self.axis) > 0:
-                            disp, d, tran = self.get_disps_optim(ref_struc, tran, d_tol)
-                            trans[j] = tran
-                    disps.append(disp)
-                    ds[j] = d
+            ref_struc = self.find_matched_lattice(ref_struc)
+            if ref_struc is not None:
+                trans = self.get_init_translations(ref_struc)
+                if len(trans) > 0:
+                    disps = []
+                    ds = np.zeros(len(trans))
+                    for j, tran in enumerate(trans):
+                        disp, d, valid = self.get_disps_single(ref_struc, tran, d_tol)
+                        if valid:
+                            #print(i, j, "dist: {:6.3f} [{:6.3f} {:6.3f} {:6.3f}]".format(d, *tran))
+                            if d > 0.3 and len(self.axis) > 0:
+                                disp, d, tran = self.get_disps_optim(ref_struc, tran, d_tol)
+                                trans[j] = tran
+                        disps.append(disp)
+                        ds[j] = d
 
-                id = np.argmin(ds)
-                disp = disps[id]
-                tran = trans[id]
-                d = ds[id]
-                # Return it early
-                if d < 0.2:
-                    return disp, tran, ref_struc
+                    id = np.argmin(ds)
+                    disp = disps[id]
+                    tran = trans[id]
+                    d = ds[id]
+                    # Return it early
+                    if d < 0.2:
+                        return disp, tran, ref_struc
+                else:
+                    d = 10
+                    tran = None
+                    disp = None
+                all_disps.append(disp)
+                all_trans.append(tran)
+                all_ds.append(d)
             else:
-                d = 10
-                tran = None
-                disp = None
-            all_disps.append(disp)
-            all_trans.append(tran)
-            all_ds.append(d)
+                all_disps.append(None)
+                all_trans.append(None)
+                all_ds.append(10)
 
         all_ds = np.array(all_ds)
         best_id = np.argmin(all_ds)
