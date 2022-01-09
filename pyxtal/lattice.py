@@ -155,7 +155,7 @@ class Lattice:
         mat = np.dot(mat, self.matrix)
         return mat, np.linalg.norm(mat, axis=1)
 
-    def search_transformation(self, lat_ref, d_tol=1.0):
+    def search_transformation(self, lat_ref, d_tol=1.0, f_tol=0.1):
         """
         search the closest match to the reference lattice object
 
@@ -172,12 +172,20 @@ class Lattice:
                           [[1,0,-1],[0,1,0],[0,0,1]]])
         
         cell1 = lat_ref.matrix
-        for tran in trans:
+        tols = np.zeros([len(trans), 2])
+        for i, tran in enumerate(trans):
             tmp = np.dot(tran, self.matrix)
             cell2 = Lattice.from_matrix(tmp).matrix
-            if np.max(np.abs(cell1-cell2)) < 1.2*d_tol: 
-                return tran
-        return None
+            diff = np.abs(cell1-cell2).flatten()
+            id = np.argmax(diff)
+            d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+            tols[i, :] = [d_tol1, f_tol1]
+
+        id = np.argmin(tols[:, 0])
+        if tols[id, 0] < d_tol or tols[id, 1] < f_tol:
+            return trans[id]
+        else:
+            return None
 
     def optimize(self):
         """

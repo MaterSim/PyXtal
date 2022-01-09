@@ -1648,7 +1648,7 @@ class pyxtal:
                 break
         return free_axis
 
-    def find_matched_lattice(self, ref_struc, d_tol=1.2):
+    def find_matched_lattice(self, ref_struc, d_tol=2.0, f_tol=0.15):
         """
         Compute the displacement w.r.t. the reference structure
 
@@ -1659,23 +1659,29 @@ class pyxtal:
         Returns:
             ref_struc with matched lattice
         """
-        cell1 = self.lattice.matrix
-        ref_struc.optimize_lattice()
-        #print(ref_struc)
-        cell2 = ref_struc.lattice.matrix
-
-        if np.max(np.abs(cell1-cell2)) > 1.2*d_tol:
-            if self.group.number <= 15:
-                l1 = self.lattice
-                l2 = ref_struc.lattice
-                tran = l2.search_transformation(l1, 1.2*d_tol)
-                if tran is None:
-                    return None
-                else:
-                    ref_struc.transform(tran)
-            else:
+        #print(self.lattice)
+        #print(ref_struc.lattice)
+        #print(cell1); print(diff); print(d_tol1, f_tol1, d_tol1 > d_tol, f_tol1 > f_tol)
+        if self.group.number <= 15:
+            ref_struc.optimize_lattice()
+            l1 = self.lattice
+            l2 = ref_struc.lattice
+            tran = l2.search_transformation(l1, d_tol, f_tol)
+            if tran is None:
                 return None
-        return ref_struc
+            else:
+                ref_struc.transform(tran)
+                return ref_struc
+        else:
+            cell1 = self.lattice.matrix
+            cell2 = ref_struc.lattice.matrix
+            diff = np.abs(cell1-cell2).flatten()
+            id = np.argmax(diff)
+            d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+            if d_tol1 > d_tol and f_tol1 > f_tol:
+                return None
+            else:
+                return ref_struc
 
     def get_disps_single(self, ref_struc, trans, d_tol=1.2):
         """
@@ -1697,17 +1703,40 @@ class pyxtal:
         atom_sites = self.atom_sites
         for site1 in atom_sites:
             match = False
+
+            #search for the best match
+            ds = []
+            ids = []
+            _disps = []
             for i in orders:
                 site2 = ref_struc.atom_sites[i]
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
                     disp, dist = site1.get_disp(site2.position, cell1, trans)
-                    #print(site1.specie, site1.position, site2.position, disp, dist)
-                    if dist < d_tol*1.2:
+                    #strs = "{:2s} {:6.3f} {:6.3f} {:6.3f}".format(site1.specie, *site1.position)
+                    #strs += " => {:6.3f} {:6.3f} {:6.3f} ".format(*site2.position)
+                    #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*disp, dist) 
+                    #if dist < d_tol*1.2: strs += ' True'
+                    #print(strs)
+
+                    if dist < 0.3: 
                         match = True
-                if match:
-                    disps.append(disp)
-                    orders.remove(i)
-                    break
+                        break    
+                    elif dist < 1.2*d_tol:
+                        ds.append(dist)
+                        ids.append(i)
+                        _disps.append(disp)
+                        #print("========", ds, ids, site1.specie, site2.specie)
+            if match:            
+                disps.append(disp)
+                orders.remove(i)
+            else:
+                if len(ds) > 0:
+                    ds = np.array(ds)
+                    id = np.argmin(ds)
+                    disps.append(_disps[id])
+                    orders.remove(ids[id])
+                    match = True
+
             #print(match, site1, site2, trans, dist)
             if not match:
                 return None, 10, False
@@ -1778,14 +1807,15 @@ class pyxtal:
             #print("\n-------------------->", i, len(ref_strucs), ref_struc)
             ref_struc = self.find_matched_lattice(ref_struc)
             if ref_struc is not None:
+                #print(ref_struc)
                 trans = self.get_init_translations(ref_struc)
                 if len(trans) > 0:
                     disps = []
                     ds = np.zeros(len(trans))
                     for j, tran in enumerate(trans):
+                        #print(i, j, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran))
                         disp, d, valid = self.get_disps_single(ref_struc, tran, d_tol)
                         if valid:
-                            #print(i, j, "dist: {:6.3f} [{:6.3f} {:6.3f} {:6.3f}]".format(d, *tran))
                             if d > 0.3 and len(self.axis) > 0:
                                 disp, d, tran = self.get_disps_optim(ref_struc, tran, d_tol)
                                 trans[j] = tran
@@ -1882,6 +1912,20 @@ class pyxtal:
                 strucs, disp, tran = res
                 if strucs is not None:
                     return strucs, disp, tran
+                else:
+                    #Some quick fix to try self k-spliting along the path
+                    if 2*sum(self.numIons) <= 2*sum(ref_struc.numIons):
+                        p0 = [self.group.number] + p
+                        res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
+                        strucs, disp, tran = res
+                        if strucs is not None:
+                            return strucs, disp, tran
+                        for i in range(len(p)):
+                            p0 = p[:i] + [p[i]] + p[i:]
+                            res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
+                            strucs, disp, tran = res
+                            if strucs is not None:
+                                return strucs, disp, tran
 
         return None, None, None
 
