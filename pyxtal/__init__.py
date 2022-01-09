@@ -1668,7 +1668,14 @@ class pyxtal:
             l2 = ref_struc.lattice
             tran = l2.search_transformation(l1, d_tol, f_tol)
             if tran is None:
-                return None
+                ref_struc.transform(np.array([[0,0,1],[0,1,0],[1,0,0]])) #swap a,c
+                l2 = ref_struc.lattice
+                tran = l2.search_transformation(l1, d_tol, f_tol)
+                if tran is None:
+                    return None
+                else:
+                    ref_struc.transform(tran)
+                    return ref_struc
             else:
                 ref_struc.transform(tran)
                 return ref_struc
