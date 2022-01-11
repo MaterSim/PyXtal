@@ -48,7 +48,7 @@ class Lattice:
     def __init__(self, ltype, volume=None, matrix=None, PBC=[1, 1, 1], **kwargs):
         # Set required parameters
         if ltype in ltype_keywords:
-            self.ltype = ltype
+            self.ltype = ltype.lower()
         elif ltype == None:
             self.ltype = "triclinic"
         else:
@@ -96,11 +96,7 @@ class Lattice:
                 elif self.unique_axis == "c":
                     norm_matrix = np.array([[1, 0, 0], [1, 1, 0], [0, 0, 1]])
 
-        elif self.ltype in ["orthorhombic", "Orthorhombic", 
-                            "tetragonal", "Tetragonal", 
-                            "trigonal", "Trigonal", 
-                            "hexagonal", "Hexagonal", 
-                            "cubic", "Cubic",]:
+        elif self.ltype in ["orthorhombic", "tetragonal", "trigonal", "hexagonal", "cubic"]:
             norm_matrix = np.eye(3)
 
         elif self.ltype in ["spherical", "ellipsoidal"]:
@@ -109,11 +105,10 @@ class Lattice:
         self.stress_normalization_matrix = norm_matrix
 
         # Set info for on-diagonal stress symmetrization
-        if self.ltype in ["tetragonal", "trigonal", "hexagonal", "rhombohedral",
-                          "Tetragonal", "Trigonal", "Hexagonal", "Rhombohedral"]:
+        if self.ltype in ["tetragonal", "trigonal", "hexagonal"]:
             self.stress_indices = [(0, 0), (1, 1)]
 
-        elif self.ltype in ["cubic", "Cubic"]:
+        elif self.ltype in ["cubic"]:
             self.stress_indices = [(0, 0), (1, 1), (2, 2)]
 
         else:
@@ -131,14 +126,13 @@ class Lattice:
         """
         get the number of degree of freedom
         """
-        if self.ltype in ["triclinic", "Triclinic"]:
+        if self.ltype in ["triclinic"]:
             self.dof = 6
-        elif self.ltype in ["monoclinic", "Monoclinic"]:
+        elif self.ltype in ["monoclinic"]:
             self.dof = 4
-        elif self.ltype in ['orthorhombic', 'Orthorhombic']:
+        elif self.ltype in ['orthorhombic']:
             self.dof = 3
-        elif self.ltype in ['tetragonal', 'Tetragonal',
-            'hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
+        elif self.ltype in ['tetragonal', 'hexagonal', 'trigonal']:
             self.dof = 2
         else:
             self.dof = 1
@@ -155,91 +149,144 @@ class Lattice:
         mat = np.dot(mat, self.matrix)
         return mat, np.linalg.norm(mat, axis=1)
 
+    def get_permutation_matrices(self):
+        """
+        Return the possible permutation matrices that donot violate the symmetry
+        """
+        if self.ltype in ["monoclinic"]: #permutation between a and c
+            return np.array([
+                             [[1,0,0],[0,1,0],[0,0,1]], #self
+                             [[0,0,1],[0,1,0],[1,0,0]], #a-c
+                           ]) 
+        elif self.ltype in ["triclinic"]:
+            return np.array([
+                             [[1,0,0],[0,1,0],[0,0,1]], #self
+                             [[1,0,0],[0,0,1],[0,1,0]], #b-c
+                             [[0,0,1],[0,1,0],[1,0,0]], #a-c
+                             [[0,1,0],[1,0,0],[0,0,1]], #a-b
+                           ])
+        else:
+            return [np.eye(3)]
+
+    def get_transformation_matrices(self):
+        """
+        Return the possible transformation matrices that donot violate the symmetry
+        """
+        if self.ltype in ["monoclinic"]: 
+            return np.array([
+                             [[1,0,0],[0,1,0],[0,0,1]],
+                             [[1,0,0],[0,1,0],[1,0,1]],
+                             [[1,0,0],[0,1,0],[-1,0,1]],
+                             [[1,0,1],[0,1,0],[0,0,1]],
+                             [[1,0,-1],[0,1,0],[0,0,1]],
+                           ])
+ 
+        elif self.ltype in ["triclinic"]:
+            return np.array([
+                             [[1,0,0],[0,1,0],[0,0,1]], 
+                             [[1,0,0],[0,1,0],[1,0,1]],
+                             [[1,0,0],[0,1,0],[-1,0,1]],
+                             [[1,0,1],[0,1,0],[0,0,1]],
+                             [[1,0,-1],[0,1,0],[0,0,1]],
+                             [[1,0,0],[0,1,0],[0,1,1]],
+                             [[1,0,0],[0,1,1],[0,0,1]],
+                             [[1,0,0],[0,1,0],[0,-1,1]],
+                             [[1,0,0],[0,1,-1],[0,0,1]],
+                             [[1,1,0],[0,1,0],[0,0,1]],
+                             [[1,-1,0],[0,1,0],[0,0,1]],
+                             [[1,0,0],[1,1,0],[0,0,1]],
+                             [[1,0,0],[-1,1,0],[0,0,1]],
+                           ])
+        else:
+            return [np.eye(3)]
+
+
     def search_transformation(self, lat_ref, d_tol=1.0, f_tol=0.1):
         """
         search the closest match to the reference lattice object
 
         Args:
-            lat_ref
+            lat_ref: reference lattice object
 
         Returns:
-            transformation matrix if possible
+            a two steps of transformation matrix if the match is possible
         """
-        trans = np.array([[[1,0,0],[0,1,0],[0,0,1]],
-                          [[1,0,0],[0,1,0],[1,0,1]],
-                          [[1,0,0],[0,1,0],[-1,0,1]],
-                          [[1,0,1],[0,1,0],[0,0,1]],
-                          [[1,0,-1],[0,1,0],[0,0,1]]])
+        #Find all possible permutation and transformation matrices
+        trans1 = self.get_permutation_matrices()
+        trans2 = self.get_transformation_matrices()
         
+        #define the reference matrix
         cell1 = lat_ref.matrix
-        tols = np.zeros([len(trans), 2])
-        for i, tran in enumerate(trans):
-            tmp = np.dot(tran, self.matrix)
-            cell2 = Lattice.from_matrix(tmp).matrix
-            diff = np.abs(cell1-cell2).flatten()
-            id = np.argmax(diff)
-            d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
-            tols[i, :] = [d_tol1, f_tol1]
+        for i, tran1 in enumerate(trans1):
+            lat0 = self.transform(tran1)
+            tols = np.zeros([len(trans2), 2])
 
-        id = np.argmin(tols[:, 0])
-        if tols[id, 0] < d_tol or tols[id, 1] < f_tol:
-            return trans[id]
-        else:
-            return None
+            for j, tran2 in enumerate(trans2):
+                tmp = np.dot(tran2, lat0.matrix)
+                cell2 = Lattice.from_matrix(tmp, l_type=self.ltype).matrix
+                diff = np.abs(cell1-cell2).flatten()
+                id = np.argmax(diff)
+                d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+                tols[j, :] = [d_tol1, f_tol1]
+                #print([d_tol1, f_tol1])
+            #print(tols)
+            id = np.argmin(tols[:, 0])
+            if tols[id, 0] < d_tol or tols[id, 1] < f_tol:
+                return [tran1, trans2[id]], tols[id]
+            else:
+                continue
+        return None, None
 
-    def optimize(self):
+    def optimize_once(self, reset=False):
         """
         Optimize the lattice's inclination angles
         """
-        trans = np.zeros([1,3,3])
-        trans[0] = np.eye(3)
-        tmp = None
         opt = False
-        if self.ltype in ["monoclinic", "Monoclinic"]:
-            tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
-                           [[1,0,0],[0,1,0],[-1,0,1]],
-                           [[1,0,1],[0,1,0],[0,0,1]],
-                           [[1,0,-1],[0,1,0],[0,0,1]]])
-
-        elif self.ltype in ["triclinic", "Triclinic"]:
-            angles = np.array([self.alpha, self.beta, self.gamma])
-            diff0s = np.abs(angles - np.pi/2)
-            axis = np.argmax(diff0s)
-            if axis == 1:
-                tmp = np.array([[[1,0,0],[0,1,0],[1,0,1]],
-                               [[1,0,0],[0,1,0],[-1,0,1]],
-                               [[1,0,1],[0,1,0],[0,0,1]],
-                               [[1,0,-1],[0,1,0],[0,0,1]]])
-            elif axis == 0:
-                tmp = np.array([[[1,0,0],[0,1,0],[0,1,1]],
-                                [[1,0,0],[0,1,1],[0,0,1]],
-                                [[1,0,0],[0,1,0],[0,-1,1]],
-                                [[1,0,0],[0,1,-1],[0,0,1]]])
-            else:
-                tmp = np.array([[[1,1,0],[0,1,0],[0,0,1]],
-                                [[1,-1,0],[0,1,0],[0,0,1]],
-                                [[1,0,0],[1,1,0],[0,0,1]],
-                                [[1,0,0],[-1,1,0],[0,0,1]]])
-        if tmp is not None:
-            trans = np.append(trans, tmp, axis=0)
+        trans = self.get_transformation_matrices()
+        if len(trans) > 1: 
             diffs = []
             for tran in trans:
                 cell_new = np.dot(tran, self.matrix)
                 try:
-                    lat_new = Lattice.from_matrix(cell_new)
-                    _, _, _, alpha, beta, gamma = lat_new.get_para()
-                    diffs.append(np.max(abs(np.array([alpha, beta, gamma])-np.pi/2)))
+                    lat_new = Lattice.from_matrix(cell_new, ltype=self.ltype)
+                    diffs.append(lat_new.get_worst_angle())
                 except:
                     diffs.append(100)
             id = np.array(diffs).argmin()
-            tran = trans[id]
-            cell = np.dot(tran, self.matrix)
-            if id > 0:
+            if id > 0 and diffs[id] < diffs[0] - 0.01:
                 opt = True
-            #print("cell:"); print(cell) #; import sys; sys.exit()
-            return Lattice.from_matrix(cell, ltype=self.ltype, reset=False), tran, opt
-        else:
-            return self, np.eye(3), opt
+                tran = trans[id]
+                cell = np.dot(tran, self.matrix)
+                lat = Lattice.from_matrix(cell, ltype=self.ltype, reset=reset)
+                return lat, tran, opt
+        return self, np.eye(3), opt
+
+    def get_worst_angle(self):
+        """
+        return the worst inclination angle difference w.r.t 90 degree
+        """
+        return np.max(abs(np.array([self.alpha, self.beta, self.gamma])-np.pi/2))
+
+    def optimize_multi(self, iterations=5):
+        """
+        Optimize the lattice if the cell has a bad inclination angles
+
+        Args:
+            iterations: maximum number of iterations
+            force: whether or not do the early termination
+
+        Returns:
+            the optimized lattice
+        """
+        lattice = self
+        trans_matrices = []
+        for i in range(iterations):
+            lattice, trans, opt = lattice.optimize_once(reset=True)
+            if opt:
+                trans_matrices.append(trans)
+            else:
+                break
+        return lattice, trans_matrices
 
     def transform(self, trans_mat=np.eye(3), reset=False):
         """
@@ -250,17 +297,24 @@ class Lattice:
         cell = np.dot(trans_mat, self.matrix)
         return Lattice.from_matrix(cell, ltype=self.ltype, reset=reset)
 
+    def transform_multi(self, trans, reset=True):
+        """
+        Optimize the lattice's inclination angles
+        """
+        lat = self
+        for tran in trans:
+            lat = lat.transform(tran, reset)
+        return lat
+
     def encode(self):
         a, b, c, alpha, beta, gamma = self.get_para(degree=True)
-        if self.ltype in ['cubic', 'Cubic']:
+        if self.ltype in ['cubic']:
             return [a]
-        elif self.ltype in ['hexagonal', 'trigonal', 
-                            'Hexagonal', 'Trigonal', 
-                            'tetragonal', 'Tetragonal']:
+        elif self.ltype in ['hexagonal', 'trigonal', 'tetragonal']:
             return [a, c]
-        elif self.ltype in ['orthorhombic', 'Orthorhombic']:
+        elif self.ltype in ['orthorhombic']:
             return [a, b, c]
-        elif self.ltype in ['monoclinic', 'Monoclinic']:
+        elif self.ltype in ['monoclinic']:
             return [a, b, c, beta]
         else:
             return [a, b, c, alpha, beta, gamma]
@@ -279,31 +333,26 @@ class Lattice:
         gamma = np.degrees(gamma0*rand[5])
         ltype = self.ltype
 
-        if self.ltype in ['cubic', 'Cubic']:
+        if self.ltype in ['cubic']:
             if frozen:
                 lat = Lattice.from_para(a0, a0, a0, 90, 90, 90, ltype=ltype)
             else:
                 lat = Lattice.from_para(a, a, a, 90, 90, 90, ltype=ltype)
-        elif ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
+        elif ltype in ['hexagonal', 'trigonal']:
             if frozen:
                 lat = Lattice.from_para(a0, a0, c, 90, 90, 120, ltype=ltype)
             else:
                 lat = Lattice.from_para(a, a, c, 90, 90, 120, ltype=ltype)
-        #elif ltype in ['rhombohedral', 'Rhombohedral']:
-        #    if forzen:
-        #        lat = Lattice.from_para(a0, a0, a0, alpha0, alpha0, alpha0, ltype=ltype)
-        #    else:
-        #        lat = Lattice.from_para(a, a, a, alpha, alpha, alpha, ltype=ltype)
-        elif ltype in ['tetragonal', 'Tetragonal']:
+        elif ltype in ['tetragonal']:
             if frozen:
                 lat = Lattice.from_para(a0, a0, c, 90, 90, 90, ltype=ltype)
             else:
                 lat = Lattice.from_para(a, a, c, 90, 90, 90, ltype=ltype)
-        elif ltype in ['orthorhombic', 'Orthorhombic']:
+        elif ltype in ['orthorhombic']:
             lat = Lattice.from_para(a, b, c, 90, 90, 90, ltype=ltype)
-        elif ltype in ['monoclinic', 'Monoclinic']:
+        elif ltype in ['monoclinic']:
             lat = Lattice.from_para(a, b, c, 90, beta, 90, ltype=ltype)
-        elif ltype in ['triclinic', 'Triclinic']:
+        elif ltype in ['triclinic']:
             lat = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
         else:
             raise ValueError("ltype {:s} is not supported".format(ltype))
@@ -404,10 +453,10 @@ class Lattice:
         For the lattice
         """
         # only applied to triclinic/monoclinic/orthorhombic
-        if self.ltype in ["triclinic", "Triclinic", "orthorhombic", "Orthorhombic"]:
+        if self.ltype in ["triclinic", "orthorhombic", "Orthorhombic"]:
             allowed_ids = [[0,1,2], [1,0,2], [0,2,1], [2,1,0], [1,2,0], [2,0,1]]
 
-        elif self.ltype in ["monoclinic", "Monoclinic"]:
+        elif self.ltype in ["monoclinic"]:
             if abs(self.beta - 90*rad) > 1e-3:
                 allowed_ids = [[0,1,2],[2,1,0]]
             else:
@@ -447,9 +496,9 @@ class Lattice:
         If the angle is not 90. There will be two equivalent versions
         e.g., 80 and 100.
         """
-        if self.ltype in ["monoclinic", "Monoclinic"]:
+        if self.ltype in ["monoclinic"]:
             allowed_ids = ["beta", "No"]
-        elif self.ltype in ["triclinic", "Triclinic"]:
+        elif self.ltype in ["triclinic"]:
             allowed_ids = ["alpha", "beta", "gamma", "No"]
         else:
             allowed_ids = ["No"]
@@ -527,7 +576,7 @@ class Lattice:
         else:
             for i, a in enumerate(self.PBC):
                 if not a:
-                    if self.ltype in ["hexagonal", "trigonal", "rhombohedral"]:
+                    if self.ltype in ["hexagonal", "trigonal"]:
                         point[i] *= 1.0 / np.sqrt(3.0)
                     else:
                         point[i] -= 0.5
@@ -797,7 +846,7 @@ def generate_lattice(
             b = vec[1] * np.cbrt(abc) / np.cbrt(xyz)
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Monoclinic
-        elif ltype in ["monoclinic", "Monoclinic"]:
+        elif ltype in ["monoclinic"]:
             alpha, gamma = np.pi / 2, np.pi / 2
             beta = gaussian(minangle, maxangle)
             x = np.sin(beta)
@@ -809,7 +858,7 @@ def generate_lattice(
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Orthorhombic
         # elif sg <= 74:
-        elif ltype in ["orthorhombic", "Orthorhombic"]:
+        elif ltype in ["orthorhombic"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
@@ -820,7 +869,7 @@ def generate_lattice(
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Tetragonal
         # elif sg <= 142:
-        elif ltype in ["tetragonal", "Tetragonal"]:
+        elif ltype in ["tetragonal"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
             vec = random_vector()
@@ -828,7 +877,7 @@ def generate_lattice(
             a = b = np.sqrt((volume / x) / c)
         # Trigonal/Rhombohedral/Hexagonal
         # elif sg <= 194:
-        elif ltype in ["hexagonal", "trigonal", "rhombohedral"]:
+        elif ltype in ["hexagonal", "trigonal"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 3 * 2
             x = np.sqrt(3.0) / 2.0
             vec = random_vector()
@@ -836,7 +885,7 @@ def generate_lattice(
             a = b = np.sqrt((volume / x) / c)
         # Cubic
         # else:
-        elif ltype in ["cubic", "Cubic"]:
+        elif ltype in ["cubic"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             s = (volume) ** (1.0 / 3.0)
             a, b, c = s, s, s
@@ -1111,7 +1160,7 @@ def generate_lattice_2D(
                 return para
 
     # If maxattempts tries have been made without success
-    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
+    msg = "Cannot get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
     raise VolumeError(msg)
 
 def generate_lattice_1D(
@@ -1382,7 +1431,7 @@ def generate_lattice_0D(
                 return np.array([a, b, c, alpha, beta, gamma])
 
     # If maxattempts tries have been made without success
-    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
+    msg = "Cannot get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
     raise VolumeError(msg)
 
 def matrix2para(matrix, radians=True):

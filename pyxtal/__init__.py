@@ -1142,10 +1142,14 @@ class pyxtal:
     def optimize_lattice(self, iterations=5, force=False):
         """
         Optimize the lattice if the cell has a bad inclination angles
+
+        Args:
+            iterations: maximum number of iterations
+            force: whether or not do the early termination
         """
         #if self.molecular:
         for i in range(iterations):
-            lattice, trans, opt = self.lattice.optimize()
+            lattice, trans, opt = self.lattice.optimize_once()
             #print(self.lattice, "->", lattice)
             if force or opt:
                 self.transform(trans, lattice)
@@ -1666,18 +1670,13 @@ class pyxtal:
             ref_struc.optimize_lattice()
             l1 = self.lattice
             l2 = ref_struc.lattice
-            tran = l2.search_transformation(l1, d_tol, f_tol)
-            if tran is None:
-                ref_struc.transform(np.array([[0,0,1],[0,1,0],[1,0,0]])) #swap a,c
-                l2 = ref_struc.lattice
-                tran = l2.search_transformation(l1, d_tol, f_tol)
-                if tran is None:
-                    return None
-                else:
-                    ref_struc.transform(tran)
-                    return ref_struc
+            trans, _ = l2.search_transformation(l1, d_tol, f_tol)
+            if trans is None:
+                #print("Cannot find lattice match")
+                return None
             else:
-                ref_struc.transform(tran)
+                for tran in trans:
+                    ref_struc.transform(tran)
                 return ref_struc
         else:
             cell1 = self.lattice.matrix
@@ -1685,6 +1684,7 @@ class pyxtal:
             diff = np.abs(cell1-cell2).flatten()
             id = np.argmax(diff)
             d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+            #print(cell1); print(diff); print(d_tol1, f_tol1, d_tol1 > d_tol, f_tol1 > f_tol)
             if d_tol1 > d_tol and f_tol1 > f_tol:
                 return None
             else:
@@ -1920,20 +1920,34 @@ class pyxtal:
                 if strucs is not None:
                     return strucs, disp, tran
                 else:
+                    #print(p)
                     #Some quick fix to try self k-spliting along the path
-                    if 2*sum(self.numIons) <= 2*sum(ref_struc.numIons):
-                        p0 = [self.group.number] + p
+                    #p0 = [self.group.number] + p
+                    #res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
+                    #strucs, disp, tran = res
+                    #if strucs is not None:
+                    #    return strucs, disp, tran
+                    for i in range(len(p)):
+                        p0 = p[:i] + [p[i]] + p[i:]
+                        #print(i, p0)
                         res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
                         strucs, disp, tran = res
                         if strucs is not None:
                             return strucs, disp, tran
-                        for i in range(len(p)):
-                            p0 = p[:i] + [p[i]] + p[i:]
+
+                    # more extensive search
+                    if 4*sum(self.numIons) <= sum(ref_struc.numIons) and len(p)<4:
+                        #p = [self.group.number] + p
+                        ijs = list(itertools.combinations(range(len(p)), 2))
+                        for ij in ijs:
+                            [i, j] = ij
+                            p0 = p[:i] + [p[i]] + p[i:j] + [p[j]] + p[j:]
+                            #print(i, p0)
                             res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
                             strucs, disp, tran = res
                             if strucs is not None:
                                 return strucs, disp, tran
-
+                       
         return None, None, None
 
     def get_transition_by_path(self, ref_struc, path, d_tol, N_images=2):
@@ -2014,8 +2028,7 @@ class pyxtal:
                         #print("bad number", site, number, numIons_H[i])
                         match = False
                         break
-
-            #print(path, _sites0, match)
+            #if match: print(path, _sites0, match)
             # make subgroup
             if match:
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)

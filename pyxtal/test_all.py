@@ -23,11 +23,8 @@ from pyxtal.supergroup import supergroups, supergroup
 #warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 cif_path = resource_filename("pyxtal", "database/cifs/")
-l0 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
 l1 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
 l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
-l3 = Lattice.from_para(4.08, 7.13, 5.50, 90, 38, 90, ltype="monoclinic")
-l4 = Lattice.from_para( 71.3649,   9.1273,  10.0753,  90.0000,  20.7978,  90.0000, ltype="monoclinic")
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_index(36, "4a")
 wp6 = Wyckoff_position.from_group_and_index(167, 0)
@@ -633,40 +630,27 @@ class TestLattice(unittest.TestCase):
         abc = l1.get_para()[:3]
         self.assertTrue(abc, np.array([9.13, 4.08, 5.50]))
 
-    def test_optimize(self):
-        lat, tran, _ = l3.optimize()
+    def test_optimize_once(self):
+        l3 = Lattice.from_para(4.08, 7.13, 5.50, 90, 38, 90, ltype="monoclinic")
+        lat, tran, _ = l3.optimize_once()
         self.assertTrue(abs(lat.beta-1.495907)<1e-4)
 
-    def test_multi_optimize(self):
-        lat0 = l4
-        for i in range(10):
-            lat, tran, opt = lat0.optimize()
-            if opt:
-                lat0 = lat
-            else:
-                break
-        self.assertTrue(abs(lat.beta-1.7201)<1e-4)
+    def test_optimize_multi(self):
+        l4 = Lattice.from_para(71.364, 9.127, 10.075, 90.00, 20.80, 90.00, ltype="monoclinic")
+        lat, _ = l4.optimize_multi(7)
+        self.assertTrue(abs(lat.beta-1.7201)<1e-2)
 
     def test_setpara(self):
+        l0 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
         l0.set_para([5, 5, 5, 90, 90, 90])
         self.assertTrue(l0.a == 5)
 
     def test_search_transformation(self):
         l6 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 105.80, 90.00, ltype='monoclinic')
         l7 = Lattice.from_para(6.028, 3.419, 6.028, 90.00, 146.92, 90.00, ltype='monoclinic')
-        l7, _, _ =l7.optimize()
-        good = False
-
-        tran = l7.search_transformation(l6)
-        if tran is None:
-            l7 = l7.transform(np.array([[0,0,1],[0,1,0],[1,0,0]]))
-            tran = l7.search_transformation(l6)
-            if tran is not None:
-                good = True
-        else:
-            good = True
-        self.assertTrue(good)
-        l7 = l7.transform(tran, True)
+        l7, _ = l7.optimize_multi()
+        trans, diff = l7.search_transformation(l6)
+        l7 = l7.transform_multi(trans)
         self.assertTrue(np.abs(l7.matrix-l6.matrix).sum() < 0.25)
 
 class TestSymmetry(unittest.TestCase):
