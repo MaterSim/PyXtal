@@ -469,7 +469,7 @@ class pyxtal:
         return False
 
 
-    def check_short_distances(self, r=0.7, exclude_H = True):
+    def check_short_distances(self, r=0.7, exclude_H=True):
         """
         A function to check short distance pairs
         Mainly used for debug, powered by pymatgen
@@ -531,9 +531,11 @@ class pyxtal:
         For other formats, Pymatgen is used
 
         Args:
-            filename: the file path
-            fmt: the file type (`cif`, `xyz`, etc.)
-            permission: `w` or `a+`
+            filename (string): the file path
+            fmt (string): the file type (`cif`, `xyz`, etc.)
+            permission (string): `w` or `a+`
+            sym_num (int): the number of symmetry operations, None means writing all symops
+            header (string): header
 
         Returns:
             Nothing. Creates a file at the specified path
@@ -580,12 +582,12 @@ class pyxtal:
         solutions = my_super.search_supergroup(d_tol=d_tol)
         return my_super.make_supergroup(solutions)
 
-    def subgroup(self, permutations=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4):
+    def subgroup(self, perms=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4):
         """
         Generate a structure with lower symmetry
 
         Args:
-            permutations: e.g., {"Si": "C"}
+            perms: e.g., {"Si": "C"}
             H: space group number (int)
             eps: pertubation term (float)
             idx: list
@@ -608,7 +610,7 @@ class pyxtal:
             splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
 
             if not splitter.error:
-                if permutations is None:
+                if perms is None:
                     if splitter.valid_split:
                         special = False
                         if self.molecular:
@@ -638,17 +640,17 @@ class pyxtal:
             new_strucs = []
             for splitter in bad_splitters:
                 trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
-                new_strucs.extend(trail_struc.subgroup(permutations, group_type=group_type))
+                new_strucs.extend(trail_struc.subgroup(perms, group_type=group_type))
             return new_strucs
         else:
             #print(len(valid_splitters), "valid_splitters are present")
             new_strucs = []
             for splitter in valid_splitters:
                 #print(splitter)
-                if permutations is None:
+                if perms is None:
                     new_struc = self._subgroup_by_splitter(splitter, eps=eps)
                 else:
-                    new_struc = self._apply_substitution(splitter, permutations)
+                    new_struc = self._apply_substitution(splitter, perms)
                 new_strucs.append(new_struc)
             return new_strucs
 
@@ -676,13 +678,13 @@ class pyxtal:
             G = splitter.H
         return struc
 
-    def subgroup_once(self, eps=0.1, H=None, permutations=None, group_type='t', \
+    def subgroup_once(self, eps=0.1, H=None, perms=None, group_type='t', \
             max_cell=4, mut_lat=True, ignore_special=False):
         """
         Generate a structure with lower symmetry (for atomic crystals only)
 
         Args:
-            permutations: e.g., {"Si": "C"}
+            perms: e.g., {"Si": "C"}
             H: space group number (int)
             idx: list
             group_type: `t` or `k`
@@ -703,20 +705,20 @@ class pyxtal:
             #print(self.group.number, sites, id, gtype, idx)
             splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
             if not splitter.error:
-                if permutations is not None:
+                if perms is not None:
                     if len(splitter.H_orbits) == 1:
                         if len(splitter.H_orbits[0]) > 1:
-                            return self._apply_substitution(splitter, permutations)
+                            return self._apply_substitution(splitter, perms)
                         else:
                             #print("try to find the next subgroup")
                             trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                             multiple = sum(trail_struc.numIons)/sum(self.numIons)
                             max_cell = max([1, max_cell/multiple])
-                            ans = trail_struc.subgroup_once(eps, H, permutations, group_type, max_cell)
+                            ans = trail_struc.subgroup_once(eps, H, perms, group_type, max_cell)
                             if ans.group.number > 1:
                                 return ans
                     else:
-                        return self._apply_substitution(splitter, permutations)
+                        return self._apply_substitution(splitter, perms)
                 else:
                     #print('permuation')
                     if splitter.valid_split:
@@ -743,7 +745,7 @@ class pyxtal:
             count += 1
         raise RuntimeError("Cannot find the splitter")
 
-    def _apply_substitution(self, splitter, permutations):
+    def _apply_substitution(self, splitter, perms):
         """
         Apply the substitution
         """
@@ -757,7 +759,7 @@ class pyxtal:
 
         site_ids = []
         for site_id, site in enumerate(new_struc.atom_sites):
-            if site.specie in permutations.keys():
+            if site.specie in perms.keys():
                 site_ids.append(site_id)
         if len(site_ids) > 1:
             N = choice(range(1, len(site_ids)))
@@ -766,7 +768,7 @@ class pyxtal:
         sub_ids = sample(site_ids, N)
         for sub_id in sub_ids:
             key = new_struc.atom_sites[sub_id].specie
-            new_struc.atom_sites[sub_id].specie = permutations[key]
+            new_struc.atom_sites[sub_id].specie = perms[key]
         new_struc._get_formula()
         return new_struc
 
@@ -1237,7 +1239,7 @@ class pyxtal:
                             elif not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
                                 #print("from p21/n to p21/c")
                                 site.lattice = lattice
-                                xyz, _ = site._get_coords_and_species(absolute=False, first=True)
+                                xyz, _ = site._get_coords_and_species(first=True)
                                 lattice0 = Lattice.from_matrix(lattice.matrix,
                                                                ltype=lattice.ltype,
                                                                reset=True)
@@ -1251,7 +1253,7 @@ class pyxtal:
                         elif diag and not site.diag:
                             #print("from p21/c to p21/n")
                             site.lattice = lattice
-                            xyz, _ = site._get_coords_and_species(absolute=False, first=True)
+                            xyz, _ = site._get_coords_and_species(first=True)
                             #print(self.lattice); print(self.lattice.matrix)
                             lattice0 = Lattice.from_matrix(lattice.matrix,
                                                       ltype=lattice.ltype,
@@ -1263,7 +1265,7 @@ class pyxtal:
                             ori.reset_matrix(np.eye(3))
                         elif not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
                             site.lattice = lattice
-                            xyz, _ = site._get_coords_and_species(absolute=False, first=True)
+                            xyz, _ = site._get_coords_and_species(first=True)
                             lattice0 = Lattice.from_matrix(lattice.matrix,
                                                       ltype=lattice.ltype,
                                                       reset=True)
@@ -1295,7 +1297,7 @@ class pyxtal:
                 if self.molecular:
                     if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
                         site.lattice = lattice
-                        xyz, _ = sites[j]._get_coords_and_species(absolute=False, first=True)
+                        xyz, _ = sites[j]._get_coords_and_species(first=True)
                         lattice0 = Lattice.from_matrix(lattice.matrix,
                                                   ltype=lattice.ltype,
                                                   reset=True)
@@ -1383,7 +1385,7 @@ class pyxtal:
             group: 225
             species: ['Na', 'Cl']
             numIons: [4, 4]
-            lattice:
+            lattice: lattice object
             sites: [{"4a": [0.0, 0.0, 0.0]}, {"4b": [0.5, 0.5, 0.5]}]
         """
 
@@ -1658,7 +1660,8 @@ class pyxtal:
 
         Args:
             ref_struc: reference pyxtal structure (assuming the same atomic ordering)
-            d_tol: tolerence of mismatch
+            d_tol: tolerence of mismatch in the absolute scale
+            f_tol: tolerence of mismatch in the fractional scale
 
         Returns:
             ref_struc with matched lattice
@@ -1719,7 +1722,8 @@ class pyxtal:
                 site2 = ref_struc.atom_sites[i]
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
                     disp, dist = site1.get_disp(site2.position, cell1, trans)
-                    #strs = "{:2s} {:6.3f} {:6.3f} {:6.3f}".format(site1.specie, *site1.position)
+                    #strs = "{:2s} ".format(site1.specie)
+                    #strs = "{:6.3f} {:6.3f} {:6.3f}".format(*site1.position)
                     #strs += " => {:6.3f} {:6.3f} {:6.3f} ".format(*site2.position)
                     #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*disp, dist) 
                     #if dist < d_tol*1.2: strs += ' True'
@@ -1754,6 +1758,17 @@ class pyxtal:
         return disps, d, True
 
     def get_disps_optim(self, ref_struc, trans, d_tol):
+        """
+        Args:
+            ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            trans: translation vector
+            d_tol: tolerence of mismatch
+
+        Returns:
+            Atomic displacements in np.array
+            translation:
+        """
+
         from scipy.optimize import minimize
         def fun(tran, ref_struc, d_tol, axis):
             for i in range(3):
@@ -1789,12 +1804,15 @@ class pyxtal:
         self.axis = axis
         return translations
 
-    def get_disps_sets(self, ref_struc, d_tol, check_mapping=False):
+    def get_disps_sets(self, ref_struc, d_tol, d_tol2=0.3, check_mapping=False):
         """
         Compute the displacement w.r.t. the reference structure (considering all wycsets)
 
         Args:
             ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            d_tol: maximally allowed atomic displacement
+            d_tol2: displacement that allows early termination
+            check_mapping: whether or not change the WP sets
 
         Returns:
             Atomic displacements in np.array
@@ -1834,8 +1852,8 @@ class pyxtal:
                     tran = trans[id]
                     d = ds[id]
                     # Return it early
-                    if d < 0.2:
-                        return disp, tran, ref_struc
+                    if d < d_tol2:
+                        return disp, tran, ref_struc, d
                 else:
                     d = 10
                     tran = None
@@ -1851,10 +1869,10 @@ class pyxtal:
         all_ds = np.array(all_ds)
         best_id = np.argmin(all_ds)
         id = np.argmin(all_ds)
-        if all_ds[id] < 1.0:
-            return all_disps[id], all_trans[id], ref_strucs[id]
+        if all_ds[id] < d_tol:
+            return all_disps[id], all_trans[id], ref_strucs[id], all_ds[id]
         else:
-            return None, None, None
+            return None, None, None, None
 
     def _get_elements_and_sites(self):
         """
@@ -1894,13 +1912,15 @@ class pyxtal:
                     sites.append(site)
         self.atom_sites = sites
 
-    def get_transition(self, ref_struc, d_tol=1.0, N_images=2):
+    def get_transition(self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2):
         """
         Get the splitted wyckoff information along a given path:
 
         Args:
             ref_struc: structure with subgroup symmetry
-            N_images (int): number of images along the transition
+            d_tol: maximally allowed atomic displacement
+            d_tol2: displacement that allows early termination
+            N_images: number of intermediate images
 
         Returns:
             - strucs:
@@ -1915,48 +1935,43 @@ class pyxtal:
             return None, None, None
         else:
             for p in paths:
-                res = self.get_transition_by_path(ref_struc, p, d_tol, N_images)
+                res = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images)
                 strucs, disp, tran = res
                 if strucs is not None:
                     return strucs, disp, tran
                 else:
-                    #print(p)
                     #Some quick fix to try self k-spliting along the path
-                    #p0 = [self.group.number] + p
-                    #res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
-                    #strucs, disp, tran = res
-                    #if strucs is not None:
-                    #    return strucs, disp, tran
                     for i in range(len(p)):
                         p0 = p[:i] + [p[i]] + p[i:]
                         #print(i, p0)
-                        res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
-                        strucs, disp, tran = res
+                        r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
+                        (strucs, disp, tran) = r
                         if strucs is not None:
                             return strucs, disp, tran
 
                     # more extensive search
                     if 4*sum(self.numIons) <= sum(ref_struc.numIons) and len(p)<4:
-                        #p = [self.group.number] + p
                         ijs = list(itertools.combinations(range(len(p)), 2))
                         for ij in ijs:
                             [i, j] = ij
                             p0 = p[:i] + [p[i]] + p[i:j] + [p[j]] + p[j:]
-                            #print(i, p0)
-                            res = self.get_transition_by_path(ref_struc, p0, d_tol, N_images)
-                            strucs, disp, tran = res
+                            r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
+                            (strucs, disp, tran) = r
                             if strucs is not None:
                                 return strucs, disp, tran
                        
         return None, None, None
 
-    def get_transition_by_path(self, ref_struc, path, d_tol, N_images=2):
+    def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2):
         """
         Get the splitted wyckoff information along a given path:
 
         Args:
             ref_struc: structure with subgroup symmetry
             path: a list of transition path
+            d_tol: maximally allowed atomic displacement
+            d_tol2: displacement that allows early termination
+            N_images: number of intermediate images
 
         Returns:
             - strucs:
@@ -1994,6 +2009,13 @@ class pyxtal:
 
         #print(ids)
         sols = list(itertools.product(*ids))
+
+        #loop over all
+        disps = []
+        refs = []
+        trans = []
+        ds = []
+
         for sol in sols:
             _sites = deepcopy(sites_G)
             G = self.group
@@ -2033,14 +2055,30 @@ class pyxtal:
             if match:
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
                 #print(ref_struc); print(s)
-                disp, tran, s = ref_struc.get_disps_sets(s, d_tol, True)
+                disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, True)
                 if disp is not None:
-                    cell = s.lattice.matrix
-                    strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
-                    return strucs, disp, tran
-                #else:
-                #    import sys; sys.exit()
-        return None, None, None
+                    # early termintion
+                    if max_disp < d_tol2:
+                        cell = s.lattice.matrix
+                        strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
+                        return strucs, disp, tran
+                    else:
+                        disps.append(disp)
+                        refs.append(s)
+                        trans.append(tran)
+                        ds.append(max_disp)
+
+        if len(ds) > 0:
+            ds = np.array(ds)
+            id = np.argmin(ds)
+            cell = refs[id].lattice.matrix
+            tran = trans[id]
+            disp = disps[id]
+            strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
+            return strucs, disp, tran
+
+        else:
+            return None, None, None
 
     def translate(self, trans):
         """

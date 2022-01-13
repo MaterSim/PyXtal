@@ -719,7 +719,7 @@ class TestSubgroup(unittest.TestCase):
             sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
             self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
-        C3s = C1.subgroup(permutations={"C":"Si"}, H=216)
+        C3s = C1.subgroup(perms={"C":"Si"}, H=216)
 
     def test_from_seed(self):
         coords = [[0, 0, 0], [0.75,0.5,0.75]]

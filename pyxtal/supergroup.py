@@ -1160,7 +1160,7 @@ class supergroups():
             #print(struc0)
             #print(i, sp.G.number, sp.H.number, wyc_set_id, match, trans)
         #print(self.struc_H)
-        disps, _, _ = self.struc_H.get_disps_sets(struc0, d_tol=1.0)
+        disps, _, _, _ = self.struc_H.get_disps_sets(struc0, d_tol=1.0)
         if disps is not None:
             cell = struc0.lattice.matrix
             return self.struc_H.make_transitions(disps, lattice=cell, N_images=N_images)
