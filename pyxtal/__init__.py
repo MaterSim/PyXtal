@@ -1912,7 +1912,7 @@ class pyxtal:
                     sites.append(site)
         self.atom_sites = sites
 
-    def get_transition(self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2):
+    def get_transition(self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2, max_path=30):
         """
         Get the splitted wyckoff information along a given path:
 
@@ -1934,6 +1934,8 @@ class pyxtal:
             print("No valid paths between the structure pairs")
             return None, None, None
         else:
+            Skipped = len(paths) - max_path
+            if Skipped > 0: paths = paths[:max_path] #sample(paths, max_path)
             for p in paths:
                 res = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images)
                 strucs, disp, tran = res
@@ -1959,6 +1961,8 @@ class pyxtal:
                             (strucs, disp, tran) = r
                             if strucs is not None:
                                 return strucs, disp, tran
+            if Skipped > 0:
+                print("Warning: ignore some solutions: ", Skipped)
                        
         return None, None, None
 
@@ -2057,7 +2061,7 @@ class pyxtal:
                 #print(ref_struc); print(s)
                 disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, True)
                 if disp is not None:
-                    # early termintion
+                    # early termination
                     if max_disp < d_tol2:
                         cell = s.lattice.matrix
                         strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
