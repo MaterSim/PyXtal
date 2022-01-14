@@ -2033,7 +2033,10 @@ class pyxtal:
                 for site in _sites:
                     _site = []
                     for label in site:
-                        index = string.ascii_lowercase.index(label[-1])
+                        try:
+                            index = string.ascii_lowercase.index(label[-1])
+                        except ValueError: #8A
+                            index = 26
                         _site.extend(relation[index])
                     _sites0.append(_site)
                 _sites = _sites0

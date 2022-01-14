@@ -3181,4 +3181,12 @@ def para2ferro(pg):
         #return ['1', 'm(s)', 'm(p)', 'mm2', '4mm', '3m']
         return ['1', 'm', 'mm2', '4mm', '3m']
 
-
+def get_all_polar_space_groups():
+    ps, nps = [], []
+    for i in range(1,231):
+        g = Group(i, quick=True)
+        if g.polar:
+            ps.append(i)
+        else:
+            nps.append(i)
+    return ps, nps
