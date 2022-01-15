@@ -221,7 +221,7 @@ class TestSupergroup(unittest.TestCase):
             s2.from_seed('pyxtal/database/cifs/'+cif2+'.cif')
             pmg_s2 = s2.to_pymatgen()
 
-            strucs, _, _ = s2.get_transition(s1)
+            strucs, _, _, _ = s2.get_transition(s1)
 
             if strucs is None:
                 print("Problem between ", cif1, cif2) 

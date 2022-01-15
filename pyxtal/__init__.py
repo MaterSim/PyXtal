@@ -122,7 +122,7 @@ class pyxtal:
     >>> s2 = pyxtal()
     >>> s1.from_seed("pyxtal/database/cifs/0-G62.cif") #structure with low symmetry
     >>> s2.from_seed("pyxtal/database/cifs/2-G71.cif") #structure with high symmetry
-    >>> strucs, _, _ = s2.get_transition(s1) # get the transition from high to low
+    >>> strucs, _, _, _ = s2.get_transition(s1) # get the transition from high to low
     >>> strucs
     [
     ------Crystal from Transition 0  0.000------
@@ -1927,13 +1927,14 @@ class pyxtal:
             - strucs:
             - displacements:
             - cell translation:
+            - the list of space groups along the path
         """
         ref_struc.sort_sites_by_numIons()
         self.sort_sites_by_numIons()
         paths = self.group.search_subgroup_paths(ref_struc.group.number) 
         if len(paths) == 0:
             print("No valid paths between the structure pairs")
-            return None, None, None
+            return None, None, None, None
         else:
             Skipped = len(paths) - max_path
             if Skipped > 0: paths = paths[:max_path] #sample(paths, max_path)
@@ -1941,7 +1942,7 @@ class pyxtal:
                 res = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images)
                 strucs, disp, tran = res
                 if strucs is not None:
-                    return strucs, disp, tran
+                    return strucs, disp, tran, p
                 else:
                     #Some quick fix to try self k-spliting along the path
                     for i in range(len(p)):
@@ -1950,7 +1951,7 @@ class pyxtal:
                         r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
                         (strucs, disp, tran) = r
                         if strucs is not None:
-                            return strucs, disp, tran
+                            return strucs, disp, tran, p0
 
                     # more extensive search
                     if 4*sum(self.numIons) <= sum(ref_struc.numIons) and len(p)<4:
@@ -1961,11 +1962,11 @@ class pyxtal:
                             r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
                             (strucs, disp, tran) = r
                             if strucs is not None:
-                                return strucs, disp, tran
+                                return strucs, disp, tran, p0
             if Skipped > 0:
                 print("Warning: ignore some solutions: ", Skipped)
                        
-        return None, None, None
+        return None, None, None, None
 
     def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2):
         """
