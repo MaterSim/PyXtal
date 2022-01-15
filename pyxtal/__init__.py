@@ -1966,7 +1966,7 @@ class pyxtal:
             if Skipped > 0:
                 print("Warning: ignore some solutions: ", Skipped)
                        
-        return None, None, None, None
+            return None, None, None, p
 
     def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2):
         """
