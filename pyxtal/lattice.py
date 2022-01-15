@@ -223,10 +223,13 @@ class Lattice:
 
             for j, tran2 in enumerate(trans2):
                 tmp = np.dot(tran2, lat0.matrix)
-                cell2 = Lattice.from_matrix(tmp, l_type=self.ltype).matrix
-                diff = np.abs(cell1-cell2).flatten()
-                id = np.argmax(diff)
-                d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+                try:
+                    cell2 = Lattice.from_matrix(tmp, l_type=self.ltype).matrix
+                    diff = np.abs(cell1-cell2).flatten()
+                    id = np.argmax(diff)
+                    d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+                except:
+                    d_tol1, f_tol1 = 10, 1.0
                 tols[j, :] = [d_tol1, f_tol1]
                 #print([d_tol1, f_tol1])
             #print(tols)

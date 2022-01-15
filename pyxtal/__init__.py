@@ -1506,9 +1506,10 @@ class pyxtal:
             if pos1 is not None:
                 new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
             else:
-                print(pos)
-                print(wp)
-                raise RuntimeError("Cannot find the right pos")
+                return None
+                #print(pos)
+                #print(wp)
+                #raise RuntimeError("Cannot find the right pos")
 
         new_struc.source = "Alt. Wyckoff Set [{:d}]: {:s}".format(index, xyz_string)
         new_struc.wyc_set_id = index
@@ -2035,7 +2036,7 @@ class pyxtal:
                     for label in site:
                         try:
                             index = string.ascii_lowercase.index(label[-1])
-                        except ValueError: #8A
+                        except ValueError: #'8A'
                             index = 26
                         _site.extend(relation[index])
                     _sites0.append(_site)
