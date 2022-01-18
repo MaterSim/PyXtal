@@ -72,10 +72,25 @@ class TestGroup(unittest.TestCase):
 
     def test_get_splitters(self):
         s = pyxtal()
-        s.from_seed(cif_path+'3-G139.cif')
+        s.from_seed(cif_path + '3-G139.cif')
         g = Group(225)
         solutions = g.get_splitters_from_structure(s, 't')
-        self.assertTrue(len(solutions)==3)
+        self.assertTrue(len(solutions) == 3)
+
+    def test_add_k_transitions(self):
+        paras = [
+                 (189, 26, 6),
+                 (11, 6, 2),
+                 (62, 33, 3),
+                 (63, 33, 5),
+                ]
+
+        for p in paras:
+            (g, h, n_path) = p
+            gr = Group(g, quick=True)
+            p = gr.search_subgroup_paths(h)[0]
+            solutions = gr.add_k_transitions(p)
+            self.assertTrue(len(solutions) == n_path)
 
 class TestSupergroup(unittest.TestCase):
     def test_make_pyxtal(self):

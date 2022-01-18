@@ -873,45 +873,36 @@ class Group:
 
     def add_k_transitions(self, path, n=1):
         """
-        Adds additional k transitions to a subgroup path. For now, only adds 1 extra k transition group to a path. Can be
-        modified in the future to add more than 1, but amount of returned paths will increase exponentially. Will return
-        viable additions in front of each group in the path.
+        Adds additional k transitions to a subgroup path. For now, it only allows n = 1. 
+        Will return viable additions in front of each group in the path.
 
         Args:
-            path: maximal subgroup chain list (a single result of search_subgroup_paths function)
-            n: number of extra k transitions to add to the given path (fixed at 1 for now)
+            path: a single result of search_subgroup_paths function
+            n: number of extra k transitions to add to the given path 
 
         Returns:
-            diversified_paths: a list of maximal subgroup chains with extra k type transitions
+            a list of maximal subgroup chains with extra k type transitions
         """
 
-        if n!=1:
+        if n != 1:
             print('only 1 extra k type supported at this time')
             return None
 
-
         solutions=[]
         for i in range(len(path[:-1])):
-            g=path[i]
-            h=path[i+1]
-            options=set(k_subgroup[str(g)]['subgroup'])
-            for group in options:
-
-                #I'm not sure whether the if statement below is redundant or not.
-                #If a_k is every possible k transition option for group a, and path a->b can be written
-                #as a->a_k->b for any maximal group subgroup pair (a,b) and any a_k, the if statement is not needed
-
-                ls=k_subgroup[str(group)]['subgroup'] + t_subgroup[str(group)]['subgroup']
+            g = path[i]
+            h = path[i+1]
+            options = set(k_subgroup[str(g)]['subgroup'] + t_subgroup[str(g)]['subgroup'])
+            #print(g, h, options)
+            for _g in options:
+                ls = k_subgroup[str(_g)]['subgroup'] + t_subgroup[str(_g)]['subgroup']
                 if h in ls:
-                    sol=deepcopy(path)
-                    sol.insert(i+1,group)
+                    sol = deepcopy(path)
+                    sol.insert(i+1, _g)
                     solutions.append(sol)
-
-        #adds the a self ktransition on the end of the path that isn't caught in the above loop
-        tail=deepcopy(path)
-        tail.insert(len(path),path[-1])
-        if tail not in solutions:
-            solutions.append(tail)
+        #https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
+        solutions.sort()
+        solutions = list(k for k,_ in itertools.groupby(solutions))
 
         return solutions
 

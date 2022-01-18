@@ -1976,25 +1976,13 @@ class pyxtal:
                 if strucs is not None:
                     return strucs, disp, tran, p
                 else:
-                    #Some quick fix to try self k-spliting along the path
-                    for i in range(len(p)):
-                        p0 = p[:i] + [p[i]] + p[i:]
-                        #print(i, p0)
+                    add_paths = self.group.add_k_transitions(p)
+                    for p0 in add_paths:
                         r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
                         (strucs, disp, tran) = r
                         if strucs is not None:
                             return strucs, disp, tran, p0
 
-                    # more extensive search
-                    if 4*sum(self.numIons) <= sum(ref_struc.numIons) and len(p)<4:
-                        ijs = list(itertools.combinations(range(len(p)), 2))
-                        for ij in ijs:
-                            [i, j] = ij
-                            p0 = p[:i] + [p[i]] + p[i:j] + [p[j]] + p[j:]
-                            r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
-                            (strucs, disp, tran) = r
-                            if strucs is not None:
-                                return strucs, disp, tran, p0
             if Skipped > 0:
                 print("Warning: ignore some solutions: ", Skipped)
                        
@@ -2022,7 +2010,6 @@ class pyxtal:
         # Here we only check symbols
         elements0, sites_G = self._get_elements_and_sites()
         elements1, sites_H = ref_struc._get_elements_and_sites()
-
         # resort sites_H based on elements0
         seq = list(map(lambda x: elements1.index(x), elements0))
         sites_H = [sites_H[i] for i in seq]
@@ -2039,7 +2026,7 @@ class pyxtal:
             _ids = []
             for i, sub in enumerate(dicts['subgroup']):
                 tran = dicts['transformation'][i]
-                if sub == p and np.linalg.det(tran[:3,:3])<=4:
+                if sub == p and np.linalg.det(tran[:3,:3]) <= 4:
                     _ids.append(i)
             ids.append(_ids)
             g_types.append(g_type)
@@ -2058,11 +2045,12 @@ class pyxtal:
             _sites = deepcopy(sites_G)
             G = self.group
             sol = list(sol)
+            #mult = 1
             for p, s in zip(path[1:], sol):
                 _sites0 = []
                 dicts, _ = G.get_max_subgroup(p)
                 relation = dicts['relations'][s]
-                tran = dicts['transformation'][s]
+                #tran = dicts['transformation'][s]; mult *= np.linalg.det(tran[:3,:3]) 
                 # add site for each element
                 for site in _sites:
                     _site = []
@@ -2075,6 +2063,7 @@ class pyxtal:
                     _sites0.append(_site)
                 _sites = _sites0
                 G = Group(p, quick=True)
+            #print('============', path, mult)
 
             # match in sites and numbers
             match = True
@@ -2091,7 +2080,7 @@ class pyxtal:
                         #print("bad number", site, number, numIons_H[i])
                         match = False
                         break
-            #if match: print(path, _sites0, match)
+            #if int(mult) == 2: print(path, _sites0, match)
             # make subgroup
             if match:
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
