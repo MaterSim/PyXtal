@@ -776,7 +776,8 @@ class pyxtal:
         """
         Generate the subgroup dictionary
         """
-        #transform from p21/n to p21/n
+
+        #transform from p21/n to p21/n, need to fix later, wp.get_transformation_to_std()
         if self.diag:
             self.transform([[1,0,0],[0,1,0],[1,0,1]])
 
@@ -1184,45 +1185,42 @@ class pyxtal:
             #print("perform cell transformation")
             lattice = self.lattice.transform(trans)
 
-        if self.molecular:
-            sites = self.mol_sites
-        else:
-            sites = self.atom_sites
-
         lattice0 = lattice
         diag = False
-
         change_lat = True
-        for j, site in enumerate(sites):
-            #print("old lattice"); print(site.lattice); print(site.lattice.matrix)
-            pos_abs = np.dot(site.position, self.lattice.matrix)
-            pos_frac = pos_abs.dot(lattice.inv_matrix)
-            pos_frac -= np.floor(pos_frac)
 
-            # for P21/c, Pc, C2/c, check if opt the inclination angle
-            #print(trans)
-            ops = site.wp.ops.copy()
-            if self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
-                for k, op in enumerate(ops):
-                    vec = op.translation_vector.dot(trans)
-                    vec -= np.floor(vec)
-                    op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                    ops[k] = op1
-                    #print(op1.as_xyz_string())
-                wp, perm = Wyckoff_position.from_symops(ops, self.group)
-                #print(wp, 'perm', perm)
-                if wp is not None: #QZ: needs to debug
-                    if not isinstance(perm, list):
-                        diag = True
-                    else:
-                        diag = False
-                        # maybe p21/a
-                        pos_frac = pos_frac[perm]
 
-                    # from p21/n to p21/c
-                    #if self.diag and not diag:
+        if self.molecular:
+            sites = self.mol_sites
+            for j, site in enumerate(sites):
+                #print("old lattice"); print(site.lattice); print(site.lattice.matrix)
+                pos_abs = np.dot(site.position, self.lattice.matrix)
+                pos_frac = pos_abs.dot(lattice.inv_matrix)
+                pos_frac -= np.floor(pos_frac)
 
-                    if self.molecular:
+                # for P21/c, Pc, C2/c, check if opt the inclination angle
+                #print(trans)
+                ops = site.wp.ops.copy()
+                if self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
+                    for k, op in enumerate(ops):
+                        vec = op.translation_vector.dot(trans)
+                        vec -= np.floor(vec)
+                        op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                        ops[k] = op1
+                        #print(op1.as_xyz_string())
+                    wp, perm = Wyckoff_position.from_symops(ops, self.group)
+                    #print(wp, 'perm', perm)
+                    if wp is not None: #QZ: needs to debug
+                        if not isinstance(perm, list):
+                            diag = True
+                        else:
+                            diag = False
+                            # maybe p21/a
+                            pos_frac = pos_frac[perm]
+
+                        # from p21/n to p21/c
+                        #if self.diag and not diag:
+
                         ori = site.orientation
                         #print("new lattice"); print(site.lattice); print(site.lattice.matrix)
                         if site.diag and not diag:
@@ -1284,18 +1282,11 @@ class pyxtal:
                         sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag)
                         sites[j].type = site.type
                     else:
-                        sites[j] = atom_site(wp, pos_frac, site.specie, diag)
+                        change_lat = False
                 else:
-                    change_lat = False
-                    #print(wp)
-                    #print("BUG to 1.cif")
-                    #self.to_file('1.cif')
-                    #import sys; sys.exit()
-            else:
-                diag = False
-                #print(self.group.symbol)
-                #print(lattice.matrix)
-                if self.molecular:
+                    diag = False
+                    #print(self.group.symbol)
+                    #print(lattice.matrix)
                     if not np.allclose(lattice.matrix, np.triu(lattice.matrix)):
                         site.lattice = lattice
                         xyz, _ = sites[j]._get_coords_and_species(first=True)
@@ -1313,16 +1304,25 @@ class pyxtal:
                     sites[j].orientation.reset_matrix(np.eye(3))
                     sites[j].position = pos_frac
                     sites[j].lattice = lattice0
-                else:
-                    sites[j] = atom_site(site.wp, pos_frac, site.specie, diag)
-
-        if change_lat:
-            if self.molecular:
+            if change_lat:
                 self.lattice = lattice0
+                self.diag = diag
+        else:
+            sites = self.atom_sites
+            for j, site in enumerate(sites):
+                #print("old lattice"); print(site.lattice); print(site.lattice.matrix)
+                pos_abs = np.dot(site.position, self.lattice.matrix)
+                pos_frac = pos_abs.dot(lattice.inv_matrix)
+                pos_frac -= np.floor(pos_frac)
+                site.wp.diagonalize_symops(trans, False) #; import sys; sys.exit()
+                sites[j] = atom_site(site.wp, pos_frac, site.specie, diag=False)
+
+            lattice.reset_matrix()
+            self.lattice = lattice
+            if sites[0].wp.is_standard_setting():
+                self.diag = False
             else:
-                lattice.reset_matrix()
-                self.lattice = lattice
-            self.diag = diag
+                self.diag = True
 
     def save_dict(self):
         """
@@ -1682,14 +1682,18 @@ class pyxtal:
             else:
                 for tran in trans:
                     ref_struc.transform(tran)
-                paras = ref_struc.lattice.get_para()
-                if abs(paras[0]-paras[2])/paras[0] < f_tol: #a, c axes are close
-                    tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
-                    ref_struc1 = ref_struc.copy()
-                    ref_struc1.transform(tmp)
-                    return [ref_struc, ref_struc1]
+
+                if ref_struc.atom_sites[0].wp.is_standard_setting():
+                    paras = ref_struc.lattice.get_para()
+                    if abs(paras[0]-paras[2])/paras[0] < f_tol: #a, c axes are close
+                        tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+                        ref_struc1 = ref_struc.copy()
+                        ref_struc1.transform(tmp)
+                        return [ref_struc, ref_struc1]
+                    else:
+                        return [ref_struc] 
                 else:
-                    return [ref_struc] 
+                    return None
         else:
             cell1 = self.lattice.matrix
             cell2 = ref_struc.lattice.matrix

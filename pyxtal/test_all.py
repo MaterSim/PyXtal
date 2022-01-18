@@ -374,6 +374,15 @@ class TestWP(unittest.TestCase):
             get_wyckoffs(i)
             get_wyckoffs(i, organized=True)
 
+    def test_setting(self):
+        wp = Group(14)[0]
+        wp.diagonalize_symops()
+        self.assertFalse(wp.is_standard_setting())
+
+    def test_standarize(self):
+        pass
+
+
     def test_is_equivalent(self):
         g = Group(15)
         wp = g[0]
@@ -677,17 +686,17 @@ class TestLattice(unittest.TestCase):
 class TestSymmetry(unittest.TestCase):
     def test_P21(self):
         strs = ["x, y, z", "-x, y+1/2, -z"]
-        wyc, perm = Wyckoff_position.from_symops(strs)
+        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
         self.assertTrue(wyc.number == 4)
 
     def test_Pmn21(self):
         strs = ["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"]
-        wyc, perm = Wyckoff_position.from_symops(strs)
+        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
         self.assertTrue(wyc.number == 31)
 
     def test_P21a(self):
         strs = ["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z", "x+1/2, -y+1/2, z"]
-        wyc, perm = Wyckoff_position.from_symops(strs)
+        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
         self.assertTrue(wyc.number == 14)
 
     def test_P21n(self):
@@ -697,7 +706,7 @@ class TestSymmetry(unittest.TestCase):
             "-x+1/2, y+1/2, -z+1/2",
             "x+1/2, -y+1/2, z+1/2",
         ]
-        wyc, perm = Wyckoff_position.from_symops(strs)
+        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
         self.assertTrue(wyc.number == 14)
 
 class TestNeighbour(unittest.TestCase):

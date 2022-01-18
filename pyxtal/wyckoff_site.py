@@ -187,7 +187,8 @@ class atom_site:
             translation: 
             axis: 
         """
-        diffs0 = pos - self.coords
+        #diffs0 = pos - self.coords
+        diffs0 = self.wp.apply_ops(pos) - self.position
         diffs = diffs0.copy() 
         diffs -= np.round(diffs)
         diffs[:, axis] = 0    

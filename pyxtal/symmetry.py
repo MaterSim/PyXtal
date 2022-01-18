@@ -1065,28 +1065,57 @@ class Wyckoff_position:
     def __repr__(self):
         return str(self)
 
-    def diagonalize_symops(self):
-        """
-        Obtain the symmetry in n representation for P2/c, Cc, P21/c, Pc, C2/c
-        """
-        ops = Group(self.number)[self.index]
-        #Pn, Cn, P2/n, P21/n, C2/n
-        if self.number in [7, 9, 13, 14, 15]:
-            trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
-            for j, op in enumerate(ops):
-                vec = op.translation_vector.dot(trans)
-                vec -= np.floor(vec)
-                op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                self.ops[j] = op1
-        #I2, Im, Ic, I2/m, I2/c
-        elif self.number in [5, 8, 9, 12, 15]:
-            trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
-            for j, op in enumerate(ops):
-                vec = op.translation_vector.dot(trans)
-                vec -= np.floor(vec)
-                op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                self.ops[j] = op1
-        #In, I2/n
+        #ops = Group(self.number)[self.index]
+        ##Pn, Cn, P2/n, P21/n, C2/n
+        #if self.number in [7, 9, 13, 14, 15]:
+        #    trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+        #    for j, op in enumerate(ops):
+        #        vec = op.translation_vector.dot(trans)
+        #        vec -= np.floor(vec)
+        #        op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+        #        self.ops[j] = op1
+        ##I2, Im, Ic, I2/m, I2/c
+        #elif self.number in [5, 8, 9, 12, 15]:
+        #    trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
+        #    for j, op in enumerate(ops):
+        #        vec = op.translation_vector.dot(trans)
+        #        vec -= np.floor(vec)
+        #        op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+        #        self.ops[j] = op1
+        ##In, I2/n
+
+    def diagonalize_symops(self, trans=None, reset=True):
+         """
+         Obtain the symmetry in n representation for P2/c, Cc, P21/c, Pc, C2/c
+         """
+         if reset:
+             ops = Group(self.number)[self.index]
+         else:
+             ops = self.ops 
+ 
+         if trans is None:
+             if self.number in [7, 9, 13, 14, 15]:
+                 trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+             elif self.number in [5, 8, 9, 12]:
+                 trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
+         if trans is not None and 2 < self.number < 16:
+             for j, op in enumerate(ops):
+                 vec = op.translation_vector.dot(trans)
+                 vec -= np.floor(vec)
+                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                 self.ops[j] = op1
+
+    def is_standard_setting(self):
+        ops0 = Group(self.number)[self.index]
+        for i, op0 in enumerate(ops0):
+            op1 = self.ops[i]
+            diff0 = op0.translation_vector - op1.translation_vector
+            diff0 -= np.round(diff0)
+            diff1 = op0.rotation_matrix - op1.rotation_matrix
+            if np.abs(diff0).sum() > 1e-3 or np.abs(diff1).sum() > 1e-3:
+                return False
+        else:
+            return True
 
     def get_site_symm_wo_translation(self):
         ops = []
@@ -1164,7 +1193,55 @@ class Wyckoff_position:
                 raise ValueError("cannot swap", swap_id, self)
         return self, np.zeros(3)
 
-    def from_symops(ops, group=None, permutation=True):
+    def from_symops(ops, group, permutation=True):
+        """
+        search Wyckoff Position by symmetry operations
+        Now only supports space group symmetry
+
+        Args:
+            ops: a list of symmetry operations
+            group: the space group number or Group object
+
+        Returns:
+            `Wyckoff_position`
+
+        """
+        if isinstance(ops[0], str):
+            str1 = ops
+        else:
+            str1 = [op.as_xyz_string() for op in ops]
+
+        str1 = [st.replace("-1/2","+1/2") for st in str1]
+
+        N_sym = len(str1)
+        if permutation:
+            permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
+        else:
+            permutations = [[0,1,2]]
+
+        if isinstance(group, int):
+            G_ops = Group(group)
+        else:
+            G_ops = group
+
+        for wyc in G_ops:
+            if len(wyc) == N_sym:
+                wyc.PBC = [1, 1, 1]
+                wyc.dim = 3
+                # Try permutation first
+                str2 = [op.as_xyz_string() for op in wyc.ops]
+                for perm in permutations:
+                    str_perm = swap_xyz_string(str1, perm)
+                    # Compare the pure rotation and then
+                    if set(str_perm) == set(str2):
+                        return wyc, perm
+
+            elif len(wyc) < N_sym:
+                continue #break
+
+        return None, None
+
+    def from_symops_wo_group(ops, permutation=True):
         """
         search Wyckoff Position by symmetry operations
         Now only supports space group symmetry
@@ -1191,16 +1268,9 @@ class Wyckoff_position:
         else:
             permutations = [[0,1,2]]
 
-        if group is None:
-            groups = range(1,231)
-        else:
-            groups = [group]
-
+        groups = range(1,231)
         for i in groups:
-            if len(groups) == 1:
-                G_ops = i
-            else:
-                G_ops = Group(i)
+            G_ops = Group(i)
             for wyc in G_ops:
                 if len(wyc) == N_sym:
                     wyc.PBC = [1, 1, 1]
@@ -1240,6 +1310,7 @@ class Wyckoff_position:
                     continue #break
 
         return None, None
+
 
 
     def from_group_and_index(group, index, dim=3, PBC=None):
