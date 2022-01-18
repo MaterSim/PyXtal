@@ -870,7 +870,7 @@ class Group:
             p.reverse()
             p.append(G)
         return paths
-        
+
     def add_k_transitions(self, path, n=1):
         """
         Adds additional k transitions to a subgroup path. For now, only adds 1 extra k transition group to a path. Can be
@@ -906,6 +906,13 @@ class Group:
                     sol=deepcopy(path)
                     sol.insert(i+1,group)
                     solutions.append(sol)
+
+        #adds the a self ktransition on the end of the path that isn't caught in the above loop
+        tail=deepcopy(path)
+        tail.insert(len(path),path[-1])
+        if tail not in solutions:
+            solutions.append(tail)
+
         return solutions
 
     def get_valid_solutions(self, solutions):
