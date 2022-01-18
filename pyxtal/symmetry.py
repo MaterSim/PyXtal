@@ -138,7 +138,7 @@ class Group:
     """
 
     def __init__(self, group, dim=3, quick=False):
-        
+
         self.dim = dim
         names = ['Point', 'Rod', 'Layer', 'Space']
         self.header = "-- " + names[dim] + 'group --'
@@ -157,7 +157,7 @@ class Group:
                 self.hall_number = hall_from_hm(self.number)
 
             # Wyckoff positions, site_symmetry, generator
-            self.wyckoffs = get_wyckoffs(self.number, dim=dim) 
+            self.wyckoffs = get_wyckoffs(self.number, dim=dim)
             self.w_symm = get_wyckoff_symmetry(self.number, dim=dim)
             self.wyckoff_generators = get_generators(self.number, dim)
 
@@ -250,7 +250,7 @@ class Group:
         for i, site in enumerate(sites):
             if len(site) > 1:
                 sites[i] = site[-1]
-        
+
         for wp in self:
             letter = wp.letter
             if sites.count(letter)>1:
@@ -310,14 +310,14 @@ class Group:
         elif np.mod(numIons, 2).sum()>0 and np.mod(basis, 2).sum()==0:
             #print("odd-even", numIons, basis)
             return None, False
-        
+
         # obtain the maximum numbers for each basis
         max_solutions = np.floor(numIons[:,None]/basis)
         # reset the maximum to 1 if there is no freedom
         for i in range(len(freedoms)):
             if not freedoms[i]:
                 max_solutions[:,i] = 1
-        
+
         # find the integer solutions
         max_arrays = max_solutions.flatten()
         lists = []
@@ -329,7 +329,7 @@ class Group:
 
         solutions = np.array(list(itertools.product(*lists)))
         big_basis = np.tile(basis, len(numIons))
-        
+
         for i in range(len(numIons)):
             N = solutions[:,i*len(basis):(i+1)*len(basis)].dot(basis)
             solutions = solutions[N == numIons[i]]
@@ -360,14 +360,14 @@ class Group:
                 if not bad_resolution:
                     _com.append(tmp)
                     _free.extend(frozen)
-                       
+
             if len(_com) == len(numIons):
                 combinations.append(_com)
                 if True in _free:
                     has_freedom.append(True)
                 else:
                     has_freedom.append(False)
- 
+
         if len(combinations) == 0:
             #print("No solution is available")
             return None, False
@@ -377,7 +377,7 @@ class Group:
     def get_wyckoff_position(self, index):
         """
         Returns a single Wyckoff_position object
-        
+
         Args:
             index: the index of the Wyckoff position within the group
                 The largest position is always 0
@@ -463,8 +463,8 @@ class Group:
     def get_splitters_from_structure(self, struc, group_type='t'):
         """
         Get the valid symmetry relations for a structure to transit to its supergroup
-        e.g., 
-        
+        e.g.,
+
         Args:
             - struc: pyxtal structure
             - group_type: `t` or `k`
@@ -492,16 +492,16 @@ class Group:
                         solutions.append((i, trials))
         return solutions
 
-    def get_splitters_from_relation(self, struc, relation):        
+    def get_splitters_from_relation(self, struc, relation):
         """
         Get the valid symmetry relations for a structure to transit to its supergroup
-        e.g., 
-        
+        e.g.,
+
         Args:
             - struc: pyxtal structure
             - group_type: `t` or `k`
         Returns:
-            list of valid transitions 
+            list of valid transitions
         """
 
         elements, sites = struc._get_elements_and_sites()
@@ -597,7 +597,7 @@ class Group:
                     if g1.point_group == self.point_group:
                         subgroups = Group(sg, quick=True).get_max_k_subgroup()
                 if subgroups is not None:
-                    for i, sub in enumerate(subgroups['subgroup']): 
+                    for i, sub in enumerate(subgroups['subgroup']):
                         if sub == self.number:
                             trans = subgroups['transformation'][i]
                             relation = subgroups['relations'][i]
@@ -703,7 +703,7 @@ class Group:
         positions. Considers the number of degrees of freedom for each Wyckoff
         position, and makes sure at least one valid combination of WP's exists.
 
-        Args: 
+        Args:
             numIons: list of integers
             valid_orientations: list of possible orientations (molecule only)
 
@@ -794,22 +794,22 @@ class Group:
         - path1 is a>>e
         - path2 is a>>b>>c>>e
         path 2 will not be counted since path 1 exists
-    
+
         Args:
             H: final supergroup number
             max_layer: the number of supergroup calculations needed.
-    
+
         Returns:
             list of possible paths ordered from G to H
         """
-    
+
         layers = {}
-        layers[0] = {'groups': [H], 
+        layers[0] = {'groups': [H],
                      'subgroups': [],
                    }
         final = []
         traversed = []
-    
+
         # Searches for every subgroup of the the groups from the previous layer.
         # stores the possible groups of each layer and their subgroups
         # in a dictinoary to avoid redundant calculations.
@@ -819,7 +819,7 @@ class Group:
             subgroups = []
             for g in previous_layer_groups:
                 subgroup_numbers=np.unique(Group(g, quick=True).get_max_subgroup_numbers())
-    
+
                 # If a subgroup list has been found with H
                 # trace a path through the dictionary to build the path
                 if self.number in subgroup_numbers:
@@ -837,16 +837,16 @@ class Group:
                         paths=deepcopy(holder)
                     final.extend(paths)
                     subgroups.append([])
-    
+
                 # Continue to generate next layer if the path to H has not been found.
                 else:
                     subgroups.append(subgroup_numbers)
                     for x in subgroup_numbers:
                         if (x not in groups) and (x not in traversed):
                             groups.append(x)
-    
+
             traversed.extend(groups)
-            layers[l] = {'groups': deepcopy(groups), 
+            layers[l] = {'groups': deepcopy(groups),
                          'subgroups':[]}
             layers[l-1]['subgroups'] = deepcopy(subgroups)
         return final
@@ -857,11 +857,11 @@ class Group:
         - path1 is a>>e
         - path2 is a>>b>>c>>e
         path 2 will not be counted since path 1 exists
-    
+
         Args:
             G: final subgroup number
             max_layer: the number of supergroup calculations needed.
-    
+
         Returns:
             list of possible paths ordered from H to G
         """
@@ -870,6 +870,43 @@ class Group:
             p.reverse()
             p.append(G)
         return paths
+        
+    def add_k_transitions(self, path, n=1):
+        """
+        Adds additional k transitions to a subgroup path. For now, only adds 1 extra k transition group to a path. Can be
+        modified in the future to add more than 1, but amount of returned paths will increase exponentially. Will return
+        viable additions in front of each group in the path.
+
+        Args:
+            path: maximal subgroup chain list (a single result of search_subgroup_paths function)
+            n: number of extra k transitions to add to the given path (fixed at 1 for now)
+
+        Returns:
+            diversified_paths: a list of maximal subgroup chains with extra k type transitions
+        """
+
+        if n!=1:
+            print('only 1 extra k type supported at this time')
+            return None
+
+
+        solutions=[]
+        for i in range(len(path[:-1])):
+            g=path[i]
+            h=path[i+1]
+            options=set(k_subgroup[str(g)]['subgroup'])
+            for group in options:
+
+                #I'm not sure whether the if statement below is redundant or not.
+                #If a_k is every possible k transition option for group a, and path a->b can be written
+                #as a->a_k->b for any maximal group subgroup pair (a,b) and any a_k, the if statement is not needed
+
+                ls=k_subgroup[str(group)]['subgroup'] + t_subgroup[str(group)]['subgroup']
+                if h in ls:
+                    sol=deepcopy(path)
+                    sol.insert(i+1,group)
+                    solutions.append(sol)
+        return solutions
 
     def get_valid_solutions(self, solutions):
         """
@@ -921,14 +958,14 @@ class Group:
     def list_groups(cls, dim=3):
         """
         Function for quick print of groups and symbols
-    
+
         Args:
             group: the group symbol or international number
             dim: the periodic dimension of the group
         """
-    
+
         import pandas as pd
-    
+
         keys = {
             3: "space_group",
             2: "layer_group",
@@ -1006,7 +1043,7 @@ class Wyckoff_position:
     def __str__(self, supress=False):
         if self.dim not in list(range(4)):
             return "invalid crystal dimension. Must be a number between 0 and 3."
-        if not hasattr(self, "site_symm"): self.get_site_symmetry()   
+        if not hasattr(self, "site_symm"): self.get_site_symmetry()
         s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
         if self.dim == 3:
             s += "space "
@@ -1040,17 +1077,17 @@ class Wyckoff_position:
             trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
             for j, op in enumerate(ops):
                 vec = op.translation_vector.dot(trans)
-                vec -= np.floor(vec) 
+                vec -= np.floor(vec)
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                self.ops[j] = op1    
+                self.ops[j] = op1
         #I2, Im, Ic, I2/m, I2/c
         elif self.number in [5, 8, 9, 12, 15]:
             trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
             for j, op in enumerate(ops):
                 vec = op.translation_vector.dot(trans)
-                vec -= np.floor(vec) 
+                vec -= np.floor(vec)
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                self.ops[j] = op1  
+                self.ops[j] = op1
         #In, I2/n
 
     def get_site_symm_wo_translation(self):
@@ -1174,17 +1211,17 @@ class Wyckoff_position:
                     str2 = [op.as_xyz_string() for op in wyc.ops]
                     for perm in permutations:
                         str_perm = swap_xyz_string(str1, perm)
-                        # Compare the pure rotation and then 
+                        # Compare the pure rotation and then
                         if set(str_perm) == set(str2):
                             return wyc, perm
 
-                    # Try monoclinic space groups (P21/n, Pn, C2/n) 
+                    # Try monoclinic space groups (P21/n, Pn, C2/n)
                     if i in [7, 9, 13, 14, 15]:
                         trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
                         str3 = []
                         for j, op in enumerate(wyc.ops):
                             vec = op.translation_vector.dot(trans)
-                            vec -= np.floor(vec) 
+                            vec -= np.floor(vec)
                             op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                             str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
                             #wyc.ops[j] = op3
@@ -1195,7 +1232,7 @@ class Wyckoff_position:
                         str3 = []
                         for j, op in enumerate(wyc.ops):
                             vec = op.translation_vector.dot(trans)
-                            vec -= np.floor(vec) 
+                            vec -= np.floor(vec)
                             op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                             str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
                             #wyc.ops[j] = op3
@@ -1210,7 +1247,7 @@ class Wyckoff_position:
     def from_group_and_index(group, index, dim=3, PBC=None):
         """
         Creates a Wyckoff_position using the space group number and index
-        
+
         Args:
             group: the international number of the symmetry group
             index: the index or letter of the Wyckoff position within the group.
@@ -1272,7 +1309,7 @@ class Wyckoff_position:
         """
         Given a general position and generating operation (ex: "x,0,0"), returns a
         Wyckoff_position object.
-        
+
         Args:
             gen_op: a SymmOp into which the generating coordinate will be plugged
             gen_pos: a list of SymmOps representing the general position
@@ -1402,7 +1439,7 @@ class Wyckoff_position:
 
     def get_euclidean_symmetries(self):
         """
-        return the symmetry operation object at the Euclidean space 
+        return the symmetry operation object at the Euclidean space
 
         Returns:
             list of pymatgen SymmOp object
@@ -1446,24 +1483,24 @@ class Wyckoff_position:
                 return True
             else:
                 return False
-        
+
     def merge(self, pt, lattice, tol, orientations=None):
         """
         Given a list of fractional coordinates, merges them within a given
         tolerance, and checks if the merged coordinates satisfy a Wyckoff
-        position. 
-    
+        position.
+
         Args:
             pt: the originl point (3-vector)
             lattice: a 3x3 matrix representing the unit cell
             tol: the cutoff distance for merging coordinates
-            orientations: the valid orientations for a given molecule. 
-    
+            orientations: the valid orientations for a given molecule.
+
         Returns:
             pt: 3-vector after merge
-            wp: a `pyxtal.symmetry.Wyckoff_position` object, If no match, returns False. 
+            wp: a `pyxtal.symmetry.Wyckoff_position` object, If no match, returns False.
             valid_ori: the valid orientations after merge
-    
+
         """
         wp = deepcopy(self)
         PBC = wp.PBC
@@ -1475,7 +1512,7 @@ class Wyckoff_position:
         else:
             j, k = jk_from_i(wp.index, orientations)
             valid_ori = orientations[j][k]
-        
+
         # Main loop for merging multiple times
         while True:
             # Check distances of current WP. If too small, merge
@@ -1489,11 +1526,11 @@ class Wyckoff_position:
                 else:
                     passed_distance_check = False
                     break
-    
+
             # for molecular crystal, one more check
             if not check_images([coor[0]], [6], lattice, PBC=PBC, tol=tol):
                 passed_distance_check = False
-    
+
             if not passed_distance_check:
                 mult1 = wp.multiplicity
                 # Find possible wp's to merge into
@@ -1506,13 +1543,13 @@ class Wyckoff_position:
                         if res is None:
                             continue
                         else:
-                            j, k = res 
+                            j, k = res
                             if orientations[j][k] == []:
                                 continue
                             else:
                                 valid_ori = orientations[j][k]
                     # factor = mult2 / mult1
-    
+
                     if (mult2 < mult1) and (mult1 % mult2 == 0):
                         possible.append(i)
                 if possible == []:
@@ -1538,7 +1575,7 @@ class Wyckoff_position:
 
     def get_euclidean_generator(self, cell, idx=0):
         """
-        return the symmetry operation object at the Euclidean space 
+        return the symmetry operation object at the Euclidean space
 
         Args:
             cell: 3*3 cell matrix
@@ -1578,7 +1615,7 @@ class Wyckoff_position:
         """
         For a given special wp, (e.g., [(x, 0, 1/4), (0, x, 1/4)]),
         return the first position according to the symmetry operation
-        
+
         Args:
             pt: 1*3 vector
             lattice: 3*3 matrix
@@ -1613,20 +1650,20 @@ class Wyckoff_position:
 
     def project(self, point, cell=np.eye(3), PBC=[1, 1, 1], id=0):
         """
-        Given a 3-vector and a Wyckoff position operator, 
+        Given a 3-vector and a Wyckoff position operator,
         returns the projection onto the axis, plane, or point.
-    
-        >>> wp.project_point([0,0.3,0.1], 
+
+        >>> wp.project_point([0,0.3,0.1],
         array([0. , 0.3, 0.1])
-    
+
         Args:
             point: a 3-vector (numeric list, tuple, or array)
             cell: 3x3 matrix describing the unit cell vectors
-            PBC: A periodic boundary condition list, 
+            PBC: A periodic boundary condition list,
                 where 1 means periodic, 0 means not periodic.
-                Ex: [1,1,1] -> full 3d periodicity, 
+                Ex: [1,1,1] -> full 3d periodicity,
                     [0,0,1] -> periodicity along the z axis
-    
+
         Returns:
             a transformed 3-vector (numpy array)
         """
@@ -1634,7 +1671,7 @@ class Wyckoff_position:
         rot = op.rotation_matrix
         trans = op.translation_vector
         point = np.array(point, dtype=float)
-    
+
         def project_single(point, rot, trans):
             # move the point in the opposite direction of the translation
             point -= trans
@@ -1821,7 +1858,7 @@ def swap_xyz_ops(ops, permutation):
     """
     change the symmetry operation by swaping the axes
 
-    Args: 
+    Args:
         ops: SymmOp object
         permutation: list, e.g. [0, 1, 2]
 
@@ -1848,7 +1885,7 @@ def op_transform(ops, affine_matrix):
     x, y, z -> x+1/2, y+1/2, z
     0, 1/2, z -> 1/2, 0, z
 
-    Args: 
+    Args:
         ops: SymmOp object
         permutation: list, e.g. [0, 1, 2]
 
@@ -1878,7 +1915,7 @@ def are_equivalent_ops(op1, op2, tol=1e-2):
         return True
     else:
         return False
-        
+
 
 def letter_from_index(index, group, dim=3):
     """
@@ -1891,7 +1928,7 @@ def letter_from_index(index, group, dim=3):
         group: an unorganized Wyckoff position array or Group object (preferred)
         dim: the periodicity dimension of the symmetry group. Used for consideration
             of "o" Wyckoff positions in point groups. Not used if group is a Group
-   
+
     Returns:
         the Wyckoff letter corresponding to the Wyckoff position (for example,
         for position 4a, the function would return 'a')
@@ -1978,7 +2015,7 @@ def i_from_jk(j, k, olist):
 
     Returns:
         i: one index corresponding to the item's location in the
-            unorganized list    
+            unorganized list
     """
     num = -1
     for x, a in enumerate(olist):
@@ -2299,7 +2336,7 @@ def organized_wyckoffs(group):
 
     Args:
         group: a pyxtal.symmetry.Group object
-    
+
     Returns:
         a 2D list of Wyckoff_position objects if group is a Group object.
         a 3D list of SymmOp objects if group is a 2D list of SymmOps
@@ -2323,7 +2360,7 @@ def symmetry_element_from_axis(axis):
     """
     Given an axis, returns a SymmOp representing a symmetry element on the axis.
     For example, the symmetry element for the vector (0,0,2) would be (0,0,z).
-    
+
     Args:
         axis: a 3-vector representing the symmetry element
 
@@ -2352,8 +2389,8 @@ def get_wyckoffs(num, organized=False, PBC=[1, 1, 1], dim=3):
     """
     Returns a list of Wyckoff positions for a given space group. Has option to
     organize the list based on multiplicity (this is used for
-    random_crystal.wyckoffs) 
-    
+    random_crystal.wyckoffs)
+
     For an unorganized list:
 
         - 1st index: index of WP in sg (0 is the WP with largest multiplicity)
@@ -2376,8 +2413,8 @@ def get_wyckoffs(num, organized=False, PBC=[1, 1, 1], dim=3):
         organized: whether or not to organize the list based on multiplicity
         PBC: A periodic boundary condition list, 1 means periodic, 0 means not periodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-    
-    Returns: 
+
+    Returns:
         a list of Wyckoff positions, each of which is a list of SymmOp's
     """
     if dim == 3:
@@ -2532,7 +2569,7 @@ def get_wyckoff_symmetry(num, dim=3, PBC=[1, 1, 1]):
                         op = SymmOp.from_xyz_string(z)
                     symmetry[-1][-1].append(op)
         return symmetry
-        
+
 
 def get_generators(num, dim=3, PBC=[1, 1, 1]):
     """
@@ -2543,13 +2580,13 @@ def get_generators(num, dim=3, PBC=[1, 1, 1]):
     since special Wyckoff positions only encode positional information, but not
     information about the orientation. The generators for each Wyckoff position
     form a subset of the spacegroup's general Wyckoff position.
-    
+
     Args:
         num: the international spacegroup number
         dim: dimension
         PBC: A periodic boundary condition list, where 1 is periodic, 0 is nonperiodic.
             Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-    
+
     Returns:
         a 2d list of symmop objects [[wp0], [wp1], ... ]
     """
@@ -2794,7 +2831,7 @@ def get_symbol_and_number(input_group, dim=3):
 def check_symmetry_and_dim(number, dim=3):
     """
     check if it is a valid number for the given symmetry
-    
+
     Args:
         number: int
         dim: 0, 1, 2, 3
@@ -2931,7 +2968,7 @@ def search_cloest_wp(G, wp, op, pos):
     Args:
         G: space group number or Group object
         wp: Wyckoff object
-        op: symmetry operation belonging to wp 
+        op: symmetry operation belonging to wp
         pos: initial xyz position
 
     Return:
@@ -2953,7 +2990,7 @@ def search_cloest_wp(G, wp, op, pos):
                 tmp = op.operate(coord)
                 diff1 = tmp - pos
                 diff1 -= np.round(diff1)
-                dist = np.linalg.norm(diff1) 
+                dist = np.linalg.norm(diff1)
                 if dist < 1e-3:
                     return tmp
                 else:
@@ -2982,7 +3019,7 @@ def search_cloest_wp(G, wp, op, pos):
 
 def get_point_group(number):
     """
-    Parse the point group symmetry info from space group 
+    Parse the point group symmetry info from space group
     http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm
     Among 32(230) point(space) groups, there are
     10(68) polar groups,
@@ -3100,14 +3137,14 @@ def para2ferro(pg):
     https://pubs.rsc.org/en/content/articlelanding/2016/cs/c5cs00308c
 
     Args:
-        paraelectric point group 
+        paraelectric point group
 
     Returns:
         list of ferroelectric point groups
     """
     #Triclinic: 1
     if pg == '-1': #2
-        return ['1'] 
+        return ['1']
     #Monoclinic: 5
     elif pg in ['2', 'm']: #2
         return '1'
@@ -3115,9 +3152,9 @@ def para2ferro(pg):
         return ['1', 'm', '2']
     #Orthorhombic: #7
     elif pg == '222': #2
-        return ['1', '2'] 
+        return ['1', '2']
     elif pg == 'mm2': #2
-        return ['1', 'm'] 
+        return ['1', 'm']
     elif pg == 'mmm': #3
         return ['1', 'm', 'mm2']
     #Tetragonal: 20
