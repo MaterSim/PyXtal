@@ -659,7 +659,7 @@ class pyxtal:
         Generate a structure with lower symmetry (for atomic crystals only)
 
         Args:
-            g_types: ['t', 't', 'k']
+            g_types: ['t', 'k']
             idx: list of ids for the splitter
             eps: degree of displacement
             mut_lat: mutate the lattice of not
@@ -1152,9 +1152,9 @@ class pyxtal:
         #if self.molecular:
         for i in range(iterations):
             lattice, trans, opt = self.lattice.optimize_once()
-            #print(self.lattice, "->", lattice)
+            #print(i, opt, self.lattice, "->", lattice)
             if force or opt:
-                self.transform(trans, lattice)
+                self.transform(trans)
             else:
                 break
 
@@ -1208,8 +1208,9 @@ class pyxtal:
                     vec -= np.floor(vec)
                     op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                     ops[k] = op1
+                    #print(op1.as_xyz_string())
                 wp, perm = Wyckoff_position.from_symops(ops, self.group)
-                #print('perm', perm)
+                #print(wp, 'perm', perm)
                 if wp is not None: #QZ: needs to debug
                     if not isinstance(perm, list):
                         diag = True
@@ -1314,7 +1315,6 @@ class pyxtal:
                     sites[j].lattice = lattice0
                 else:
                     sites[j] = atom_site(site.wp, pos_frac, site.specie, diag)
-
 
         if change_lat:
             if self.molecular:
@@ -1675,13 +1675,21 @@ class pyxtal:
             l1 = self.lattice
             l2 = ref_struc.lattice
             trans, _ = l2.search_transformation(l1, d_tol, f_tol)
+            #print(l1, l2, trans); import sys; sys.exit()
             if trans is None:
                 #print("Cannot find lattice match")
                 return None
             else:
                 for tran in trans:
                     ref_struc.transform(tran)
-                return ref_struc
+                paras = ref_struc.lattice.get_para()
+                if abs(paras[0]-paras[2])/paras[0] < f_tol: #a, c axes are close
+                    tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+                    ref_struc1 = ref_struc.copy()
+                    ref_struc1.transform(tmp)
+                    return [ref_struc, ref_struc1]
+                else:
+                    return [ref_struc] 
         else:
             cell1 = self.lattice.matrix
             cell2 = ref_struc.lattice.matrix
@@ -1692,7 +1700,7 @@ class pyxtal:
             if d_tol1 > d_tol and f_tol1 > f_tol:
                 return None
             else:
-                return ref_struc
+                return [ref_struc]
 
     def get_disps_single(self, ref_struc, trans, d_tol=1.2):
         """
@@ -1707,6 +1715,8 @@ class pyxtal:
             Atomic displacements in np.array
             translation:
         """
+        #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        #print(ref_struc)
         cell1 = self.lattice.matrix
         disps = []
         orders = list(range(len(self.atom_sites)))
@@ -1724,7 +1734,7 @@ class pyxtal:
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
                     disp, dist = site1.get_disp(site2.position, cell1, trans)
                     #strs = "{:2s} ".format(site1.specie)
-                    #strs = "{:6.3f} {:6.3f} {:6.3f}".format(*site1.position)
+                    #strs += "{:6.3f} {:6.3f} {:6.3f}".format(*site1.position)
                     #strs += " => {:6.3f} {:6.3f} {:6.3f} ".format(*site2.position)
                     #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*disp, dist) 
                     #if dist < d_tol*1.2: strs += ' True'
@@ -1807,7 +1817,7 @@ class pyxtal:
 
     def get_disps_sets(self, ref_struc, d_tol, d_tol2=0.3, check_mapping=False):
         """
-        Compute the displacement w.r.t. the reference structure (considering all wycsets)
+        Compute the displacement w.r.t. a reference structure (considering all wycsets)
 
         Args:
             ref_struc: reference pyxtal structure (assuming the same atomic ordering)
@@ -1829,49 +1839,71 @@ class pyxtal:
         all_disps = []
         all_trans = []
         all_ds = []
+        good_ref_strucs = []
         for i, ref_struc in enumerate(ref_strucs):
             #print("\n-------------------->", i, len(ref_strucs), ref_struc)
-            ref_struc = self.find_matched_lattice(ref_struc)
-            if ref_struc is not None:
-                #print(ref_struc)
-                trans = self.get_init_translations(ref_struc)
-                if len(trans) > 0:
-                    disps = []
-                    ds = np.zeros(len(trans))
-                    for j, tran in enumerate(trans):
-                        #print(i, j, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran))
-                        disp, d, valid = self.get_disps_single(ref_struc, tran, d_tol)
-                        if valid:
-                            if d > 0.3 and len(self.axis) > 0:
-                                disp, d, tran = self.get_disps_optim(ref_struc, tran, d_tol)
-                                trans[j] = tran
-                        disps.append(disp)
-                        ds[j] = d
+            #import pymatgen.analysis.structure_matcher as sm
+            #pmg1 = ref_struc.to_pymatgen(); pmg2 = ref_struc.to_pymatgen()
+            #print('++++', sm.StructureMatcher().get_rms_dist(pmg1, pmg2))
 
-                    id = np.argmin(ds)
-                    disp = disps[id]
-                    tran = trans[id]
-                    d = ds[id]
-                    # Return it early
-                    if d < d_tol2:
-                        return disp, tran, ref_struc, d
-                else:
-                    d = 10
-                    tran = None
-                    disp = None
-                all_disps.append(disp)
-                all_trans.append(tran)
-                all_ds.append(d)
+            ref_strucs0 = self.find_matched_lattice(ref_struc)
+            if ref_strucs0 is not None:
+                _ds = []
+                _disps = []
+                _trans = []
+                for ref_struc0 in ref_strucs0:
+
+                    trans = self.get_init_translations(ref_struc0)
+                    #print("=======================", len(ref_strucs0), ref_struc0, _trans)
+                    if len(trans) > 0:
+                        disps = []
+                        ds = np.zeros(len(trans))
+                        for j, tran in enumerate(trans):
+                            #self.to_file('01.cif'); ref_struc0.to_file('02.cif')
+                            disp, d, valid = self.get_disps_single(ref_struc0, tran, d_tol)
+                            if valid:
+                                if d > 0.3 and len(self.axis) > 0:
+                                    disp, d, tran = self.get_disps_optim(ref_struc0, tran, d_tol)
+                                    trans[j] = tran
+                            disps.append(disp)
+                            ds[j] = d
+                            #print("\nwyc_id", i, "trans", j, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
+                            #import sys; sys.exit()
+
+                        id = np.argmin(ds)
+                        disp = disps[id]
+                        tran = trans[id]
+                        d = ds[id]
+                        # Return it early
+                        if d < d_tol2:
+                            return disp, tran, ref_struc0, d
+                    else:
+                        d = 10
+                        tran = None
+                        disp = None
+
+                    _ds.append(d)
+                    _disps.append(disp)
+                    _trans.append(tran)
+
+                #find the best here
+                _ds = np.array(_ds)
+                _id = np.argmin(_ds)
+
+                all_disps.append(_disps[_id])
+                all_trans.append(_trans[_id])
+                all_ds.append(_ds[_id])
+                good_ref_strucs.append(ref_strucs0[_id])
             else:
                 all_disps.append(None)
                 all_trans.append(None)
                 all_ds.append(10)
+                good_ref_strucs.append(ref_struc)
 
         all_ds = np.array(all_ds)
-        best_id = np.argmin(all_ds)
         id = np.argmin(all_ds)
         if all_ds[id] < d_tol:
-            return all_disps[id], all_trans[id], ref_strucs[id], all_ds[id]
+            return all_disps[id], all_trans[id], good_ref_strucs[id], all_ds[id]
         else:
             return None, None, None, None
 
@@ -2063,8 +2095,19 @@ class pyxtal:
             # make subgroup
             if match:
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
-                #print(ref_struc); print(s)
+                #print(g_types, sol)
+                #import pymatgen.analysis.structure_matcher as sm
+                #pmg1 = self.to_pymatgen()
+                #pmg2 = s.to_pymatgen()
+                #print(s); s.to_file('test_sub1.cif')
+                #s.optimize_lattice()
+                #print(s); pmg3 = s.to_pymatgen(); s.to_file('test_sub2.cif')
+                #print('++++', sm.StructureMatcher().get_rms_dist(pmg1, pmg2))
+                #print('++++', sm.StructureMatcher().get_rms_dist(pmg1, pmg3))
+                #import sys; sys.exit()
+
                 disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, True)
+                #import sys; sys.exit()
                 if disp is not None:
                     # early termination
                     if max_disp < d_tol2:

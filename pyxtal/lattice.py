@@ -179,6 +179,7 @@ class Lattice:
                              [[1,0,0],[0,1,0],[-1,0,1]],
                              [[1,0,1],[0,1,0],[0,0,1]],
                              [[1,0,-1],[0,1,0],[0,0,1]],
+                             #[[-1,0,0],[0,1,0],[0,0,1]],
                            ])
  
         elif self.ltype in ["triclinic"]:
@@ -224,7 +225,9 @@ class Lattice:
             for j, tran2 in enumerate(trans2):
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
-                    cell2 = Lattice.from_matrix(tmp, l_type=self.ltype).matrix
+                    lat2 = Lattice.from_matrix(tmp, l_type=self.ltype)
+                    cell2 = lat2.matrix
+                    #print(lat2)
                     diff = np.abs(cell1-cell2).flatten()
                     id = np.argmax(diff)
                     d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
