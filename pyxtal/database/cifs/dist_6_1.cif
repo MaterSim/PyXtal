@@ -1,0 +1,56 @@
+#############################################################
+#             ______       _    _          _   	            #
+#            (_____ \     \ \  / /        | |               #
+#             _____) )   _ \ \/ / |_  ____| |  	            #
+#            |  ____/ | | | )  (|  _)/ _  | | 	            #
+#            | |    | |_| |/ /\ \ |_( (_| | |___            #
+#            |_|     \__  /_/  \_\___)__|_|_____)           #
+#                   (____/                                  #
+#---------------------(version    0.4.1)--------------------#
+#       A Python package for random crystal generation      #
+#       url: https://github.com/qzhu2017/pyxtal             #
+#       @Zhu's group at University of Nevada Las Vegas      #
+#############################################################
+data_from_pyxtal
+
+_symmetry_space_group_name_H-M 'Pm'
+_symmetry_Int_Tables_number                    6
+_symmetry_cell_setting                monoclinic
+_cell_length_a            6.552521
+_cell_length_b            3.746938
+_cell_length_c            6.574206
+_cell_angle_alpha        90.000000
+_cell_angle_beta        119.133402
+_cell_angle_gamma        90.000000
+_cell_volume            140.989071
+
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+1 'x, y, z'
+2 'x, -y, z'
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+Pr     Pr       1     0.671517    0.000000    0.328734 1
+Pr     Pr       1     0.330775    0.500000    0.663204 1
+H      H        1     0.845421    0.500000    0.700867 1
+H      H        1     0.858107    0.500000    0.121573 1
+H      H        1     0.708558    0.000000    0.849799 1
+H      H        1     0.293448    0.500000    0.142286 1
+H      H        1     0.143953    0.000000    0.869053 1
+H      H        1     0.156897    0.000000    0.291312 1
+O      O        1     0.914160    0.500000    0.598961 1
+O      O        1     0.692279    0.500000    0.074340 1
+O      O        1     0.602685    0.000000    0.682542 1
+O      O        1     0.399633    0.500000    0.309400 1
+O      O        1     0.310063    0.000000    0.917436 1
+O      O        1     0.088101    0.000000    0.393138 1
+#END
+
