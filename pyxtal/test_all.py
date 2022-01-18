@@ -102,7 +102,7 @@ class TestSupergroup(unittest.TestCase):
                }
         for cif in data.keys():
             s = pyxtal()
-            s.from_seed(cif_path+cif+'.cif')
+            s.from_seed(cif_path + cif + '.cif')
             my = supergroup(s, G=data[cif])
             sols = my.search_supergroup(max_solutions=1)
             for sol in sols:
@@ -123,7 +123,7 @@ class TestSupergroup(unittest.TestCase):
                }
         for cif in data.keys():
             s = pyxtal()
-            s.from_seed(cif_path+cif+'.cif')
+            s.from_seed(cif_path + cif + '.cif')
             sup = supergroups(s, G=data[cif], show=False)
             self.assertFalse(sup.strucs is None)
 
@@ -133,7 +133,7 @@ class TestSupergroup(unittest.TestCase):
                }
         for cif in data.keys():
             s = pyxtal()
-            s.from_seed(cif_path+cif+'.cif')
+            s.from_seed(cif_path + cif + '.cif')
             sup = supergroups(s, path=data[cif], show=False)
             self.assertFalse(sup.strucs is None)
 
@@ -212,7 +212,7 @@ class TestSupergroup(unittest.TestCase):
                }
         for cif in data.keys():
             s = pyxtal()
-            s.from_seed(cif_path+cif+'.cif')
+            s.from_seed(cif_path + cif + '.cif')
             sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
             strucs = sup.get_transformation()
             pmg_0, pmg_1 = s.to_pymatgen(), sup.strucs[-1].to_pymatgen()
@@ -232,8 +232,8 @@ class TestSupergroup(unittest.TestCase):
             (cif1, cif2) = para
             s1 = pyxtal()
             s2 = pyxtal()
-            s1.from_seed('pyxtal/database/cifs/'+cif1+'.cif')
-            s2.from_seed('pyxtal/database/cifs/'+cif2+'.cif')
+            s1.from_seed(cif_path + cif1 + '.cif')
+            s2.from_seed(cif_path + cif2 + '.cif')
             pmg_s2 = s2.to_pymatgen()
 
             strucs, _, _, _ = s2.get_transition(s1)
@@ -249,10 +249,16 @@ class TestSupergroup(unittest.TestCase):
                 self.assertTrue(dist < 1e-3)
                 self.assertTrue(s3.group.number == s2.group.number)
 
+    def test_get_disp_sets(self):
+        s1 = pyxtal(); s1.from_seed(cif_path + 'dist_6_0.cif')
+        s2 = pyxtal(); s2.from_seed(cif_path + 'dist_6_1.cif')
+        _, _, _, d = s1.get_disps_sets(s2, 1.0)
+        self.assertTrue(d < 0.12)
+
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):
         c1 = pyxtal()
-        c1.from_seed(cif_path+"LiCs.cif", backend='pyxtal')
+        c1.from_seed(cif_path + "LiCs.cif", backend='pyxtal')
         pmg1 = c1.to_pymatgen()
 
         c2 = c1.copy()
@@ -265,7 +271,7 @@ class TestOptLat(unittest.TestCase):
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
         
         c3 = pyxtal()
-        c3.from_seed(cif_path+"LiCs.cif")
+        c3.from_seed(cif_path + "LiCs.cif")
         pmg3 = c3.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg3))
 
