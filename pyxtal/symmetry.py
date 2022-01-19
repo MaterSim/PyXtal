@@ -915,6 +915,15 @@ class Group:
                 solutions.extend(self.add_k_transitions(x,n=1))
             solutions.sort()
             solutions = list(k for k,_ in itertools.groupby(solutions))
+            
+            for sol in solutions:
+                for i in range(len(sol)-2):
+                    if (sol[i]== sol[i+1]) and (sol[i]==sol[i+2]):
+                        solutions.remove(sol)
+                        break
+                    
+            
+            
             return solutions
         
             
