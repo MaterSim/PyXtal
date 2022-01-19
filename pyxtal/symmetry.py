@@ -1065,24 +1065,12 @@ class Wyckoff_position:
     def __repr__(self):
         return str(self)
 
-        #ops = Group(self.number)[self.index]
-        ##Pn, Cn, P2/n, P21/n, C2/n
-        #if self.number in [7, 9, 13, 14, 15]:
-        #    trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
-        #    for j, op in enumerate(ops):
-        #        vec = op.translation_vector.dot(trans)
-        #        vec -= np.floor(vec)
-        #        op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-        #        self.ops[j] = op1
-        ##I2, Im, Ic, I2/m, I2/c
-        #elif self.number in [5, 8, 9, 12, 15]:
-        #    trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
-        #    for j, op in enumerate(ops):
-        #        vec = op.translation_vector.dot(trans)
-        #        vec -= np.floor(vec)
-        #        op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-        #        self.ops[j] = op1
-        ##In, I2/n
+    def copy(self):
+        """
+        Simply copy the structure
+        """
+        return deepcopy(self)
+
 
     def diagonalize_symops(self, trans=None, reset=True):
          """
@@ -1098,15 +1086,81 @@ class Wyckoff_position:
                  trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
              elif self.number in [5, 8, 9, 12]:
                  trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
+
          if trans is not None and 2 < self.number < 16:
              for j, op in enumerate(ops):
                  vec = op.translation_vector.dot(trans)
+                 #vec = trans.T.dot(op.translation_vector).T
                  vec -= np.floor(vec)
                  op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                  self.ops[j] = op1
 
+    def get_transformation_matrices(self):
+        """
+        Return the possible transformation matrices that donot violate the symmetry
+        This is to compensate the change that cannot be counted by wyckoff setting
+        """
+
+        if self.number <= 2:
+            return np.array([
+                             [[1,0,0],[0,1,0],[0,0,1]], 
+                             [[1,0,0],[0,1,0],[1,0,1]],
+                             [[1,0,0],[0,1,0],[-1,0,1]],
+                             [[1,0,1],[0,1,0],[0,0,1]],
+                             [[1,0,-1],[0,1,0],[0,0,1]],
+                             [[1,0,0],[0,1,0],[0,1,1]],
+                             [[1,0,0],[0,1,1],[0,0,1]],
+                             [[1,0,0],[0,1,0],[0,-1,1]],
+                             [[1,0,0],[0,1,-1],[0,0,1]],
+                             [[1,1,0],[0,1,0],[0,0,1]],
+                             [[1,-1,0],[0,1,0],[0,0,1]],
+                             [[1,0,0],[1,1,0],[0,0,1]],
+                             [[1,0,0],[-1,1,0],[0,0,1]],
+                             #[[-1,0,0],[0,1,0],[0,0,1]],
+                             #[[1,0,0],[0,-1,0],[0,0,1]],
+                             #[[1,0,0],[0,1,0],[0,0,-1]],
+                           ])
+        elif 2 < self.number < 16: 
+            return np.array([
+                             [[1,0,0],[0,1,0],[0,0,1]],
+                             [[1,0,0],[0,1,0],[1,0,1]],
+                             [[1,0,0],[0,1,0],[-1,0,1]],
+                             [[1,0,1],[0,1,0],[0,0,1]],
+                             [[1,0,-1],[0,1,0],[0,0,1]],
+                             #[[-1,0,0],[0,1,0],[0,0,1]],
+                           ])
+ 
+        else:
+            return [np.eye(3)]
+
+
+    def to_standard_setting(self):
+        """
+        calculate the required transformation to the standard setting
+        """
+        trans = []
+        _trans = self.get_transformation_matrices()
+        for tran in _trans:
+            wp0 = self.copy()
+            wp0.diagonalize_symops(tran, False)
+            if wp0.is_standard_setting():
+                trans.append(tran)
+        return trans
+    
     def is_standard_setting(self):
         ops0 = Group(self.number)[self.index]
+        for i, op0 in enumerate(ops0):
+            op1 = self.ops[i]
+            diff0 = op0.translation_vector - op1.translation_vector
+            diff0 -= np.round(diff0)
+            diff1 = op0.rotation_matrix - op1.rotation_matrix
+            if np.abs(diff0).sum() > 1e-3 or np.abs(diff1).sum() > 1e-3:
+                return False
+        else:
+            return True
+
+    def has_equivalent_ops(self, wp2):
+        ops0 = wp2.ops
         for i, op0 in enumerate(ops0):
             op1 = self.ops[i]
             diff0 = op0.translation_vector - op1.translation_vector
