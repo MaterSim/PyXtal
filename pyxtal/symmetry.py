@@ -884,27 +884,40 @@ class Group:
             a list of maximal subgroup chains with extra k type transitions
         """
 
-        if n != 1:
+        if n not in [1,2]:
             print('only 1 extra k type supported at this time')
             return None
-
-        solutions=[]
-        for i in range(len(path[:-1])):
-            g = path[i]
-            h = path[i+1]
-            options = set(k_subgroup[str(g)]['subgroup'] + t_subgroup[str(g)]['subgroup'])
-            #print(g, h, options)
-            for _g in options:
-                ls = k_subgroup[str(_g)]['subgroup'] + t_subgroup[str(_g)]['subgroup']
-                if h in ls:
-                    sol = deepcopy(path)
-                    sol.insert(i+1, _g)
-                    solutions.append(sol)
-        #https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
-        solutions.sort()
-        solutions = list(k for k,_ in itertools.groupby(solutions))
-
-        return solutions
+        
+        if n==1:
+            solutions=[]
+            for i in range(len(path[:-1])):
+                g = path[i]
+                h = path[i+1]
+                if g==h:
+                    continue
+                options = set(k_subgroup[str(g)]['subgroup'] + t_subgroup[str(g)]['subgroup'])
+                #print(g, h, options)
+                for _g in options:
+                    ls = k_subgroup[str(_g)]['subgroup'] + t_subgroup[str(_g)]['subgroup']
+                    if h in ls and (_g!= path[i-1] or len(path)==2):
+                        sol = deepcopy(path)
+                        sol.insert(i+1, _g)
+                        solutions.append(sol)
+            #https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
+            solutions.sort()
+            solutions = list(k for k,_ in itertools.groupby(solutions))
+            return solutions
+        
+        if n==2:
+            solutions=[]
+            first_set=self.add_k_transitions(path,n=1)
+            for x in first_set:
+                solutions.extend(self.add_k_transitions(x,n=1))
+            solutions.sort()
+            solutions = list(k for k,_ in itertools.groupby(solutions))
+            return solutions
+        
+            
 
     def get_valid_solutions(self, solutions):
         """
