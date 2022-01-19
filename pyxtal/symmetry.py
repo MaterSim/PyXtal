@@ -1073,27 +1073,35 @@ class Wyckoff_position:
 
 
     def diagonalize_symops(self, trans=None, reset=True):
-         """
-         Obtain the symmetry in n representation for P2/c, Cc, P21/c, Pc, C2/c
-         """
-         if reset:
-             ops = Group(self.number)[self.index]
-         else:
-             ops = self.ops 
+        """
+        Obtain the symmetry in n representation for P2/c, Cc, P21/c, Pc, C2/c
+        """
+        if reset:
+            ops = Group(self.number)[self.index]
+        else:
+            ops = self.ops 
  
-         if trans is None:
-             if self.number in [7, 9, 13, 14, 15]:
-                 trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
-             elif self.number in [5, 8, 9, 12]:
-                 trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
+        if trans is None:
+            if self.number in [7, 9, 13, 14, 15]:
+                trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+            elif self.number in [5, 8, 9, 12]:
+                trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
 
-         if trans is not None and 2 < self.number < 16:
-             for j, op in enumerate(ops):
-                 vec = op.translation_vector.dot(trans)
-                 #vec = trans.T.dot(op.translation_vector).T
-                 vec -= np.floor(vec)
-                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                 self.ops[j] = op1
+        if trans is not None and 2 < self.number < 16:
+            for j, op in enumerate(ops):
+                vec = op.translation_vector.dot(trans)
+                #vec = trans.T.dot(op.translation_vector).T
+                vec -= np.floor(vec)
+                op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                self.ops[j] = op1
+
+    def transform(self, trans):
+        """
+        Args:
+            trans: a list of transformation matrices
+        """
+        for tran in trans:
+            self.diagonalize_symops(tran, False)
 
     def get_transformation_matrices(self):
         """
@@ -1140,11 +1148,15 @@ class Wyckoff_position:
         """
         trans = []
         _trans = self.get_transformation_matrices()
-        for tran in _trans:
-            wp0 = self.copy()
-            wp0.diagonalize_symops(tran, False)
-            if wp0.is_standard_setting():
-                trans.append(tran)
+
+        # search for a single step
+        for tran1 in _trans:
+            for tran2 in _trans:
+                wp0 = self.copy()
+                wp0.diagonalize_symops(tran1, False)
+                wp0.diagonalize_symops(tran2, False)
+                if wp0.is_standard_setting():
+                    trans.append([tran1, tran2])
         return trans
     
     def is_standard_setting(self):

@@ -1142,15 +1142,18 @@ class pyxtal:
 
         return XRD(self.to_ase(), **kwargs)
 
-    def optimize_lattice(self, iterations=5, force=False):
+    def optimize_lattice(self, iterations=5, force=False, standard=False):
         """
         Optimize the lattice if the cell has a bad inclination angles
+        We first optimize the angle to some good-looking range.
+        In standard is true, will force the structure to have the standard setting
+        This only applies to monoclinic/triclinic systems
 
         Args:
             iterations: maximum number of iterations
             force: whether or not do the early termination
+            standard: 
         """
-        #if self.molecular:
         for i in range(iterations):
             lattice, trans, opt = self.lattice.optimize_once()
             #print(i, opt, self.lattice, "->", lattice)
@@ -1158,6 +1161,20 @@ class pyxtal:
                 self.transform(trans)
             else:
                 break
+
+        # only for monoclinic systems like P21/n
+        if standard and 3 <= self.group.number <= 15:
+            wp = self.atom_sites[0].wp.copy()
+            for i in range(iterations):
+                lattice, trans, opt = self.lattice.optimize_once()
+
+    def to_standard_setting(self):
+        """
+        Transform the structure into a standard setting
+        Sometimes the symmetry use different setting. 
+        http://cci.lbl.gov/sginfo/hall_symbols.html
+        """
+        self.optimize_lattice(standard=True)
 
     def get_std_representation(self, trans):
         """
@@ -1675,7 +1692,7 @@ class pyxtal:
             l1 = self.lattice
             l2 = ref_struc.lattice
             trans, _ = l2.search_transformation(l1, d_tol, f_tol)
-            #print(l1, l2, trans); import sys; sys.exit()
+            #print(l1, l2, trans)#; import sys; sys.exit()
             if trans is None:
                 #print("Cannot find lattice match")
                 return None
@@ -1855,23 +1872,23 @@ class pyxtal:
                 _ds = []
                 _disps = []
                 _trans = []
-                for ref_struc0 in ref_strucs0:
+                for j, ref_struc0 in enumerate(ref_strucs0):
 
                     trans = self.get_init_translations(ref_struc0)
                     #print("=======================", len(ref_strucs0), ref_struc0, _trans)
                     if len(trans) > 0:
                         disps = []
                         ds = np.zeros(len(trans))
-                        for j, tran in enumerate(trans):
+                        for k, tran in enumerate(trans):
                             #self.to_file('01.cif'); ref_struc0.to_file('02.cif')
                             disp, d, valid = self.get_disps_single(ref_struc0, tran, d_tol)
                             if valid:
                                 if d > 0.3 and len(self.axis) > 0:
                                     disp, d, tran = self.get_disps_optim(ref_struc0, tran, d_tol)
-                                    trans[j] = tran
+                                    trans[k] = tran
                             disps.append(disp)
-                            ds[j] = d
-                            #print("\nwyc_id", i, "trans", j, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
+                            ds[k] = d
+                            #print("\nwyc_id", i, "lat", j, "trans", k, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
                             #import sys; sys.exit()
 
                         id = np.argmin(ds)
@@ -1974,19 +1991,47 @@ class pyxtal:
         else:
             Skipped = len(paths) - max_path
             if Skipped > 0: paths = paths[:max_path] #sample(paths, max_path)
+
+            good_ds = []
+            good_strucs = []
+            good_disps = []
+            good_paths = []
+            good_trans = []
+
             for p in paths:
-                res = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images)
-                strucs, disp, tran = res
-                if strucs is not None:
-                    return strucs, disp, tran, p
-                else:
+                r = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images)
+                (strucs, disp, tran, count) = r
+                if count == 0:
+                    # prepare more paths to increase diversity
                     add_paths = self.group.add_k_transitions(p)
                     for p0 in add_paths:
                         r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
-                        (strucs, disp, tran) = r
-                        if strucs is not None:
-                            return strucs, disp, tran, p0
-
+                        (strucs, disp, tran, count) = r
+                        if strucs is not None: 
+                            if strucs[-1].disp < d_tol2: #stop
+                                return strucs, disp, tran, p0
+                            else:
+                                good_ds.append(strucs[-1].disp)
+                                good_disps.append(disp)
+                                good_paths.append(p0)
+                                good_strucs.append(strucs)
+                                good_trans.append(tran)
+                else:
+                    if strucs is not None:
+                        if strucs[-1].disp < d_tol2:
+                            return strucs, disp, tran, p
+                        else:
+                            good_ds.append(strucs[-1].disp)
+                            good_disps.append(disp)
+                            good_paths.append(p)
+                            good_strucs.append(strucs)
+                            good_trans.append(tran)
+            if len(good_ds) > 0:
+                #print("Number of candidate path:", len(good_ds))
+                good_ds = np.array(good_ds)
+                id = np.argmin(good_ds)
+                return good_strucs[id], good_disps[id], good_trans[id], good_paths[id]
+                            
             if Skipped > 0:
                 print("Warning: ignore some solutions: ", Skipped)
                        
@@ -2012,6 +2057,7 @@ class pyxtal:
 
         #print("Searching the transition path.....", path)
         # Here we only check symbols
+        count_match = 0
         elements0, sites_G = self._get_elements_and_sites()
         elements1, sites_H = ref_struc._get_elements_and_sites()
         # resort sites_H based on elements0
@@ -2087,18 +2133,8 @@ class pyxtal:
             #if int(mult) == 2: print(path, _sites0, match)
             # make subgroup
             if match:
+                count_match += 1
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
-                #print(g_types, sol)
-                #import pymatgen.analysis.structure_matcher as sm
-                #pmg1 = self.to_pymatgen()
-                #pmg2 = s.to_pymatgen()
-                #print(s); s.to_file('test_sub1.cif')
-                #s.optimize_lattice()
-                #print(s); pmg3 = s.to_pymatgen(); s.to_file('test_sub2.cif')
-                #print('++++', sm.StructureMatcher().get_rms_dist(pmg1, pmg2))
-                #print('++++', sm.StructureMatcher().get_rms_dist(pmg1, pmg3))
-                #import sys; sys.exit()
-
                 disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, True)
                 #import sys; sys.exit()
                 if disp is not None:
@@ -2106,7 +2142,7 @@ class pyxtal:
                     if max_disp < d_tol2:
                         cell = s.lattice.matrix
                         strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
-                        return strucs, disp, tran
+                        return strucs, disp, tran, count_match
                     else:
                         disps.append(disp)
                         refs.append(s)
@@ -2120,10 +2156,10 @@ class pyxtal:
             tran = trans[id]
             disp = disps[id]
             strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
-            return strucs, disp, tran
+            return strucs, disp, tran, count_match
 
         else:
-            return None, None, None
+            return None, None, None, count_match
 
     def translate(self, trans):
         """
