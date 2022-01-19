@@ -1827,12 +1827,18 @@ class pyxtal:
         """
         axis = self.get_free_axis()
         translations = []
-        site1 = self.atom_sites[0]
-        for i in range(len(self.atom_sites)):
-            site2 = ref_struc.atom_sites[i]
-            if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
-                trans0 = site1.get_translations(site2.position, axis)
-                translations.extend(trans0)
+        #choose the one and avoid hydrogen is possible
+
+        for specie in self.species:
+            for site1 in self.atom_sites:
+                if site1.specie == specie:
+                    break           
+            for i in range(len(self.atom_sites)):
+                site2 = ref_struc.atom_sites[i]
+                if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
+                    trans0 = site1.get_translations(site2.position, axis)
+                    translations.extend(trans0)
+
         self.axis = axis
         return translations
 
