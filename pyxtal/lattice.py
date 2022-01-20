@@ -122,9 +122,9 @@ class Lattice:
 
         # Set tolerance
         if self.ltype in ["triclinic"]:
-            self.a_tol = 10.0
+            self.a_tol = 15.0
         else:
-            self.a_tol = 5.0
+            self.a_tol = 7.5
         self._get_dof()
 
     def _get_dof(self):
@@ -225,25 +225,24 @@ class Lattice:
             a two steps of transformation matrix if the match is possible
         """
         #Find all possible permutation and transformation matrices
-        a_tol = self.a_tol
-        d_tol1, f_tol1, a_tol1, switch = self.get_diff(lat_ref)
-        if (d_tol1 < d_tol or f_tol1 < f_tol) and a_tol1 < a_tol:
-            if switch:
-                return [[[1,0,0],[0,-1,0],[0,0,-1]]], [d_tol1, f_tol1, a_tol1]
-            else:
-                return [np.eye(3)], [d_tol1, f_tol1, a_tol1]
-        
         trans1 = self.get_permutation_matrices()
         trans2 = self.get_transformation_matrices()
-        
-        #define the reference matrix
-        cell1 = lat_ref.matrix
+
+        tols = np.zeros([len(trans2)*len(trans1)+1, 3])
+        trans = []
+        switchs = []
+
+        #Check it self
+        d_tol1, f_tol1, a_tol1, switch = self.get_diff(lat_ref)
+        tols[0] = [d_tol1, f_tol1, a_tol1]
+        switchs.append(switch)
+        trans.append([np.eye(3)])
+
+        count = 0
         for i, tran1 in enumerate(trans1):
             lat0 = self.transform(tran1)
-            tols = np.zeros([len(trans2), 3])
-            switchs = []
-
             for j, tran2 in enumerate(trans2):
+                count += 1
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
                     lat2 = Lattice.from_matrix(tmp, l_type=self.ltype)
@@ -251,28 +250,34 @@ class Lattice:
                     #print(d_tol1, f_tol1, a_tol1, switch)
                 except:
                     d_tol1, f_tol1, a_tol1, switch = 10, 1.0, 90, None
-                tols[j, :] = [d_tol1, f_tol1, a_tol1]
+                tols[count] = [d_tol1, f_tol1, a_tol1]
+                trans.append([tran1, tran2])
                 switchs.append(switch)
-                #print([d_tol1, f_tol1])
 
-            #print(tols)
-            #id = np.argmin(tols[:, 2])
-            # QZ: needs to figure out a better way to select the best
-            ids = np.argsort(tols.sum(axis=1))
-            #print(tols[ids[0]], switchs[ids[0]])
-            #print(tols[ids[1]], switchs[ids[1]])
-            id = ids[0]
-            if abs(tols[ids[0]].sum() - tols[ids[1]].sum()) < 1e-3:
-                if switchs[ids[0]] and not switchs[ids[1]]:
-                    id = ids[1]
-            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < a_tol:
-                if switchs[id]:
-                    return [tran1, trans2[id], [[1,0,0],[0,-1,0],[0,0,-1]]], tols[id]
-                else:
-                    return [tran1, trans2[id]], tols[id]
+        # QZ: needs to figure out a better way to select the best
+        #print(tols)
+        rms = tols.sum(axis=1)
+        ids = np.argsort(rms)
+        id = ids[0]
+        #print(id)
+        if abs(rms[ids[0]] - rms[ids[1]]) < 1e-3:
+            if switchs[ids[0]] and not switchs[ids[1]]:
+                id = ids[1]
+                #print("change id 1", id)
+        if id != 0:
+            if abs(rms[0] - rms[id]) < 1e-2:
+                #print("change id 2", id, rms[0], rms[id])
+                id = 0
+        
+        if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
+            if switchs[id]:
+                trans[id].append([[1,0,0],[0,-1,0],[0,0,-1]])
+                return trans[id], tols[id]
             else:
-                continue
-        return None, None
+                return trans[id], tols[id]
+        else:
+            #print("=============================================Cannot match:", tols[id])
+            return None, None
 
     def optimize_once(self, reset=False):
         """
@@ -846,24 +851,27 @@ class Lattice:
         abc_diff = np.abs(np.array([a2-a1, b2-b1, c2-c1])).max()
         abc_f_diff = np.abs(np.array([(a2-a1)/a1, (b2-b1)/b1, (c2-c1)/c1])).max()
         ang_diff1 = abs(alpha1 - alpha2) + abs(beta1 - beta2) + abs(gamma1 - gamma2)
-        ang_diff2 = abs(abs(alpha1-90) - abs(alpha2-90))
+        ang_diff2 = abs(alpha1-alpha2)
         ang_diff2 += abs(abs(beta1-90) - abs(beta2-90))
-        ang_diff2 += abs(abs(gamma1-90) - abs(gamma2-90))
+        ang_diff2 += abs(gamma1-gamma2)
         if ang_diff1 < ang_diff2 + 0.01:
             return abc_diff, abc_f_diff, ang_diff1, False
         else:
-            return abc_diff, abc_f_diff, ang_diff2, True
+            if self.ltype == 'monoclinic':
+                return abc_diff, abc_f_diff, ang_diff2, True
+            else:
+                return abc_diff, abc_f_diff, ang_diff2, False
 
 
     def __str__(self):
-        s = "{:s}: {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(
-            str(self.ltype),
+        s = "{:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:s}".format(
             self.a,
             self.b,
             self.c,
             self.alpha * deg,
             self.beta * deg,
             self.gamma * deg,
+            str(self.ltype),
         )
         return s
 
