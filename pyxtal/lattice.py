@@ -266,7 +266,7 @@ class Lattice:
                 id = ids[1]
                 #print("change id 1", id)
         if id != 0:
-            if abs(rms[0] - rms[id]) < 0.1: #1.0:
+            if abs(rms[0] - rms[id]) < 1.0:
                 #print("change id 2", id, rms[0], rms[id])
                 id = 0
         
