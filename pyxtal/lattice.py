@@ -124,7 +124,7 @@ class Lattice:
         if self.ltype in ["triclinic"]:
             self.a_tol = 15.0
         else:
-            self.a_tol = 7.5
+            self.a_tol = 9.9
         self._get_dof()
 
     def _get_dof(self):

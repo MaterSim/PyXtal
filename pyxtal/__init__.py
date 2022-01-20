@@ -1697,6 +1697,7 @@ class pyxtal:
             l2 = ref_struc.lattice
             trans, _ = l2.search_transformation(l1, d_tol, f_tol)
             #print(l1, l2, trans)#; import sys; sys.exit()
+            good_strucs = []
             if trans is None:
                 #print("Cannot find lattice match")
                 return None
@@ -1704,15 +1705,39 @@ class pyxtal:
                 for tran in trans:
                     ref_struc.transform(tran)
                 #print(ref_struc); print(self) #; import sys; sys.exit()
-                if ref_struc.atom_sites[0].wp.is_standard_setting():
-                    paras = ref_struc.lattice.get_para()
-                    if abs(paras[0]-paras[2])/paras[0] < f_tol: #a, c axes are close
-                        tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
-                        ref_struc1 = ref_struc.copy()
-                        ref_struc1.transform(tmp)
-                        return [ref_struc, ref_struc1]
+
+                #consider the 1st struc
+                wp = ref_struc.atom_sites[0].wp
+                pt = ref_struc.atom_sites[0].position
+                if wp.is_standard_setting():
+                    good_strucs.append(ref_struc)
+                else:
+                    valid, vector = wp.check_translation(pt)
+                    if valid:
+                        ref_struc0 = ref_struc.copy()
+                        ref_struc0.translate(vector, reset_wp=True)
+                        ref_struc0.diag = False
+                        good_strucs.append(ref_struc0)
+
+                #consider permutation
+                paras = ref_struc.lattice.get_para()
+                if abs(paras[0]-paras[2])/paras[0] < f_tol: #a, c axes are close
+                    tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+                    ref_struc1 = ref_struc.copy()
+                    ref_struc1.transform(tmp)
+                    wp = ref_struc1.atom_sites[0].wp
+                    pt = ref_struc1.atom_sites[0].position
+                    if wp.is_standard_setting():
+                        good_strucs.append(ref_struc1)
                     else:
-                        return [ref_struc] 
+                        valid, vector = wp.check_translation(pt)
+                        if valid:
+                            ref_struc1.translate(vector, reset_wp=True)
+                            ref_struc1.diag = False
+                            good_strucs.append(ref_struc1)    
+                if len(good_strucs) > 0:
+                    #print(good_strucs)
+                    return good_strucs 
                 else:
                     return None
         else:
@@ -1899,7 +1924,7 @@ class pyxtal:
                             disps.append(disp)
                             ds[k] = d
                             #print("\nwyc_id", i, "lat", j, "trans", k, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
-                            #import sys; sys.exit()
+                            #if d<1.0: import sys; sys.exit()
 
                         id = np.argmin(ds)
                         disp = disps[id]
@@ -2037,7 +2062,7 @@ class pyxtal:
                             good_strucs.append(strucs)
                             good_trans.append(tran)
                 # Early stop
-                if len(good_ds) > 10:
+                if len(good_ds) > 5:
                     break
             if len(good_ds) > 0:
                 #print("Number of candidate path:", len(good_ds))
@@ -2174,7 +2199,7 @@ class pyxtal:
         else:
             return None, None, None, count_match
 
-    def translate(self, trans):
+    def translate(self, trans, reset_wp=False):
         """
         move the atomic sites along a translation
 
@@ -2182,7 +2207,7 @@ class pyxtal:
             trans: 1*3 vector
         """
         for site in self.atom_sites:
-            site.update(site.position + trans)
+            site.update(site.position + trans, reset_wp=reset_wp)
 
     def make_transitions(self, disps, lattice=None, translation=None, N_images=3):
         """

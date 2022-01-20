@@ -1071,7 +1071,7 @@ class Wyckoff_position:
         """
         return deepcopy(self)
 
-    def check_translation(self, pt, trans):
+    def check_translation(self, pt, trans=[0, 0.25, 0]):
         wp0 = Group(self.number)[self.index]
         coords1 = self.apply_ops(pt) + trans
         coords2 = wp0.apply_ops(pt + trans)
@@ -1087,9 +1087,9 @@ class Wyckoff_position:
                     orders.remove(i)
                     break
             if not match:
-                return False
+                return False, None
             #print(i, match, coord1, coords2[i])
-        return True
+        return True, trans
 
     def diagonalize_symops(self, trans=None, reset=True):
         """
