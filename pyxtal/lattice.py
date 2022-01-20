@@ -245,7 +245,8 @@ class Lattice:
                 count += 1
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
-                    lat2 = Lattice.from_matrix(tmp, l_type=self.ltype)
+                    #print(i, j, self.ltype)
+                    lat2 = Lattice.from_matrix(tmp, ltype=self.ltype)
                     d_tol1, f_tol1, a_tol1, switch = lat2.get_diff(lat_ref)
                     #print(d_tol1, f_tol1, a_tol1, switch)
                 except:
@@ -255,17 +256,17 @@ class Lattice:
                 switchs.append(switch)
 
         # QZ: needs to figure out a better way to select the best
-        #print(tols)
         rms = tols.sum(axis=1)
         ids = np.argsort(rms)
         id = ids[0]
-        #print(id)
+        #print(tols, rms)
+        #print(id, switchs[id])
         if abs(rms[ids[0]] - rms[ids[1]]) < 1e-3:
             if switchs[ids[0]] and not switchs[ids[1]]:
                 id = ids[1]
                 #print("change id 1", id)
         if id != 0:
-            if abs(rms[0] - rms[id]) < 1e-2:
+            if abs(rms[0] - rms[id]) < 0.1: #1.0:
                 #print("change id 2", id, rms[0], rms[id])
                 id = 0
         
@@ -854,6 +855,7 @@ class Lattice:
         ang_diff2 = abs(alpha1-alpha2)
         ang_diff2 += abs(abs(beta1-90) - abs(beta2-90))
         ang_diff2 += abs(gamma1-gamma2)
+        #print(abc_diff, abc_f_diff, ang_diff1, ang_diff2, self.ltype)
         if ang_diff1 < ang_diff2 + 0.01:
             return abc_diff, abc_f_diff, ang_diff1, False
         else:
