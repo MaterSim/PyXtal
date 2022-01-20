@@ -168,12 +168,14 @@ class atom_site:
         )
         self.update()
 
-    def update(self, pos=None):
+    def update(self, pos=None, reset_wp=False):
         """
         Used to generate coords from self.position
         """
         if pos is None:
             pos = self.position
+        if reset_wp:
+            self.wp.ops = Group(self.wp.number)[self.wp.index].ops
         self.coords = self.wp.apply_ops(pos) 
         self.position = self.coords[0]
 

@@ -120,6 +120,11 @@ class Lattice:
         else:
             self.set_matrix(matrix)
 
+        # Set tolerance
+        if self.ltype in ["triclinic"]:
+            self.a_tol = 10.0
+        else:
+            self.a_tol = 5.0
         self._get_dof()
 
     def _get_dof(self):
@@ -179,7 +184,8 @@ class Lattice:
                              [[1,0,0],[0,1,0],[-1,0,1]],
                              [[1,0,1],[0,1,0],[0,0,1]],
                              [[1,0,-1],[0,1,0],[0,0,1]],
-                             [[-1,0,0],[0,1,0],[0,0,1]],
+                             [[1,0,0],[0,-1,0],[0,0,-1]], #change angle
+                             #[[-1,0,0],[0,1,0],[0,0,1]], #change angle
                            ])
  
         elif self.ltype in ["triclinic"]:
@@ -211,11 +217,22 @@ class Lattice:
 
         Args:
             lat_ref: reference lattice object
+            d_tol: tolerance in angle
+            f_tol:
+            a_tol:
 
         Returns:
             a two steps of transformation matrix if the match is possible
         """
         #Find all possible permutation and transformation matrices
+        a_tol = self.a_tol
+        d_tol1, f_tol1, a_tol1, switch = self.get_diff(lat_ref)
+        if (d_tol1 < d_tol or f_tol1 < f_tol) and a_tol1 < a_tol:
+            if switch:
+                return [[[1,0,0],[0,-1,0],[0,0,-1]]], [d_tol1, f_tol1, a_tol1]
+            else:
+                return [np.eye(3)], [d_tol1, f_tol1, a_tol1]
+        
         trans1 = self.get_permutation_matrices()
         trans2 = self.get_transformation_matrices()
         
@@ -223,25 +240,36 @@ class Lattice:
         cell1 = lat_ref.matrix
         for i, tran1 in enumerate(trans1):
             lat0 = self.transform(tran1)
-            tols = np.zeros([len(trans2), 2])
+            tols = np.zeros([len(trans2), 3])
+            switchs = []
 
             for j, tran2 in enumerate(trans2):
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
                     lat2 = Lattice.from_matrix(tmp, l_type=self.ltype)
-                    cell2 = lat2.matrix
-                    #print(lat2)
-                    diff = np.abs(cell1-cell2).flatten()
-                    id = np.argmax(diff)
-                    d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+                    d_tol1, f_tol1, a_tol1, switch = lat2.get_diff(lat_ref)
+                    #print(d_tol1, f_tol1, a_tol1, switch)
                 except:
-                    d_tol1, f_tol1 = 10, 1.0
-                tols[j, :] = [d_tol1, f_tol1]
+                    d_tol1, f_tol1, a_tol1, switch = 10, 1.0, 90, None
+                tols[j, :] = [d_tol1, f_tol1, a_tol1]
+                switchs.append(switch)
                 #print([d_tol1, f_tol1])
+
             #print(tols)
-            id = np.argmin(tols[:, 0])
-            if tols[id, 0] < d_tol or tols[id, 1] < f_tol:
-                return [tran1, trans2[id]], tols[id]
+            #id = np.argmin(tols[:, 2])
+            # QZ: needs to figure out a better way to select the best
+            ids = np.argsort(tols.sum(axis=1))
+            #print(tols[ids[0]], switchs[ids[0]])
+            #print(tols[ids[1]], switchs[ids[1]])
+            id = ids[0]
+            if abs(tols[ids[0]].sum() - tols[ids[1]].sum()) < 1e-3:
+                if switchs[ids[0]] and not switchs[ids[1]]:
+                    id = ids[1]
+            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < a_tol:
+                if switchs[id]:
+                    return [tran1, trans2[id], [[1,0,0],[0,-1,0],[0,0,-1]]], tols[id]
+                else:
+                    return [tran1, trans2[id]], tols[id]
             else:
                 continue
         return None, None
@@ -296,6 +324,30 @@ class Lattice:
             else:
                 break
         return lattice, trans_matrices
+
+    def standardize(self):
+        """
+        Force the angle to be smaller than 90 degree
+        """
+        change = False
+        if self.ltype in ["monoclinic"]:
+            if self.beta > np.pi/2:
+                self.beta = np.pi - self.beta
+                change = True
+        elif self.ltype in ["triclinic"]:
+            if self.alpha > np.pi/2:
+                self.alpha = np.pi - self.alpha
+                change = True
+            if self.beta > np.pi/2:
+                self.beta = np.pi - self.beta
+                change = True
+            if self.gamma > np.pi/2:
+                self.gamma = np.pi - self.gamma
+                change = True
+
+        if change:
+            para = (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
+            self.matrix = para2matrix(para)
 
     def transform(self, trans_mat=np.eye(3), reset=False):
         """
@@ -784,6 +836,24 @@ class Lattice:
             return False
         else:
             return True
+
+    def get_diff(self, l_ref):
+        """
+        get the difference in length, angle, and check if switch is needed
+        """
+        (a1, b1, c1, alpha1, beta1, gamma1) = self.get_para(degree=True)
+        (a2, b2, c2, alpha2, beta2, gamma2) = l_ref.get_para(degree=True)
+        abc_diff = np.abs(np.array([a2-a1, b2-b1, c2-c1])).max()
+        abc_f_diff = np.abs(np.array([(a2-a1)/a1, (b2-b1)/b1, (c2-c1)/c1])).max()
+        ang_diff1 = abs(alpha1 - alpha2) + abs(beta1 - beta2) + abs(gamma1 - gamma2)
+        ang_diff2 = abs(abs(alpha1-90) - abs(alpha2-90))
+        ang_diff2 += abs(abs(beta1-90) - abs(beta2-90))
+        ang_diff2 += abs(abs(gamma1-90) - abs(gamma2-90))
+        if ang_diff1 < ang_diff2 + 0.01:
+            return abc_diff, abc_f_diff, ang_diff1, False
+        else:
+            return abc_diff, abc_f_diff, ang_diff2, True
+
 
     def __str__(self):
         s = "{:s}: {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(
@@ -1541,7 +1611,11 @@ def para2matrix(cell_para, radians=True, format="upper"):
         matrix[1][1] = b * sin_alpha
         matrix[0][2] = a3
         matrix[0][1] = a2
-        matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
+        tmp = a ** 2 - a3 ** 2 - a2 ** 2
+        if tmp > 0:
+            matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
+        else:
+            return None
         #pass
     return matrix
 

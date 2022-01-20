@@ -854,10 +854,21 @@ class pyxtal:
         """
         #print(splitter)
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
+       
         multiples = np.linalg.det(splitter.R[:3,:3])
         new_struc = self.copy()
         new_struc.group = splitter.H
-        lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+        try:
+            lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+        except:
+            self.optimize_lattice()
+            lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
+            lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+            #print(np.linalg.det(lat1))
+            #print(self.lattice)
+            #print(self.lattice.matrix)
+            #print(splitter.R[:3,:3].T)
+            #print(lat1); import sys; sys.exit()
         #print(lattice); print(lattice.matrix)
         if mut_lat:
             lattice=lattice.mutate(degree=eps, frozen=True)
@@ -1168,14 +1179,6 @@ class pyxtal:
             for i in range(iterations):
                 lattice, trans, opt = self.lattice.optimize_once()
 
-    def to_standard_setting(self):
-        """
-        Transform the structure into a standard setting
-        Sometimes the symmetry use different setting. 
-        http://cci.lbl.gov/sginfo/hall_symbols.html
-        """
-        self.optimize_lattice(standard=True)
-
     def get_std_representation(self, trans):
         """
         Perform cell transformation so that the symmetry operations
@@ -1331,8 +1334,9 @@ class pyxtal:
                 pos_abs = np.dot(site.position, self.lattice.matrix)
                 pos_frac = pos_abs.dot(lattice.inv_matrix)
                 pos_frac -= np.floor(pos_frac)
-                site.wp.diagonalize_symops(trans, False) #; import sys; sys.exit()
-                sites[j] = atom_site(site.wp, pos_frac, site.specie, diag=False)
+                wp = site.wp.copy()
+                wp.diagonalize_symops(trans, False) #; import sys; sys.exit()
+                sites[j] = atom_site(wp, pos_frac, site.specie, diag=False)
 
             lattice.reset_matrix()
             self.lattice = lattice
@@ -1699,7 +1703,7 @@ class pyxtal:
             else:
                 for tran in trans:
                     ref_struc.transform(tran)
-
+                #print(ref_struc); print(self) #; import sys; sys.exit()
                 if ref_struc.atom_sites[0].wp.is_standard_setting():
                     paras = ref_struc.lattice.get_para()
                     if abs(paras[0]-paras[2])/paras[0] < f_tol: #a, c axes are close
@@ -2032,6 +2036,9 @@ class pyxtal:
                             good_paths.append(p)
                             good_strucs.append(strucs)
                             good_trans.append(tran)
+                # Early stop
+                if len(good_ds) > 10:
+                    break
             if len(good_ds) > 0:
                 #print("Number of candidate path:", len(good_ds))
                 good_ds = np.array(good_ds)

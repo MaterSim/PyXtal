@@ -324,8 +324,28 @@ class TestOptLat(unittest.TestCase):
             pmg2 = c2.to_pymatgen()
             self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
+    def test_transform(self):
+        l = Lattice.from_para(48.0051, 7.3207, 35.8640, 90.0000, 174.9488, 90.0000, ltype='monoclinic')
+        sites = [
+                [0.0000,  0.0000,  0.1250],
+                [0.2296,  0.7704,  0.5370],
+                [0.2296,  0.2296,  0.5370],
+                [0.5408,  0.0000,  0.6186],
+                [0.0000,  0.0000,  0.3074],
+                ]
+        c = pyxtal()
+        c.build(9, ['S'], [8], lattice=l, sites=[sites])
+        pmg0 = c.to_pymatgen()
+        c.optimize_lattice()
+        pmg1 = c.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg0, pmg1))
+
 
 class TestWP(unittest.TestCase):
+
+    def test_wp_check_translation(self):
+        pass
+
     def test_wp_site_symm(self):
         data = [(143, 1, '3 . .'), 
                 (230, 6, '. 3 2'), 
