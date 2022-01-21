@@ -1688,9 +1688,6 @@ class pyxtal:
         Returns:
             ref_struc with matched lattice
         """
-        #print(self.lattice)
-        #print(ref_struc.lattice)
-        #print(cell1); print(diff); print(d_tol1, f_tol1, d_tol1 > d_tol, f_tol1 > f_tol)
         if self.group.number <= 15:
             ref_struc.optimize_lattice()
             l1 = self.lattice
@@ -1704,11 +1701,11 @@ class pyxtal:
             else:
                 for tran in trans:
                     ref_struc.transform(tran)
-                #print(ref_struc); print(self) #; import sys; sys.exit()
 
                 #consider the 1st struc
                 wp = ref_struc.atom_sites[0].wp
                 pt = ref_struc.atom_sites[0].position
+                #print(ref_struc); print(self); print(wp.is_standard_setting()); #import sys; sys.exit()
                 if wp.is_standard_setting():
                     good_strucs.append(ref_struc)
                 else:
@@ -1718,10 +1715,12 @@ class pyxtal:
                         ref_struc0.translate(vector, reset_wp=True)
                         ref_struc0.diag = False
                         good_strucs.append(ref_struc0)
+                        #print("add 1"); print(ref_struc0)
 
                 #consider permutation
                 paras = ref_struc.lattice.get_para()
-                if abs(paras[0]-paras[2])/paras[0] < f_tol: #a, c axes are close
+                a, b, c, alpha, beta, gamma = ref_struc.lattice.get_para(degree=True)
+                if abs(a-c)/a < f_tol: #a, c axes are close
                     tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
                     ref_struc1 = ref_struc.copy()
                     ref_struc1.transform(tmp)
@@ -1735,8 +1734,27 @@ class pyxtal:
                             ref_struc1.translate(vector, reset_wp=True)
                             ref_struc1.diag = False
                             good_strucs.append(ref_struc1)    
+                            #print("add 2"); print(ref_struc1)
+
+                if abs(beta-120) < 10.0 and round(a/c) == 2.0:
+                    tmp = np.array([[-1, 0, -2], [0, 1, 0], [0, 0, 1]])
+                    ref_struc2 = ref_struc.copy()
+                    ref_struc2.transform(tmp)
+                    wp = ref_struc2.atom_sites[0].wp
+                    pt = ref_struc2.atom_sites[0].position
+                    #print(beta-120, round(a/c)==2.0, wp.is_standard_setting()); import sys; sys.exit()
+                    if wp.is_standard_setting():
+                        good_strucs.append(ref_struc2)
+                    else:
+                        valid, vector = wp.check_translation(pt)
+                        if valid:
+                            ref_struc2.translate(vector, reset_wp=True)
+                            ref_struc2.diag = False
+                            good_strucs.append(ref_struc2)    
+                            #print("add 3"); print(ref_struc2)
+
                 if len(good_strucs) > 0:
-                    #print(good_strucs)
+                    #print("==============================", good_strucs)
                     return good_strucs 
                 else:
                     return None
@@ -1765,8 +1783,6 @@ class pyxtal:
             Atomic displacements in np.array
             translation:
         """
-        #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-        #print(ref_struc)
         cell1 = self.lattice.matrix
         disps = []
         orders = list(range(len(self.atom_sites)))
@@ -1854,6 +1870,9 @@ class pyxtal:
         Returns:
             list of possible translations
         """
+        #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        #print(ref_struc)
+
         axis = self.get_free_axis()
         translations = []
         #choose the one and avoid hydrogen is possible
@@ -1897,12 +1916,9 @@ class pyxtal:
         all_ds = []
         good_ref_strucs = []
         for i, ref_struc in enumerate(ref_strucs):
-            #print("\n-------------------->", i, len(ref_strucs), ref_struc)
-            #import pymatgen.analysis.structure_matcher as sm
-            #pmg1 = ref_struc.to_pymatgen(); pmg2 = ref_struc.to_pymatgen()
-            #print('++++', sm.StructureMatcher().get_rms_dist(pmg1, pmg2))
 
             ref_strucs0 = self.find_matched_lattice(ref_struc)
+
             if ref_strucs0 is not None:
                 _ds = []
                 _disps = []
@@ -1910,12 +1926,10 @@ class pyxtal:
                 for j, ref_struc0 in enumerate(ref_strucs0):
 
                     trans = self.get_init_translations(ref_struc0)
-                    #print("=======================", len(ref_strucs0), ref_struc0, _trans)
                     if len(trans) > 0:
                         disps = []
                         ds = np.zeros(len(trans))
                         for k, tran in enumerate(trans):
-                            #self.to_file('01.cif'); ref_struc0.to_file('02.cif')
                             disp, d, valid = self.get_disps_single(ref_struc0, tran, d_tol)
                             if valid:
                                 if d > 0.3 and len(self.axis) > 0:
@@ -1924,7 +1938,7 @@ class pyxtal:
                             disps.append(disp)
                             ds[k] = d
                             #print("\nwyc_id", i, "lat", j, "trans", k, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
-                            #if d<1.0: import sys; sys.exit()
+                            #if d<1.0: print(d, "========"); import sys; sys.exit()
 
                         id = np.argmin(ds)
                         disp = disps[id]
@@ -2017,8 +2031,8 @@ class pyxtal:
             - cell translation:
             - the list of space groups along the path
         """
-        ref_struc.sort_sites_by_numIons()
-        self.sort_sites_by_numIons()
+        #ref_struc.sort_sites_by_numIons()
+        #self.sort_sites_by_numIons()
         paths = self.group.search_subgroup_paths(ref_struc.group.number) 
         if len(paths) == 0:
             print("No valid paths between the structure pairs")
