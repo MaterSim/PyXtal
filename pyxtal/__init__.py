@@ -1915,30 +1915,34 @@ class pyxtal:
         all_trans = []
         all_ds = []
         good_ref_strucs = []
-        for i, ref_struc in enumerate(ref_strucs):
 
-            ref_strucs0 = self.find_matched_lattice(ref_struc)
+        ref_strucs_matched = self.find_matched_lattice(ref_struc)
 
-            if ref_strucs0 is not None:
+        if ref_strucs_matched is not None:
+            for i, ref_struc_matched in enumerate(ref_strucs_matched):
+                ref_strucs_alt = ref_struc_matched.get_alternatives(same_letters=same_letters, \
+                                                ref_cell=self.lattice.matrix)
                 _ds = []
                 _disps = []
                 _trans = []
-                for j, ref_struc0 in enumerate(ref_strucs0):
-
-                    trans = self.get_init_translations(ref_struc0)
+                for j, ref_struc_alt in enumerate(ref_strucs_alt):
+                    #Get translation
+                    trans = self.get_init_translations(ref_struc_alt)
                     if len(trans) > 0:
                         disps = []
                         ds = np.zeros(len(trans))
                         for k, tran in enumerate(trans):
-                            disp, d, valid = self.get_disps_single(ref_struc0, tran, d_tol)
+                            disp, d, valid = self.get_disps_single(ref_struc_alt, tran, d_tol)
                             if valid:
                                 if d > 0.3 and len(self.axis) > 0:
-                                    disp, d, tran = self.get_disps_optim(ref_struc0, tran, d_tol)
+                                    disp, d, tran = self.get_disps_optim(ref_struc_alt, tran, d_tol)
                                     trans[k] = tran
                             disps.append(disp)
                             ds[k] = d
-                            #print("\nwyc_id", i, "lat", j, "trans", k, "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
-                            #if d<1.0: print(d, "========"); import sys; sys.exit()
+
+                            #strs = "\nlattice {:d} wyc {:d} trans {:d}".format(i, j, k)
+                            #strs += "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
+                            #if d < 1.0: print(strs)
 
                         id = np.argmin(ds)
                         disp = disps[id]
@@ -1946,7 +1950,7 @@ class pyxtal:
                         d = ds[id]
                         # Return it early
                         if d < d_tol2:
-                            return disp, tran, ref_struc0, d
+                            return disp, tran, ref_struc_alt, d
                     else:
                         d = 10
                         tran = None
@@ -1963,17 +1967,17 @@ class pyxtal:
                 all_disps.append(_disps[_id])
                 all_trans.append(_trans[_id])
                 all_ds.append(_ds[_id])
-                good_ref_strucs.append(ref_strucs0[_id])
+                good_ref_strucs.append(ref_strucs_alt[_id])
             else:
                 all_disps.append(None)
                 all_trans.append(None)
                 all_ds.append(10)
                 good_ref_strucs.append(ref_struc)
 
-        all_ds = np.array(all_ds)
-        id = np.argmin(all_ds)
-        if all_ds[id] < d_tol:
-            return all_disps[id], all_trans[id], good_ref_strucs[id], all_ds[id]
+            all_ds = np.array(all_ds)
+            id = np.argmin(all_ds)
+            if all_ds[id] < d_tol:
+                return all_disps[id], all_trans[id], good_ref_strucs[id], all_ds[id]
         else:
             return None, None, None, None
 
