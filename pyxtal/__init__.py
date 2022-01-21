@@ -1692,72 +1692,69 @@ class pyxtal:
             ref_struc.optimize_lattice()
             l1 = self.lattice
             l2 = ref_struc.lattice
-            trans, _ = l2.search_transformation(l1, d_tol, f_tol)
+            #QZ: here we enumerate all possible transformations, maybe redundant
+            trans_good, _ = l2.search_transformations(l1, d_tol, f_tol)
             #print(l1, l2, trans)#; import sys; sys.exit()
             good_strucs = []
-            if trans is None:
-                #print("Cannot find lattice match")
-                return None
-            else:
-                for tran in trans:
-                    ref_struc.transform(tran)
 
-                #consider the 1st struc
-                wp = ref_struc.atom_sites[0].wp
-                pt = ref_struc.atom_sites[0].position
-                #print(ref_struc); print(self); print(wp.is_standard_setting()); #import sys; sys.exit()
+            for trans in trans_good:
+
+                ref_struc0 = ref_struc.copy()
+                for tran in trans:
+                    ref_struc0.transform(tran)
+
+                wp = ref_struc0.atom_sites[0].wp
+                pt = ref_struc0.atom_sites[0].position
                 if wp.is_standard_setting():
-                    good_strucs.append(ref_struc)
+                    good_strucs.append(ref_struc0)
                 else:
                     valid, vector = wp.check_translation(pt)
                     if valid:
-                        ref_struc0 = ref_struc.copy()
                         ref_struc0.translate(vector, reset_wp=True)
                         ref_struc0.diag = False
                         good_strucs.append(ref_struc0)
-                        #print("add 1"); print(ref_struc0)
 
                 #consider permutation
-                paras = ref_struc.lattice.get_para()
-                a, b, c, alpha, beta, gamma = ref_struc.lattice.get_para(degree=True)
-                if abs(a-c)/a < f_tol: #a, c axes are close
-                    tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
-                    ref_struc1 = ref_struc.copy()
-                    ref_struc1.transform(tmp)
-                    wp = ref_struc1.atom_sites[0].wp
-                    pt = ref_struc1.atom_sites[0].position
-                    if wp.is_standard_setting():
-                        good_strucs.append(ref_struc1)
-                    else:
-                        valid, vector = wp.check_translation(pt)
-                        if valid:
-                            ref_struc1.translate(vector, reset_wp=True)
-                            ref_struc1.diag = False
-                            good_strucs.append(ref_struc1)    
-                            #print("add 2"); print(ref_struc1)
+                #paras = ref_struc.lattice.get_para()
+                #a, b, c, alpha, beta, gamma = ref_struc.lattice.get_para(degree=True)
+                #if abs(a-c)/a < f_tol: #a, c axes are close
+                #    tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+                #    ref_struc1 = ref_struc.copy()
+                #    ref_struc1.transform(tmp)
+                #    wp = ref_struc1.atom_sites[0].wp
+                #    pt = ref_struc1.atom_sites[0].position
+                #    if wp.is_standard_setting():
+                #        good_strucs.append(ref_struc1)
+                #    else:
+                #        valid, vector = wp.check_translation(pt)
+                #        if valid:
+                #            ref_struc1.translate(vector, reset_wp=True)
+                #            ref_struc1.diag = False
+                #            good_strucs.append(ref_struc1)    
+                #            #print("add 2"); print(ref_struc1)
 
-                if abs(beta-120) < 10.0 and round(a/c) == 2.0:
-                    tmp = np.array([[-1, 0, -2], [0, 1, 0], [0, 0, 1]])
-                    ref_struc2 = ref_struc.copy()
-                    ref_struc2.transform(tmp)
-                    wp = ref_struc2.atom_sites[0].wp
-                    pt = ref_struc2.atom_sites[0].position
-                    #print(beta-120, round(a/c)==2.0, wp.is_standard_setting()); import sys; sys.exit()
-                    if wp.is_standard_setting():
-                        good_strucs.append(ref_struc2)
-                    else:
-                        valid, vector = wp.check_translation(pt)
-                        if valid:
-                            ref_struc2.translate(vector, reset_wp=True)
-                            ref_struc2.diag = False
-                            good_strucs.append(ref_struc2)    
-                            #print("add 3"); print(ref_struc2)
+                #if abs(beta-120) < 10.0 and round(a/c) == 2.0:
+                #    tmp = np.array([[-1, 0, -2], [0, 1, 0], [0, 0, 1]])
+                #    ref_struc2 = ref_struc.copy()
+                #    ref_struc2.transform(tmp)
+                #    wp = ref_struc2.atom_sites[0].wp
+                #    pt = ref_struc2.atom_sites[0].position
+                #    #print(beta-120, round(a/c)==2.0, wp.is_standard_setting()); import sys; sys.exit()
+                #    if wp.is_standard_setting():
+                #        good_strucs.append(ref_struc2)
+                #    else:
+                #        valid, vector = wp.check_translation(pt)
+                #        if valid:
+                #            ref_struc2.translate(vector, reset_wp=True)
+                #            ref_struc2.diag = False
+                #            good_strucs.append(ref_struc2)    
+                #            #print("add 3"); print(ref_struc2)
 
-                if len(good_strucs) > 0:
-                    #print("==============================", good_strucs)
-                    return good_strucs 
-                else:
-                    return None
+            if len(good_strucs) > 0:
+                #print("==============================", good_strucs)
+                return good_strucs 
+            else:
+                return None
         else:
             cell1 = self.lattice.matrix
             cell2 = ref_struc.lattice.matrix
@@ -1978,8 +1975,7 @@ class pyxtal:
             id = np.argmin(all_ds)
             if all_ds[id] < d_tol:
                 return all_disps[id], all_trans[id], good_ref_strucs[id], all_ds[id]
-        else:
-            return None, None, None, None
+        return None, None, None, None
 
     def _get_elements_and_sites(self):
         """

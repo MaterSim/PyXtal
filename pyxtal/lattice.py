@@ -211,6 +211,70 @@ class Lattice:
             return [np.eye(3)]
 
 
+    #def search_close_transformations(self, lat_ref, d_tol=1.0, f_tol=0.1):
+    #    """
+    #    Search for transformations that return close lattice matches
+    #    """
+    #    trans = []
+    #    a, b, c, alpha, beta, gamma = self.get_para(degree=True)
+    #    if abs(a-c)/a < f_tol: #a, c axes are close
+    #        tmp = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
+
+    #    if abs(beta-120.0) < 10.0:
+    #        if a > c:
+    #            tmp = np.array([[-1, 0, -round(a/c)], [0, 1, 0], [0, 0, 1]])
+    #        else:
+    #            tmp = np.array([[-round(c/a), 0, -1], [0, 1, 0], [0, 0, 1]])
+
+    def search_transformations(self, lat_ref, d_tol=1.0, f_tol=0.1):
+        """
+        search the closest match to the reference lattice object
+
+        Args:
+            lat_ref: reference lattice object
+            d_tol: tolerance in angle
+            f_tol:
+            a_tol:
+
+        Returns:
+            a two steps of transformation matrix if the match is possible
+        """
+        #Find all possible permutation and transformation matrices
+        trans1 = self.get_permutation_matrices()
+        trans2 = self.get_transformation_matrices()
+        tols = np.zeros([len(trans2)*len(trans1), 3])
+        trans = []
+        switchs = []
+
+        count = 0
+        for i, tran1 in enumerate(trans1):
+            lat0 = self.transform(tran1)
+            for j, tran2 in enumerate(trans2):
+                tmp = np.dot(tran2, lat0.matrix)
+                try:
+                    #print(i, j, self.ltype)
+                    lat2 = Lattice.from_matrix(tmp, ltype=self.ltype)
+                    d_tol1, f_tol1, a_tol1, switch = lat2.get_diff(lat_ref)
+                    #print(d_tol1, f_tol1, a_tol1, switch)
+                except:
+                    d_tol1, f_tol1, a_tol1, switch = 10, 1.0, 90, None
+                tols[count] = [d_tol1, f_tol1, a_tol1]
+                trans.append([tran1, tran2])
+                switchs.append(switch)
+                count += 1
+
+        trans_good = []
+        tols_good = []
+        for id in range(len(tols)):
+            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
+                if switchs[id]:
+                    trans[id].append([[1,0,0],[0,-1,0],[0,0,-1]])
+            trans_good.append(trans[id])
+            tols_good.append(tols[id])
+            
+        return trans_good, tols_good
+
+
     def search_transformation(self, lat_ref, d_tol=1.0, f_tol=0.1):
         """
         search the closest match to the reference lattice object
