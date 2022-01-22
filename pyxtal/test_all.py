@@ -257,7 +257,7 @@ class TestSupergroup(unittest.TestCase):
 
         s1 = pyxtal(); s1.from_seed(cif_path + 'sim-0.vasp')
         s2 = pyxtal(); s2.from_seed(cif_path + 'sim-1.vasp')
-        _, _, _, d = s1.get_disps_sets(s2, 1.0, 0.3, True)
+        _, _, _, d = s1.get_disps_sets(s2, 1.0, 0.3, check_mapping=True)
         self.assertTrue(d < 0.02)
 
 class TestOptLat(unittest.TestCase):

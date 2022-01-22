@@ -1451,7 +1451,7 @@ class pyxtal:
         self.source = 'Build'
         self._get_formula()
 
-    def get_alternatives(self, include_self=True, same_letters=False, ref_lat=None):
+    def get_alternatives(self, include_self=True, same_letters=False, ref_lat=None, d_tol=2.0, f_tol=0.15):
         """
         Get alternative structure representations
 
@@ -1484,13 +1484,13 @@ class pyxtal:
                 else:
                     add = True
                 if add:
-                    new_struc = self._get_alternative(wyc_sets, no, ref_lat)
+                    new_struc = self._get_alternative(wyc_sets, no, ref_lat, d_tol, f_tol)
                     if new_struc is not None:
                         new_strucs.append(new_struc)
         #print("Numbers===============", len(new_strucs)); import sys; sys.exit()
         return new_strucs
 
-    def _get_alternative(self, wyc_sets, index, ref_lat=None):
+    def _get_alternative(self, wyc_sets, index, ref_lat=None, d_tol=2.0, f_tol=0.15):
         """
         Get alternative structure representations
 
@@ -1514,7 +1514,7 @@ class pyxtal:
         #matrix = new_lat.matrix
         if ref_lat is not None: 
             d_tol1, f_tol1, a_tol1, switch = new_lat.get_diff(ref_lat) 
-            if (d_tol1 > 1.0 and f_tol > 0.1) or (a_tol1 > 12) or switch:
+            if (d_tol1 > d_tol and f_tol1 > f_tol) or (a_tol1 > 15.0) or switch:
             #print('bad setting', new_lat); print(ref_lat)
                 return None
 
@@ -1690,10 +1690,11 @@ class pyxtal:
         Returns:
             ref_struc with matched lattice
         """
+        ref_struc.optimize_lattice()
+        l1 = self.lattice
+        l2 = ref_struc.lattice
+        #print(l1, l2)
         if self.group.number <= 15:
-            ref_struc.optimize_lattice()
-            l1 = self.lattice
-            l2 = ref_struc.lattice
             #QZ: here we enumerate all possible transformations, maybe redundant
             trans_good, _ = l2.search_transformations(l1, d_tol, f_tol)
             #print(l1, l2, len(trans_good)); import sys; sys.exit()
@@ -1732,6 +1733,32 @@ class pyxtal:
                 return None
             else:
                 return [ref_struc]
+
+    def check_mapping(self, ref_struc):
+        """
+        Compute the displacement w.r.t. the reference structure
+
+        Args:
+            ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+
+        Returns:
+            True or False
+        """
+        orders = list(range(len(self.atom_sites)))
+        atom_sites = self.atom_sites
+        for site1 in atom_sites:
+            match = False
+            #search for the best match
+            for i in orders:
+                site2 = ref_struc.atom_sites[i]
+                if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
+                    match = True
+                    break    
+            if match:            
+                orders.remove(i)
+            else:
+                return False
+        return True
 
     def get_disps_single(self, ref_struc, trans, d_tol=1.2):
         """
@@ -1853,7 +1880,7 @@ class pyxtal:
         self.axis = axis
         return translations
 
-    def get_disps_sets(self, ref_struc, d_tol, d_tol2=0.3, check_mapping=False):
+    def get_disps_sets(self, ref_struc, d_tol, d_tol2=0.3, ld_tol=2.0, fd_tol=0.15, check_mapping=False):
         """
         Compute the displacement w.r.t. a reference structure (considering all wycsets)
 
@@ -1875,19 +1902,24 @@ class pyxtal:
         all_trans = []
         all_ds = []
         good_ref_strucs = []
-
-        ref_strucs_matched = self.find_matched_lattice(ref_struc)
+        #print(ld_tol, fd_tol)
+        ref_strucs_matched = self.find_matched_lattice(ref_struc, d_tol=ld_tol, f_tol=fd_tol)
 
         if ref_strucs_matched is not None:
             for i, ref_struc_matched in enumerate(ref_strucs_matched):
                 ref_strucs_alt = ref_struc_matched.get_alternatives(same_letters=same_letters, \
-                                                ref_lat=self.lattice)
+                                            ref_lat=self.lattice, d_tol=ld_tol, f_tol=fd_tol)
                 _ds = []
                 _disps = []
                 _trans = []
                 for j, ref_struc_alt in enumerate(ref_strucs_alt):
                     #Get translation
-                    trans = self.get_init_translations(ref_struc_alt)
+                    #print(ref_struc_alt)
+                    if self.check_mapping(ref_struc_alt):
+                        trans = self.get_init_translations(ref_struc_alt)
+                    else:
+                        trans = []
+                    #save some time
                     if len(trans) > 0:
                         disps = []
                         ds = np.zeros(len(trans))
@@ -1902,7 +1934,7 @@ class pyxtal:
 
                             #strs = "\nlattice {:d} wyc {:d} trans {:d}".format(i, j, k)
                             #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*tran, d)
-                            #if d < 1.0: print(strs)
+                            #print(strs)
 
                         id = np.argmin(ds)
                         disp = disps[id]
@@ -2150,7 +2182,7 @@ class pyxtal:
             if match:
                 count_match += 1
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
-                disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, True)
+                disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, check_mapping=True)
                 #import sys; sys.exit()
                 if disp is not None:
                     # early termination
