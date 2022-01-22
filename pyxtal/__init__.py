@@ -1528,7 +1528,7 @@ class pyxtal:
         if ref_lat is not None: 
             d_tol1, f_tol1, a_tol1, switch = new_lat.get_diff(ref_lat) 
             if (d_tol1 > d_tol and f_tol1 > f_tol) or (a_tol1 > 15.0) or switch:
-            #print('bad setting', new_lat); print(ref_lat)
+                print('bad setting', new_lat); print(ref_lat)
                 return None
 
         new_struc.lattice = new_lat #Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
@@ -1730,21 +1730,11 @@ class pyxtal:
                         ref_struc0.diag = False
                         good_strucs.append(ref_struc0)
 
-            if len(good_strucs) > 0:
-                #print("==============================", good_strucs)
-                return good_strucs 
-            else:
-                return None
+            return good_strucs 
         else:
-            #cell1 = self.lattice.matrix
-            #cell2 = ref_struc.lattice.matrix
-            #diff = np.abs(cell1-cell2).flatten()
-            #id = np.argmax(diff)
-            #d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
-            #print(cell1); print(diff); print(d_tol1, f_tol1, d_tol1 > d_tol, f_tol1 > f_tol)
             d_tol1, f_tol1, a_tol1, switch = l1.get_diff(l2)
             if d_tol1 > d_tol and f_tol1 > f_tol:
-                return None
+                return []
             else:
                 return [ref_struc]
 
@@ -1831,7 +1821,7 @@ class pyxtal:
 
             #print(match, site1, site2, trans, dist)
             if not match:
-                return None, 10, False
+                return None, 5.0, False
 
         disps = np.array(disps)
         d = np.max(np.linalg.norm(disps.dot(cell1), axis=1))
@@ -1878,6 +1868,7 @@ class pyxtal:
         #print(ref_struc)
 
         axis = self.get_free_axis()
+
         translations = []
         #choose the one and avoid hydrogen is possible
 
@@ -1891,10 +1882,43 @@ class pyxtal:
                     trans0 = site1.get_translations(site2.position, axis)
                     translations.extend(trans0)
 
+        # remove close translations
+        good_translations = []
+        for trans in translations:
+            match = False
+            for trans_ref in good_translations:
+                diff = trans - trans_ref
+                diff -= np.round(diff)
+                if np.abs(diff).sum() < 5e-2:
+                    match = True
+                    break
+            if not match:
+                good_translations.append(trans)
         self.axis = axis
-        return translations
+        return good_translations
 
-    def get_disps_sets(self, ref_struc, d_tol, d_tol2=0.3, ld_tol=2.0, fd_tol=0.15, check_mapping=False):
+    def is_duplicate(self, ref_strucs):
+        """
+        check if the structure is exactly the same 
+        """
+
+        lat0 = self.lattice
+        pos0 = self.atom_sites[0].position
+        for ref_struc in ref_strucs:
+            d_tol1, f_tol1, a_tol1, switch = ref_struc.lattice.get_diff(lat0)
+            #print(d_tol1, f_tol1, a_tol1, switch); import sys; sys.exit()
+            if (d_tol1 + a_tol1) < 1e-3 and not switch:
+                if self.group.number > 15:
+                    tran = np.zeros([3])
+                else:
+                    tran = ref_struc.atom_sites[0].position - pos0
+                disp, d, valid = self.get_disps_single(ref_struc, -tran, d_tol=0.1)
+                #print(self); print(ref_struc), print("=====", d); import sys; sys.exit()
+                if d < 1e-3:
+                    return True
+        return False
+
+    def get_disps_sets(self, ref_struc, d_tol, d_tol2=0.3, ld_tol=2.0, fd_tol=0.15, keep_lattice=False):
         """
         Compute the displacement w.r.t. a reference structure (considering all wycsets)
 
@@ -1902,88 +1926,76 @@ class pyxtal:
             ref_struc: reference pyxtal structure (assuming the same atomic ordering)
             d_tol: maximally allowed atomic displacement
             d_tol2: displacement that allows early termination
-            check_mapping: whether or not change the WP sets
+            kepp_lattice: whether or not change the WP sets
 
         Returns:
             Atomic displacements in np.array
         """
-        if check_mapping:
-            same_letters = False
-        else:
-            same_letters = True
-
         all_disps = []
         all_trans = []
         all_ds = []
         good_ref_strucs = []
+        bad_ref_strucs = []
         #print(ld_tol, fd_tol)
-        ref_strucs_matched = self.find_matched_lattice(ref_struc, d_tol=ld_tol, f_tol=fd_tol)
+        if keep_lattice:
+            ref_strucs_matched = [ref_struc]
+        else:
+            ref_strucs_matched = self.find_matched_lattice(ref_struc, d_tol=ld_tol, f_tol=fd_tol)
 
-        if ref_strucs_matched is not None:
-            for i, ref_struc_matched in enumerate(ref_strucs_matched):
-                ref_strucs_alt = ref_struc_matched.get_alternatives(same_letters=same_letters, \
-                                            ref_lat=self.lattice, d_tol=ld_tol, f_tol=fd_tol)
-                _ds = []
-                _disps = []
-                _trans = []
-                for j, ref_struc_alt in enumerate(ref_strucs_alt):
-                    #Get translation
-                    #print(ref_struc_alt)
-                    if self.check_mapping(ref_struc_alt):
+        for i, ref_struc_matched in enumerate(ref_strucs_matched):
+            ref_strucs_alt = ref_struc_matched.get_alternatives(\
+                                        ref_lat=self.lattice, d_tol=ld_tol, f_tol=fd_tol)
+            for j, ref_struc_alt in enumerate(ref_strucs_alt):
+                #initial setup
+                d_min = 10.0   
+                disp_min = None
+                tran_min = None
+                trans = []
+
+                #print('========================', ref_struc_alt)
+                #print('=======', i, j, len(ref_strucs_matched), len(ref_strucs_alt))
+                # must have the same wp letters and  different strucs
+                if self.check_mapping(ref_struc_alt):
+                    if not ref_struc_alt.is_duplicate(good_ref_strucs+bad_ref_strucs):
                         trans = self.get_init_translations(ref_struc_alt)
-                    else:
-                        trans = []
-                    #save some time
-                    if len(trans) > 0:
-                        disps = []
-                        ds = np.zeros(len(trans))
-                        for k, tran in enumerate(trans):
-                            disp, d, valid = self.get_disps_single(ref_struc_alt, tran, d_tol)
-                            if valid:
-                                if d > 0.3 and len(self.axis) > 0:
-                                    disp, d, tran = self.get_disps_optim(ref_struc_alt, tran, d_tol)
-                                    trans[k] = tran
-                            disps.append(disp)
-                            ds[k] = d
 
-                            #strs = "\nlattice {:d} wyc {:d} trans {:d}".format(i, j, k)
-                            #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*tran, d)
-                            #print(strs)
+                for k, tran in enumerate(trans):
+                    disp, d, valid = self.get_disps_single(ref_struc_alt, tran, d_tol)
+                    if valid:
+                        if d > 0.3 and len(self.axis) > 0:
+                            disp, d, tran = self.get_disps_optim(ref_struc_alt, tran, d_tol)
+                    #update
+                    if d < d_min:
+                        d_min = d
+                        disp_min = disp
+                        trans_min = tran
 
-                        id = np.argmin(ds)
-                        disp = disps[id]
-                        tran = trans[id]
-                        d = ds[id]
-                        # Return it early
-                        if d < d_tol2:
-                            return disp, tran, ref_struc_alt, d
-                    else:
-                        d = 10
-                        tran = None
-                        disp = None
+                    #strs = "\nlattice {:d} wyc {:d} trans {:d}".format(i, j, k)
+                    #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*tran, d)
+                    #print(strs)
 
-                    _ds.append(d)
-                    _disps.append(disp)
-                    _trans.append(tran)
+                if d_min < d_tol2: # Return it early
+                    return disp_min, trans_min, ref_struc_alt, d_min
+                elif d_min < d_tol: # add to database
+                    all_ds.append(d_min)
+                    all_disps.append(disp_min)
+                    all_trans.append(trans_min)
+                    good_ref_strucs.append(ref_struc_alt)
+                elif d_min < 5.1:   # add bad 
+                    bad_ref_strucs.append(ref_struc_alt)
 
-                #find the best here
-                _ds = np.array(_ds)
-                _id = np.argmin(_ds)
-
-                all_disps.append(_disps[_id])
-                all_trans.append(_trans[_id])
-                all_ds.append(_ds[_id])
-                good_ref_strucs.append(ref_strucs_alt[_id])
-            else:
-                all_disps.append(None)
-                all_trans.append(None)
-                all_ds.append(10)
-                good_ref_strucs.append(ref_struc)
-
+        #choose the best
+        #print("Good_candiates", len(good_ref_strucs), "Bad canidates", len(bad_ref_strucs))
+        if len(all_ds) > 0:
             all_ds = np.array(all_ds)
             id = np.argmin(all_ds)
             if all_ds[id] < d_tol:
                 return all_disps[id], all_trans[id], good_ref_strucs[id], all_ds[id]
+            else:
+                return None, None, None, None
+        else:
+            return None, None, None, None
+
         return None, None, None, None
 
     def _get_elements_and_sites(self):
@@ -2197,7 +2209,7 @@ class pyxtal:
                 count_match += 1
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
                 if s is not None:
-                    disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, check_mapping=True)
+                    disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2)
                     #import sys; sys.exit()
                     if disp is not None:
                         # early termination
