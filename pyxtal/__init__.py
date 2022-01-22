@@ -640,7 +640,8 @@ class pyxtal:
             new_strucs = []
             for splitter in bad_splitters:
                 trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
-                new_strucs.extend(trail_struc.subgroup(perms, group_type=group_type))
+                if trail_struc is not None:
+                    new_strucs.extend(trail_struc.subgroup(perms, group_type=group_type))
             return new_strucs
         else:
             #print(len(valid_splitters), "valid_splitters are present")
@@ -672,9 +673,11 @@ class pyxtal:
         G = self.group
         for g_type, id in zip(gtypes, ids):
             sites = [site.wp.index for site in struc.atom_sites]
-            #print(G.number, p, id, g_type)
+            #print(G.number, id, g_type)
             splitter = wyckoff_split(G, wp1=sites, idx=id, group_type=g_type)
             struc = struc._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
+            if struc is None:
+                return None
             G = splitter.H
         return struc
 
@@ -712,11 +715,12 @@ class pyxtal:
                         else:
                             #print("try to find the next subgroup")
                             trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
-                            multiple = sum(trail_struc.numIons)/sum(self.numIons)
-                            max_cell = max([1, max_cell/multiple])
-                            ans = trail_struc.subgroup_once(eps, H, perms, group_type, max_cell)
-                            if ans.group.number > 1:
-                                return ans
+                            if trail_struc is not None:
+                                multiple = sum(trail_struc.numIons)/sum(self.numIons)
+                                max_cell = max([1, max_cell/multiple])
+                                ans = trail_struc.subgroup_once(eps, H, perms, group_type, max_cell)
+                                if ans.group.number > 1:
+                                    return ans
                     else:
                         return self._apply_substitution(splitter, perms)
                 else:
@@ -737,11 +741,12 @@ class pyxtal:
                     else:
                         #print("try to find the next subgroup")
                         trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
-                        multiple = sum(trail_struc.numIons)/sum(self.numIons)
-                        max_cell = max([1, max_cell/multiple])
-                        ans = trail_struc.subgroup_once(eps, H, None, group_type, max_cell)
-                        if ans.group.number > 1:
-                            return ans
+                        if trail_struc is not None:
+                            multiple = sum(trail_struc.numIons)/sum(self.numIons)
+                            max_cell = max([1, max_cell/multiple])
+                            ans = trail_struc.subgroup_once(eps, H, None, group_type, max_cell)
+                            if ans.group.number > 1:
+                                return ans
             count += 1
         raise RuntimeError("Cannot find the splitter")
 
@@ -863,7 +868,15 @@ class pyxtal:
         except:
             self.optimize_lattice()
             lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
-            lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+            try:
+                lattice = Lattice.from_matrix(lat1, ltype=new_struc.group.lattice_type)
+            except:
+                #print('problem with splitter, save it to bug.cif')
+                #print(splitter)
+                #print(self)
+                #self.to_file('bug.cif')
+                #import sys; sys.exit()
+                return None
             #print(np.linalg.det(lat1))
             #print(self.lattice)
             #print(self.lattice.matrix)
@@ -2183,19 +2196,20 @@ class pyxtal:
             if match:
                 count_match += 1
                 s = self.subgroup_by_path(g_types, ids=sol, eps=0)
-                disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, check_mapping=True)
-                #import sys; sys.exit()
-                if disp is not None:
-                    # early termination
-                    if max_disp < d_tol2:
-                        cell = s.lattice.matrix
-                        strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
-                        return strucs, disp, tran, count_match
-                    else:
-                        disps.append(disp)
-                        refs.append(s)
-                        trans.append(tran)
-                        ds.append(max_disp)
+                if s is not None:
+                    disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2, check_mapping=True)
+                    #import sys; sys.exit()
+                    if disp is not None:
+                        # early termination
+                        if max_disp < d_tol2:
+                            cell = s.lattice.matrix
+                            strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
+                            return strucs, disp, tran, count_match
+                        else:
+                            disps.append(disp)
+                            refs.append(s)
+                            trans.append(tran)
+                            ds.append(max_disp)
 
         if len(ds) > 0:
             ds = np.array(ds)
