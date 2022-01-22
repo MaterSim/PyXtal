@@ -1723,12 +1723,13 @@ class pyxtal:
             else:
                 return None
         else:
-            cell1 = self.lattice.matrix
-            cell2 = ref_struc.lattice.matrix
-            diff = np.abs(cell1-cell2).flatten()
-            id = np.argmax(diff)
-            d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+            #cell1 = self.lattice.matrix
+            #cell2 = ref_struc.lattice.matrix
+            #diff = np.abs(cell1-cell2).flatten()
+            #id = np.argmax(diff)
+            #d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
             #print(cell1); print(diff); print(d_tol1, f_tol1, d_tol1 > d_tol, f_tol1 > f_tol)
+            d_tol1, f_tol1, a_tol1, switch = l1.get_diff(l2)
             if d_tol1 > d_tol and f_tol1 > f_tol:
                 return None
             else:
