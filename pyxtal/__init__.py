@@ -1528,7 +1528,7 @@ class pyxtal:
         if ref_lat is not None: 
             d_tol1, f_tol1, a_tol1, switch = new_lat.get_diff(ref_lat) 
             if (d_tol1 > d_tol and f_tol1 > f_tol) or (a_tol1 > 15.0) or switch:
-                print('bad setting', new_lat); print(ref_lat)
+                #print('bad setting', new_lat); print(ref_lat)
                 return None
 
         new_struc.lattice = new_lat #Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
@@ -1854,7 +1854,7 @@ class pyxtal:
         disp, d, _ = self.get_disps_single(ref_struc, res.x, d_tol)
         return disp, d, res.x
 
-    def get_init_translations(self, ref_struc):
+    def get_init_translations(self, ref_struc, tol=0.75):
         """
         Compute the displacement w.r.t. the reference structure
 
@@ -1889,7 +1889,8 @@ class pyxtal:
             for trans_ref in good_translations:
                 diff = trans - trans_ref
                 diff -= np.round(diff)
-                if np.abs(diff).sum() < 5e-2:
+                diff = np.dot(diff, self.lattice.matrix)
+                if np.linalg.norm(diff) < tol:
                     match = True
                     break
             if not match:
