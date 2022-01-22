@@ -268,9 +268,10 @@ class Lattice:
         for id in range(len(tols)):
             if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
                 if switchs[id]:
-                    trans[id].append([[1,0,0],[0,-1,0],[0,0,-1]])
-            trans_good.append(trans[id])
-            tols_good.append(tols[id])
+                    trans[id].extend([[[1,0,0],[0,-1,0],[0,0,-1]]])
+                #print(tols[id], len(trans[id]))
+                trans_good.append(trans[id])
+                tols_good.append(tols[id])
             
         return trans_good, tols_good
 

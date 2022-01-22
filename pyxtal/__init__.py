@@ -1451,7 +1451,7 @@ class pyxtal:
         self.source = 'Build'
         self._get_formula()
 
-    def get_alternatives(self, include_self=True, same_letters=False, ref_cell=None):
+    def get_alternatives(self, include_self=True, same_letters=False, ref_lat=None):
         """
         Get alternative structure representations
 
@@ -1484,20 +1484,20 @@ class pyxtal:
                 else:
                     add = True
                 if add:
-                    new_struc = self._get_alternative(wyc_sets, no, ref_cell)
+                    new_struc = self._get_alternative(wyc_sets, no, ref_lat)
                     if new_struc is not None:
                         new_strucs.append(new_struc)
         #print("Numbers===============", len(new_strucs)); import sys; sys.exit()
         return new_strucs
 
-    def _get_alternative(self, wyc_sets, index, ref_cell=None):
+    def _get_alternative(self, wyc_sets, index, ref_lat=None):
         """
         Get alternative structure representations
 
         Args:
             wyc_sets: dictionary of `Coset Representative` and `Transformed WP`
             index: the index of target wyc_set
-            ref_cell: a refernece cell matrix
+            ref_lat: a refernece lattice
 
         Returns:
             a new pyxtal structure after transformation
@@ -1511,12 +1511,14 @@ class pyxtal:
         R = op.affine_matrix[:3,:3] #rotation
         cell = self.lattice.matrix
         new_lat = Lattice.from_matrix(np.dot(R, cell), ltype=self.lattice.ltype)
-        matrix = new_lat.matrix
-        if ref_cell is not None and np.max(np.abs(ref_cell - matrix)) > 1.0:
-            #print('bad setting', new_lat); print(ref_cell); print(matrix)
-            return None
+        #matrix = new_lat.matrix
+        if ref_lat is not None: 
+            d_tol1, f_tol1, a_tol1, switch = new_lat.get_diff(ref_lat) 
+            if (d_tol1 > 1.0 and f_tol > 0.1) or (a_tol1 > 12) or switch:
+            #print('bad setting', new_lat); print(ref_lat)
+                return None
 
-        new_struc.lattice = Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
+        new_struc.lattice = new_lat #Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
 
         for i, site in enumerate(new_struc.atom_sites):
             id = len(self.group) - site.wp.index - 1
@@ -1694,7 +1696,7 @@ class pyxtal:
             l2 = ref_struc.lattice
             #QZ: here we enumerate all possible transformations, maybe redundant
             trans_good, _ = l2.search_transformations(l1, d_tol, f_tol)
-            #print(l1, l2, trans)#; import sys; sys.exit()
+            #print(l1, l2, len(trans_good)); import sys; sys.exit()
             good_strucs = []
 
             for trans in trans_good:
@@ -1702,7 +1704,7 @@ class pyxtal:
                 ref_struc0 = ref_struc.copy()
                 for tran in trans:
                     ref_struc0.transform(tran)
-
+                #print(ref_struc0, len(trans))
                 wp = ref_struc0.atom_sites[0].wp
                 pt = ref_struc0.atom_sites[0].position
                 if wp.is_standard_setting():
@@ -1713,42 +1715,6 @@ class pyxtal:
                         ref_struc0.translate(vector, reset_wp=True)
                         ref_struc0.diag = False
                         good_strucs.append(ref_struc0)
-
-                #consider permutation
-                #paras = ref_struc.lattice.get_para()
-                #a, b, c, alpha, beta, gamma = ref_struc.lattice.get_para(degree=True)
-                #if abs(a-c)/a < f_tol: #a, c axes are close
-                #    tmp = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
-                #    ref_struc1 = ref_struc.copy()
-                #    ref_struc1.transform(tmp)
-                #    wp = ref_struc1.atom_sites[0].wp
-                #    pt = ref_struc1.atom_sites[0].position
-                #    if wp.is_standard_setting():
-                #        good_strucs.append(ref_struc1)
-                #    else:
-                #        valid, vector = wp.check_translation(pt)
-                #        if valid:
-                #            ref_struc1.translate(vector, reset_wp=True)
-                #            ref_struc1.diag = False
-                #            good_strucs.append(ref_struc1)    
-                #            #print("add 2"); print(ref_struc1)
-
-                #if abs(beta-120) < 10.0 and round(a/c) == 2.0:
-                #    tmp = np.array([[-1, 0, -2], [0, 1, 0], [0, 0, 1]])
-                #    ref_struc2 = ref_struc.copy()
-                #    ref_struc2.transform(tmp)
-                #    wp = ref_struc2.atom_sites[0].wp
-                #    pt = ref_struc2.atom_sites[0].position
-                #    #print(beta-120, round(a/c)==2.0, wp.is_standard_setting()); import sys; sys.exit()
-                #    if wp.is_standard_setting():
-                #        good_strucs.append(ref_struc2)
-                #    else:
-                #        valid, vector = wp.check_translation(pt)
-                #        if valid:
-                #            ref_struc2.translate(vector, reset_wp=True)
-                #            ref_struc2.diag = False
-                #            good_strucs.append(ref_struc2)    
-                #            #print("add 3"); print(ref_struc2)
 
             if len(good_strucs) > 0:
                 #print("==============================", good_strucs)
@@ -1905,9 +1871,6 @@ class pyxtal:
         else:
             same_letters = True
 
-        ref_strucs = ref_struc.get_alternatives(same_letters=same_letters, \
-                                                ref_cell=self.lattice.matrix)
-
         all_disps = []
         all_trans = []
         all_ds = []
@@ -1918,7 +1881,7 @@ class pyxtal:
         if ref_strucs_matched is not None:
             for i, ref_struc_matched in enumerate(ref_strucs_matched):
                 ref_strucs_alt = ref_struc_matched.get_alternatives(same_letters=same_letters, \
-                                                ref_cell=self.lattice.matrix)
+                                                ref_lat=self.lattice)
                 _ds = []
                 _disps = []
                 _trans = []
@@ -1938,7 +1901,7 @@ class pyxtal:
                             ds[k] = d
 
                             #strs = "\nlattice {:d} wyc {:d} trans {:d}".format(i, j, k)
-                            #strs += "[{:6.3f} {:6.3f} {:6.3f}]".format(*tran), d)
+                            #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*tran, d)
                             #if d < 1.0: print(strs)
 
                         id = np.argmin(ds)
