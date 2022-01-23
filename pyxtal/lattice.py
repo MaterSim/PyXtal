@@ -203,28 +203,15 @@ class Lattice:
                              [[1,-1,0],[0,1,0],[0,0,1]],
                              [[1,0,0],[1,1,0],[0,0,1]],
                              [[1,0,0],[-1,1,0],[0,0,1]],
+                             #[[-1,0,0],[0,-1,0],[0,0,1]],
+                             #[[1,0,0],[0,-1,0],[0,0,-1]],
+                             #[[-1,0,0],[0,1,0],[0,0,-1]],
                              [[-1,0,0],[0,1,0],[0,0,1]],
                              [[1,0,0],[0,-1,0],[0,0,1]],
                              [[1,0,0],[0,1,0],[0,0,-1]],
                            ])
         else:
             return [np.eye(3)]
-
-
-    #def search_close_transformations(self, lat_ref, d_tol=1.0, f_tol=0.1):
-    #    """
-    #    Search for transformations that return close lattice matches
-    #    """
-    #    trans = []
-    #    a, b, c, alpha, beta, gamma = self.get_para(degree=True)
-    #    if abs(a-c)/a < f_tol: #a, c axes are close
-    #        tmp = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
-
-    #    if abs(beta-120.0) < 10.0:
-    #        if a > c:
-    #            tmp = np.array([[-1, 0, -round(a/c)], [0, 1, 0], [0, 0, 1]])
-    #        else:
-    #            tmp = np.array([[-round(c/a), 0, -1], [0, 1, 0], [0, 0, 1]])
 
     def search_transformations(self, lat_ref, d_tol=1.0, f_tol=0.1):
         """
@@ -252,8 +239,9 @@ class Lattice:
             for j, tran2 in enumerate(trans2):
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
-                    #print(i, j, self.ltype)
+                    #print("Start", np.linalg.det(tmp))
                     lat2 = Lattice.from_matrix(tmp, ltype=self.ltype)
+                    #print("End", np.linalg.det(lat2.matrix))
                     d_tol1, f_tol1, a_tol1, switch = lat2.get_diff(lat_ref)
                     #print(d_tol1, f_tol1, a_tol1, switch)
                 except:
@@ -423,6 +411,7 @@ class Lattice:
     def transform(self, trans_mat=np.eye(3), reset=False):
         """
         Optimize the lattice's inclination angles
+        If reset is False, may return negative lattice
         """
         if type(trans_mat) == list:
             trans_mat = np.array(trans_mat)
