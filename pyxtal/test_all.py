@@ -219,6 +219,7 @@ class TestSupergroup(unittest.TestCase):
             pmg_2, pmg_3 = strucs[0].to_pymatgen(), strucs[1].to_pymatgen()
             dist1 = sm.StructureMatcher().get_rms_dist(pmg_0, pmg_2)[0]
             dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
+            print(cif, dist1, dist2)
             self.assertTrue(dist1 < 1e-3)
             self.assertTrue(dist2 < 1e-3)
 
