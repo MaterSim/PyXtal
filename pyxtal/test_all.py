@@ -220,6 +220,9 @@ class TestSupergroup(unittest.TestCase):
             dist1 = sm.StructureMatcher().get_rms_dist(pmg_0, pmg_2)[0]
             dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
             print(cif, dist1, dist2)
+            if dist2 > 1e-3:
+                print(pmg_1.lattice.matrix)
+                print(pmg_3.lattice.matrix)
             self.assertTrue(dist1 < 1e-3)
             self.assertTrue(dist2 < 1e-3)
 
