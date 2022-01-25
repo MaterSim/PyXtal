@@ -219,6 +219,10 @@ class TestSupergroup(unittest.TestCase):
             pmg_2, pmg_3 = strucs[0].to_pymatgen(), strucs[1].to_pymatgen()
             dist1 = sm.StructureMatcher().get_rms_dist(pmg_0, pmg_2)[0]
             dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
+            print(cif, dist1, dist2)
+            if dist2 > 1e-3:
+                print(pmg_1.lattice.matrix)
+                print(pmg_3.lattice.matrix)
             self.assertTrue(dist1 < 1e-3)
             self.assertTrue(dist2 < 1e-3)
 
@@ -253,7 +257,12 @@ class TestSupergroup(unittest.TestCase):
         s1 = pyxtal(); s1.from_seed(cif_path + 'dist_6_0.cif')
         s2 = pyxtal(); s2.from_seed(cif_path + 'dist_6_1.cif')
         _, _, _, d = s1.get_disps_sets(s2, 1.0)
-        self.assertTrue(d < 0.12)
+        self.assertTrue(d < 0.15)
+
+        s1 = pyxtal(); s1.from_seed(cif_path + 'sim-0.vasp')
+        s2 = pyxtal(); s2.from_seed(cif_path + 'sim-1.vasp')
+        _, _, _, d = s1.get_disps_sets(s2, 1.0, 0.3)
+        self.assertTrue(d < 0.02)
 
 class TestOptLat(unittest.TestCase):
     def test_atomic(self):
@@ -324,8 +333,58 @@ class TestOptLat(unittest.TestCase):
             pmg2 = c2.to_pymatgen()
             self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
+    def test_transform(self):
+        l = Lattice.from_para(48.005, 7.320, 35.864, 90.000, 174.948, 90.000, ltype='monoclinic')
+        sites = [
+                [0.0000,  0.0000,  0.1250],
+                [0.2296,  0.7704,  0.5370],
+                [0.2296,  0.2296,  0.5370],
+                [0.5408,  0.0000,  0.6186],
+                [0.0000,  0.0000,  0.3074],
+                ]
+        c = pyxtal()
+        c.build(9, ['S'], [8], lattice=l, sites=[sites])
+        pmg0 = c.to_pymatgen()
+        c.optimize_lattice()
+        pmg1 = c.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg0, pmg1))
+
+    def test_transforms(self):
+        paras = [
+                 (5.0317, 19.2982,  5.8004, 90.0000, 122.2672,  90.0000, 'monoclinic', 6),
+                 (5.0317, 19.2982,  5.8004, 90.0000,  57.7328,  90.0000, 'monoclinic', 6),
+                 (9.0640,  8.3522,  5.2856, 90.0000, 103.9699,  90.0000, 'monoclinic', 3),
+                 (9.4913,  8.5844,  5.3358, 90.0000, 110.0035,  90.0000, 'monoclinic', 3),
+                 (3.7727,  6.7490,  7.6446, 64.4392,  77.9087,  75.7214,  'triclinic', 1),
+                 (3.7297,  6.5421,  7.9915, 73.9361,  71.5867, 103.2590,  'triclinic', 1),
+                 (5.5740,  7.0902, 11.4529, 96.5703,  90.0224, 108.1857,  'triclinic', 2),  
+                 (5.5487,  7.1197, 11.4349, 83.0223,  89.8479,  72.0003,  'triclinic', 2),
+                 (5.7985, 30.6352,  7.6374, 90.0000, 112.2615,  90.0000, 'monoclinic', 3),  
+                 (5.8280, 30.5992,  7.6373, 90.0000, 112.6020,  90.0000, 'monoclinic', 3),
+                ]
+        
+        for i in range(int(len(paras)/2)):
+            (a1, b1, c1, alpha1, beta1, gamma1, ltype1, N) = paras[i*2]
+            (a2, b2, c2, alpha2, beta2, gamma2, ltype2, N) = paras[i*2+1]
+            l1 = Lattice.from_para(a1, b1, c1, alpha1, beta1, gamma1, ltype=ltype1)
+            l2 = Lattice.from_para(a2, b2, c2, alpha2, beta2, gamma2, ltype=ltype2)
+            trans, diffs = l2.search_transformations(l1)
+            print(i, len(trans), N)
+            self.assertTrue(len(trans) == N)
+
+            #print("\nTarget:", l1)
+            #print("Start :", l2)
+            #if len(trans) == N:
+            #for tran, diff in zip(trans, diffs):
+            #    l = l2.transform_multi(tran)
+            #    strs = "Success:" + str(l) + " {:6.3f} {:6.3f} {:6.3f}".format(*diff)
+            #    print(strs)
 
 class TestWP(unittest.TestCase):
+
+    def test_wp_check_translation(self):
+        pass
+
     def test_wp_site_symm(self):
         data = [(143, 1, '3 . .'), 
                 (230, 6, '. 3 2'), 

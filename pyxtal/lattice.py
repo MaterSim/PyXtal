@@ -120,6 +120,11 @@ class Lattice:
         else:
             self.set_matrix(matrix)
 
+        # Set tolerance
+        if self.ltype in ["triclinic"]:
+            self.a_tol = 15.0
+        else:
+            self.a_tol = 9.9
         self._get_dof()
 
     def _get_dof(self):
@@ -179,7 +184,8 @@ class Lattice:
                              [[1,0,0],[0,1,0],[-1,0,1]],
                              [[1,0,1],[0,1,0],[0,0,1]],
                              [[1,0,-1],[0,1,0],[0,0,1]],
-                             [[-1,0,0],[0,1,0],[0,0,1]],
+                             [[1,0,0],[0,-1,0],[0,0,-1]], #change angle
+                             #[[-1,0,0],[0,1,0],[0,0,1]], #change angle
                            ])
  
         elif self.ltype in ["triclinic"]:
@@ -197,12 +203,65 @@ class Lattice:
                              [[1,-1,0],[0,1,0],[0,0,1]],
                              [[1,0,0],[1,1,0],[0,0,1]],
                              [[1,0,0],[-1,1,0],[0,0,1]],
+                             #[[-1,0,0],[0,-1,0],[0,0,1]],
+                             #[[1,0,0],[0,-1,0],[0,0,-1]],
+                             #[[-1,0,0],[0,1,0],[0,0,-1]],
                              [[-1,0,0],[0,1,0],[0,0,1]],
                              [[1,0,0],[0,-1,0],[0,0,1]],
                              [[1,0,0],[0,1,0],[0,0,-1]],
                            ])
         else:
             return [np.eye(3)]
+
+    def search_transformations(self, lat_ref, d_tol=1.0, f_tol=0.1):
+        """
+        search the closest match to the reference lattice object
+
+        Args:
+            lat_ref: reference lattice object
+            d_tol: tolerance in angle
+            f_tol:
+            a_tol:
+
+        Returns:
+            a two steps of transformation matrix if the match is possible
+        """
+        #Find all possible permutation and transformation matrices
+        trans1 = self.get_permutation_matrices()
+        trans2 = self.get_transformation_matrices()
+        tols = np.zeros([len(trans2)*len(trans1), 3])
+        trans = []
+        switchs = []
+
+        count = 0
+        for i, tran1 in enumerate(trans1):
+            lat0 = self.transform(tran1)
+            for j, tran2 in enumerate(trans2):
+                tmp = np.dot(tran2, lat0.matrix)
+                try:
+                    #print("Start", np.linalg.det(tmp))
+                    lat2 = Lattice.from_matrix(tmp, ltype=self.ltype)
+                    #print("End", np.linalg.det(lat2.matrix))
+                    d_tol1, f_tol1, a_tol1, switch = lat2.get_diff(lat_ref)
+                    #print(d_tol1, f_tol1, a_tol1, switch)
+                except:
+                    d_tol1, f_tol1, a_tol1, switch = 10, 1.0, 90, None
+                tols[count] = [d_tol1, f_tol1, a_tol1]
+                trans.append([tran1, tran2])
+                switchs.append(switch)
+                count += 1
+
+        trans_good = []
+        tols_good = []
+        for id in range(len(tols)):
+            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
+                if switchs[id]:
+                    trans[id].extend([[[1,0,0],[0,-1,0],[0,0,-1]]])
+                #print(tols[id], len(trans[id]))
+                trans_good.append(trans[id])
+                tols_good.append(tols[id])
+            
+        return trans_good, tols_good
 
 
     def search_transformation(self, lat_ref, d_tol=1.0, f_tol=0.1):
@@ -211,6 +270,9 @@ class Lattice:
 
         Args:
             lat_ref: reference lattice object
+            d_tol: tolerance in angle
+            f_tol:
+            a_tol:
 
         Returns:
             a two steps of transformation matrix if the match is possible
@@ -218,33 +280,58 @@ class Lattice:
         #Find all possible permutation and transformation matrices
         trans1 = self.get_permutation_matrices()
         trans2 = self.get_transformation_matrices()
-        
-        #define the reference matrix
-        cell1 = lat_ref.matrix
+
+        tols = np.zeros([len(trans2)*len(trans1)+1, 3])
+        trans = []
+        switchs = []
+
+        #Check it self
+        d_tol1, f_tol1, a_tol1, switch = self.get_diff(lat_ref)
+        tols[0] = [d_tol1, f_tol1, a_tol1]
+        switchs.append(switch)
+        trans.append([np.eye(3)])
+
+        count = 0
         for i, tran1 in enumerate(trans1):
             lat0 = self.transform(tran1)
-            tols = np.zeros([len(trans2), 2])
-
             for j, tran2 in enumerate(trans2):
+                count += 1
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
-                    lat2 = Lattice.from_matrix(tmp, l_type=self.ltype)
-                    cell2 = lat2.matrix
-                    #print(lat2)
-                    diff = np.abs(cell1-cell2).flatten()
-                    id = np.argmax(diff)
-                    d_tol1, f_tol1 = diff[id], diff[id]/abs(cell1.flatten()[id])
+                    #print(i, j, self.ltype)
+                    lat2 = Lattice.from_matrix(tmp, ltype=self.ltype)
+                    d_tol1, f_tol1, a_tol1, switch = lat2.get_diff(lat_ref)
+                    #print(d_tol1, f_tol1, a_tol1, switch)
                 except:
-                    d_tol1, f_tol1 = 10, 1.0
-                tols[j, :] = [d_tol1, f_tol1]
-                #print([d_tol1, f_tol1])
-            #print(tols)
-            id = np.argmin(tols[:, 0])
-            if tols[id, 0] < d_tol or tols[id, 1] < f_tol:
-                return [tran1, trans2[id]], tols[id]
+                    d_tol1, f_tol1, a_tol1, switch = 10, 1.0, 90, None
+                tols[count] = [d_tol1, f_tol1, a_tol1]
+                trans.append([tran1, tran2])
+                switchs.append(switch)
+
+        # QZ: needs to figure out a better way to select the best
+        rms = tols.sum(axis=1)
+        ids = np.argsort(rms)
+        id = ids[0]
+        #print(tols, rms)
+        #print(id, switchs[id])
+        if abs(rms[ids[0]] - rms[ids[1]]) < 1e-3:
+            if switchs[ids[0]] and not switchs[ids[1]]:
+                id = ids[1]
+                #print("change id 1", id)
+        if id != 0:
+            if abs(rms[0] - rms[id]) < 1.0:
+                #print("change id 2", id, rms[0], rms[id])
+                id = 0
+        
+        if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
+            if switchs[id]:
+                trans[id].append([[1,0,0],[0,-1,0],[0,0,-1]])
+                return trans[id], tols[id]
             else:
-                continue
-        return None, None
+                return trans[id], tols[id]
+        else:
+            #print("=============================================Cannot match:", tols[id])
+            return None, None
 
     def optimize_once(self, reset=False):
         """
@@ -297,9 +384,34 @@ class Lattice:
                 break
         return lattice, trans_matrices
 
+    def standardize(self):
+        """
+        Force the angle to be smaller than 90 degree
+        """
+        change = False
+        if self.ltype in ["monoclinic"]:
+            if self.beta > np.pi/2:
+                self.beta = np.pi - self.beta
+                change = True
+        elif self.ltype in ["triclinic"]:
+            if self.alpha > np.pi/2:
+                self.alpha = np.pi - self.alpha
+                change = True
+            if self.beta > np.pi/2:
+                self.beta = np.pi - self.beta
+                change = True
+            if self.gamma > np.pi/2:
+                self.gamma = np.pi - self.gamma
+                change = True
+
+        if change:
+            para = (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
+            self.matrix = para2matrix(para)
+
     def transform(self, trans_mat=np.eye(3), reset=False):
         """
         Optimize the lattice's inclination angles
+        If reset is False, may return negative lattice
         """
         if type(trans_mat) == list:
             trans_mat = np.array(trans_mat)
@@ -785,15 +897,37 @@ class Lattice:
         else:
             return True
 
+    def get_diff(self, l_ref):
+        """
+        get the difference in length, angle, and check if switch is needed
+        """
+        (a1, b1, c1, alpha1, beta1, gamma1) = self.get_para(degree=True)
+        (a2, b2, c2, alpha2, beta2, gamma2) = l_ref.get_para(degree=True)
+        abc_diff = np.abs(np.array([a2-a1, b2-b1, c2-c1])).max()
+        abc_f_diff = np.abs(np.array([(a2-a1)/a1, (b2-b1)/b1, (c2-c1)/c1])).max()
+        ang_diff1 = abs(alpha1 - alpha2) + abs(beta1 - beta2) + abs(gamma1 - gamma2)
+        ang_diff2 = abs(alpha1-alpha2)
+        ang_diff2 += abs(abs(beta1-90) - abs(beta2-90))
+        ang_diff2 += abs(gamma1-gamma2)
+        #print(abc_diff, abc_f_diff, ang_diff1, ang_diff2, self.ltype)
+        if ang_diff1 < ang_diff2 + 0.01:
+            return abc_diff, abc_f_diff, ang_diff1, False
+        else:
+            if self.ltype == 'monoclinic':
+                return abc_diff, abc_f_diff, ang_diff2, True
+            else:
+                return abc_diff, abc_f_diff, ang_diff2, False
+
+
     def __str__(self):
-        s = "{:s}: {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(
-            str(self.ltype),
+        s = "{:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:s}".format(
             self.a,
             self.b,
             self.c,
             self.alpha * deg,
             self.beta * deg,
             self.gamma * deg,
+            str(self.ltype),
         )
         return s
 
@@ -1541,7 +1675,11 @@ def para2matrix(cell_para, radians=True, format="upper"):
         matrix[1][1] = b * sin_alpha
         matrix[0][2] = a3
         matrix[0][1] = a2
-        matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
+        tmp = a ** 2 - a3 ** 2 - a2 ** 2
+        if tmp > 0:
+            matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
+        else:
+            return None
         #pass
     return matrix
 
