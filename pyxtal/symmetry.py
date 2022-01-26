@@ -875,56 +875,77 @@ class Group:
         """
         Adds additional k transitions to a subgroup path. For now, it only allows n = 1. 
         Will return viable additions in front of each group in the path.
-
         Args:
             path: a single result of search_subgroup_paths function
             n: number of extra k transitions to add to the given path 
-
         Returns:
             a list of maximal subgroup chains with extra k type transitions
         """
 
-        if n not in [1,2]:
+        if n != 1:
             print('only 1 extra k type supported at this time')
             return None
+
+        solutions=[]
+        for i in range(len(path[:-1])):
+            g = path[i]
+            h = path[i+1]
+            options = set(k_subgroup[str(g)]['subgroup'] + t_subgroup[str(g)]['subgroup'])
+            #print(g, h, options)
+            for _g in options:
+                ls = k_subgroup[str(_g)]['subgroup'] + t_subgroup[str(_g)]['subgroup']
+                if h in ls:
+                    sol = deepcopy(path)
+                    sol.insert(i+1, _g)
+                    solutions.append(sol)
+        #https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
+        solutions.sort()
+        solutions = list(k for k,_ in itertools.groupby(solutions))
+
+        return solutions
         
-        if n==1:
-            solutions=[]
-            for i in range(len(path[:-1])):
-                g = path[i]
-                h = path[i+1]
-                if g==h:
-                    continue
-                options = set(k_subgroup[str(g)]['subgroup'] + t_subgroup[str(g)]['subgroup'])
-                #print(g, h, options)
-                for _g in options:
-                    ls = k_subgroup[str(_g)]['subgroup'] + t_subgroup[str(_g)]['subgroup']
-                    if h in ls and (_g!= path[i-1] or len(path)==2):
-                        sol = deepcopy(path)
-                        sol.insert(i+1, _g)
-                        solutions.append(sol)
-            #https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
-            solutions.sort()
-            solutions = list(k for k,_ in itertools.groupby(solutions))
-            return solutions
+    def path_to_general_wp(self, index=1,max_steps=1):
+        """
+        Find the path to transform the special wp into general site
+
+        Args:
+            group: Group object 
+            index: the index of starting wp
+
+        Return:
+            a list of (g_types, subgroup_id, spg_number)
+        """
         
-        if n==2:
-            solutions=[]
-            first_set=self.add_k_transitions(path,n=1)
-            for x in first_set:
-                solutions.extend(self.add_k_transitions(x,n=1))
-            solutions.sort()
-            solutions = list(k for k,_ in itertools.groupby(solutions))
-            
-            for sol in solutions:
-                for i in range(len(sol)-2):
-                    if (sol[i]== sol[i+1]) and (sol[i]==sol[i+2]):
-                        solutions.remove(sol)
-                        break
+        #initial set of paths
+        tdict=t_subgroup[str(self.number)];len_t=len(tdict['subgroup'])
+        kdict=k_subgroup[str(self.number)];len_k=len(kdict['subgroup'])
+        trelation=[x[::-1] for x in tdict['relations']]
+        krelation=[x[::-1] for x in kdict['relations']]
+        potential=[[("t", i, tdict['subgroup'][i], trelation[i][index])] for i in range(len_t)] + \
+                  [[("k", i, kdict['subgroup'][i], krelation[i][index])] for i in range(len_k) \
+                   if kdict['subgroup'][i]!=self.number]
+        
+        solutions=[]
+
+        for p in deepcopy(potential):
+               #Check there's only one wp.  #Check that the 1 wp is the general position
+            if (len(set(p[-1][3]))==1) and (p[-1][3][0][-1]==Group(p[-1][2])[0].letter):
+                solutions.append(deepcopy(p))
+                potential.remove(p)
+        
+        return solutions
+
                     
-            
-            
-            return solutions
+
+        
+#         for step in range(max_steps-1):
+#             _potential=[]
+#             for p in potential:
+#                 if p[-1][
+                
+#             potential=deepcopy(_potential)
+        # for x in solutions:
+        #     print(x)
         
             
 
