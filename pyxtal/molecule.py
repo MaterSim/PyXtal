@@ -212,18 +212,19 @@ class pyxtal_molecule:
     def __str__(self):
         return '[' + self.name + ']'
 
-    def save_dict(self):
+    def save_str(self):
         """
         save the object as a dictionary
         """
-        return self.mol.as_dict()
+        d = self.mol.to(fmt='xyz')
+        return d
 
     @classmethod
-    def load_dict(cls, dicts):
+    def load_str(cls, string):
         """
         load the molecule from a dictionary
         """
-        mol = Molecule.from_dict(dicts)
+        mol = Molecule.from_str(string, fmt='xyz')
         return cls(mol)
 
     def copy(self):

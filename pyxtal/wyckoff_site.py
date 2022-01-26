@@ -329,7 +329,7 @@ class mol_site:
                  "dim": self.wp.dim,
                  "index": self.wp.index,
                  "diag": self.diag,
-                 "molecule": self.molecule.save_dict(),
+                 "molecule": self.molecule.save_str(),
                  "orientation": self.orientation.save_dict(),
                  "lattice": self.lattice.matrix,
                  "lattice_type": self.lattice.ltype,
@@ -347,7 +347,7 @@ class mol_site:
         """
         from pyxtal.molecule import pyxtal_molecule, Orientation
 
-        mol = pyxtal_molecule.load_dict(dicts["molecule"])
+        mol = pyxtal_molecule.load_str(dicts["molecule"])
         g = dicts["number"]
         index = dicts["index"]
         dim = dicts["dim"]
