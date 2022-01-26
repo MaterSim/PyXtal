@@ -7,6 +7,7 @@ from copy import deepcopy
 from random import choice, sample
 import itertools
 import numpy as np
+import json
 
 from ase import Atoms
 from pymatgen.core.structure import Structure, Molecule
@@ -163,6 +164,10 @@ class pyxtal:
 
     >>> pmg_struc = struc.to_pymatgen()
     >>> ase_struc = struc.to_ase()
+
+    or to json file
+    >>> struc.to_json('1.json')
+
     """
 
     def __init__(self, molecular=False):
@@ -1358,6 +1363,24 @@ class pyxtal:
             else:
                 self.diag = True
 
+    def to_json(self, filename='pyxtal.json'):
+        """
+        Save the model as a dictionary
+        """
+        from monty.json import MontyEncoder
+
+        dict0 = self.save_dict()
+        with open(filename, "w") as outfile:
+            json.dump(dict0, outfile, cls=MontyEncoder)
+
+    def from_json(self, filename):
+        """
+        Load the model from a json file
+        """
+        from monty.serialization import loadfn
+        data = loadfn(filename)
+        self.load_dict(data)
+
     def save_dict(self):
         """
         Save the model as a dictionary
@@ -1390,7 +1413,7 @@ class pyxtal:
         """
         Load the structure from a dictionary
         """
-        self.group = Group(dict0["group"])
+        self.group = Group(dict0["group"], dict0["dim"])
         self.lattice = Lattice.from_matrix(dict0["lattice"], ltype=self.group.lattice_type)
         self.molecular = dict0["molecular"]
         self.factor = dict0["factor"]
