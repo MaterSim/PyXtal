@@ -93,9 +93,24 @@ class TestGroup(unittest.TestCase):
             self.assertTrue(len(solutions) == n_path)
 
 class TestSupergroup(unittest.TestCase):
+
+    def test_supergroup(self):
+        """
+        call supergroup from pyxtal
+        """
+        data = [
+                ("NbO2", 141, 2),
+               ]
+        for d in data:
+            (cif, g, N) = d
+            s = pyxtal()
+            s.from_seed(cif_path + cif + '.cif')
+            strucs = s.supergroup(g, 0.5)
+            self.assertTrue(len(strucs) == N)
+
     def test_make_pyxtal(self):
         data = {
-                "NbO2": 141,
+                #"NbO2": 141,
                 "GeF2": 62,
                 "lt_quartz": 180,
                 "NiS-Cm": 160, #9b->2a+4b
@@ -221,8 +236,8 @@ class TestSupergroup(unittest.TestCase):
             dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
             print(cif, dist1, dist2)
             if dist2 > 1e-3:
-                print(pmg_1.lattice.matrix)
-                print(pmg_3.lattice.matrix)
+                print(pmg_1)
+                print(pmg_3)
             self.assertTrue(dist1 < 1e-3)
             self.assertTrue(dist2 < 1e-3)
 
