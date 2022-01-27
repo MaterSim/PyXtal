@@ -583,7 +583,7 @@ class pyxtal:
 
         from pyxtal.supergroup import supergroup
 
-        my_super = supergroup(self, G=G, group_type=group_type)
+        my_super = supergroup(self, G=G)
         solutions = my_super.search_supergroup(d_tol=d_tol)
         return my_super.make_supergroup(solutions)
 
