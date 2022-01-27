@@ -904,48 +904,55 @@ class Group:
 
         return solutions
         
-    def path_to_general_wp(self, index=1,max_steps=1):
+    def path_to_general_wp(self, index=1,max_steps=1,include_wp_list=False):
         """
         Find the path to transform the special wp into general site
 
         Args:
             group: Group object 
             index: the index of starting wp
+            max_steps: the number of steps to search
+            include_wp_list: option to have the representation of each step included in the results
 
         Return:
-            a list of (g_types, subgroup_id, spg_number)
+            a list of (g_types, subgroup_id, spg_number, wp_list (optional))
         """
         
-        #initial set of paths
-        tdict=t_subgroup[str(self.number)];len_t=len(tdict['subgroup'])
-        kdict=k_subgroup[str(self.number)];len_k=len(kdict['subgroup'])
-        trelation=[x[::-1] for x in tdict['relations']]
-        krelation=[x[::-1] for x in kdict['relations']]
-        potential=[[("t", i, tdict['subgroup'][i], trelation[i][index])] for i in range(len_t)] + \
-                  [[("k", i, kdict['subgroup'][i], krelation[i][index])] for i in range(len_k) \
-                   if kdict['subgroup'][i]!=self.number]
-        
+        potential=[[(None,None,self.number,[str(self[index].multiplicity)+self[index].letter])]] 
         solutions=[]
 
-        for p in deepcopy(potential):
-               #Check there's only one wp.  #Check that the 1 wp is the general position
-            if (len(set(p[-1][3]))==1) and (p[-1][3][0][-1]==Group(p[-1][2])[0].letter):
-                solutions.append(deepcopy(p))
-                potential.remove(p)
+
         
+        for step in range(max_steps):
+            _potential=[]
+            for p in potential:
+                tail=p[-1]
+                tdict=t_subgroup[str(tail[2])];len_t=len(tdict['subgroup'])
+                kdict=k_subgroup[str(tail[2])];len_k=len(kdict['subgroup'])
+                _indexs=[ord(x[-1])-97 for x in tail[3]]
+                next_steps=[[("t", i, tdict['subgroup'][i], sum([tdict['relations'][i][_index] for _index in _indexs],[]))] \
+                            for i in range(len_t)] + \
+                           [[("k", i, kdict['subgroup'][i], sum([kdict['relations'][i][_index] for _index in _indexs],[]))] \
+                            for i in range(len_k) if kdict['subgroup'][i]!=tail[2]]
+                for n in next_steps:
+                    _potential.append(deepcopy(p)+n) 
+            potential=deepcopy(_potential)
+                   
+            
+            for p in deepcopy(potential):
+                   #Check there's only one wp.  #Check that the 1 wp is the general position
+                if (len(set(p[-1][3]))==1) and (p[-1][3][0][-1]==Group(p[-1][2])[0].letter):
+                    solutions.append(deepcopy(p)[1:])
+                    potential.remove(p)
+        
+        if not include_wp_list:   
+            for i in range(len(solutions)):
+                for j in range(len(solutions[i])):
+                    solutions[i][j]=solutions[i][j][:3]
+                    
         return solutions
 
-                    
 
-        
-#         for step in range(max_steps-1):
-#             _potential=[]
-#             for p in potential:
-#                 if p[-1][
-                
-#             potential=deepcopy(_potential)
-        # for x in solutions:
-        #     print(x)
         
             
 
