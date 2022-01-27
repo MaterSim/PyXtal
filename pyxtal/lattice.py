@@ -564,6 +564,7 @@ class Lattice:
             # a small utility to convert the cell shape
             para = matrix2para(self.matrix)
             self.matrix = para2matrix(para, format=shape)
+            self.inv_matrix = np.linalg.inv(self.matrix)
 
     def set_volume(self, volume):
         if self.allow_volume_reset:

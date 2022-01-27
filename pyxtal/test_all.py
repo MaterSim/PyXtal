@@ -93,9 +93,24 @@ class TestGroup(unittest.TestCase):
             self.assertTrue(len(solutions) == n_path)
 
 class TestSupergroup(unittest.TestCase):
+
+    def test_supergroup(self):
+        """
+        call supergroup from pyxtal
+        """
+        data = [
+                ("NbO2", 141, 2),
+               ]
+        for d in data:
+            (cif, g, N) = d
+            s = pyxtal()
+            s.from_seed(cif_path + cif + '.cif')
+            strucs = s.supergroup(g, 0.5)
+            self.assertTrue(len(strucs) == N)
+
     def test_make_pyxtal(self):
         data = {
-                "NbO2": 141,
+                #"NbO2": 141,
                 "GeF2": 62,
                 "lt_quartz": 180,
                 "NiS-Cm": 160, #9b->2a+4b
@@ -221,8 +236,8 @@ class TestSupergroup(unittest.TestCase):
             dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
             print(cif, dist1, dist2)
             if dist2 > 1e-3:
-                print(pmg_1.lattice.matrix)
-                print(pmg_3.lattice.matrix)
+                print(pmg_1)
+                print(pmg_3)
             self.assertTrue(dist1 < 1e-3)
             self.assertTrue(dist2 < 1e-3)
 
@@ -379,6 +394,25 @@ class TestOptLat(unittest.TestCase):
             #    l = l2.transform_multi(tran)
             #    strs = "Success:" + str(l) + " {:6.3f} {:6.3f} {:6.3f}".format(*diff)
             #    print(strs)
+
+    def test_optlat_setting(self):
+        paras = [
+                 (18.950, 10.914, 31.672, 90, 168.63, 90, 'monoclinic'),
+                 (48.005, 7.320, 35.864, 90, 174.948, 90, 'monoclinic'),
+                ]
+        sites = [0.3600,  0.7500,  0.6743]
+        for para in paras:
+            (a, b, c, alpha, beta, gamma, ltype) = para
+            l = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+            for sg in range(3, 16):
+                mult = Group(sg, quick=True)
+                c=pyxtal()
+                c.build(sg, ['S'], [mult], lattice=l, sites=[[sites]]); pmg0 = c.to_pymatgen()
+                c0 = c.copy(); c0.optimize_lattice(standard=True); pmg1 = c0.to_pymatgen()
+                c1 = c.copy(); c1.optimize_lattice(standard=False); pmg2 = c1.to_pymatgen()
+                d1 = sm.StructureMatcher().get_rms_dist(pmg0, pmg1)
+                d2 = sm.StructureMatcher().get_rms_dist(pmg0, pmg2)
+                self.assertTrue(sum(d1)+sum(d2) < 1e-3)
 
 class TestWP(unittest.TestCase):
 

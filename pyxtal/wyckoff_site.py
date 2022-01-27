@@ -277,9 +277,10 @@ class mol_site:
         wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
         lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object 
         diag: whether or not use the `n` representation
+        stype: integer number to specify the type of molecule
     """
 
-    def __init__(self, mol, position, orientation, wp, lattice=None, diag=False):
+    def __init__(self, mol, position, orientation, wp, lattice=None, diag=False, stype=0):
         # describe the molecule
         self.molecule = mol
         self.diag = diag
@@ -296,6 +297,7 @@ class mol_site:
         self.numbers = self.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
+        self.type = stype
 
         if self.diag:
             self.wp.diagonalize_symops()
@@ -333,10 +335,11 @@ class mol_site:
                  "orientation": self.orientation.save_dict(),
                  "lattice": self.lattice.matrix,
                  "lattice_type": self.lattice.ltype,
+                 "stype": self.type,
                 }
         if self.molecule.torsionlist is not None:
             xyz, _ = self._get_coords_and_species(absolute=True, first=True)
-            dict0['rotors'] = molecule.get_torsion_angles(xyz)
+            dict0['rotors'] = self.molecule.get_torsion_angles(xyz)
 
         return dict0
 
@@ -356,8 +359,8 @@ class mol_site:
         wp = Wyckoff_position.from_group_and_index(g, index, dim)
         diag = dicts["diag"]
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
-
-        return cls(mol, position, orientation, wp, lattice, diag)
+        stype = dicts["stype"]
+        return cls(mol, position, orientation, wp, lattice, diag, stype)
 
     def encode(self):
         """
@@ -475,7 +478,7 @@ class mol_site:
             #else:
             #    tau = op2_m.translation_vector
             tmp = np.dot(coord0, rot) #+ tau
-
+            
             # Add absolute center to molecule
             tmp += center_absolute
             tmp = tmp.dot(self.lattice.inv_matrix)
