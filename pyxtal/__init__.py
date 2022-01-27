@@ -1174,8 +1174,8 @@ class pyxtal:
         """
         Optimize the lattice if the cell has a bad inclination angles
         We first optimize the angle to some good-looking range.
-        In standard is true, will force the structure to have the standard setting
-        This only applies to monoclinic/triclinic systems
+        In standard is true, force the structure to have the standard setting
+        This only applies to monoclinic systems
 
         Args:
             iterations: maximum number of iterations
@@ -1191,10 +1191,34 @@ class pyxtal:
                 break
 
         # only for monoclinic systems like P21/n
-        if standard and 3 <= self.group.number <= 15:
-            wp = self.atom_sites[0].wp.copy()
-            for i in range(iterations):
-                lattice, trans, opt = self.lattice.optimize_once()
+        if standard and 3 <= self.group.number <= 15 and self.diag:
+            trans1 = self.lattice.get_permutation_matrices()
+            trans2 = self.lattice.get_transformation_matrices()
+            good_trans = None
+            beta_diff = 90
+            for tran1 in trans1:
+                for tran2 in trans2:
+                    _trans = [tran1, tran2]
+                    wp0 = self.atom_sites[0].wp.copy()
+                    lat0 = self.lattice.transform_multi(_trans)
+                    wp0.transform(_trans)
+                    beta_diff0 = abs(lat0.beta*180/np.pi - 90)
+                    if wp0.is_standard_setting() and beta_diff0 < beta_diff:
+                        good_trans = _trans
+                        beta_diff = beta_diff0
+                        
+            if good_trans is not None:
+                for tran in good_trans:
+                    self.transform(tran)
+            else:
+                msg = "Cannot find the standard setting"
+                print(self.lattice)
+                if self.molecular:
+                    print(self.mol_sites[0].wp)
+                else:
+                    print(self.atom_sites[0].wp)
+                raise RuntimeError()
+
 
     def get_std_representation(self, trans):
         """
@@ -1322,8 +1346,12 @@ class pyxtal:
         self.formula = dict0["formula"]
         sites = []
         if dict0["molecular"]:
+            self.molecules = [None]*len(self.numMols)
             for site in dict0["sites"]:
-                sites.append(mol_site.load_dict(site))
+                msite = mol_site.load_dict(site)
+                sites.append(msite)
+                if self.molecules[msite.type] is None:
+                    self.molecules[msite.type] = msite.molecule
             self.mol_sites = sites
         else:
             for site in dict0["sites"]:

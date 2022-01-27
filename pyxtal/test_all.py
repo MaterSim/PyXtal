@@ -395,6 +395,25 @@ class TestOptLat(unittest.TestCase):
             #    strs = "Success:" + str(l) + " {:6.3f} {:6.3f} {:6.3f}".format(*diff)
             #    print(strs)
 
+    def test_optlat_setting(self):
+        paras = [
+                 (18.950, 10.914, 31.672, 90, 168.63, 90, 'monoclinic'),
+                 (48.005, 7.320, 35.864, 90, 174.948, 90, 'monoclinic'),
+                ]
+        sites = [0.3600,  0.7500,  0.6743]
+        for para in paras:
+            (a, b, c, alpha, beta, gamma, ltype) = para
+            l = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+            for sg in range(3, 16):
+                mult = Group(sg, quick=True)
+                c=pyxtal()
+                c.build(sg, ['S'], [mult], lattice=l, sites=[[sites]]); pmg0 = c.to_pymatgen()
+                c0 = c.copy(); c0.optimize_lattice(standard=True); pmg1 = c0.to_pymatgen()
+                c1 = c.copy(); c1.optimize_lattice(standard=False); pmg2 = c1.to_pymatgen()
+                d1 = sm.StructureMatcher().get_rms_dist(pmg0, pmg1)
+                d2 = sm.StructureMatcher().get_rms_dist(pmg0, pmg2)
+                self.assertTrue(sum(d1)+sum(d2) < 1e-3)
+
 class TestWP(unittest.TestCase):
 
     def test_wp_check_translation(self):
