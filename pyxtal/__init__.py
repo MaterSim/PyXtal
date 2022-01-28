@@ -1200,10 +1200,15 @@ class pyxtal:
             trans2 = self.lattice.get_transformation_matrices()
             good_trans = None
             beta_diff = 90
+            if self.molecular:
+                wp = self.mol_sites[0].wp
+            else:
+                wp = self.atom_sites[0].wp
+
             for tran1 in trans1:
                 for tran2 in trans2:
                     _trans = [tran1, tran2]
-                    wp0 = self.atom_sites[0].wp.copy()
+                    wp0 = wp.copy()
                     lat0 = self.lattice.transform_multi(_trans)
                     wp0.transform(_trans)
                     beta_diff0 = abs(lat0.beta*180/np.pi - 90)

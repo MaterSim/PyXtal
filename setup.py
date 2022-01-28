@@ -50,11 +50,11 @@ setup(
         "networkx>=2.3",
         "py3Dmol>=0.8.0",
         'ase>=3.18.0',
-        'numba<=0.53.0rc2', #prevent the numpy conflict
+        'numba>=0.55.0', #lastest version to support Python 3.10 and NumPy 1.21.
         'scipy>=1.6.1',
         'importlib_metadata>=1.4',
         #"openbabel>=3.0.0",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.7, <=3.10", #add the restriction for now issue #189
     license="MIT",
 )
