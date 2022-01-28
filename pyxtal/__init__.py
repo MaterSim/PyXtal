@@ -676,8 +676,12 @@ class pyxtal:
 
         G = self.group
         for g_type, id in zip(gtypes, ids):
-            sites = [site.wp.index for site in struc.atom_sites]
-            #print(G.number, id, g_type)
+            if self.molecular:
+                _sites = struc.mol_sites
+            else:
+                _sites = struc.atom_sites
+            sites = [site.wp.index for site in _sites]
+            #print(G.number, id, g_type, sites)
             splitter = wyckoff_split(G, wp1=sites, idx=id, group_type=g_type)
             struc = struc._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
             if struc is None:
@@ -1577,42 +1581,25 @@ class pyxtal:
         represenatation with general sites
         """
         if self.diag:
-            self.transform([[1,0,0],[0,1,0],[1,0,1]])
-
-        #QZ: below is a tentative solution
-        g_type = 't'
-        if self.group.number == 64 and self.mol_sites[0].wp.multiplicity==4:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=61, \
-                    group_type='k', ignore_special=True)
-        elif self.group.number == 113 and self.mol_sites[0].wp.multiplicity==2:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=18, \
-                    group_type='t', ignore_special=True)
-        elif self.group.number == 205 and self.mol_sites[0].wp.multiplicity==4:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=61, \
-                    group_type='t', ignore_special=True)
-        elif self.group.number == 167 and self.mol_sites[0].wp.multiplicity==6:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=15, \
-                    group_type='t', ignore_special=True)
-        elif self.group.number == 204 and self.mol_sites[0].wp.multiplicity==6:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=197, \
-                    group_type='t', ignore_special=True)
-        elif self.group.number == 82 and self.mol_sites[0].wp.multiplicity==4:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=81, \
-                    group_type='k', ignore_special=True)
-        elif self.group.number == 217 and self.mol_sites[0].wp.multiplicity==2:
-            s = self.subgroup_once(eps=0, mut_lat=False, H=121, \
-                    group_type='t', ignore_special=True)
-            s = s.subgroup_once(eps=0, mut_lat=False, H=23, \
-                    group_type='t', ignore_special=True)
-            s = s.subgroup_once(eps=0, mut_lat=False, H=5, \
-                    group_type='t', ignore_special=True)
-            g_type = 'k'
+            self.optimize_lattice(standard=True)
+        
+        if self.molecular:
+            sites = self.mol_sites
         else:
-            s = deepcopy(self)
+            sites = self.atom_sites
 
-        sub = s.subgroup_once(eps=0, group_type=g_type, mut_lat=False)
-        sub.optimize_lattice()
-        sub.source = "subgroup"
+        max_index = max([site.wp.index for site in sites])
+        path = self.group.short_path_to_general_wp(max_index)
+        if path is not None:
+            gtypes, ids = [], []
+            for p in path:
+                gtypes.append(p[0])
+                ids.append(p[1])
+            sub = self.subgroup_by_path(gtypes, ids, eps=0)
+            sub.optimize_lattice()
+            sub.source = "subgroup"
+        else:
+            sub = self.copy()
         return sub
 
     def show(self, **kwargs):
@@ -2375,7 +2362,7 @@ class pyxtal:
             self.tag = {'smiles': smi1,
                         'csd_code': csd_code,
                         'ccdc_number': entry.ccdc_number,
-                        'publication': entry.publication,
+                        #'publication': entry.publication,
                        }
 
             cif = process_csd_cif(cif) #, remove_H=True)
@@ -2396,6 +2383,7 @@ class pyxtal:
                 elif ele.value not in ["C", "H", "O", "N", "S", "F", "Cl", "Br", "I", "P"]:
                     organic = False
                     break
+
             if not organic:
                 msg = "Cannot handle the organometallic entry from CSD: "
                 msg += entry.formula
@@ -2433,20 +2421,20 @@ class pyxtal:
             pmg.remove_species('H')
             pmg0.remove_species('H')
 
-        import pymatgen.analysis.structure_matcher as sm
-        if not sm.StructureMatcher().fit(pmg0, pmg):
-            pmg = Structure.from_str(cif, fmt='cif')
-            #pmg0 = Structure.from_str(self.to_file(), fmt='cif')
-            pmg0 = Structure.from_str(pmg0.to(fmt='cif'), fmt='cif')
-            print(cif)
-            print(self)
-            print(pmg0)
-            pmg0.remove_species('H'); pmg0.remove_species('O')
-            pmg.remove_species('H'); pmg.remove_species('O')
-            #print(pmg0.to(fmt='cif'))
-            print(sm.StructureMatcher().fit(pmg0, pmg))
-            print(pmg) #reference
-            print(pmg0) #pyxtal
-            #print(cif)
-            #print(self.to_file())
-            print("Wrong", csd_code); import sys; sys.exit()
+        #import pymatgen.analysis.structure_matcher as sm
+        #if not sm.StructureMatcher().fit(pmg0, pmg):
+        #    pmg = Structure.from_str(cif, fmt='cif')
+        #    #pmg0 = Structure.from_str(self.to_file(), fmt='cif')
+        #    pmg0 = Structure.from_str(pmg0.to(fmt='cif'), fmt='cif')
+        #    print(cif)
+        #    print(self)
+        #    print(pmg0)
+        #    pmg0.remove_species('H'); pmg0.remove_species('O')
+        #    pmg.remove_species('H'); pmg.remove_species('O')
+        #    #print(pmg0.to(fmt='cif'))
+        #    print(sm.StructureMatcher().fit(pmg0, pmg))
+        #    print(pmg) #reference
+        #    print(pmg0) #pyxtal
+        #    #print(cif)
+        #    #print(self.to_file())
+        #    print("Wrong", csd_code); import sys; sys.exit()

@@ -37,6 +37,11 @@ class TestGroup(unittest.TestCase):
         a2, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
 
+    def test_short_path(self):
+        g = Group(217)
+        path = g.short_path_to_general_wp(7)
+        self.assertTrue(path[-1][2] == 145)
+
     def test_spg_symmetry(self):
         N_polar, N_centro, N_chiral = 0, 0, 0
         for sg in range(1, 231):
@@ -221,8 +226,8 @@ class TestSupergroup(unittest.TestCase):
                 "BTO": [123, 221],
                 "lt_cristobalite": [98, 210, 227],
                 "BTO-Amm2": [65, 123, 221],
-                "NaSb3F10": [186, 194],
-                "NaSb3F10": [176, 194],
+                #"NaSb3F10": [186, 194],
+                #"NaSb3F10": [176, 194],
                 #"MPWO": [59, 71, 139, 225],
                }
         for cif in data.keys():
