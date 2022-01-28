@@ -55,6 +55,6 @@ setup(
         'importlib_metadata>=1.4',
         #"openbabel>=3.0.0",
     ],
-    python_requires=">=3.7, <=3.10", #add the restriction for now issue #189
+    python_requires=">=3.7, <3.10", #add the restriction for now issue #189
     license="MIT",
 )

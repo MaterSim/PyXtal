@@ -19,15 +19,11 @@ from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
 from pyxtal.supergroup import supergroups, supergroup
 
-#import warnings
-#warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 cif_path = resource_filename("pyxtal", "database/cifs/")
-l1 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
-l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
+l01 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
+l02 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_index(36, "4a")
-wp6 = Wyckoff_position.from_group_and_index(167, 0)
 
 class TestGroup(unittest.TestCase):
     def test_list_wyckoff_combinations(self):
@@ -441,10 +437,10 @@ class TestWP(unittest.TestCase):
         self.assertTrue(symbol == "4a")
 
     def test_merge(self):
-        pt, wp, _ = wp1.merge([0.05, 0.7, 0.24], l1.matrix, 0.5)
+        pt, wp, _ = wp1.merge([0.05, 0.7, 0.24], l01.matrix, 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol == "4a")
-        pt, wp, _ = wp1.merge([0.15, 0.7, 0.24], l1.matrix, 0.5)
+        pt, wp, _ = wp1.merge([0.15, 0.7, 0.24], l01.matrix, 0.5)
         symbol = str(wp.multiplicity) + wp.letter
         self.assertTrue(symbol == "8b")
 
@@ -750,11 +746,11 @@ class TestCluster(unittest.TestCase):
 
 class TestLattice(unittest.TestCase):
     def test_para_matrix(self):
-        self.assertTrue(np.allclose(l1.matrix, l2.matrix))
+        self.assertTrue(np.allclose(l01.matrix, l02.matrix))
 
     def test_swap(self):
-        l1.swap_axis(ids=[1, 0, 2])
-        abc = l1.get_para()[:3]
+        l01.swap_axis(ids=[1, 0, 2])
+        abc = l01.get_para()[:3]
         self.assertTrue(abc, np.array([9.13, 4.08, 5.50]))
 
     def test_optimize_once(self):
