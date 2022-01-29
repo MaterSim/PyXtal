@@ -37,7 +37,7 @@ class representation():
         Args:
             struc: pyxtal object
         """
-        symmetry = [struc.group.number, struc.diag]
+        symmetry = [struc.group.number, struc.standard_setting]
         lat = struc.lattice.encode()
         vector = [symmetry + lat]
         smiles = []
@@ -120,7 +120,7 @@ class representation():
         # symmetry
         v = self.x[0]
         struc = pyxtal(molecular=True)
-        struc.group, number, struc.diag = Group(v[0]), v[0], v[1]
+        struc.group, number, struc.standard_setting = Group(v[0]), v[0], v[1]
     
         # lattice
         ltype = struc.group.lattice_type
@@ -197,7 +197,7 @@ class representation():
         # data for cell
         if x[0][0] <= 74:
             num = 5
-        elif x[0][0] <=194:
+        elif x[0][0] <= 194:
             num = 4
         else:
             num = 3

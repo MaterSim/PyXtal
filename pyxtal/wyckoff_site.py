@@ -32,18 +32,16 @@ class atom_site:
         wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object 
         coordinate: a fractional 3-vector for the generating atom's coordinate
         specie: an Element, element name or symbol, or atomic number of the atom
-        diag: whether or not has the diagonal symmetry
         search: to search for the optimum position for special wyckoff site
     """
 
-    def __init__(self, wp=None, coordinate=None, specie=1, diag=False, search=False):
+    def __init__(self, wp=None, coordinate=None, specie=1, search=False):
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
-        self.diag = diag
         self.wp = wp
-        if self.diag:
-            self.wp.diagonalize_symops()
-            #self.position = project_point(self.position, wp[0])
+        #if self.diag:
+        #    self.wp.diagonalize_symops()
+        #    #self.position = project_point(self.position, wp[0])
 
         self._get_dof()
         self.PBC = self.wp.PBC
@@ -66,10 +64,7 @@ class atom_site:
     def save_dict(self):
         dict0 = {"position": self.position,
                  "specie": self.specie,
-                 "number": self.wp.number,
-                 "dim": self.wp.dim,
-                 "index": self.wp.index,
-                 "PBC": self.wp.PBC,
+                 "wp": self.wp.save_dict(),
                 }
         return dict0
 
@@ -86,13 +81,9 @@ class atom_site:
         """
         load the sites from a dictionary
         """
-        g = dicts["number"]
-        index = dicts["index"]
-        dim = dicts["dim"]
-        PBC = dicts["PBC"]
         position = dicts["position"]
         specie = dicts["specie"]
-        wp = Wyckoff_position.from_group_and_index(g, index, dim, PBC)
+        wp = Wyckoff_position.load_dict(dicts['wp'])
         return cls(wp, position, specie)
 
     def perturbate(self, lattice, magnitude=0.1):
@@ -276,14 +267,12 @@ class mol_site:
         orientation: an `Orientation <pyxtal.molecule.Oreintation.html>`_ object 
         wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
         lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object 
-        diag: whether or not use the `n` representation
         stype: integer number to specify the type of molecule
     """
 
-    def __init__(self, mol, position, orientation, wp, lattice=None, diag=False, stype=0):
+    def __init__(self, mol, position, orientation, wp, lattice=None, stype=0):
         # describe the molecule
         self.molecule = mol
-        self.diag = diag
         self.wp = wp
         self.position = position # fractional coordinate of molecular center
         self.orientation = orientation #pyxtal.molecule.orientation object 
@@ -299,9 +288,9 @@ class mol_site:
         self.radius = mol.radius
         self.type = stype
 
-        if self.diag:
-            self.wp.diagonalize_symops()
-            self.position = self.wp.project(self.position)
+        #if self.diag:
+        #    self.wp.diagonalize_symops()
+        #    self.position = self.wp.project(self.position)
 
     def __str__(self):
         if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
@@ -327,10 +316,7 @@ class mol_site:
 
     def save_dict(self):
         dict0 = {"position": self.position,
-                 "number": self.wp.number,
-                 "dim": self.wp.dim,
-                 "index": self.wp.index,
-                 "diag": self.diag,
+                 "wp": self.wp.save_dict(),
                  "molecule": self.molecule.save_str(),
                  "orientation": self.orientation.save_dict(),
                  "lattice": self.lattice.matrix,
@@ -351,16 +337,12 @@ class mol_site:
         from pyxtal.molecule import pyxtal_molecule, Orientation
 
         mol = pyxtal_molecule.load_str(dicts["molecule"])
-        g = dicts["number"]
-        index = dicts["index"]
-        dim = dicts["dim"]
         position = dicts["position"]
         orientation = Orientation.load_dict(dicts['orientation'])
-        wp = Wyckoff_position.from_group_and_index(g, index, dim)
-        diag = dicts["diag"]
+        wp = Wyckoff_position.load_dict(dicts['wp'])
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
         stype = dicts["stype"]
-        return cls(mol, position, orientation, wp, lattice, diag, stype)
+        return cls(mol, position, orientation, wp, lattice, stype)
 
     def encode(self):
         """

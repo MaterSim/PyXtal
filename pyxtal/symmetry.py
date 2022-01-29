@@ -1122,6 +1122,23 @@ class Wyckoff_position:
         """
         return deepcopy(self)
 
+    def save_dict(self):
+        dict0 = {
+         "group": self.number,
+         "index": self.index,
+         "dim": self.dim,
+         "transformation": self.get_transformation(),
+        }
+        return dict0
+
+    @classmethod
+    def load_dict(cls, dicts):
+        g = dicts['group']
+        index = dicts['index']
+        dim = dicts['dim']
+        trans = dicts['transformation']
+        return Wyckoff_position.from_group_and_index(g, index, dim, trans=trans)
+
     def check_translation(self, pt, trans=[0, 0.25, 0]):
         wp0 = Group(self.number)[self.index]
         coords1 = self.apply_ops(pt) + trans
@@ -1205,29 +1222,26 @@ class Wyckoff_position:
                              [[1,0,0],[0,1,0],[-1,0,1]],
                              [[1,0,1],[0,1,0],[0,0,1]],
                              [[1,0,-1],[0,1,0],[0,0,1]],
-                             #[[-1,0,0],[0,1,0],[0,0,1]],
                            ])
  
         else:
             return [np.eye(3)]
 
 
-    def to_standard_setting(self):
+    def get_transformation(self):
         """
         calculate the required transformation to the standard setting
         """
-        trans = []
-        _trans = self.get_transformation_matrices()
+        ops = Group(self.number)[self.index]
 
-        # search for a single step
-        for tran1 in _trans:
-            for tran2 in _trans:
-                wp0 = self.copy()
-                wp0.diagonalize_symops(tran1, False)
-                wp0.diagonalize_symops(tran2, False)
-                if wp0.is_standard_setting():
-                    trans.append([tran1, tran2])
-        return trans
+        _trans = self.get_transformation_matrices()
+        for trans in _trans:
+            wp0 = self.copy()
+            wp0.diagonalize_symops(trans, True)
+            if self.has_equivalent_ops(wp0):
+                return trans
+        print(wp)
+        raise RuntimeError("Cannot find the transformation")
     
     def is_standard_setting(self):
         ops0 = Group(self.number)[self.index]
@@ -1447,9 +1461,7 @@ class Wyckoff_position:
 
         return None, None
 
-
-
-    def from_group_and_index(group, index, dim=3, PBC=None):
+    def from_group_and_index(group, index, dim=3, PBC=None, trans=None):
         """
         Creates a Wyckoff_position using the space group number and index
 
@@ -1461,6 +1473,7 @@ class Wyckoff_position:
                 ("4a" or "6f")
             dim: the periodic dimension of the crystal
             PBC: the periodic boundary conditions
+            trans: transformation matrix
         """
         wp = Wyckoff_position()
         wp.dim = dim
@@ -1504,10 +1517,10 @@ class Wyckoff_position:
             # Generate a Group and retrieve Wyckoff position from it
             g = Group(group, dim=0)
             wp = g[index]
-        #wp.generators = get_generators(wp.number, dim)[wp.index]
-        #wp.get_site_symmetry()
         wp.set_euclidean()
         wp.symbol, _ = get_symbol_and_number(wp.number, wp.dim)
+        if trans is not None:
+            wp.diagonalize_symops(trans)
         return wp
 
     def wyckoff_from_generating_op(gen_op, gen_pos):

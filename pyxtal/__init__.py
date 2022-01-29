@@ -173,7 +173,7 @@ class pyxtal:
     def __init__(self, molecular=False):
         self.valid = False
         self.molecular = molecular
-        self.diag = False
+        self.standard_setting = True
         self.numIons = None
         self.numMols = None
         self.source = None
@@ -195,7 +195,7 @@ class pyxtal:
             s = "\n------Crystal from {:s}------".format(self.source)
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
-            if self.diag and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
+            if not self.standard_setting and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                 symbol = self.group.alias
             else:
                 symbol = self.group.symbol
@@ -334,7 +334,7 @@ class pyxtal:
                     self.numMols = struc.numMols
                     self.molecules = struc.molecules
                     self.mol_sites = struc.mol_sites
-                    self.diag = struc.diag
+                    self.standard_setting = struc.mol_sites[0].wp.is_standard_setting()
                 else:
                     self.numIons = struc.numIons
                     self.species = struc.species
@@ -373,7 +373,7 @@ class pyxtal:
             self.lattice = struc.lattice
             self.molecules = pmols
             self.numMols = struc.numMols
-            self.diag = False #struc.diag
+            self.standard_setting = True 
             self.valid = True # Need to add a check function
             self.optimize_lattice()
         else:
@@ -392,7 +392,7 @@ class pyxtal:
                 else:
                     self.lattice, self.atom_sites = read_cif(seed)
                     self.group = Group(self.atom_sites[0].wp.number)
-                    self.diag = self.atom_sites[0].diag
+                    self.standard_setting = self.atom_sites[0].wp.is_standard_setting()
                     self.valid = True
         self.factor = 1.0
         self.source = 'Seed'
@@ -791,8 +791,8 @@ class pyxtal:
         """
 
         #transform from p21/n to p21/n, need to fix later, wp.get_transformation_to_std()
-        if self.diag:
-            self.transform([[1,0,0],[0,1,0],[1,0,1]])
+        if not self.standard_setting:
+            self.optimize_lattice(standard=True)
 
         if H is not None:
             if Group(H, quick=True).point_group == self.group.point_group:
@@ -937,8 +937,7 @@ class pyxtal:
                     dis /= np.linalg.norm(dis)
                     pos0 += eps*dis*(np.random.random()-0.5)
                     wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
-                    diag = self.diag
-                    _site = mol_site(_mol, pos0, ori, wp, lattice, diag)
+                    _site = mol_site(_mol, pos0, ori, wp, lattice)
                     _site.type = site.type
                     split_sites.append(_site)
                     id += wp.multiplicity
@@ -1142,10 +1141,10 @@ class pyxtal:
                 for i, mol in enumerate(self.molecules):
                     if mol.name == site.molecule.name:
                         break
-                newsites.append(atom_site(site.wp, site.position, i+1, diag=site.diag))
+                newsites.append(atom_site(site.wp, site.position, i+1))
             new_struc.atom_sites = newsites
             new_struc.group = self.group
-            new_struc.diag = site.diag
+            new_struc.standard_setting = site.wp.is_standard_setting()
             new_struc.numIons = self.numMols
             new_struc.species = []
             for i in range(len(self.molecules)):
@@ -1195,38 +1194,39 @@ class pyxtal:
                 break
 
         # only for monoclinic systems like P21/n
-        if standard and 3 <= self.group.number <= 15 and self.diag:
-            trans1 = self.lattice.get_permutation_matrices()
-            trans2 = self.lattice.get_transformation_matrices()
-            good_trans = None
-            beta_diff = 90
-            if self.molecular:
-                wp = self.mol_sites[0].wp
-            else:
-                wp = self.atom_sites[0].wp
-
-            for tran1 in trans1:
-                for tran2 in trans2:
-                    _trans = [tran1, tran2]
-                    wp0 = wp.copy()
-                    lat0 = self.lattice.transform_multi(_trans)
-                    wp0.transform(_trans)
-                    beta_diff0 = abs(lat0.beta*180/np.pi - 90)
-                    if wp0.is_standard_setting() and beta_diff0 < beta_diff:
-                        good_trans = _trans
-                        beta_diff = beta_diff0
-                        
-            if good_trans is not None:
-                for tran in good_trans:
-                    self.transform(tran)
-            else:
-                msg = "Cannot find the standard setting"
-                print(self.lattice)
+        if standard and 3 <= self.group.number <= 15:
+            if not self.standard_setting:
+                trans1 = self.lattice.get_permutation_matrices()
+                trans2 = self.lattice.get_transformation_matrices()
+                good_trans = None
+                beta_diff = 90
                 if self.molecular:
-                    print(self.mol_sites[0].wp)
+                    wp = self.mol_sites[0].wp
                 else:
-                    print(self.atom_sites[0].wp)
-                raise RuntimeError()
+                    wp = self.atom_sites[0].wp
+
+                for tran1 in trans1:
+                    for tran2 in trans2:
+                        _trans = [tran1, tran2]
+                        wp0 = wp.copy()
+                        lat0 = self.lattice.transform_multi(_trans)
+                        wp0.transform(_trans)
+                        beta_diff0 = abs(lat0.beta*180/np.pi - 90)
+                        if wp0.is_standard_setting() and beta_diff0 < beta_diff:
+                            good_trans = _trans
+                            beta_diff = beta_diff0
+                            
+                if good_trans is not None:
+                    for tran in good_trans:
+                        self.transform(tran)
+                else:
+                    msg = "Cannot find the standard setting"
+                    print(self.lattice)
+                    if self.molecular:
+                        print(self.mol_sites[0].wp)
+                    else:
+                        print(self.atom_sites[0].wp)
+                    raise RuntimeError()
 
 
     def get_std_representation(self, trans):
@@ -1281,16 +1281,13 @@ class pyxtal:
                 ori.reset_matrix(np.eye(3))
                 center = mol.get_center(xyz_abs)
                 mol.reset_positions(xyz_abs-center)               
-                sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, diag=False)
+                sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, site.type)
             else:
-                sites[j] = atom_site(wp, pos_frac, site.specie, diag=False)
+                sites[j] = atom_site(wp, pos_frac, site.specie)
             
         # reset the matrix 
         self.lattice = lattice0
-        if sites[0].wp.is_standard_setting():
-            self.diag = False
-        else:
-            self.diag = True
+        self.standard_setting = sites[0].wp.is_standard_setting()
 
     def to_json(self, filename='pyxtal.json'):
         """
@@ -1415,7 +1412,7 @@ class pyxtal:
                     _sites.append(atom_site(_wp, pt, sp))
 
         self.atom_sites = _sites
-        self.diag = False
+        self.standard_setting = True
         self.valid = True
         self.source = 'Build'
         self._get_formula()
@@ -1585,7 +1582,7 @@ class pyxtal:
         Transform a molecular crystal with speical sites to subgroup
         represenatation with general sites
         """
-        if self.diag:
+        if not self.standard_setting:
             self.optimize_lattice(standard=True)
         
         if self.molecular:
@@ -1666,7 +1663,7 @@ class pyxtal:
                     valid, vector = wp.check_translation(pt)
                     if valid:
                         ref_struc0.translate(vector, reset_wp=True)
-                        ref_struc0.diag = False
+                        ref_struc0.standard_setting = True
                         good_strucs.append(ref_struc0)
 
             return good_strucs 
