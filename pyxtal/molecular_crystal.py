@@ -94,10 +94,10 @@ class molecular_crystal:
         self.diag = diag
         if self.diag and self.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
             self.diag = False
-        if self.diag and self.group.number in [7, 14, 15]:
-            self.symbol = self.group.alias
-        else:
-            self.symbol = self.group.symbol
+        #if self.diag and self.group.number in [7, 14, 15]:
+        #    self.symbol = self.group.alias
+        #else:
+        #    self.symbol = self.group.symbol
 
         # Composition
         if numMols is None:
@@ -149,7 +149,7 @@ class molecular_crystal:
     def __str__(self):
         s = "------Random Molecular Crystal------"
         s += "\nDimension: " + str(self.dim)
-        s += "\nGroup: " + self.symbol
+        #s += "\nGroup: " + self.symbol
         s += "\nVolume factor: " + str(self.factor)
         s += "\n" + str(self.lattice)
         if self.valid:

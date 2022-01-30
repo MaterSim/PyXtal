@@ -195,8 +195,11 @@ class pyxtal:
             s = "\n------Crystal from {:s}------".format(self.source)
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
-            if not self.standard_setting and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
-                symbol = self.group.alias
+            if not self.standard_setting: #and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
+                if self.molecular:
+                    symbol = self.mol_sites[0].wp.get_symbols()
+                else:
+                    symbol = self.atom_sites[0].wp.get_symbols()
             else:
                 symbol = self.group.symbol
             s += "\nGroup: {} ({})".format(symbol, self.group.number)

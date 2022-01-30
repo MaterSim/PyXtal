@@ -144,16 +144,12 @@ class Group:
         self.header = "-- " + names[dim] + 'group --'
         self.symbol, self.number = get_symbol_and_number(group, dim)
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
-        self.alias = None
 
         if dim == 3:
             self.point_group, self.polar, self.inversion, self.chiral = get_point_group(self.number)
 
         if not quick:
             if dim == 3:
-                if self.number in [5, 7, 8, 9, 12, 13, 14, 15]:
-                    self.alias = self.symbol.replace("c","n")
-                    #self.alias = self.alias.replace("C","I")
                 self.hall_number = hall_from_hm(self.number)
 
             # Wyckoff positions, site_symmetry, generator
@@ -1182,6 +1178,64 @@ class Wyckoff_position:
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                 self.ops[j] = op1
 
+    def get_symbols(self):
+        """
+        Search for the symbol based on symmetry operation
+        http://cci.lbl.gov/sginfo/hall_symbols.html
+        3: P2
+        4: P21
+        5: C2/m, A2/m, I2/m
+        6: Pm
+        7: Pc, Pa, Pn
+        8: Cm, Im, Am
+        9: Cc, An, Ia, Aa, Cn, Ic
+        10: P2/m
+        11: P21/m
+        12: C2/m, A2/m, I2/m
+        13: P2/c, P2/a, P2/n
+        14: P21/c, P21/a, P21/n
+        15: C2/c, C2/n, I2/a, A2/a, A2/n, I2/c
+        """
+        symbol = self.symbol
+        #    return symbol
+        if self.is_standard_setting():
+            return symbol
+        else:
+            #Determine the Bravis Lattice
+            ops = self.ops
+            if self.number in [5, 8, 9, 12, 15]:
+                tran1 = ops[0].translation_vector
+                tran2 = ops[int(len(ops)/2)].translation_vector
+                diff = tran2 - tran1
+                diff -= np.round(diff)
+                if abs(diff[0]) < 1e-4:
+                    BL = 'A'
+                elif abs(diff[2]) < 1e-4:
+                    BL = 'C'
+                else:
+                    BL = 'I'
+            else:
+                BL = symbol[0]
+
+            #Determine the a, c, n symbols for glide axis
+            if self.number in [7, 9, 13, 14, 15]:
+                ops1 = Group(self.number)[self.index]
+                tran1 = ops[-1].translation_vector
+                tran2 = ops1[-1].translation_vector
+                diff = tran2 - tran1
+                diff -= np.round(diff)
+                diff = np.abs(diff)
+                N = len(diff[diff>0]) 
+                if N == 0:
+                    GL = 'c'
+                elif N == 1:
+                    GL = 'n'
+                else:
+                    GL = 'a'
+            else:
+                GL = symbol[-1]
+            return BL+symbol[1:-1]+GL
+            
     def transform(self, trans):
         """
         Args:
@@ -1244,16 +1298,22 @@ class Wyckoff_position:
         raise RuntimeError("Cannot find the transformation")
     
     def is_standard_setting(self):
-        ops0 = Group(self.number)[self.index]
-        for i, op0 in enumerate(ops0):
-            op1 = self.ops[i]
-            diff0 = op0.translation_vector - op1.translation_vector
-            diff0 -= np.round(diff0)
-            diff1 = op0.rotation_matrix - op1.rotation_matrix
-            if np.abs(diff0).sum() > 1e-3 or np.abs(diff1).sum() > 1e-3:
-                return False
-        else:
+        """
+        Check if the symmetry operation follows the standard setting
+        """
+        if self.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
             return True
+        else:
+            ops0 = Group(self.number)[self.index]
+            for i, op0 in enumerate(ops0):
+                op1 = self.ops[i]
+                diff0 = op0.translation_vector - op1.translation_vector
+                diff0 -= np.round(diff0)
+                diff1 = op0.rotation_matrix - op1.rotation_matrix
+                if np.abs(diff0).sum() > 1e-3 or np.abs(diff1).sum() > 1e-3:
+                    return False
+            else:
+                return True
 
     def has_equivalent_ops(self, wp2):
         ops0 = wp2.ops

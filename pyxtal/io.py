@@ -44,31 +44,30 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         style: `icsd` or `mp` (used in pymatgen)
 
     """
-    if sym_num is None:
-        l_type = struc.group.lattice_type
-        symbol = struc.group.symbol
-        number = struc.group.number
-        G1 = struc.group.Wyckoff_positions[0]
-    else: #P1 symmetry
-        l_type = 'triclinic'
-        symbol = 'P1'
-        number = 1
-        G1 = Group(1).Wyckoff_positions[0]
-
-    if hasattr(struc, 'mol_sites'):
+    if struc.molecular:
         sites = struc.mol_sites
         molecule = True
     else:
         sites = struc.atom_sites
         molecule = False
 
-    change_set = False
-    if number in [7, 14, 15]:
-        if hasattr(struc, 'diag') and struc.diag:
-            symbol = struc.group.alias 
-            G1.diagonalize_symops()
-            change_set = True
-    
+    if sym_num is None:
+        l_type = struc.group.lattice_type
+        number = struc.group.number
+        G1 = struc.group[0]
+        if struc.standard_setting:
+            symbol = struc.group.symbol
+        else:
+            symbol = sites[0].wp.get_symbols()
+            trans = sites[0].wp.get_transformation()
+            G1.diagonalize_symops(trans, False)
+
+    else: #P1 symmetry
+        l_type = 'triclinic'
+        symbol = 'P1'
+        number = 1
+        G1 = Group(1).Wyckoff_positions[0]
+   
     lines = logo
     lines += 'data_' + header + '\n'
     if hasattr(struc, "energy"):
@@ -99,12 +98,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
     lines += ' _symmetry_equiv_pos_site_id\n'
     lines += ' _symmetry_equiv_pos_as_xyz\n'
 
-    if not change_set:
-    #if change_set:
-        wps = G1
-    else:
-        wps = sites[0].wp.ops
-    for i, op in enumerate(wps):
+    for i, op in enumerate(G1):
         lines += "{:d} '{:s}'\n".format(i+1, op.as_xyz_string())
 
     lines += '\nloop_\n'
