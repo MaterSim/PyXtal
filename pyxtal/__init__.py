@@ -1898,8 +1898,8 @@ class pyxtal:
                 #print('=======', i, j, len(ref_strucs_matched), len(ref_strucs_alt))
                 # must have the same wp letters and  different strucs
                 if self.check_mapping(ref_struc_alt):
-                    if not ref_struc_alt.is_duplicate(good_ref_strucs+bad_ref_strucs):
-                        trans = self.get_init_translations(ref_struc_alt)
+                    #if not ref_struc_alt.is_duplicate(good_ref_strucs+bad_ref_strucs):
+                    trans = self.get_init_translations(ref_struc_alt)
 
                 for k, tran in enumerate(trans):
                     disp, d, valid = self.get_disps_single(ref_struc_alt, tran, d_tol)
