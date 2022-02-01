@@ -166,6 +166,7 @@ class pyxtal:
     >>> ase_struc = struc.to_ase()
 
     or to json file
+
     >>> struc.to_json('1.json')
 
     """
@@ -1620,7 +1621,8 @@ class pyxtal:
         """
         Check if the a, b, c axis have free parameters
         """
-        free_axis = [0, 1, 2]
+        free_axis = self.group.get_free_axis()
+
         for site in self.atom_sites:
             axis = site.wp.get_frozen_axis()
             for ax in axis:
@@ -2178,6 +2180,7 @@ class pyxtal:
     def translate(self, trans, reset_wp=False):
         """
         move the atomic sites along a translation
+        Note that this may change the structure
 
         Args:
             trans: 1*3 vector

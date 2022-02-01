@@ -999,6 +999,53 @@ class Group:
             else:
                 return 2  # A, C, I
 
+    def get_free_axis(self):
+        """
+        Get the free axis that can perform continus translation
+        """
+        number = self.number 
+
+        if number == 1:
+            return [0, 1, 2]
+        elif number == 2:
+            return []
+        elif 3 <= number <= 5:
+            return [1] # '2'
+        elif 6 <= number <= 9:
+            return [0, 2] # 'm'
+        elif 10 <= number <= 24:
+            return [] # '2/m', '222'
+        elif 25 <= number <= 46:
+            return [2] # 'mm2'
+        elif 47 <= number <= 74:
+            return []  # 'mmm'
+        elif 75 <= number <= 80:
+            return [2] # '4'
+        elif 81 <= number <= 98:
+            return [] # '-4', '4/m', '422'
+        elif 99 <= number <= 110: 
+            return [2] # '4mm'
+        elif 111 <= number <= 142:
+            return []  # '-42m', '4/mmm'
+        elif 143 <= number <= 146:
+            return [2] # '3'
+        elif 147 <= number <= 155:
+            return []  #'-3', '32'
+        elif 156 <= number <= 161:
+            return [2] #'3m'
+        elif 162 <= number <= 167:
+            return [] #'-3m'
+        elif 168 <= number <= 173:
+            return [2] #'6'
+        elif 174 <= number <= 182:
+            return [] # '-6', '6/m', '622'
+        elif 183 <= number <= 186:
+            return [2] #'6mm'
+        elif 187 <= number <= 194:
+            return [] #'-62m', '6/mmm'
+        elif 195 <= number <= 230:
+            return [] #'23', 'm-3', '432', '-43m', 'm-3m', 
+
     @classmethod
     def list_groups(cls, dim=3):
         """
@@ -3505,3 +3552,5 @@ def get_all_polar_space_groups():
         else:
             nps.append(i)
     return ps, nps
+
+
