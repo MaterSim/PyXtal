@@ -1978,7 +1978,7 @@ class pyxtal:
                     sites.append(site)
         self.atom_sites = sites
 
-    def get_transition(self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2, max_path=30):
+    def get_transition(self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2, max_path=30, both=False):
         """
         Get the splitted wyckoff information along a given path:
 
@@ -1987,6 +1987,8 @@ class pyxtal:
             d_tol: maximally allowed atomic displacement
             d_tol2: displacement that allows early termination
             N_images: number of intermediate images
+            max_path: maximum number of paths
+            both: whether or not do interpolation along both sides
 
         Returns:
             - strucs:
@@ -2011,13 +2013,13 @@ class pyxtal:
             good_trans = []
 
             for p in paths:
-                r = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images)
+                r = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images, both)
                 (strucs, disp, tran, count) = r
                 if count == 0:
                     # prepare more paths to increase diversity
                     add_paths = self.group.add_k_transitions(p)
                     for p0 in add_paths:
-                        r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images)
+                        r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images, both)
                         (strucs, disp, tran, count) = r
                         if strucs is not None: 
                             if strucs[-1].disp < d_tol2: #stop
@@ -2052,7 +2054,7 @@ class pyxtal:
                        
             return None, None, None, p
 
-    def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2):
+    def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2, both=False):
         """
         Get the splitted wyckoff information along a given path:
 
@@ -2062,6 +2064,7 @@ class pyxtal:
             d_tol: maximally allowed atomic displacement
             d_tol2: displacement that allows early termination
             N_images: number of intermediate images
+            both: interpolation on both sides
 
         Returns:
             - strucs:
@@ -2157,7 +2160,7 @@ class pyxtal:
                         # early termination
                         if max_disp < d_tol2:
                             cell = s.lattice.matrix
-                            strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
+                            strucs = ref_struc.make_transitions(disp, cell, tran, N_images, both)
                             return strucs, disp, tran, count_match
                         else:
                             disps.append(disp)
@@ -2171,7 +2174,7 @@ class pyxtal:
             cell = refs[id].lattice.matrix
             tran = trans[id]
             disp = disps[id]
-            strucs = ref_struc.make_transitions(disp, cell, tran, N_images)
+            strucs = ref_struc.make_transitions(disp, cell, tran, N_images, both)
             return strucs, disp, tran, count_match
 
         else:
@@ -2188,7 +2191,7 @@ class pyxtal:
         for site in self.atom_sites:
             site.update(site.position + trans, reset_wp=reset_wp)
 
-    def make_transitions(self, disps, lattice=None, translation=None, N_images=3):
+    def make_transitions(self, disps, lattice=None, translation=None, N_images=3, both=False):
         """
         make the pyxtals by following the atomic displacements
 
@@ -2197,6 +2200,7 @@ class pyxtal:
             lattice: 3*3 cell matrix (self.lattice.matrix if None)
             translation: overall translation
             N_images: number of images
+            both: whether or not interpolar on both sides
         """
         N_images = max([N_images, 2])
         cell = self.lattice.matrix
@@ -2213,7 +2217,12 @@ class pyxtal:
         if translation is None:
             translation = np.zeros([3])
 
-        for i in range(N_images):
+        if both:
+            i_list = range(0, 2*N_images-1)
+        else:
+            i_list = range(N_images)
+
+        for i in i_list:
             struc = self.copy()
             for j, site in enumerate(struc.atom_sites):
                 coord = site.position + i*disps[j] + translation
