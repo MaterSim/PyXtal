@@ -2230,7 +2230,7 @@ class pyxtal:
             struc.source = 'Transition {:d} {:6.3f}'.format(i, max_disp*i)
             struc.disp = max_disp*i
             if i >= N_images:
-                struc.lattice.set_matrix(cell + (i-2*(N_images-1))*l_disps)
+                struc.lattice.set_matrix(cell - (i-2*(N_images-1))*l_disps)
             else:
                 struc.lattice.set_matrix(cell + i*l_disps)
             strucs.append(struc)
