@@ -586,10 +586,12 @@ class mol_site:
         coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
         # Obtain the center in absolute coords
         if id <= len(self.wp.generators):
-            op = self.wp.generators[id]
+            #op = self.wp.generators[id]
+            op = self.wp.get_euclidean_generator(self.lattice.matrix, id)
             center_relative = op.operate(self.position)
             center_relative -= np.floor(center_relative)
             center_absolute = np.dot(center_relative, self.lattice.matrix)
+
             # Rotate the molecule (Euclidean metric)
             #op_m = self.wp.generators_m[id]
             #rot = op_m.affine_matrix[0:3][:, 0:3].T

@@ -146,7 +146,7 @@ class Group:
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
 
         if dim == 3:
-            self.point_group, self.polar, self.inversion, self.chiral = get_point_group(self.number)
+            self.point_group, self.pg_number, self.polar, self.inversion, self.chiral = get_point_group(self.number)
 
         if not quick:
             if dim == 3:
@@ -3362,69 +3362,69 @@ def get_point_group(number):
     """
 
     if number == 1:
-        return '1', True, False, True
+        return '1', 1, True, False, True
     elif number == 2:
-        return '-1', False, True, False
+        return '-1', 2, False, True, False
     elif 3 <= number <= 5:
-        return '2', True, False, True
+        return '2', 3, True, False, True
     elif 6 <= number <= 9:
-        return 'm', True, False, False
+        return 'm', 4, True, False, False
     elif 10 <= number <= 15:
-        return '2/m', False, True, False
+        return '2/m', 5, False, True, False
     elif 16 <= number <= 24:
-        return '222', False, False, True
+        return '222', 6, False, False, True
     elif 25 <= number <= 46:
-        return 'mm2', True, False, False
+        return 'mm2', 7, True, False, False
     elif 47 <= number <= 74:
-        return 'mmm', False, True, False
+        return 'mmm', 8, False, True, False
     elif 75 <= number <= 80:
-        return '4', True, False, True
+        return '4', 9, True, False, True
     elif 81 <= number <= 82:
-        return '-4', False, False, False
+        return '-4', 10, False, False, False
     elif 83 <= number <= 88:
-        return '4/m', False, True, False
+        return '4/m', 11, False, True, False
     elif 89 <= number <= 98:
-        return '422', False, False, True
+        return '422', 12, False, False, True
     elif 99 <= number <= 110:
-        return '4mm', True, False, False
+        return '4mm', 13, True, False, False
     elif 111 <= number <= 122:
-        return '-42m', False, False, False
+        return '-42m', 14, False, False, False
     elif 123 <= number <= 142:
-        return '4/mmm', False, True, False
+        return '4/mmm', 15, False, True, False
     elif 143 <= number <= 146:
-        return '3', True, False, True
+        return '3', 16, True, False, True
     elif 147 <= number <= 148:
-        return '-3', False, True, False
+        return '-3', 17, False, True, False
     elif 149 <= number <= 155:
-        return '32', False, False, True
+        return '32', 18, False, False, True
     elif 156 <= number <= 161:
-        return '3m', True, False, False
+        return '3m', 19, True, False, False
     elif 162 <= number <= 167:
-        return '-3m', False, True, False
+        return '-3m', 20, False, True, False
     elif 168 <= number <= 173:
-        return '6', True, False, True
+        return '6', 21, True, False, True
     elif number == 174:
-        return '-6', False, False, False
+        return '-6', 22, False, False, False
     elif 175 <= number <= 176:
-        return '6/m', False, True, False
+        return '6/m', 23, False, True, False
     elif 177 <= number <= 182:
-        return '622', False, False, True
+        return '622', 24, False, False, True
     elif 183 <= number <= 186:
-        return '6mm', True, False, False
+        return '6mm', 25, True, False, False
     elif 187 <= number <= 190:
-        return '-62m', False, False, False
+        return '-62m', 26, False, False, False
     elif 191 <= number <= 194:
-        return '6/mmm', False, True, False
+        return '6/mmm', 27, False, True, False
     elif 195 <= number <= 199:
-        return '23', False, False, True
+        return '23', 28, False, False, True
     elif 200 <= number <= 206:
-        return 'm-3', False, True, False
+        return 'm-3', 29, False, True, False
     elif 207 <= number <= 214:
-        return '432', False, False, True
+        return '432', 30, False, False, True
     elif 215 <= number <= 220:
-        return '-43m', False, False, False
+        return '-43m', 31, False, False, False
     elif 221 <= number <= 230:
-        return 'm-3m', False, True, False
+        return 'm-3m', 32, False, True, False
 
 def get_close_packed_groups(pg):
     """
