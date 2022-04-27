@@ -139,9 +139,14 @@ class random_crystal:
         # Symmetry sites
         self.sites = {}
         for i, specie in enumerate(self.species):
-            if sites is not None and sites[i] is not None:
+            if sites is not None and sites[i] is not None and len(sites[i])>0:
                 self._check_consistency(sites[i], self.numIons[i])
-                self.sites[specie] = sites[i]
+                if type(sites[i][0]) is dict:
+                    self.sites[specie] = []
+                    for item in sites[i][0].items():
+                        self.sites[specie].append({item[0]: item[1]})
+                else:
+                    self.sites[specie] = sites[i]
             else:
                 self.sites[specie] = None
  
@@ -292,7 +297,6 @@ class random_crystal:
         """
         numIon_added = 0
         tol = self.tol_matrix.get_tol(specie, specie)
-        tol_matrix = self.tol_matrix
         wyckoff_sites_tmp = []
 
         # Now we start to add the specie to the wyckoff position
@@ -312,51 +316,66 @@ class random_crystal:
             else: # Selecting the merging
                 site = None
 
-            wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
-            if wp is not False:
-                # Generate a list of coords from ops
-                mult = wp.multiplicity # remember the original multiplicity
-                pt = self.lattice.generate_point()
-                # Merge coordinates if the atoms are close
-                pt, wp, _ = wp.merge(pt, cell, tol)
-                # For pure planar structure
-                if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
-                    pt[-1] = 0.5
-
-                # If site the pre-assigned, do not accept merge
+            new_site = None
+            if type(site) is dict: #site with coordinates
+                key = list(site.keys())[0]
+                wp = choose_wyckoff(self.group, numIon-numIon_added, key, self.dim)
+                new_site = atom_site(wp, site[key], specie)
+            else:
+                wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
                 if wp is not False:
-                    if site is not None and mult != wp.multiplicity:
-                        cycle += 1
-                        continue
-                    # Use a Wyckoff_site object for the current site
-                    new_site = atom_site(wp, pt, specie)
+                    # Generate a list of coords from ops
+                    mult = wp.multiplicity # remember the original multiplicity
+                    pt = self.lattice.generate_point()
+                    # Merge coordinates if the atoms are close
+                    pt, wp, _ = wp.merge(pt, cell, tol)
+                    # For pure planar structure
+                    if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
+                        pt[-1] = 0.5
 
-                    # Check current WP against existing WP's
-                    passed_wp_check = True
-                    for ws in wyckoff_sites_tmp + wyks:
-                        if not new_site.check_with_ws2(ws, cell, tol_matrix):
-                            passed_wp_check = False
+                    # If site the pre-assigned, do not accept merge
+                    if wp is not False:
+                        if site is not None and mult != wp.multiplicity:
+                            cycle += 1
+                            continue
+                        # Use a Wyckoff_site object for the current site
+                        new_site = atom_site(wp, pt, specie)
 
-                    if passed_wp_check:
-                        if sites_list is not None:
-                            sites_list.pop(0)
-                        wyckoff_sites_tmp.append(new_site)
-                        numIon_added += new_site.multiplicity
+            # Check current WP against existing WP's
+            if self.check_wp(wyckoff_sites_tmp, wyks, cell, new_site):
+                if sites_list is not None:
+                    sites_list.pop(0)
+                wyckoff_sites_tmp.append(new_site)
+                numIon_added += new_site.multiplicity
 
-                        # Check if enough atoms have been added
-                        if numIon_added == numIon:
-                            return wyckoff_sites_tmp
+                # Check if enough atoms have been added
+                if numIon_added == numIon:
+                    return wyckoff_sites_tmp
 
             cycle += 1
             self.numattempts += 1
 
         return None
 
+    def check_wp(self, wyckoff_sites_tmp, wyks, cell, new_site):
+        # Check current WP against existing WP's
+        if new_site is None:
+            return False
+
+        for ws in wyckoff_sites_tmp + wyks:
+            if not new_site.check_with_ws2(ws, cell, self.tol_matrix):
+                return False
+        return True
+
 
     def _check_consistency(self, site, numIon):
         num = 0
         for s in site:
-            num += int(s[:-1])
+            if type(s) is dict:
+                for key in s.keys():
+                    num += int(key[:-1])
+            else:
+                num += int(s[:-1])
         if numIon == num:
             return True
         else:

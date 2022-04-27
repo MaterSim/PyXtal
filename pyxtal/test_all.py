@@ -927,6 +927,23 @@ class TestLoad(unittest.TestCase):
         pmg_s2 = s2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
 
+class TestPartial(unittest.TestCase):
+    def test_Al2SiO5(self):
+        cell = Lattice.from_para(7.8758, 7.9794, 5.6139, 90, 90, 90)
+        spg = 58
+        elements = ['Al', 'Si', 'O']
+        composition = [8, 4, 20]
+        sites = [[{"4e": [0.0000,  0.0000,  0.2418],
+                   "4g": [0.1294,  0.6392,  0.0000],
+                 }],
+                 [{"4g": [0.2458,  0.2522,  0.0000]}],
+                 [], #empty for oxygen
+                ]
+
+        s = pyxtal()
+        s.from_random(3, spg, elements, composition, lattice=cell, sites=sites)
+        self.assertTrue(s.valid)
+
 class Test_operations(unittest.TestCase):
     def test_inverse(self):
         coord0 = [0.35, 0.1, 0.4]
