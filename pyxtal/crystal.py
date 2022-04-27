@@ -141,9 +141,9 @@ class random_crystal:
         for i, specie in enumerate(self.species):
             if sites is not None and sites[i] is not None and len(sites[i])>0:
                 self._check_consistency(sites[i], self.numIons[i])
-                if type(sites[i][0]) is dict:
+                if type(sites[i]) is dict:
                     self.sites[specie] = []
-                    for item in sites[i][0].items():
+                    for item in sites[i].items():
                         self.sites[specie].append({item[0]: item[1]})
                 else:
                     self.sites[specie] = sites[i]
@@ -311,7 +311,7 @@ class random_crystal:
         cycle = 0
         while cycle < wyckoff_attempts:
             # Choose a random WP for given multiplicity: 2a, 2b
-            if sites_list is not None:
+            if sites_list is not None and len(sites_list)>0:
                 site = sites_list[0]
             else: # Selecting the merging
                 site = None
@@ -343,7 +343,7 @@ class random_crystal:
 
             # Check current WP against existing WP's
             if self.check_wp(wyckoff_sites_tmp, wyks, cell, new_site):
-                if sites_list is not None:
+                if sites_list is not None and len(sites_list)>0:
                     sites_list.pop(0)
                 wyckoff_sites_tmp.append(new_site)
                 numIon_added += new_site.multiplicity
@@ -379,8 +379,20 @@ class random_crystal:
         if numIon == num:
             return True
         else:
-            msg = "\nThe requested number of atoms is inconsistent: " + str(site)
-            msg += "\nfrom numIons: {:d}".format(numIon)
-            msg += "\nfrom Wyckoff list: {:d}".format(num)
-            raise ValueError(msg)
+            diff = numIon - num
+            if diff > 0:
+                #check if compatible
+                compat, self.degrees = self.group.check_compatible([diff])
+                if compat:
+                    return True
+                else:
+                    msg += "\nfrom numIons: {:d}".format(numIon)
+                    msg += "\nfrom Wyckoff list: {:d}".format(num)
+                    msg = "\nThe number of atoms is incompatible with composition: " + str(site)
+                raise ValueError(msg)
+            else:
+                msg += "\nfrom numIons: {:d}".format(numIon)
+                msg += "\nfrom Wyckoff list: {:d}".format(num)
+                msg = "\nThe requested number of atoms is greater than composition: " + str(site)
+                raise ValueError(msg)
 

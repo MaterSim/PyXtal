@@ -933,15 +933,26 @@ class TestPartial(unittest.TestCase):
         spg = 58
         elements = ['Al', 'Si', 'O']
         composition = [8, 4, 20]
-        sites = [[{"4e": [0.0000,  0.0000,  0.2418],
-                   "4g": [0.1294,  0.6392,  0.0000],
-                 }],
-                 [{"4g": [0.2458,  0.2522,  0.0000]}],
+        sites = [{"4e": [0.0000,  0.0000,  0.2418],
+                  "4g": [0.1294,  0.6392,  0.0000],
+                 },
+                 {"4g": [0.2458,  0.2522,  0.0000]},
                  [], #empty for oxygen
                 ]
 
         s = pyxtal()
         s.from_random(3, spg, elements, composition, lattice=cell, sites=sites)
+        self.assertTrue(s.valid)
+
+        sites2 = [{"4e": [0.0000, 0.0000, 0.2418],
+                   "4g": [0.1294, 0.6392, 0.0000],
+                  },
+                  {"4g": [0.2458, 0.2522, 0.0000]},
+                  {"4g": [0.4241, 0.3636, 0.0000]}, #partial info on O
+                 ]
+        
+        s = pyxtal()
+        s.from_random(3, spg, elements, composition, lattice=cell, sites=sites2)
         self.assertTrue(s.valid)
 
 class Test_operations(unittest.TestCase):

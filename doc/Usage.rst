@@ -42,6 +42,61 @@ This would create a crystal structure with 3D structure with space group 225, 12
 
 would create a random BaTiO3 crystal.
 
+Sometimes, it is also convenient to generate the random crystal with partial information
+
+.. code-block:: Python
+
+    my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3])
+    my_crystal
+    ------Random Crystal------
+    Composition: Ba1 Ti1 O3
+    Dimension: 3
+    Group: P4mm (99)
+    Volume factor: 1.0
+    tetragonal lattice:   5.1029   5.1029   4.3018  90.0000  90.0000  90.0000
+    Wyckoff sites:
+    	Ba @ [0.5000 0.5000 0.3612], Wyckoff letter:  1b, Site symmetry: 4 m m
+    	Ti @ [0.5000 0.5000 0.8701], Wyckoff letter:  1b, Site symmetry: 4 m m
+    	 O @ [0.5000 0.0000 0.0823], Wyckoff letter:  2c, Site symmetry: 2 mm .
+    	 O @ [0.5000 0.5000 0.8177], Wyckoff letter:  1b, Site symmetry: 4 m m
+
+    from pyxtal.lattice import Lattice
+    cell = Lattice.from_para(7.8758, 7.9794, 5.6139, 90, 90, 90, ltype='orthorhombic')
+    spg = 58
+    elements = ['Al', 'Si', 'O']
+    composition = [8, 4, 20]
+    
+    sites = [{"4e": [0.0000, 0.0000, 0.2418],
+               "4g": [0.1294, 0.6392, 0.0000],
+              },
+              {"4g": [0.2458, 0.2522, 0.0000]},
+              {"4g": [0.4241, 0.3636, 0.0000]}, #partial information on oxygen sites
+            ]
+    
+    s = pyxtal()
+    s.from_random(3, spg, elements, composition, lattice=cell, sites=sites)
+    print(s)
+
+    ------Crystal from random------
+    Dimension: 3
+    Composition: O20Si4Al8
+    Group: Pnnm (58)
+      7.8758,   7.9794,   5.6139,  90.0000,  90.0000,  90.0000, orthorhombic
+    Wyckoff sites:
+    	Al @ [ 0.0000  0.0000  0.2418], WP [4e] Site [..2]
+    	Al @ [ 0.1294  0.6392  0.0000], WP [4g] Site [..m]
+    	Si @ [ 0.2458  0.2522  0.0000], WP [4g] Site [..m]
+    	 O @ [ 0.4241  0.3636  0.0000], WP [4g] Site [..m]
+    	 O @ [ 0.5538  0.2648  0.0000], WP [4g] Site [..m]
+    	 O @ [ 0.0000  0.5000  0.6057], WP [4f] Site [..2]
+    	 O @ [ 0.8809  0.5970  0.0786], WP [8h] Site [1]
+
+
+The above script will create a crystal with constrained unit cell and sites on Si/Al, but random sites on O sites.
+
+
+
+
 If the generation is successful, the value ``my_crystal.valid`` will be set to ``True``; otherwise, it will be ``False``. 
 
 2D Crystals
