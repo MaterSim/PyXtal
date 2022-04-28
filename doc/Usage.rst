@@ -46,20 +46,6 @@ Sometimes, it is also convenient to generate the random crystal with partial inf
 
 .. code-block:: Python
 
-    my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3])
-    my_crystal
-    ------Random Crystal------
-    Composition: Ba1 Ti1 O3
-    Dimension: 3
-    Group: P4mm (99)
-    Volume factor: 1.0
-    tetragonal lattice:   5.1029   5.1029   4.3018  90.0000  90.0000  90.0000
-    Wyckoff sites:
-    	Ba @ [0.5000 0.5000 0.3612], Wyckoff letter:  1b, Site symmetry: 4 m m
-    	Ti @ [0.5000 0.5000 0.8701], Wyckoff letter:  1b, Site symmetry: 4 m m
-    	 O @ [0.5000 0.0000 0.0823], Wyckoff letter:  2c, Site symmetry: 2 mm .
-    	 O @ [0.5000 0.5000 0.8177], Wyckoff letter:  1b, Site symmetry: 4 m m
-
     from pyxtal.lattice import Lattice
     cell = Lattice.from_para(7.8758, 7.9794, 5.6139, 90, 90, 90, ltype='orthorhombic')
     spg = 58
@@ -67,10 +53,10 @@ Sometimes, it is also convenient to generate the random crystal with partial inf
     composition = [8, 4, 20]
     
     sites = [{"4e": [0.0000, 0.0000, 0.2418],
-               "4g": [0.1294, 0.6392, 0.0000],
-              },
-              {"4g": [0.2458, 0.2522, 0.0000]},
-              {"4g": [0.4241, 0.3636, 0.0000]}, #partial information on oxygen sites
+              "4g": [0.1294, 0.6392, 0.0000],
+             },
+             {"4g": [0.2458, 0.2522, 0.0000]},
+             {"4g": [0.4241, 0.3636, 0.0000]}, #partial information on O sites
             ]
     
     s = pyxtal()
@@ -92,10 +78,7 @@ Sometimes, it is also convenient to generate the random crystal with partial inf
     	 O @ [ 0.8809  0.5970  0.0786], WP [8h] Site [1]
 
 
-The above script will create a crystal with constrained unit cell and sites on Si/Al, but random sites on O sites.
-
-
-
+The above script will create a Al2SiO5 crystal with a pre-assigned unit cell and sites on 8Al+4Si+4O, and then random coordinates on the 16 remaining O atoms.
 
 If the generation is successful, the value ``my_crystal.valid`` will be set to ``True``; otherwise, it will be ``False``. 
 
