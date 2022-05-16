@@ -25,7 +25,6 @@ from pyxtal.lattice import Lattice
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.representation import representation
 from pyxtal.io import read_cif, write_cif, structure_from_ext
-from pyxtal.XRD import XRD
 from pyxtal.constants import letters
 from pyxtal.viz import display_molecular, display_atomic, display_cluster
 from pyxtal.constants import letters
@@ -1174,7 +1173,7 @@ class pyxtal:
             - preferred_orientation: False
             - march_parameter: None
         """
-
+        from pyxtal.XRD import XRD
         return XRD(self.to_ase(), **kwargs)
 
     def optimize_lattice(self, iterations=5, force=False, standard=False):
