@@ -386,13 +386,13 @@ class random_crystal:
                 if compat:
                     return True
                 else:
-                    msg += "\nfrom numIons: {:d}".format(numIon)
+                    msg = "\nfrom numIons: {:d}".format(numIon)
                     msg += "\nfrom Wyckoff list: {:d}".format(num)
-                    msg = "\nThe number of atoms is incompatible with composition: " + str(site)
+                    msg += "\nThe number of atoms is incompatible with composition: " + str(site)
                 raise ValueError(msg)
             else:
-                msg += "\nfrom numIons: {:d}".format(numIon)
+                msg = "\nfrom numIons: {:d}".format(numIon)
                 msg += "\nfrom Wyckoff list: {:d}".format(num)
-                msg = "\nThe requested number of atoms is greater than composition: " + str(site)
+                msg += "\nThe requested number of atoms is greater than composition: " + str(site)
                 raise ValueError(msg)
 

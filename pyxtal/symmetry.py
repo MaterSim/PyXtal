@@ -605,15 +605,23 @@ class Group:
         else:
             raise NotImplementedError("Only supports the supergroups for space group")
 
-    def get_max_subgroup_numbers(self):
+    def get_max_subgroup_numbers(self, max_cell=9):
         """
         Returns the minimal supergroups as a dictionary
         """
         groups = []
         if self.dim == 3:
-            k = k_subgroup[str(self.number)]['subgroup']
-            t = t_subgroup[str(self.number)]['subgroup']
-            return k+t
+            sub_k = k_subgroup[str(self.number)]
+            sub_t = t_subgroup[str(self.number)]
+            k = sub_k['subgroup']
+            t = sub_t['subgroup']
+            for i, n in enumerate(t):
+                if np.linalg.det(sub_t['transformation'][i][:3,:3])<=max_cell:
+                    groups.append(n)
+            for i, n in enumerate(k):
+                if np.linalg.det(sub_k['transformation'][i][:3,:3])<=max_cell:
+                    groups.append(n)
+            return groups
         else:
             raise NotImplementedError("Only supports the supergroups for space group")
 

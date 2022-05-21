@@ -42,7 +42,8 @@ This would create a crystal structure with 3D structure with space group 225, 12
 
 would create a random BaTiO3 crystal.
 
-Sometimes, it is also convenient to generate the random crystal with partial information
+Sometimes, it is also convenient to generate the random crystal with partial information. 
+The following script creates a Al2SiO5 crystal with a pre-assigned unit cell and sites on 8Al+4Si+4O, and then random coordinates on the 16 remaining O atoms.
 
 .. code-block:: Python
 
@@ -78,7 +79,6 @@ Sometimes, it is also convenient to generate the random crystal with partial inf
     	 O @ [ 0.8809  0.5970  0.0786], WP [8h] Site [1]
 
 
-The above script will create a Al2SiO5 crystal with a pre-assigned unit cell and sites on 8Al+4Si+4O, and then random coordinates on the 16 remaining O atoms.
 
 If the generation is successful, the value ``my_crystal.valid`` will be set to ``True``; otherwise, it will be ``False``. 
 
