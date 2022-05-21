@@ -596,6 +596,13 @@ class TestMolecular(unittest.TestCase):
         sga = SpacegroupAnalyzer(pmg_struc)
         self.assertTrue(sga.get_space_group_symbol() == "Cmc2_1")
 
+    def test_sites_xyz(self):
+        struc = pyxtal(molecular=True)
+        sites = [{"4e": [0.77, 0.57, 0.53]}]
+        lat = Lattice.from_para(11.43, 6.49, 11.19, 90, 83.31, 90, ltype='monoclinic')
+        struc.from_random(3, 14, ['aspirin'], [4], lattice=lat, sites=sites)
+        self.assertTrue(sga.get_space_group_symbol() == "P2_1/c")
+
     def test_read(self):
         # test reading structure from external
         struc = pyxtal(molecular=True)

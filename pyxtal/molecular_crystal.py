@@ -173,9 +173,14 @@ class molecular_crystal:
         # Symmetry sites
         self.sites = {}
         for i, mol in enumerate(self.molecules):
-            if sites is not None and sites[i] is not None:
+            if sites is not None and sites[i] is not None and len(sites[i])>0:
                 self._check_consistency(sites[i], self.numMols[i])
-                self.sites[i] = sites[i]
+                if type(sites[i]) is dict:
+                    self.sites[i] = []
+                    for item in sites[i].items():
+                        self.sites[i].append({item[0]: item[1]})
+                else:
+                    self.sites[i] = sites[i]
             else:
                 self.sites[i] = None
  
@@ -378,23 +383,30 @@ class molecular_crystal:
             self.wyckoff_attempts = max(2*min_wyckoffs, 10)
 
         for cycle in range(self.wyckoff_attempts):
-
             # Choose a random WP for given multiplicity: 2a, 2b, 2c
-            if sites_list is not None:
+            if sites_list is not None and len(sites_list)>0:
                 site = sites_list[0]
             else: # Selecting the merging 
                 site = None
 
             # NOTE: The molecular version return wyckoff indices, not ops
             diff = numMol - numMol_added
-            wp = wyc_mol(self.group, diff, site, valid_ori, True, self.dim)
+
+            if type(site) is dict: #site with coordinates
+                key = list(site.keys())[0] 
+                wp = wyc_mol(self.group, diff, key, valid_ori, True, self.dim)
+            else:
+                wp = wyc_mol(self.group, diff, site, valid_ori, True, self.dim)
 
             if wp is not False:
                 # Generate a list of coords from the wyckoff position
                 mult = wp.multiplicity # remember the original multiplicity
-                pt = self.lattice.generate_point()
 
-                # merge coordinates if the atoms are close
+                if type(site) is dict:
+                    pt = site[key]
+                else:
+                    pt = self.lattice.generate_point()
+                    # merge coordinates if the atoms are close
                 mtol = pyxtal_mol.radius * 0.5
                 pt, wp, oris = wp.merge(pt, self.lattice.matrix, mtol, valid_ori)
 
