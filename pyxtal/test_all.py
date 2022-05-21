@@ -601,7 +601,7 @@ class TestMolecular(unittest.TestCase):
         sites = [{"4e": [0.77, 0.57, 0.53]}]
         lat = Lattice.from_para(11.43, 6.49, 11.19, 90, 83.31, 90, ltype='monoclinic')
         struc.from_random(3, 14, ['aspirin'], [4], lattice=lat, sites=sites)
-        self.assertTrue(sga.get_space_group_symbol() == "P2_1/c")
+        self.assertTrue(struc.valid)
 
     def test_read(self):
         # test reading structure from external
