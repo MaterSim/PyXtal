@@ -215,8 +215,10 @@ A list of example scripts is shown below
     # Add sites constraints
     sites = [{"4e": [0.77, 0.57, 0.53]}]
     s.from_random(3, 14, ['aspirin'], [4], lattice=lat, sites=sites)
-    print(s)
 
+    # Crystal with 2 water molecules occupying two special wyckoff sites
+    # This requires that the molecule is compatible with the site symmetry, be cautious!
+    s.from_random(3, 36, ["H2O"], [8], sites=[["4a", "4a"]])
 
 
 2D/1D Molecular Crystals  
