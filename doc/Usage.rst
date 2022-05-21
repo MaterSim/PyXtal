@@ -194,6 +194,31 @@ There are a few other parameters which may be passed to the class. See the `modu
 
 The user may also define which orientations are allowed for each molecule in each Wyckoff position. This is done by setting the orientations parameter. By default, PyXtal will determine the valid orientations automatically using the `get_orientations <pyxtal.molecular_crystal.html#molecular_crystal.get_orientations>`_ function, which in turn calls the `orientation_in_wyckoff_position <pyxtal.molecule.html#orientation_in_wyckoff_position>`_ function. Setting custom orientations will typically not be necessary, but may be used to save time during generation; see the source code for more information.
 
+
+Molecular Crystals with Constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Similar to atomic crystals, we also allow the user to pre-assign the partial information (e.g., lattice, wyckoff sites) before generating the crystals.
+A list of example scripts is shown below
+
+.. code-block:: Python
+
+    s = pyxtal()
+    # Generatation with minimum input
+    s.from_random(from_random(3, 14, ['aspirin'], [4])
+    
+    # Add Lattice constraints
+    from pyxtal.lattice import Lattice
+    lat = Lattice.from_para(11.43, 6.49, 11.19, 90, 83.31, 90, ltype='monoclinic')
+    s.from_random(3, 14, ['aspirin'], [4], lattice=lat)
+    
+    # Add sites constraints
+    sites = [{"4e": [0.77, 0.57, 0.53]}]
+    s.from_random(3, 14, ['aspirin'], [4], lattice=lat, sites=sites)
+    print(s)
+
+
+
 2D/1D Molecular Crystals  
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
