@@ -590,7 +590,7 @@ class pyxtal:
         solutions = my_super.search_supergroup(d_tol=d_tol)
         return my_super.make_supergroup(solutions)
 
-    def subgroup(self, perms=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4):
+    def subgroup(self, perms=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4, min_cell=0):
         """
         Generate a structure with lower symmetry
 
@@ -607,7 +607,7 @@ class pyxtal:
         """
 
         #randomly choose a subgroup from the available list
-        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell)
+        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell, min_cell)
 
         valid_splitters = []
         bad_splitters = []
@@ -694,7 +694,7 @@ class pyxtal:
         return struc
 
     def subgroup_once(self, eps=0.1, H=None, perms=None, group_type='t', \
-            max_cell=4, mut_lat=True, ignore_special=False):
+            max_cell=4, min_cell=0, mut_lat=True, ignore_special=False):
         """
         Generate a structure with lower symmetry (for atomic crystals only)
 
@@ -708,7 +708,7 @@ class pyxtal:
         Returns:
             a pyxtal structure with lower symmetries
         """
-        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell)
+        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell, min_cell)
 
         # Try 100 times to see if a valid split can be found
         count = 0
@@ -789,7 +789,7 @@ class pyxtal:
         new_struc._get_formula()
         return new_struc
 
-    def _get_subgroup_ids(self, H, group_type, idx, max_cell):
+    def _get_subgroup_ids(self, H, group_type, idx, max_cell, min_cell):
         """
         Generate the subgroup dictionary
         """
@@ -826,7 +826,7 @@ class pyxtal:
             idx = []
             if not self.molecular or self.group.number>142:
                 for i, tran in enumerate(trans):
-                    if np.linalg.det(tran[:3,:3])<=max_cell:
+                    if min_cell<=np.linalg.det(tran[:3,:3])<=max_cell:
                         idx.append(i)
             else:
                 # for molecular crystals, assume the cell does not change
@@ -2249,6 +2249,8 @@ class pyxtal:
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
             comps: list of molecular types
+            Ps: list of [0, 1] to distinguish betweel self and other molecules
+            engs: list of energies from atom-atom potential
         """
         min_ds = []
         neighs = []
@@ -2287,7 +2289,7 @@ class pyxtal:
         """
         display the local packing environment for a selected molecule
         """
-        min_ds, neighs, comps, Ps = self.get_neighboring_molecules(id, factor, max_d)
+        min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(id, factor, max_d)
         print("Number of neighboring molecules", len(min_ds))
         print(min_ds)
 
