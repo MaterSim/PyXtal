@@ -35,7 +35,6 @@ setup(
     },
     scripts=[
         "scripts/pyxtal_main.py",
-        "scripts/pyxtal_test.py",
         "scripts/pyxtal_symmetry.py",
     ],
     classifiers=[

@@ -6,7 +6,6 @@ They include:
 
 - ``Pyxtal_main.py``: a tool to generate atomic/molecular crystals
 - ``Pyxtal_symmetry.py``: a tool to access the symmetry information
-- ``Pyxtal_test.py``: a tool to test all modules
 
 After a successfull `installation <Installation.html>`_, all of them can be accessed by invoking the ``-h`` command:
 
@@ -55,8 +54,6 @@ After a successfull `installation <Installation.html>`_, all of them can be acce
 
 
 
-Among them, ``pyxtal_test.py`` is mainly used for the internal test. In the following, we explain the rest utilites in detail.
-   
 PyXtal_symmetry utility
 ------------------------
 ``PyXtal_symmetry.py`` is a utility to handle the generation of moelcular crystals.
