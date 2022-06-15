@@ -197,9 +197,9 @@ class pyxtal:
             s += "\nComposition: {}".format(self.formula)
             if not self.standard_setting: #and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                 if self.molecular:
-                    symbol = self.mol_sites[0].wp.get_symbols()
+                    symbol = self.mol_sites[0].wp.get_hm_symbols()
                 else:
-                    symbol = self.atom_sites[0].wp.get_symbols()
+                    symbol = self.atom_sites[0].wp.get_hm_symbols()
             else:
                 symbol = self.group.symbol
             s += "\nGroup: {} ({})".format(symbol, self.group.number)
@@ -430,20 +430,24 @@ class pyxtal:
             self.numIons = numIons
             self.species = species
             self.group = Group(number)
+            #print(self.group[0]); import sys; sys.exit()
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
             atom_sites = []
             for i, site in enumerate(sym_struc.equivalent_sites):
                 pos = site[0].frac_coords
                 wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
+                #print(wp.hall_number)
                 specie = site[0].specie.number
                 pos1 = search_matched_position(self.group, wp, pos)
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
                     break
-
+                    
             if len(atom_sites) != len(sym_struc.equivalent_sites):
+                print(len(atom_sites))
+                print(len(sym_struc.equivalent_sites))
                 raise RuntimeError("Cannot extract the right mapping from spglib")
             else:
                 self.atom_sites = atom_sites
@@ -1252,6 +1256,7 @@ class pyxtal:
         Args:
             trans: 3*3 matrix
             lattice: pyxtal lattice object
+            update: whether or not update each wp
         """
         #print(trans)
         if lattice is None:
@@ -1271,7 +1276,7 @@ class pyxtal:
             pos_frac = pos_abs.dot(lattice.inv_matrix)
             pos_frac -= np.floor(pos_frac)
             wp = site.wp.copy()
-            wp.diagonalize_symops(trans, False)
+            wp.diagonalize_symops(trans, False, update=False)
 
             if self.molecular:
                 #Obtain the transformed xyz
@@ -1288,6 +1293,17 @@ class pyxtal:
             else:
                 sites[j] = atom_site(wp, pos_frac, site.specie)
             
+        # update the hall number 
+        for i, site in enumerate(sites):
+            if i == 0:
+                match_spg, match_hall = site.wp.update()
+                if not match_spg:
+                    hall_numbers = [site.wp.hall_number]
+            else:
+                if not match_spg:
+                    site.wp.update_hall(hall_numbers)
+                else:
+                    site.wp.update_index()
         # reset the matrix 
         self.lattice = lattice0
         self.standard_setting = sites[0].wp.is_standard_setting()
@@ -1659,16 +1675,19 @@ class pyxtal:
                 for tran in trans:
                     ref_struc0.transform(tran)
                 #print(ref_struc0, len(trans))
-                wp = ref_struc0.atom_sites[0].wp
-                pt = ref_struc0.atom_sites[0].position
-                if wp.is_standard_setting():
+                if ref_struc0.standard_setting:
                     good_strucs.append(ref_struc0)
-                else:
-                    valid, vector = wp.check_translation(pt)
-                    if valid:
-                        ref_struc0.translate(vector, reset_wp=True)
-                        ref_struc0.standard_setting = True
-                        good_strucs.append(ref_struc0)
+                #============================== To remove
+                #wp = ref_struc0.atom_sites[0].wp
+                #pt = ref_struc0.atom_sites[0].position
+                #if wp.is_standard_setting():
+                #    good_strucs.append(ref_struc0)
+                #else: 
+                #    valid, vector = wp.check_translation(pt)
+                #    if valid:
+                #        ref_struc0.translate(vector, reset_wp=True)
+                #        ref_struc0.standard_setting = True
+                #        good_strucs.append(ref_struc0)
 
             return good_strucs 
         else:

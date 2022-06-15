@@ -159,7 +159,7 @@ class representation():
                 dicts['dim'] = 3
                 dicts['PBC'] = [1, 1, 1]
                 dicts['number'] = number
-                dicts['diag'] = struc.diag
+                dicts['diag'] = struc.standard_setting
                 dicts['index'] = 0
                 dicts['lattice'] = struc.lattice.matrix
                 dicts['lattice_type'] = ltype

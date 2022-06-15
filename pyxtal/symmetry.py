@@ -1,9 +1,10 @@
 """
-Module for storing and accessing symmetry group information, including a Group class and
-a Wyckoff_Position class. These classes are used for generation of random structures.
+Module for storing & accessing symmetry group information, including 
+    - Group class 
+    - Wyckoff_Position class. 
+    - Hall class
 """
-# Imports
-# ------------------------------
+# Imports ------------------------------
 # Standard Libraries
 import numpy as np
 from pkg_resources import resource_filename as rf
@@ -30,7 +31,6 @@ from pyxtal.operations import (
     OperationAnalyzer,
     check_images,
 )
-from pyxtal.database.hall import hall_from_hm
 from pyxtal.constants import letters
 # ------------------------------ Constants ---------------------------------------
 
@@ -51,11 +51,82 @@ t_subgroup = loadfn(rf("pyxtal",'database/t_subgroup.json'))
 k_subgroup = loadfn(rf("pyxtal",'database/k_subgroup.json'))
 wyc_sets = loadfn(rf("pyxtal",'database/wyckoff_sets.json'))
 hex_cell = np.array([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]])
+hall_table = read_csv(rf("pyxtal", "database/HM_Full.csv"), sep=',')
+
+#The map between spglib default space group and hall numbers
+spglib_default_hall_numbers = [
+1,   2,   3,   6,   9,   18,  21,  30,  39,  57,  60,  63,  72,  81,  90,
+108, 109, 112, 115, 116, 119, 122, 123, 124, 125, 128, 134, 137, 143, 149,
+155, 161, 164, 170, 173, 176, 182, 185, 191, 197, 203, 209, 212, 215, 218,
+221, 227, 228, 230, 233, 239, 245, 251, 257, 263, 266, 269, 275, 278, 284,
+290, 292, 298, 304, 310, 313, 316, 322, 334, 335, 337, 338, 341, 343, 349,
+350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 361, 363, 364, 366, 367,
+368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382,
+383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397,
+398, 399, 400, 401, 402, 404, 406, 407, 408, 410, 412, 413, 414, 416, 418,
+419, 420, 422, 424, 425, 426, 428, 430, 431, 432, 433, 435, 436, 438, 439,
+440, 441, 442, 443, 444, 446, 447, 448, 449, 450, 452, 454, 455, 456, 457,
+458, 460, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474,
+475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489,
+490, 491, 492, 493, 494, 495, 497, 498, 500, 501, 502, 503, 504, 505, 506,
+507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 520, 521, 523,
+524, 525, 527, 529, 530]
+
+#The map between standard space group and hall numbers
+pyxtal_default_hall_numbers = [
+1,   2,   3,   6,   9,   18,  21,  30,  39,  57,  60,  63,  72,  81,  90,
+108, 109, 112, 115, 116, 119, 122, 123, 124, 125, 128, 134, 137, 143, 149,
+155, 161, 164, 170, 173, 176, 182, 185, 191, 197, 203, 209, 212, 215, 218,
+221, 227, 229, 230, 234, 239, 245, 251, 257, 263, 266, 269, 275, 279, 284,
+290, 292, 298, 304, 310, 313, 316, 323, 334, 336, 337, 338, 341, 343, 349,
+350, 351, 352, 353, 354, 355, 356, 357, 358, 360, 362, 363, 365, 366, 367,
+368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382,
+383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397,
+398, 399, 400, 401, 403, 405, 406, 407, 409, 411, 412, 413, 415, 417, 418, 
+419, 421, 423, 424, 425, 427, 429, 430, 431, 432, 433, 435, 436, 438, 439, 
+440, 441, 442, 443, 444, 446, 447, 448, 449, 450, 452, 454, 455, 456, 457,  
+458, 460, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474,
+475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489,
+490, 491, 492, 493, 494, 496, 497, 499, 500, 501, 502, 503, 504, 505, 506,
+507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 519, 520, 522, 523,
+524, 526, 528, 529, 530,
+]
+
+
+# --------------------------- Hall class -----------------------------
+class Hall:
+    """
+    Class for conversion between Hall and standard spacegroups
+    http://cci.lbl.gov/sginfo/itvb_2001_table_a1427_hall_symbols.html
+
+    Args:
+        spg_num: interger number between 1 and 230
+    """
+
+    def __init__(self, spgnum, style='pyxtal'):
+        self.spg = spgnum
+        if style == 'pyxtal':
+            self.hall_default = pyxtal_default_hall_numbers[spgnum-1]
+        else:
+            self.hall_default = pyxtal_spglib_hall_numbers[spgnum-1]
+        self.hall_numbers = []
+        self.Ps = [] #convertion from standard
+        self.P1s = [] #inverse convertion to standard
+        for id in range(len(hall_table['Hall'])):
+            if hall_table['Spg_num'][id] == spgnum and hall_table['Permutation'][id]==0:
+                self.hall_numbers.append(hall_table['Hall'][id])
+                self.Ps.append(abc2matrix(hall_table['P'][id]))
+                self.P1s.append(abc2matrix(hall_table['P^-1'][id]))
+            elif hall_table['Spg_num'][id] > spgnum:
+                break
+        if len(self.hall_numbers) == 0:
+            raise RuntimeError("hall numbers cannot be found, check input", spgnum)
+
 # --------------------------- Group class -----------------------------
 class Group:
     """
-    Class for storing a set of Wyckoff positions for a symmetry group. See the documentation
-    for details about settings.
+    Class for storing a set of Wyckoff positions for a symmetry group. 
+    See the documentation for details about settings.
 
     Examples
     --------
@@ -71,7 +142,7 @@ class Group:
     4b	site symm: 2/m..
     4a	site symm: 2/m..
 
-    one can access data with its attributes such as `symbol`, `number` and `Wyckoff_positions`
+    one can access data from attributes such as `symbol`, `number` and `Wyckoff_positions`
 
     >>> g.symbol
     'Cmce'
@@ -137,12 +208,17 @@ class Group:
         quick: whether or not ignore the wyckoff information
     """
 
-    def __init__(self, group, dim=3, quick=False):
+    def __init__(self, group, dim=3, use_hall=False, style='pyxtal', quick=False):
 
         self.dim = dim
         names = ['Point', 'Rod', 'Layer', 'Space']
         self.header = "-- " + names[dim] + 'group --'
-        self.symbol, self.number = get_symbol_and_number(group, dim)
+        if not use_hall:
+            self.symbol, self.number = get_symbol_and_number(group, dim)
+        else:
+            self.symbol = hall_table['Symbol'][group-1]
+            self.number = hall_table['Spg_num'][group-1]
+            
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
 
         if dim == 3:
@@ -150,7 +226,18 @@ class Group:
 
         if not quick:
             if dim == 3:
-                self.hall_number = hall_from_hm(self.number)
+                if not use_hall: 
+                    if style == 'pyxtal':
+                        self.hall_number = pyxtal_default_hall_numbers[self.number-1]
+                    else:
+                        self.hall_number = spglib_default_hall_numbers[self.number-1]
+                else:
+                    self.hall_number = group
+                #self.P = abc2matrix(hall_table['P'][self.hall_number-1])
+                self.P = abc2matrix(hall_table['P^-1'][self.hall_number-1])
+            else:
+                self.hall_number = None
+                self.P = None
 
             # Wyckoff positions, site_symmetry, generator
             self.wyckoffs = get_wyckoffs(self.number, dim=dim)
@@ -169,6 +256,8 @@ class Group:
                     "dim": self.dim,
                     "number": self.number,
                     "symbol": self.symbol,
+                    "P": self.P,
+                    "hall_number": self.hall_number,
                 }
                 for i in range(len(self.wyckoffs))
             ]
@@ -1105,6 +1194,10 @@ class Wyckoff_position:
             setattr(wp, key, dictionary[key])
         #wp.get_site_symmetry()
         wp.set_euclidean()
+        if wp.P is not None:
+            #print("Transformation", wp.P)
+            (rot, trans) = wp.P
+            wp.transform_from_hall(rot, trans)
         return wp
 
     def get_dof(self):
@@ -1190,107 +1283,155 @@ class Wyckoff_position:
         trans = dicts['transformation']
         return Wyckoff_position.from_group_and_index(g, index, dim, trans=trans)
 
-    def check_translation(self, pt, trans=[0, 0.25, 0]):
-        wp0 = Group(self.number)[self.index]
-        coords1 = self.apply_ops(pt) + trans
-        coords2 = wp0.apply_ops(pt + trans)
-        orders = list(range(len(coords1)))
-        #print(coords1); print(coords2)
-        for coord1 in coords1:
-            match = False
-            for i in orders:
-                diff = coord1 - coords2[i]
-                diff -= np.round(diff)
-                if sum(abs(diff)) < 1e-3:
-                    match = True
-                    orders.remove(i)
-                    break
-            if not match:
-                return False, None
-            #print(i, match, coord1, coords2[i])
-        return True, trans
+    def diagonalize_symops(self, trans=None, reset=True, update=False):
+        """
+        Transform the symmetry operation according to cell transformation
+        Mostly needed when optimizing the lattice
+        """
 
-    def diagonalize_symops(self, trans=None, reset=True):
-        """
-        Obtain the symmetry in n representation for P2/c, Cc, P21/c, Pc, C2/c
-        """
-        if reset:
-            ops = Group(self.number)[self.index]
-        else:
-            ops = self.ops 
- 
         if trans is None:
             if self.number in [7, 9, 13, 14, 15]:
                 trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
             elif self.number in [5, 8, 9, 12]:
                 trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
 
-        if trans is not None and 2 < self.number < 16:
+        if 2 < self.number < 16:
+            if reset:
+                ops = Group(self.number)[self.index]
+            else:
+                ops = self.ops 
+ 
             for j, op in enumerate(ops):
                 vec = op.translation_vector.dot(trans)
                 #vec = trans.T.dot(op.translation_vector).T
                 vec -= np.floor(vec)
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                 self.ops[j] = op1
+            if update:
+                self.update_hall()
 
-    def get_symbols(self):
+    def update(self):
         """
-        Search for the symbol based on symmetry operation
-        http://cci.lbl.gov/sginfo/hall_symbols.html
-        3: P2
-        4: P21
-        5: C2/m, A2/m, I2/m
-        6: Pm
-        7: Pc, Pa, Pn
-        8: Cm, Im, Am
-        9: Cc, An, Ia, Aa, Cn, Ic
-        10: P2/m
-        11: P21/m
-        12: C2/m, A2/m, I2/m
-        13: P2/c, P2/a, P2/n
-        14: P21/c, P21/a, P21/n
-        15: C2/c, C2/n, I2/a, A2/a, A2/n, I2/c
+        update the spacegroup information if needed
         """
-        symbol = self.symbol
-        #    return symbol
-        if self.is_standard_setting():
-            return symbol
+        match_spg, match_hall = False, False
+        match_spg = self.update_index()
+        if not match_spg:
+            match_hall = self.update_hall()
+
+        if not match_spg and not match_hall:
+            print(match_spg, match_hall)
+            print(self)
+            raise RuntimeError("Cannot find the right hall_number")
+        return match_spg, match_hall
+
+    def update_hall(self, hall_numbers=None):
+        """
+        update the Hall number when the symmetry operation changes
+
+        Args: 
+            hall_numbers: a list of numbers for consideration
+        """
+        if hall_numbers is None:
+            hall_numbers = Hall(self.number).hall_numbers
+        for hall_number in hall_numbers:
+            P = abc2matrix(hall_table['P^-1'][hall_number-1])
+            wyckoffs = get_wyckoffs(self.number, dim=self.dim)
+            wp2 = self.get_wp_from_index(wyckoffs, self.index, P)
+            if self.has_equivalent_ops(wp2):
+                return True
+            else:
+                #check other sites
+                for i in range(len(wyckoffs)):
+                    if len(wyckoffs[i]) == self.multiplicity:
+                        wp2 = self.get_wp_from_index(wyckoffs, i, P)
+                        if self.has_equivalent_ops(wp2):
+                            self.hall_number = hall_number
+                            self.P = wp2.P
+                        return True
+        return False
+        #if not found:
+        #    hall_number = 95
+        #    wp2 = Group(hall_number, use_hall=True)[self.index]
+        #    print(Group(hall_number, use_hall=True).symbol)
+        #    print(wp2)
+        #    print("Reference===")
+        #    print(self)
+        #    import sys; sys.exit()
+
+    def update_index(self):
+        """
+        check if needs to update the index due to lattice transformation
+        """
+        wyckoffs = get_wyckoffs(self.number, dim=self.dim)
+        wp2 = self.get_wp_from_index(wyckoffs, self.index, self.P) 
+        if self.has_equivalent_ops(wp2):
+            return True
         else:
-            #Determine the Bravis Lattice
-            ops = self.ops
-            if self.number in [5, 8, 9, 12, 15]:
-                tran1 = ops[0].translation_vector
-                tran2 = ops[int(len(ops)/2)].translation_vector
-                diff = tran2 - tran1
-                diff -= np.round(diff)
-                if abs(diff[0]) < 1e-4:
-                    BL = 'A'
-                elif abs(diff[2]) < 1e-4:
-                    BL = 'C'
-                else:
-                    BL = 'I'
-            else:
-                BL = symbol[0]
+            for i in range(len(wyckoffs)):
+                if i != self.index and len(wyckoffs[i]) == self.multiplicity:
+                    wp2 = self.get_wp_from_index(wyckoffs, i)
+                    if self.has_equivalent_ops(wp2):
+                        self.index = i
+                        #adjust to normal
+                        #self.ops = wp2.ops
+                        return True
+        return False
 
-            #Determine the a, c, n symbols for glide axis
-            if self.number in [7, 9, 13, 14, 15]:
-                ops1 = Group(self.number)[self.index]
-                tran1 = ops[-1].translation_vector
-                tran2 = ops1[-1].translation_vector
-                diff = tran2 - tran1
-                diff -= np.round(diff)
-                diff = np.abs(diff)
-                N = len(diff[diff>0]) 
-                if N == 0:
-                    GL = 'c'
-                elif N == 1:
-                    GL = 'n'
-                else:
-                    GL = 'a'
-            else:
-                GL = symbol[-1]
-            return BL+symbol[1:-1]+GL
-            
+
+    def get_wp_from_index(self, wyckoffs, index, P=None):
+        """
+        A short cut to create the WP object from a given index
+        Mainly used for the update function
+
+        Args:
+            wyckoffs: wyckoff position 
+            index: index of wp
+            P: transformation matrix (rot + trans)
+        """
+
+        if P is None:
+            P = self.P
+        wpdict = {
+                  "index": index,
+                  "letter": letter_from_index(index, wyckoffs, dim=self.dim),
+                  "ops": wyckoffs[index],
+                  "multiplicity": len(wyckoffs[index]),
+                  "PBC": self.PBC,
+                  "dim": self.dim,
+                  "number": self.number,
+                  "P": P,
+                  "hall_number": self.hall_number,
+                 }
+        return Wyckoff_position.from_dict(wpdict)
+
+
+    def transform_from_hall(self, rot=None, trans=None):
+        """
+        Transform the symmetry operation according to hall number
+        We don't consider permutation so far
+
+        Args:
+            rot: 3*3 rotation matrix
+            trans: 1*3 translation vector
+        """
+        ops = self.ops 
+        for j, op in enumerate(ops):
+            vec1 = op.translation_vector.dot(rot) + trans
+            vec1 -= np.floor(vec1)
+            #if j == 4 and self.hall_number==95: 
+            #    print(self.hall_number, rot, op.translation_vector, vec1)
+            rot1 = op.rotation_matrix
+            op1 = op.from_rotation_and_translation(rot1, vec1)
+            self.ops[j] = op1
+            #print(op.translation_vector, vec1)
+
+    def get_hm_symbol(self):
+        """
+        get Hermann-Mauguin symbol
+        """
+        return hall_table['Symbol'][self.hall_number+1]
+
     def transform(self, trans):
         """
         Args:
@@ -1349,38 +1490,54 @@ class Wyckoff_position:
             wp0.diagonalize_symops(trans, True)
             if self.has_equivalent_ops(wp0):
                 return trans
-        print(wp)
+        print(wp0)
         raise RuntimeError("Cannot find the transformation")
     
     def is_standard_setting(self):
         """
         Check if the symmetry operation follows the standard setting
         """
-        if self.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
-            return True
-        else:
-            ops0 = Group(self.number)[self.index]
-            for i, op0 in enumerate(ops0):
-                op1 = self.ops[i]
-                diff0 = op0.translation_vector - op1.translation_vector
-                diff0 -= np.round(diff0)
-                diff1 = op0.rotation_matrix - op1.rotation_matrix
-                if np.abs(diff0).sum() > 1e-3 or np.abs(diff1).sum() > 1e-3:
-                    return False
-            else:
-                return True
+        wp2 = Group(self.number)[self.index]
+        return self.has_equivalent_ops(wp2)
 
     def has_equivalent_ops(self, wp2):
+        """
+        check if two wps are equivalent
+        """
         ops0 = wp2.ops
-        for i, op0 in enumerate(ops0):
-            op1 = self.ops[i]
-            diff0 = op0.translation_vector - op1.translation_vector
-            diff0 -= np.round(diff0)
-            diff1 = op0.rotation_matrix - op1.rotation_matrix
-            if np.abs(diff0).sum() > 1e-3 or np.abs(diff1).sum() > 1e-3:
-                return False
+        if len(ops0) == len(self.ops):
+            if self.get_dof() == 0:
+                #The following situation may occur
+                #3/4, 3/4, 1/4        1/4, 1/4, 3/4
+                #1/4, 3/4, 1/4  --->  3/4, 1/4, 3/4
+                #1/4, 1/4, 3/4  --->  3/4, 3/4, 1/4
+                #3/4, 1/4, 3/4        1/4, 3/4, 1/4
+                for op0 in ops0:
+                    nomatch = True
+                    vec0 = op0.translation_vector
+                    for op1 in self.ops:
+                        vec1 = op1.translation_vector
+                        diff = vec1 - vec0
+                        diff -= np.round(diff)
+                        if np.abs(diff).sum() < 1e-3:
+                            nomatch = False
+                            break
+                    if nomatch:
+                        return False
+                return True
+            else:
+                # More general cases
+                for i, op0 in enumerate(ops0):
+                    op1 = self.ops[i]
+                    diff0 = op0.translation_vector - op1.translation_vector
+                    diff0 -= np.round(diff0)
+                    diff1 = op0.rotation_matrix - op1.rotation_matrix
+                    if np.abs(diff0).sum() > 1e-3 or np.abs(diff1).sum() > 1e-3:
+                        return False
+                else:
+                    return True
         else:
-            return True
+            return False
 
     def get_site_symm_wo_translation(self):
         ops = []
@@ -1458,7 +1615,7 @@ class Wyckoff_position:
                 raise ValueError("cannot swap", swap_id, self)
         return self, np.zeros(3)
 
-    def from_symops(ops, group, permutation=True):
+    def from_symops(ops, group=None, permutation=True):
         """
         search Wyckoff Position by symmetry operations
         Now only supports space group symmetry
@@ -1471,6 +1628,10 @@ class Wyckoff_position:
             `Wyckoff_position`
 
         """
+        if group is None:
+            hall_num, group = get_symmetry_from_ops(ops)
+            print(group)
+
         if isinstance(ops[0], str):
             str1 = ops
         else:
@@ -1484,7 +1645,7 @@ class Wyckoff_position:
         else:
             permutations = [[0,1,2]]
 
-        if isinstance(group, int):
+        if not isinstance(group, Group):
             G_ops = Group(group)
         else:
             G_ops = group
@@ -1506,6 +1667,13 @@ class Wyckoff_position:
 
         return None, None
 
+    def get_hall_number(ops, tol=1e-5):
+        if self.index == 0:
+            return get_symmetry_from_ops(self.ops, tol)[0]
+        else:
+            print(self)
+            raise ValueError("input must be general position")
+
     def from_symops_wo_group(ops, permutation=True):
         """
         search Wyckoff Position by symmetry operations
@@ -1513,12 +1681,12 @@ class Wyckoff_position:
 
         Args:
             ops: a list of symmetry operations
-            group: the space group number or Group object
 
         Returns:
             `Wyckoff_position`
 
         """
+        hall_num, spg_num = get_symmetry_from_ops(ops)
         if isinstance(ops[0], str):
             str1 = ops
         else:
@@ -1533,51 +1701,50 @@ class Wyckoff_position:
         else:
             permutations = [[0,1,2]]
 
-        groups = range(1,231)
-        for i in groups:
-            G_ops = Group(i)
-            for wyc in G_ops:
-                if len(wyc) == N_sym:
-                    wyc.PBC = [1, 1, 1]
-                    wyc.dim = 3
-                    # Try permutation first
-                    str2 = [op.as_xyz_string() for op in wyc.ops]
-                    for perm in permutations:
-                        str_perm = swap_xyz_string(str1, perm)
-                        # Compare the pure rotation and then
-                        if set(str_perm) == set(str2):
-                            return wyc, perm
+        G_ops = Group(spg_num)
+        for wyc in G_ops:
+            if len(wyc) == N_sym:
+                wyc.PBC = [1, 1, 1]
+                wyc.dim = 3
+                # Try permutation first
+                str2 = [op.as_xyz_string() for op in wyc.ops]
+                for perm in permutations:
+                    str_perm = swap_xyz_string(str1, perm)
+                    # Compare the pure rotation and then
+                    if set(str_perm) == set(str2):
+                        return wyc, perm
 
-                    # Try monoclinic space groups (P21/n, Pn, C2/n)
-                    if i in [7, 9, 13, 14, 15]:
-                        trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
-                        str3 = []
-                        for j, op in enumerate(wyc.ops):
-                            vec = op.translation_vector.dot(trans)
-                            vec -= np.floor(vec)
-                            op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                            str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
-                            #wyc.ops[j] = op3
-                        if set(str3) == set(str1):
-                            return wyc, trans
-                    elif i in [5, 8, 9, 12, 15]:
-                        trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
-                        str3 = []
-                        for j, op in enumerate(wyc.ops):
-                            vec = op.translation_vector.dot(trans)
-                            vec -= np.floor(vec)
-                            op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
-                            str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
-                            #wyc.ops[j] = op3
-                        if set(str3) == set(str1):
-                            return wyc, trans
-                elif len(wyc) < N_sym:
-                    continue #break
+                # Try monoclinic space groups (P21/n, Pn, C2/n)
+                if spg_num in [7, 9, 13, 14, 15]:
+                    trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+                    str3 = []
+                    for j, op in enumerate(wyc.ops):
+                        vec = op.translation_vector.dot(trans)
+                        vec -= np.floor(vec)
+                        op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                        str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
+                        #wyc.ops[j] = op3
+                    if set(str3) == set(str1):
+                        return wyc, trans
+                elif spgnum in [5, 8, 9, 12, 15]:
+                    trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
+                    str3 = []
+                    for j, op in enumerate(wyc.ops):
+                        vec = op.translation_vector.dot(trans)
+                        vec -= np.floor(vec)
+                        op3 = op.from_rotation_and_translation(op.rotation_matrix, vec)
+                        str3.append(op3.as_xyz_string().replace("-1/2","+1/2"))
+                        #wyc.ops[j] = op3
+                    if set(str3) == set(str1):
+                        return wyc, trans
+            elif len(wyc) < N_sym:
+                continue #break
 
-        return None, None
+        #return None, None
 
-    def from_group_and_index(group, index, dim=3, PBC=None, trans=None):
+    def from_group_and_index(group, index, dim=3, PBC=None, trans=None, style='pyxtal'):
         """
+        TODO: simplify the process, many of them are unnecessary!
         Creates a Wyckoff_position using the space group number and index
 
         Args:
@@ -1609,6 +1776,11 @@ class Wyckoff_position:
             if dim == 3:
                 if wp.PBC is None:
                     wp.PBC = [1, 1, 1]
+                    if style == 'pyxtal':
+                        wp.hall_number = pyxtal_default_hall_numbers[wp.number-1]
+                    else:
+                        wp.hall_number = spglib_default_hall_numbers[wp.number-1]
+                    wp.P = abc2matrix(hall_table['P^-1'][wp.hall_number-1])
             elif dim == 2:
                 if wp.PBC is None:
                     wp.PBC = [1, 1, 0]
@@ -1924,8 +2096,10 @@ class Wyckoff_position:
 
         return op
 
-
     def set_euclidean(self):
+        """
+        For the hexagonal groups, need to consider the euclidean conversion
+        """
         convert = False
         if self.dim == 3:
             if 143 <= self.number < 195:
@@ -2720,7 +2894,7 @@ def symmetry_element_from_axis(axis):
 
 def get_wyckoffs(num, organized=False, PBC=[1, 1, 1], dim=3):
     """
-    Returns a list of Wyckoff positions for a given space group. Has option to
+    Returns a list of Wyckoff positions for a given group. Has option to
     organize the list based on multiplicity (this is used for
     random_crystal.wyckoffs)
 
@@ -3247,14 +3421,13 @@ def search_matched_position(G, wp, pos):
     """
     wp0 = G[0]
     match = False
-
     for op in wp0:
         pos1 = op.operate(pos)
         pos0 = wp[0].operate(pos1)
         diff = pos1 - pos0
         diff -= np.round(diff)
         diff = np.abs(diff)
-        #print(wp.letter, pos1, pos0, diff)
+        #print(wp.letter, op.as_xyz_string(), pos, pos1, pos0, diff)
         if diff.sum()<1e-2:
             pos1 -= np.floor(pos1)
             match = True
@@ -3262,6 +3435,7 @@ def search_matched_position(G, wp, pos):
     if match:
         return pos1
     else:
+        #print(pos, wp0, wp)
         return None
 
 def search_matched_positions(G, wp, pos):
@@ -3561,4 +3735,73 @@ def get_all_polar_space_groups():
             nps.append(i)
     return ps, nps
 
+def abc2matrix(abc):
+    """
+    convert the abc string representation to matrix
+    Args:
+        abc: string like 'a, b, c' or 'a+c, b, c' or 'a+1/4, b+1/4, c'
 
+    Returns:
+        4*4 affine matrix
+    """
+    rot_matrix = np.zeros((3, 3))
+    trans = np.zeros(3)
+    toks = abc.strip().replace(" ", "").lower().split(",")
+    re_rot = re.compile(r"([+-]?)([\d\.]*)/?([\d\.]*)([a-c])")
+    re_trans = re.compile(r"([+-]?)([\d\.]+)/?([\d\.]*)(?![a-c])")
+    for i, tok in enumerate(toks):
+        # build the rotation matrix
+        for m in re_rot.finditer(tok):
+            factor = -1.0 if m.group(1) == "-" else 1.0
+            if m.group(2) != "":
+                factor *= float(m.group(2)) / float(m.group(3)) if m.group(3) != "" else float(m.group(2))
+            j = ord(m.group(4)) - 97
+            rot_matrix[i, j] = factor
+        # build the translation vector
+        for m in re_trans.finditer(tok):
+            factor = -1 if m.group(1) == "-" else 1
+            num = float(m.group(2)) / float(m.group(3)) if m.group(3) != "" else float(m.group(2))
+            trans[i] = num * factor
+    return (rot_matrix, trans)
+
+def abc2matrix(abc):
+    """
+    convert the abc string representation to matrix
+    Args:
+        abc: string like 'a, b, c' or 'a+c, b, c' or 'a+1/4, b+1/4, c'
+
+    Returns:
+        4*4 affine matrix
+    """
+    rot_matrix = np.zeros((3, 3))
+    trans = np.zeros(3)
+    toks = abc.strip().replace(" ", "").lower().split(",")
+    re_rot = re.compile(r"([+-]?)([\d\.]*)/?([\d\.]*)([a-c])")
+    re_trans = re.compile(r"([+-]?)([\d\.]+)/?([\d\.]*)(?![a-c])")
+    for i, tok in enumerate(toks):
+        # build the rotation matrix
+        for m in re_rot.finditer(tok):
+            factor = -1.0 if m.group(1) == "-" else 1.0
+            if m.group(2) != "":
+                factor *= float(m.group(2)) / float(m.group(3)) if m.group(3) != "" else float(m.group(2))
+            j = ord(m.group(4)) - 97
+            rot_matrix[i, j] = factor
+        # build the translation vector
+        for m in re_trans.finditer(tok):
+            factor = -1 if m.group(1) == "-" else 1
+            num = float(m.group(2)) / float(m.group(3)) if m.group(3) != "" else float(m.group(2))
+            trans[i] = num * factor
+    return (rot_matrix, trans)
+
+def get_symmetry_from_ops(ops, tol=1e-5):
+    """
+    get the hall number from
+    """
+    from spglib import get_hall_number_from_symmetry
+    if isinstance(ops[0], str):
+        ops = [SymmOp.from_xyz_string(op) for op in ops]
+    rot = [op.rotation_matrix for op in ops]
+    tran = [op.translation_vector for op in ops]
+    hall_number = get_hall_number_from_symmetry(rot, tran, tol)
+    spg_number = hall_table['Spg_num'][hall_number-1]
+    return hall_number, spg_number

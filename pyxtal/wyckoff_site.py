@@ -452,9 +452,9 @@ class mol_site:
 
             # Rotate the molecule (Euclidean metric)
             #op2_m = self.wp.generators_m[point_index]
-
             op2_m = self.wp.get_euclidean_generator(self.lattice.matrix, point_index)
             rot = op2_m.affine_matrix[:3, :3].T
+            #NOTE: the euclidean_generator has wrong translation vectors, but we don't care
             #if self.diag and self.wp.index > 0:
             #    tau = op2.translation_vector
             #else:

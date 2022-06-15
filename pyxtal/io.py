@@ -55,12 +55,12 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         l_type = struc.group.lattice_type
         number = struc.group.number
         G1 = struc.group[0]
-        if struc.standard_setting:
+        if G1.is_standard_setting():
             symbol = struc.group.symbol
         else:
-            symbol = sites[0].wp.get_symbols()
-            trans = sites[0].wp.get_transformation()
-            G1.diagonalize_symops(trans, False)
+            symbol = sites[0].wp.get_hm_symbols()
+            #trans = sites[0].wp.get_transformation()
+            #G1.diagonalize_symops(trans, False)
 
     else: #P1 symmetry
         l_type = 'triclinic'

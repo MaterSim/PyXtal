@@ -49,7 +49,6 @@ class TestGroup(unittest.TestCase):
                 N_centro += 1
             if chiral:
                 N_chiral += 1
-        
         self.assertTrue(N_polar == 68)
         self.assertTrue(N_centro == 92)
         self.assertTrue(N_chiral == 65)
@@ -91,6 +90,7 @@ class TestGroup(unittest.TestCase):
             p = gr.search_subgroup_paths(h)[0]
             solutions = gr.add_k_transitions(p)
             self.assertTrue(len(solutions) == n_path)
+
 
 class TestSupergroup(unittest.TestCase):
 
@@ -784,30 +784,17 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(np.abs(l7.matrix-l6.matrix).sum() < 0.25)
 
 class TestSymmetry(unittest.TestCase):
-    def test_P21(self):
-        strs = ["x, y, z", "-x, y+1/2, -z"]
-        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
-        self.assertTrue(wyc.number == 4)
-
-    def test_Pmn21(self):
-        strs = ["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"]
-        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
-        self.assertTrue(wyc.number == 31)
-
-    def test_P21a(self):
-        strs = ["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z", "x+1/2, -y+1/2, z"]
-        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
-        self.assertTrue(wyc.number == 14)
-
-    def test_P21n(self):
-        strs = [
-            "x, y, z",
-            "-x, -y, -z",
-            "-x+1/2, y+1/2, -z+1/2",
-            "x+1/2, -y+1/2, z+1/2",
+    def test_all(self):
+        data = [
+        (["x, y, z", "-x, y+1/2, -z"], 4),
+        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31), 
+        (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z", "x+1/2, -y+1/2, z"], 14),
+        (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z+1/2", "x+1/2, -y+1/2, z+1/2"], 14),
         ]
-        wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
-        self.assertTrue(wyc.number == 14)
+        for d in data:
+            (strs, spg) = d
+            wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
+            self.assertTrue(wyc.number == spg)
 
 class TestNeighbour(unittest.TestCase):
     def test_packing(self):
@@ -1034,6 +1021,15 @@ class Test_operations(unittest.TestCase):
     def test_wyc_sets(self):
         for i in range(1, 229):
             res = Group(i, quick=True).get_alternatives()['No.']
+
+
+#class Test_io(unittest.TestCase):
+#    def test_wyc_sets(self):
+#        c1 = pyxtal(molecular=True)
+#        for name in ['', '']:
+#            c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
+#            c1.to_file()
+
 
 if __name__ == "__main__":
     unittest.main()

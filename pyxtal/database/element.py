@@ -1,8 +1,6 @@
 """
 Module for handling atomic elements.
 """
-from numpy import vectorize
-
 
 class Element:
     """
