@@ -204,8 +204,10 @@ class Group:
 
     Args:
         group: the group symbol or international number
-        dim: the periodic dimension of the group
-        quick: whether or not ignore the wyckoff information
+        dim (defult: 3): the periodic dimension of the group
+        use_hall (default: False): whether or not the group is defined by the hall number
+        style (default: `pyxtal`): 'pyxtal' or 'spglib' regarding the choice of hall numbers
+        quick (defaut: False): whether or not ignore the wyckoff information
     """
 
     def __init__(self, group, dim=3, use_hall=False, style='pyxtal', quick=False):
@@ -222,7 +224,12 @@ class Group:
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
 
         if dim == 3:
-            self.point_group, self.pg_number, self.polar, self.inversion, self.chiral = get_point_group(self.number)
+            point_group, pg_number, polar, inversion, chiral = get_point_group(self.number)
+            self.point_group = point_group
+            self.pg_number = pg_number
+            self.polar = polar
+            self.inversion = inversion
+            self.chiral = chiral
 
         if not quick:
             if dim == 3:
@@ -410,7 +417,8 @@ class Group:
             d = int(a) + 1
             lists.append(list(range(d)))
         if len(lists) > 20:
-            raise RuntimeError("Solution space is big, rerun it by setting quick as True")
+            msg = "Solution space is big, rerun it by setting quick as True"
+            raise RuntimeError(msg)
 
         solutions = np.array(list(itertools.product(*lists)))
         big_basis = np.tile(basis, len(numIons))
@@ -789,7 +797,6 @@ class Group:
                 l_free.append(False)
         return l_mult, l_maxn, l_free, indices
 
-
     def check_compatible(self, numIons, valid_orientations=None):
         """
         Checks if the number of atoms is compatible with the Wyckoff
@@ -1020,9 +1027,11 @@ class Group:
                 tdict = t_subgroup[str(tail[2])]; len_t = len(tdict['subgroup'])
                 kdict = k_subgroup[str(tail[2])]; len_k = len(kdict['subgroup'])
                 _indexs=[ord(x[-1])-97 for x in tail[3]]
-                next_steps=[[("t", i, tdict['subgroup'][i], sum([tdict['relations'][i][_index] for _index in _indexs],[]))] \
+                next_steps=[[("t", i, tdict['subgroup'][i], sum([tdict['relations'][i][_index] \
+                            for _index in _indexs],[]))] \
                             for i in range(len_t)] + \
-                           [[("k", i, kdict['subgroup'][i], sum([kdict['relations'][i][_index] for _index in _indexs],[]))] \
+                           [[("k", i, kdict['subgroup'][i], sum([kdict['relations'][i][_index] \
+                            for _index in _indexs],[]))] \
                             for i in range(len_k) if kdict['subgroup'][i]!=tail[2]]
                 for n in next_steps:
                     _potential.append(deepcopy(p)+n) 
@@ -3616,7 +3625,7 @@ def get_close_packed_groups(pg):
     Args:
         pg: point group symbol
 
-    Return
+    Return:
         list of space group numbers
     """
 
@@ -3764,40 +3773,16 @@ def abc2matrix(abc):
             trans[i] = num * factor
     return (rot_matrix, trans)
 
-def abc2matrix(abc):
-    """
-    convert the abc string representation to matrix
-    Args:
-        abc: string like 'a, b, c' or 'a+c, b, c' or 'a+1/4, b+1/4, c'
-
-    Returns:
-        4*4 affine matrix
-    """
-    rot_matrix = np.zeros((3, 3))
-    trans = np.zeros(3)
-    toks = abc.strip().replace(" ", "").lower().split(",")
-    re_rot = re.compile(r"([+-]?)([\d\.]*)/?([\d\.]*)([a-c])")
-    re_trans = re.compile(r"([+-]?)([\d\.]+)/?([\d\.]*)(?![a-c])")
-    for i, tok in enumerate(toks):
-        # build the rotation matrix
-        for m in re_rot.finditer(tok):
-            factor = -1.0 if m.group(1) == "-" else 1.0
-            if m.group(2) != "":
-                factor *= float(m.group(2)) / float(m.group(3)) if m.group(3) != "" else float(m.group(2))
-            j = ord(m.group(4)) - 97
-            rot_matrix[i, j] = factor
-        # build the translation vector
-        for m in re_trans.finditer(tok):
-            factor = -1 if m.group(1) == "-" else 1
-            num = float(m.group(2)) / float(m.group(3)) if m.group(3) != "" else float(m.group(2))
-            trans[i] = num * factor
-    return (rot_matrix, trans)
-
 def get_symmetry_from_ops(ops, tol=1e-5):
     """
     get the hall number from
+
+    Args:
+        ops: tuple of (rotation, translation) or list of strings
+        tol: tolerance
     """
     from spglib import get_hall_number_from_symmetry
+
     if isinstance(ops[0], str):
         ops = [SymmOp.from_xyz_string(op) for op in ops]
     rot = [op.rotation_matrix for op in ops]
