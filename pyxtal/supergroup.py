@@ -985,7 +985,7 @@ class supergroup():
                 pos = coords[i]
                 pos -= np.floor(pos)
                 if check:
-                    pos1 = sym.search_matched_position(sp.G, wp, pos)
+                    pos1 = sym.search_matched_position(sp.G[0], wp, pos)
                     if pos1 is not None:
                         site = atom_site(wp, pos1, sp.elements[i])
                         G_sites.append(site)
@@ -1005,7 +1005,7 @@ class supergroup():
                 for wp in wp2:
                     pos = coords[count]
                     pos -= np.floor(pos)
-                    pos1 = sym.search_matched_position(sp.H, wp, pos)
+                    pos1 = sym.search_matched_position(sp.H[0], wp, pos)
                     if pos1 is not None:
                         site = atom_site(wp, pos1, elements[count])
                         G_sites.append(site)

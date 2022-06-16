@@ -197,9 +197,9 @@ class pyxtal:
             s += "\nComposition: {}".format(self.formula)
             if not self.standard_setting: #and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
                 if self.molecular:
-                    symbol = self.mol_sites[0].wp.get_hm_symbols()
+                    symbol = self.mol_sites[0].wp.get_hm_symbol()
                 else:
-                    symbol = self.atom_sites[0].wp.get_hm_symbols()
+                    symbol = self.atom_sites[0].wp.get_hm_symbol()
             else:
                 symbol = self.group.symbol
             s += "\nGroup: {} ({})".format(symbol, self.group.number)
@@ -349,7 +349,17 @@ class pyxtal:
                 pass
 
 
-    def from_seed(self, seed, molecules=None, tol=1e-4, a_tol=5.0, ignore_HH=True, add_H=False, backend='pymatgen'):
+    def from_seed(
+        self, 
+        seed, 
+        molecules = None, 
+        tol = 1e-4, 
+        a_tol = 5.0, 
+        ignore_HH = True, 
+        add_H = False, 
+        backend = 'pymatgen',
+        style = 'pyxtal',
+        ):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
         Internally they will be handled by Pymatgen
@@ -360,7 +370,8 @@ class pyxtal:
             tol: scale factor for covalent bond distance
             ignore_HH: whether or not ignore the short H-H distance when checking molecule
             add_H: whether or not add H atoms
-
+            backend: structure parser, default is pymatgen, otherwise use the built_in
+            style: pyxtal for spglib
         """
 
         if self.molecular:
@@ -383,14 +394,15 @@ class pyxtal:
             elif isinstance(seed, Atoms): #ASE atoms
                 from pymatgen.io.ase import AseAtomsAdaptor
                 pmg_struc = AseAtomsAdaptor.get_structure(seed)
-                self._from_pymatgen(pmg_struc, tol, a_tol)
+                self._from_pymatgen(pmg_struc, tol, a_tol, style=style)
             elif isinstance(seed, Structure): #Pymatgen
-                self._from_pymatgen(seed, tol)
+                self._from_pymatgen(seed, tol, style=style)
             elif isinstance(seed, str):
                 if backend=='pymatgen':
                     pmg_struc = Structure.from_file(seed)
-                    self._from_pymatgen(pmg_struc, tol, a_tol)
+                    self._from_pymatgen(pmg_struc, tol, a_tol, style=style)
                 else:
+                    #Need to check
                     self.lattice, self.atom_sites = read_cif(seed)
                     self.group = Group(self.atom_sites[0].wp.number)
                     self.standard_setting = self.atom_sites[0].wp.is_standard_setting()
@@ -401,7 +413,7 @@ class pyxtal:
         self.PBC = [1, 1, 1]
         self._get_formula()
 
-    def _from_pymatgen(self, struc, tol=1e-3, a_tol=5.0):
+    def _from_pymatgen(self, struc, tol=1e-3, a_tol=5.0, style='pyxtal'):
         """
         Load structure from Pymatgen
         should not be used directly
@@ -411,7 +423,7 @@ class pyxtal:
 
         self.valid = True
         try:
-            sym_struc, number = get_symmetrized_pmg(struc, tol, a_tol)
+            sym_struc, number = get_symmetrized_pmg(struc, tol, a_tol, style)
             #print(sym_struc)
             #import sys; sys.exit()
         except TypeError:
@@ -427,17 +439,18 @@ class pyxtal:
                 numIons.append(int(d[ele]))
             self.numIons = numIons
             self.species = species
-            self.group = Group(number)
+            self.group = Group(number, style=style)
             #print(self.group[0]); import sys; sys.exit()
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
             atom_sites = []
             for i, site in enumerate(sym_struc.equivalent_sites):
                 pos = site[0].frac_coords
-                wp = Wyckoff_position.from_group_and_letter(number, sym_struc.wyckoff_symbols[i])
-                #print(wp.hall_number)
+                letter = sym_struc.wyckoff_symbols[i]
+                wp = Wyckoff_position.from_group_and_letter(number, letter, style=style)
                 specie = site[0].specie.number
-                pos1 = search_matched_position(self.group, wp, pos)
+                #print(wp)
+                pos1 = search_matched_position(self.group[0], wp, pos)
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
@@ -1508,7 +1521,7 @@ class pyxtal:
             letter = wyc_sets['Transformed WP'][index].split()[id]
             wp = Wyckoff_position.from_group_and_letter(self.group.number, letter)
             pos = op.operate(site.position)
-            pos1 = search_matched_position(self.group, wp, pos)
+            pos1 = search_matched_position(self.group[0], wp, pos)
             if pos1 is not None:
                 new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
             else:
@@ -1549,7 +1562,7 @@ class pyxtal:
             #print("transition", letter1, '->', letter)
             wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
             pos = op.operate(site.position)
-            pos1 = search_matched_position(self.group, wp, pos)
+            pos1 = search_matched_position(self.group[0], wp, pos)
             if pos1 is not None:
                 new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
             else:

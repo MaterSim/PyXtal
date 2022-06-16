@@ -786,15 +786,16 @@ class TestLattice(unittest.TestCase):
 class TestSymmetry(unittest.TestCase):
     def test_all(self):
         data = [
-        (["x, y, z", "-x, y+1/2, -z"], 4),
-        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31), 
-        (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z", "x+1/2, -y+1/2, z"], 14),
-        (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z+1/2", "x+1/2, -y+1/2, z+1/2"], 14),
+        (["x, y, z", "-x, y+1/2, -z"], 4, 6),
+        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31, 155), 
+        (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z", "x+1/2, -y+1/2, z"], 14, 83),
+        (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z+1/2", "x+1/2, -y+1/2, z+1/2"], 14, 82),
         ]
         for d in data:
-            (strs, spg) = d
-            wyc, perm = Wyckoff_position.from_symops_wo_group(strs)
-            self.assertTrue(wyc.number == spg)
+            (strs, spg, hall) = d
+            wp = Wyckoff_position.from_symops_wo_group(strs)
+            self.assertTrue(wp.number == spg)
+            self.assertTrue(wp.hall_number == hall)
 
 class TestNeighbour(unittest.TestCase):
     def test_packing(self):

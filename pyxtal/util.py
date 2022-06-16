@@ -6,7 +6,7 @@ from spglib import get_symmetry_dataset
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
 from pymatgen.core.structure import Structure
 from ase import Atoms
-from pyxtal.symmetry import Group
+from pyxtal.symmetry import Hall
 import re
 
 def find_dir(dirs):
@@ -75,13 +75,15 @@ def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
     else:
         return False
 
-def symmetrize(pmg, tol=1e-3, a_tol=5.0):
+def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
     """
     symmetrize the structure from spglib
 
     Args:
         pmg: pymatgen structure
         tol: tolerance
+        a_tol: angle tolerance
+        style: 'pyxtal' or spglib, differing in the choice of origin
 
     Returns:
         pymatgen structure with symmetrized lattice
@@ -89,16 +91,18 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0):
     numbers = [site.species.elements[0].Z for site in pmg.sites]
     atoms = (pmg.lattice.matrix, pmg.frac_coords, numbers)
     dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol)
-    hn = Group(dataset['number'], 3).hall_number
+    hn = Hall(dataset['number'], style=style).hall_default
     if hn != dataset['hall_number']:
-        dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol, hall_number=hn)
+        dataset = get_symmetry_dataset(atoms, tol,
+                                       angle_tolerance=a_tol,
+                                       hall_number=hn)
     cell = dataset['std_lattice']
     pos = dataset['std_positions']
     numbers = dataset['std_types']
 
     return Structure(cell, numbers, pos)
 
-def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0):
+def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
     """
     Symmetrized Pymatgen structure
     A slight modification to ensure that the structure adopts the
@@ -107,14 +111,21 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0):
     Args:
         pmg: input pymatgen structure
         tol: symmetry tolerance
+        a_tol: angle tolerance
+        style: 'pyxtal' or spglib, differing in the choice of origin
+
+    Returns:
+        pymatgen structure with symmetrized lattice
     """
 
-    pmg = symmetrize(pmg, tol, a_tol=a_tol)
+    pmg = symmetrize(pmg, tol, a_tol=a_tol, style=style)
     s = sga(pmg, symprec=tol, angle_tolerance=a_tol)
-    hn = Group(s.get_space_group_number()).hall_number
     # make sure that the coordinates are in standard setting
+    hn = Hall(s._space_group_data['number'], style=style).hall_default
     if hn != s._space_group_data["hall_number"]:
-        s._space_group_data = get_symmetry_dataset(s._cell, tol, angle_tolerance=a_tol, hall_number=hn)
+        s._space_group_data = get_symmetry_dataset(s._cell, tol, 
+                                                   angle_tolerance=a_tol, 
+                                                   hall_number=hn)
     return s.get_symmetrized_structure(), s.get_space_group_number()
 
 def extract_ase_db(db_file, id):
