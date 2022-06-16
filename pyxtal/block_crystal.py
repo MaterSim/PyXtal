@@ -27,7 +27,6 @@ def block_crystal(dim,
                   torsions, 
                   sites, 
                   conventional, 
-                  diag, 
                   tm,
                   seed):
     
@@ -45,7 +44,6 @@ def block_crystal(dim,
                          torsions = torsions, 
                          sites = sites, 
                          conventional = conventional, 
-                         diag = diag, 
                          tm = tm,
                          seed = seed,
                          )
@@ -99,7 +97,6 @@ def block_crystal(dim,
                              torsions = torsions, 
                              sites = sites, 
                              conventional = conventional, 
-                             diag = diag, 
                              tm = tm)
 
             if struc.valid:
@@ -125,7 +122,7 @@ def block_crystal(dim,
             #print(mol.mol.to('xyz'))
             position = np.dot(center, np.linalg.inv(struc.lattice.matrix))
             position -= np.floor(position)
-            m_site = mol_site(mol, position, ori, b_site.wp, struc.lattice, struc.diag)
+            m_site = mol_site(mol, position, ori, b_site.wp, struc.lattice)
             m_site.type = i
             mol_sites.append(m_site)
             count += len(mol.mol)

@@ -23,7 +23,7 @@ cif_path = resource_filename("pyxtal", "database/cifs/")
 l01 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
 l02 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
-wp2 = Wyckoff_position.from_group_and_index(36, "4a")
+wp2 = Wyckoff_position.from_group_and_letter(36, "4a")
 
 class TestGroup(unittest.TestCase):
     def test_list_wyckoff_combinations(self):
@@ -329,7 +329,7 @@ class TestOptLat(unittest.TestCase):
             for i in range(20):
                 sg = choice(sgs)
                 c1 = pyxtal(molecular=True)
-                c1.from_random(3, sg, ["aspirin"], diag=diag) 
+                c1.from_random(3, sg, ["aspirin"]) #, diag=diag) 
                 pmg1 = c1.to_pymatgen()
                 c2 = c1.copy()
                 c2.optimize_lattice(1)
@@ -337,11 +337,11 @@ class TestOptLat(unittest.TestCase):
                 self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
 
     def test_molecular_nodiag(self):
-        sgs, diag = [5, 7, 8, 12, 13, 14], False
+        sgs = [5, 7, 8, 12, 13, 14]
         for i in range(20):
             sg = choice(sgs)
             c1 = pyxtal(molecular=True)
-            c1.from_random(3, sg, ["aspirin"], diag=diag) 
+            c1.from_random(3, sg, ["aspirin"]) #, diag=diag) 
             pmg1 = c1.to_pymatgen()
             c2 = c1.copy()
             c2.optimize_lattice(1)
@@ -469,7 +469,7 @@ class TestWP(unittest.TestCase):
 
     def test_setting(self):
         wp = Group(14)[0]
-        wp.diagonalize_symops()
+        wp.transform_from_matrix()
         self.assertFalse(wp.is_standard_setting())
 
     def test_standarize(self):

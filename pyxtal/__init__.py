@@ -265,7 +265,6 @@ class pyxtal:
         lattice=None,
         sites = None,
         conventional = True,
-        diag = False,
         t_factor = 1.0,
         max_count = 10,
         torsions = None,
@@ -302,7 +301,6 @@ class pyxtal:
                                       torsions = torsions,
                                       sites = sites,
                                       conventional = conventional,
-                                      diag = diag,
                                       tm = tm,
                                       seed = seed,
                                       )
@@ -436,7 +434,7 @@ class pyxtal:
             atom_sites = []
             for i, site in enumerate(sym_struc.equivalent_sites):
                 pos = site[0].frac_coords
-                wp = Wyckoff_position.from_group_and_index(number, sym_struc.wyckoff_symbols[i])
+                wp = Wyckoff_position.from_group_and_letter(number, sym_struc.wyckoff_symbols[i])
                 #print(wp.hall_number)
                 specie = site[0].specie.number
                 pos1 = search_matched_position(self.group, wp, pos)
@@ -1217,7 +1215,7 @@ class pyxtal:
                         _trans = [tran1, tran2]
                         wp0 = wp.copy()
                         lat0 = self.lattice.transform_multi(_trans)
-                        wp0.transform(_trans)
+                        wp0.transform_from_matrices(_trans)
                         beta_diff0 = abs(lat0.beta*180/np.pi - 90)
                         if wp0.is_standard_setting() and beta_diff0 < beta_diff:
                             good_trans = _trans
@@ -1276,7 +1274,7 @@ class pyxtal:
             pos_frac = pos_abs.dot(lattice.inv_matrix)
             pos_frac -= np.floor(pos_frac)
             wp = site.wp.copy()
-            wp.diagonalize_symops(trans, False, update=False)
+            wp.transform_from_matrix(trans, False, update=False)
 
             if self.molecular:
                 #Obtain the transformed xyz
@@ -1508,7 +1506,7 @@ class pyxtal:
         for i, site in enumerate(new_struc.atom_sites):
             id = len(self.group) - site.wp.index - 1
             letter = wyc_sets['Transformed WP'][index].split()[id]
-            wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
+            wp = Wyckoff_position.from_group_and_letter(self.group.number, letter)
             pos = op.operate(site.position)
             pos1 = search_matched_position(self.group, wp, pos)
             if pos1 is not None:

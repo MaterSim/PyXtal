@@ -44,7 +44,6 @@ class molecular_crystal:
         tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
             object to define the distances
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        diag (optional): if use the nonstandart setting (P21/n, Pn, C2/n)?
         seed (optional): seeds
     """
 
@@ -62,7 +61,6 @@ class molecular_crystal:
         tm = Tol_matrix(prototype="molecular"),
         sites = None,
         conventional = True,
-        diag = False,
         seed = None,
     ):
 
@@ -91,13 +89,6 @@ class molecular_crystal:
         else:
             self.group = Group(group, dim=self.dim)
         self.number = self.group.number
-        self.diag = diag
-        if self.diag and self.number not in [5, 7, 8, 9, 12, 13, 14, 15]:
-            self.diag = False
-        #if self.diag and self.group.number in [7, 14, 15]:
-        #    self.symbol = self.group.alias
-        #else:
-        #    self.symbol = self.group.symbol
 
         # Composition
         if numMols is None:
@@ -446,7 +437,7 @@ class molecular_crystal:
         self.numattempts += 1
         ori = random.choice(oris).copy()
         ori.change_orientation(flip=True)
-        ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice, self.diag)
+        ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
         # Check distances within the WP
         if ms0.short_dist():
             return ms0
@@ -464,7 +455,6 @@ class molecular_crystal:
                         ori,
                         wp,
                         self.lattice,
-                        self.diag,
                     )
                     d = ms0.get_min_dist()
                     return d

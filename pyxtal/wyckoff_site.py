@@ -39,9 +39,6 @@ class atom_site:
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
         self.wp = wp
-        #if self.diag:
-        #    self.wp.diagonalize_symops()
-        #    #self.position = project_point(self.position, wp[0])
 
         self._get_dof()
         self.PBC = self.wp.PBC
@@ -288,10 +285,6 @@ class mol_site:
         self.radius = mol.radius
         self.type = stype
 
-        #if self.diag:
-        #    self.wp.diagonalize_symops()
-        #    self.position = self.wp.project(self.position)
-
     def __str__(self):
         if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
@@ -378,7 +371,6 @@ class mol_site:
         dict0["index"] = self.wp.index
         dict0["PBC"] = self.wp.PBC
         dict0["dim"] = self.wp.dim
-        dict0["diag"] = self.diag
         dict0["lattice"] = self.lattice.matrix
         dict0["lattice_type"] = self.lattice.ltype
 
@@ -411,12 +403,11 @@ class mol_site:
         index = dicts["index"]
         dim = dicts["dim"]
         wp = Wyckoff_position.from_group_and_index(g, index, dim, dicts["PBC"])
-        diag = dicts["diag"]
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
         position = dicts["center"] #np.dot(dicts["center"], lattice.inv_matrix)
         position, wp, _ = wp.merge(position, lattice.matrix, 0.01)
 
-        return cls(mol, position, orientation, wp, lattice, diag)
+        return cls(mol, position, orientation, wp, lattice)
 
     def show(self, id=None, **kwargs):
         """
