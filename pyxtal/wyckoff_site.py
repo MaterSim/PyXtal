@@ -576,6 +576,8 @@ class mol_site:
         """
         coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
         # Obtain the center in absolute coords
+        if not hasattr(self.wp, "generators"): self.wp.set_generators()
+
         if id <= len(self.wp.generators):
             #op = self.wp.generators[id]
             op = self.wp.get_euclidean_generator(self.lattice.matrix, id)
