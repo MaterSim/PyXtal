@@ -1216,12 +1216,47 @@ class Wyckoff_position:
             setattr(wp, key, dictionary[key])
         #wp.get_site_symmetry()
         wp.set_euclidean()
+        # For nonstandard setting only
         if wp.P1 is not None and not identity_ops(wp.P1):
-            #print("Transformation", wp.P)
-            (rot, trans) = wp.P1
-            wp.ops = wp.transform_from_hall(wp.ops, rot, trans)
-            wp.reset_translation()
+            wp.set_generators()
+            wp.set_ops()
+        #    #print("Transformation", wp.P)
+        #    (rot, trans) = wp.P1
+        #    wp.ops = wp.transform_from_hall(wp.ops, rot, trans)
+        #    wp.reset_translation()
         return wp
+
+    def set_ops(self):
+        self.ops = self.get_ops_from_generators()
+
+    def get_ops_from_generators(self):
+        """
+        Get symmetry operation from the generators
+        """
+        # Get the position for the 1st site
+        if self.index > 0:
+            if self.P1 is not None and not identity_ops(self.P1):
+                rot_P = self.P[0].T
+                rot_Q = self.P1[0].T
+                tran_P = self.P[1]
+                # R = Q * R * P, suitable when P = {a-c, b, c}
+                tran = rot_Q.dot(self.ops[0].translation_vector) - tran_P
+                rot = rot_Q.dot(self.ops[0].rotation_matrix).dot(rot_P)
+                op0 = SymmOp.from_rotation_and_translation(rot, tran)
+                op0 = trim_op(op0)
+            else:
+                op0 = self.ops[0]
+
+            # new positions
+            ops1 = []
+            for gen in self.generators:
+                #print(gen)
+                #print(op0)
+                ops1.append(gen * op0)
+        else:
+            ops1 = self.generators
+        return ops1
+            
 
     def from_group_and_letter(group, letter, dim=3, style='pyxtal'):
         """
@@ -1354,19 +1389,17 @@ class Wyckoff_position:
         else:
             G_ops = group
 
-        for wyc in G_ops:
-            if len(wyc) == N_sym:
-                wyc.PBC = [1, 1, 1]
-                wyc.dim = 3
+        for wp in G_ops:
+            if len(wp) == N_sym:
                 # Try permutation first
-                str2 = [op.as_xyz_string() for op in wyc.ops]
+                str2 = [op.as_xyz_string() for op in wp.ops]
                 for perm in permutations:
                     str_perm = swap_xyz_string(str1, perm)
                     # Compare the pure rotation and then
                     if set(str_perm) == set(str2):
-                        return wyc, perm
+                        return wp, perm
 
-            elif len(wyc) < N_sym:
+            elif len(wp) < N_sym:
                 continue #break
 
         return None, None
@@ -1771,7 +1804,10 @@ class Wyckoff_position:
         """
         check if two wps are equivalent
         """
-        ops0 = wp2.ops
+        if type(wp2) == list:
+            ops0 = wp2
+        else:
+            ops0 = wp2.ops
         if len(ops0) == len(self.ops):
             if self.get_dof() == 0:
                 #The following situation may occur
@@ -3631,7 +3667,10 @@ def abc2matrix(abc):
                 else: 
                     factor *= float(m.group(2))
             j = ord(m.group(4)) - 97
-            rot_matrix[i, j] = factor
+            try:
+                rot_matrix[i, j] = factor
+            except:
+                print(abc); import sys; sys.exit()
 
         # build the translation vector
         for m in re_trans.finditer(tok):
@@ -3675,6 +3714,11 @@ def transform_ops(ops, P, P1):
     """
     There are two types of tranformation:
     permuation or a+b
+
+    Args:
+        ops: list of symmtry ops
+        P: transformation
+        P1: inverse transformation
     """
     #print("}++++++++++++++++++++++", len(ops))
     rot_P = P[0].T
@@ -3694,8 +3738,23 @@ def transform_ops(ops, P, P1):
         for i, op in enumerate(ops):
             inv = np.linalg.inv(op.affine_matrix)
             trans = inv[:3, 3] + base
+            trans -= np.round(trans)
             rot_ops = ops[i].rotation_matrix
             ops[i] = SymmOp.from_rotation_and_translation(rot_ops, trans)
 
     return ops
 
+def trim_op(op):
+    """
+    Convert the operation to the simplest form
+    e.g.,
+    'x+1/8, y+1/8, z+1/8' -> 'x, y, z'
+    'x+'
+    """
+    rot = op.rotation_matrix
+    tran = op.translation_vector
+    for i in range(3):
+        tmp = rot[i, :]
+        if np.linalg.norm(tmp)>1e-3:
+            tran[i] = 0
+    return SymmOp.from_rotation_and_translation(rot, tran)
