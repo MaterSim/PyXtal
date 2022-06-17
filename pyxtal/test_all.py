@@ -704,6 +704,16 @@ class TestAtomic3D(unittest.TestCase):
             pmg_struc = struc.to_pymatgen()
             self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg1))
 
+    def test_read_spglib(self):
+        # test reading xtal from cif
+        for name in ["FAU"]:
+            cif_file = cif_path + name + ".cif"
+            pmg1 = Structure.from_file(cif_file)
+            struc = pyxtal()
+            struc.from_seed(seed=cif_file, style='spglib')
+            pmg_struc = struc.to_pymatgen()
+            self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg1))
+
 
 class TestAtomic2D(unittest.TestCase):
     def test_single_specie(self):

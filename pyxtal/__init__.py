@@ -449,7 +449,7 @@ class pyxtal:
                 letter = sym_struc.wyckoff_symbols[i]
                 wp = Wyckoff_position.from_group_and_letter(number, letter, style=style)
                 specie = site[0].specie.number
-                #print(wp)
+                #if wp.index>0: print(wp)
                 pos1 = wp.search_matched_position(pos, self.group[0])
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
@@ -1030,6 +1030,23 @@ class pyxtal:
         else:
             for site in self.atom_sites:
                 species.extend([site.specie]*site.multiplicity)
+                #wp = Group(227, style='spglib')[0]
+                #my = wp.apply_ops(site.position)
+                #print(site); print(len(site.coords))
+                #for i, m in enumerate(site.coords):
+                #    if i > 1:
+                #        diff = site.coords[:i-1, :] - m
+                #        diff -= np.round(diff)
+                #        dist1 = np.linalg.norm(diff, axis=1)
+                #        if dist1.min() < 1e-2: 
+                #            s = 0
+                #            site.wp.print_ops(site.wp.ops[s:i+1])
+                #            print('+++++=')
+                #            site.wp.print_ops(site.wp.generators[s:i+1])
+                #            print(i, m)
+                #            print(dist1[s:])
+                #            print(site.coords[s:i+1])
+                #            import sys; sys.exit()
                 if total_coords is None:
                     total_coords = site.coords
                 else:

@@ -1234,25 +1234,29 @@ class Wyckoff_position:
         Get symmetry operation from the generators
         """
         # Get the position for the 1st site
+        ops1 = []
         if self.index > 0:
             if self.P1 is not None and not identity_ops(self.P1):
-                rot_P = self.P[0].T
-                rot_Q = self.P1[0].T
-                tran_P = self.P[1]
-                # R = Q * R * P, suitable when P = {a-c, b, c}
-                tran = rot_Q.dot(self.ops[0].translation_vector) - tran_P
-                rot = rot_Q.dot(self.ops[0].rotation_matrix).dot(rot_P)
-                op0 = SymmOp.from_rotation_and_translation(rot, tran)
-                op0 = trim_op(op0)
+                for op in self.ops:
+                    rot_P = self.P[0].T
+                    rot_Q = self.P1[0].T
+                    tran_P = self.P[1]
+                    # R = Q * R * P, suitable when P = {a-c, b, c}
+                    tran = rot_Q.dot(op.translation_vector) - tran_P
+                    rot = rot_Q.dot(op.rotation_matrix).dot(rot_P)
+                    op0 = SymmOp.from_rotation_and_translation(rot, tran)
+                    ops1.append(op0)   
+                    #print(op0.as_xyz_string())
+                ops1 = trim_ops(ops1)
             else:
                 op0 = self.ops[0]
 
             # new positions
-            ops1 = []
-            for gen in self.generators:
-                #print(gen)
-                #print(op0)
-                ops1.append(gen * op0)
+            #ops1 = []
+            #for gen in self.generators:
+            #    #print(gen)
+            #    #print(op0)
+            #    ops1.append(gen * op0)
         else:
             ops1 = self.generators
         return ops1
@@ -3744,17 +3748,57 @@ def transform_ops(ops, P, P1):
 
     return ops
 
-def trim_op(op):
+def trim_ops(ops):
     """
     Convert the operation to the simplest form
     e.g.,
     'x+1/8, y+1/8, z+1/8' -> 'x, y, z'
+    '1/8 y+1/8 -y+1/8' -> '1/8, y, -y+1/4'
     'x+'
     """
-    rot = op.rotation_matrix
-    tran = op.translation_vector
-    for i in range(3):
-        tmp = rot[i, :]
-        if np.linalg.norm(tmp)>1e-3:
-            tran[i] = 0
-    return SymmOp.from_rotation_and_translation(rot, tran)
+    def in_base(op, base):
+        for b in base:
+            if abs(op-b[:3]).sum()<1e-2 or abs(op+b[:3]).sum()<1e-2:
+                return b
+        return None
+
+    ops1 = []
+    for i, op in enumerate(ops):
+        rot = op.rotation_matrix
+        tran = op.translation_vector
+        if i == 0:
+            base = [] # e.g., [1, 0, 0, 1/2] means (x+1/2)
+            for i in range(3):
+                tmp = rot[i, :]
+                if np.linalg.norm(tmp) > 1e-3:
+                    b = in_base(tmp, base)
+                    if b is None:
+                        _base = np.zeros(4)
+                        _base[:3] = tmp
+                        _base[3] = tran[i]
+                        base.append(_base)
+                        tran[i] = 0
+                    else:
+                        for j in range(3):
+                            if abs(b[j]) > 0:
+                                coef = tmp[j]/b[j]
+                                break
+                        tran[i] -= coef*b[3]
+        else:
+            
+            for i in range(3):
+                tmp = rot[i, :]
+                if np.linalg.norm(tmp) > 1e-3:
+                    b = in_base(tmp, base)
+                    for j in range(3):
+                        if abs(b[j]) > 0:
+                            coef = tmp[j]/b[j]
+                            break
+                    tran[i] -= coef*b[3]
+        ops1.append(SymmOp.from_rotation_and_translation(rot, tran))
+
+    return ops
+#op = SymmOp.from_xyz_string('y+1/8, -y+1/8, 0')
+#op = SymmOp.from_xyz_string('1/8, y+1/8, -y+1/8')
+#op = SymmOp.from_xyz_string(['x+1/8,x+1/8,z+1/8', '')
+#print(trim_op(op).as_xyz_string())

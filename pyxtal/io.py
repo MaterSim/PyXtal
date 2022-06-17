@@ -58,7 +58,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         if G1.is_standard_setting():
             symbol = struc.group.symbol
         else:
-            symbol = sites[0].wp.get_hm_symbols()
+            symbol = sites[0].wp.get_hm_symbol()
             #trans = sites[0].wp.get_transformation()
             #G1.diagonalize_symops(trans, False)
 
