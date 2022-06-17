@@ -16,7 +16,7 @@ from pymatgen.core.structure import Structure, Molecule
 from pyxtal.version import __version__
 from pyxtal.block_crystal import block_crystal
 from pyxtal.crystal import random_crystal
-from pyxtal.symmetry import Group, Wyckoff_position, search_matched_position
+from pyxtal.symmetry import Group, Wyckoff_position
 from pyxtal.operations import apply_ops, SymmOp, get_inverse
 from pyxtal.wyckoff_site import atom_site, mol_site
 from pyxtal.wyckoff_split import wyckoff_split
@@ -450,7 +450,7 @@ class pyxtal:
                 wp = Wyckoff_position.from_group_and_letter(number, letter, style=style)
                 specie = site[0].specie.number
                 #print(wp)
-                pos1 = search_matched_position(self.group[0], wp, pos)
+                pos1 = wp.search_matched_position(pos, self.group[0])
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
@@ -1521,7 +1521,7 @@ class pyxtal:
             letter = wyc_sets['Transformed WP'][index].split()[id]
             wp = Wyckoff_position.from_group_and_letter(self.group.number, letter)
             pos = op.operate(site.position)
-            pos1 = search_matched_position(self.group[0], wp, pos)
+            pos1 = wp.search_matched_position(pos, self.group[0])
             if pos1 is not None:
                 new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
             else:
@@ -1562,7 +1562,7 @@ class pyxtal:
             #print("transition", letter1, '->', letter)
             wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
             pos = op.operate(site.position)
-            pos1 = search_matched_position(self.group[0], wp, pos)
+            pos1 = wp.search_matched_position(pos, self.group[0])
             if pos1 is not None:
                 new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
             else:
