@@ -1220,10 +1220,6 @@ class Wyckoff_position:
         if wp.P1 is not None and not identity_ops(wp.P1):
             wp.set_generators()
             wp.set_ops()
-        #    #print("Transformation", wp.P)
-        #    (rot, trans) = wp.P1
-        #    wp.ops = wp.transform_from_hall(wp.ops, rot, trans)
-        #    wp.reset_translation()
         return wp
 
     def set_ops(self):
@@ -1250,19 +1246,12 @@ class Wyckoff_position:
                 ops1 = trim_ops(ops1)
             else:
                 op0 = self.ops[0]
-
-            # new positions
-            #ops1 = []
-            #for gen in self.generators:
-            #    #print(gen)
-            #    #print(op0)
-            #    ops1.append(gen * op0)
         else:
             ops1 = self.generators
         return ops1
             
 
-    def from_group_and_letter(group, letter, dim=3, style='pyxtal'):
+    def from_group_and_letter(group, letter, dim=3, style='pyxtal', hn=None):
         """
         Creates a Wyckoff_position using the space group number and index
 
@@ -1270,6 +1259,8 @@ class Wyckoff_position:
             group: the international number of the symmetry group
             letter: e.g. 4a
             dim: the periodic dimension of the crystal
+            style: 'pyxtal' or spglib, differing in the choice of origin
+            hn: hall_number
         """
 
         for c in letter:
@@ -1278,7 +1269,11 @@ class Wyckoff_position:
                 break
         ops_all = get_wyckoffs(group, dim=dim)
         index = index_from_letter(letter, ops_all, dim=dim)
-        return Wyckoff_position.from_group_and_index(group, index, dim, style=style, wyckoffs=ops_all)
+        if hn is not None:
+            wp = Wyckoff_position.from_group_and_index(hn, index, dim, use_hall=True, wyckoffs=ops_all)
+        else:
+            wp = Wyckoff_position.from_group_and_index(group, index, dim, style=style, wyckoffs=ops_all)
+        return wp
 
     def from_group_and_index(group, index, dim=3, use_hall=False, style='pyxtal', wyckoffs=None):
         """
@@ -3754,7 +3749,6 @@ def trim_ops(ops):
     e.g.,
     'x+1/8, y+1/8, z+1/8' -> 'x, y, z'
     '1/8 y+1/8 -y+1/8' -> '1/8, y, -y+1/4'
-    'x+'
     """
     def in_base(op, base):
         for b in base:

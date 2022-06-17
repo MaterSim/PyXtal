@@ -14,7 +14,7 @@ from pymatgen.core.operations import SymmOp
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
 from pyxtal.molecule import pyxtal_molecule
-from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs
+from pyxtal.symmetry import Group, Wyckoff_position, get_wyckoffs, Hall
 from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
 from pyxtal.supergroup import supergroups, supergroup
@@ -713,6 +713,24 @@ class TestAtomic3D(unittest.TestCase):
             struc.from_seed(seed=cif_file, style='spglib')
             pmg_struc = struc.to_pymatgen()
             self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg1))
+        # more space groups
+        for name in ['I41amd', 'P4nmm', 'Pmmn', 'Pn3m', 'Fd3', 'Pn3']:
+            cif_file = cif_path + name + ".vasp" 
+            pmg1 = Structure.from_file(cif_file)
+            struc = pyxtal()
+            struc.from_seed(seed=cif_file, style='spglib')
+            pmg_struc = struc.to_pymatgen()
+            self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg1))
+
+    def test_read_by_HN(self):
+        for name in ["aspirin"]:
+            cif_file = cif_path + name + '.cif'
+            pmg1 = Structure.from_file(cif_file)
+            struc = pyxtal()
+            for hn in Hall(14).hall_numbers:
+                struc._from_pymatgen(pmg1, hn=hn)
+                pmg_struc = struc.to_pymatgen()
+                self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg1))
 
 
 class TestAtomic2D(unittest.TestCase):

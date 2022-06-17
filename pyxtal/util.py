@@ -75,7 +75,7 @@ def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
     else:
         return False
 
-def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
+def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
     """
     symmetrize the structure from spglib
 
@@ -84,6 +84,7 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
         tol: tolerance
         a_tol: angle tolerance
         style: 'pyxtal' or spglib, differing in the choice of origin
+        hn: hall_number
 
     Returns:
         pymatgen structure with symmetrized lattice
@@ -91,7 +92,8 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
     numbers = [site.species.elements[0].Z for site in pmg.sites]
     atoms = (pmg.lattice.matrix, pmg.frac_coords, numbers)
     dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol)
-    hn = Hall(dataset['number'], style=style).hall_default
+    if hn is None:
+        hn = Hall(dataset['number'], style=style).hall_default
     if hn != dataset['hall_number']:
         dataset = get_symmetry_dataset(atoms, tol,
                                        angle_tolerance=a_tol,
@@ -102,7 +104,7 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
 
     return Structure(cell, numbers, pos)
 
-def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
+def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
     """
     Symmetrized Pymatgen structure
     A slight modification to ensure that the structure adopts the
@@ -113,15 +115,17 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal'):
         tol: symmetry tolerance
         a_tol: angle tolerance
         style: 'pyxtal' or spglib, differing in the choice of origin
+        hn: hall_number
 
     Returns:
         pymatgen structure with symmetrized lattice
     """
 
-    pmg = symmetrize(pmg, tol, a_tol=a_tol, style=style)
+    pmg = symmetrize(pmg, tol, a_tol=a_tol, style=style, hn=hn)
     s = sga(pmg, symprec=tol, angle_tolerance=a_tol)
     # make sure that the coordinates are in standard setting
-    hn = Hall(s._space_group_data['number'], style=style).hall_default
+    if hn is None:
+        hn = Hall(s._space_group_data['number'], style=style).hall_default
     if hn != s._space_group_data["hall_number"]:
         s._space_group_data = get_symmetry_dataset(s._cell, tol, 
                                                    angle_tolerance=a_tol, 

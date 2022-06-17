@@ -413,17 +413,24 @@ class pyxtal:
         self.PBC = [1, 1, 1]
         self._get_formula()
 
-    def _from_pymatgen(self, struc, tol=1e-3, a_tol=5.0, style='pyxtal'):
+    def _from_pymatgen(self, struc, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
         """
         Load structure from Pymatgen
         should not be used directly
+
+        Args:
+            struc: input pymatgen structure
+            tol: symmetry tolerance
+            a_tol: angle tolerance
+            style: 'pyxtal' or spglib, differing in the choice of origin
+            hn: hall_number
         """
         from pyxtal.util import get_symmetrized_pmg
         #import pymatgen.analysis.structure_matcher as sm
 
         self.valid = True
         try:
-            sym_struc, number = get_symmetrized_pmg(struc, tol, a_tol, style)
+            sym_struc, number = get_symmetrized_pmg(struc, tol, a_tol, style, hn)
             #print(sym_struc)
             #import sys; sys.exit()
         except TypeError:
@@ -439,7 +446,10 @@ class pyxtal:
                 numIons.append(int(d[ele]))
             self.numIons = numIons
             self.species = species
-            self.group = Group(number, style=style)
+            if hn is None:
+                self.group = Group(number, style=style)
+            else:
+                self.group = Group(hn, use_hall=True)
             #print(self.group[0]); import sys; sys.exit()
             matrix, ltype = sym_struc.lattice.matrix, self.group.lattice_type
             self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
@@ -447,7 +457,7 @@ class pyxtal:
             for i, site in enumerate(sym_struc.equivalent_sites):
                 pos = site[0].frac_coords
                 letter = sym_struc.wyckoff_symbols[i]
-                wp = Wyckoff_position.from_group_and_letter(number, letter, style=style)
+                wp = Wyckoff_position.from_group_and_letter(number, letter, style=style, hn=hn)
                 specie = site[0].specie.number
                 #if wp.index>0: print(wp)
                 pos1 = wp.search_matched_position(pos, self.group[0])
