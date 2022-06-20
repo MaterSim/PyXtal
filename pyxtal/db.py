@@ -24,8 +24,8 @@ class database():
                      'mol_smi', 'mol_formula', 'mol_weight',
                      'l_type',
                     ]
-        self.calculators = ['charmm', 
-                            'gulp', 
+        self.calculators = ['charmm',
+                            'gulp',
                             'ani',
                             'dftb_D3',
                             'dftb_TS',
@@ -57,7 +57,7 @@ class database():
                 kvp0[key] = kvp[key]
             else:
                 print('Error, cannot find ', key, ' from the input')
-                return 
+                return
         return kvp0
 
     def check_status(self, show=False):
@@ -67,7 +67,7 @@ class database():
         ids = []
         for row in self.db.select():
             if len(row.data.keys())==len(self.calculators):
-                ids.append(row.id)        
+                ids.append(row.id)
                 if show:
                     row_info = self.get_row_info(id=row.id)
                     self.view(row_info)
@@ -114,13 +114,13 @@ class database():
         #calcs
         for key in data.keys():
             calc = key[:-5]
-            time = data[key]['time'] 
+            time = data[key]['time']
 
             rep = data[key]['rep']
             if type(rep[0]) is not list: rep = [rep]
             rep = representation(rep, kvp['mol_smi']).to_string()
 
-            (dv, msd1, msd2) = data[key]['diff'] 
+            (dv, msd1, msd2) = data[key]['diff']
             strs = "{:s} {:8s} {:6.2f} {:6.3f}".format(rep, calc, time/60, dv)
             if msd1 is not None:
                 strs += "{:6.3f}{:6.3f}".format(msd1, msd2)
@@ -207,4 +207,3 @@ if __name__ == "__main__":
     # view structure
     c = db.get_pyxtal('HXMTAM')
     print(c)
-

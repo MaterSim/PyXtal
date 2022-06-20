@@ -25,23 +25,23 @@ class molecular_crystal:
     constraints. Based on the crystal.random_crystal class for atomic crystals.
     Given a spacegroup, list of molecule objects, molecular stoichiometry, and
     a volume factor, generates a molecular crystal consistent with the given
-    constraints. 
+    constraints.
 
     Args:
         dim: dimenion (1, 2, 3)
         group: the group number (1-75, 1-80, 1-230)
         molecules: a list of pymatgen.core.structure.Molecule objects for
             each type of molecule. Alternatively, you may supply a file path,
-            or the name of molecules from the built_in 
+            or the name of molecules from the built_in
             `database <pyxtal.database.collection.html>`_
         numMols: A list of the number of each type of molecule within the
             primitive cell (NOT the conventioal cell)
         factor: A volume factor used to generate a larger or smaller
             unit cell. Increasing this gives extra space between molecules
-        lattice (optional): the `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_ 
+        lattice (optional): the `Lattice <pyxtal.lattice.Lattice.html>`_
             object to define the unit cell
-        conventional (optional): count the number of atoms in the conventional cell
-        tm (optional): the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.tolerance.html>`_ 
+        conventional (optional): count the atomic numbers in a conventional cell
+        tm (optional): the `Tol_matrix <pyxtal.tolerance.tolerance.html>`_
             object to define the distances
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
         seed (optional): seeds
@@ -71,13 +71,13 @@ class molecular_crystal:
         self.seed = seed
 
         # Dimesion
-        self.dim = dim 
+        self.dim = dim
         self.area = area  # Cross-section area for 1D
-        self.thickness = thickness # Thickness of 2D slab 
+        self.thickness = thickness # Thickness of 2D slab
 
         #The periodic boundary condition
         if dim == 3:
-            self.PBC = [1, 1, 1] 
+            self.PBC = [1, 1, 1]
         elif dim == 2:
             self.PBC = [1, 1, 0]
         elif dim == 1:
@@ -122,9 +122,9 @@ class molecular_crystal:
                 compat, self.degrees = self.group.check_compatible(self.numMols, \
                         self.valid_orientations)
             if not compat:
-                msg = "Compoisition " + str(self.numMols) 
+                msg = "Compoisition " + str(self.numMols)
                 msg += " not compatible with symmetry "
-                msg += str(self.group.number) 
+                msg += str(self.group.number)
                 raise Comp_CompatibilityError(msg)
             else:
                 self.set_volume()
@@ -164,7 +164,7 @@ class molecular_crystal:
         # Symmetry sites
         self.sites = {}
         for i, mol in enumerate(self.molecules):
-            if sites is not None and sites[i] is not None and len(sites[i])>0:
+            if sites is not None and sites[i] is not None and len(sites[i]) > 0:
                 self._check_consistency(sites[i], self.numMols[i])
                 if type(sites[i]) is dict:
                     self.sites[i] = []
@@ -174,7 +174,7 @@ class molecular_crystal:
                     self.sites[i] = sites[i]
             else:
                 self.sites[i] = None
- 
+
     def set_molecules(self, molecules, torsions):
         """
         Get molecular information
@@ -186,7 +186,7 @@ class molecular_crystal:
         if torsions is None:
             torsions = [None]*len(molecules)
 
-        self.molecules = []  
+        self.molecules = []
         for i, mol in enumerate(molecules):
             # already a pyxtal_molecule object
             if isinstance(mol, pyxtal_molecule):
@@ -195,15 +195,15 @@ class molecular_crystal:
                 p_mol = pyxtal_molecule(mol, seed=self.seed, \
                         torsions=torsions[i], tm=self.tol_matrix)
             self.molecules.append(p_mol)
- 
+
     def set_orientations(self):
         """
         Calculates the valid orientations for each Molecule and Wyckoff
         position. Returns a list with 4 indices:
             - index 1: the molecular prototype's index within self.molecules
             - index 2: the WP's 1st index (based on multiplicity)
-            - index 3: the WP's 2nd index (within the group of equal multiplicity)
-            - index 4: the index of the valid orientation for the molecule/WP pair
+            - index 3: the WP's 2nd index (within the group of same multiplicity)
+            - index 4: the index of a valid orientation for the molecule/WP pair
 
         For example, self.valid_orientations[i][j][k] would be a list of valid
         orientations for self.molecules[i], in the Wyckoff position
@@ -228,7 +228,7 @@ class molecular_crystal:
 
     def set_volume(self):
         """
-        Given the molecular stoichiometry, estimate the volume needed for a unit cell.
+        Given the molecular stoichiometry, estimate the volume for a unit cell.
         """
         volume = 0
         for numMol, mol in zip(self.numMols, self.molecules):
@@ -290,8 +290,8 @@ class molecular_crystal:
 
     def set_crystal(self):
         """
-        The main code to generate a random molecular crystal. 
-        If successful, `self.valid` is True 
+        The main code to generate a random molecular crystal.
+        If successful, `self.valid` is True
         """
         self.numattempts = 0
         if not self.degrees:
@@ -328,7 +328,7 @@ class molecular_crystal:
         """
 
         mol_sites_total = []
-        # Add molecules 
+        # Add molecules
         for i, numMol in enumerate(self.numMols):
             pyxtal_mol = self.molecules[i]
             valid_ori = self.valid_orientations[i]
@@ -344,7 +344,7 @@ class molecular_crystal:
         self.valid = True
         return mol_sites_total
 
-    def _set_mol_wyckoffs(self, id, numMol, pyxtal_mol, valid_ori, mol_wyks): 
+    def _set_mol_wyckoffs(self, id, numMol, pyxtal_mol, valid_ori, mol_wyks):
         """
         generates a set of wyckoff positions to accomodate a given number
         of molecules
@@ -377,14 +377,14 @@ class molecular_crystal:
             # Choose a random WP for given multiplicity: 2a, 2b, 2c
             if sites_list is not None and len(sites_list)>0:
                 site = sites_list[0]
-            else: # Selecting the merging 
+            else: # Selecting the merging
                 site = None
 
             # NOTE: The molecular version return wyckoff indices, not ops
             diff = numMol - numMol_added
 
             if type(site) is dict: #site with coordinates
-                key = list(site.keys())[0] 
+                key = list(site.keys())[0]
                 wp = wyc_mol(self.group, diff, key, valid_ori, True, self.dim)
             else:
                 wp = wyc_mol(self.group, diff, site, valid_ori, True, self.dim)
@@ -404,21 +404,22 @@ class molecular_crystal:
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:
                         continue
-                    if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
-                        pt[-1] = 0.5 
+                    if self.dim == 2 and self.thickness is not None and \
+                    self.thickness < 0.1:
+                        pt[-1] = 0.5
 
                     ms0 = self._set_orientation(pyxtal_mol, pt, oris, wp)
                     if ms0 is not None:
-                        # Check current WP against existing WP's  
+                        # Check current WP against existing WP's
                         passed_wp_check = True
                         for ms1 in mol_sites_tmp + mol_wyks:
                             if not ms0.short_dist_with_wp2(ms1, tm=self.tol_matrix):
                                 passed_wp_check = False
-                        
+
                         if passed_wp_check:
                             if sites_list is not None:
                                 sites_list.pop(0)
-                            
+
                             ms0.type = id
                             mol_sites_tmp.append(ms0)
                             numMol_added += len(ms0.wp)
@@ -429,7 +430,7 @@ class molecular_crystal:
         return None
 
 
-    def _set_orientation(self, pyxtal_mol, pt, oris, wp): 
+    def _set_orientation(self, pyxtal_mol, pt, oris, wp):
         """
         Generate good orientations
         """
@@ -488,8 +489,8 @@ class molecular_crystal:
         if numMol == num:
             return True
         else:
-            msg = "\nThe requested number of molecules is inconsistent: " + str(site)
+            msg = "\nThe requested number of molecules is inconsistent: "
+            msg += str(site)
             msg += "\nfrom numMols: {:d}".format(numMol)
             msg += "\nfrom Wyckoff list: {:d}".format(num)
             raise ValueError(msg)
-

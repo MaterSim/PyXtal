@@ -35,10 +35,8 @@ def check_distance(
     d_factor=1.0,
 ):
     """
-    Check the distances between two set of atoms. Distances between coordinates
-    within the first set are not checked, and distances between coordinates within
-    the second set are not checked. Only distances between points from different
-    sets are checked.
+    Check the distances between two atom set. Only distances between points from
+    different sets are checked.
 
     Args:
         coord1: a list of fractional coordinates e.g. [[.1,.6,.4]
@@ -48,9 +46,9 @@ def check_distance(
         species1: a list of atomic species or numbers for coord1
         species2: a list of atomic species or numbers for coord2
         lattice: matrix describing the unit cell vectors
-        PBC: A periodic boundary condition list, 
+        PBC: A periodic boundary condition list,
             where 1 means periodic, 0 means not periodic.
-            [1,1,1] -> full 3d periodicity, 
+            [1,1,1] -> full 3d periodicity,
             [0,0,1] -> periodicity along the z axis
         tm: a Tol_matrix object, or a string representing Tol_matrix
         d_factor: the tolerance is multiplied by this amount. Larger values
@@ -88,10 +86,10 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]):
         lattice: a 3x3 matrix representing the lattice vectors of the unit cell
         factor: a tolerance factor for checking distances. A larger value means
             atoms must be farther apart
-        PBC: A periodic boundary condition list, 
-            where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-    
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means
+            not periodic. Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> 1d
+            periodicity along the z axis
+
     Returns:
         True if no atoms are too close together, False if any pair is too close
     """
@@ -119,8 +117,9 @@ def check_images(
     d_factor=1.0,
 ):
     """
-    Given a set of (unfiltered) frac coordinates, checks if the periodic images are too close.
-    
+    Given a set of (unfiltered) frac coordinates, checks if the periodic images
+    are too close.
+
     Args:
         coords: a list of fractional coordinates
         species: the atomic species of each coordinate
@@ -174,13 +173,14 @@ def distance(xyz, lattice, PBC=[1, 1, 1]):
     Returns the Euclidean distance from the origin for a fractional
     displacement vector. Takes into account the lattice metric and periodic
     boundary conditions, including up to one non-periodic axis.
-    
+
     Args:
         xyz: a fractional 3d displacement vector. Can be obtained by
             subtracting one fractional vector from another
         lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means
+        not periodic. Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> 1d
+        periodicity along the z axis
 
     Returns:
         a scalar for the distance of the point from the origin
@@ -196,15 +196,16 @@ def distance_matrix(pts1, pts2, lattice, PBC=[1, 1, 1], single=False, metric="eu
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account the lattice metric and periodic boundary conditions.
-    
+
     Args:
         pts1: a list of fractional coordinates
         pts2: another list of fractional coordinates
         lattice: a 3x3 matrix describing a unit cell's lattice vectors
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
+        PBC: A periodic boundary condition list, where 1 means periodic, 0 means
+            not periodic. Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> 1d
+            periodicity along the z axis
         single: return a scalor and matrix?
-        metric: the metric to use with cdist. Possible values include 'euclidean',
+        metric: the metric to use with cdist, such as  'euclidean',
             'sqeuclidean', 'minkowski', and others
 
     Returns:
@@ -277,7 +278,7 @@ def create_matrix(PBC=[1, 1, 1], omit=False):
     for i in i_list:
         for j in j_list:
             for k in k_list:
-                if omit: 
+                if omit:
                     if [i, j, k] != [0,0,0]:
                         matrix.append([i, j, k])
                 else:
@@ -287,13 +288,13 @@ def create_matrix(PBC=[1, 1, 1], omit=False):
 
 def filtered_coords(coords, PBC=[1, 1, 1]):
     """
-    Transform all coordinates to [0, 1] interval if PBC is allowed 
-    For example, [1.2, 1.6, -.4] becomes 
+    Transform all coordinates to [0, 1] interval if PBC is allowed
+    For example, [1.2, 1.6, -.4] becomes
     [0.2, 0.6, 0.6] when PBC=[1,1,1]
     [0.2, 1.6, 0.6] when PBC=[1,0,1]
 
     Args:
-        coords: an array of real 3d vectors. 
+        coords: an array of real 3d vectors.
         PBC: A periodic boundary condition list (1: periodic; 0: nonperiodic).
 
     Returns:
@@ -317,7 +318,7 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
     1. Then, values which are greater than 0.5 are converted to 1 minus their
     value. This is used for converting displacement vectors with a Euclidean
     lattice.
-    
+
     Args:
         coords: an array of real 3d vectors. The shape does not matter
         PBC: A periodic boundary condition list (1: periodic; 0: nonperiodic).
@@ -360,7 +361,7 @@ def get_inverse(op):
             # [-3x/2, -x/2, 1/4]
             # [0, x, 1/4]
             for rows in [[0,1,2],[1,2,0],[0,2,1]]:
-                #m = (matrix[rows,:])[:,rows] 
+                #m = (matrix[rows,:])[:,rows]
                 #print(rows, m)
                 if np.linalg.matrix_rank(matrix[rows[:2],:3]) != 2:
                     break
@@ -375,7 +376,7 @@ def get_inverse(op):
                     matrix[id1, id0], matrix[id1, id2] = matrix[id1, id2], matrix[id1, id0]
 
         elif np.linalg.matrix_rank(matrix) == 2:
-            # -3x/2, -x/2, -x+1/4 
+            # -3x/2, -x/2, -x+1/4
             if np.sum(matrix[:, 0]**2) > 1e-3:
                 matrix[1,0], matrix[1,1] = matrix[1,1], matrix[1,0]
                 matrix[2,0], matrix[2,2] = matrix[2,2], matrix[2,0]
@@ -390,7 +391,7 @@ def get_inverse(op):
 
 def get_inverse_ops(ops):
     """
-    Given a (possibly nested) list of SymmOp objects, returns a list of the inverses.
+    Given a inverse list of SymmOp objects
 
     Args:
         ops: a list of Symmop's
@@ -584,12 +585,9 @@ def are_equal(op1, op2, PBC=[1, 1, 1], rtol=1e-3, atol=1e-3):
     Args:
         op1: a SymmOp object
         op2: another SymmOp object
-        PBC: A periodic boundary condition list, where 1 means periodic, 0 means not periodic.
-            Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along the z axis
-        rtol: the relative numerical tolerance for equivalence (passed to
-            np.allclose)
-        atol: the absolute numerical tolerance for equivalence (passed to
-            np.allclose)
+        PBC: A periodic boundary condition list.
+        rtol: the relative numerical tolerance for equivalence
+        atol: the absolute numerical tolerance for equivalence
 
     Returns:
         True if op1 and op2 are equivalent, False otherwise
@@ -869,11 +867,11 @@ def get_best_match(positions, ref, cell):
 # Test Functionality
 if __name__ == "__main__":
     # ----------------------------------------------------
-    op = SymmOp.from_rotation_and_translation(
-        Rotation.from_rotvec(np.pi / 6 * np.array([1, 0, 0])).as_matrix(), [0, 0, 0]
-    )
-    ops = [op]
     from pymatgen.symmetry.analyzer import generate_full_symmops
+
+    rot = Rotation.from_rotvec(np.pi / 6 * np.array([1, 0, 0]))
+    op = SymmOp.from_rotation_and_translation(rot.as_matrix(), vec0)
+    ops = [op]
 
     symm_m = generate_full_symmops(ops, 1e-3)
     for op in symm_m:

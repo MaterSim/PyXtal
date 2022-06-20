@@ -32,10 +32,10 @@ class random_crystal:
             primitive cell (NOT the conventional cell), e.g., `[4, 2]`
         factor (optional): volume factor used to generate the crystal
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-        lattice (optional): `pyxtal.lattice.Lattice <pyxtal.lattice.Lattice.html>`_
-            object to define the unit cell
-        tm (optional): `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_
-            object to define the distances
+        lattice (optional): `Lattice <pyxtal.lattice.Lattice.html>`_ object to
+            define the unit cell
+        tm (optional): `Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ object
+            to define the distances
     """
 
     def __init__(
@@ -60,13 +60,13 @@ class random_crystal:
         self.min_density = 0.75
 
         # Dimesion
-        self.dim = dim 
+        self.dim = dim
         self.area = area  # Cross-section area for 1D
-        self.thickness = thickness # Thickness of 2D slab 
+        self.thickness = thickness # Thickness of 2D slab
 
         #The periodic boundary condition
         if dim == 3:
-            self.PBC = [1, 1, 1] 
+            self.PBC = [1, 1, 1]
         elif dim == 2:
             self.PBC = [1, 1, 0]
         elif dim == 1:
@@ -91,22 +91,22 @@ class random_crystal:
         self.numIons = numIons * mul
         self.species = species
 
-        # Tolerance matrix 
+        # Tolerance matrix
         if type(tm) == Tol_matrix:
             self.tol_matrix = tm
         else:
             self.tol_matrix = Tol_matrix(prototype=tm)
 
         # Wyckoff sites
-        self.set_sites(sites) 
+        self.set_sites(sites)
 
         # Lattice and coordinates
         compat, self.degrees = self.group.check_compatible(self.numIons)
         if not compat:
             self.valid = False
-            msg = "Compoisition " + str(self.numIons) 
+            msg = "Compoisition " + str(self.numIons)
             msg += " not compatible with symmetry "
-            msg += str(self.group.number) 
+            msg += str(self.group.number)
             raise Comp_CompatibilityError(msg)
         else:
             self.set_volume()
@@ -149,12 +149,12 @@ class random_crystal:
                     self.sites[specie] = sites[i]
             else:
                 self.sites[specie] = None
- 
+
     def set_volume(self):
         """
-        Estimates the volume of a unit cell based on the number and types of ions.
-        Assumes each atom takes up a sphere with radius equal to its covalent bond
-        radius.
+        Estimates the volume of a unit cell based on the number/types of ions.
+        Assumes each atom takes up a sphere with radius equal to its covalent
+        bond radius.
         0.50 A -> 0.52 A^3
         0.62 A -> 1.00 A^3
         0.75 A -> 1.76 A^3
@@ -171,8 +171,8 @@ class random_crystal:
         self.volume = self.factor * volume
 
         #make sure the volume is not too small
-        if self.volume/sum(self.numIons) < self.min_density: 
-            self.volume = sum(self.numIons) * self.min_density 
+        if self.volume/sum(self.numIons) < self.min_density:
+            self.volume = sum(self.numIons) * self.min_density
 
     def set_lattice(self, lattice):
         """
@@ -228,8 +228,8 @@ class random_crystal:
 
     def set_crystal(self):
         """
-        The main code to generate a random atomic crystal. 
-        If successful, `self.valid` is True 
+        The main code to generate a random atomic crystal.
+        If successful, `self.valid` is True
        """
         self.numattempts = 0
         if not self.degrees:
@@ -330,7 +330,8 @@ class random_crystal:
                     # Merge coordinates if the atoms are close
                     pt, wp, _ = wp.merge(pt, cell, tol)
                     # For pure planar structure
-                    if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
+                    if self.dim == 2 and self.thickness is not None and \
+                        self.thickness < 0.1:
                         pt[-1] = 0.5
 
                     # If site the pre-assigned, do not accept merge
@@ -388,11 +389,12 @@ class random_crystal:
                 else:
                     msg = "\nfrom numIons: {:d}".format(numIon)
                     msg += "\nfrom Wyckoff list: {:d}".format(num)
-                    msg += "\nThe number of atoms is incompatible with composition: " + str(site)
+                    msg += "\nThe number is incompatible with composition: "
+                    mse += str(site)
                 raise ValueError(msg)
             else:
                 msg = "\nfrom numIons: {:d}".format(numIon)
                 msg += "\nfrom Wyckoff list: {:d}".format(num)
-                msg += "\nThe requested number of atoms is greater than composition: " + str(site)
+                msg += "\nThe requested number is greater than composition: "
+                msg += str(site)
                 raise ValueError(msg)
-

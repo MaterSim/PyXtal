@@ -14,8 +14,8 @@ from pymatgen.core import Molecule
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.operations import (
     check_images,
-    distance_matrix, 
-    filtered_coords, 
+    distance_matrix,
+    filtered_coords,
     create_matrix,
     SymmOp,
 )
@@ -29,7 +29,7 @@ class atom_site:
     Class for storing atomic Wyckoff positions with a single coordinate.
 
     Args:
-        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object 
+        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object
         coordinate: a fractional 3-vector for the generating atom's coordinate
         specie: an Element, element name or symbol, or atomic number of the atom
         search: to search for the optimum position for special wyckoff site
@@ -86,7 +86,7 @@ class atom_site:
     def perturbate(self, lattice, magnitude=0.1):
         """
         Random perturbation of the site
-        
+
         Args:
             lattice: lattice vectors
             magnitude: the magnitude of displacement (default: 0.1 A)
@@ -96,7 +96,7 @@ class atom_site:
         dis *= magnitude
         pos = self.position + dis.dot(np.linalg.inv(lattice))
         self.update(pos)
- 
+
     def search_position(self):
         """
         Sometimes, the initial posiition is not the proper generator
@@ -146,7 +146,7 @@ class atom_site:
 
         Args:
             tran: affine matrix
-            indices: the list of transformed wps 
+            indices: the list of transformed wps
         """
         self.position = SymmOp(tran).operate(self.position)
         self.position -= np.floor(self.position)
@@ -164,7 +164,7 @@ class atom_site:
             pos = self.position
         if reset_wp:
             self.wp.ops = Group(self.wp.number)[self.wp.index].ops
-        self.coords = self.wp.apply_ops(pos) 
+        self.coords = self.wp.apply_ops(pos)
         self.position = self.coords[0]
 
     def get_translations(self, pos, axis):
@@ -174,14 +174,14 @@ class atom_site:
         Args:
             pos: reference position (1*3 vector)
             lattice: 3*3 matrix
-            translation: 
-            axis: 
+            translation:
+            axis:
         """
         #diffs0 = pos - self.coords
         diffs0 = self.wp.apply_ops(pos) - self.position
-        diffs = diffs0.copy() 
+        diffs = diffs0.copy()
         diffs -= np.round(diffs)
-        diffs[:, axis] = 0    
+        diffs[:, axis] = 0
         translations = diffs0 - diffs
         return translations
 
@@ -192,12 +192,12 @@ class atom_site:
         Args:
             pos: reference position (1*3 vector)
             lattice: 3*3 matrix
-            translation: 
+            translation:
         """
         coords = self.wp.apply_ops(pos)
         diffs = coords - (self.position + translation)
         #coords = self.wp.apply_ops(self.position + translation)
-        #diffs = pos - coords 
+        #diffs = pos - coords
 
         diffs -= np.round(diffs)
         dists = np.linalg.norm(diffs.dot(lattice), axis=1)
@@ -255,15 +255,15 @@ class mol_site:
     """
     Class for storing molecular Wyckoff positions and orientations within
     the molecular_crystal class. Each mol_site object represenents an
-    entire Wyckoff position, not necessarily a single molecule. 
+    entire Wyckoff position, not necessarily a single molecule.
     This is the molecular version of Wyckoff_site
 
     Args:
         mol: a `pyxtal_molecule <pyxtal.molecule.pyxtal_molecule.html>`_ object
         position: the 3-vector representing the generating molecule's position
-        orientation: an `Orientation <pyxtal.molecule.Oreintation.html>`_ object 
+        orientation: an `Orientation <pyxtal.molecule.Oreintation.html>`_ object
         wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
-        lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object 
+        lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object
         stype: integer number to specify the type of molecule
     """
 
@@ -272,7 +272,7 @@ class mol_site:
         self.molecule = mol
         self.wp = wp
         self.position = position # fractional coordinate of molecular center
-        self.orientation = orientation #pyxtal.molecule.orientation object 
+        self.orientation = orientation #pyxtal.molecule.orientation object
         if isinstance(lattice, Lattice):
             self.lattice = lattice
         else:
@@ -296,7 +296,7 @@ class mol_site:
             s += " Euler [{:6.1f} {:6.1f} {:6.1f}]".format(*self.angles)
 
         return s
-    
+
     def __repr__(self):
         return str(self)
 
@@ -342,7 +342,7 @@ class mol_site:
         transform dict to 1D vector
         [x, y, z, or1, or2, or3, rotor1, rotor2, .etc]
         """
-        if len(self.molecule.mol)>1: 
+        if len(self.molecule.mol)>1:
             xyz, _ = self._get_coords_and_species(absolute=True, first=True)
             #if len(xyz)==3: print("encode: \n", self.molecule.mol.cart_coords)
             rotor = self.molecule.get_torsion_angles(xyz)
@@ -350,7 +350,7 @@ class mol_site:
             return list(self.position) + list(ori) + rotor + [reflect]
         else:
             return list(self.position) + [0]
-        
+
     def to_1D_dicts(self):
         """
         save the wp in 1D representation
@@ -359,7 +359,7 @@ class mol_site:
         dict0 = {"smile": self.molecule.smile}
         dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
         dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(xyz)
-        angs = dict0["rotor"] 
+        angs = dict0["rotor"]
         #rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
         #conf0 = rdkit_mol.GetConformer(0)
         #print(self.molecule.set_torsion_angles(conf0, angs))
@@ -390,9 +390,9 @@ class mol_site:
             else:
                 # for H2O, use the standard one
                 xyz = np.array([[-0.00111384,  0.36313718,  0.        ],
-                                [-0.82498189, -0.18196256,  0.        ], 
+                                [-0.82498189, -0.18196256,  0.        ],
                                 [ 0.82609573, -0.18117463,  0.        ]])
- 
+
             mol.reset_positions(xyz)
             matrix = R.from_euler('zxy', dicts["orientation"], degrees=True).as_matrix()
             orientation = Orientation(matrix)
@@ -421,8 +421,8 @@ class mol_site:
         Used to generate coords and species for get_coords_and_species
 
         Args:
-            absolute: return absolute or relative coordinates 
-            PBC: whether or not to add coordinates in neighboring unit cells, 
+            absolute: return absolute or relative coordinates
+            PBC: whether or not to add coordinates in neighboring unit cells,
             first: whether or not to extract the information from only the first site
             unitcell: whether or not to move the molecular center to the unit cell
 
@@ -445,7 +445,7 @@ class mol_site:
             #op2_m = self.wp.generators_m[point_index]
             op2_m = self.wp.get_euclidean_generator(self.lattice.matrix, point_index)
             rot = op2_m.affine_matrix[:3, :3].T
-            #NOTE=====the euclidean_generator has wrong translation vectors, 
+            #NOTE=====the euclidean_generator has wrong translation vectors,
             #but we don't care. This needs to be fixed later
 
             #if self.diag and self.wp.index > 0:
@@ -453,7 +453,7 @@ class mol_site:
             #else:
             #    tau = op2_m.translation_vector
             tmp = np.dot(coord0, rot) #+ tau
-            
+
             # Add absolute center to molecule
             tmp += center_absolute
             tmp = tmp.dot(self.lattice.inv_matrix)
@@ -490,9 +490,9 @@ class mol_site:
         (with angle=0), and calculates the new positions.
 
         Args:
-            absolute: return absolute or relative coordinates 
+            absolute: return absolute or relative coordinates
             PBC: whether or not to add coordinates in neighboring unit cells
-            unitcell: whether or not to move the molecular center to the unit cell
+            unitcell: whether or not to move the molecule center to the unit cell
 
         Returns:
             coords: a np array of 3-vectors.
@@ -503,7 +503,7 @@ class mol_site:
     def perturbate(self, lattice, trans=0.1, rot=5):
         """
         Random perturbation of the molecular site
-        
+
         Args:
             lattice: lattice vectors
             trans: magnitude of tranlation vectors (default: 0.1 A)
@@ -517,10 +517,10 @@ class mol_site:
             self.orientation.change_orientation()
         else:
             self.orientation.change_orientation(angle=rot/180*np.pi)
-    
+
     def translate(self, disp=np.zeros(3), absolute=False):
         """
-        To translate the molecule 
+        To translate the molecule
         """
         disp = np.array(disp)
         if absolute:
@@ -541,12 +541,12 @@ class mol_site:
         if ax_vector is not None:
             ax = ax_vector/np.linalg.norm(ax_vector)
         else:
-            xyz = self.mol.cart_coords.dot(p.as_matrix().T) 
+            xyz = self.mol.cart_coords.dot(p.as_matrix().T)
             ax = self.molecule.get_principle_axes(xyz).T[ax_id]
 
         q = R.from_rotvec(ax*rad*angle)
         o = q*p
-        self.orientation.r = o 
+        self.orientation.r = o
         self.orientation.matrix = o.as_matrix()
 
     #def is_compatible_symmetry(self, tol=0.3):
@@ -593,10 +593,10 @@ class mol_site:
             #tau = op_m.affine_matrix[0:3][:, 3]
             op0 = self.wp.get_euclidean_generator(self.lattice.matrix, id)
             rot = op0.rotation_matrix.T
-            tmp = np.dot(coord0, rot) 
+            tmp = np.dot(coord0, rot)
             # Add absolute center to molecule
             tmp += center_absolute
-            return Molecule(self.symbols, tmp)           
+            return Molecule(self.symbols, tmp)
         else:
             raise ValueError("id is greater than the number of molecules")
 
@@ -616,7 +616,7 @@ class mol_site:
         """
         After the geometry relaxation, the returned atomic coordinates
         maybe rescaled to [0, 1] bound. In this case, we need to refind
-        the molecular coordinates according to the original neighbor list. 
+        the molecular coordinates according to the original neighbor list.
         If the list does not change, we return the new coordinates
         otherwise, terminate the calculation.
         """
@@ -667,7 +667,7 @@ class mol_site:
                 self.mol.to(filename='Ref.xyz', fmt='xyz')
             raise ValueError("molecular connectivity changes! Exit")
         #todo check if connectivty changed
-   
+
     def _create_matrix(self, center=False, ignore=False):
         """
         Used for calculating distances in lattices with periodic boundary
@@ -679,7 +679,7 @@ class mol_site:
             coordinates
         """
         abc = [self.lattice.a, self.lattice.b, self.lattice.c]
-        
+
         # QZ: This should be based on the occupation of current molecule
         if hasattr(self, 'ijk_lists'):
             ijk_lists = self.ijk_lists
@@ -695,7 +695,7 @@ class mol_site:
                         ijk_lists.append([-1, 0, 1])
                 else:
                     ijk_lists.append([0])
-         
+
         if center:
             matrix = [[0,0,0]]
         else:
@@ -713,7 +713,7 @@ class mol_site:
 
     def get_distances(self, coord1, coord2, m2=None, center=True, ignore=False):
         """
-        Compute the distance matrix between the center molecule (m1 length) and 
+        Compute the distance matrix between the center molecule (m1 length) and
         neighbors (m2 length) within the PBC consideration (pbc)
 
         Args:
@@ -773,7 +773,7 @@ class mol_site:
         else:
             coord2 = coords[m_length*(id):m_length*(id+1)] #rest molecular coords
 
-        return self.get_distances(coord1, coord2, ignore=ignore) 
+        return self.get_distances(coord1, coord2, ignore=ignore)
 
     def get_min_dist(self):
         """
@@ -799,10 +799,10 @@ class mol_site:
 
     def short_dist(self):
         """
-        Check if the atoms are too close within the WP. 
+        Check if the atoms are too close within the WP.
 
         Returns:
-            True or False 
+            True or False
         """
         m_length = len(self.numbers)
         tols_matrix = self.tols_matrix
@@ -825,8 +825,8 @@ class mol_site:
     def short_dist_with_wp2(self, wp2, tm=Tol_matrix(prototype="molecular")):
         """
         Check whether or not the molecules of two wp sites overlap. Uses
-        ellipsoid overlapping approximation to check. 
-    
+        ellipsoid overlapping approximation to check.
+
         Args:
             wp2: the 2nd wp sites
             tm: a Tol_matrix object (or prototype string) for distance checking
@@ -853,7 +853,7 @@ class mol_site:
             m2 = m_length1
 
         # compute the distance matrix
-        d, _ = self.get_distances(coord1, coord2, m2) 
+        d, _ = self.get_distances(coord1, coord2, m2)
         if np.min(d) < np.max(tols_matrix):
             tols = np.min(d, axis=0)
             if (tols < tols_matrix).any():
@@ -940,7 +940,7 @@ class mol_site:
         tm=Tol_matrix(prototype="vdW", factor=factor)
         m_length1 = len(self.numbers)
         m_length2 = len(wp2.numbers)
-            
+
         # Get coordinates for both mol_sites
         c1, _ = self.get_coords_and_species()
         c2, _ = wp2.get_coords_and_species()
@@ -956,7 +956,7 @@ class mol_site:
 
 
         # compute the distance matrix
-        d, coord2 = self.get_distances(coord1, coord2, m_length2, ignore=True) 
+        d, coord2 = self.get_distances(coord1, coord2, m_length2, ignore=True)
         min_ds = []
         neighs = []
         engs = []
@@ -1002,4 +1002,3 @@ class mol_site:
             self.ijk_lists = ijk_lists
         else:
             self.ijk_lists = value
-

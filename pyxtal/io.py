@@ -17,7 +17,7 @@ from monty.serialization import loadfn
 
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 
-def in_merged_coords(wp, pt, pts, cell):   
+def in_merged_coords(wp, pt, pts, cell):
     """
     Whether or not the pt in within the pts
     """
@@ -33,11 +33,11 @@ def in_merged_coords(wp, pt, pts, cell):
 def write_cif(struc, filename=None, header="", permission='w', sym_num=None, style='mp'):
     """
     Export the structure in cif format
-    The default setting for _atom_site follows the materials project cif 
+    The default setting for _atom_site follows the materials project cif
 
     Args:
         struc: pyxtal structure object
-        filename: path of the structure file 
+        filename: path of the structure file
         header: additional information
         permission: write(`w`) or append(`a+`) to the given file
         sym_num: the number of symmetry operations, None means writing all symops
@@ -67,7 +67,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         symbol = 'P1'
         number = 1
         G1 = Group(1).Wyckoff_positions[0]
-   
+
     lines = logo
     lines += 'data_' + header + '\n'
     if hasattr(struc, "energy"):
@@ -124,12 +124,15 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
                     coords = []
                     species = []
                     merges = []
-                    
+
                     for coord, specie in zip(coord0s, specie0s):
                         _, wp, _ = G1.merge(coord, struc.lattice.matrix, 0.05)
                         #print(coord, wp)
                         if len(wp) > mul:
-                            if not in_merged_coords(G1, [coord, specie], merges, struc.lattice.matrix):
+                            if not in_merged_coords(G1,
+                                                    [coord, specie],
+                                                    merges,
+                                                    struc.lattice.matrix):
                                 coords.append(coord)
                                 species.append(specie)
                                 muls.append(len(wp))
@@ -140,7 +143,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
                             muls.append(mul)
 
                 else:
-                    coords, species = coord0s, specie0s 
+                    coords, species = coord0s, specie0s
                     muls = [mul] * len(coords)
             else:
                 coords = None
@@ -178,7 +181,7 @@ def read_cif(filename):
     Be cautious in using it to read other cif files
 
     Args:
-        filename: path of the structure file 
+        filename: path of the structure file
 
     Return:
         pyxtal structure
@@ -231,18 +234,18 @@ def read_cif(filename):
 
 
 class structure_from_ext():
-    
+
     def __init__(self, struc, ref_mols, tol=0.2, ignore_HH=False, add_H=False):
 
         """
-        extract the mol_site information from the give cif file 
+        extract the mol_site information from the give cif file
         and reference molecule
-    
-        Args: 
+
+        Args:
             struc: cif/poscar file or a Pymatgen Structure object
             ref_mols: a list of reference molecule (xyz file or Pyxtal molecule)
             tol: scale factor for covalent bond distance
-            ignore_HH: whether or not ignore the short H-H distance when checking molecule
+            ignore_HH: whether or not ignore short H-H in checking molecule
             add_H: whether or not add the H atoms
         """
 
@@ -254,7 +257,7 @@ class structure_from_ext():
             else:
                 print(type(ref_mol))
                 raise NameError("reference molecule cannot be defined")
-    
+
         if isinstance(struc, str):
             pmg_struc = Structure.from_file(struc)
         elif isinstance(struc, Structure):
@@ -275,10 +278,14 @@ class structure_from_ext():
         self.group = group
         self.wyc = group[0]
 
-        molecules = search_molecules_in_crystal(sym_struc, self.tol, ignore_HH=ignore_HH)
+        molecules = search_molecules_in_crystal(sym_struc,
+                                                self.tol,
+                                                ignore_HH=ignore_HH)
 
         self.pmg_struc = sym_struc
-        self.lattice = Lattice.from_matrix(sym_struc.lattice.matrix, ltype=group.lattice_type)
+        matrix = sym_struc.lattice.matrix
+        ltype = group.lattice_type
+        self.lattice = Lattice.from_matrix(matrix, ltype=ltype)
         self.resort(molecules)
         if len(self.ids) == 0:
             raise RuntimeError('Cannot extract molecules')
@@ -292,7 +299,7 @@ class structure_from_ext():
         new_lat = self.lattice.matrix
         positions = np.zeros([len(molecules),3])
         for i in range(len(molecules)):
-            positions[i, :] = np.dot(molecules[i].cart_coords.mean(axis=0), inv_lat) 
+            positions[i] = np.dot(molecules[i].cart_coords.mean(axis=0), inv_lat)
 
         self.wps = []
 
@@ -341,13 +348,14 @@ class structure_from_ext():
                         if len(mol1) > 1:
                             # rearrange the order
                             order = [mapping[at] for at in range(len(mol1))]
-                            xyz = mol1.cart_coords[order] 
+                            xyz = mol1.cart_coords[order]
                             # add hydrogen positions here
-                            if self.add_H: xyz = self.add_Hydrogens(mol2.smile, xyz)
+                            if self.add_H:
+                                xyz = self.add_Hydrogens(mol2.smile, xyz)
                             #print(xyz)
-                            frac = np.dot(xyz, inv_lat) 
-                            xyz = np.dot(frac, new_lat) 
-                            center = p_mol.get_center(xyz) 
+                            frac = np.dot(xyz, inv_lat)
+                            xyz = np.dot(frac, new_lat)
+                            center = p_mol.get_center(xyz)
                             p_mol.reset_positions(xyz-center)
                             position = np.dot(center, np.linalg.inv(new_lat))
                         else:
@@ -364,7 +372,7 @@ class structure_from_ext():
         if len(ids_done) < len(ids):
             for id in ids:
                 if id not in ids_done:
-                    msg = "This molecule cannot be matched to the reference molecule\n"
+                    msg = "This molecule cannot be matched to the reference\n"
                     msg += 'Molecules extracted from the structure\n'
                     msg += molecules[id].to('xyz') + '\n'
                     msg += "Reference molecule from smiles or xyz\n"
@@ -403,7 +411,7 @@ class structure_from_ext():
         AllChem.UFFOptimizeMolecule(m1)
         m3 = AllChem.ConstrainedEmbed(m1,m2)
         conf = m3.GetConformer(0) #; print(conf.GetPositions())
-        
+
         return conf.GetPositions()
 
     def make_mol_sites(self):
@@ -465,7 +473,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
         struc: Pymatgen Structure
         tol: tolerance value to check the connectivity
         once: search only one molecule or all molecules
-        ignore_HH: whether or not ignore the short H-H distance when checking molecule
+        ignore_HH: whether or not ignore the short H-H in checking molecule
 
     Returns:
         molecules: list of pymatgen molecules
@@ -477,7 +485,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
             sites_add, visited = check_one_site(struc, site0, visited)
             new_members.extend(sites_add)
         return new_members, visited
-    
+
     def check_one_site(struc, site0, visited, rmax=2.8):
         neigh_sites = struc.get_neighbors(site0, rmax)
         ids = [m.index for m in visited]
@@ -493,10 +501,11 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
                             (d, image) = site0.distance_and_image(site1)
                         else:
                             d = site0.distance(site1)
-                        key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
+                        val1, val2 = site1.specie.value, site0.specie.value
+                        key = "{:s}-{:s}".format(val1, val2)
 
                         #sometime the H-H short distance is not avoidable
-                        if key == 'H-H': 
+                        if key == 'H-H':
                             if not ignore_HH:
                                 if pbc: site1.frac_coords += image
                                 sites_add.append(site1)
@@ -513,12 +522,13 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
                     else:
                         d = site0.distance(site1)
 
-                    key = "{:s}-{:s}".format(site1.specie.value, site0.specie.value)
+                    val1, val2 = site1.specie.value, site0.specie.value
+                    key = "{:s}-{:s}".format(val1, val2)
                     if d < bonds[key]:
                         if pbc: site1.frac_coords += image
                         sites_add.append(site1)
                         ids_add.append(site1.index)
-                    
+
         if len(sites_add) > 0:
             visited.extend(sites_add)
 
@@ -530,7 +540,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
     for id, site in enumerate(struc.sites):
         if id not in visited_ids:
             first_site = site
-            visited = [first_site] 
+            visited = [first_site]
             first_site.index = id
             n_iter, max_iter = 0, len(struc)-len(visited_ids)
             while n_iter < max_iter:
@@ -541,7 +551,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
                 n_iter += 1
                 if len(new_sites)==0:
                     break
-            
+
             coords = [s.coords for s in visited]
             coords = np.array(coords)
             numbers = [s.specie.number for s in visited]

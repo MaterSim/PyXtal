@@ -96,7 +96,8 @@ class Lattice:
                 elif self.unique_axis == "c":
                     norm_matrix = np.array([[1, 0, 0], [1, 1, 0], [0, 0, 1]])
 
-        elif self.ltype in ["orthorhombic", "tetragonal", "trigonal", "hexagonal", "cubic"]:
+        elif self.ltype in ["orthorhombic", "tetragonal", "trigonal",
+                            "hexagonal", "cubic"]:
             norm_matrix = np.eye(3)
 
         elif self.ltype in ["spherical", "ellipsoidal"]:
@@ -162,7 +163,7 @@ class Lattice:
             return np.array([
                              [[1,0,0],[0,1,0],[0,0,1]], #self
                              [[0,0,1],[0,1,0],[1,0,0]], #a-c
-                           ]) 
+                           ])
         elif self.ltype in ["triclinic"]:
             return np.array([
                              [[1,0,0],[0,1,0],[0,0,1]], #self
@@ -175,9 +176,9 @@ class Lattice:
 
     def get_transformation_matrices(self):
         """
-        Return the possible transformation matrices that donot violate the symmetry
+        Return possible transformation matrices that donot violate the symmetry
         """
-        if self.ltype in ["monoclinic"]: 
+        if self.ltype in ["monoclinic"]:
             return np.array([
                              [[1,0,0],[0,1,0],[0,0,1]],
                              [[1,0,0],[0,1,0],[1,0,1]],
@@ -187,10 +188,10 @@ class Lattice:
                              [[1,0,0],[0,-1,0],[0,0,-1]], #change angle
                              #[[-1,0,0],[0,1,0],[0,0,1]], #change angle
                            ])
- 
+
         elif self.ltype in ["triclinic"]:
             return np.array([
-                             [[1,0,0],[0,1,0],[0,0,1]], 
+                             [[1,0,0],[0,1,0],[0,0,1]],
                              [[1,0,0],[0,1,0],[1,0,1]],
                              [[1,0,0],[0,1,0],[-1,0,1]],
                              [[1,0,1],[0,1,0],[0,0,1]],
@@ -254,13 +255,15 @@ class Lattice:
         trans_good = []
         tols_good = []
         for id in range(len(tols)):
-            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
+            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and \
+                tols[id, 2] < self.a_tol:
+
                 if switchs[id]:
                     trans[id].extend([[[1,0,0],[0,-1,0],[0,0,-1]]])
                 #print(tols[id], len(trans[id]))
                 trans_good.append(trans[id])
                 tols_good.append(tols[id])
-            
+
         return trans_good, tols_good
 
 
@@ -322,7 +325,7 @@ class Lattice:
             if abs(rms[0] - rms[id]) < 1.0:
                 #print("change id 2", id, rms[0], rms[id])
                 id = 0
-        
+
         if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
             if switchs[id]:
                 trans[id].append([[1,0,0],[0,-1,0],[0,0,-1]])
@@ -330,7 +333,7 @@ class Lattice:
             else:
                 return trans[id], tols[id]
         else:
-            #print("=============================================Cannot match:", tols[id])
+            #print("===================================Cannot match:", tols[id])
             return None, None
 
     def optimize_once(self, reset=False):
@@ -339,7 +342,7 @@ class Lattice:
         """
         opt = False
         trans = self.get_transformation_matrices()
-        if len(trans) > 1: 
+        if len(trans) > 1:
             diffs = []
             for tran in trans:
                 cell_new = np.dot(tran, self.matrix)
@@ -491,7 +494,7 @@ class Lattice:
 
     def generate_matrix(self):
         """
-        Generates a 3x3 matrix for the lattice based on the lattice type and volume
+        Generates a 3x3 matrix for a lattice based on the lattice type and volume
         """
         # Try multiple times in case of failure
         for i in range(10):
@@ -743,8 +746,8 @@ class Lattice:
                 Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity along
                 the z axis
             kwargs: various values which may be defined. If none are defined,
-                random ones will be generated. Values will be passed to generate_lattice.
-                Options include:
+                random ones will be generated. Values will be passed to
+                generate_lattice. Options include:
                 area: The cross-sectional area (in Angstroms squared). Only used
                     to generate 1D crystals
                 thickness: The unit cell's non-periodic thickness (in Angstroms).
@@ -756,20 +759,17 @@ class Lattice:
                 random: If False, keeps the stored values for the lattice geometry
                     even upon applying reset_matrix. To alter the matrix,
                     use set_matrix() or set_para
-                'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
-                    equivalent to the other two
-                'min_l': the smallest allowed cell vector. The smallest vector must
-                    be larger than this.
-                'mid_l': the second smallest allowed cell vector. The second
-                    smallest vector must be larger than this.
-                'max_l': the third smallest allowed cell vector. The largest cell
-                    vector must be larger than this.
+                'unique_axis': the axis ('a', 'b', or 'c') which is unique
+                'min_l': the smallest allowed cell vector.
+                'mid_l': the second smallest allowed cell vector.
+                'max_l': the third smallest allowed cell vector.
 
         Returns:
             a Lattice object with the specified parameters
         """
         try:
-            cell_matrix = factor*para2matrix((a, b, c, alpha, beta, gamma), radians=radians)
+            cell_matrix = para2matrix((a, b, c, alpha, beta, gamma), radians=radians)
+            cell_matrix *= factor
         except:
             msg = "Error: invalid cell parameters for lattice."
             raise ValueError(msg)
@@ -789,31 +789,30 @@ class Lattice:
     @classmethod
     def from_matrix(self, matrix, reset=True, shape='upper', ltype="triclinic", PBC=[1, 1, 1], **kwargs):
         """
-        Creates a Lattice object from a 3x3 cell matrix. Additional keyword arguments
-        are available. Unless specified by the keyword random=True, does not create a
-        new matrix upon calling reset_matrix. This allows for generation of random
+        Creates a Lattice object from a 3x3 cell matrix. Additional keywords
+        are available. Unless specified by the keyword random=True, does not
+        create a new matrix upon calling reset_matrix. This allows for a random
         crystals with a specific choice of unit cell.
 
         Args:
             matrix: a 3x3 real matrix (numpy array or nested list) for the cell
-            ltype: the lattice type ("cubic, tetragonal, etc."). Also available are 
+            ltype: the lattice type ("cubic, tetragonal, etc."). Also can be
                 - "spherical", confines points to lie within a sphere,
-                - "ellipsoidal", points to lie within an ellipsoid (about the z axis)
+                - "ellipsoidal", points to lie within an ellipsoid (about z axis)
             PBC: A periodic boundary condition list, where 1 is periodic
-                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity at z axis
+                Ex: [1,1,1] -> full 3d periodicity, [0,0,1] -> periodicity at z.
             kwargs: various values which may be defined. Random ones if None
                 Values will be passed to generate_lattice. Options include:
                 `area: The cross-sectional area (in Ang^2) for 1D crystals
                 `thickness`: The cell's thickness (in Ang) for 2D crystals
                 `unique_axis`: The unique axis for layer groups.
-                `random`: If False, keeps the stored values for the lattice geometry 
-                even applying reset_matrix. To alter the matrix, use `set_matrix()` 
-                or `set_para`
-                'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
-                    equivalent to the other two
-                'min_l': the smallest allowed cell vector. 
-                'mid_l': the second smallest allowed cell vector. 
-                'max_l': the third smallest allowed cell vector. 
+                `random`: If False, keeps the stored values for the lattice
+                geometry even applying reset_matrix. To alter the matrix,
+                use `set_matrix()` or `set_para`
+                'unique_axis': the axis ('a', 'b', or 'c') which is unique.
+                'min_l': the smallest allowed cell vector.
+                'mid_l': the second smallest allowed cell vector.
+                'max_l': the third smallest allowed cell vector.
 
         Returns:
             a Lattice object with the specified parameters
@@ -823,7 +822,7 @@ class Lattice:
             print(matrix)
             msg = "Error: matrix must be a 3x3 numpy array or list"
             raise ValueError(msg)
- 
+
         [a, b, c, alpha, beta, gamma] = matrix2para(m)
 
         # symmetrize the lattice
@@ -842,10 +841,10 @@ class Lattice:
                 alpha = beta = gamma = np.pi/2
             elif ltype in ['monoclinic', 'Monoclinic']:
                 alpha = gamma = np.pi/2
-            
+
             # reset matrix according to the symmetry
             m = para2matrix([a, b, c, alpha, beta, gamma], format=shape)
-        
+
         # Initialize a Lattice instance
         volume = np.linalg.det(m)
         l = Lattice(ltype, volume, m, PBC=PBC, **kwargs)
@@ -861,7 +860,7 @@ class Lattice:
 
     def is_valid_matrix(self):
         """
-        check if the cell parameter is reasonable or not 
+        check if the cell parameter is reasonable or not
         """
 
         try:
@@ -958,11 +957,10 @@ def generate_lattice(
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
         kwargs: a dictionary of optional values. These include:
-            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
-                equivalent to the other two
-            'min_l': the smallest allowed cell vector. 
-            'mid_l': the second smallest allowed cell vector. 
-            'max_l': the third smallest allowed cell vector. 
+            'unique_axis': the axis ('a', 'b', or 'c') which is unique.
+            'min_l': the smallest allowed cell vector.
+            'mid_l': the second smallest allowed cell vector.
+            'max_l': the third smallest allowed cell vector.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1123,14 +1121,10 @@ def generate_lattice_2D(
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
         kwargs: a dictionary of optional values. These include:
-            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
-                equivalent to the other two
-            'min_l': the smallest allowed cell vector. The smallest vector must be larger
-                than this.
-            'mid_l': the second smallest allowed cell vector. The second smallest vector
-                must be larger than this.
-            'max_l': the third smallest allowed cell vector. The largest cell vector must
-                be larger than this.
+            'unique_axis': the axis ('a', 'b', or 'c') which is unique.
+            'min_l': the smallest allowed cell vector.
+            'mid_l': the second smallest allowed cell vector.
+            'max_l': the third smallest allowed cell vector.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1337,14 +1331,10 @@ def generate_lattice_1D(
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
         kwargs: a dictionary of optional values. These include:
-            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
-                equivalent to the other two
-            'min_l': the smallest allowed cell vector. The smallest vector must be larger
-                than this.
-            'mid_l': the second smallest allowed cell vector. The second smallest vector
-                must be larger than this.
-            'max_l': the third smallest allowed cell vector. The largest cell vector must
-                be larger than this.
+            'unique_axis': the axis ('a', 'b', or 'c') which is unique.
+            'min_l': the smallest allowed cell vector.
+            'mid_l': the second smallest allowed cell vector.
+            'max_l': the third smallest allowed cell vector.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1544,15 +1534,11 @@ def generate_lattice_0D(
         max_ratio: largest allowed ratio of two lattice vector lengths
         maxattempts: the maximum number of attempts for generating a lattice
         kwargs: a dictionary of optional values. Only used for ellipsoidal
-            lattices, which pass the value to generate_lattice. Possible values include:
-            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
-                equivalent to the other two
-            'min_l': the smallest allowed cell vector. The smallest vector must be larger
-                than this.
-            'mid_l': the second smallest allowed cell vector. The second smallest vector
-                must be larger than this.
-            'max_l': the third smallest allowed cell vector. The largest cell vector must
-                be larger than this.
+            lattices, which pass the value to generate_lattice. They include:
+            'unique_axis': the axis ('a', 'b', or 'c') which is unique.
+            'min_l': the smallest allowed cell vector.
+            'mid_l': the second smallest allowed cell vector.
+            'max_l': the third smallest allowed cell vector.
 
     Returns:
         a 3x3 matrix representing the lattice vectors of the unit cell. If
@@ -1696,7 +1682,7 @@ def gaussian(min, max, sigma=3.0):
     Args:
         min: the minimum acceptable value
         max: the maximum acceptable value
-        sigma: the number of standard deviations between the center and min or max
+        sigma: the number of standard deviations between the center and min/max
 
     Returns:
         a value chosen randomly between min and max
@@ -1749,7 +1735,7 @@ def random_shear_matrix(width=1.0, unitary=False):
         width: the width of the normal distribution to use when choosing values.
             Passed to np.random.normal
         unitary: whether or not to normalize the matrix to determinant 1
-    
+
     Returns:
         a 3x3 numpy array of floats
     """
@@ -1768,4 +1754,3 @@ def random_shear_matrix(width=1.0, unitary=False):
         return new
     else:
         return mat
-

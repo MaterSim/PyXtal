@@ -4,19 +4,20 @@ import numpy as np
 
 class Tol_matrix:
     """
-    Class for variable distance tolerance checking. Used within random_crystal and
-    molecular_crystal to verify whether atoms are too close. Stores a matrix of atom-
-    atom pair tolerances. Note that the matrix's indices correspond to atomic numbers,
-    with the 0th entries being 0 (there is no atomic number 0).
+    Class for variable distance tolerance checking. Used within random_crystal
+    and molecular_crystal to verify whether atoms are too close. Stores a matrix
+    of atom-atom pair tolerances. Note that the matrix's indices correspond to
+    atomic numbers, with the 0th entries being 0 (there is no atomic number 0).
 
     Args:
         prototype: a string representing the type of radii to use
             (`atomic`, `molecular`, `vdW` or `metallic`)
-        factor: a float to scale the distances by. 
-        tuples: a list or tuple of tuples, which define custom tolerance values. Each tuple
-            should be of the form (specie1, specie2, value), where value is the tolerance
-            in Angstroms, and specie1 and specie2 can be strings, integers, Element objects,
-            or pymatgen Specie objects. Custom values may also be set using set_tol
+        factor: a float to scale the distances by.
+        tuples: a list or tuple of tuples, which define custom tolerance values.
+            Each tuple should be of the form (specie1, specie2, value), where
+            value is the tolerance in Angstroms, and specie1 and specie2 can be
+            strings, integers, Element objects, or pymatgen Specie objects.
+            Custom values may also be set using set_tol
     """
 
     def __init__(self, *tuples, prototype="atomic", factor=1.0):
@@ -75,9 +76,9 @@ class Tol_matrix:
             for tup in tuples:
                 self.set_tol(*tup)
         except:
-            msg = "Error: Could not set custom tolerance value(s).\n"
-            msg += "All custom entries should be entered using the following form:\n"
-            msg += "(specie1, specie2, value), where value is the tolerance in Angstroms.",
+            msg = "Error: Cannot not set custom tolerance value(s).\n"
+            msg += "All entries should be entered using the following form:\n"
+            msg += "(specie1, specie2, value), where the value is in Angstrom."
             raise RuntimeError(msg)
 
         self.radius_list = []
@@ -90,7 +91,7 @@ class Tol_matrix:
     def get_tol(self, specie1, specie2):
         """
         Returns the tolerance between two species.
-        
+
         Args:
             specie1/2: atomic number (int or float), name (str), symbol (str),
                 an Element object, or a pymatgen Specie object
@@ -110,7 +111,7 @@ class Tol_matrix:
     def set_tol(self, specie1, specie2, value):
         """
         Sets the distance tolerance between two species.
-        
+
         Args:
             specie1/2: atomic number (int or float), name (str), symbol (str),
                 an Element object, or a pymatgen Specie object
@@ -135,11 +136,11 @@ class Tol_matrix:
     @classmethod
     def from_matrix(self, matrix, prototype="atomic", factor=1.0, begin_with=0):
         """
-        Given a tolerance matrix, returns a Tol_matrix object. Matrix indices correspond to
-        the atomic number (with 0 pointing to Hydrogen by default). For atoms with atomic
-        numbers not included in the matrix, the default value (specified by prototype) will be
-        used, up to element 96. Note that if the matrix is asymmetric, only the value below the
-        diagonal will be used.
+        Given a tolerance matrix, returns a Tol_matrix object. Matrix indices
+        correspond to the atomic number (with 0 pointing to Hydrogen by default).
+        For atoms with atomic numbers not included in the matrix, the default
+        value (specified by prototype) will be used, up to element 96. Note that
+        if the matrix is asymmetric, only the value below the diagonal will be used.
 
         Args:
             matrix: a 2D matrix or list of tolerances between atomic species pairs. The
@@ -195,14 +196,14 @@ class Tol_matrix:
     @classmethod
     def from_single_value(self, value):
         """
-        Creates a Tol_matrix which only has a single tolerance value. Using get_tol will
-        always return the same value.
+        Creates a Tol_matrix which only has a single tolerance value. Using
+        `get_tol` will always return the same value.
 
         Args:
             value: the tolerance value to use
 
         Returns:
-            a Tol_matrix object whose methods are overridden to use a single tolerance value
+            a Tol_matrix object
         """
         tm = Tol_matrix()
         tm.prototype = "single value"
@@ -237,12 +238,9 @@ class Tol_matrix:
 
     def to_file(self, filename=None):
         """
-        Creates a file with the given filename and file type to store the structure.
-        By default, creates cif files for crystals and xyz files for clusters.
-        By default, the filename is based on the stoichiometry.
+        Creates a file with the given filename.
 
         Args:
-            fmt: the file type ('cif', 'xyz', etc.)
             filename: the file path
 
         Returns:
@@ -264,7 +262,7 @@ class Tol_matrix:
                     break
                 i += 1
                 if i > 10000:
-                    return "Could not create file: too many files already created."
+                    return "Cannot create file: too many files already created."
         else:
             outdir = filename
         try:
@@ -286,7 +284,9 @@ class Tol_matrix:
 
 
 if __name__ == "__main__":
+
     from pyxtal.molecule import pyxtal_molecule
+
     for p in ['atomic', 'molecular', 'vdW', 'metallic']:
         tm = Tol_matrix(prototype=p)
         print(p, tm.get_tol('C', 'H'))

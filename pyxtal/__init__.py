@@ -47,7 +47,7 @@ def print_logo():
                    (____/      """
     )
     print("\n")
-    print("----------------------(version", __version__, ")----------------------\n")
+    print("-------------------(version", __version__, ")--------------------\n")
     print("A Python package for random crystal generation")
     print("The source code is available at https://github.com/qzhu2017/pyxtal")
     print("Developed by Zhu's group at University of Nevada Las Vegas\n\n")
@@ -100,7 +100,7 @@ class pyxtal:
     Wyckoff sites:
     	 C @ [0.0000 0.2500 0.3750], WP:  4b, Site symmetry: -4 m 2
 
-    Alternatively, one can also easily compute its XRD via the `pyxtal.XRD` class
+    Alternatively, one can easily compute its XRD via the `pyxtal.XRD` class
 
     >>> xrd = struc.get_XRD()
     >>> xrd
@@ -195,7 +195,7 @@ class pyxtal:
             s = "\n------Crystal from {:s}------".format(self.source)
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
-            if not self.standard_setting: #and self.group.number in [5, 7, 8, 9, 12, 13, 14, 15]:
+            if not self.standard_setting:
                 if self.molecular:
                     symbol = self.mol_sites[0].wp.get_hm_symbol()
                 else:
@@ -350,13 +350,13 @@ class pyxtal:
 
 
     def from_seed(
-        self, 
-        seed, 
-        molecules = None, 
-        tol = 1e-4, 
-        a_tol = 5.0, 
-        ignore_HH = True, 
-        add_H = False, 
+        self,
+        seed,
+        molecules = None,
+        tol = 1e-4,
+        a_tol = 5.0,
+        ignore_HH = True,
+        add_H = False,
         backend = 'pymatgen',
         style = 'pyxtal',
         ):
@@ -368,9 +368,9 @@ class pyxtal:
             seed: cif/poscar file or a Pymatgen Structure object
             molecules: a list of reference molecule (xyz file or Pyxtal molecule)
             tol: scale factor for covalent bond distance
-            ignore_HH: whether or not ignore the short H-H distance when checking molecule
+            ignore_HH: whether or not ignore short H-H distance in molecules
             add_H: whether or not add H atoms
-            backend: structure parser, default is pymatgen, otherwise use the built_in
+            backend: structure parser, default is pymatgen
             style: pyxtal for spglib
         """
 
@@ -378,14 +378,14 @@ class pyxtal:
             pmols = []
             for mol in molecules:
                 pmols.append(pyxtal_molecule(mol, fix=True))
-            #QZ: the default choice will not work for molecular H2, which should be rare!
+            #QZ: the default will not work for molecular H2, which is rare!
             struc = structure_from_ext(seed, pmols, ignore_HH=ignore_HH, add_H=add_H)
             self.mol_sites = struc.make_mol_sites()
             self.group = Group(struc.wyc.number)
             self.lattice = struc.lattice
             self.molecules = pmols
             self.numMols = struc.numMols
-            self.standard_setting = True 
+            self.standard_setting = True
             self.valid = True # Need to add a check function
             self.optimize_lattice()
         else:
@@ -404,8 +404,9 @@ class pyxtal:
                 else:
                     #Need to check
                     self.lattice, self.atom_sites = read_cif(seed)
-                    self.group = Group(self.atom_sites[0].wp.number)
-                    self.standard_setting = self.atom_sites[0].wp.is_standard_setting()
+                    wp = self.atom_sites[0].wp
+                    self.group = Group(wp.hall_number, use_hall=True)
+                    self.standard_setting = wp.is_standard_setting()
                     self.valid = True
         self.factor = 1.0
         self.source = 'Seed'
@@ -465,7 +466,7 @@ class pyxtal:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
                     break
-                    
+
             if len(atom_sites) != len(sym_struc.equivalent_sites):
                 print(len(atom_sites))
                 print(len(sym_struc.equivalent_sites))
@@ -559,7 +560,7 @@ class pyxtal:
 
     def to_file(self, filename=None, fmt=None, permission='w', sym_num=None, header="from_pyxtal"):
         """
-        Creates a file with the given filename and file type to store the structure.
+        Creates a file with the given ame and type to store the structure.
         By default, creates cif files for crystals and xyz files for clusters.
         For other formats, Pymatgen is used
 
@@ -567,7 +568,7 @@ class pyxtal:
             filename (string): the file path
             fmt (string): the file type (`cif`, `xyz`, etc.)
             permission (string): `w` or `a+`
-            sym_num (int): the number of symmetry operations, None means writing all symops
+            sym_num (int): number of sym_ops, None means writing all symops
             header (string): header
 
         Returns:
@@ -895,7 +896,7 @@ class pyxtal:
         """
         #print(splitter)
         lat1 = np.dot(splitter.R[:3,:3].T, self.lattice.matrix)
-       
+
         multiples = np.linalg.det(splitter.R[:3,:3])
         new_struc = self.copy()
         new_struc.group = splitter.H
@@ -1048,7 +1049,7 @@ class pyxtal:
                 #        diff = site.coords[:i-1, :] - m
                 #        diff -= np.round(diff)
                 #        dist1 = np.linalg.norm(diff, axis=1)
-                #        if dist1.min() < 1e-2: 
+                #        if dist1.min() < 1e-2:
                 #            s = 0
                 #            site.wp.print_ops(site.wp.ops[s:i+1])
                 #            print('+++++=')
@@ -1228,7 +1229,7 @@ class pyxtal:
         Args:
             iterations: maximum number of iterations
             force: whether or not do the early termination
-            standard: 
+            standard:
         """
         for i in range(iterations):
             lattice, trans, opt = self.lattice.optimize_once()
@@ -1260,7 +1261,7 @@ class pyxtal:
                         if wp0.is_standard_setting() and beta_diff0 < beta_diff:
                             good_trans = _trans
                             beta_diff = beta_diff0
-                            
+
                 if good_trans is not None:
                     for tran in good_trans:
                         self.transform(tran)
@@ -1289,7 +1290,7 @@ class pyxtal:
 
     def transform(self, trans, lattice=None):
         """
-        Perform cell transformation which may lead to the change of symmetry operation
+        Perform cell transformation and symmetry operation
 
         Args:
             trans: 3*3 matrix
@@ -1326,12 +1327,12 @@ class pyxtal:
                 ori = site.orientation
                 ori.reset_matrix(np.eye(3))
                 center = mol.get_center(xyz_abs)
-                mol.reset_positions(xyz_abs-center)               
+                mol.reset_positions(xyz_abs-center)
                 sites[j] = mol_site(mol, pos_frac, ori, wp, lattice0, site.type)
             else:
                 sites[j] = atom_site(wp, pos_frac, site.specie)
-            
-        # update the hall number 
+
+        # update the hall number
         for i, site in enumerate(sites):
             if i == 0:
                 match_spg, match_hall = site.wp.update()
@@ -1342,7 +1343,7 @@ class pyxtal:
                     site.wp.update_hall(hall_numbers)
                 else:
                     site.wp.update_index()
-        # reset the matrix 
+        # reset the matrix
         self.lattice = lattice0
         self.standard_setting = sites[0].wp.is_standard_setting()
 
@@ -1535,8 +1536,8 @@ class pyxtal:
         cell = self.lattice.matrix
         new_lat = Lattice.from_matrix(np.dot(R, cell), ltype=self.lattice.ltype)
         #matrix = new_lat.matrix
-        if ref_lat is not None: 
-            d_tol1, f_tol1, a_tol1, switch = new_lat.get_diff(ref_lat) 
+        if ref_lat is not None:
+            d_tol1, f_tol1, a_tol1, switch = new_lat.get_diff(ref_lat)
             if (d_tol1 > d_tol and f_tol1 > f_tol) or (a_tol1 > 15.0) or switch:
                 #print('bad setting', new_lat); print(ref_lat)
                 return None
@@ -1641,7 +1642,7 @@ class pyxtal:
         """
         if not self.standard_setting:
             self.optimize_lattice(standard=True)
-        
+
         if self.molecular:
             sites = self.mol_sites
         else:
@@ -1720,14 +1721,14 @@ class pyxtal:
                 #pt = ref_struc0.atom_sites[0].position
                 #if wp.is_standard_setting():
                 #    good_strucs.append(ref_struc0)
-                #else: 
+                #else:
                 #    valid, vector = wp.check_translation(pt)
                 #    if valid:
                 #        ref_struc0.translate(vector, reset_wp=True)
                 #        ref_struc0.standard_setting = True
                 #        good_strucs.append(ref_struc0)
 
-            return good_strucs 
+            return good_strucs
         else:
             d_tol1, f_tol1, a_tol1, switch = l1.get_diff(l2)
             if d_tol1 > d_tol and f_tol1 > f_tol:
@@ -1740,7 +1741,7 @@ class pyxtal:
         Compute the displacement w.r.t. the reference structure
 
         Args:
-            ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            ref_struc: reference pyxtal structure (assuming the same atom order)
 
         Returns:
             True or False
@@ -1754,8 +1755,8 @@ class pyxtal:
                 site2 = ref_struc.atom_sites[i]
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
                     match = True
-                    break    
-            if match:            
+                    break
+            if match:
                 orders.remove(i)
             else:
                 return False
@@ -1766,7 +1767,7 @@ class pyxtal:
         Compute the displacement w.r.t. the reference structure
 
         Args:
-            ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            ref_struc: reference pyxtal structure (assuming the same atom order)
             trans: translation vector
             d_tol: tolerence of mismatch
 
@@ -1793,19 +1794,19 @@ class pyxtal:
                     #strs = "{:2s} ".format(site1.specie)
                     #strs += "{:6.3f} {:6.3f} {:6.3f}".format(*site1.position)
                     #strs += " => {:6.3f} {:6.3f} {:6.3f} ".format(*site2.position)
-                    #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*disp, dist) 
+                    #strs += "[{:6.3f} {:6.3f} {:6.3f}] {:6.3f}".format(*disp, dist)
                     #if dist < d_tol*1.2: strs += ' True'
                     #print(strs)
 
-                    if dist < 0.3: 
+                    if dist < 0.3:
                         match = True
-                        break    
+                        break
                     elif dist < 1.2*d_tol:
                         ds.append(dist)
                         ids.append(i)
                         _disps.append(disp)
                         #print("========", ds, ids, site1.specie, site2.specie)
-            if match:            
+            if match:
                 disps.append(disp)
                 orders.remove(i)
             else:
@@ -1822,13 +1823,13 @@ class pyxtal:
 
         disps = np.array(disps)
         d = np.max(np.linalg.norm(disps.dot(cell1), axis=1))
- 
+
         return disps, d, True
 
     def get_disps_optim(self, ref_struc, trans, d_tol):
         """
         Args:
-            ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            ref_struc: reference pyxtal structure (assuming the same atom order)
             trans: translation vector
             d_tol: tolerence of mismatch
 
@@ -1856,7 +1857,7 @@ class pyxtal:
         Compute the displacement w.r.t. the reference structure
 
         Args:
-            ref_struc: reference pyxtal structure (assuming the same atomic ordering)
+            ref_struc: reference pyxtal structure (assuming the same atom order)
 
         Returns:
             list of possible translations
@@ -1872,7 +1873,7 @@ class pyxtal:
         for specie in self.species:
             for site1 in self.atom_sites:
                 if site1.specie == specie:
-                    break           
+                    break
             for i in range(len(self.atom_sites)):
                 site2 = ref_struc.atom_sites[i]
                 if site1.specie == site2.specie and site1.wp.index == site2.wp.index:
@@ -1897,7 +1898,7 @@ class pyxtal:
 
     def is_duplicate(self, ref_strucs):
         """
-        check if the structure is exactly the same 
+        check if the structure is exactly the same
         """
 
         lat0 = self.lattice
@@ -1945,7 +1946,7 @@ class pyxtal:
                                         ref_lat=self.lattice, d_tol=ld_tol, f_tol=fd_tol)
             for j, ref_struc_alt in enumerate(ref_strucs_alt):
                 #initial setup
-                d_min = 10.0   
+                d_min = 10.0
                 disp_min = None
                 tran_min = None
                 trans = []
@@ -1979,7 +1980,7 @@ class pyxtal:
                     all_disps.append(disp_min)
                     all_trans.append(trans_min)
                     good_ref_strucs.append(ref_struc_alt)
-                elif d_min < 5.1:   # add bad 
+                elif d_min < 5.1:   # add bad
                     bad_ref_strucs.append(ref_struc_alt)
 
         #choose the best
@@ -2054,7 +2055,7 @@ class pyxtal:
         """
         #ref_struc.sort_sites_by_numIons()
         #self.sort_sites_by_numIons()
-        paths = self.group.search_subgroup_paths(ref_struc.group.number) 
+        paths = self.group.search_subgroup_paths(ref_struc.group.number)
         if len(paths) == 0:
             print("No valid paths between the structure pairs")
             return None, None, None, None
@@ -2077,7 +2078,7 @@ class pyxtal:
                     for p0 in add_paths:
                         r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images, both)
                         (strucs, disp, tran, count) = r
-                        if strucs is not None: 
+                        if strucs is not None:
                             if strucs[-1].disp < d_tol2: #stop
                                 return strucs, disp, tran, p0
                             else:
@@ -2104,10 +2105,10 @@ class pyxtal:
                 good_ds = np.array(good_ds)
                 id = np.argmin(good_ds)
                 return good_strucs[id], good_disps[id], good_trans[id], good_paths[id]
-                            
+
             if Skipped > 0:
                 print("Warning: ignore some solutions: ", Skipped)
-                       
+
             return None, None, None, p
 
     def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2, both=False):
@@ -2174,7 +2175,7 @@ class pyxtal:
                 _sites0 = []
                 dicts, _ = G.get_max_subgroup(p)
                 relation = dicts['relations'][s]
-                #tran = dicts['transformation'][s]; mult *= np.linalg.det(tran[:3,:3]) 
+                #tran = dicts['transformation'][s]; mult *= np.linalg.det(tran[:3,:3])
                 # add site for each element
                 for site in _sites:
                     _site = []
@@ -2399,10 +2400,10 @@ class pyxtal:
         """
         Download the crystal from CCDC
         if csd_code is given, return the single pyxtal object
-        if csd_family is given, perform the grouping analysis and ignore high pressure form
+        if csd_family is given, do group analysis and ignore high pressure form
 
         Args:
-            csd_code: e.g., ACSALA01
+            csd_code: e.g., ``ACSALA01``
 
         """
         from pyxtal.util import process_csd_cif

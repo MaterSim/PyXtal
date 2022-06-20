@@ -19,11 +19,11 @@ def find_dir(dirs):
             return d
     raise RuntimeError("Cannot find the dirtory for dftb parameters")
 
-def listToString(s): 
+def listToString(s):
     # initialize an empty string
-    #str1 = " " 
-    str1 = "" 
-    # return string  
+    #str1 = " "
+    str1 = ""
+    # return string
     return (str1.join(s))
 
 def pymatgen2ase(struc):
@@ -45,7 +45,8 @@ def ase2pymatgen(struc):
 
 def symmetrize_cell(struc, mode='C'):
     """
-    symmetrize structure from pymatgen, and return the struc in conventional/primitive setting
+    symmetrize structure from pymatgen, and return the struc in conventional or
+    primitive setting.
 
     Args:
         struc: ase type
@@ -62,7 +63,7 @@ def symmetrize_cell(struc, mode='C'):
 
 def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
     """
-    check if the lattice has a good shape
+    check if the lattice has a good shape.
 
     Args:
         struc: pyxtal structure
@@ -77,7 +78,7 @@ def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
 
 def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
     """
-    symmetrize the structure from spglib
+    symmetrize the structure from spglib.
 
     Args:
         pmg: pymatgen structure
@@ -106,9 +107,9 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
 
 def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
     """
-    Symmetrized Pymatgen structure
-    A slight modification to ensure that the structure adopts the
-    standard setting used in interational crystallography table
+    Get the symmetrized Pymatgen structure. A slight modification to ensure that
+    the structure adopts the standard setting according to the Interational
+    Crystallography Table.
 
     Args:
         pmg: input pymatgen structure
@@ -127,8 +128,8 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
     if hn is None:
         hn = Hall(s._space_group_data['number'], style=style).hall_default
     if hn != s._space_group_data["hall_number"]:
-        s._space_group_data = get_symmetry_dataset(s._cell, tol, 
-                                                   angle_tolerance=a_tol, 
+        s._space_group_data = get_symmetry_dataset(s._cell, tol,
+                                                   angle_tolerance=a_tol,
                                                    hall_number=hn)
     return s.get_symmetrized_structure(), s.get_space_group_number()
 
@@ -202,7 +203,7 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
         for l in lines[start:]:
             if len(re.findall(r"[0-9][B-D]", l))>0 or \
             len(re.findall(r"[A-Z][0-9]\' [0-9]", l))>0:
-                #print(l); 
+                #print(l);
                 continue
             tmp.append(l)
         cif = listToString(tmp)
@@ -223,7 +224,7 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
 
 def process_csd_cif(cif, remove_H=False):
     """
-    process cif from CSD, sometimes it contains multiple 
+    process cif from CSD, sometimes it contains multiple
     e.g., C2
     """
     lines = cif.split('\n')
@@ -243,7 +244,6 @@ def process_csd_cif(cif, remove_H=False):
     return listToString(tmp)
 
 def get_similar_cids_from_pubchem(base, MaxRecords):
-
     """
     Args:
         base: PubChem CID of Starting chemical
@@ -256,8 +256,8 @@ def get_similar_cids_from_pubchem(base, MaxRecords):
     import pubchempy as pcp
 
     if type(base) == int: base = str(base)
-    cids = pcp.get_compounds(base, 
-                             searchtype="similarity", 
+    cids = pcp.get_compounds(base,
+                             searchtype="similarity",
                              MaxRecords=MaxRecords)
     results = []
     for x in cids:

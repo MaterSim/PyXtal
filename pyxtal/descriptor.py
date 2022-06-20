@@ -3,7 +3,7 @@ from scipy.special import sph_harm
 
 def _qlm(center, neighbors, weights, l=4):
     '''
-    Calculates the complex vector associated with an atomic site and 
+    Calculates the complex vector associated with an atomic site and
     one of its neighbors
 
     Args:
@@ -54,7 +54,7 @@ def _qlm(center, neighbors, weights, l=4):
 
 def get_q4_and_q6(center, neighbors, weights=None):
     '''
-    Computes the Steinhardt orientation order parameters q4 and q6 
+    Computes the Steinhardt orientation order parameters q4 and q6
 
     Args:
         center: center xyz coordinate
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     data = []
     for v in np.linspace(1, 8, Npt):
         data.append(('Xe', 'bct', np.sqrt(v/4)))
-    bcts = [] 
+    bcts = []
     for i, d in enumerate(data):
         (element, packing, covera) = d
         for j, a in enumerate(_as):
@@ -161,7 +161,7 @@ if __name__ == '__main__':
     data = []
     for v in np.linspace(1, 8, Npt):
         data.append(('Xe', 'diamond', np.sqrt(v/4)))
- 
+
     ds = []
     for i, d in enumerate(data):
         (element, packing, covera) = d
@@ -191,6 +191,3 @@ if __name__ == '__main__':
     plt.xlabel('q4')
     plt.ylabel('q6')
     plt.savefig('0.png')
-
-            
-

@@ -1,5 +1,5 @@
 """
-Module for handling molecules. 
+Module for handling molecules.
 """
 # Imports
 import os
@@ -72,7 +72,7 @@ def find_id_from_smile(smile):
 def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
     """
     generate pyxtal_molecules from smiles codes.
-    
+
     """
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -130,9 +130,9 @@ class pyxtal_molecule:
     The added features include:
     0, parse the input
     1, estimate volume/tolerance/radii
-    2, find and store symmetry 
-    3, get the principle axis 
-    4, re-align the molecule 
+    2, find and store symmetry
+    3, get the principle axis
+    4, re-align the molecule
 
     The molecule is always centered at (0, 0, 0).
 
@@ -146,10 +146,10 @@ class pyxtal_molecule:
         tm: tolerance matrix
     """
 
-    def __init__(self, 
-                 mol=None, 
-                 symmetrize=True, 
-                 fix=False, 
+    def __init__(self,
+                 mol=None,
+                 symmetrize=True,
+                 fix=False,
                  torsions=None,
                  seed = None,
                  tm=Tol_matrix(prototype="molecular")):
@@ -274,8 +274,8 @@ class pyxtal_molecule:
                 dims[i] = max([dims[i], 2.0]) #for planar molecules
             else:
                 ids = np.argsort(xyz[:, i])
-                r = Element(mol[ids[0]].species_string).vdw_radius 
-                r += Element(mol[ids[-1]].species_string).vdw_radius 
+                r = Element(mol[ids[0]].species_string).vdw_radius
+                r += Element(mol[ids[-1]].species_string).vdw_radius
                 dims[i] = max([dims[i]+r, 3.4]) #for planar molecules
         return Box(dims)
 
@@ -291,21 +291,21 @@ class pyxtal_molecule:
 
         Return:
             cell: box axis
-            vertices: [N, 3] np.array, Cartesian coordinates to describe the box.
+            vertices: [N, 3] array, Cartesian coordinates to describe the box.
             center: box center
         """
         cell = self.get_principle_axes(xyz).T
         center = self.get_center(xyz) #, geometry=True)
         box = self.get_box(padding)
         #print(box)
-        w, h, l = box.width, box.height, box.length      
+        w, h, l = box.width, box.height, box.length
         cell[0,:] *= l
         cell[1,:] *= w
         cell[2,:] *= h
         x_ = np.linspace(-1/2, 1/2, int(l/resolution)+1)
         y_ = np.linspace(-1/2, 1/2, int(w/resolution)+1)
         z_ = np.linspace(-1/2, 1/2, int(h/resolution)+1)
-        
+
         #XY
         #print(len(x_), len(y_), len(z_))
         x, y = np.meshgrid(x_, y_, indexing='ij')
@@ -355,9 +355,7 @@ class pyxtal_molecule:
         """
         r_max = 0
         for coord, number in zip(self.mol.cart_coords, self.mol.atomic_numbers):
-            radius = (
-                np.sqrt(np.sum(coord * coord)) + self.tm.get_tol(number, number) * 0.5
-            )
+            radius = np.linalg.norm(coord) + 0.5*self.tm.get_tol(number, number)
             if radius > r_max:
                 r_max = radius
         self.radius = r_max
@@ -378,7 +376,7 @@ class pyxtal_molecule:
             mol2: the 2nd pyxtal_molecule object
             tm: tolerance class
 
-        Returns: 
+        Returns:
             a 2D matrix which is used internally for distance checking.
         """
         if tm is None:
@@ -412,7 +410,7 @@ class pyxtal_molecule:
             mol2: the 2nd pyxtal_molecule object
             tm: tolerance class
 
-        Returns: 
+        Returns:
             a 3D matrix for computing the intermolecular energy
         """
         numbers1 = self.mol.atomic_numbers
@@ -449,19 +447,19 @@ class pyxtal_molecule:
                 elif [number1, number2] in [[7,7]]:            #N-N
                     coefs[i1, i2, :] = [87300, 3.65, 691.]
                 elif [number1, number2] in [[7,8], [8,7]]:     #N-O
-                    coefs[i1, i2, :] = [64190, 3.86, 364.]     
+                    coefs[i1, i2, :] = [64190, 3.86, 364.]
                 elif [number1, number2] in [[8,8]]:            #O-O
-                    coefs[i1, i2, :] = [46680, 3.74, 319.]     
+                    coefs[i1, i2, :] = [46680, 3.74, 319.]
                 elif [number1, number2] in [[8,16], [16,8]]:   #O-S
-                    coefs[i1, i2, :] = [110160, 3.63, 906.]     
+                    coefs[i1, i2, :] = [110160, 3.63, 906.]
                 elif [number1, number2] in [[8,17], [17,8]]:   #O-Cl
-                    coefs[i1, i2, :] = [80855, 3.63, 665.]   
+                    coefs[i1, i2, :] = [80855, 3.63, 665.]
                 elif [number1, number2] in [[16, 16]]:         #S-S
-                    coefs[i1, i2, :] = [259960, 3.52, 2571]  
+                    coefs[i1, i2, :] = [259960, 3.52, 2571]
                 elif [number1, number2] in [[16,17], [17,16]]: #S-S
-                    coefs[i1, i2, :] = [1800000, 3.52, 2000]   #made  
+                    coefs[i1, i2, :] = [1800000, 3.52, 2000]   #made
                 elif [number1, number2] in [[17,17]]:          #Cl-Cl
-                    coefs[i1, i2, :] = [140050, 3.52, 1385]  
+                    coefs[i1, i2, :] = [140050, 3.52, 1385]
                 #todo add H-bonds
                 #HB-O(amides):   3607810, 7.78, 238
                 #HB-O(acids):    6313670, 8.75, 205
@@ -541,10 +539,10 @@ class pyxtal_molecule:
             if fix or torsions is not None or len(torsionlist)==0:
                 conf = ref_conf
             else:
-                AllChem.EmbedMultipleConfs(mol, 
-                                           numConfs=max([1, 4*len(torsionlist)]), 
-                                           maxAttempts=200, 
-                                           useRandomCoords=True, 
+                AllChem.EmbedMultipleConfs(mol,
+                                           numConfs=max([1, 4*len(torsionlist)]),
+                                           maxAttempts=200,
+                                           useRandomCoords=True,
                                            pruneRmsThresh=0.5)
                 N_confs = mol.GetNumConformers()
                 conf_id = choice(range(N_confs))
@@ -571,7 +569,7 @@ class pyxtal_molecule:
         slightly perturb the torsion
         """
         angs = self.get_torsion_angles(xyz, self.torsionlist)
-        angs *= (1+0.1*np.random.uniform(-1., 1., len(angs))) 
+        angs *= (1+0.1*np.random.uniform(-1., 1., len(angs)))
         xyz = self.set_torsion_angles(conf, angs, torsionlist=self.torsionlist)
         xyz -= self.get_center(xyz)
         return xyz
@@ -584,15 +582,15 @@ class pyxtal_molecule:
         from rdkit.Chem import rdMolTransforms as rdmt
 
         # Rotation
-        if len(self.smile) > 1: 
+        if len(self.smile) > 1:
             trans = rdmt.ComputeCanonicalTransform(conf)
-            if abs(abs(np.linalg.det(trans))-1.0)>1e-1: 
+            if abs(abs(np.linalg.det(trans))-1.0)>1e-1:
                 print("Bug in trans", np.linalg.det(trans))
                 import sys; sys.exit()
-            elif np.linalg.det(trans[:3,:3]) < 0: 
+            elif np.linalg.det(trans[:3,:3]) < 0:
                 trans[:3,:3] *= -1
 
-            # add reflection if needed    
+            # add reflection if needed
             if reflect: trans[:3,:3] *= -1
             rdmt.TransformConformer(conf, trans)
 
@@ -628,7 +626,7 @@ class pyxtal_molecule:
                     # from rdkit
                     from rdkit.Geometry import Point3D
                     from rdkit.Chem import rdMolTransforms as rdmt
-                    
+
                     conf = self.rdkit_mol().GetConformer(0)
                     for i in range(len(xyz)):
                         x, y, z = xyz[i]
@@ -641,7 +639,7 @@ class pyxtal_molecule:
         """
         get the principle axis for a rotated xyz
         """
-        if self.smile is None or len(self.smile)==1 or not rdmt: 
+        if self.smile is None or len(self.smile)==1 or not rdmt:
             Inertia = get_inertia_tensor(xyz)
             _, matrix = np.linalg.eigh(Inertia)
             return matrix
@@ -676,7 +674,7 @@ class pyxtal_molecule:
                 (i, j, k, l) = torsion
                 angs.append(rdmt.GetDihedralDeg(conf, i, j, k, l))
         return angs
-    
+
     def set_torsion_angles(self, conf, angles, reflect=False, torsionlist=None):
         """
         reset the torsion angles and update molecular xyz
@@ -687,7 +685,7 @@ class pyxtal_molecule:
         for id, torsion in enumerate(torsionlist):
             (i, j, k, l) = torsion
             rdmt.SetDihedralDeg(conf, i, j, k, l, angles[id])
-        
+
         xyz = self.align(conf, reflect)
         return xyz
 
@@ -716,7 +714,7 @@ class pyxtal_molecule:
         res = AllChem.MMFFOptimizeMoleculeConfs(mol)
         if align:
             xyz = self.align(conf0)
-        else:   
+        else:
             xyz = mol.GetConformer(0).GetPositions()
         return xyz, res[0][1]
 
@@ -762,7 +760,7 @@ class pyxtal_molecule:
         #rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
         #rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
         #rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
-       
+
         if rmsd1 <= rmsd2:
             return rmsd1, trans1, True
         else:
@@ -775,13 +773,13 @@ class pyxtal_molecule:
         Args:
             xyz: molecular xyz
         """
-        
+
         xyz -= self.get_center(xyz)
 
         if len(self.smile) > 1: # not in ["O", "o"]:
             rmsd, trans, reflect = self.get_rmsd(xyz)
             tol = rtol*len(xyz)
-            
+
             if rmsd < tol:
                 trans = trans[:3,:3].T
                 r = Rotation.from_matrix(trans)
@@ -790,16 +788,16 @@ class pyxtal_molecule:
                 msg = "Problem in conformer\n"
                 msg += "{:5.2f} {:5.2f}\n".format(rmsd1, rmsd2)
                 if len(self.torsionlist) > 0:
-                    msg += str(self.get_torsion_angles(xyz)) + '\n'  
-                    msg += str(self.get_torsion_angles(xyz0)) + '\n'  
-                    msg += str(self.get_torsion_angles(xyz1)) + '\n'  
+                    msg += str(self.get_torsion_angles(xyz)) + '\n'
+                    msg += str(self.get_torsion_angles(xyz0)) + '\n'
+                    msg += str(self.get_torsion_angles(xyz1)) + '\n'
                 raise ConformerError(msg)
         else:
             # the orientation of CH4, NH3, H2O
             ref = np.array([[-0.00111384,  0.36313718,  0.        ],
-                            [-0.82498189, -0.18196256,  0.        ], 
+                            [-0.82498189, -0.18196256,  0.        ],
                             [ 0.82609573, -0.18117463,  0.        ]])
-            Inertia = get_inertia_tensor(xyz) 
+            Inertia = get_inertia_tensor(xyz)
             _, matrix = np.linalg.eigh(Inertia)
 
             ref0 = np.dot(xyz, matrix)
@@ -877,7 +875,7 @@ class pyxtal_molecule:
         self.mol_no_h = mol
 
         #print(mol.to(fmt='xyz'), pga.sch_symbol)
-        # For single atoms, we cannot represent the point group using a list of operations
+        # For single atoms, no point group using a list of operations
         if len(mol) == 1:
             symm_m = []
             symbol = 'C1'
@@ -885,7 +883,7 @@ class pyxtal_molecule:
             symbol = pga.sch_symbol
             pg = pga.get_pointgroup()
             symm_m = [op for op in pg]
-    
+
             if "*" in symbol: # linear molecules
                 symbol = symbol.replace('*','6')
                 # Add 12-fold  and reflections in place of ininitesimal rotation
@@ -911,7 +909,7 @@ class pyxtal_molecule:
                             symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
                             symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
                             #r = SymmOp.from_xyz_string("x,-y,-z")
-                        # Generate a full list of SymmOps for the molecule's pointgroup
+                        # Generate a full list of SymmOps for the pointgroup
                         symm_m = generate_full_symmops(symm_m, 1e-3)
                         break
         self.symops = symm_m
@@ -922,11 +920,11 @@ class pyxtal_molecule:
     def get_orientations_in_wps(self, wps=None, rtol=1e-2):
         """
         Compute the valid orientations from a given Wyckoff site symmetry.
-    
+
         Args:
             wp: a pyxtal.symmetry.Wyckoff_position object
         Returns:
-            a list of operations.Orientation objects 
+            a list of operations.Orientation objects
         """
         if wps is None:
             return None, True
@@ -943,11 +941,11 @@ class pyxtal_molecule:
     def get_orientations_in_wp(self, wp, rtol=1e-2):
         """
         Compute the valid orientations from a given Wyckoff site symmetry.
-    
+
         Args:
             wp: a pyxtal.symmetry.Wyckoff_position object
         Returns:
-            a list of pyxtal.molecule.Orientation objects 
+            a list of pyxtal.molecule.Orientation objects
         """
         # For single atoms, there are no constraints
         if len(self.mol) == 1 or wp.index == 0:
@@ -956,28 +954,29 @@ class pyxtal_molecule:
         elif wp.index > 1 and self.pga.sch_symbol == 'C1':
             return []
 
-        symm_w = wp.get_site_symm_wo_translation() #symmetry without translation 
+        symm_w = wp.get_site_symm_wo_translation() #symmetry without translation
         # molecule has fewer symops
         if len(self.pg[0]) < len(symm_w):
             return []
-    
-        symm_m = self.symops 
+
+        symm_m = self.symops
         wyckoffs = wp.ops
         opa_m = []
         for op_m in symm_m:
             opa = OperationAnalyzer(op_m)
             opa_m.append(opa)
-        
+
         # Store OperationAnalyzer objects for each Wyckoff symmetry SymmOp
         opa_w = []
         for op_w in symm_w:
             opa_w.append(OperationAnalyzer(op_w))
-    
-        # Check for constraints from the Wyckoff symmetry
-        # If we find ANY two constraints (SymmOps with unique axes), the molecule's
-        # point group MUST contain SymmOps which can be aligned to these particular
-        # constraints. However, there may be multiple compatible orientations of the
-        # molecule consistent with these constraints
+        """
+        Check for constraints from the Wyckoff symmetry. If we find ANY two
+        constraints (SymmOps with unique axes), the molecule's point group MUST
+        contain SymmOps which can be aligned to these particular constraints.
+        However, there may be multiple compatible orientations of the molecule
+        consistent with these constraints
+        """
         constraint1 = None
         constraint2 = None
         for i, op_w in enumerate(symm_w):
@@ -1003,9 +1002,11 @@ class pyxtal_molecule:
                     constraints_m.append([opa1, []])
                     # Generate 2nd constraint in opposite direction
                     extra = deepcopy(opa1)
-                    extra.axis = [opa1.axis[0] * -1, opa1.axis[1] * -1, opa1.axis[2] * -1]
+                    extra.axis = [opa1.axis[0] * -1,
+                                  opa1.axis[1] * -1,
+                                  opa1.axis[2] * -1]
                     constraints_m.append([extra, []])
-    
+
         # Remove redundancy for the first constraints
         list_i = list(range(len(constraints_m)))
         list_j = list(range(len(constraints_m)))
@@ -1039,7 +1040,7 @@ class pyxtal_molecule:
         constraints_m = []
         for i in list_i:
             constraints_m.append(c_m[i])
-    
+
         # Generate 2nd consistent molecular constraints
         valid = list(range(len(constraints_m)))
         if constraint2 is not None:
@@ -1066,7 +1067,7 @@ class pyxtal_molecule:
         constraints_m = []
         for i in valid:
             constraints_m.append(copy[i])
-    
+
         # Generate orientations consistent with the possible constraints
         orientations = []
         # Loop over molecular constraint sets
@@ -1122,8 +1123,8 @@ class pyxtal_molecule:
         orientations_new = []
         for i in list_i:
             orientations_new.append(orientations[i])
-    
-        #Check each of the found orientations for consistency with the Wyckoff pos.
+
+        #Check each of the found orientations for consistency with Wyckoff site.
         #If consistent, put into an array of valid orientations
         #print("======", orientations_new)
         allowed = []
@@ -1146,7 +1147,7 @@ class pyxtal_molecule:
 
 class Box:
     """
-    Class for storing the binding box for a molecule. 
+    Class for storing the binding box for a molecule.
 
     Args:
         dims: [length, width, height]
@@ -1195,7 +1196,7 @@ class Orientation:
 
     def __init__(self, matrix=None, degrees=2, axis=None):
         self.matrix = np.array(matrix)
-        self.degrees = degrees  # The number of degrees of freedom.
+        self.degrees = degrees
         if degrees == 1:
             if axis is None:
                 raise ValueError("axis is required for orientation")
@@ -1203,7 +1204,7 @@ class Orientation:
                 axis /= np.linalg.norm(axis)
         self.axis = axis
 
-        self.r = Rotation.from_matrix(self.matrix)  # scipy transform.Rotation class
+        self.r = Rotation.from_matrix(self.matrix)
         self.angle = None
 
     def __str__(self):
@@ -1244,8 +1245,8 @@ class Orientation:
 
     def change_orientation(self, angle="random", flip=False):
         """
-        Allows for specification of an angle (possibly random) to
-        rotate about the constraint axis.
+        Allows for specification of an angle (possibly random) to rotate about
+        the constraint axis.
 
         Args:
             angle: an angle to rotate about the constraint axis.
@@ -1336,9 +1337,9 @@ class Orientation:
 
     def get_op(self): #, angle=None):
         """
-        Generate a SymmOp object consistent with the orientation's
-        constraints. Allows for specification of an angle (possibly random) to
-        rotate about the constraint axis.
+        Generate a SymmOp object consistent with the orientation's constraints.
+        Allows for specification of an angle (possibly random) to rotate about
+        the constraint axis.
 
         Args:
             angle: an angle to rotate about the constraint axis. If "random",
@@ -1374,8 +1375,7 @@ class Orientation:
 
 def get_inertia_tensor(coords, weights=None):
     """
-    Calculate the symmetric inertia tensor for a Molecule
-    the principal axes of symmetry.
+    Calculate the symmetric inertia tensor for a molecule.
 
     Args:
         coords: [N, 3] array of coordinates
@@ -1398,8 +1398,7 @@ def get_inertia_tensor(coords, weights=None):
 
 def reoriented_molecule(mol): #, nested=False):
     """
-    Reorient a molecule so that its principal axes are aligned with the
-    identity matrix.
+    Allign a molecule so that its principal axes is the identity matrix.
 
     Args:
         mol: a Molecule object

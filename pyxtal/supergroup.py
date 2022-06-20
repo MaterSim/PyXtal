@@ -21,14 +21,14 @@ ALL_SHIFTS = np.array([[0,0,0], [0,1,0], [1,0,0], [0,0,1], [0,1,1], [1,1,0], [1,
 
 def write_poscars(H_struc, G_struc, mappings, splitters, wyc_sets, N_images=3):
     """
-    Write the intermediate POSCARs betwee H and G structure,
-    The key is to continuously change G to subgroup represenations with zero disp
-    Finally, call `write_poscars_intermediate`
+    Write the intermediate POSCARs betwee H and G structure. The key is to
+    continuously change G to subgroup represenations with zero displacements.
+    Finally, call `write_poscars_intermediate`.
 
     Args:
         H_struc: PyXtal low symmetry structure
         G_strucs: a list of PyXtal high symmetry structures
-        mapping: a list of atomic mappings 
+        mapping: a list of atomic mappings
         splitter: a list of splitter object
         wyc_set: a list of wyc_set transformation
         N_images: number of intermediate structures between H and G
@@ -233,7 +233,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     dist = np.min(dists)
     shift = shifts[np.argmin(dists)]
     pos = np.dot(rot, pos1 + shift + tran.T)
-    
+
 
     diff = pos - pos2
     diff -= np.round(diff)
@@ -252,8 +252,8 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
     Args:
         G2_op: a symmetry operation in G2
         coord: the coordinate that matches G2_op
-        quadrant: a 3 item list (ex:[1,1,-1]) that contains information
-                  on the orientation of the molecule
+        quadrant: a 3 item list (ex:[1,1,-1]) that contains information on the
+            orientation of the molecule
 
     Returns:
         G2_holder: x,y,z parameters written in the G2 basis
@@ -309,7 +309,7 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
             return np.array(G2_holder)
 
         except:
-            raise RuntimeError('unable to find free parameters using this operation')
+            raise RuntimeError('unable to find free parameters in the operation')
 
 class supergroup():
     """
@@ -350,7 +350,7 @@ class supergroup():
         Args:
             d_tol (float): tolerance for atomic displacement
             max_per_G (int): maximum number of possible solution for each G
-            max_solutions (int):
+            max_solutions (int): maximum number of solutions.
 
         Returns:
             solutions: list of solutions with small displacements
@@ -409,7 +409,7 @@ class supergroup():
 
     def calc_disps(self, split_id, solution, d_tol):
         """
-        For a given solution, compute the minimum displacement by adusting `translation`.
+        For a given solution, compute the minimum disp by adusting translation.
 
         Args:
             split_id (int): integer
@@ -457,6 +457,7 @@ class supergroup():
                 if mask is None or len(mask)<3:
                     def fun(translation, mapping, splitter, mask):
                         return self.symmetrize_dist(splitter, mapping, mask, translation)[0]
+                        
                     res = minimize(fun, translations[id], args=(mappings[id], splitter, mask),
                             method='Nelder-Mead', options={'maxiter': 10})
                     if res.fun < max_disp:
@@ -470,7 +471,7 @@ class supergroup():
 
     def get_initial_mask(self, splitter):
         """
-        Get the mask 
+        Get the mask
         """
         for wp2 in splitter.wp2_lists:
             for wp in wp2:
@@ -487,7 +488,7 @@ class supergroup():
         if n > 1:
             letters = [atom_sites_H[mapping[id][x]].wp.letter for x in range(n)]
             letters_wp = [wp.letter for wp in splitter.wp2_lists[id]]
-            seq = [] 
+            seq = []
             for l in letters_wp:
                 index = letters.index(l)
                 seq.append(index)
@@ -519,7 +520,7 @@ class supergroup():
         """
 
         max_disps = []
-        if mask is not None: 
+        if mask is not None:
             if translation is not None:
                 translation[mask] = 0
 
@@ -541,7 +542,7 @@ class supergroup():
                     dist = self.symmetrize_site_double_t(splitter, i, coord_H, translation)
             else:
                 dist = self.symmetrize_site_multi(splitter, i, coord_H, translation)
-    
+
             #strs = self.print_wp(splitter, i); print(strs, dist)
             if i == 0 and translation is None: translation = np.zeros(3)
 
@@ -579,7 +580,7 @@ class supergroup():
             coord_H, seq = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
-                res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)       
+                res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)
             elif n==2:
                 if splitter.group_type == 'k':
                     res = self.symmetrize_site_double_k(splitter, i, coord_H, translation, 0)
@@ -595,11 +596,11 @@ class supergroup():
             elements.extend([splitter.elements[i]]*n)
             ordered_mapping.extend(seq)
             #self.print_wp(splitter, i); print(coord_G1); print(coord_G2)
- 
+
         coords_G1 = np.array(coords_G1)
         coords_G2 = np.array(coords_G2)
         coords_H = np.array(coords_H)
-        
+
         return coords_G1, coords_G2, coords_H, elements, ordered_mapping
 
     def print_wp(self, sp, id):
@@ -615,7 +616,7 @@ class supergroup():
 
     def symmetrize_site_single(self, splitter, id, base, translation, run_type=1):
         """
-        Symmetrize one WP to another with higher symmetry 
+        Symmetrize one WP to another with higher symmetry
 
         Args:
             splitter: splitter object
@@ -678,13 +679,13 @@ class supergroup():
 
     def symmetrize_site_double_k(self, splitter, id, coord_H, translation, run_type=1):
         """
-        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry 
+        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry
 
         Args:
             splitter: splitter object
             id: index of splitter
             coord_H: 2*3 coordinates
-            translation: 1*3 transaltion vector 
+            translation: 1*3 transaltion vector
             run_type: return distance or coordinates
         """
         # For k-type splitting, restore the translation symmetry:
@@ -703,7 +704,7 @@ class supergroup():
 
         coord1_H, coord2_H = coord_H[0], coord_H[1]
         coord1_G2, coord2_G2  = coord1_H + translation, coord2_H + translation
-        
+
         # since rotation does not change, search for the closest match on rotation
         # then we can get the translation vector
         for op_G22 in ops_G22:
@@ -716,7 +717,7 @@ class supergroup():
         coords11 += trans
         tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
 
-        # needed displacement 
+        # needed displacement
         if run_type == 1:
             return dist/2 #np.linalg.norm(np.dot(d/2, self.cell))
         else:
@@ -730,13 +731,13 @@ class supergroup():
 
     def symmetrize_site_double_t(self, splitter, id, coord_H, translation, run_type=1):
         """
-        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry 
+        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry
 
         Args:
             splitter: splitter object
             id: the id in the splitter
             coord_H: coordinates to work on
-            translation: 1*3 transaltion vector 
+            translation: 1*3 transaltion vector
             run_type: return distance or coordinates
         """
 
@@ -757,8 +758,8 @@ class supergroup():
         coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, ops_G11[0])
         coord2_G1, _ = search_G1(splitter.G, rot, tran, coord2_G2, wp1, ops_G12[0])
 
-        # apply the operations in G 
-        # find the position that is closest to coord2_G1 
+        # apply the operations in G
+        # find the position that is closest to coord2_G1
         coords11 = apply_ops(coord1_G1, ops_G1)
         tmp, dist = get_best_match(coords11, coord2_G1, cell_G)
 
@@ -779,23 +780,23 @@ class supergroup():
             coord1_G2, dist = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
             coord2_G2, dist = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
             #print("in G1", l1, coord1_G2, l2, coord2_G2, dist)
-            
+
             return coord2_G1, np.array([coord1_G2, coord2_G2]), coord_H
 
     def symmetrize_site_multi(self, splitter, id, coord_H, translation, run_type=1):
         """
-        Symmetrize multiple WPs to another with higher symmetry 
+        Symmetrize multiple WPs to another with higher symmetry
 
         Args:
             splitter: splitter object
             id: the id in the splitter
             coord_H: coordinates to work on
-            translation: 1*3 transaltion vector 
+            translation: 1*3 transaltion vector
             run_type: return distance or coordinates
         """
 
         if translation is None: translation = np.zeros(3)
-        
+
         n = len(splitter.wp2_lists[id])
         rot = splitter.R[:3,:3]
         tran = splitter.R[:3,3]
@@ -845,7 +846,7 @@ class supergroup():
             G2_xyz[j] += find_xyz(corresponding_ops[j], coord_G2[j], quadrant)
         #print(G2_xyz)
 
-        # Finds the average free parameters between all the coordinates as the best set 
+        # Finds the average free parameters between all the coordinates as the best set
         # of free parameters that all coordinates must match
         final_xyz = np.mean(G2_xyz, axis=0)
 
@@ -883,8 +884,8 @@ class supergroup():
             strs = ''
             for wp in wp2:
                 x, y, ele = coords_H[count], coords_G[count], elements[count]
-                label = str(wp.multiplicity) + wp.letter + '->' 
-                label += str(wp1.multiplicity) + wp1.letter 
+                label = str(wp.multiplicity) + wp.letter + '->'
+                label += str(wp1.multiplicity) + wp1.letter
                 dis = y - x - translation
                 dis -= np.round(dis)
                 dis_abs = np.linalg.norm(dis.dot(self.cell))
@@ -908,7 +909,7 @@ class supergroup():
         """
         Make the pyxtal according to the given solution
 
-        Args: 
+        Args:
             solution: a tuple of (sp, mapping, translation, wyc_set_id, max_disp)
             N_images: number of images
 
@@ -937,7 +938,7 @@ class supergroup():
         disps /= (N_images-1)
         max_disp = np.max(np.linalg.norm(disps.dot(self.cell), axis=1))
         for i in range(N_images):
-            coords = coords_H1 + i*disps + translation 
+            coords = coords_H1 + i*disps + translation
             struc = self._make_pyxtal(sp, coords, elements, 1, False)
             struc.source = 'supergroup {:d} {:6.3f}'.format(i, max_disp*i)
             strucs.append(struc)
@@ -947,7 +948,7 @@ class supergroup():
         """
         Make the pyxtal according to the given solution
 
-        Args: 
+        Args:
             solution: a tuple of (sp, mapping, translation, wyc_set_id, max_disp)
 
         Return:
@@ -1053,7 +1054,7 @@ class symmetry_mapper():
     #    for ele in eles:
     #        # 1, make_subgroup to H
     #        # 2, enumerate all wycs
-    #    return 
+    #    return
 class supergroups():
     """
     Class to search for the feasible transition to a given super group
@@ -1132,9 +1133,9 @@ class supergroups():
             for i, wp2 in enumerate(sp.wp2_lists):
                 wp1 = sp.wp1_lists[i]
                 ele = sp.elements[i]
-                l2 = str(wp1.multiplicity) + wp1.letter 
+                l2 = str(wp1.multiplicity) + wp1.letter
                 for j, wp in enumerate(wp2):
-                    l1 = str(wp.multiplicity) + wp.letter 
+                    l1 = str(wp.multiplicity) + wp.letter
                     output = "{:2s} [{:2d}]: ".format(ele, mapping[i][j])
                     output += "{:3s} -> {:3s}".format(l1, l2)
                     print(output)
@@ -1143,7 +1144,7 @@ class supergroups():
         """
         Get the series of transformed structures between H and G
 
-        Args: 
+        Args:
             N_images: number of structures
 
         Returns:
@@ -1169,12 +1170,12 @@ class supergroups():
             return self.struc_H.make_transitions(disps, lattice=cell, N_images=N_images)
         else:
             raise RuntimeError("Cannot find the match between H and G")
-    
+
     def struc_along_path(self, path):
         """
         Search for the super group structure along a given path
-        
-        Args: 
+
+        Args:
             path: [59, 71, 139]
 
         Returns:
@@ -1200,7 +1201,7 @@ class supergroups():
                 if len(new_G_strucs) > 0:
                     strucs.append(G_struc)
                     if prev_sols is not None:
-                        valid_sols.append(prev_sols[i]) 
+                        valid_sols.append(prev_sols[i])
                     G_strucs = new_G_strucs
                     prev_sols = deepcopy(new_sols)
                     break
