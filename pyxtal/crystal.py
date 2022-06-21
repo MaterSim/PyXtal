@@ -50,8 +50,8 @@ class random_crystal:
         lattice = None,
         sites = None,
         conventional = True,
-        tm=Tol_matrix(prototype="atomic"),
-    ):
+        tm = Tol_matrix(prototype="atomic"),
+        use_hall = False):
 
         # Initialize
         self.source = 'Random'
@@ -78,7 +78,7 @@ class random_crystal:
         if type(group) == Group:
             self.group = group
         else:
-            self.group = Group(group, dim=self.dim)
+            self.group = Group(group, dim=self.dim, use_hall=use_hall)
         self.number = self.group.number
         self.symbol = self.group.symbol
 

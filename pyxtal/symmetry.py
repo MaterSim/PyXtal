@@ -1621,7 +1621,7 @@ class Wyckoff_position:
             ops = self.symmetry[0]
         self.site_symm = ss_string_from_ops(ops, self.number, dim=self.dim)
 
-    def get_hm_number(ops, tol=1e-5):
+    def get_hm_number(tol=1e-5):
         if self.index == 0:
             return get_symmetry_from_ops(self.ops, tol)[0]
         else:
@@ -1827,11 +1827,11 @@ class Wyckoff_position:
 
     def are_equivalent_pts(self, pt1, pt2, cell=np.eye(3), tol=0.05):
         """
-        Check two pts are equivalent
+        Check if two pts are equivalent
         """
-        pt1, dist1 = self.search_generator(pt1, cell)
-        pt2, dist2 = self.search_generator(pt2, cell)
-        if dist1 > tol or dist2 > tol:
+        pt1 = self.search_generator(pt1, tol=tol)
+        pt2 = self.search_generator(pt2, tol=tol)
+        if pt1 is None or pt2 is None:
             return False
         else:
             pt1 = np.array(pt1); pt1 -= np.floor(pt1)
@@ -1922,7 +1922,7 @@ class Wyckoff_position:
                 pts = []
                 for i in possible:
                     wp = group[i]
-                    p, d = wp.search_generator(pt.copy(), lattice)
+                    p, d = wp.search_generator_dist(pt.copy(), lattice)
                     distances.append(d)
                     pts.append(p)
 
@@ -1963,11 +1963,10 @@ class Wyckoff_position:
                 convert = True
         self.euclidean = convert
 
-    def search_generator(self, pt, lattice=np.eye(3)):
+    def search_generator_dist(self, pt, lattice=np.eye(3)):
         """
         For a given special wp, (e.g., [(x, 0, 1/4), (0, x, 1/4)]),
-        return the first position according to the symmetry operation
-        QZ: check if it is the same as search_matched_position
+        return the first position and distance
 
         Args:
             pt: 1*3 vector
@@ -1983,35 +1982,39 @@ class Wyckoff_position:
 
         else:
             d = []
-
             if self.get_dof == 0: #fixed site like [0, 0, 0]
                 pts = self.apply_ops(pt)
                 for p0 in pts:
                     d.append(distance(p0, lattice, PBC=self.PBC))
 
             else: # sites like (x, 0, 0)
-                wp0 = Group(self.number)[0]
-                pts = wp0.apply_ops(pt)
-                op = self.ops[0]
-                for i, p0 in enumerate(pts):
-                    coord = op.operate(p0)-p0
+                ops = get_wyckoffs(self.number, dim=self.dim)[0]
+                pts = []
+                for op in ops:
+                    pt0 = op.operate(pt)
+                    pt1 = self.ops[0].operate(pt0)
+                    coord = pt1 - pt0
                     d.append(distance(coord, lattice, PBC=self.PBC))
+                    pts.append(pt0)
             #print(d)
             d = np.array(d)
             return pts[np.argmin(d)], np.min(d)
 
-    def search_matched_position(self, pos, ops=None):
+    def search_generator(self, pos, ops=None, tol=1e-2):
         """
         search generator for a special Wyckoff position
 
         Args:
             pos: initial xyz position
+            ops: list of symops
+            tol: tolerance
 
         Return:
             pos1: the position that matchs the standard setting
         """
 
-        if ops is None: ops = get_wyckoffs(self.number, dim=self.dim)[0]
+        if ops is None: 
+            ops = get_wyckoffs(self.number, dim=self.dim)[0]
 
         match = False
         for op in ops:
@@ -2021,24 +2024,25 @@ class Wyckoff_position:
             diff -= np.round(diff)
             diff = np.abs(diff)
             #print(self.letter, "{:24s}".format(op.as_xyz_string()), pos, pos0, pos1, diff)
-            if diff.sum()<1e-2:
+            if diff.sum() < tol:
                 pos1 -= np.floor(pos1)
                 match = True
                 break
+
         if match:
             return pos1
         else:
             #print(pos, wp0, wp)
             return None
 
-    def search_matched_positions(self, pos, ops):
+    def search_all_generators(self, pos, ops=None, tol=1e-2):
         """
         search generator for a special Wyckoff position
 
         Args:
-            G: space group number or Group object
-            wp: Wyckoff object
             pos: initial xyz position
+            ops: list of symops
+            tol: tolerance
 
         Return:
             pos1: the position that matchs the standard setting
@@ -2054,7 +2058,7 @@ class Wyckoff_position:
             diff -= np.round(diff)
             diff = np.abs(diff)
             #print(wp.letter, pos1, pos0, diff)
-            if diff.sum()<1e-2:
+            if diff.sum() < tol:
                 pos1 -= np.floor(pos1)
                 coords.append(pos1)
         return coords
@@ -3179,7 +3183,7 @@ def search_cloest_wp(G, wp, op, pos):
     closest match is (0.11, 0.11, 0.2)
 
     Args:
-        G: space group number or Group object
+        G: space group number 
         wp: Wyckoff object
         op: symmetry operation belonging to wp
         pos: initial xyz position
@@ -3196,7 +3200,8 @@ def search_cloest_wp(G, wp, op, pos):
         return pos
     else:
         # check if this is already matched
-        coords = wp.search_matched_positions(pos, G[0])
+        wp0 = G[0]
+        coords = wp.search_all_generators(pos, wp0)
         if len(coords)>0:
             diffs = []
             for coord in coords:
@@ -3213,7 +3218,6 @@ def search_cloest_wp(G, wp, op, pos):
 
         # if not match, search for the closest solution
         else:
-            wp0 = G[0]
             # extract all possible xyzs
             all_xyz = apply_ops(pos, wp0)[1:]
             dists = all_xyz - pos
@@ -3224,7 +3228,7 @@ def search_cloest_wp(G, wp, op, pos):
                 d = all_xyz[id] - pos
                 d -= np.round(d)
                 res = pos + d/2
-                if wp.search_matched_position(res, wp0) is not None:
+                if wp.search_generator(res, wp0) is not None:
                     #print(ds[id], pos, res)
                     return res
             return op.operate(pos)

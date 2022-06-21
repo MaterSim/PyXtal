@@ -28,7 +28,9 @@ def block_crystal(dim,
                   sites, 
                   conventional, 
                   tm,
-                  seed):
+                  seed,
+                  use_hall,
+                  ):
     
     # If block is None, directly generate mol. xtal.
     # Otherwise, generate crystal from building block
@@ -46,6 +48,7 @@ def block_crystal(dim,
                          conventional = conventional, 
                          tm = tm,
                          seed = seed,
+                         use_hall = use_hall,
                          )
         return struc
 
@@ -97,7 +100,9 @@ def block_crystal(dim,
                              torsions = torsions, 
                              sites = sites, 
                              conventional = conventional, 
-                             tm = tm)
+                             tm = tm,
+                             use_hall = use_hall,
+                             )
 
             if struc.valid:
                 break

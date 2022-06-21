@@ -195,13 +195,13 @@ class pyxtal:
             s = "\n------Crystal from {:s}------".format(self.source)
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
-            if not self.standard_setting:
-                if self.molecular:
-                    symbol = self.mol_sites[0].wp.get_hm_symbol()
-                else:
-                    symbol = self.atom_sites[0].wp.get_hm_symbol()
+            #if not self.standard_setting:
+            if self.molecular:
+                symbol = self.mol_sites[0].wp.get_hm_symbol()
             else:
-                symbol = self.group.symbol
+                symbol = self.atom_sites[0].wp.get_hm_symbol()
+            #else:
+            #    symbol = self.group.symbol
             s += "\nGroup: {} ({})".format(symbol, self.group.number)
             s += "\n{}".format(self.lattice)
             s += "\nWyckoff sites:"
@@ -273,6 +273,7 @@ class pyxtal:
         num_block = None,
         seed = None,
         tm = None,
+        use_hall = False,
     ):
         if self.molecular:
             prototype = "molecular"
@@ -303,6 +304,7 @@ class pyxtal:
                                       conventional = conventional,
                                       tm = tm,
                                       seed = seed,
+                                      use_hall = use_hall,
                                       )
             else:
                 struc = random_crystal(dim,
@@ -315,7 +317,9 @@ class pyxtal:
                                        lattice,
                                        sites,
                                        conventional,
-                                       tm)
+                                       tm,
+                                       use_hall = use_hall,
+                                       )
             if force_pass:
                 quit = True
                 break
@@ -461,7 +465,7 @@ class pyxtal:
                 wp = Wyckoff_position.from_group_and_letter(number, letter, style=style, hn=hn)
                 specie = site[0].specie.number
                 #if wp.index>0: print(wp)
-                pos1 = wp.search_matched_position(pos, self.group[0])
+                pos1 = wp.search_generator(pos, self.group[0])
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
@@ -1223,13 +1227,13 @@ class pyxtal:
         """
         Optimize the lattice if the cell has a bad inclination angles
         We first optimize the angle to some good-looking range.
-        In standard is true, force the structure to have the standard setting
+        If standard, force the structure to have the standard setting
         This only applies to monoclinic systems
 
         Args:
             iterations: maximum number of iterations
             force: whether or not do the early termination
-            standard:
+            standard: True or False
         """
         for i in range(iterations):
             lattice, trans, opt = self.lattice.optimize_once()
@@ -1239,7 +1243,7 @@ class pyxtal:
             else:
                 break
 
-        # only for monoclinic systems like P21/n
+        # QZ: to check spglib
         if standard and 3 <= self.group.number <= 15:
             if not self.standard_setting:
                 trans1 = self.lattice.get_permutation_matrices()
@@ -1266,13 +1270,13 @@ class pyxtal:
                     for tran in good_trans:
                         self.transform(tran)
                 else:
-                    msg = "Cannot find the standard setting"
                     print(self.lattice)
                     if self.molecular:
                         print(self.mol_sites[0].wp)
                     else:
                         print(self.atom_sites[0].wp)
-                    raise RuntimeError()
+                    msg = "Cannot find the standard setting"
+                    raise RuntimeError(msg)
 
 
     def get_std_representation(self, trans):
@@ -1338,6 +1342,7 @@ class pyxtal:
                 match_spg, match_hall = site.wp.update()
                 if not match_spg:
                     hall_numbers = [site.wp.hall_number]
+                    #site.wp.update_hall(hall_numbers)
             else:
                 if not match_spg:
                     site.wp.update_hall(hall_numbers)
@@ -1549,7 +1554,7 @@ class pyxtal:
             letter = wyc_sets['Transformed WP'][index].split()[id]
             wp = Wyckoff_position.from_group_and_letter(self.group.number, letter)
             pos = op.operate(site.position)
-            pos1 = wp.search_matched_position(pos, self.group[0])
+            pos1 = wp.search_generator(pos, self.group[0])
             if pos1 is not None:
                 new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
             else:
@@ -1590,7 +1595,7 @@ class pyxtal:
             #print("transition", letter1, '->', letter)
             wp = Wyckoff_position.from_group_and_index(self.group.number, letter)
             pos = op.operate(site.position)
-            pos1 = wp.search_matched_position(pos, self.group[0])
+            pos1 = wp.search_generator(pos, self.group[0])
             if pos1 is not None:
                 new_struc.atom_sites[i] = atom_site(wp, pos1, site.specie)
             else:

@@ -323,25 +323,27 @@ class TestOptLat(unittest.TestCase):
         self.assertTrue(sm.StructureMatcher().fit(pmg2, pmg3))
 
 
-    def test_molecular_diag(self):
-        sgs, diags = [5, 7, 8, 12, 13, 14], [True, False]
-        for diag in diags:
-            for i in range(20):
-                sg = choice(sgs)
-                c1 = pyxtal(molecular=True)
-                c1.from_random(3, sg, ["aspirin"]) #, diag=diag) 
+    def test_molecular_nonstd(self):
+        sgs = [5, 7, 8, 9, 12, 13, 14, 15]
+        c1 = pyxtal(molecular=True)
+        for sg in sgs:
+            hns = Hall(sg).hall_numbers 
+            for hn in hns[1:]:
+                c1.from_random(3, hn, ["aspirin"], use_hall=True) 
                 pmg1 = c1.to_pymatgen()
                 c2 = c1.copy()
                 c2.optimize_lattice(1)
                 pmg2 = c2.to_pymatgen()
                 self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
+                pmg3 = Structure.from_str(c1.to_file(), fmt='cif')
+                self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg3))
 
-    def test_molecular_nodiag(self):
+    def test_molecular(self):
         sgs = [5, 7, 8, 12, 13, 14]
+        c1 = pyxtal(molecular=True)
         for i in range(20):
             sg = choice(sgs)
-            c1 = pyxtal(molecular=True)
-            c1.from_random(3, sg, ["aspirin"]) #, diag=diag) 
+            c1.from_random(3, sg, ["aspirin"]) 
             pmg1 = c1.to_pymatgen()
             c2 = c1.copy()
             c2.optimize_lattice(1)
@@ -459,8 +461,8 @@ class TestWP(unittest.TestCase):
     def test_search_generator(self):
         wp = Group(167)[1]
         for pt in [[0, 0.13, 0.25], [0.13, 0, 0.25]]:
-            _, dist = wp.search_generator(pt)
-            self.assertTrue(dist<1e-3)
+            wp0 = wp.search_generator(pt)
+            self.assertTrue(wp0 is not None)
 
     def test_get_wyckoff(self):
         for i in [1, 2, 229, 230]:
@@ -1062,14 +1064,6 @@ class Test_operations(unittest.TestCase):
     def test_wyc_sets(self):
         for i in range(1, 229):
             res = Group(i, quick=True).get_alternatives()['No.']
-
-
-#class Test_io(unittest.TestCase):
-#    def test_wyc_sets(self):
-#        c1 = pyxtal(molecular=True)
-#        for name in ['', '']:
-#            c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
-#            c1.to_file()
 
 
 if __name__ == "__main__":

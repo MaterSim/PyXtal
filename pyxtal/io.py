@@ -59,8 +59,6 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
             symbol = struc.group.symbol
         else:
             symbol = sites[0].wp.get_hm_symbol()
-            #trans = sites[0].wp.get_transformation()
-            #G1.diagonalize_symops(trans, False)
 
     else: #P1 symmetry
         l_type = 'triclinic'

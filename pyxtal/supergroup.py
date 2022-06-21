@@ -987,7 +987,7 @@ class supergroup():
                 pos -= np.floor(pos)
                 if check:
                     #pos1 = wp.search_matched_position(sp.G[0], pos)
-                    pos1 = wp.search_matched_position(pos)
+                    pos1 = wp.search_generator(pos, sp.G[0])
                     if pos1 is not None:
                         site = atom_site(wp, pos1, sp.elements[i])
                         G_sites.append(site)
@@ -1008,7 +1008,7 @@ class supergroup():
                     pos = coords[count]
                     pos -= np.floor(pos)
                     #pos1 = wp.search_matched_position(sp.H[0], pos)
-                    pos1 = wp.search_matched_position(pos)
+                    pos1 = wp.search_generator(pos, sp.H[0])
                     if pos1 is not None:
                         site = atom_site(wp, pos1, elements[count])
                         G_sites.append(site)

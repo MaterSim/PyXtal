@@ -37,7 +37,7 @@ class representation():
         Args:
             struc: pyxtal object
         """
-        symmetry = [struc.group.number, struc.standard_setting]
+        symmetry = [struc.group.hall_number]
         lat = struc.lattice.encode()
         vector = [symmetry + lat]
         smiles = []
@@ -61,21 +61,21 @@ class representation():
             composition = [1] * len(smiles)
 
         inputs = [float(tmp) for tmp in inputs.split()]
-        g, diag = int(inputs[0]), int(inputs[1])
-        if g <= 2:
+        hn = int(inputs[0])
+        if hn <= 2:
             n_cell = 8
-        elif g <= 15:
+        elif hn <= 107:
             n_cell = 6
-        elif g <= 74:
+        elif hn <= 348:
             n_cell = 5
-        elif g <= 194:
+        elif hn <= 488:
             n_cell = 4
         else:
             n_cell = 3 #cubic
-        cell = [g, diag] + inputs[2:n_cell]
+        cell = [hn] + inputs[1:n_cell]
         
         x = [cell]
-        n_site = int(inputs[n_cell])
+        n_site = int(inputs[n_cell-1])
         if n_site != sum(composition):
             msg = "Composition is inconsistent: {:d}/{:d}\n".format(sum(composition), n_site)
             msg += str(inputs)
@@ -91,8 +91,9 @@ class representation():
                 else:
                     n_torsion = len(find_id_from_smile(smile))
                     n_mol = 7 + n_torsion
-                inputs[n_cell+n_mol-1] = int(inputs[n_cell+n_mol-1])
-                x.append(inputs[n_cell:n_cell+n_mol])
+                #inversion
+                inputs[n_cell+n_mol-2] = int(inputs[n_cell+n_mol-2])
+                x.append(inputs[n_cell-1:n_cell+n_mol-1])
                 n_cell += n_mol
         return cls(x, smiles)
  
@@ -120,22 +121,22 @@ class representation():
         # symmetry
         v = self.x[0]
         struc = pyxtal(molecular=True)
-        struc.group, number, struc.standard_setting = Group(v[0]), v[0], v[1]
+        struc.group, number = Group(v[0], use_hall=True), v[0]
     
         # lattice
         ltype = struc.group.lattice_type
         if ltype == 'triclinic':
-            a, b, c, alpha, beta, gamma = v[2], v[3], v[4], v[5], v[6], v[7]
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], v[4], v[5], v[6]
         elif ltype == 'monoclinic':
-            a, b, c, alpha, beta, gamma = v[2], v[3], v[4], 90, v[5], 90
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, v[4], 90
         elif ltype == 'orthorhombic':
-            a, b, c, alpha, beta, gamma = v[2], v[3], v[4], 90, 90, 90
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, 90, 90
         elif ltype == 'tetragonal':
-            a, b, c, alpha, beta, gamma = v[2], v[2], v[3], 90, 90, 90
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, 90, 90
         elif ltype == 'hexagonal':
-            a, b, c, alpha, beta, gamma = v[2], v[2], v[3], 90, 90, 120
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[2], 90, 90, 120
         else:
-            a, b, c, alpha, beta, gamma = v[2], v[2], v[2], 90, 90, 90
+            a, b, c, alpha, beta, gamma = v[1], v[1], v[1], 90, 90, 90
         try:
             struc.lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
         except:
@@ -158,8 +159,8 @@ class representation():
                 dicts['type'] = i
                 dicts['dim'] = 3
                 dicts['PBC'] = [1, 1, 1]
-                dicts['number'] = number
-                dicts['diag'] = struc.standard_setting
+                #dicts['number'] = number
+                dicts['hn'] = struc.group.hall_number
                 dicts['index'] = 0
                 dicts['lattice'] = struc.lattice.matrix
                 dicts['lattice_type'] = ltype
@@ -192,17 +193,17 @@ class representation():
             tag: string
         """
         x = self.x
-        strs = "{:3d} {:d} ".format(int(x[0][0]), int(x[0][1]))
+        strs = "{:3d} ".format(int(x[0][0]))
 
         # data for cell
-        if x[0][0] <= 74:
+        if x[0][0] <= 348:
             num = 5
-        elif x[0][0] <= 194:
+        elif x[0][0] <= 107:
             num = 4
         else:
             num = 3
 
-        for c in x[0][2:num]:
+        for c in x[0][1:num]:
             strs += "{:5.2f} ".format(c)
         for c in x[0][num:]:
             strs += "{:5.1f} ".format(c)
@@ -233,7 +234,7 @@ if __name__ == "__main__":
 
     #aspirin
     smiles = ['CC(=O)OC1=CC=CC=C1C(=O)O']
-    x = [[14,False,11.43,6.49,11.19,83.31],[0.77,0.57,0.53,48.55,24.31,145.94,-77.85,-4.40,170.86,False]]
+    x = [[81,11.43,6.49,11.19,83.31],[0.77,0.57,0.53,48.55,24.31,145.94,-77.85,-4.40,170.86,False]]
     #rep0 = representation(x, smiles)
     #print(rep0.to_string())
     rep1 = representation(x, smiles)
@@ -242,6 +243,6 @@ if __name__ == "__main__":
     rep2 = representation.from_pyxtal(xtal)
     print(rep2.to_pyxtal())
     print(rep2.to_string())
-    string = "14 0 11.43  6.49 11.19 83.31 1  0.77  0.57  0.53 48.55 24.31 145.9 -77.85 -4.40 170.9 0"
+    string = "82 11.43  6.49 11.19 83.31 1  0.77  0.57  0.53 48.55 24.31 145.9 -77.85 -4.40 170.9 0"
     rep3 = representation.from_string(string, smiles)
     print(rep3.to_pyxtal())

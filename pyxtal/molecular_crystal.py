@@ -44,6 +44,7 @@ class molecular_crystal:
             object to define the distances
         sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
         seed (optional): seeds
+        use_hall: False
     """
 
     def __init__(
@@ -61,6 +62,7 @@ class molecular_crystal:
         sites = None,
         conventional = True,
         seed = None,
+        use_hall = False,
     ):
 
         # Initialize
@@ -86,8 +88,9 @@ class molecular_crystal:
         if type(group) == Group:
             self.group = group
         else:
-            self.group = Group(group, dim=self.dim)
+            self.group = Group(group, dim=self.dim, use_hall=use_hall)
         self.number = self.group.number
+        self.hall_number = self.group.hall_number
 
         # Composition
         if numMols is None:

@@ -399,7 +399,7 @@ class mol_site:
         else:
             orientation = Orientation(np.eye(3))
 
-        g = dicts["number"]
+        g = dicts["hn"]
         index = dicts["index"]
         dim = dicts["dim"]
         wp = Wyckoff_position.from_group_and_index(g, index, dim, dicts["PBC"])
