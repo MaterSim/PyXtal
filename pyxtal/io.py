@@ -24,7 +24,7 @@ def in_merged_coords(wp, pt, pts, cell):
     (c, s) = pt
     for pt0 in pts:
         (c0, s0) = pt0
-        if s == s0 and wp.is_equivalent(c, c0, cell):
+        if s == s0 and wp.are_equivalent_pts(c, c0, cell):
             #print(c, c0, 'equivalent')
             return True
     return False

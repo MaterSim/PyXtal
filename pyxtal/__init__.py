@@ -965,7 +965,7 @@ class pyxtal:
                     dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
                     dis /= np.linalg.norm(dis)
                     pos0 += eps*dis*(np.random.random()-0.5)
-                    wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
+                    wp = Wyckoff_position.from_symops(ops2, h)
                     _site = mol_site(_mol, pos0, ori, wp, lattice)
                     _site.type = site.type
                     split_sites.append(_site)
@@ -982,7 +982,7 @@ class pyxtal:
                     dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
                     dis /= np.linalg.norm(dis)
                     pos0 += np.dot(eps*dis*(np.random.random()-0.5), self.lattice.inv_matrix)
-                    wp, _ = Wyckoff_position.from_symops(ops2, h, permutation=False)
+                    wp = Wyckoff_position.from_symops(ops2, h)
                     split_sites.append(atom_site(wp, pos0, site.specie))
 
             new_struc.atom_sites = split_sites

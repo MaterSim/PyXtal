@@ -101,8 +101,8 @@ class Hall:
 
     Args:
         spg_num: interger number between 1 and 230
-        style:
-        permutation:
+        style: spglib or pyxtal
+        permutation: allow permutation or not
     """
 
     def __init__(self, spgnum, style='pyxtal', permutation=False):
@@ -132,7 +132,8 @@ class Hall:
             elif hall_table['Spg_num'][id] > spgnum:
                 break
         if len(self.hall_numbers) == 0:
-            raise RuntimeError("hall numbers cannot be found, check input", spgnum)
+            msg = "hall numbers cannot be found, check input " + spgnum
+            raise RuntimeError(msg)
 
 # --------------------------- Group class -----------------------------
 class Group:
@@ -154,7 +155,7 @@ class Group:
     4b	site symm: 2/m..
     4a	site symm: 2/m..
 
-    one can access data from attributes such as `symbol`, `number` and `Wyckoff_positions`
+    one can access data such as `symbol`, `number` and `Wyckoff_positions`
 
     >>> g.symbol
     'Cmce'
@@ -282,9 +283,12 @@ class Group:
             ]
 
             # A list of Wyckoff_positions sorted by descending multiplicity
-            self.Wyckoff_positions = [Wyckoff_position.from_dict(wpdict) for wpdict in wpdicts]
+            self.Wyckoff_positions = []
+            for wpdict in wpdicts:
+                wp = Wyckoff_position.from_dict(wpdict)
+                self.Wyckoff_positions.append(wp)
 
-            # A 2D list of Wyckoff_position objects, grouped and sorted by multiplicity
+            # A 2D list of WP objects, grouped and sorted by multiplicity
             self.wyckoffs_organized = organized_wyckoffs(self)
 
 
@@ -982,7 +986,8 @@ class Group:
         Returns:
             list of possible paths ordered from H to G
         """
-        paths = Group(G, quick=True).search_supergroup_paths(self.number, max_layer=max_layer)
+        tmp = Group(G, quick=True)
+        paths = tmp.search_supergroup_paths(self.number, max_layer=max_layer)
         for p in paths:
             p.reverse()
             p.append(G)
@@ -1035,8 +1040,8 @@ class Group:
         Return:
             a list of (g_types, subgroup_id, spg_number, wp_list (optional))
         """
-
-        potential=[[(None, None, self.number, [str(self[index].multiplicity)+self[index].letter])]]
+        label = [str(self[index].multiplicity) + self[index].letter]
+        potential=[[(None, None, self.number, label)]]
         solutions=[]
 
         for step in range(max_steps):
@@ -1069,7 +1074,7 @@ class Group:
         Find a short path to turn the spcical wp to general position
 
         Args:
-            index:
+            index: index of the wp
         """
         for i in range(1, 5):
             paths = self.path_to_general_wp(index, max_steps=i)
@@ -1174,7 +1179,7 @@ class Group:
     @classmethod
     def list_groups(cls, dim=3):
         """
-        Function for quick print of groups and symbols
+        Function for quick print of groups and symbols.
 
         Args:
             group: the group symbol or international number
@@ -1190,7 +1195,8 @@ class Group:
             0: "point_group",
         }
         data = symbols[keys[dim]]
-        df = pd.DataFrame(index=range(1, len(data) + 1), data=data, columns=[keys[dim]])
+        index = range(1, len(data) + 1)
+        df = pd.DataFrame(index=index, data=data, columns=[keys[dim]])
         pd.set_option("display.max_rows", len(df))
         print(df)
 
@@ -1227,34 +1233,6 @@ class Wyckoff_position:
             wp.set_generators()
             wp.set_ops()
         return wp
-
-    def set_ops(self):
-        self.ops = self.get_ops_from_generators()
-
-    def get_ops_from_generators(self):
-        """
-        Get symmetry operation from the generators
-        """
-        # Get the position for the 1st site
-        ops1 = []
-        if self.index > 0:
-            if self.P1 is not None and not identity_ops(self.P1):
-                for op in self.ops:
-                    rot_P = self.P[0].T
-                    rot_Q = self.P1[0].T
-                    tran_P = self.P[1]
-                    # R = Q * R * P, suitable when P = {a-c, b, c}
-                    tran = rot_Q.dot(op.translation_vector) - tran_P
-                    rot = rot_Q.dot(op.rotation_matrix).dot(rot_P)
-                    op0 = SymmOp.from_rotation_and_translation(rot, tran)
-                    ops1.append(op0)
-                    #print(op0.as_xyz_string())
-                ops1 = trim_ops(ops1)
-            else:
-                op0 = self.ops[0]
-        else:
-            ops1 = self.generators
-        return ops1
 
 
     def from_group_and_letter(group, letter, dim=3, style='pyxtal', hn=None):
@@ -1348,67 +1326,42 @@ class Wyckoff_position:
         Returns:
             `Wyckoff_position`
         """
-        hall_num, spg_num = get_symmetry_from_ops(ops)
+        _, spg_num = get_symmetry_from_ops(ops)
         wp = Wyckoff_position.from_group_and_index(spg_num, 0)
         if isinstance(ops[0], str):
             ops = [SymmOp.from_xyz_string(op) for op in ops]
         wp.ops = ops
         match_spg, match_hm = wp.update()
-        print("match_spg", match_spg, "match_hall", match_hm)
+        #print("match_spg", match_spg, "match_hall", match_hm)
         return wp
 
 
-    def from_symops(ops, group=None, permutation=True):
+    def from_symops(ops, G):
         """
         search Wyckoff Position by symmetry operations
-        Now only supports space group symmetry
+        
 
         Args:
             ops: a list of symmetry operations
-            group: the space group number or Group object
-            permutation: whether or not allow permutation in the search
+            G: the Group object
 
         Returns:
             `Wyckoff_position`
 
         """
-        if group is None:
-            hall_num, group = get_symmetry_from_ops(ops)
-            #print(group)
-
         if isinstance(ops[0], str):
-            str1 = ops
+            ops = [SymmOp.from_xyz_string(op) for op in ops]
+    
+        for wp in G:
+            if wp.has_equivalent_ops(ops):
+                return wp
+        
+        if isinstance(ops[0], str):
+            print(ops)
         else:
-            str1 = [op.as_xyz_string() for op in ops]
-
-        str1 = [st.replace("-1/2","+1/2") for st in str1]
-
-        N_sym = len(str1)
-        if permutation:
-            permutations = [[0,1,2],[1,0,2],[2,1,0],[0,2,1]]
-        else:
-            permutations = [[0,1,2]]
-
-        if not isinstance(group, Group):
-            G_ops = Group(group)
-        else:
-            G_ops = group
-
-        for wp in G_ops:
-            if len(wp) == N_sym:
-                # Try permutation first
-                str2 = [op.as_xyz_string() for op in wp.ops]
-                for perm in permutations:
-                    str_perm = swap_xyz_string(str1, perm)
-                    # Compare the pure rotation and then
-                    if set(str_perm) == set(str2):
-                        return wp, perm
-
-            elif len(wp) < N_sym:
-                continue #break
-
-        return None, None
-
+            for op in ops:
+                print(op.as_xyz_string())
+        raise RuntimeError("Cannot find the right wp")
 
     def from_index_quick(self, wyckoffs, index, P=None, P1=None):
         """
@@ -1501,34 +1454,33 @@ class Wyckoff_position:
         return Wyckoff_position.from_group_and_index(g, index, dim)#, trans=trans)
 
     #=============================Updates===========================
-    def reset_translation(self):
+    def set_ops(self):
+        self.ops = self.get_ops_from_transformation()
+
+    def get_ops_from_transformation(self):
         """
-        After transformation, it is possible that the first generator
-        becomes [x+1/2, y+1/2, z+1/2], in this case we convert it
-        to [x, y, z] by applying the uniform translation
-
-        QZ: we need to do the same to handle permutation
+        Get symmetry operation from the generators
         """
-        #if not hasattr(self, 'generators'): self.set_generators()
-        #ops = self.generators
-
-        # we don't change for cases like (0, y, 0)
-        # This is only needed when
-        base = self.ops[0].translation_vector
-        if np.linalg.norm(base) > 0:
-            if self.index == 0:
-                for i, op in enumerate(self.ops):
-                    #print(op.as_xyz_string())
-                    #print(op.affine_matrix)
-                    inv = np.linalg.inv(op.affine_matrix)
-                    trans = inv[:3, 3] + base
-                    #rot_gen = op.rotation_matrix
-                    #self.generators[i] = SymmOp.from_rotation_and_translation(rot_gen, trans)
-                    rot_ops = self.ops[i].rotation_matrix
-                    self.ops[i] = SymmOp.from_rotation_and_translation(rot_ops, trans)
-                # for general position only
-                self.generators = self.ops
-
+        # Get the position for the 1st site
+        ops1 = []
+        if self.index > 0:
+            if self.P1 is not None and not identity_ops(self.P1):
+                for op in self.ops:
+                    rot_P = self.P[0].T
+                    rot_Q = self.P1[0].T
+                    tran_P = self.P[1]
+                    # R = Q * R * P, suitable when P = {a-c, b, c}
+                    tran = rot_Q.dot(op.translation_vector) - tran_P
+                    rot = rot_Q.dot(op.rotation_matrix).dot(rot_P)
+                    op0 = SymmOp.from_rotation_and_translation(rot, tran)
+                    ops1.append(op0)
+                    #print(op0.as_xyz_string())
+                ops1 = trim_ops(ops1)
+            else:
+                op0 = self.ops[0]
+        else:
+            ops1 = self.generators
+        return ops1
 
     def update(self):
         """
@@ -1599,7 +1551,6 @@ class Wyckoff_position:
         return False
 
 
-
     def transform_from_matrices(self, trans):
         """
         Args:
@@ -1635,26 +1586,6 @@ class Wyckoff_position:
             if update:
                 self.update_hall()
 
-
-    def transform_from_hall(self, ops, rot, trans):
-        """
-        Transform the symmetry operation according to hall number
-        We don't consider permutation so far
-
-        Args:
-            rot: 3*3 rotation matrix
-            trans: 1*3 translation vector
-        """
-        #ops = self.ops
-        for j, op in enumerate(ops):
-            vec1 = op.translation_vector.dot(rot) + trans
-            vec1 -= np.floor(vec1)
-            rot1 = op.rotation_matrix
-            op1 = op.from_rotation_and_translation(rot1, vec1)
-            ops[j] = op1
-            #print(op.translation_vector, vec1)
-        return ops
-
     def equivalent_set(self, index):
         """
         Transform the wp to another equivalent set.
@@ -1682,6 +1613,20 @@ class Wyckoff_position:
             op = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0])
             ops.append(op)
         return ops
+
+    def get_site_symmetry(self):
+        if self.euclidean:
+            ops = self.get_euclidean_symmetries()
+        else:
+            ops = self.symmetry[0]
+        self.site_symm = ss_string_from_ops(ops, self.number, dim=self.dim)
+
+    def get_hm_number(ops, tol=1e-5):
+        if self.index == 0:
+            return get_symmetry_from_ops(self.ops, tol)[0]
+        else:
+            print(self)
+            raise ValueError("input must be general position")
 
     def get_hm_symbol(self):
         """
@@ -1721,22 +1666,6 @@ class Wyckoff_position:
                         return [1]
                     elif self.ops[0].rotation_matrix[0,0] != 1:
                         return [0]
-
-
-    def get_hall_number(ops, tol=1e-5):
-        if self.index == 0:
-            return get_symmetry_from_ops(self.ops, tol)[0]
-        else:
-            print(self)
-            raise ValueError("input must be general position")
-
-    def get_site_symmetry(self):
-        if self.euclidean:
-            ops = self.get_euclidean_symmetries()
-        else:
-            ops = self.symmetry[0]
-        self.site_symm = ss_string_from_ops(ops, self.number, dim=self.dim)
-
 
     def get_euclidean_symmetries(self):
         """
@@ -1805,48 +1734,31 @@ class Wyckoff_position:
         wp2 = Group(self.number)[self.index]
         return self.has_equivalent_ops(wp2)
 
-    def has_equivalent_ops(self, wp2):
+    def has_equivalent_ops(self, wp2, tol=1e-3):
         """
         check if two wps are equivalent
+
+        Args:
+            wp2: wp object or list of operations
         """
         if type(wp2) == list:
             ops0 = wp2
         else:
             ops0 = wp2.ops
+
         if len(ops0) == len(self.ops):
-            if self.get_dof() == 0:
-                #The following situation may occur
-                #3/4, 3/4, 1/4        1/4, 1/4, 3/4
-                #1/4, 3/4, 1/4  --->  3/4, 1/4, 3/4
-                #1/4, 1/4, 3/4  --->  3/4, 3/4, 1/4
-                #3/4, 1/4, 3/4        1/4, 3/4, 1/4
-                for op0 in ops0:
-                    nomatch = True
-                    vec0 = op0.translation_vector
-                    for op1 in self.ops:
-                        vec1 = op1.translation_vector
-                        diff = vec1 - vec0
-                        diff -= np.round(diff)
-                        if np.abs(diff).sum() < 1e-3:
-                            nomatch = False
-                            break
-                    if nomatch:
-                        return False
+            count = 0
+            for i, op0 in enumerate(ops0):
+                for j, op1 in enumerate(self.ops):
+                    diff0 = op0.translation_vector - op1.translation_vector
+                    diff0 -= np.round(diff0)
+                    diff1 = op0.rotation_matrix - op1.rotation_matrix
+                    if max([np.abs(diff0).sum(), np.abs(diff1).sum()]) < tol:
+                        count += 1
+            if count == len(ops0):
                 return True
             else:
-                # More general cases
-                count = 0
-                for i, op0 in enumerate(ops0):
-                    for j, op1 in enumerate(self.ops):
-                        diff0 = op0.translation_vector - op1.translation_vector
-                        diff0 -= np.round(diff0)
-                        diff1 = op0.rotation_matrix - op1.rotation_matrix
-                        if np.abs(diff0).sum() < 1e-3 and np.abs(diff1).sum() < 1e-3:
-                            count += 1
-                if count == len(ops0):
-                    return True
-                else:
-                    return False
+                return False
         else:
             return False
 
@@ -1901,121 +1813,6 @@ class Wyckoff_position:
         return self, np.zeros(3)
 
 
-    def wyckoff_from_generating_op(gen_op, gen_pos):
-        """
-        Given a general position and generating operation (ex: "x,0,0"), returns
-        a Wyckoff_position object.
-
-        Args:
-            gen_op: a SymmOp into which the generating coordinate will be plugged
-            gen_pos: a list of SymmOps representing the general position
-
-        Returns:
-            a list of SymmOps
-        """
-
-        def is_valid_generator(op):
-            m = op.affine_matrix
-            # Check for x,y+ax,z+bx+cy format
-            # Make sure y, z are not referred to before second and third slots
-            if (np.array([m[0][1], m[0][2], m[1][2]]) != 0.0).any():
-                if (np.array([m[2][0], m[2][1], m[1][0]]) != 0.0).any():
-                    return False
-            for i in range(0, 3):
-                # Check for translation
-                if m[i][i] != 0 and m[i][3] != 0:
-                    return False
-                # Check that x, y, z are present in desired spot and positive
-                if np.linalg.norm(m[:, i]) > 0:
-                    if m[i][i] == 0:
-                        return False
-            return True
-
-        def filter_zeroes(op):
-            m = op.affine_matrix
-            m2 = m
-            for i, x in enumerate(m):
-                for j, y in enumerate(x):
-                    if np.isclose(y, 0, atol=1e-3):
-                        m2[i][j] = 0
-            return SymmOp(m2)
-
-        Identity = SymmOp.from_xyz_string("x,y,z")
-        # new_ops = [filter_zeroes(op*gen_op) for op in gen_pos]
-        new_ops = [
-            filter_zeroes(SymmOp(np.dot(op.affine_matrix, gen_op.affine_matrix)))
-            for op in gen_pos
-        ]
-
-        # Remove redundant ops
-        op_list = []
-        for op1 in new_ops:
-            passed = True
-            for op2 in op_list:
-                if np.allclose(op1.affine_matrix, op2.affine_matrix):
-                    passed = False
-                    break
-            if passed is True:
-                op_list.append(op1)
-
-        # Check for identity op
-        if Identity in op_list:
-            index = op_list.index(Identity)
-            op2 = op_list[0]
-            op_list[index] = op2
-            op_list[0] = Identity
-            return op_list
-
-        # Check for generating op
-        found = False
-        for op in op_list:
-            if is_valid_generator(op):
-                # Place generating op at beginning of list
-                index = op_list.index(op)
-                op2 = op_list[0]
-                op_list[index] = op2
-                op_list[0] = op
-                found = True
-                break
-        if found is False:
-            printx("Error: Could not find generating op.", priority=0)
-            printx("gen_op: ")
-            printx(str(gen_op))
-            printx("gen_pos: ")
-            printx(str(gen_pos))
-            return op_list
-
-        # Make sure first op is normalized
-        m = op_list[0].affine_matrix
-        x_factor = 1
-        y_factor = 1
-        z_factor = 1
-        if m[0][0] != 0:
-            if m[0][0] != 1:
-                x_factor = m[0][0]
-        if m[1][1] != 0:
-            if m[1][1] != 1:
-                y_factor = m[1][1]
-        if m[2][2] != 0:
-            if m[2][2] != 1:
-                z_factor = m[2][2]
-        new_list = []
-        for op in op_list:
-            m = op.affine_matrix
-            m2 = m
-            m2[:, 0] = m2[:, 0] / x_factor
-            m2[:, 1] = m2[:, 1] / y_factor
-            m2[:, 2] = m2[:, 2] / z_factor
-            new_list.append(SymmOp(m2))
-
-        return new_list
-
-    def symmetry_from_wyckoff(wp, gen_pos):
-        symm = []
-        for op in wp:
-            symm.append(site_symm(op, gen_pos))
-        return symm
-
     def print_ops(self, ops=None):
         if ops is None:
             ops = self.ops
@@ -2028,7 +1825,7 @@ class Wyckoff_position:
         """
         return self.Wyckoff_positions[0]
 
-    def is_equivalent(self, pt1, pt2, cell=np.eye(3), tol=0.05):
+    def are_equivalent_pts(self, pt1, pt2, cell=np.eye(3), tol=0.05):
         """
         Check two pts are equivalent
         """
@@ -2166,6 +1963,43 @@ class Wyckoff_position:
                 convert = True
         self.euclidean = convert
 
+    def search_generator(self, pt, lattice=np.eye(3)):
+        """
+        For a given special wp, (e.g., [(x, 0, 1/4), (0, x, 1/4)]),
+        return the first position according to the symmetry operation
+        QZ: check if it is the same as search_matched_position
+
+        Args:
+            pt: 1*3 vector
+            lattice: 3*3 matrix
+
+        Returns:
+            pt: the best matched pt
+            diff: numerical difference
+
+        """
+        if self.index == 0: #general sites
+            return pt, 0
+
+        else:
+            d = []
+
+            if self.get_dof == 0: #fixed site like [0, 0, 0]
+                pts = self.apply_ops(pt)
+                for p0 in pts:
+                    d.append(distance(p0, lattice, PBC=self.PBC))
+
+            else: # sites like (x, 0, 0)
+                wp0 = Group(self.number)[0]
+                pts = wp0.apply_ops(pt)
+                op = self.ops[0]
+                for i, p0 in enumerate(pts):
+                    coord = op.operate(p0)-p0
+                    d.append(distance(coord, lattice, PBC=self.PBC))
+            #print(d)
+            d = np.array(d)
+            return pts[np.argmin(d)], np.min(d)
+
     def search_matched_position(self, pos, ops=None):
         """
         search generator for a special Wyckoff position
@@ -2209,7 +2043,8 @@ class Wyckoff_position:
         Return:
             pos1: the position that matchs the standard setting
         """
-        if ops is None: ops = get_wyckoffs(self.number, dim=self.dim)[0]
+        if ops is None: 
+            ops = get_wyckoffs(self.number, dim=self.dim)[0]
 
         coords = []
         for op in ops:
@@ -2230,42 +2065,6 @@ class Wyckoff_position:
         apply symmetry operation
         """
         return apply_ops(pt, self.ops)
-
-    def search_generator(self, pt, lattice=np.eye(3)):
-        """
-        For a given special wp, (e.g., [(x, 0, 1/4), (0, x, 1/4)]),
-        return the first position according to the symmetry operation
-
-        Args:
-            pt: 1*3 vector
-            lattice: 3*3 matrix
-
-        Returns:
-            pt: the best matched pt
-            diff: numerical difference
-
-        """
-        if self.index == 0: #general sites
-            return pt, 0
-
-        else:
-            d = []
-
-            if self.get_dof == 0: #fixed site like [0, 0, 0]
-                pts = self.apply_ops(pt)
-                for p0 in pts:
-                    d.append(distance(p0, lattice, PBC=self.PBC))
-
-            else: # sites like (x, 0, 0)
-                wp0 = Group(self.number)[0]
-                pts = wp0.apply_ops(pt)
-                op = self.ops[0]
-                for i, p0 in enumerate(pts):
-                    coord = op.operate(p0)-p0
-                    d.append(distance(coord, lattice, PBC=self.PBC))
-            #print(d)
-            d = np.array(d)
-            return pts[np.argmin(d)], np.min(d)
 
 
     def project(self, point, cell=np.eye(3), PBC=[1, 1, 1], id=0):
@@ -2322,7 +2121,7 @@ class Wyckoff_position:
 
 # --------------------------- Wyckoff Position selection  -----------------------------
 
-def choose_wyckoff(group, number=None, site=None, dim=3):
+def choose_wyckoff(G, number, site=None, dim=3):
     """
     Choose a Wyckoff position to fill based on the current number of atoms
     needed to be placed within a unit cell
@@ -2332,7 +2131,7 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
         2) We prefer positions with large multiplicity.
 
     Args:
-        group: a pyxtal.symmetry.Group object
+        G: a pyxtal.symmetry.Group object
         number: the number of atoms still needed in the unit cell
         site: the pre-assigned Wyckoff sites (e.g., 4a)
 
@@ -2341,9 +2140,9 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
     """
 
     if site is not None:
-        return Wyckoff_position.from_group_and_letter(group.number, site, dim)
+        return Wyckoff_position.from_group_and_letter(G.number, site, dim)
     else:
-        wyckoffs_organized = group.wyckoffs_organized
+        wyckoffs_organized = G.wyckoffs_organized
 
         if random.uniform(0, 1) > 0.5:  # choose from high to low
             for wyckoff in wyckoffs_organized:
@@ -2361,7 +2160,7 @@ def choose_wyckoff(group, number=None, site=None, dim=3):
             else:
                 return False
 
-def choose_wyckoff_molecular(group, number, site, orientations, general_site=True, dim=3):
+def choose_wyckoff_mol(G, number, site, orientations, gen_site=True, dim=3):
     """
     Choose a Wyckoff position to fill based on the current number of molecules
     needed to be placed within a unit cell
@@ -2373,20 +2172,20 @@ def choose_wyckoff_molecular(group, number, site, orientations, general_site=Tru
         3) The site must admit valid orientations for the desired molecule.
 
     Args:
-        group: a pyxtal.symmetry.Group object
+        G: a pyxtal.symmetry.Group object
         number: the number of molecules still needed in the unit cell
-        orientations: the valid orientations for a given molecule. Obtained
-            from get_sg_orientations, which is called within molecular_crystal
+        orientations: the valid orientations for a given molecule. 
+        gen_site: general WP only
 
     Returns:
         Wyckoff position. If no position is found, returns False
     """
-    wyckoffs = group.wyckoffs_organized
+    wyckoffs = G.wyckoffs_organized
 
     if site is not None:
-        return Wyckoff_position.from_group_and_letter(group.number, site, dim)
+        return Wyckoff_position.from_group_and_letter(G.number, site, dim)
 
-    elif general_site or np.random.random() > 0.5:  # choose from high to low
+    elif gen_site or np.random.random() > 0.5:  # choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
                 good_wyckoff = []
@@ -2500,7 +2299,7 @@ def op_translation(op, tran):
 
 def are_equivalent_ops(op1, op2, tol=1e-2):
     """
-    check if two ops are equivalent
+    check if two ops are equivalent, assuming the same ordering
     """
     diff = op1.affine_matrix - op2.affine_matrix
     diff[:,3] -= np.round(diff[:,3])
@@ -2517,11 +2316,9 @@ def letter_from_index(index, group, dim=3):
     and letter e.g. '4a'
 
     Args:
-        index: a single integer describing the WP's index within the
-            spacegroup (0 is the general position)
+        index: WP's index (0 is the general position)
         group: an unorganized Wyckoff position array or Group object (preferred)
-        dim: the periodicity dimension of the symmetry group. Used for
-            consideration of "o" Wyckoff positions in point groups.
+        dim: the periodicity dimension of the symmetry group.
 
     Returns:
         the Wyckoff letter corresponding to the Wyckoff position (for example,
@@ -2544,18 +2341,15 @@ def letter_from_index(index, group, dim=3):
 
 def index_from_letter(letter, group, dim=3):
     """
-    Given the Wyckoff letter, returns the index of a Wyckoff position within
-    the spacegroup
+    Given the Wyckoff letter, returns the index of a Wyckoff position.
 
     Args:
         letter: The wyckoff letter
         group: an unorganized Wyckoff position array or Group object (preferred)
-        dim: the periodicity dimension of the symmetry group. Used for consideration
-            of "o" Wyckoff positions in point groups. Not used if group is a Group
+        dim: the periodicity dimension of the symmetry group. 
 
     Returns:
-        a single index specifying the location of the Wyckoff position within
-        the spacegroup (0 is the general position)
+        a single index specifying the location of the Wyckoff position.
     """
     letters1 = letters
     # See whether the group has an "o" Wyckoff position
@@ -2993,8 +2787,8 @@ def get_wyckoffs(num, organized=False, dim=3):
     For an organized list:
 
         - 1st index: specifies multiplicity (0 is the largest multiplicity)
-        - 2nd index: corresponds to a WP within the group of equal multiplicity.
-        - 3nd index: corresponds to a SymmOp object within the Wyckoff position
+        - 2nd index: a WP within the group of equal multiplicity.
+        - 3nd index: a SymmOp object within the Wyckoff position
 
     You may switch between organized and unorganized lists using the methods
     i_from_jk and jk_from_i. For example, if a Wyckoff position is the [i]
@@ -3802,3 +3596,4 @@ def trim_ops(ops):
 #op = SymmOp.from_xyz_string('1/8, y+1/8, -y+1/8')
 #op = SymmOp.from_xyz_string(['x+1/8,x+1/8,z+1/8', '')
 #print(trim_op(op).as_xyz_string())
+#from_symops(ops, group=None, permutation=True)

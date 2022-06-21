@@ -15,9 +15,11 @@ Available Tools in PyXtal
 
 PyXtal includes the following functions:
 
-- `Group <pyxtal.symmetry.html#pyxtal.symmetry.Group>`_ class
+- `Group <pyxtal.symmetry.html#pyxtal.symmetry.Group>`_
 - `Wyckoff_position <pyxtal.symmetry.html#pyxtal.symmetry.Wyckoff_position>`_
 - `pyxtal_molecule <pyxtal.molecule.html#pyxtal.molecule.pyxtal_molecule>`_
+- `Lattice <pyxtal.lattice.html#pyxtal.lattice.Lattice>`_
+- `Tol_matrix <pyxtal.tolerance.html#pyxtal.tolerance.Tol_matrix>`_
 
 pyxtal.symmetry.Group
 ~~~~~~~~~~~~~~~~~~~~~
@@ -42,12 +44,12 @@ can be accessed directly as follows:
     True
 
 
-It is important to note that one space group may have multiple settings. To
-avoid the ambiguity, Hall introduced the explicit-origin space group notation.
-Following the Hall notation, there exist 530 Concise space groups. The full
-list is available
+It is important to note that one space group may have multiple settings (see the
+`Settings <Settings.html>`_ page for details). To avoid the ambiguity, Hall
+introduced the explicit-origin space group notation. Following the Hall notation,
+there exist 530 Concise space groups. The full list is available
 `online <http://cci.lbl.gov/sginfo/itvb_2001_table_a1427_hall_symbols.html>`_.
-In PyXtal, we also the initialization of space group according to the hall number.
+In PyXtal, we also the initialization of space group according to Hall number.
 Below shows an example to create the Group object of ``Fd-3m (227)``
 with the choice 1 of origin.
 
@@ -170,18 +172,22 @@ and a translation vector (``op.translation``), and is represented by a 4x4 affin
 matrix (``op.affine_matrix``).
 
 For a given symmetry group, each Wyckoff position is a subgroup of the general
-Wyckoff position. As a result, each Wyckoff position requires some point group
-symmetry for a molecule to occupy it. This symmetry can be accessed using
-``g.w_symm``. This returns a nested list, where the first index specifies a
-Wyckoff position, the second index specifies a point within that Wyckoff
-position, and the third index specifies a list of symmetry operations
-corresponding to that point. This list of operations can then be used to check
-whether a given molecule is consistent with a given Wyckoff position.
+Wyckoff position.
+
+.. only:: comment
+
+    As a result, each Wyckoff position requires some point group
+    symmetry for a molecule to occupy it. This symmetry can be accessed using
+    ``g.w_symm``. This returns a nested list, where the first index specifies a
+    Wyckoff position, the second index specifies a point within that Wyckoff
+    position, and the third index specifies a list of symmetry operations
+    corresponding to that point. This list of operations can then be used to check
+    whether a given molecule is consistent with a given Wyckoff position.
+
 
 As displayed in the example above, the Wyckoff position ``4b`` has site symmetry
  ``..2``. In this example, ``.`` denotes no symmetry about the x and y axes, and
   ``2`` denotes a 2-fold rotation about the z axis in Hermann-Mauguin notation.
-The symbols do not always follow this ``x,y,z`` format.
 For more information on reading these symbols,
 see https://en.wikipedia.org/wiki/Hermann%E2%80%93Mauguin_notation.
 
@@ -191,7 +197,7 @@ pyxtal.molecule.pyxtal_molecule
 
 There are four options for defining molecules within Pyxtal. First, you need to
 import the
-`pyxtal_molecule <https://pyxtal.readthedocs.io/en/latest/pyxtal.molecule.html#pyxtal.molecule.pyxtal_molecule>`_ class,
+`pyxtal_molecule <pyxtal.molecule.html#pyxtal.molecule.pyxtal_molecule>`_ class,
 
 .. code-block:: Python
 
@@ -251,8 +257,7 @@ Note that the current code is designed for version no later than ``2021.09.2``.
     mol = pyxtal_molecule('CC(=O)NC1=CC=CC=C1C(=O)N.smi')
 
 
-After the molecule is defined, its point group will also be parsed, one can
-access this information by:
+After the molecule is defined, its point group will also be parsed:
 
 .. code-block:: Python
 
@@ -268,10 +273,67 @@ access this information by:
     1a	site symm: mm2 . .
 
 
+Lattices
+~~~~~~~~
+
+It is possible to supply your own unit cell lattice for a random crystal,
+via the `Lattice <pyxtal.crystal.html#pyxtal.crystal.Lattice>`_ class.
+You can define a lattice using either a 3x3 matrix, or 6 cell parameters:
+
+.. code-block:: Python
+
+    from pyxtal.lattice import Lattice
+    l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
+    l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
+
+Here, both ``l1`` and ``l2`` describe the same lattice.
+In this case, it is an orthorhombic lattice with lengths 4.08, 9.13, and 5.50 Angstrom,
+which is the unit cell for common water ice. The lattice parameters are,
+in order: (a, b, c, :math:`\alpha, \beta, \gamma`).
+a, b, and c are the lengths of the lattice vectors;
+:math:`\alpha, \beta, \gamma` are the angles (in degrees) between these vectors.
+
+
+pyxtal.tolerance.Tol_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When generating random crystals, PyXtal performs inter-atomic distances checks
+to make sure the atoms are not too close together. By default, the covalent
+radius is used as a basis. However, the user may also define their own criteria
+using the `Tol_matrix <pyxtal.crystal.html#pyxtal.crystal.Tol_matrix>`_ class.
+To do this, initialize a ``Tol_matrix`` object using one of the built-in methods.
+
+.. code-block:: Python
+
+    from pyxtal.tolerance import Tol_matrix
+    tol_m_1 = Tol_matrix(prototype="molecular", factor=2.0)
+    tol_m_2 = Tol_matrix.from_radii(some_custom_list_of_atomic_radii)
+    tol_m_3 = Tol_matrix.from_matrix(some_custom_2D_tolerance_matrix)
+
+From here, you can alter the tolerance between certain inter-atomic pairs.
+Additionally, you can save and reload custom Tol_matrix objects for later use:
+
+.. code-block:: Python
+
+    >>> tol_m_1.set_tol('C', 'N', 2.1)
+    >>> tol_m_1.set_tol(1, 3, 4.6)
+    >>> tol_m_1.to_file("custom_matrix_file")
+    'Output file to custom_matrix_file.npy'
+    >>> reloaded_tol_matrix = Tol_matrix.from_file("custom_matrix_file.npy")
+    >>> print(reloaded_tol_matrix)
+    --Tol_matrix class object--
+      Prototype: molecular
+      Atomic radius type: covalent
+      Radius scaling factor: 2.4
+      Custom tolerance values:
+        C, N: 2.1
+        H, Li: 4.6
+
 
 
 Crystal structure generation
 ----------------------------
+
 First, one can always load an existing crystal from a given file path. Assuming
 there is a file.
 
@@ -282,19 +344,18 @@ there is a file.
     my_crystal.from_seed(seed=cif_file, style='spglib')
 
 
-
 The most important feature of PyXtal is to generate the trial structure
 according to customized factors such as space group, cell parameters, partial
 occupation. Below we describe the supports on handling different systems from
 atomic to molecular, and from 1D to 3D.
 
 
-3D Atomic Crystals
-~~~~~~~~~~~~~~~~~~
+Atomic Crystals
+~~~~~~~~~~~~~~~
 
 PyXtal allows the user to generate random crystal structures with given symmetry
- constraints. There are several parameters which can be specified, but only
- three are necessary:
+constraints. There are several parameters which can be specified, but only three
+are necessary:
 
 - the symmetry group,
 - the types of atoms,
@@ -334,11 +395,53 @@ would create a random BaTiO3 crystal. If the generation is successful, the value
 of ``my_crystal.valid`` will be set to ``True``;
 otherwise, it will be ``False``.
 
+
+Molecular Crystals
+~~~~~~~~~~~~~~~~~~
+
+3D Molecular crystals are generated in the same way as atomic crystals,
+but atomic species are replaced with (rigid) molecules.
+
+.. code-block:: Python
+
+    my_crystal = pyxtal(molecular=True)
+    my_crystal.from_random(3, 36, ['H2O'], [4])
+
+    ------Random Molecular Crystal------
+    Dimension: 3
+    Group: Cmc21
+    Volume factor: 1.0
+    orthorhombic lattice:   5.6448   6.3389   4.4262  90.0000  90.0000  90.0000
+    Wyckoff sites:
+    	H2 O1 @ [ 0.000  0.596  0.986]  Wyckoff letter:  4a, Site symmetry m.. ==> Rotvec: -0.343  0.000  0.000
+
+
+This would give a crystal with space group 36, 4 molecules in the conventional
+unit cell.
+
+There are a few other parameters which may be passed to the class. See the
+`documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular
+importance is the variable allow_inversion=False. By default, chiral molecules
+will not be flipped or inverted while generating the crystal. This is because
+a chiral molecule's mirror image may have different chemical properties,
+especially in a biological setting. But if the mirror images are acceptable for
+your application, you may use allow_inversion=True, which will allow more space
+groups to be generated.
+
+The user may also define which orientations are allowed for each molecule
+in each Wyckoff position. This is done by setting the orientations parameter.
+By default, PyXtal will determine the valid orientations automatically using the
+`get_orientations <pyxtal.molecular_crystal.html#molecular_crystal.get_orientations>`
+_ function, which in turn calls the
+`orientation_in_wyckoff_position <pyxtal.molecule.html#orientation_in_wyckoff_position>`_
+function. Setting custom orientations will typically not be necessary, but may
+be used to save time during generation; see the source code for more information.
+
+
 2D Atomic Crystals
 ~~~~~~~~~~~~~~~~~~
 
-PyXtal can also generate sub-periodic crystals. To generate a 2d crystal, use the
-class `crystal.random_crystal_2D <pyxtal.crystal.html#pyxtal.crystal.random_crystal_2D>`_. For example,
+PyXtal can also generate sub-periodic crystals. For example,
 
 .. code-block:: Python
 
@@ -373,9 +476,6 @@ behavior. So, if you are testing over a range of volume factors, consider how
 the shape of the unit cell will be affected, and change the thickness accordingly.
 Alternatively, you may supply a custom Lattice object, as described below.
 
-1D Crystals and 0D Clusters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 You can generate 1D crystals using Rod groups (between 1 and 75). The parameters
 for this function are the same as those for ``random_crystal_2D``. However, in
 place of the thickness of the unit cell, you should use the cross-sectional area
@@ -394,49 +494,9 @@ with 60 atoms and full icosahedral symmetry:
 
 The point group may be specified either by a number (only for the crystallographic
 point groups), or by a
-`Schoenflies symbol <https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups>`_
-(ex: ``Ih``, ``C*``, ``D6h``).
+`Schoenflies <https://en.wikipedia.org/wiki/Schoenflies_notation#Point_groups>`_
+symbol (ex: ``Ih``, ``C*``, ``D6h``).
 
-
-
-Molecular Crystals
-~~~~~~~~~~~~~~~~~~
-
-3D Molecular crystals are generated in the same way as atomic crystals,
-but atomic species are replaced with (rigid) molecules.
-
-.. code-block:: Python
-
-    my_crystal = pyxtal(molecular=True)
-    my_crystal.from_random(3, 36, ['H2O'], [4])
-
-    ------Random Molecular Crystal------
-    Dimension: 3
-    Group: Cmc21
-    Volume factor: 1.0
-    orthorhombic lattice:   5.6448   6.3389   4.4262  90.0000  90.0000  90.0000
-    Wyckoff sites:
-    	H2 O1 @ [ 0.000  0.596  0.986]  Wyckoff letter:  4a, Site symmetry m.. ==> Rotvec: -0.343  0.000  0.000
-
-This would give a crystal with space group 36, 4 molecules in the conventional
-
-There are a few other parameters which may be passed to the class. See the
-`documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular
-importance is the variable allow_inversion=False. By default, chiral molecules
-will not be flipped or inverted while generating the crystal. This is because
-a chiral molecule's mirror image may have different chemical properties,
-especially in a biological setting. But if the mirror images are acceptable for
-your application, you may use allow_inversion=True, which will allow more space
-groups to be generated.
-
-The user may also define which orientations are allowed for each molecule
-in each Wyckoff position. This is done by setting the orientations parameter.
-By default, PyXtal will determine the valid orientations automatically using the
-`get_orientations <pyxtal.molecular_crystal.html#molecular_crystal.get_orientations>`
-_ function, which in turn calls the
-`orientation_in_wyckoff_position <pyxtal.molecule.html#orientation_in_wyckoff_position>`_
-function. Setting custom orientations will typically not be necessary, but may
-be used to save time during generation; see the source code for more information.
 
 
 2D and 1D molecular crystals are also supported.
@@ -448,31 +508,19 @@ be used to save time during generation; see the source code for more information
     my_crystal.from_random(1, 20, ['H2O'], [4])
 
 
+Crystal structure manipulation
+------------------------------
+
+
+
+
 Optional Parameters
 -------------------
 
 In addition to the four required parameters, the user can provide additional
 constraints.
 
-Lattices
-~~~~~~~~
 
-It is possible to supply your own unit cell lattice for a random crystal,
-via the `Lattice <pyxtal.crystal.html#pyxtal.crystal.Lattice>`_ class.
-You can define a lattice using either a 3x3 matrix, or 6 cell parameters:
-
-.. code-block:: Python
-
-    from pyxtal.lattice import Lattice
-    l1 = Lattice.from_matrix([[4.08,0,0],[0,9.13,0],[0,0,5.50]])
-    l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
-
-Here, both ``l1`` and ``l2`` describe the same lattice.
-In this case, it is an orthorhombic lattice with lengths 4.08, 9.13, and 5.50 Angstrom,
-which is the unit cell for common water ice. The lattice parameters are,
-in order: (a, b, c, :math:`\alpha, \beta, \gamma`).
-a, b, and c are the lengths of the lattice vectors;
-:math:`\alpha, \beta, \gamma` are the angles (in degrees) between these vectors.
 You can use a custom Lattice to generate a random_crystal or molecular_crystal:
 
 .. code-block:: Python
@@ -481,11 +529,20 @@ You can use a custom Lattice to generate a random_crystal or molecular_crystal:
     my_crystal.from_random(3, 36, ['H2O'], [4], lattice=l1)
 
 
-If you do not specify a lattice, a random one will be generated
-according to the space group.
+The Tol_matrix can be passed to a random_crystal object:
+
+.. code-block:: Python
+
+    crystal = pyxtal()
+    crystal.from_random(3, 12, ['C','N'], [2,4], tm=tol_m_1)
+
+By default, atomic crystals will use the average of the covalent radii between
+two atoms. Molecular crystals will use 1.2 times the sum of the covalent radii
+between two atoms. Using ``metallic`` will use the average of the metallic
+radius for metals, and the ``covalent`` radius for other atom types.
 
 Note: For monoclinic layer groups, be careful when choosing
-the unique axis (see the `Settings <Settings.html>`_ page for details).
+the unique axis.
 
 Examples with customized constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -552,52 +609,7 @@ shown below.
     s.from_random(3, 36, ["H2O"], [8], sites=[["4a", "4a"]])
 
 
-Tolerance Matrices
-~~~~~~~~~~~~~~~~~~
 
-When generating random crystals, PyXtal performs inter-atomic distances checks
-to make sure the atoms are not too close together. By default, the covalent
-radius is used as a basis. However, the user may also define their own criteria
-using the `Tol_matrix <pyxtal.crystal.html#pyxtal.crystal.Tol_matrix>`_ class.
-To do this, initialize a ``Tol_matrix`` object using one of the built-in methods.
-
-.. code-block:: Python
-
-    from pyxtal.tolerance import Tol_matrix
-    tol_m_1 = Tol_matrix(prototype="molecular", factor=2.0)
-    tol_m_2 = Tol_matrix.from_radii(some_custom_list_of_atomic_radii)
-    tol_m_3 = Tol_matrix.from_matrix(some_custom_2D_tolerance_matrix)
-
-From here, you can alter the tolerance between certain inter-atomic pairs.
-Additionally, you can save and reload custom Tol_matrix objects for later use:
-
-.. code-block:: Python
-
-    >>> tol_m_1.set_tol('C', 'N', 2.1)
-    >>> tol_m_1.set_tol(1, 3, 4.6)
-    >>> tol_m_1.to_file("custom_matrix_file")
-    'Output file to custom_matrix_file.npy'
-    >>> reloaded_tol_matrix = Tol_matrix.from_file("custom_matrix_file.npy")
-    >>> print(reloaded_tol_matrix)
-    --Tol_matrix class object--
-      Prototype: molecular
-      Atomic radius type: covalent
-      Radius scaling factor: 2.4
-      Custom tolerance values:
-        C, N: 2.1
-        H, Li: 4.6
-
-The Tol_matrix can now be passed to a random_crystal object:
-
-.. code-block:: Python
-
-    crystal = pyxtal()
-    crystal.from_random(3, 12, ['C','N'], [2,4], tm=tol_m_1)
-
-By default, atomic crystals will use the average of the covalent radii between
-two atoms. Molecular crystals will use 1.2 times the sum of the covalent radii
-between two atoms. Using ``metallic`` will use the average of the metallic
-radius for metals, and the ``covalent`` radius for other atom types.
 
 
 Supports for Different File Formats
@@ -659,8 +671,6 @@ when you call the ``to_ase()`` function.
 Molecule in PyXtal
 ------------------
 
-
-
 Random molecular crystal from a customized pyxtal_molecule object
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -677,10 +687,9 @@ the following
 Random molecular crystal without calling pyxtal_molecule
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you just want to generate a random molecular crystal,
-Pyxtal will automatically interpret the strings.
-Therefore, it is not necessary to call the ``pyxtal_molecule`` class.
-See a short example below.
+If you just want to generate a random molecular crystal, Pyxtal will automatically
+interpret the strings. Therefore, it is not necessary to call the
+``pyxtal_molecule`` class. See a short example below.
 
 .. code-block:: Python
 
@@ -787,8 +796,7 @@ In an 1D string, the data is organized as follows
 
 - space group number (1-230)
 - HM sequence
-- cell parameter: ``a, b, c, alpha, beta, gamma`` (For othorhombic system, only
-a, b, c is specified)
+- cell parameter: ``a, b, c, alpha, beta, gamma``
 - molecular site: fractional coordinates [``x, y, z``] + orientation [``ang_x,
 ang_y, ang_z``] + torsions [``t1, t2, ...``]
 

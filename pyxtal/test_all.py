@@ -484,15 +484,15 @@ class TestWP(unittest.TestCase):
         c = [ 0.60052642,  0.62726848,  0.27405526]
         d = [-0.60052642, -0.62726848, -0.27405526]
         e = [0, 2.54537267e-01, 0]
-        self.assertTrue(wp.is_equivalent(a,b))
-        self.assertTrue(wp.is_equivalent(b,c))
-        self.assertTrue(wp.is_equivalent(d,a))
-        self.assertFalse(wp.is_equivalent(a,e))
+        self.assertTrue(wp.are_equivalent_pts(a,b))
+        self.assertTrue(wp.are_equivalent_pts(b,c))
+        self.assertTrue(wp.are_equivalent_pts(d,a))
+        self.assertFalse(wp.are_equivalent_pts(a,e))
 
         wp = g[1]
         a = [ 0.00,  0.127,  0.254]
         b = [-0.01, -0.127, -0.250]
-        self.assertTrue(wp.is_equivalent(a,b))
+        self.assertTrue(wp.are_equivalent_pts(a,b))
 
     def test_euclidean(self):
 
@@ -812,7 +812,7 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(np.abs(l7.matrix-l6.matrix).sum() < 0.25)
 
 class TestSymmetry(unittest.TestCase):
-    def test_all(self):
+    def test_from_symops_wo_grou(self):
         data = [
         (["x, y, z", "-x, y+1/2, -z"], 4, 6),
         (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31, 155), 
@@ -822,6 +822,18 @@ class TestSymmetry(unittest.TestCase):
         for d in data:
             (strs, spg, hall) = d
             wp = Wyckoff_position.from_symops_wo_group(strs)
+            self.assertTrue(wp.number == spg)
+            self.assertTrue(wp.hall_number == hall)
+
+    def test_from_symops(self):
+        data = [
+        (["x, y, z", "-x, y+1/2, -z"], 4, 6),
+        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31, 155), 
+        ]
+        for d in data:
+            (strs, spg, hall) = d
+            G = Group(spg)
+            wp = Wyckoff_position.from_symops(strs, G)
             self.assertTrue(wp.number == spg)
             self.assertTrue(wp.hall_number == hall)
 

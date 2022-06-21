@@ -8,13 +8,12 @@ from copy import deepcopy
 import numpy as np
 
 # PyXtal imports
-from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import mol_site
 from pyxtal.molecule import pyxtal_molecule
 from pyxtal.symmetry import Group
-from pyxtal.symmetry import choose_wyckoff_molecular as wyc_mol
+from pyxtal.symmetry import choose_wyckoff_mol as wyc_mol
 from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError, VolumeError
 
 # Define functions
@@ -320,7 +319,7 @@ class molecular_crystal:
             else:
                 self.lattice.reset_matrix()
 
-        printx("Cannot generate crystal after max attempts.", priority=1)
+        print("Cannot generate crystal after max attempts.")
 
     def _set_coords(self):
         """
