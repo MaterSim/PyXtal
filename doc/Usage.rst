@@ -419,6 +419,36 @@ but atomic species are replaced with (rigid) molecules.
 This would give a crystal with space group 36, 4 molecules in the conventional
 unit cell.
 
+For molecular crystals, it is possible that a structure is better represented in
+a non-standard setting. PyXtal supports the generation of crystals from a
+non-standard setting (as defined by the Hall number). Below compares how to
+generate the crystals of P21/c and P21/n, which are both in space group 14.
+
+.. code-block:: Python
+
+    >>> from pyxtal import pyxtal
+    >>> c1 = pyxtal(molecular=True)
+    >>> c1.from_random(3, 81, ["aspirin"], use_hall=True)
+    >>> c1
+    ------Crystal from random------
+    Dimension: 3
+    Composition: [aspirin]4
+    Group: P 1 21/c 1 (14)
+    12.6259,  15.1971,  12.3168,  90.0000,  84.2525,  90.0000, monoclinic
+    Wyckoff sites:
+	H8C9O4       @ [ 0.6281  0.9928  0.7032]  WP [4e] Site [1] Euler [  57.4  -46.9   89.8]
+
+    >>> c1.from_random(3, 82, ["aspirin"], use_hall=True)
+    >>> c1
+    ------Crystal from random------
+    Dimension: 3
+    Composition: [aspirin]4
+    Group: P 1 21/n 1 (14)
+    16.4395,  16.5499,   9.4357,  90.0000, 113.6587,  90.0000, monoclinic
+    Wyckoff sites:
+	H8C9O4       @ [ 0.0181  0.6252  0.5789]  WP [4e] Site [1] Euler [-179.0   46.1  -63.9]
+
+
 There are a few other parameters which may be passed to the class. See the
 `documentation <pyxtal.molecular_crystal.html>`_ for details. Of particular
 importance is the variable allow_inversion=False. By default, chiral molecules
@@ -454,33 +484,27 @@ would generate a 2d crystal with
 - 4 carbon atoms in the conventional cell,
 - a thickness of 2.0 Angstroms.
 
-As with the 3d case, for crystals with multiple atom types, you may replace
-``[C]`` and ``[4]`` with lists of the atomic symbols and amounts, respectively.
-The crystal will be periodic in two directions instead of 3. PyXtal adds
-``10 Angstroms`` of vacuum on each side of the 2D lattice, so that optimization
-may be performed without altering the structure file. However, care should be
-taken when using the cif file for applications designed for 3D crystals. The
-axis of non-periodicity can be accessed via my_crystal.PBC; each axis will either
+The crystal will be periodic in two directions instead of three. PyXtal adds
+``10 Angstroms`` of vacuum on each side of the 2D lattice. The axis of
+non-periodicity can be accessed via my_crystal.PBC; each axis will either
 be 1 or 0, representing either periodicity or non-periodicity. For example,
 PBC = [1,1,0] means that the x and y axes are periodic, while the z axis is
-non-periodic.
+non-periodic. Note that the layer group number is different from the space group
+number, and ranges between 1 and 80 (see settings). By default, PyXtal will
+automatically generate a value for the thickness of the unit cell, based on the
+volume. By specifying thickness value, you override this behavior. So, if you
+are testing over a range of volume factors, consider how the shape of the unit
+cell will be affected, and change the thickness accordingly. Alternatively, you
+may supply a custom Lattice object, as described below.
 
-Note that the layer group number is different from the international space group
-number, and ranges between 1 and 80. For a list of the layer groups and their
-symmetry operations, see the International Tables of Crystallography,
-`Volume E, part 4 <https://it.iucr.org/Eb/ch4o1v0001/contents/>`_.
-
-By default, PyXtal will automatically generate a value for the thickness of the
-unit cell, based on the volume. By specifying thickness value, you override this
-behavior. So, if you are testing over a range of volume factors, consider how
-the shape of the unit cell will be affected, and change the thickness accordingly.
-Alternatively, you may supply a custom Lattice object, as described below.
-
-You can generate 1D crystals using Rod groups (between 1 and 75). The parameters
-for this function are the same as those for ``random_crystal_2D``. However, in
-place of the thickness of the unit cell, you should use the cross-sectional area
-of the unit cell (in Angstroms squared). Again, by default, PyXtal will
+You can generate 1D crystals using Rod groups (between 1 and 75). You should use
+the cross-sectional area of the unit cell (in A^2). By default, PyXtal will
 automatically generate a value for the area if one is not specified.
+
+.. code-block:: Python
+
+  1d = pyxtal()
+  1d.from_random(1, 20, ['C'], [4])
 
 PyXtal also supports generation of atomic clusters with point group symmetry.
 As an example, the following code will generate a carbon cluster
@@ -510,8 +534,7 @@ symbol (ex: ``Ih``, ``C*``, ``D6h``).
 
 Crystal structure manipulation
 ------------------------------
-
-
+To add.
 
 
 Optional Parameters
