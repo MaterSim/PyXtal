@@ -197,11 +197,11 @@ class representation():
 
         # data for cell
         if x[0][0] <= 348:
-            num = 5
-        elif x[0][0] <= 107:
             num = 4
-        else:
+        elif x[0][0] <= 488:
             num = 3
+        else: #cubic
+            num = 2
 
         for c in x[0][1:num]:
             strs += "{:5.2f} ".format(c)
