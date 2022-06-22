@@ -80,5 +80,7 @@ class Collection:
                     self._data = dct
 
     def show_names(self):
+        names = []
         for dct in self.content:
-            print(dct["name"])
+            names.append(dct["name"])
+        print(names)

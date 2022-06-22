@@ -146,6 +146,12 @@ class pyxtal_molecule:
         tm: tolerance matrix
     """
 
+    def list_molecules():
+        """
+        list the internally supported molecules
+        """
+        molecule_collection.show_names()
+
     def __init__(self,
                  mol=None,
                  symmetrize=True,
