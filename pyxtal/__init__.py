@@ -1349,8 +1349,10 @@ class pyxtal:
                 else:
                     site.wp.update_index()
         # reset the matrix
+        wp0 = sites[0].wp
         self.lattice = lattice0
-        self.standard_setting = sites[0].wp.is_standard_setting()
+        self.standard_setting = wp0.is_standard_setting()
+        self.group = Group(wp0.hall_number, use_hall=True)
 
     def to_json(self, filename='pyxtal.json'):
         """

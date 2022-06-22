@@ -1,8 +1,9 @@
 Group Settings
 ==============
 
-For the output 3D structures, PyXtal uses the conventional standard cell (the same as `Bilbao
-<http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_). Below are the links for each set.
+For the output 3D structures, PyXtal uses the conventional standard cell (same
+as `Bilbao <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_).
+Below are the links for each set.
 
 - `Space group <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-table>`_
 - `Layer group <http://www.cryst.ehu.es/cgi-bin/subperiodic/programs/nph-sub_gen?subtype=layer&from=table>`_

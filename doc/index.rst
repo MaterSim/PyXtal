@@ -13,7 +13,8 @@
 PyXtal
 ============
 
-PyXtal (pronounced ``pie-crystal``) is an open source Python library for the ab-initio generation of random crystal structures. It has the following features:
+PyXtal (pronounced ``pie-crystal``) is an open source Python library for the
+ab-initio generation of random crystal structures. It has the following features:
 
 - Generation of atomic structures for a given symmetry and stoichiometry (0-3D)
 - Generation of molecular crystals (1-3D) with the support of special Wyckoff positions
@@ -23,14 +24,21 @@ PyXtal (pronounced ``pie-crystal``) is an open source Python library for the ab-
 - Structural manipulation via symmetry relation (both subgroup and supergroup)
 - Geometry optimization from built-in and external optimization methods
 
-The current version is ``0.4.8`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_. It is available for use under the MIT license. Expect updates upon request by `Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at University of Nevada Las Vegas.
+The current version is ``0.4.8`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_.
+It is available for use under the MIT license. Expect updates upon request by
+`Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at the
+University of Nevada Las Vegas.
 
-PyXtal is an open source project. You are welcome to contribute it directly via the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your comments and suggestions to the `developer <http://www.physics.unlv.edu/~qzhu/>`_.
+PyXtal is an open source project. You are welcome to contribute it directly via
+the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your
+comments and suggestions to the `developer <http://www.physics.unlv.edu/~qzhu/>`_.
 
 
-A basic tutorial is provided below for common functions. Additionally, documentation and source code are provided for individual modules.
+A basic tutorial is provided below for common functions. Additionally, 
+documentation and source code are provided for individual modules.
 
-For an experienced Python user who are familiar with Jupyter notebook, you are also encourged to check out the following examples
+For an experienced Python user who are familiar with Jupyter notebook, you are
+also encouraged to check out the following examples
 
 - `Atomic crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb>`_
 - `Molecular crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb>`_

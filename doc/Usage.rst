@@ -161,7 +161,7 @@ Alternatively, the WP can be initialized by itself.
 
 
 In each WP, the symmetry operations are stored as
-`pymatgen.core.operations.SymmOp <http://pymatgen.org/pymatgen.core.operations.html#pymatgen.core.operations.SymmOp>`_ objects.
+`SymmOp <http://pymatgen.org/pymatgen.core.operations.html#pymatgen.core.operations.SymmOp>`_ objects.
 These symmetry operations can be applied to 3d vectors using ``op.operate``
 (vector), or can be composed together via multiplication:
 
@@ -217,8 +217,7 @@ You may use a list with any of the following input types:
     mol = pyxtal_molecule('H2O')
 
 
-2) From a `pymatgen.core.structure.Molecule
-<http://pymatgen.org/pymatgen.core.structure.html?highlight=class%20molecule#pymatgen.core.structure.Molecule>`_ object.
+2) From a `Molecule <http://pymatgen.org/pymatgen.core.structure.html>`_ object.
 
 .. code-block:: Python
 
@@ -273,8 +272,8 @@ After the molecule is defined, its point group will also be parsed:
     1a	site symm: mm2 . .
 
 
-Lattices
-~~~~~~~~
+pyxtal.lattice.Lattices
+~~~~~~~~~~~~~~~~~~~~~~~
 
 It is possible to supply your own unit cell lattice for a random crystal,
 via the `Lattice <pyxtal.crystal.html#pyxtal.crystal.Lattice>`_ class.
@@ -287,7 +286,7 @@ You can define a lattice using either a 3x3 matrix, or 6 cell parameters:
     l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 
 Here, both ``l1`` and ``l2`` describe the same lattice.
-In this case, it is an orthorhombic lattice with lengths 4.08, 9.13, and 5.50 Angstrom,
+In this case, it is an orthorhombic cell with lengths 4.08, 9.13, and 5.50 :math:`\AA`,
 which is the unit cell for common water ice. The lattice parameters are,
 in order: (a, b, c, :math:`\alpha, \beta, \gamma`).
 a, b, and c are the lengths of the lattice vectors;
@@ -485,7 +484,7 @@ would generate a 2d crystal with
 - a thickness of 2.0 Angstroms.
 
 The crystal will be periodic in two directions instead of three. PyXtal adds
-``10 Angstroms`` of vacuum on each side of the 2D lattice. The axis of
+``10 Angstrom`` of vacuum on each side of the 2D lattice. The axis of
 non-periodicity can be accessed via my_crystal.PBC; each axis will either
 be 1 or 0, representing either periodicity or non-periodicity. For example,
 PBC = [1,1,0] means that the x and y axes are periodic, while the z axis is
@@ -630,7 +629,6 @@ shown below.
     # Crystal with 2 water molecules occupying two special wyckoff sites
     # This requires that the molecule is compatible with the site symmetry, be cautious!
     s.from_random(3, 36, ["H2O"], [8], sites=[["4a", "4a"]])
-
 
 
 
