@@ -1,7 +1,9 @@
 Background and Theory
 =====================
 This is a pedagogical introduction to crystallography and basic group theory.
-For information about how PyXtal works specifically, see the `Algorithms <Algorithm>`_ page.
+For information about how PyXtal works specifically, see the
+Algorithm <Algorithm.html>`_ page.
+
 
 Crystals and Structures
 -----------------------
@@ -10,7 +12,7 @@ the atomic level. From this description one can (in theory) determine the
 material's physical properties, including mechanical strength, electrical and
 thermal conductivity, melting point, etc. Due to the near-infinite number of
 possible materials and atomic geometries, it is necessary to have a consistent
-mathematical framework for such descriptions. This is described by *crystallography*.
+mathematical framework. This is described by *crystallography*.
 
 For an atomic structure, we could describe the geometry by specifying the type
 and position of every atom. This works alright for molecules, and is in fact how
@@ -29,7 +31,7 @@ each grain has the same crystal structure at the inter-atomic scale. If we can
 determine this crystal structure, it becomes possible to predict the way that
 the grains form and interact with each other. From this, we can go on to predict
 properties at larger and larger scales, and determine how useful a material will
-behave in different physical situations. For this reason, determining a material's
+behave in different physical situations. Therefore, determining a material's
 small-scale crystal structure is absolutely essential for modern materials
 science and engineering.
 
@@ -216,21 +218,17 @@ We list these here:
 
 Much like squares can be considered a special case of rectangles, all unit cells
 can be thought of as special cases of triclinic cells. Cubic cells are a subset
-of tetragonal cells, tetragonal cells are a subset of orthorhombic cells, and so on.
-
-The hexagonal and trigonal lattices are somewhat special cases. They can be
+of tetragonal cells, tetragonal cells are a subset of orthorhombic cells, and so
+on. The hexagonal and trigonal lattices are somewhat special cases. They can be
 generated using either trigonal/hexagonal prisms, or using the standard
 parallelepiped shape. For consistency, the parallelepiped is always used. Note
 that despite using a parallelepiped, this is still called a hexagonal cell choice.
-
 Some lattices can be generated using a rhombohedral unit cell. Such space groups
 begin with an ``R``, and always have trigonal symmetry. For these cases, we
 again use the hexagonal cell.
 
 Whenever possible, PyXtal uses the same choices of unit cell as the Bilbao
 Crystallographic Server, which in turn uses the standard conventional cell.
-Their default choices are listed
-`here. <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-def-choice>`_
 For a complete list of the cell choices used by PyXtal, see the
 `Group Settings <html/Settings.html>`_ page.
 
@@ -311,7 +309,7 @@ matrix. We simply place the vector to the right of the rotation matrix, place
    :scale: 50%
    :alt: fractional vs absolute coordinates
 
-This 4x4 matrix is called an affine transformation matrix. With it, we can apply
+This matrix is called an ``affine transformation matrix``. With it, we can apply
 operations using a single matrix multiplication operation. Although this may
 seem like just a mathematical trick, the affine matrix notation highlights the
 group structure of the transformations, as it allows translations and rotations
@@ -538,7 +536,7 @@ transformations present, and a number to describe the order. For detailed
 information, see the Wikipedia page. Below are a few examples of point groups
 found in crystallography and chemistry.
 
-- H2O: point group C2v (2-fold rotation axis, and two mirror planes) [#]_
+- :math:`H_2O`: point group C2v (2-fold rotation axis, and two mirror planes) [#]_
 - Hypothetical Pmmm crystal: point group mmm (3 mirror planes)
 - Buckminsterfullerene: point group Ih (Full icosahedral symmetry) [#]_
 
@@ -550,7 +548,7 @@ found in crystallography and chemistry.
             :scale: 25%
             :figclass: align-center
 
-            H2O molecule (``C2v``)
+            :math:`H_2O` molecule (``C2v``)
 
       - .. figure:: ../images/Pmmm.png
             :height: 720 px
@@ -752,102 +750,6 @@ For larger site symmetry groups, it is more complicated to check if a molecule
 will fit or not. The algorithm used by PyXtal for doing this is detailed in the
 `How PyXtal Works <Algorithm.html>`_ page.
 
-.. Molecular Crystals
-.. ------------------
-
-.. Knowing the limitations on molecular Wyckoff positions, we can consider
-crystals which have molecules, rather than atoms, as their basic building blocks.
-Typically, such crystals have strong intramolecular forces, which hold the atoms
-in a molecule together. In contrast, the intermolecular forces between molecules
-are weak, and often consist of hydrogen bonding and van der Waals forces. When
-the molecules are organic (carbon-based), the resulting structure is called an
-organic crystal; this is an important case with many applications.
-
-.. Because the intermolecular forces are so weak, molecular crystals often break
-down at high temperature, converting into atomic structures. But when molecular
-crystals do exist, they often have unique properties due to their low density and
-high level of variation in structure. Unlike atomic crystals, which are typically
-as close-packed as possible, molecular crystals have large gaps between atoms,
-and as a result the energy gap between different crystal structures is relatively
-low. This means that a given molecule may crystallize in many different ways;
-these different crystals may transform differently under pressure, temperature,
-or solvent conditions. So, it is often useful to look for different crystal
-structures for different applications.
-
-.. Important uses for molecular crystallography include pharmaceutical drug
-design, organic superconductors, water ice in extreme conditions, and novel
-material design.
-
-.. Crystal Structure Prediction
-.. ----------------------------
-.. As the techniques for computational crystallography become more sophisticated,
-it becomes easier to model and generate new crystal structures. In theory, there
-are an infinite number of possible crystal structures, but in practice,
-structures which are only slightly different will converge to the same low-energy
-structure. This is because in nature, the lowest-energy structure is the most
-likely to be found. So, for a given temperature and pressure, crystallographers
-can analyze a large number of possible crystal structures, and determine which
-has the lowest energy. This low-energy structure is the one most likely to form
-under the given conditions, and thus will probably be the correct structure found
-on a pressure-temperature diagram.
-
-.. However, doing this *from scratch* requires a very large number of structures
-to be analyzed. Currently, it is often not feasible to analyze every possible
-structural prototype, so instead random sampling is used in combination with
-evolutionary algorithms. This all amounts to crystal structure prediction (CSP).
-CSP has two opposite but complimentary applications. On the one hand, a material
-may be known to exist at a given set of conditions. For example, we know that
-iron and oxygen exist below the earth's crust, but we cannot obtain physical
-samples of every iron-oxygen compound, in the same pressure-temperature range.
-So, scientists use CSP to determine what crystal structures are likely to exist
-at the conditions found below the crust.
-
-.. On the other hand, scientists may be looking for new, undiscovered materials.
-For example, a materials scientist may want to find a new material which possesses
-certain electronic and thermal properties. Using what they know about existing
-materials as a basis, the scientist can use CSP to search a wide range of crystal
-structures. then, they can filter out only those which meet the application's
-requirements. Using only the best-performing candidates, the scientist can then
-choose to synthesize a material and perform physical experiments on it. Because
-computer time is substantially cheaper than laboratory time, a research team
-could save months or years of trial and error, and could save tens of thousands
-of dollars on experimentation.
-
-.. Roughly speaking, CSP can be split into five steps:
-
-.. 1) Generate random crystal structures based on a given stoichiometry,
-pressure, and temperature range.
-
-.. 2) Optimize these structures and determine their energy (this is step which
-takes the most time). This may be either a simple force-field optimization, or
-a more costly electron density (quantum mechanical) calculation. It can be useful
-to use a combination of these, performing the high-cost calculations on only the
-most promising structures.
-..
-.. 3) Keep the low-energy structures and filter out the high-energy ones. Then,
-add new random structures based on a genetic algorithm or other optimization
-technique
-..
-.. 4) After many iterations, keep only the lowest-energy structures, and check
-whether or not they meet the desired criteria.
-..
-.. 5) If a desirable structure is found, then great! If not, the stoichiometry
-can be changed to perform a new search. Furthermore, the results obtained so-far
-can be stored for use by other scientists, who may be looking for a different
-application.
-..
-.. Clearly, each of these steps is dependent on the steps before it, and making
-an improvement to any of the steps can reduce the total time cost by a large
-amount. The purpose of PyXtal is to improve the first step of random generation,
-by properly utilizing symmetry considerations. These random structures can then
-be used in conjunction with other optimization software to perform a complete
-CSP search.
-..
-.. As computer technology improves, the speed and applicability of CSP will also
-improve. The databases of known crystal structures will grow, and this will allow
-scientists to simply scan these databases to find materials for a given
-application. Indeed, databases like AFlow and the Materials Genome Initiative are
-already freely available for researchers.
 
 Crystal File Formats
 --------------------
