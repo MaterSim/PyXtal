@@ -105,10 +105,9 @@ For point group structures, we use unique axis c for all groups except the
 polyhedral groups ``T, Th, O, Td, Oh, I, and Ih``. For all of these groups,
 we place the 2-fold rotation about the z axis and a 3-fold rotation about the
 (x,x,x) axis. For ``I`` and ``Ih``, we use a 5-fold rotation about the axis (1,
-:math:`\tau`, 0), where :math:`\tau` is the golden ratio
-( :math:`\tau = \frac{\sqrt{5}+1}{2} = 1.618` ).
+:math:`\tau`, 0), where :math:`\tau` is the golden ratio 1.618.
 
-Crystallographic point groups, listed by number:
+All supported point groups, listed by number:
 
 +------------+------------+-----------+-----------+
 | 1: C1      | 2: Ci      | 3: C2     | 4: Cs     |
@@ -127,21 +126,28 @@ Crystallographic point groups, listed by number:
 +------------+------------+-----------+-----------+
 | 29: Th     | 30: O      | 31: Td    | 32: Oh    |
 +------------+------------+-----------+-----------+
+| 33: C5     | 34: C7     | 35: C8    | 36: D5    |
++------------+------------+-----------+-----------+
+| 37: D7     | 38: D8     | 39: C5v   | 40: C7v   |
++------------+------------+-----------+-----------+
+| 41: C8v    | 42: C5h    | 43: D5h   | 44: D7h   |
++------------+------------+-----------+-----------+
+| 45: D8h    | 46: D4d    | 47: D5d   | 48: D6d   |
++------------+------------+-----------+-----------+
+| 49: D7d    | 50: D8d    | 51: S6    | 52: S8    |
++------------+------------+-----------+-----------+
+| 53: S10    | 54: S12    | 55: I     | 56: Ih    |
++------------+------------+-----------+-----------+
+| 57: C*     | 58: C*h    |           |           |
++------------+------------+-----------+-----------+
 
-For a list of Wyckoff positions, see the
-`Bilbao 3D WYCKPOS utility <http://www.cryst.ehu.es/cryst/point_wp.html>`_.
-In addition, the following finite non-crystallographic point groups are also
-available:
+In addition to the 32 crystallographic point group , we add the following finite
+non-crystallographic point groups:
 
-``I, Ih, Cn, Cnh, Cnv, Sn, Cni, Dn, Dnh, Dnd.``
+``Cn, Cnh, Cnv, Sn, Cni, Dn, Dnh, Dnd.``
 
 where n should be replaced by an integer. I and Ih, which are the icosahedral
 and full icosahedral groups, are particularly useful (Buckminsterfullerene,
 for example has point group symmetry ``Ih``). Finally, the infinite rotational
-and dihedral point groups are also available:
-
-``C*, C*v, C*h, D*, D*h``
-
-However, only ``C*`` and ``C*h`` are needed, as the atomic positions will all
-lie along the z axis. These groups can thus be used for generating linear
+and dihedral point groups ``C*`` and ``C*h`` can be used for generating linear
 structures. ``C*h`` will have mirror symmetry, while ``C*`` will not.

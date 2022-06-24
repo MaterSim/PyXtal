@@ -129,7 +129,7 @@ group may have the special Wyckoff position ``1o``, which corresponds to the poi
 is further separated into individual operations
 ``('-x,-y,z', '1,1/2,z+1/2', etc.)``.
 
-When a ``Group`` is defined, its Wyckoff position can be accessed
+When a ``Group`` is defined, its ``Wyckoff_position`` can be accessed
 with either a numerical index or letter.
 
 .. code-block:: Python
@@ -151,11 +151,11 @@ As displayed in the example above, the Wyckoff position ``4b`` has site symmetry
 ``..2``. In this example, ``.`` denotes no symmetry about the x and y axes, and
 ``2`` denotes a 2-fold rotation about the z axis in Hermann-Mauguin notation.
 In each WP, the symmetry operations are stored as
-`SymmOp <http://pymatgen.org/pymatgen.core.operations.html`_ objects. These
+`SymmOp <http://pymatgen.org/pymatgen.core.operations.html>`_ objects. These
 symmetry operations can be applied to 3d vectors using ``op.operate``, or can be
 composed together via multiplication: ``op3 = op1 * op2``. Each ``SymmOp``
 consists of a rotation matrix (``op.rotation_matrix``) and a translation vector
-(``op.translation_vector``), and is represented by a 4x4 affine
+(``op.translation_vector``), and is represented by a :math: `4 \times 4` affine
 matrix (``op.affine_matrix``).
 
 Alternatively, the WP can be initialized by itself.
@@ -190,6 +190,19 @@ import the ``pyxtal_molecule`` class,
 
     mol = pyxtal_molecule('H2O')
 
+The list of supported molecules are accessible via:
+
+.. code-block:: Python
+
+    >>> pyxtal_molecule.list_molecules()
+    >>> ['C60', 'Glycine-z', 'xxvi', 'xxv', 'BIPHEN', 'ANULEN',
+    'QUPHEN', 'DBPERY', 'TBZPER', 'TBZPYR', 'YICMOP', 'MERQIM',
+    'H2O', 'CH4', 'NH3', 'benzene', 'naphthalene', 'anthracene',
+    'tetracene', 'Pentacene', 'coumarin', 'resorcinol', 'benzamide',
+    'aspirin', 'ddt', 'lindane', 'Glycine', 'Glucose', 'ROY', 'LEFCIK',
+    'OFIXUX', 'HAHCOI', 'JAPWIH', 'WEXBOS', 'LAGNAL', 'LUFHAW',
+    'PAHYON01', 'AXOSOW01']
+
 
 2) From a `Molecule <http://pymatgen.org/pymatgen.core.structure.html>`_ object.
 
@@ -210,7 +223,6 @@ import the ``pyxtal_molecule`` class,
 
     # Alternatively, one can load a xyz molecule file.
     # It will be converted to pymatgen.molecule and then passed to pyxtal.
-
     mol = pyxtal_molecule('h2o.xyz')
 
 
@@ -244,12 +256,13 @@ After the molecule is defined, its point group will also be parsed:
     1a	site symm: mm2 . .
 
 
-pyxtal.lattice.Lattices
-~~~~~~~~~~~~~~~~~~~~~~~
+pyxtal.lattice.Lattice
+~~~~~~~~~~~~~~~~~~~~~~
 
 It is possible to supply your own unit cell lattice for a random crystal,
-via the `Lattice <pyxtal.crystal.html#pyxtal.crystal.Lattice>`_ class.
-You can define a lattice using either a 3x3 matrix, or 6 cell parameters:
+via the `Lattice <pyxtal.lattice.html>`_ class. You can define a lattice using
+either a :math: `3 \times 3` matrix, or 6
+cell parameters:
 
 .. code-block:: Python
 
@@ -258,11 +271,11 @@ You can define a lattice using either a 3x3 matrix, or 6 cell parameters:
     l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 
 Here, both ``l1`` and ``l2`` describe the same lattice.
-In this case, it is an orthorhombic cell with lengths 4.08, 9.13, and 5.50 :math:`\AA`,
+In this case, it is an orthorhombic cell with lengths 4.08, 9.13, and 5.50 :math:`\\AA`,
 which is the unit cell for common water ice. The lattice parameters are,
 in order: (a, b, c, :math:`\alpha, \beta, \gamma`).
 a, b, and c are the lengths of the lattice vectors;
-:math:`\alpha, \beta, \gamma` are the angles (in degrees) between these vectors.
+:math:`\alpha, \beta, \gamma` are the angles in degrees between these vectors.
 
 
 pyxtal.tolerance.Tol_matrix
@@ -271,7 +284,7 @@ pyxtal.tolerance.Tol_matrix
 When generating random crystals, PyXtal performs inter-atomic distances checks
 to make sure the atoms are not too close together. By default, the covalent
 radius is used as a basis. However, the user may also define their own criteria
-using the `Tol_matrix <pyxtal.crystal.html#pyxtal.crystal.Tol_matrix>`_ class.
+using the `Tol_matrix <pyxtal.tolerance.html>`_ class.
 To do this, initialize a ``Tol_matrix`` object using one of the built-in methods.
 
 .. code-block:: Python
@@ -364,9 +377,9 @@ with a list of numbers. For example,
 
 .. code-block:: Python
 
-    my_crystal = pyxtal()
-    my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3])
-    my_crystal
+    >>> my_crystal = pyxtal()
+    >>> my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3])
+    >>> my_crystal
     ------Random Crystal------
     Composition: Ba1 Ti1 O3
     Dimension: 3
@@ -379,7 +392,7 @@ with a list of numbers. For example,
     	 O @ [0.5000 0.0000 0.0823], Wyckoff letter:  2c, Site symmetry: 2 mm .
     	 O @ [0.5000 0.5000 0.8177], Wyckoff letter:  1b, Site symmetry: 4 m m
 
-would create a random BaTiO3 crystal. If the generation is successful, the value
+would create a random :math:`BaTiO_3` crystal. If the generation is successful, the value
 of ``my_crystal.valid`` will be set to ``True``;
 otherwise, it will be ``False``.
 
@@ -451,10 +464,10 @@ would generate a 2d crystal with
 
 - layer group ``P2_122 (20)``,
 - 4 carbon atoms in the conventional cell,
-- a thickness of 2.0 Angstroms.
+- a thickness of 2.0 :math:`\\AA`.
 
 The crystal will be periodic in two directions instead of three. PyXtal adds
-``10 Angstrom`` of vacuum on the z axis (which is non-periodic). Note that the
+10 :math:`\\AA` of vacuum on the z axis (which is non-periodic). Note that the
 layer group number is different from the space group number, and ranges between
 1 and 80. By default, PyXtal will automatically generate a value for the
 thickness of the unit cell, based on the volume. By specifying thickness value,
@@ -583,8 +596,9 @@ Constraints on lattice and sites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sometimes, it is convenient to generate the crystal with partial information.
-Below shows how to create a Al2SiO5 crystal with a pre-assigned unit cell
-and sites on ``8Al+4Si+4O``, and random coordinates on the 16 remaining O atoms.
+Below shows how to create a :math:`Al_2SiO_5` crystal with a pre-assigned unit
+cell and sites on ``8Al + 4Si + 4O``, and random coordinates on the 16 remaining
+O atoms.
 
 .. code-block:: Python
 
