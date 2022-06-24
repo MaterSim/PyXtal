@@ -3,7 +3,7 @@ import numpy as np
 from pyxtal.symmetry import Group
 from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import mol_site
-from pyxtal.molecule import find_id_from_smile
+from pyxtal.molecule import find_rotor_from_smile
  
 class representation():
     """
@@ -89,7 +89,7 @@ class representation():
                 if smile in ["Cl-"]:
                     n_mol = 4
                 else:
-                    n_torsion = len(find_id_from_smile(smile))
+                    n_torsion = len(find_rotor_from_smile(smile))
                     n_mol = 7 + n_torsion
                 #inversion
                 inputs[n_cell+n_mol-2] = int(inputs[n_cell+n_mol-2])
