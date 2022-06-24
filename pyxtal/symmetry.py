@@ -1731,8 +1731,15 @@ class Wyckoff_position:
         """
         Check if the symmetry operation follows the standard setting
         """
-        wp2 = Group(self.number)[self.index]
-        return self.has_equivalent_ops(wp2)
+        G_ops = get_wyckoffs(self.number, dim=self.dim)
+        for i, ops in enumerate(G_ops):
+            if self.has_equivalent_ops(ops):
+                self.ops = ops
+                self.index = i
+                self.letter = letter_from_index(i, G_ops, dim=self.dim)
+                return True
+        
+        return False
 
     def has_equivalent_ops(self, wp2, tol=1e-3):
         """

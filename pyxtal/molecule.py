@@ -731,7 +731,7 @@ class pyxtal_molecule:
         return xyz, res[0][1]
 
 
-    def get_rmsd(self, xyz):
+    def get_rmsd(self, xyz, debug=False):
         """
         Compute the rmsd with another 3D xyz coordinates
 
@@ -769,11 +769,13 @@ class pyxtal_molecule:
         mol = RemoveHs(mol)
         rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 0)
         rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 1)
-        #from rdkit.Chem import rdmolfiles
-        #rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
-        #rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
-        #rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
-        #print(rmsd1, rmsd2)
+        
+        if debug:
+            from rdkit.Chem import rdmolfiles
+            rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
+            rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
+            rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
+            print(rmsd1, rmsd2)
         if rmsd1 <= rmsd2:
             #return rmsd1, trans1, True
             return rmsd1, trans1, False
