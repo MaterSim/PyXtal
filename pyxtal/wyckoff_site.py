@@ -286,7 +286,9 @@ class mol_site:
         self.type = stype
 
     def __str__(self):
-        if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
+        if not hasattr(self.wp, "site_symm"): 
+            self.wp.get_site_symmetry()
+
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
         s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)

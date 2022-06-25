@@ -15,7 +15,7 @@ pyxtal_verbosity = 1  # constant for printx function
 max_fast_mol_size = 30
 letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ltype_keywords = [
-                  "triclinic", "Triclinic", 
+                  "triclinic", "Triclinic",
                   "monoclinic", "Monoclinic",
                   "orthorhombic", "Orthorhombic",
                   "tetragonal", "Tetragonal",
@@ -27,10 +27,10 @@ ltype_keywords = [
                  ]
 
 logo = """#############################################################
-#             ______       _    _          _   	            #
+#             ______       _    _          _                #
 #            (_____ \     \ \  / /        | |               #
-#             _____) )   _ \ \/ / |_  ____| |  	            #
-#            |  ____/ | | | )  (|  _)/ _  | | 	            #
+#             _____) )   _ \ \/ / |_  ____| |               #
+#            |  ____/ | | | )  (|  _)/ _  | |               #
 #            | |    | |_| |/ /\ \ |_( (_| | |___            #
 #            |_|     \__  /_/  \_\___)__|_|_____)           #
 #                   (____/                                  #

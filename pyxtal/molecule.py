@@ -28,23 +28,35 @@ from pyxtal.msg import ConformerError
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 molecule_collection = Collection("molecules")
 
-def find_id_from_smile(smile):
+def find_rotor_from_smile(smile):
     """
     Find the positions of rotatable bonds in the molecule.
     """
-    def cleaner(list_to_clean):
+    def cleaner(list_to_clean, neighbors):
         """
         Remove duplicate torsion from a list of atom index tuples.
         """
+        
         for_remove = []
         for x in reversed(range(len(list_to_clean))):
-            for y in reversed(range(x)):
-                ix1, ix2 = itemgetter(1)(list_to_clean[x]), itemgetter(2)(list_to_clean[x])
-                iy1, iy2 = itemgetter(1)(list_to_clean[y]), itemgetter(2)(list_to_clean[y])
-                if (ix1 == iy1 and ix2 == iy2) or (ix1 == iy2 and ix2 == iy1):
-                    for_remove.append(y)
-        clean_list = [v for i, v in enumerate(list_to_clean)
-                      if i not in set(for_remove)]
+            ix0 = itemgetter(0)(list_to_clean[x])
+            ix3 = itemgetter(3)(list_to_clean[x])
+            # for i-j-k-l, we don't want i, l are the ending members
+            # here C-C-S=O is not a good choice since O is only 1-coordinated
+            if neighbors[ix0] > 1 and neighbors[ix3] > 1:
+                for y in reversed(range(x)):
+                    ix1 = itemgetter(1)(list_to_clean[x])
+                    ix2 = itemgetter(2)(list_to_clean[x])
+                    iy1 = itemgetter(1)(list_to_clean[y])
+                    iy2 = itemgetter(2)(list_to_clean[y])
+                    if [ix1, ix2] == [iy1, iy2] or [ix1, ix2] == [iy2, iy1]:
+                        for_remove.append(y)
+            else:
+                for_remove.append(x)
+        clean_list = []
+        for i, v in enumerate(list_to_clean):
+            if i not in set(for_remove):
+                clean_list.append(v)
         return clean_list
 
     if smile in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
@@ -56,35 +68,51 @@ def find_id_from_smile(smile):
         #smarts_torsion2="[*]~[^1]#[^1]~[*]" # C-C triples bonds, to be fixed
 
         mol = Chem.MolFromSmiles(smile)
-        pattern_tor1 = Chem.MolFromSmarts(smarts_torsion1)
-        torsion1 = cleaner(list(mol.GetSubstructMatches(pattern_tor1)))
-        pattern_tor2 = Chem.MolFromSmarts(smarts_torsion2)
-        torsion2 = cleaner(list(mol.GetSubstructMatches(pattern_tor2)))
-        tmp = cleaner(torsion1+torsion2)
+        N_atom = mol.GetNumAtoms()
+        neighbors = [len(a.GetNeighbors()) for a in mol.GetAtoms()]
+        #make sure that the ending members will be counted
+        neighbors[0] += 1
+        neighbors[-1] += 1
+        patn_tor1 = Chem.MolFromSmarts(smarts_torsion1)
+        torsion1 = cleaner(list(mol.GetSubstructMatches(patn_tor1)), neighbors)
+        patn_tor2 = Chem.MolFromSmarts(smarts_torsion2)
+        torsion2 = cleaner(list(mol.GetSubstructMatches(patn_tor2)), neighbors)
+        tmp = cleaner(torsion1+torsion2, neighbors)
         torsions = []
         for t in tmp:
             (i, j, k, l) = t
             b = mol.GetBondBetweenAtoms(j,k)
             if not b.IsInRing():
                 torsions.append(t)
+        #if len(torsions) > 6: torsions[1] = (4, 7, 10, 15)
         return torsions
 
 def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
     """
     generate pyxtal_molecules from smiles codes.
 
+    Args:
+        smile: smiles code
+        wps: list of wps
+        N_iter: rdkit parameter
+        N_conf: number of conformers
+        tol: rdkit parameter
+
+    Returns:
+        a list of pyxtal molecules
     """
+
     from rdkit import Chem
     from rdkit.Chem import AllChem
 
-    torsionlist = find_id_from_smile(smile)
+    torsionlist = find_rotor_from_smile(smile)
 
     def get_conformers(smile, seed):
         mol = Chem.MolFromSmiles(smile)
         mol = Chem.AddHs(mol)
         ps = AllChem.ETKDGv3()
-        ps.randomSeed=seed
-        ps.runeRmsThresh=tol
+        ps.randomSeed = seed
+        ps.runeRmsThresh = tol
         AllChem.EmbedMultipleConfs(mol, max([4, 4*len(torsionlist)]), ps)
         return mol
 
@@ -153,12 +181,12 @@ class pyxtal_molecule:
         molecule_collection.show_names()
 
     def __init__(self,
-                 mol=None,
-                 symmetrize=True,
-                 fix=False,
-                 torsions=None,
+                 mol = None,
+                 symmetrize = True,
+                 fix = False,
+                 torsions = None,
                  seed = None,
-                 tm=Tol_matrix(prototype="molecular")):
+                 tm = Tol_matrix(prototype="molecular")):
 
         mo = None
         self.smile = None
@@ -247,15 +275,6 @@ class pyxtal_molecule:
         mo = Molecule(self.symbols, coords)
 
         return pyxtal_molecule(mo, self.tm)
-
-    #def add_site_props(self, mo):
-    #    """
-    #    add site properties
-    #    """
-    #    if len(self.props) > 0:
-    #        for key in self.props.keys():
-    #            mo.add_site_property(key, self.props[key])
-    #    return mo
 
     def get_box(self, padding=None):
         """
@@ -519,7 +538,7 @@ class pyxtal_molecule:
         from rdkit.Chem import rdMolTransforms as rdmt
 
         if smile not in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
-            torsionlist = find_id_from_smile(smile)
+            torsionlist = find_rotor_from_smile(smile)
             mol = Chem.MolFromSmiles(smile)
             mol = Chem.AddHs(mol)
             symbols = []
@@ -530,7 +549,7 @@ class pyxtal_molecule:
                 cid = 0
             else:
                 ps = AllChem.ETKDGv3()
-                ps.randomSeed=self.seed
+                ps.randomSeed = self.seed
                 AllChem.EmbedMultipleConfs(mol, 1, ps)
                 if mol.GetNumConformers() == 0:
                     AllChem.EmbedMultipleConfs(mol, 3, ps)
@@ -725,7 +744,7 @@ class pyxtal_molecule:
         return xyz, res[0][1]
 
 
-    def get_rmsd(self, xyz):
+    def get_rmsd(self, xyz, debug=False):
         """
         Compute the rmsd with another 3D xyz coordinates
 
@@ -750,7 +769,7 @@ class pyxtal_molecule:
         angs = self.get_torsion_angles(xyz)
         xyz0 = self.set_torsion_angles(conf0, angs) #conf0 with aligned
         xyz1 = self.set_torsion_angles(conf0, angs, True) #conf0 with aligned+reflect
-
+        #print('xyz0', xyz0)
         # reset the xyz
         for i in range(len(self.mol)):
             x0,y0,z0 = xyz0[i]
@@ -763,14 +782,19 @@ class pyxtal_molecule:
         mol = RemoveHs(mol)
         rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 0)
         rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 1)
-        #rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
-        #rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
-        #rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
-
+        
+        if debug:
+            from rdkit.Chem import rdmolfiles
+            rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
+            rdmolfiles.MolToXYZFile(mol, '2.xyz', 1)
+            rdmolfiles.MolToXYZFile(mol, '3.xyz', 2)
+            print(rmsd1, rmsd2)
         if rmsd1 <= rmsd2:
-            return rmsd1, trans1, True
+            #return rmsd1, trans1, True
+            return rmsd1, trans1, False
         else:
-            return rmsd2, trans2, False
+            #return rmsd2, trans2, False
+            return rmsd2, trans2, True
 
     def get_orientation(self, xyz, rtol=0.15):
         """
@@ -976,6 +1000,7 @@ class pyxtal_molecule:
         opa_w = []
         for op_w in symm_w:
             opa_w.append(OperationAnalyzer(op_w))
+
         """
         Check for constraints from the Wyckoff symmetry. If we find ANY two
         constraints (SymmOps with unique axes), the molecule's point group MUST

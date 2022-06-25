@@ -644,7 +644,7 @@ class pyxtal:
             gtype = (t_types+k_types)[id]
             if gtype == 'k':
                 id -= len(t_types)
-            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
+            splitter = wyckoff_split(G=self.group, wp1=sites, idx=id, group_type=gtype)
 
             if not splitter.error:
                 if perms is None:
@@ -1262,6 +1262,7 @@ class pyxtal:
                         lat0 = self.lattice.transform_multi(_trans)
                         wp0.transform_from_matrices(_trans)
                         beta_diff0 = abs(lat0.beta*180/np.pi - 90)
+                        #print(wp0, wp0.is_standard_setting())
                         if wp0.is_standard_setting() and beta_diff0 < beta_diff:
                             good_trans = _trans
                             beta_diff = beta_diff0
