@@ -30,14 +30,17 @@ class representation():
         return self.to_string()
 
     @classmethod
-    def from_pyxtal(cls, struc):
+    def from_pyxtal(cls, struc, standard=False):
         """
         Initialize 1D rep. from the pyxtal object
 
         Args:
             struc: pyxtal object
         """
-        symmetry = [struc.group.hall_number]
+        if standard and not struc.standard_setting:
+            struc.optimize_lattice(standard=True)
+
+        symmetry = [struc.mol_sites[0].wp.hall_number]
         lat = struc.lattice.encode()
         vector = [symmetry + lat]
         smiles = []
@@ -96,6 +99,10 @@ class representation():
                 x.append(inputs[n_cell-1:n_cell+n_mol-1])
                 n_cell += n_mol
         return cls(x, smiles)
+
+    def to_standard_setting(self):
+        xtal = self.to_pyxtal()
+        self.x = representation.from_pyxtal(xtal, standard=True).x
  
     def to_pyxtal(self, smiles=None, composition=None):
         """
@@ -180,6 +187,7 @@ class representation():
         struc._get_formula()
         struc.source = '1D rep.'
         struc.valid = True
+        struc.standard_setting = site.wp.is_standard_setting()
 
         return struc
     
@@ -246,3 +254,7 @@ if __name__ == "__main__":
     string = "82 11.43  6.49 11.19 83.31 1  0.77  0.57  0.53 48.55 24.31 145.9 -77.85 -4.40 170.9 0"
     rep3 = representation.from_string(string, smiles)
     print(rep3.to_pyxtal())
+    rep3.to_standard_setting()
+    print(rep3.to_pyxtal())
+    print(rep3.to_string())
+
