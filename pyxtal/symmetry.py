@@ -2151,7 +2151,12 @@ def choose_wyckoff(G, number, site=None, dim=3):
     """
 
     if site is not None:
-        return Wyckoff_position.from_group_and_letter(G.number, site, dim)
+        number = G.number
+        if G.hall_number is not None:
+            hn = G.hall_number
+        else:
+            hn = None
+        return Wyckoff_position.from_group_and_letter(number, site, dim, hn=hn)
     else:
         wyckoffs_organized = G.wyckoffs_organized
 
@@ -2194,8 +2199,13 @@ def choose_wyckoff_mol(G, number, site, orientations, gen_site=True, dim=3):
     wyckoffs = G.wyckoffs_organized
 
     if site is not None:
-        return Wyckoff_position.from_group_and_letter(G.number, site, dim)
-
+        number = G.number
+        if G.hall_number is not None:
+            hn = G.hall_number
+        else:
+            hn = None
+        return Wyckoff_position.from_group_and_letter(number, site, dim, hn=hn)
+ 
     elif gen_site or np.random.random() > 0.5:  # choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
