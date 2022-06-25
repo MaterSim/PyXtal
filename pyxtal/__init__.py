@@ -363,6 +363,8 @@ class pyxtal:
         add_H = False,
         backend = 'pymatgen',
         style = 'pyxtal',
+        hn = None,
+        standard = False,
         ):
         """
         Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
@@ -381,9 +383,12 @@ class pyxtal:
         if self.molecular:
             pmols = []
             for mol in molecules:
-                pmols.append(pyxtal_molecule(mol, fix=True))
+                if type(mol) == pyxtal_molecule:
+                    pmols.append(mol)
+                else:
+                    pmols.append(pyxtal_molecule(mol, fix=True))
             #QZ: the default will not work for molecular H2, which is rare!
-            struc = structure_from_ext(seed, pmols, ignore_HH=ignore_HH, add_H=add_H)
+            struc = structure_from_ext(seed, pmols, ignore_HH=ignore_HH, add_H=add_H, hn=hn)
             self.mol_sites = struc.make_mol_sites()
             self.group = Group(struc.wyc.number)
             self.lattice = struc.lattice
@@ -391,7 +396,8 @@ class pyxtal:
             self.numMols = struc.numMols
             self.standard_setting = True
             self.valid = True # Need to add a check function
-            self.optimize_lattice()
+            if not standard:
+                self.optimize_lattice()
         else:
             if isinstance(seed, dict):
                 self.from_dict()

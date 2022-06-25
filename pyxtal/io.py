@@ -233,7 +233,7 @@ def read_cif(filename):
 
 class structure_from_ext():
 
-    def __init__(self, struc, ref_mols, tol=0.2, ignore_HH=False, add_H=False):
+    def __init__(self, struc, ref_mols, tol=0.2, ignore_HH=False, add_H=False, hn=None):
 
         """
         extract the mol_site information from the give cif file
@@ -271,8 +271,12 @@ class structure_from_ext():
         self.tol = tol
         self.add_H = add_H
 
-        sym_struc, number = get_symmetrized_pmg(pmg_struc)
-        group = Group(number)
+        sym_struc, number = get_symmetrized_pmg(pmg_struc, hn=hn)
+        if hn is None:
+            group = Group(number)
+        else:
+            group = Group(hn, use_hall=True)
+
         self.group = group
         self.wyc = group[0]
 
