@@ -1528,6 +1528,24 @@ class pyxtal:
         #print("Numbers===============", len(new_strucs)); import sys; sys.exit()
         return new_strucs
 
+    def resort(self):
+        """
+        A short cut to resort the sites by self.molecules or self.species
+        """
+        ids = []
+        if self.molecular:
+            for mol in self.molecules:
+                for j, site in enumerate(self.mol_sites):
+                    if site.molecule.name == mol.name and j not in ids:
+                        ids.append(j)
+            self.mol_sites = [self.mol_sites[j] for j in ids]
+        else:
+            for specie in self.species:
+                for j, site in enumerate(self.atom_sites):
+                    if site.specie == specie and j not in ids:
+                        ids.append(j)
+            self.atom_sites = [self.atom_sites[j] for j in ids]
+
     def _get_alternative(self, wyc_sets, index, ref_lat=None, d_tol=2.0, f_tol=0.15):
         """
         Get alternative structure representations

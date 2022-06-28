@@ -1,7 +1,7 @@
 # python -m unittest pyxtal/test_all.py
 import unittest
 
-from random import choice
+from random import choice, shuffle
 import numpy as np
 from pkg_resources import resource_filename
 from pymatgen.core import Structure
@@ -991,6 +991,32 @@ class TestPartial(unittest.TestCase):
         s = pyxtal()
         s.from_random(3, spg, elements, composition, lattice=cell, sites=sites2)
         self.assertTrue(s.valid)
+
+class resort(unittest.TestCase):
+    def test_molecule(self):
+        # glycine dihydrate
+        cif = cif_path + "gdh.cif"
+        struc = pyxtal(molecular=True)
+        struc.from_seed(seed=cif, molecules=['Glycine-z', 'H2O'])
+        N1 = len(struc.mol_sites)
+        l = list(range(len(struc.mol_sites)))
+        shuffle(l)
+        struc.mol_sites = [struc.mol_sites[i] for i in l]
+        struc.resort()
+        N2 = len(struc.mol_sites)
+        self.assertTrue(N1 == N2) 
+
+    def test_atom(self):
+        cif = cif_path + "aspirin.cif"
+        struc = pyxtal()
+        struc.from_seed(seed=cif)
+        N1 = len(struc.atom_sites)
+        l = list(range(len(struc.atom_sites)))
+        shuffle(l)
+        struc.atom_sites = [struc.atom_sites[i] for i in l]
+        struc.resort()
+        N2 = len(struc.atom_sites)
+        self.assertTrue(N1 == N2)
 
 class Test_operations(unittest.TestCase):
     def test_inverse(self):
