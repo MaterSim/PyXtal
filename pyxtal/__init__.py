@@ -1689,7 +1689,10 @@ class pyxtal:
             sites = self.atom_sites
 
         max_index = max([site.wp.index for site in sites])
-        path = self.group.short_path_to_general_wp(max_index)
+        if self.molecular:
+            path = self.group.short_path_to_general_wp(max_index, True)
+        else:
+            path = self.group.short_path_to_general_wp(max_index)
         if path is not None:
             gtypes, ids = [], []
             for p in path:
