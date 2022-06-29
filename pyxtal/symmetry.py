@@ -1069,17 +1069,20 @@ class Group:
 
         return solutions
 
-    def short_path_to_general_wp(self, index=1):
+    def short_path_to_general_wp(self, index=1, t_only=False):
         """
         Find a short path to turn the spcical wp to general position
 
         Args:
             index: index of the wp
+            t_only: only consider t_spliting
         """
         for i in range(1, 5):
             paths = self.path_to_general_wp(index, max_steps=i)
             if len(paths) > 0:
                 last_gs = np.array([p[-1][2] for p in paths])
+                if t_only:
+                    last_gs[last_gs > len(self[0])] = 0
                 max_id = np.argmax(last_gs)
                 return paths[max_id]
 

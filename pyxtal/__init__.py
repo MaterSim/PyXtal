@@ -1528,6 +1528,14 @@ class pyxtal:
         #print("Numbers===============", len(new_strucs)); import sys; sys.exit()
         return new_strucs
 
+    def to_standard_setting(self):
+        """
+        A short cut to symmetrize the structure in the stardard setting
+        """
+        if self.molecular:
+            pmg = self.to_pymatgen()
+            self.from_seed(pmg, molecules=self.molecules, standard=True)
+
     def resort(self):
         """
         A short cut to resort the sites by self.molecules or self.species

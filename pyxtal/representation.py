@@ -140,9 +140,9 @@ class representation():
         elif ltype == 'orthorhombic':
             a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, 90, 90
         elif ltype == 'tetragonal':
-            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, 90, 90
+            a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 90
         elif ltype == 'hexagonal':
-            a, b, c, alpha, beta, gamma = v[1], v[2], v[2], 90, 90, 120
+            a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 120
         else:
             a, b, c, alpha, beta, gamma = v[1], v[1], v[1], 90, 90, 90
         try:
