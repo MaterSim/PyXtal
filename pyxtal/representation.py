@@ -273,7 +273,7 @@ class representation():
                 tmp2 = np.array(rep.x[i])
                 # cell difference
                 if i == 0:
-                    diff_cell = tmp2[1:] - tmp1[1:]
+                    diff_cell = tmp2 - tmp1
                     diffs.extend(diff_cell)
                 # site difference
                 else:
@@ -287,14 +287,14 @@ class representation():
                     diff_ori /= [360.0, 180.0, 360.0]
                     diff_ori -= np.round(diff_ori)
                     diff_ori *= [360.0, 180.0, 360.0]
-                    diff_tor = tmp2[6:-1] - tmp1[6:-1]
+                    diff_tor = tmp2[6:] - tmp1[6:]
                     diff_tor /= 360.0
                     diff_tor -= np.round(diff_tor)
                     diff_tor *= 360.0
                     diffs.extend(diff_xyz)
                     diffs.extend(diff_ori)
                     diffs.extend(diff_tor)
-            return diffs
+            return np.array(diffs)
 
 if __name__ == "__main__":
 
