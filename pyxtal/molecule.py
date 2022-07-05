@@ -119,6 +119,7 @@ def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
     m0 = pyxtal_molecule(smile+'.smi', fix=True)
     _, valid = m0.get_orientations_in_wps(wps)
     if valid:
+        #print('torsion', m0.get_torsion_angles())
         mols = [m0]
     else:
         mols = []
@@ -140,14 +141,16 @@ def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
             if add:
                 match = False
                 for mol in mols:
-                    rms, _, _ = mol.get_rmsd(xyz)
+                    rms, _ = mol.get_rmsd2(xyz, mol.mol.cart_coords)
+                    #print("rms", mol.get_torsion_angles(), rms)
                     if rms < tol:
                         match = True
                         break
                 if not match:
+                    #print(len(mols)+1, m.get_torsion_angles(xyz))
                     mols.append(m)
-            if len(mols) == N_conf:
-                break
+                    if len(mols) == N_conf:
+                        return mols
     #for m in mols:
     #    print(m.energy, m.pga.sch_symbol, len(torsionlist))
     return mols
@@ -679,13 +682,14 @@ class pyxtal_molecule:
 
             return rdmt.ComputePrincipalAxesAndMoments(conf1)[0]
 
-    def get_torsion_angles(self, xyz, torsionlist=None):
+    def get_torsion_angles(self, xyz=None, torsionlist=None):
         """
         get the torsion angles
         """
         from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolTransforms as rdmt
 
+        if xyz is None: xyz = self.mol.cart_coords
         if torsionlist is None: torsionlist=self.torsionlist
 
         angs = []
@@ -742,6 +746,38 @@ class pyxtal_molecule:
         else:
             xyz = mol.GetConformer(0).GetPositions()
         return xyz, res[0][1]
+
+
+    def get_rmsd2(self, xyz0, xyz1):
+        """
+        Compute the rmsd with another 3D xyz coordinates
+
+        Args:
+            xyz: 3D coordinates
+
+        Returns:
+            rmsd:
+            transition matrix:
+            match:
+        """
+
+        from rdkit import Chem
+        from rdkit.Geometry import Point3D
+        from rdkit.Chem import rdMolAlign, RemoveHs
+
+        mol = self.rdkit_mol(3)
+        conf0 = mol.GetConformer(0)
+        conf1 = mol.GetConformer(1) 
+        for i in range(len(self.mol)):
+            x0,y0,z0 = xyz0[i]
+            x1,y1,z1 = xyz1[i]
+            conf0.SetAtomPosition(i,Point3D(x0,y0,z0))
+            conf1.SetAtomPosition(i,Point3D(x1,y1,z1))
+
+        mol = RemoveHs(mol)
+        rmsd, trans = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
+        
+        return rmsd, trans
 
 
     def get_rmsd(self, xyz, debug=False):
