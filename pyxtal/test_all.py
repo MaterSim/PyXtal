@@ -1091,6 +1091,22 @@ class Test_operations(unittest.TestCase):
         for i in range(1, 229):
             res = Group(i, quick=True).get_alternatives()['No.']
 
-
+    def test_trans(self):
+        mats = [
+                np.array([[1,0,1],[0,1,0],[0,0,1]]),
+                np.array([[1,0,-1],[0,1,0],[0,0,1]]),
+               ]
+        
+        for n in range(3, 16):
+            hns = Hall(n).hall_numbers
+            for hn in hns:
+                g = Group(hn, use_hall=True)
+                for i in range(1, len(g)):
+                    wp = g[i].copy()
+                    for mat in mats:
+                        wp.transform_from_matrix(mat)
+                        c1, c2 = wp.update()
+                        #print(hn, i, (c1 or c2))
+                        self.assertTrue(c1 or c2)
 if __name__ == "__main__":
     unittest.main()

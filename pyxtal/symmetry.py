@@ -1497,6 +1497,7 @@ class Wyckoff_position:
         if not match_spg and not match_hall:
             print("match_spg", match_spg, "match_hall", match_hall)
             print(self)
+            print(self.get_hm_symbol())
             raise RuntimeError("Cannot find the right hall_number")
         return match_spg, match_hall
 
@@ -1507,30 +1508,45 @@ class Wyckoff_position:
         Args:
             hall_numbers: a list of numbers for consideration
         """
+        #print("test", self)
         if hall_numbers is None:
             hall_numbers = Hall(self.number).hall_numbers
 
+        candidates = self.process_ops()
         success = False
         for hall_number in hall_numbers:
             P = abc2matrix(hall_table['P'][hall_number-1])
             P1 = abc2matrix(hall_table['P^-1'][hall_number-1])
             wyckoffs = get_wyckoffs(self.number, dim=self.dim)
+
+            # Fist check the original index
             wp2 = self.from_index_quick(wyckoffs, self.index, P, P1)
-            #check the original index
-            if self.has_equivalent_ops(wp2):
-                success = True
-            else:
-                #check other sites
+            for ops in candidates:
+                if wp2.has_equivalent_ops(ops):
+                    success = True
+                    #print("same letter") #; import sys; sys.exit()
+                    break
+
+            # Check other sites
+            if not success:
                 for i in range(len(wyckoffs)):
                     if i != self.index and len(wyckoffs[i]) == self.multiplicity:
                         wp2 = self.from_index_quick(wyckoffs, i, P, P1)
-                        if self.has_equivalent_ops(wp2):
-                            success = True
+                        for ops in candidates:
+                            if wp2.has_equivalent_ops(ops):
+                                success = True
+                                self.index = i
+                                self.letter = wp2.letter
+                                #print("new letter")
+                                break
+                    if success:
+                        break
             if success:
                 self.hall_number = hall_number
                 self.P = wp2.P
                 self.P1 = wp2.P1
                 self.ops = wp2.ops
+                
                 return True
         return False
 
@@ -1548,6 +1564,7 @@ class Wyckoff_position:
                     wp2 = self.from_index_quick(wyckoffs, i)
                     if self.has_equivalent_ops(wp2):
                         self.index = i
+                        self.letter = wp2.letter
                         #adjust to normal
                         self.ops = wp2.ops
                         return True
@@ -1582,12 +1599,34 @@ class Wyckoff_position:
 
             for j, op in enumerate(ops):
                 vec = op.translation_vector.dot(trans)
-                #vec = trans.T.dot(op.translation_vector).T
                 vec -= np.floor(vec)
                 op1 = op.from_rotation_and_translation(op.rotation_matrix, vec)
                 self.ops[j] = op1
+
             if update:
                 self.update_hall()
+
+    def process_ops(self):
+        """
+        handle some annoying cases
+        e.g., in I2, ['1/2, y, 1/2', '0, y+1/2, 0'] can be transfered to
+        ['0, y, 0', '1/2, y+1/2, 1/2']
+        """
+        opss = [self.ops]
+        if self.number in [5, 12] and self.index > 0:
+            # replace y with y+1/2
+            op2 = SymmOp.from_xyz_string('x, y+1/2, z')
+            ops = [op2*op for op in self.ops]
+            opss.append(ops)
+
+        if self.number in [13] and self.index > 0:
+            op2 = SymmOp.from_xyz_string('x, -y, z')
+            ops = [op2*op for op in self.ops]
+            opss.append(ops)
+
+
+            #for op in ops: print('AAAA', op.as_xyz_string())
+        return opss
 
     def equivalent_set(self, index):
         """
