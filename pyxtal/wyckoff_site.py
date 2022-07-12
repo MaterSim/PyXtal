@@ -862,16 +862,21 @@ class mol_site:
                 return False
         return True
 
-    def get_neighbors_auto(self, factor=1.1, max_d=4.0):
+    def get_neighbors_auto(self, factor=1.1, max_d=4.0, detail=False, etol=-5e-2):
         """
         Find the neigboring molecules
+
+        Args:
+            factor:
+            max_d: maximum intermolecular distance
+            detail: show detailed energies
 
         Returns
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
         """
-
-        tm=Tol_matrix(prototype="vdW", factor=factor)
+        coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
+        tm = Tol_matrix(prototype="vdW", factor=factor)
         m_length = len(self.numbers)
         tols_matrix = self.molecule.get_tols_matrix(tm=tm)
         coef_matrix = self.molecule.get_coefs_matrix()
@@ -884,15 +889,28 @@ class mol_site:
         neighs = []
         Ps = []
         engs = []
+        pairs = []
+        dists = []
 
         # Check periodic images
         d, coord2 = self.get_dists_auto(ignore=True)
         for i in range(d.shape[0]):
-            if np.min(d[i])<max_d and (d[i]<tols_matrix).any():
+            if np.min(d[i]) < max_d and (d[i] < tols_matrix).any():
                 if coef_matrix is not None:
-                    eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                    if detail:
+                        eng = A*np.exp(-B*d[i])-C/(d[i]**6)
+                        ids = np.where(eng < etol)
+                        for id in zip(*ids):
+                            tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
+                            pairs.append((tmp1+tmp2)/2)
+                            engs.append(eng[id])
+                            dists.append(d[i][id])
+                        #eng = eng.sum()
+                    else:
+                        engs.append(np.sum(A*np.exp(-B*d[i])-C/(d[i]**6)))
                 else:
-                    eng = None
+                    engs.append(None)
+
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1.0]
                 id = np.argmin(tmp.flatten())
@@ -900,9 +918,8 @@ class mol_site:
                 min_ds.append(min(_d)*factor)
                 neighs.append(coord2[i])
                 Ps.append(0)
-                engs.append(eng)
                 #print('S {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id],eng))
+                #  i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
 
         if self.wp.multiplicity > 1:
             for idx in range(1, self.wp.multiplicity):
@@ -914,7 +931,18 @@ class mol_site:
                 for i in range(d.shape[0]):
                     if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
                         if coef_matrix is not None:
-                            eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                            if detail:
+                                eng = A*np.exp(-B*d[i])-C/(d[i]**6)
+                                ids = np.where(eng < etol)
+                                for id in zip(*ids):
+                                    tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
+                                    pairs.append((tmp1+tmp2)/2)
+                                    engs.append(eng[id])
+                                    dists.append(d[i][id])
+                                #eng = eng.sum()
+                            else:
+                                eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                                engs.append(eng)
                         else:
                             eng = None
                         tmp = d[i]/tols_matrix
@@ -923,14 +951,16 @@ class mol_site:
                         d_min = d[i].flatten()[id]
                         if d_min < max_d:
                             #print('R {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                            #        i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
+                            #i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
                             min_ds.append(min(_d)*factor)
                             neighs.append(coord2[i])
                             Ps.append(P)
-                            engs.append(eng)
-        return min_ds, neighs, Ps, engs
+        if detail:
+            return engs, pairs, dists
+        else:
+            return min_ds, neighs, Ps, engs
 
-    def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0):
+    def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0, detail=False, etol=-5e-2):
         """
         Find the neigboring molecules from a 2nd wp site
 
@@ -956,19 +986,30 @@ class mol_site:
             B = coef_matrix[:,:,1]
             C = coef_matrix[:,:,2]
 
-
         # compute the distance matrix
         d, coord2 = self.get_distances(coord1, coord2, m_length2, ignore=True)
         min_ds = []
         neighs = []
         engs = []
+        dists = []
+        pairs = []
 
         for i in range(d.shape[0]):
             if np.min(d[i])<max_d and (d[i] < tols_matrix).any():
                 if coef_matrix is not None:
-                    eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                    if detail:
+                        eng = A*np.exp(-B*d[i])-C/(d[i]**6)
+                        ids = np.where(eng < etol)
+                        for id in zip(*ids):
+                            tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
+                            pairs.append((tmp1+tmp2)/2)
+                            engs.append(eng[id])
+                            dists.append(d[i][id])
+                    else:
+                        eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
+                        engs.append(eng)
                 else:
-                    eng = None
+                    engs.append(None)
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1]
                 id = np.argmin(tmp.flatten())
@@ -976,8 +1017,12 @@ class mol_site:
                 if d_min < max_d:
                     min_ds.append(min(_d)*factor)
                     neighs.append(coord2[i])
-                    engs.append(eng)
-        return min_ds, neighs, engs
+
+        if detail:
+            return engs, pairs, dists
+        else:
+            return min_ds, neighs, engs
+
 
     def get_ijk_lists(self, value=None):
         """

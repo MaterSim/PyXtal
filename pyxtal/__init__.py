@@ -2384,8 +2384,36 @@ class pyxtal:
         engs = [engs[i] for i in ids]
         return min_ds, neighs, comps, Ps, engs
 
+    def get_neighboring_dists(self, site_id=0, factor=1.5, max_d=5.0):
+        """
+        For molecular crystals, get the neighboring molecules for a given WP
 
-    def show_molecular_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, plot=True, **kwargs):
+        Args:
+            site_id: the index of reference site
+            factor: factor of vdw tolerance
+            max_d: maximum distances
+
+        Returns:
+            pairs: list of short contact pairs
+            engs: list of energies from atom-atom potential
+        """
+        pairs = []
+        engs = []
+        dists = []
+
+        site0 = self.mol_sites[site_id]
+        site0.get_ijk_lists()
+        for id0, site1 in enumerate(self.mol_sites):
+            if id0 == site_id:
+                _eng, _pair, _dist = site0.get_neighbors_auto(factor, max_d, detail=True)
+            else:
+                _eng, _pair, _dist = site0.get_neighbors_wp2(site1, factor, max_d, detail=True)
+            pairs.extend(_pair)
+            engs.extend(_eng)
+            dists.extend(_dist)
+        return engs, pairs, dists
+
+    def show_mol_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, plot=True, **kwargs):
         """
         display the local packing environment for a selected molecule
         """
@@ -2437,7 +2465,6 @@ class pyxtal:
             molecules.append(Molecule(specie0, neigh))
 
         return display_cluster(molecules, self.lattice.matrix, Ps, N_cut, **kwargs)
-
 
     def from_CSD(self, csd_code):
         """
