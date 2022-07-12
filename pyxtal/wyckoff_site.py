@@ -944,7 +944,7 @@ class mol_site:
                                 eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
                                 engs.append(eng)
                         else:
-                            eng = None
+                            engs.append(None)
                         tmp = d[i]/tols_matrix
                         _d = tmp[tmp < 1]
                         id = np.argmin(tmp.flatten())
