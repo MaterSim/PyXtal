@@ -2413,7 +2413,7 @@ class pyxtal:
             dists.extend(_dist)
         return engs, pairs, dists
 
-    def show_mol_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, plot=True, **kwargs):
+    def show_mol_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, plot=True, cmap='YlGn', **kwargs):
         """
         display the local packing environment for a selected molecule
         """
@@ -2464,7 +2464,7 @@ class pyxtal:
             specie0 = self.molecules[typ].mol.atomic_numbers
             molecules.append(Molecule(specie0, neigh))
 
-        return display_cluster(molecules, self.lattice.matrix, Ps, N_cut, **kwargs)
+        return display_cluster(molecules, self.lattice.matrix, engs, cmap, **kwargs)
 
     def from_CSD(self, csd_code):
         """
