@@ -296,8 +296,12 @@ def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, 
        
 
 
-def display_cluster(molecules, cell, Ps, N_cut=12, size=(400,300), style='sphere'):
+def display_cluster(molecules, cell, Ps, cmap='YlGn', s_opacity=0.5, size=(400,300), style='sphere'):
     import py3Dmol
+    import numpy as np
+    from matplotlib import cm, colors
+
+    cmaps = getattr(cm, cmap)(Ps/np.mean(Ps))
     models = {}
     
     view = py3Dmol.view()
@@ -327,22 +331,8 @@ def display_cluster(molecules, cell, Ps, N_cut=12, size=(400,300), style='sphere
         mol_strs += mol.to(fmt='xyz') + '\n'
         view.addModel(mol_strs, 'xyz')
         model = view.getModel()
-        if sum(Ps) > 0:
-            if Ps[i-1] == 0:
-                ctype = 1
-            else:
-                ctype = 2
-        else:
-            if i > N_cut:
-                ctype = 1
-            else:
-                ctype = 2
-        if ctype == 1:
-            color = 'greenCarbon'
-            opacity = 0.65
-        else:
-            color = 'cyanCarbon'
-            opacity = 0.65
+        color = 'greenCarbon'
+        opacity = 0.65
         if style == 'sphere':
             model.setStyle({}, {"sphere": {'colorscheme':color,
                                            'scale':0.5,
@@ -351,4 +341,8 @@ def display_cluster(molecules, cell, Ps, N_cut=12, size=(400,300), style='sphere
             model.setStyle({}, {"stick": {'colorscheme':color, 
                                           'radius': 0.1,
                                           'opacity': opacity}})
+
+        view.addSurface(py3Dmol.VDW, {'opacity': s_opacity,
+                                      'color': colors.rgb2hex(cmaps[i-1])})
+
     return view.zoomTo({"model": list(models.values())})
