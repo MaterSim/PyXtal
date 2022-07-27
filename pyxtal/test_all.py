@@ -1110,14 +1110,14 @@ class Test_operations(unittest.TestCase):
                         #print(hn, i, (c1 or c2))
                         self.assertTrue(c1 or c2)
 
-    #def test_image(self):
-    #    c1 = pyxtal(molecular=True)
-    #    for name in ['benzene', 'aspirin', 'naphthalene']:
-    #        c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
-    #        for model in ['contact', 'molecule']:
-    #            sph = spherical_image(c1, model=model)
-    #            sph.align()
-    #            print(name, model)
+    def test_image(self):
+        c1 = pyxtal(molecular=True)
+        for name in ['benzene', 'aspirin', 'naphthalene']:
+            c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
+            for model in ['contact', 'molecule']:
+                sph = spherical_image(c1, model=model)
+                sph.align()
+                print(name, model)
 
 if __name__ == "__main__":
     unittest.main()
