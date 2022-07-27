@@ -2431,10 +2431,10 @@ class pyxtal:
         """
         display the local packing environment for a selected molecule
         """
-        np.set_printoptions(suppress=True, precision=3)
+        np.set_printoptions(precision=3)
         min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(id, factor, max_d, N_cut)
         print("Number of neighboring molecules", len(engs))
-        print(engs)
+        print(np.array(engs))
 
         if plot:
             import matplotlib.pyplot as plt

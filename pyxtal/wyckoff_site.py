@@ -867,7 +867,7 @@ class mol_site:
         Find the neigboring molecules
 
         Args:
-            factor:
+            factor: volume factor
             max_d: maximum intermolecular distance
             detail: show detailed energies
 

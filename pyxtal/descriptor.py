@@ -369,6 +369,22 @@ class spherical_image():
         for i in range(len(self.coefs)):
             self.coefs[i] = self.coefs[i].rotate(alpha, beta, gamma)
 
+    def get_similarity(self, sph2, M=6):
+        """
+        Compute the similarity matrix between two sphs
+        
+        Args:
+            sph2: the 2nd sph class
+            M: number of power in quasi random sampling
+        """
+        S = np.zeros([len(self.coefs), len(sph2.coefs)])
+        for i in range(len(self.coefs)):
+            coef1 = self.coefs[i]
+            for j in range(len(sph2.coefs)):
+                coef2 = sph2.coefs[j]
+                d, _ = correlation_go(coef1, coef2, M=M)
+                S[i, j] = d
+        return S
 
 if __name__ == '__main__':
     
