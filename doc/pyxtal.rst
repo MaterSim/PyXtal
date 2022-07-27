@@ -21,6 +21,7 @@ Submodules
 
    pyxtal.crystal
    pyxtal.block_crystal
+   pyxtal.descriptor
    pyxtal.molecular_crystal
    pyxtal.wyckoff_site
    pyxtal.wyckoff_split

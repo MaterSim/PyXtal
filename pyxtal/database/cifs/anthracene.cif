@@ -1,0 +1,70 @@
+
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC 
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge 
+# Structural Database, then it will include bibliographic, chemical, 
+# crystal, experimental, refinement or atomic coordinate data resulting 
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_ANTCEN24
+_symmetry_cell_setting           monoclinic
+_symmetry_space_group_name_H-M   'P 21/c'
+_symmetry_Int_Tables_number      14
+_space_group_name_Hall           '-P 2ybc'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 -x,1/2+y,1/2-z
+3 -x,-y,-z
+4 x,1/2-y,1/2+z
+_cell_length_a                   9.3056(6)
+_cell_length_b                   5.9879(3)
+_cell_length_c                   8.4252(5)
+_cell_angle_alpha                90
+_cell_angle_beta                 102.620(6)
+_cell_angle_gamma                90
+_cell_volume                     458.119
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+_atom_site_thermal_displace_type
+C1 C 0.58950(11) 0.36625(19) 0.62036(13) 0.0215 Uani
+C2 C 0.68314(13) 0.2371(2) 0.74332(13) 0.0256 Uani
+H1 H 0.6486(14) 0.094(3) 0.7692(16) 0.0290 Uiso
+C3 C 0.81698(14) 0.3147(2) 0.82163(15) 0.0304 Uani
+H2 H 0.8792(18) 0.222(3) 0.903(2) 0.0430 Uiso
+C4 C 0.86753(14) 0.5265(2) 0.78125(15) 0.0310 Uani
+H3 H 0.9696(16) 0.579(2) 0.8432(16) 0.0330 Uiso
+C5 C 0.78184(13) 0.6554(2) 0.66477(14) 0.0263 Uani
+H4 H 0.8154(14) 0.807(3) 0.6335(17) 0.0360 Uiso
+C6 C 0.63965(12) 0.5817(2) 0.58077(12) 0.0215 Uani
+C7 C 0.54864(12) 0.71035(19) 0.46170(13) 0.0224 Uani
+H5 H 0.5853(15) 0.856(2) 0.4363(15) 0.0240 Uiso
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_23
+_atom_site_aniso_U_13
+_atom_site_aniso_U_12
+C1 0.0233(6) 0.0226(6) 0.0199(6) -0.0010(4) 0.0075(4) 0.0014(4)
+C2 0.0287(6) 0.0245(6) 0.0246(6) 0.0032(5) 0.0079(5) 0.0028(5)
+C3 0.0278(7) 0.0369(7) 0.0253(6) 0.0036(5) 0.0033(5) 0.0062(5)
+C4 0.0243(6) 0.0386(8) 0.0290(6) -0.0036(5) 0.0033(4) -0.0007(5)
+C5 0.0250(6) 0.0271(7) 0.0270(6) -0.0029(5) 0.0062(4) -0.0026(5)
+C6 0.0227(6) 0.0226(6) 0.0203(6) -0.0031(4) 0.0073(4) -0.0003(4)
+C7 0.0260(6) 0.0205(6) 0.0221(6) -0.0009(5) 0.0083(4) -0.0012(5)
+#END
