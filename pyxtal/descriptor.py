@@ -238,6 +238,7 @@ class spherical_image():
             grids[:, 2] = self.calculate_density(pt, xyzs)
             cilm, chi2 = expand_sph(grids, lmax)
             self.coefs.append(pysh.SHCoeffs.from_array(cilm))
+        self.ds = np.ones(len(self.coefs))
 
     def calculate_density(self, pt, xyzs):
         """
@@ -255,10 +256,7 @@ class spherical_image():
         '''
         compute the spherical images from neighboring molecules
     
-        Args:
-            scale: scale the coordinates by priciple axis?
-    
-        Returns
+        Returns:
             pts: [N, 3] array, (theta, phi, eng)
         '''
         pts = []
@@ -280,12 +278,9 @@ class spherical_image():
     
     def get_contacts(self):
         '''
-        compute the spherical images from the neighboring distances
+        Compute the spherical images from the neighboring distances
     
-        Args:
-            scale: scale the coordinates by priciple axis?
-    
-        Returns
+        Returns:
             pts: [N, 3] array, (theta, phi, eng)
         '''
         pts = []
@@ -299,9 +294,13 @@ class spherical_image():
             pts.append(pt)
         return pts
     
-    def plot(self, figname=None):
+    def plot_sph_images(self, lmax=None, figname=None):
         """
-        plot the descriptors
+        Plot the spherical images in both 3d and 2d
+
+        Args:
+            lmax: maximum truncation
+            figname: name of figure file
         """
         import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
@@ -309,25 +308,66 @@ class spherical_image():
         fig = plt.figure(figsize=(9, 4*len(self.coefs)))
         gs = gridspec.GridSpec(nrows=len(self.coefs), ncols=2, 
                                wspace=0.15, width_ratios=[0.7, 1])
+        if lmax is None:
+            lmax = self.lmax
+        elif lmax > self.lmax:
+            print("Warning: Cannot set lmax greater than the ", self.lmax)
+            lmax = self.lmax
+
         for i in range(len(self.coefs)):
             ax1 = fig.add_subplot(gs[i, 0])
             ax2 = fig.add_subplot(gs[i, 1])
             coef = self.coefs[i]
-            grid = coef.expand()
-            grid.plot3d(0, 0, show=False, ax=ax1)
+            grid = coef.expand(lmax=lmax)
+            grid.plot3d(0, 0, title="{:6.3f}".format(self.ds[i]), show=False, ax=ax1)
             grid.plot(show=False, ax=ax2, tick_interval=[120, 90], 
                     tick_labelsize=14, axes_labelsize=16)
             ax2.set_xlim([1, 359])
+
         if figname is None:
             plt.show()
         else:
             plt.savefig(figname)
 
+    def plot_real_image(self, id=0):
+        """
+        Plot the real molecular contacts in the crystal
+        """
+        return self.xtal.show_mol_cluster(id, 
+                                          factor=self.factor, 
+                                          max_d=self.max_d, 
+                                          N_cut=self.max_CN, 
+                                          plot=False)
 
-    def align(self):
+    def align(self, M=6):
+        """
+        Align spherical image in a way that three most important contributions
+        are parallel to the equatorial plane. Experimental stage now!
+
+        Args:
+            M: number of power in quasi random sampling
+        """
+        coef0 = self.coefs[0]
+        angles = get_alignment(self.pts[0])
+        self.coefs[0] = self.coefs[0].rotate(angles[0], angles[1], angles[2]) 
+
+        for i in range(1, len(self.coefs)):
+            coef1 = self.coefs[i]
+            d, angles = correlation_go(self.coefs[0], coef1, M=M)
+            self.coefs[i] = coef1.rotate(angles[0], angles[1], angles[2]) 
+            self.ds[i] = d 
+
+    def rotate(self, alpha=0, beta=0, gamma=0):
+        """
+        uniformly rotate the coefs
+
+        Args:
+            alpha: rotation in degrees
+            beta: rotation in degress
+            gamma: rotation in degress
+        """
         for i in range(len(self.coefs)):
-            angles = get_alignment(self.pts[i])
-            self.coefs[i] = self.coefs[i].rotate(angles[0], angles[1], angles[2]) 
+            self.coefs[i] = self.coefs[i].rotate(alpha, beta, gamma)
 
 
 if __name__ == '__main__':
@@ -337,9 +377,9 @@ if __name__ == '__main__':
 
     cif_path = resource_filename("pyxtal", "database/cifs/")
     c1 = pyxtal(molecular=True)
-    for name in ['benzene', 'aspirin', 'naphthalene']:
+    for name in ['benzene', 'resorcinol', 'aspirin', 'naphthalene']:
         c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
         for model in ['contact', 'molecule']:
             sph = spherical_image(c1, model=model)
             sph.align()
-            sph.plot(name+'-'+model+'.png')
+            sph.plot_sph_images(name+'-'+model+'.png')

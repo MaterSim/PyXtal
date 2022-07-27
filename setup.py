@@ -50,7 +50,7 @@ setup(
         "py3Dmol>=0.8.0",
         'ase>=3.18.0',  #covered by pymatgen
         'numba>=0.55.2', #now supports numpy 1.22
-        'scipy>=1.6.1',
+        'scipy>=1.7.3',
         'importlib_metadata>=1.4',
         'pyshtools>=4.10',
         #"openbabel>=3.0.0",

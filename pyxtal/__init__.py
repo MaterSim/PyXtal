@@ -28,6 +28,7 @@ from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.constants import letters
 from pyxtal.viz import display_molecular, display_atomic, display_cluster
 from pyxtal.constants import letters
+from pyxtal.descriptor import spherical_image
 
 # name = "pyxtal"
 
@@ -2384,6 +2385,19 @@ class pyxtal:
         engs = [engs[i] for i in ids]
         return min_ds, neighs, comps, Ps, engs
 
+    def get_spherical_images(self, **kwargs):
+        """
+        get the spherical image representation
+
+        Args:
+            model: either 'molecule' or 'contacts'
+
+        Returns:
+            the sph class
+        """
+        sph = spherical_image(self, **kwargs)
+        return sph
+
     def get_neighboring_dists(self, site_id=0, factor=1.5, max_d=5.0):
         """
         For molecular crystals, get the neighboring molecules for a given WP
@@ -2417,9 +2431,10 @@ class pyxtal:
         """
         display the local packing environment for a selected molecule
         """
-        min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(id, factor, max_d)
-        print("Number of neighboring molecules", len(min_ds))
-        print(min_ds)
+        np.set_printoptions(suppress=True, precision=3)
+        min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(id, factor, max_d, N_cut)
+        print("Number of neighboring molecules", len(engs))
+        print(engs)
 
         if plot:
             import matplotlib.pyplot as plt
