@@ -30,6 +30,7 @@ To contribute to this project, please check [How to contribute?](#how-to-contrib
 - [Atomic crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb)
 - [Molecular crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb)
 - [XRD](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb)
+- [Molecular Packing](https://nbviewer.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/05-crystal-packing.ipynb)
 
 ## Current Features
 
