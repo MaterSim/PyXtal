@@ -200,7 +200,6 @@ def get_alignment(pts, degrees=True):
     return angles
 
 
-
 class spherical_image():
     """
     A class to handle the crystal packing descriptor from spherical image
@@ -215,11 +214,12 @@ class spherical_image():
         N: number of grid points on the unit sphere
     """
     def __init__(self, xtal, model='molecule', max_d=10, max_CN=36, 
-            lmax=13, sigma=0.1, N=10000):
+        factor=2.2, lmax=13, sigma=0.1, N=10000):
 
         self.xtal = xtal
         self.max_d = max_d
         self.max_CN = max_CN
+        self.factor = factor
         self.lmax = lmax
         self.sigma = sigma
         self.N = N
@@ -264,7 +264,7 @@ class spherical_image():
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
             _, neighs, _, _, engs = self.xtal.get_neighboring_molecules(i, 
-                                                    factor=2.2, 
+                                                    factor=self.factor, 
                                                     max_d=self.max_d, 
                                                     CN=self.max_CN)
             xyz, _ = site._get_coords_and_species(absolute=True, first=True) 
@@ -291,7 +291,7 @@ class spherical_image():
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
             engs, pairs, dists = self.xtal.get_neighboring_dists(i, 
-                                            factor=2.2, 
+                                            factor=self.factor, 
                                             max_d=self.max_d)
             pt = np.zeros([len(pairs), 3])
             pt[:, :2] = xyz2sph(pairs)
