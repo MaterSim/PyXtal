@@ -119,7 +119,7 @@ class XRD():
 
         """
         This function calculates all that is necessary to find the intensities.
-        This scheme is based off of pymatgen
+        This scheme is similar to pymatgen
         Needs improvement from different correction factors.
         """
 
@@ -283,13 +283,15 @@ class XRD():
 
         return hkl_str
 
-    def plot_pxrd(self, filename=None, minimum_I=0.01, show_hkl=True,\
-                fontsize=None, figsize=(20,10), xlim=None, width=1.0):
+    def plot_pxrd(self, filename=None, profile=None, minimum_I=0.01, 
+                show_hkl=True, fontsize=None, figsize=(20,10), 
+                ax=None, xlim=None, width=1.0, legend=None, show=False):
         """
         plot PXRD
 
         Args:
             filename (None): name of the xrd plot. If None, show the plot
+            profile: type of peak profile
             minimum_I (0.01): the minimum intensity to include in the plot
             show_hkl (True): whether or not show hkl labels
             fontsize (None): fontsize of text in the plot
@@ -301,33 +303,47 @@ class XRD():
         if fontsize is not None:
             matplotlib.rcParams.update({'font.size': fontsize})
 
-        plt.figure(figsize=figsize)
-
         if xlim is None:
             x_min, x_max = 0, np.degrees(self.max2theta)
         else:
             x_min, x_max = xlim[0], xlim[1]
-        dx = x_max-x_min
-        for i in self.pxrd:
-            plt.bar(i[0],i[-1], color='b', width=width*dx/180)
-            if i[-1] > minimum_I and x_min <= i[0] <= x_max:
-                if show_hkl:
-                    label = self.draw_hkl(i[2:5])
-                    plt.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
 
-        #ax=plt.gca()
-        plt.gca()
-        plt.grid()
-        plt.xlim([x_min, x_max])
-        plt.xlabel('2$\Theta$ ($\lambda$=' + str(self.wavelength) + ' $\AA$)')
-        plt.ylabel('Intensity')
-        plt.title('PXRD of ' + self.name)
-
-        if filename is None:
-            plt.show()
+        if ax is None:
+            fig, axes = plt.subplots(1, 1, figsize=figsize) #plt.figure(figsize=figsize)
+            axes.set_title('PXRD of ' + self.name)
         else:
-            plt.savefig(filename)
-            plt.close()
+            axes = ax
+
+        if profile is None:
+            dx = x_max-x_min
+            for i in self.pxrd:
+                axes.bar(i[0],i[-1], color='b', width=width*dx/180)
+                if i[-1] > minimum_I and x_min <= i[0] <= x_max:
+                    if show_hkl:
+                        label = self.draw_hkl(i[2:5])
+                        axes.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
+        else:
+            spectra = self.get_profile(method=profile, res=0.2, user_kwargs={"FWHM": 0.1})
+            if legend is None:
+                label = 'Profile: ' + profile
+            else:
+                label = legend
+            axes.plot(spectra[0], spectra[1], label=label)
+            axes.legend()
+
+        axes.set_xlim([x_min, x_max])
+        axes.set_xlabel('2$\Theta$ ($\lambda$=' + str(self.wavelength) + ' $\AA$)')
+        axes.set_ylabel('Intensity')
+
+        if ax is None:
+            axes.grid()
+            if filename is None:
+                if show:
+                    fig.show()
+            else:
+                fig.savefig(filename)
+                #fig.close()
+            return fig, axes
 
 
     def plotly_pxrd(self, profile='gaussian', minimum_I=0.01, res=0.02, \

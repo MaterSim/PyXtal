@@ -14,8 +14,8 @@ class database():
 
     def __init__(self, db_name):
         self.db_name = db_name
-        if not os.path.exists(db_name):
-            raise ValueError(db_name, 'doesnot exist')
+        #if not os.path.exists(db_name):
+        #    raise ValueError(db_name, 'doesnot exist')
 
         self.db = connect(db_name)
         self.get_all_codes()
