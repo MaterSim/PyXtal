@@ -48,7 +48,7 @@ def correlation_opt(coef1, coef2, angle, s=0):
             method='Nelder-Mead', options={'maxiter': 20})
     return -res.fun, res.x
 
-def correlation_go(coef1, coef2, M=6, s=0, d_cut=0.9):
+def correlation_go(coef1, coef2, M=6, s=0, d_cut=0.92):
     """
     global optimization of two coefs based on quasi random sampling
 
@@ -369,20 +369,21 @@ class spherical_image():
         for i in range(len(self.coefs)):
             self.coefs[i] = self.coefs[i].rotate(alpha, beta, gamma)
 
-    def get_similarity(self, sph2, M=6):
+    def get_similarity(self, sph2, M=6, cutoff=0.95):
         """
         Compute the similarity matrix between two sphs
         
         Args:
             sph2: the 2nd sph class
             M: number of power in quasi random sampling
+            cutoff: cutoff similarity to terminate search early
         """
         S = np.zeros([len(self.coefs), len(sph2.coefs)])
         for i in range(len(self.coefs)):
             coef1 = self.coefs[i]
             for j in range(len(sph2.coefs)):
                 coef2 = sph2.coefs[j]
-                d, _ = correlation_go(coef1, coef2, M=M)
+                d, _ = correlation_go(coef1, coef2, M=M, d_cut=cutoff)
                 S[i, j] = d
         return S
 
