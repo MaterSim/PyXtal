@@ -26,10 +26,11 @@ class XRD():
 
     def __init__(self, crystal, wavelength=1.54184,
                  thetas = [0, 180],
+                 res = 0.01,
                  preferred_orientation = False,
                  march_parameter = None):
 
-
+        self.res = np.radians(res)
         self.wavelength = wavelength
         self.min2theta = np.radians(thetas[0])
         self.max2theta = np.radians(thetas[1])
@@ -37,8 +38,9 @@ class XRD():
         self.preferred_orientation = preferred_orientation
         self.march_parameter = march_parameter
         self.all_dhkl(crystal)
-        self.intensity(crystal)
-        self.pxrdf()
+        skip_hkl = self.intensity(crystal)
+        if not skip_hkl:
+            self.pxrdf()
 
     def __str__(self):
         return self.by_hkl()
@@ -88,6 +90,7 @@ class XRD():
         hkl_index = create_index()
         hkl_max = np.array([1,1,1])
 
+        # to fix soon
         for index in hkl_index:
             d = np.linalg.norm(np.dot(index, rec_matrix))
             multiple = int(np.ceil(1/d/d_min))
@@ -115,20 +118,26 @@ class XRD():
         self.hkl_list = np.array(hkl_list)
         self.d_hkl = d_hkl
 
-    def intensity(self, crystal):
-
+    def intensity(self, crystal, TWO_THETA_TOL=1e-5, SCALED_INTENSITY_TOL=1e-5, 
+            per_N=5e+7): #0000000):
         """
         This function calculates all that is necessary to find the intensities.
         This scheme is similar to pymatgen
-        Needs improvement from different correction factors.
+        If the number of hkl is significanly large, will automtically switch to
+        the fast mode in which we only calculate the intensity and do not care
+        the exact hkl families
+
+        Args:
+            TWO_THETA_TOL: tolerance to find repeating angles
+            SCALED_INTENSITY_TOL: threshold for intensities
         """
-
-        d0 = (1/2/self.d_hkl)**2
-
         # obtiain scattering parameters, atomic numbers, and occus (need to look into occus)
+        #print("total number of hkl lists", len(self.hkl_list))
+        #print("total number of coordinates:", len(crystal.get_scaled_positions()))
+        #from time import time
+        #t0 = time()
         coeffs = []
         zs = []
-
         for elem in crystal.get_chemical_symbols():
             if elem == 'D':
                 elem = 'H'
@@ -136,54 +145,80 @@ class XRD():
             z = Element(elem).z
             coeffs.append(c)
             zs.append(z)
-
         coeffs = np.array(coeffs)
+        zs = np.array(zs)
+        #zs = np.tile(zs, (len(self.theta),1)).T #N*M
+        s2s = (np.sin(self.theta)/self.wavelength)**2 # M
+
+
+        # QZ: This is a heavy calculation, Partition it to prevent the memory issue
+        N_atom, N_hkls = len(crystal), len(self.hkl_list)
+        Is = np.zeros(N_hkls)
+        N_cycle = int(np.ceil(N_hkls*N_atom/per_N))
+        positions = crystal.get_scaled_positions()
+        prev_N1 = 0
+        for cycle in range(N_cycle):
+            N1 = prev_N1
+            N2 = min([int(per_N*(cycle+1)/N_atom), N_hkls]) 
+            g_dot_rs = np.dot(positions, self.hkl_list[N1:N2].T) # N*M
+            exps = np.exp(2j * np.pi * g_dot_rs) # N*M
+
+            tmp1 = np.exp(np.einsum('ij,k->ijk', -coeffs[:, :, 1], s2s[N1:N2])) #N*4, M
+            tmp2 = np.einsum('ij,ijk->ik', coeffs[:, :, 0], tmp1) #N*4, N*M
+            sfs = np.tile(zs, (N2-N1,1)).T - 41.78214*np.einsum('ij,j->ij', tmp2, s2s[N1:N2]) #N*M, M -> N*M
+
+            fs = np.einsum('ij,ij->j', sfs, exps) #M
+            
+            # Final intensity values
+            Is[N1:N2] = (fs * fs.conjugate()).real #M
+            #print(N1, N2, time()-t0)
+            prev_N1 = N2
+
+        # Lorentz polarization factor lf
+        lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
+
+        # Preferred orientation factor
+        if self.preferred_orientation != False:
+            G = self.march_parameter
+            pos = ((G * np.cos(self.theta))**2 + 1/G * np.sin(self.theta)**2)**(-3/2)
+        else:
+            pos = np.ones(len(self.hkl_list))
+
+        # Group the peaks by theta values
+        # calculate 2*theta
+        _two_thetas = np.degrees(2 * self.theta)
         self.peaks = {}
-        two_thetas = []
 
-        # self.march_parameter = 1
-        TWO_THETA_TOL = 1e-5 # tolerance to find repeating angles
-        SCALED_INTENSITY_TOL = 1e-5 # threshold for intensities
+        N = int((self.max2theta - self.min2theta)/self.res)
+        if len(self.hkl_list) > N:
+            skip_hkl = True
+            refs = np.degrees(np.linspace(self.min2theta, self.max2theta, N+1))
+            dtol = np.degrees(self.res/2)
+            for ref_theta in refs:
+                ind = np.where(np.abs(_two_thetas - ref_theta) < dtol)
+                ids = ind[0]
+                #print(ref_theta, ind)
+                if len(ids) > 0:
+                    intensity = np.sum(Is[ids] * lfs[ids] * pos[ids])
+                    self.peaks[ref_theta] = [intensity, self.hkl_list[ids], self.d_hkl[ids[0]]]
+        else:
+            skip_hkl = False
+            two_thetas = []
+            for id in range(len(self.hkl_list)):
 
-        for hkl, s2, theta, d_hkl in zip(self.hkl_list, d0, self.theta, self.d_hkl):
-
-            # calculate the scattering factor sf
-            g_dot_r = np.dot(crystal.get_scaled_positions(), np.transpose([hkl])).T[0]
-            sf = zs - 41.78214 * s2 * np.sum(coeffs[:, :, 0] * np.exp(-coeffs[:, :, 1] * s2), axis=1)
-
-            # calculate the structure factor f
-            f = np.sum(sf * np.exp(2j * np.pi * g_dot_r))
-
-            # calculate the lorentz polarization factor lf
-            lf = (1 + np.cos(2 * theta) ** 2) / (np.sin(theta) ** 2 * np.cos(theta))
-
-            # calculate the preferred orientation factor
-            if self.preferred_orientation != False:
-                G = self.march_parameter
-                po = ((G * np.cos(theta))**2 + 1/G * np.sin(theta)**2)**(-3/2)
-            else:
-                po = 1
-
-            # calculate the intensity I
-            I = (f * f.conjugate()).real
-
-            # calculate 2*theta
-            two_theta = np.degrees(2 * theta)
-
-            # find where the scattered angles are equal
-            ind = np.where(np.abs(np.subtract(two_thetas, two_theta)) < TWO_THETA_TOL)
-
-            # append intensity, hkl plane, and thetas to lists
-            if len(ind[0]) > 0:
-                self.peaks[two_thetas[ind[0][0]]][0] += I * lf * po
-                self.peaks[two_thetas[ind[0][0]]][1].append(tuple(hkl))
-            else:
-                self.peaks[two_theta] = [I * lf * po, [tuple(hkl)],d_hkl]
-                two_thetas.append(two_theta)
+                hkl, d_hkl = self.hkl_list[id], self.d_hkl[id]
+                # find where the scattered angles are equal
+                ind = np.where(np.abs(np.subtract(two_thetas, _two_thetas[id])) < TWO_THETA_TOL)
+                if len(ind[0]) > 0:
+                    # append intensity, hkl plane, and thetas to lists
+                    self.peaks[two_thetas[ind[0][0]]][0] += Is[id] * lfs[id] * pos[id]
+                    self.peaks[two_thetas[ind[0][0]]][1].append(tuple(hkl))
+                else:
+                    self.peaks[_two_thetas[id]] = [Is[id] * lfs[id] * pos[id], [tuple(hkl)], d_hkl]
+                    two_thetas.append(_two_thetas[id])
 
         # obtain important intensities (defined by SCALED_INTENSITY_TOL)
         # and corresponding 2*theta, hkl plane + multiplicity, and d_hkl
-
         max_intensity = max([v[0] for v in self.peaks.values()])
         x = []
         y = []
@@ -191,10 +226,15 @@ class XRD():
         d_hkls = []
         count = 0
         for k in sorted(self.peaks.keys()):
-            count +=1
+            count += 1
             v = self.peaks[k]
-            fam = self.get_unique_families(v[1])
+            if skip_hkl:
+                fam = {}
+                fam[tuple(v[1][0])] = len(v[1])
+            else:
+                fam = self.get_unique_families(v[1])
             if v[0] / max_intensity * 100 > SCALED_INTENSITY_TOL:
+                #print(k, v[0]/max_intensity)
                 x.append(k)
                 y.append(v[0])
 
@@ -207,12 +247,13 @@ class XRD():
         self.hkl_labels = hkls
         self.d_hkls = d_hkls
 
+        return skip_hkl
+
     def pxrdf(self):
         """
         Group the equivalent hkl planes together by 2\theta angle
         N*6 arrays, Angle, d_hkl, h, k, l, intensity
         """
-
         rank = range(len(self.theta2)) #np.argsort(self.theta2)
         PL = []
         last = 0
@@ -243,7 +284,7 @@ class XRD():
             {hkl: multiplicity}: A dict with unique hkl and multiplicity.
         """
 
-       # TODO: Definitely can be sped up.
+       # TODO: Definitely speed it up.
         def is_perm(hkl1, hkl2):
             h1 = np.abs(hkl1)
             h2 = np.abs(hkl2)
@@ -285,6 +326,7 @@ class XRD():
 
     def plot_pxrd(self, filename=None, profile=None, minimum_I=0.01, 
                 show_hkl=True, fontsize=None, figsize=(20,10), 
+                res = 0.02, fwhm = 0.1,
                 ax=None, xlim=None, width=1.0, legend=None, show=False):
         """
         plot PXRD
@@ -323,7 +365,7 @@ class XRD():
                         label = self.draw_hkl(i[2:5])
                         axes.text(i[0]-dx/40, i[-1], label[0]+label[1]+label[2])
         else:
-            spectra = self.get_profile(method=profile, res=0.2, user_kwargs={"FWHM": 0.1})
+            spectra = self.get_profile(method=profile, res=res, user_kwargs={"FWHM": fwhm})
             if legend is None:
                 label = 'Profile: ' + profile
             else:
@@ -456,15 +498,16 @@ class Profile:
             - two_thetas: 1d float array simulated/measured 2 theta values
             - intensities: simulated/measures peaks
         """
-
         N = int((max2theta-min2theta)/self.res)
         px = np.linspace(min2theta, max2theta, N)
         py = np.zeros((N))
-
         for two_theta, intensity in zip(two_thetas, intensities):
+            #print(two_theta, intensity)
             if self.method == 'gaussian':
                 fwhm = self.kwargs['FWHM']
-                tmp = gaussian(two_theta, px, fwhm)
+                dtheta2 = ((px - two_theta)/fwhm)**2
+                tmp = np.exp(-4*np.log(2)*dtheta2)
+                #tmp = gaussian(two_theta, px, fwhm)
 
             elif self.method == 'lorentzian':
                 fwhm = self.kwargs['FWHM']
@@ -496,6 +539,7 @@ class Profile:
                 tmp = mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N)
 
             py += intensity * tmp
+            #print(intensity * tmp)
 
         py /= np.max(py)
 
