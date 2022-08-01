@@ -108,7 +108,7 @@ class XRD():
         
         hkl = np.array((np.meshgrid(h,k,l))).transpose()
         hkl_list = np.reshape(hkl, [len(h)*len(k)*len(l),3])
-        #hkl_list = hkl_list[np.where(hkl_list.any(axis=1))[0]]
+        hkl_list = hkl_list[np.where(hkl_list.any(axis=1))[0]]
         #id = int((len(hkl_list)-1)/2)
         #hkl_list = np.delete(hkl_list, int((len(hkl_list)-1)/2), axis=0)
         d_hkl = 1/np.linalg.norm( np.dot(hkl_list, rec_matrix), axis=1)
