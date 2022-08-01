@@ -20,6 +20,7 @@ class XRD():
         crystal: ase atoms object
         wavelength: float
         max2theta: float
+        per_N: int
         preferred_orientation: boolean
         march_parameter: float
     """
@@ -27,20 +28,20 @@ class XRD():
     def __init__(self, crystal, wavelength=1.54184,
                  thetas = [0, 180],
                  res = 0.01,
+                 per_N = 3e+4,
                  preferred_orientation = False,
                  march_parameter = None):
-
         self.res = np.radians(res)
         self.wavelength = wavelength
         self.min2theta = np.radians(thetas[0])
         self.max2theta = np.radians(thetas[1])
+        self.per_N = per_N
         self.name = crystal.get_chemical_formula()
         self.preferred_orientation = preferred_orientation
         self.march_parameter = march_parameter
         self.all_dhkl(crystal)
-        skip_hkl = self.intensity(crystal)
-        if not skip_hkl:
-            self.pxrdf()
+        self.skip_hkl = self.intensity(crystal)
+        self.pxrdf()
 
     def __str__(self):
         return self.by_hkl()
@@ -82,12 +83,13 @@ class XRD():
 
         #rec_matrix = crystal.get_reciprocal_cell()
         rec_matrix = crystal.cell.reciprocal()
+        d_max = self.wavelength/np.sin(self.min2theta/2)/2
         d_min = self.wavelength/np.sin(self.max2theta/2)/2
 
         # This block is to find the shortest d_hkl
         # for all basic directions (1,0,0), (0,1,0), (1,1,0), (1,-1,0)
 
-        hkl_index = create_index()
+        hkl_index = create_index() #2, 2, 2)
         hkl_max = np.array([1,1,1])
 
         # to fix soon
@@ -100,26 +102,27 @@ class XRD():
                     hkl_max[i] = index[i]
 
         h1, k1, l1 = hkl_max
-        h = np.arange(-h1,h1+1)
-        k = np.arange(-k1,k1+1)
-        l = np.arange(-l1,l1+1)
-
+        h = np.arange(-h1, h1+1)
+        k = np.arange(-k1, k1+1)
+        l = np.arange(-l1, l1+1)
+        
         hkl = np.array((np.meshgrid(h,k,l))).transpose()
         hkl_list = np.reshape(hkl, [len(h)*len(k)*len(l),3])
-        hkl_list = hkl_list[np.where(hkl_list.any(axis=1))[0]]
+        #hkl_list = hkl_list[np.where(hkl_list.any(axis=1))[0]]
+        #id = int((len(hkl_list)-1)/2)
+        #hkl_list = np.delete(hkl_list, int((len(hkl_list)-1)/2), axis=0)
         d_hkl = 1/np.linalg.norm( np.dot(hkl_list, rec_matrix), axis=1)
 
-        shortlist = d_hkl > (d_min)
+        shortlist = np.where((d_hkl >= d_min) & (d_hkl < d_max))[0]
         d_hkl = d_hkl[shortlist]
         hkl_list = hkl_list[shortlist]
         sintheta = self.wavelength/2/d_hkl
 
         self.theta = np.arcsin(sintheta)
-        self.hkl_list = np.array(hkl_list)
+        self.hkl_list = np.array(hkl_list, dtype=int)
         self.d_hkl = d_hkl
 
-    def intensity(self, crystal, TWO_THETA_TOL=1e-5, SCALED_INTENSITY_TOL=1e-5, 
-            per_N=5e+7): #0000000):
+    def intensity(self, crystal, TWO_THETA_TOL=1e-5, SCALED_INTENSITY_TOL=1e-5): 
         """
         This function calculates all that is necessary to find the intensities.
         This scheme is similar to pymatgen
@@ -136,45 +139,44 @@ class XRD():
         #print("total number of coordinates:", len(crystal.get_scaled_positions()))
         #from time import time
         #t0 = time()
-        coeffs = []
-        zs = []
-        for elem in crystal.get_chemical_symbols():
+
+        N_atom, N_hkls = len(crystal), len(self.hkl_list)
+        coeffs = np.zeros([N_atom, 4, 2])
+        zs = np.zeros([N_atom, 1], dtype=int)
+        for i, elem in enumerate(crystal.get_chemical_symbols()):
             if elem == 'D':
                 elem = 'H'
-            c = ATOMIC_SCATTERING_PARAMS[elem]
-            z = Element(elem).z
-            coeffs.append(c)
-            zs.append(z)
-        coeffs = np.array(coeffs)
-        zs = np.array(zs)
-        #zs = np.tile(zs, (len(self.theta),1)).T #N*M
+            coeffs[i, :, :] = ATOMIC_SCATTERING_PARAMS[elem]
+            zs[i] = Element(elem).z
+
+        # A heavy calculation, Partition it to prevent the memory issue
         s2s = (np.sin(self.theta)/self.wavelength)**2 # M
-
-
-        # QZ: This is a heavy calculation, Partition it to prevent the memory issue
-        N_atom, N_hkls = len(crystal), len(self.hkl_list)
         Is = np.zeros(N_hkls)
-        N_cycle = int(np.ceil(N_hkls*N_atom/per_N))
+        N_cycle = int(np.ceil(N_hkls*N_atom/self.per_N))
         positions = crystal.get_scaled_positions()
+        const = 2j * np.pi
         prev_N1 = 0
+
         for cycle in range(N_cycle):
             N1 = prev_N1
-            N2 = min([int(per_N*(cycle+1)/N_atom), N_hkls]) 
+            if cycle+1 == N_cycle:
+                N2 = N_hkls 
+            else:
+                N2 = int(self.per_N*(cycle+1)/N_atom)
+
             g_dot_rs = np.dot(positions, self.hkl_list[N1:N2].T) # N*M
-            exps = np.exp(2j * np.pi * g_dot_rs) # N*M
+            exps = np.exp(const * g_dot_rs) # N*M
 
             tmp1 = np.exp(np.einsum('ij,k->ijk', -coeffs[:, :, 1], s2s[N1:N2])) #N*4, M
             tmp2 = np.einsum('ij,ijk->ik', coeffs[:, :, 0], tmp1) #N*4, N*M
-            sfs = np.tile(zs, (N2-N1,1)).T - 41.78214*np.einsum('ij,j->ij', tmp2, s2s[N1:N2]) #N*M, M -> N*M
+            sfs = np.add(-41.78214*np.einsum('ij,j->ij', tmp2, s2s[N1:N2]), zs) #N*M, M -> N*M
+            fs = np.sum(sfs*exps, axis=0) #M
 
-            fs = np.einsum('ij,ij->j', sfs, exps) #M
-            
             # Final intensity values
             Is[N1:N2] = (fs * fs.conjugate()).real #M
-            #print(N1, N2, time()-t0)
             prev_N1 = N2
 
-        # Lorentz polarization factor lf
+        # Lorentz polarization factor 
         lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
 
         # Preferred orientation factor
@@ -182,10 +184,9 @@ class XRD():
             G = self.march_parameter
             pos = ((G * np.cos(self.theta))**2 + 1/G * np.sin(self.theta)**2)**(-3/2)
         else:
-            pos = np.ones(len(self.hkl_list))
+            pos = np.ones(N_hkls)
 
         # Group the peaks by theta values
-        # calculate 2*theta
         _two_thetas = np.degrees(2 * self.theta)
         self.peaks = {}
 
@@ -195,9 +196,7 @@ class XRD():
             refs = np.degrees(np.linspace(self.min2theta, self.max2theta, N+1))
             dtol = np.degrees(self.res/2)
             for ref_theta in refs:
-                ind = np.where(np.abs(_two_thetas - ref_theta) < dtol)
-                ids = ind[0]
-                #print(ref_theta, ind)
+                ids = np.where(np.abs(_two_thetas - ref_theta) < dtol)[0]
                 if len(ids) > 0:
                     intensity = np.sum(Is[ids] * lfs[ids] * pos[ids])
                     self.peaks[ref_theta] = [intensity, self.hkl_list[ids], self.d_hkl[ids[0]]]
@@ -219,6 +218,7 @@ class XRD():
 
         # obtain important intensities (defined by SCALED_INTENSITY_TOL)
         # and corresponding 2*theta, hkl plane + multiplicity, and d_hkl
+
         max_intensity = max([v[0] for v in self.peaks.values()])
         x = []
         y = []
@@ -751,14 +751,14 @@ def similarity_calculate(r, w, d, Npts, fy, gy):
     return np.abs(xCorrfg_w / np.sqrt(aCorrff_w * aCorrgg_w))
 
 
-def create_index():
+def create_index(imax=1, jmax=1, kmax=1):
     """
     shortcut to get the index
     """
     hkl_index = []
-    for i in [-1,0,1]:
-        for j in [-1,0,1]:
-            for k in [-1,0,1]:
+    for i in range(-imax, imax+1):
+        for j in range(-jmax,jmax+1):
+            for k in range(-kmax, kmax+1):
                 hkl = np.array([i,j,k])
                 if sum(hkl*hkl)>0:
                     hkl_index.append(hkl)
