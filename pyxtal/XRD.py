@@ -21,6 +21,7 @@ class XRD():
         wavelength: float
         max2theta: float
         per_N: int
+        ncpu: int
         preferred_orientation: boolean
         march_parameter: float
     """
@@ -29,6 +30,7 @@ class XRD():
                  thetas = [0, 180],
                  res = 0.01,
                  per_N = 3e+4,
+                 ncpu = 1,
                  preferred_orientation = False,
                  march_parameter = None):
         self.res = np.radians(res)
@@ -36,6 +38,7 @@ class XRD():
         self.min2theta = np.radians(thetas[0])
         self.max2theta = np.radians(thetas[1])
         self.per_N = per_N
+        self.ncpu = ncpu
         self.name = crystal.get_chemical_formula()
         self.preferred_orientation = preferred_orientation
         self.march_parameter = march_parameter
@@ -151,30 +154,46 @@ class XRD():
 
         # A heavy calculation, Partition it to prevent the memory issue
         s2s = (np.sin(self.theta)/self.wavelength)**2 # M
-        Is = np.zeros(N_hkls)
         N_cycle = int(np.ceil(N_hkls*N_atom/self.per_N))
         positions = crystal.get_scaled_positions()
-        const = 2j * np.pi
-        prev_N1 = 0
+        if self.ncpu == 1:
+            N_cycles = range(N_cycle)
+            Is = get_all_intensity(N_cycles, N_atom, self.per_N, positions, self.hkl_list, s2s, coeffs, zs)
+        else:
+            import multiprocessing as mp
+            queue = mp.Queue()
+            cycle_per_cpu = int(np.ceil(N_cycle/self.ncpu))
+            
+            processes = []
+            for cpu in range(self.ncpu):
+                N1 = cpu * cycle_per_cpu
+                if cpu + 1 == self.ncpu:
+                    N2 = N_cycle
+                else:
+                    N2 = (cpu + 1) * cycle_per_cpu 
+                cycles = range(N1, N2)
+                #print("cpus", cpu, N1, N2)
+                p = mp.Process(target=get_all_intensity_par,
+                               args = (cpu,
+                                       queue,
+                                       cycles, 
+                                       N_atom, 
+                                       self.per_N, 
+                                       positions, 
+                                       self.hkl_list, 
+                                       s2s, 
+                                       coeffs, 
+                                       zs))
+                p.start()
+                processes.append(p)
 
-        for cycle in range(N_cycle):
-            N1 = prev_N1
-            if cycle+1 == N_cycle:
-                N2 = N_hkls 
-            else:
-                N2 = int(self.per_N*(cycle+1)/N_atom)
-
-            g_dot_rs = np.dot(positions, self.hkl_list[N1:N2].T) # N*M
-            exps = np.exp(const * g_dot_rs) # N*M
-
-            tmp1 = np.exp(np.einsum('ij,k->ijk', -coeffs[:, :, 1], s2s[N1:N2])) #N*4, M
-            tmp2 = np.einsum('ij,ijk->ik', coeffs[:, :, 0], tmp1) #N*4, N*M
-            sfs = np.add(-41.78214*np.einsum('ij,j->ij', tmp2, s2s[N1:N2]), zs) #N*M, M -> N*M
-            fs = np.sum(sfs*exps, axis=0) #M
-
-            # Final intensity values
-            Is[N1:N2] = (fs * fs.conjugate()).real #M
-            prev_N1 = N2
+            unsorted_result = [queue.get() for p in processes] 
+            for p in processes: p.join()
+            
+            #collect results
+            Is = np.zeros([N_hkls])
+            for t in unsorted_result:
+                Is += t[1]
 
         # Lorentz polarization factor 
         lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
@@ -764,3 +783,42 @@ def create_index(imax=1, jmax=1, kmax=1):
                     hkl_index.append(hkl)
     hkl_index = np.array(hkl_index).reshape([len(hkl_index), 3])
     return hkl_index
+
+def get_intensity(positions, hkl, s2, coeffs, z):
+    const = 2j * np.pi
+    g_dot_rs = np.dot(positions, hkl) # N*M
+    exps = np.exp(const * g_dot_rs) # N*M
+
+    tmp1 = np.exp(np.einsum('ij,k->ijk', -coeffs[:, :, 1], s2)) #N*4, M
+    tmp2 = np.einsum('ij,ijk->ik', coeffs[:, :, 0], tmp1) #N*4, N*M
+    sfs = np.add(-41.78214*np.einsum('ij,j->ij', tmp2, s2), z) #N*M, M -> N*M
+    fs = np.sum(sfs*exps, axis=0) #M
+
+    # Final intensity values
+    return (fs * fs.conjugate()).real #M
+ 
+def get_all_intensity(N_cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs):
+    Is = np.zeros(len(hkls))
+    for i, cycle in enumerate(N_cycles):
+        N1 = int(per_N*(cycle)/N_atom)
+        if i+1 == len(N_cycles):
+            N2 = min([len(hkls), int(per_N*(cycle+1)/N_atom)]) 
+        else:
+            N2 = int(per_N*(cycle+1)/N_atom)
+        hkl, s2 = hkls[N1:N2].T, s2s[N1:N2]
+        Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
+    return Is
+
+def get_all_intensity_par(cpu, queue, cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs):
+    #print("proc", cpu, cycles)
+    Is = np.zeros(len(hkls))
+    for i, cycle in enumerate(cycles):
+        N1 = int(per_N*(cycle)/N_atom)
+        if i+1 == len(cycles):
+            N2 = min([len(hkls), int(per_N*(cycle+1)/N_atom)]) 
+        else:
+            N2 = int(per_N*(cycle+1)/N_atom)
+        hkl, s2 = hkls[N1:N2].T, s2s[N1:N2]
+        Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
+        #print('run', cpu, N1, N2)
+    queue.put((cpu, Is))
