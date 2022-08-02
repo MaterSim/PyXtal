@@ -31,20 +31,55 @@ class XRD():
                  res = 0.01,
                  per_N = 3e+4,
                  ncpu = 1,
+                 filename = None,
                  preferred_orientation = False,
                  march_parameter = None):
         self.res = np.radians(res)
-        self.wavelength = wavelength
-        self.min2theta = np.radians(thetas[0])
-        self.max2theta = np.radians(thetas[1])
-        self.per_N = per_N
-        self.ncpu = ncpu
-        self.name = crystal.get_chemical_formula()
-        self.preferred_orientation = preferred_orientation
-        self.march_parameter = march_parameter
-        self.all_dhkl(crystal)
-        self.skip_hkl = self.intensity(crystal)
-        self.pxrdf()
+        if filename is None:
+            self.wavelength = wavelength
+            self.min2theta = np.radians(thetas[0])
+            self.max2theta = np.radians(thetas[1])
+            self.per_N = per_N
+            self.ncpu = ncpu
+            self.name = crystal.get_chemical_formula()
+            self.preferred_orientation = preferred_orientation
+            self.march_parameter = march_parameter
+            self.all_dhkl(crystal)
+            self.skip_hkl = self.intensity(crystal)
+            self.pxrdf()
+        else:
+            self.load(filename)
+
+    def save(self, filename):
+        """
+        savetxt file 
+        """
+        header = "wavelength/thetas {:12.6f} {:6.2f} {:6.2f}".format(\
+                self.wavelength, np.degrees(self.min2theta), np.degrees(self.max2theta))
+        np.savetxt(filename, self.pxrd, header=header)
+
+    def load(self, filename):
+        """
+        Load the pxrd from txt file
+        """
+        fp = open(filename, 'r')
+        tmp = fp.readline()
+        res =  tmp.split()[2:]
+        self.wavelength = float(res[0])
+        self.min2theta = np.radians(float(res[1]))
+        self.max2theta = np.radians(float(res[2]))
+
+        pxrd = np.loadtxt(filename)
+        self.theta2 = pxrd[:, 0]
+        self.d_hkls = pxrd[:, 1] 
+        self.xrd_intensity = pxrd[:, -1]
+        hkl_labels = []
+        for i in range(len(pxrd)):
+            h, k, l = int(pxrd[i, 2]), int(pxrd[i, 3]), int(pxrd[i, 4])
+            hkl_labels.append([{"hkl": (h, k, l), "multiplicity": 1}])
+        self.hkl_labels = hkl_labels
+        self.pxrd = pxrd       
+        self.name = filename
 
     def __str__(self):
         return self.by_hkl()
