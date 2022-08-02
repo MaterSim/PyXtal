@@ -208,15 +208,20 @@ class XRD():
                     N2 = (cpu + 1) * cycle_per_cpu 
                 cycles = range(N1, N2)
                 #print("cpus", cpu, N1, N2)
+                Start = int(self.per_N*(cycles[0])/N_atom)
+                End = min([N_hkls, int(self.per_N*(cycles[-1]+1)/N_atom)])
+
                 p = mp.Process(target=get_all_intensity_par,
                                args = (cpu,
                                        queue,
                                        cycles, 
+                                       Start,
+                                       End,
                                        N_atom, 
                                        self.per_N, 
                                        positions, 
-                                       self.hkl_list, 
-                                       s2s, 
+                                       self.hkl_list[Start:End], 
+                                       s2s[Start:End], 
                                        coeffs, 
                                        zs))
                 p.start()
@@ -227,8 +232,14 @@ class XRD():
             
             #collect results
             Is = np.zeros([N_hkls])
-            for t in unsorted_result:
-                Is += t[1]
+            for t in sorted(unsorted_result):
+                N1 = int(t[0] * cycle_per_cpu * self.per_N / N_atom)
+                if t[0] + 1 == self.ncpu:
+                    N2 = N_hkls
+                else:
+                    N2 = int((t[0]+1) * cycle_per_cpu * self.per_N / N_atom)
+                #print(t[0], N1, N2, N2-N1, len(t[1]))
+                Is[N1:N2] += t[1]
 
         # Lorentz polarization factor 
         lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
@@ -844,15 +855,17 @@ def get_all_intensity(N_cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs)
         Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
     return Is
 
-def get_all_intensity_par(cpu, queue, cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs):
+def get_all_intensity_par(cpu, queue, cycles, Start, End, N_atom, per_N, positions, hkls, s2s, coeffs, zs):
     #print("proc", cpu, cycles)
-    Is = np.zeros(len(hkls))
+    Is = np.zeros(End-Start)
+    #print(cpu, Start, End)
+
     for i, cycle in enumerate(cycles):
-        N1 = int(per_N*(cycle)/N_atom)
+        N1 = int(per_N*(cycle)/N_atom) - Start
         if i+1 == len(cycles):
-            N2 = min([len(hkls), int(per_N*(cycle+1)/N_atom)]) 
+            N2 = min([End, int(per_N*(cycle+1)/N_atom)]) - Start
         else:
-            N2 = int(per_N*(cycle+1)/N_atom)
+            N2 = int(per_N*(cycle+1)/N_atom) - Start
         hkl, s2 = hkls[N1:N2].T, s2s[N1:N2]
         Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
         #print('run', cpu, N1, N2)
