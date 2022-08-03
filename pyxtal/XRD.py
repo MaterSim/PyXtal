@@ -29,7 +29,7 @@ class XRD():
     def __init__(self, crystal, wavelength=1.54184,
                  thetas = [0, 180],
                  res = 0.01,
-                 per_N = 3e+4,
+                 per_N = 30000,
                  ncpu = 1,
                  filename = None,
                  preferred_orientation = False,
@@ -179,6 +179,9 @@ class XRD():
         #t0 = time()
 
         N_atom, N_hkls = len(crystal), len(self.hkl_list)
+        # Make sure the code don't split into too many cycles
+        if self.per_N < N_atom: self.per_N = N_atom
+
         coeffs = np.zeros([N_atom, 4, 2])
         zs = np.zeros([N_atom, 1], dtype=int)
         for i, elem in enumerate(crystal.get_chemical_symbols()):
