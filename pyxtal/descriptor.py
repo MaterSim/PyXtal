@@ -261,7 +261,7 @@ class spherical_image():
         '''
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
-            _, neighs, _, _, engs = self.xtal.get_neighboring_molecules(i, 
+            _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i, 
                                                     factor=self.factor, 
                                                     max_d=self.max_d, 
                                                     CN=self.max_CN)
@@ -269,7 +269,8 @@ class spherical_image():
             center = site.molecule.get_center(xyz)
             coords = np.zeros([len(neighs), 3])
             for _i, xyz in enumerate(neighs):
-                coords[_i, :] = site.molecule.get_center(xyz) - center
+                #coords[_i, :] = site.molecule.get_center(xyz) - center
+                coords[_i, :] = self.xtal.molecules[comps[_i]].get_center(xyz) - center
             pt = np.zeros([len(coords), 3])
             pt[:, :2] = xyz2sph(coords)
             pt[:, 2] = engs/np.sum(engs)
