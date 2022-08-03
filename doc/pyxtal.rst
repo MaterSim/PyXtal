@@ -19,18 +19,19 @@ Submodules
 
 .. toctree::
 
-   pyxtal.crystal
    pyxtal.block_crystal
+   pyxtal.crystal
    pyxtal.descriptor
+   pyxtal.io
+   pyxtal.lattice
    pyxtal.molecular_crystal
-   pyxtal.wyckoff_site
-   pyxtal.wyckoff_split
    pyxtal.molecule
    pyxtal.operations
    pyxtal.representation
    pyxtal.supergroup
    pyxtal.symmetry
-   pyxtal.lattice
    pyxtal.tolerance
    pyxtal.viz
-   pyxtal.io
+   pyxtal.wyckoff_site
+   pyxtal.wyckoff_split
+   pyxtal.XRD

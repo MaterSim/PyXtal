@@ -1,5 +1,5 @@
-pyxtal./descriptor module
-=========================
+pyxtal.descriptor module
+========================
 
 .. automodule:: pyxtal.descriptor
     :members:

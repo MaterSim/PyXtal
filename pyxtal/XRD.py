@@ -189,8 +189,9 @@ class XRD():
 
         # A heavy calculation, Partition it to prevent the memory issue
         s2s = (np.sin(self.theta)/self.wavelength)**2 # M
-        N_cycle = int(np.ceil(N_hkls*N_atom/self.per_N))
+        hkl_per_proc = int(self.per_N/N_atom); N_cycle = int(np.ceil(N_hkls/hkl_per_proc))
         positions = crystal.get_scaled_positions()
+
         if self.ncpu == 1:
             N_cycles = range(N_cycle)
             Is = get_all_intensity(N_cycles, N_atom, self.per_N, positions, self.hkl_list, s2s, coeffs, zs)
@@ -198,48 +199,72 @@ class XRD():
             import multiprocessing as mp
             queue = mp.Queue()
             cycle_per_cpu = int(np.ceil(N_cycle/self.ncpu))
-            
-            processes = []
-            for cpu in range(self.ncpu):
-                N1 = cpu * cycle_per_cpu
-                if cpu + 1 == self.ncpu:
-                    N2 = N_cycle
-                else:
-                    N2 = (cpu + 1) * cycle_per_cpu 
-                cycles = range(N1, N2)
-                #print("cpus", cpu, N1, N2)
-                Start = int(self.per_N*(cycles[0])/N_atom)
-                End = min([N_hkls, int(self.per_N*(cycles[-1]+1)/N_atom)])
+            if False:
+                Is = np.zeros([N_hkls])
+                for cycle in range(cycle_per_cpu):
+                    processes = []
+                    for cpu in range(self.ncpu):
+                        mycycle = self.ncpu*cycle + cpu
+                        Start = mycycle * hkl_per_proc
+                        End = min([N_hkls, Start + hkl_per_proc])
+                        #print(N_cycle, mycycle, cpu, Start, End, N_hkls)
+                        if Start < End:
+                            p = mp.Process(target=get_all_intensity_par,
+                                           args = (cpu,
+                                                   queue,
+                                                   [mycycle], 
+                                                   Start,
+                                                   End,
+                                                   hkl_per_proc,
+                                                   positions, 
+                                                   self.hkl_list[Start:End], 
+                                                   s2s[Start:End], 
+                                                   coeffs, 
+                                                   zs))
+                            p.start()
+                            processes.append(p)
 
-                p = mp.Process(target=get_all_intensity_par,
-                               args = (cpu,
-                                       queue,
-                                       cycles, 
-                                       Start,
-                                       End,
-                                       N_atom, 
-                                       self.per_N, 
-                                       positions, 
-                                       self.hkl_list[Start:End], 
-                                       s2s[Start:End], 
-                                       coeffs, 
-                                       zs))
-                p.start()
-                processes.append(p)
+                    #print("collect results")
+                    unsorted_result = [queue.get() for p in processes] 
+                    for p in processes: p.join()
+                    for t in unsorted_result: Is[t[1]:t[2]] += t[3]
+                    #print('Done=================', cycle)
 
-            unsorted_result = [queue.get() for p in processes] 
-            for p in processes: p.join()
-            
-            #collect results
-            Is = np.zeros([N_hkls])
-            for t in sorted(unsorted_result):
-                N1 = int(t[0] * cycle_per_cpu * self.per_N / N_atom)
-                if t[0] + 1 == self.ncpu:
-                    N2 = N_hkls
-                else:
-                    N2 = int((t[0]+1) * cycle_per_cpu * self.per_N / N_atom)
-                #print(t[0], N1, N2, N2-N1, len(t[1]))
-                Is[N1:N2] += t[1]
+            else:
+                processes = []
+                for cpu in range(self.ncpu):
+                    N1 = cpu * cycle_per_cpu
+                    Start = N1 * hkl_per_proc
+                    if cpu + 1 == self.ncpu:
+                        N2 = N_cycle
+                        End = N_hkls
+                    else:
+                        N2 = (cpu + 1) * cycle_per_cpu 
+                        End = N2* hkl_per_proc
+
+                    cycles = range(N1, N2)
+
+                    p = mp.Process(target=get_all_intensity_par,
+                                   args = (cpu,
+                                           queue,
+                                           cycles, 
+                                           Start,
+                                           End,
+                                           hkl_per_proc,
+                                           positions, 
+                                           self.hkl_list[Start:End], 
+                                           s2s[Start:End], 
+                                           coeffs, 
+                                           zs))
+                    p.start()
+                    processes.append(p)
+
+                unsorted_result = [queue.get() for p in processes] 
+                for p in processes: p.join()
+                
+                #collect results
+                Is = np.zeros([N_hkls])
+                for t in unsorted_result: Is[t[1]:t[2]] += t[3]
 
         # Lorentz polarization factor 
         lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
@@ -830,6 +855,8 @@ def create_index(imax=1, jmax=1, kmax=1):
     hkl_index = np.array(hkl_index).reshape([len(hkl_index), 3])
     return hkl_index
 
+
+#@nb.njit(nb.f8[:](nb.f8[:], nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:]), cache = True)
 def get_intensity(positions, hkl, s2, coeffs, z):
     const = 2j * np.pi
     g_dot_rs = np.dot(positions, hkl) # N*M
@@ -840,8 +867,8 @@ def get_intensity(positions, hkl, s2, coeffs, z):
     sfs = np.add(-41.78214*np.einsum('ij,j->ij', tmp2, s2), z) #N*M, M -> N*M
     fs = np.sum(sfs*exps, axis=0) #M
 
-    # Final intensity values
-    return (fs * fs.conjugate()).real #M
+    # Final intensity values, M
+    return (fs * fs.conjugate()).real 
  
 def get_all_intensity(N_cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs):
     Is = np.zeros(len(hkls))
@@ -855,18 +882,18 @@ def get_all_intensity(N_cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs)
         Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
     return Is
 
-def get_all_intensity_par(cpu, queue, cycles, Start, End, N_atom, per_N, positions, hkls, s2s, coeffs, zs):
+def get_all_intensity_par(cpu, queue, cycles, Start, End, hkl_per_proc, positions, hkls, s2s, coeffs, zs):
     #print("proc", cpu, cycles)
     Is = np.zeros(End-Start)
     #print(cpu, Start, End)
 
     for i, cycle in enumerate(cycles):
-        N1 = int(per_N*(cycle)/N_atom) - Start
+        N1 = cycle*hkl_per_proc - Start
         if i+1 == len(cycles):
-            N2 = min([End, int(per_N*(cycle+1)/N_atom)]) - Start
+            N2 = End - Start
         else:
-            N2 = int(per_N*(cycle+1)/N_atom) - Start
+            N2 = N1 + hkl_per_proc 
         hkl, s2 = hkls[N1:N2].T, s2s[N1:N2]
         Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
-        #print('run', cpu, N1, N2)
-    queue.put((cpu, Is))
+        #print('run', cpu, N1+Start, N2+Start, N1, N2)
+    queue.put((cpu, Start, End, Is))
