@@ -428,6 +428,102 @@ class pyxtal_molecule:
             tols *= 0.8 # if only one atom, reduce the tolerance
         return tols
 
+    def set_labels(self):
+        """
+        Set atom labels for the given molecule for H-bond caculation.
+        Needs to identify the following:
+        - (O)N-H
+        - acid-O
+        - amide-O
+        - alcohol-O
+        - N with NH2
+        - N with NH
+        """
+        from rdkit import Chem
+
+        def search_H(pairs, ref, pos_H):
+            """
+            quick routine to search for the id of H that is bonded to N/O:
+
+            Args:
+                pairs: list of atomic pairs
+                ref: reference id for O or N
+                pos_H: the starting position for H
+            """
+            res = []
+            for p in pairs:
+                if ref in p and max(p) >= pos_H:
+                    res.append(max(p))
+            return res
+
+        # template
+        acid = Chem.MolFromSmarts('CC(=O)O') #COOH
+        amide = Chem.MolFromSmarts('CC(=O)N') #CONH
+        alcohol1 = Chem.MolFromSmarts('[CX3][OH]')  #ROH
+        alcohol2 = Chem.MolFromSmarts('c[OH]')  #ROH
+        aromatic_carbon = Chem.MolFromSmarts("c") #Aromatic
+        NH1 = Chem.MolFromSmarts("[NH1]")  #NH1
+        NH2 = Chem.MolFromSmarts("[NH2]")  #NH2
+        
+        # Initialize mol
+        m = Chem.MolFromSmiles(self.smile)
+        pos_H = m.GetNumAtoms() #starting position for H
+        m = Chem.AddHs(m)
+        labels = [a.GetSymbol() for a in m.GetAtoms()]
+    
+        # Create bonds
+        bonds = m.GetBonds()
+        pairs = np.zeros([len(bonds), 2], dtype=int)
+        for i, bond in enumerate(bonds):
+            pairs[i, 0] = bond.GetBeginAtomIdx()
+            pairs[i, 1] = bond.GetEndAtomIdx()
+
+        # Assign aromatic
+        #ds = m.GetSubstructMatches(aromatic_carbon)
+        #for d in ds: labels[d[0]] += '_aromatic'
+
+        #Assign O
+        count_O = 0
+        if labels.count('O') > 0:
+            for i, smart in enumerate([acid, amide, alcohol1, alcohol2]):
+                ds = m.GetSubstructMatches(smart)
+                for d in ds:
+                    if i == 0: # COOH or COO in general
+                        labels[d[2]] += '_acid'
+                        labels[d[3]] += '_acid'
+                        Hs = search_H(pairs, d[3], pos_H)
+                        if len(Hs) > 0:
+                            labels[Hs[0]] += '_O'
+                        count_O += 2
+                    elif i == 1: #CONH
+                        labels[d[2]] += '_amide'
+                        count_O += 1
+                    else:# OH
+                        labels[d[-1]] += '_alcohol'
+                        labels[search_H(pairs, d[-1], pos_H)[0]] += '_O'
+                        count_O += 1
+                if count_O == labels.count('O'):
+                    break
+
+        #Assign N
+        count_N = 0
+        if labels.count('N') > 0:
+            for i, smart in enumerate([NH1, NH2]):
+                ds = m.GetSubstructMatches(smart)
+                for d in ds:
+                    if i == 0:
+                        labels[d[0]] += '_H1' #N_H2
+                        labels[search_H(pairs, d[0], pos_H)[0]] += '_N'
+                    else:
+                        labels[d[0]] += '_H2' #N_H2
+                        Hs = search_H(pairs, d[0], pos_H)
+                        labels[Hs[0]] += '_N'
+                        labels[Hs[1]] += '_N'
+                    count_N += 1
+                if count_N == labels.count('N'):
+                    break
+        self.labels = labels
+
     def get_coefs_matrix(self, mol2=None):
         """
         Get the Atom-Atom potential parameters
@@ -442,11 +538,20 @@ class pyxtal_molecule:
         Returns:
             a 3D matrix for computing the intermolecular energy
         """
+        if hasattr(self, 'labels'): 
+            labels1 = self.labels
+        else:
+            labels1 = self.symbols
         numbers1 = self.mol.atomic_numbers
         if mol2 is None:
             numbers2 = self.mol.atomic_numbers
+            labels2 = labels1
         else:
             numbers2 = mol2.mol.atomic_numbers
+            if hasattr(mol2, 'labels'): 
+                labels2 = mol2.labels
+            else:
+                labels2 = mol2.symbols
 
         coefs = np.zeros([len(numbers1), len(numbers2), 3])
         for i1, n1 in enumerate(numbers1):
@@ -455,10 +560,47 @@ class pyxtal_molecule:
                     coefs[i1, i2, :] = [5774, 4.01, 26.1]
                 elif [n1, n2] in [[1,6], [6,1]]:     #H-C
                     coefs[i1, i2, :] = [28870, 4.10, 113.]
-                elif [n1, n2] in [[1,7], [7,1]]:     #H-N
-                    coefs[i1, i2, :] = [54560, 4.52, 120.]
-                elif [n1, n2] in [[1,8], [8,1]]:     #H-O
-                    coefs[i1, i2, :] = [70610, 4.82, 105.]
+                elif [n1, n2] in [[1,7]]:     #H-N
+                    if len(labels1[i1])>1: 
+                        if labels1[i1] == 'H_N1': #HB-N(-NH-N):
+                            coefs[i1, i2, :] = [7215600, 7.78, 476]
+                        else: #HB-N(-NH2-N):   
+                            coefs[i1, i2, :] = 1803920, 7.37, 165
+                    else:
+                        coefs[i1, i2, :] = [54560, 4.52, 120.]
+                elif [n1, n2] in [[7,1]]:     #N-H
+                    if len(labels2[i2])>1: 
+                        if labels2[i2] == 'H_N1': #HB-N(-NH-N):
+                            coefs[i1, i2, :] = [7215600, 7.78, 476]
+                        else: #HB-N(-NH2-N):   
+                            coefs[i1, i2, :] = 1803920, 7.37, 165
+                    else:
+                        coefs[i1, i2, :] = [54560, 4.52, 120.]
+                elif [n1, n2] in [[1,8]]:     #H-O
+                    if len(labels1[i1]) > 1: 
+                        if labels2[i2] == 'O_amide': #HB...O=C-N
+                            coefs[i1, i2, :] = [3607810, 7.78, 238]
+                        elif labels2[i2] == 'O_acid': #HB...O=C-OH
+                            coefs[i1, i2, :] = [6313670, 8.75, 205]
+                        elif labels2[i2] == 'O_alcohol': #HB...OH
+                            coefs[i1, i2, :] = [4509750, 7.78, 298]
+                        else:
+                            print(labels2[i2]); import sys; sys.exit()
+                    else: #Normal cases:
+                        coefs[i1, i2, :] = [70610, 4.82, 105.]
+
+                elif [n1, n2] in [[8,1]]:     #O-H
+                    if len(labels2[i2]) > 1: 
+                        if labels1[i1] == 'O_amide': #HB...O=C-N
+                            coefs[i1, i2, :] = [3607810, 7.78, 238]
+                        elif labels1[i1] == 'O_acid': #HB...O=C-OH
+                            coefs[i1, i2, :] = [6313670, 8.75, 205]
+                        elif labels1[i1] == 'O_alcohol': #HB...OH
+                            coefs[i1, i2, :] = [4509750, 7.78, 298]
+                        else:
+                            print(labels2[i2]); import sys; sys.exit()
+                    else: #Normal cases:
+                        coefs[i1, i2, :] = [70610, 4.82, 105.]
                 elif [n1, n2] in [[1,16],[16,1]]:    #H-S
                     coefs[i1, i2, :] = [64190, 4.03, 279.]
                 elif [n1, n2] in [[1,17],[17,1]]:    #H-Cl
@@ -478,7 +620,10 @@ class pyxtal_molecule:
                 elif [n1, n2] in [[7,8], [8,7]]:     #N-O
                     coefs[i1, i2, :] = [64190, 3.86, 364.]
                 elif [n1, n2] in [[8,8]]:            #O-O
-                    coefs[i1, i2, :] = [46680, 3.74, 319.]
+                    if labels1[i1] == 'O_alcohol' and labels2[i2] == 'O_alcohol':
+                        coefs[i1, i2, :] = [3607800, 5.00, 3372.]
+                    else:
+                        coefs[i1, i2, :] = [46680, 3.74, 319.]
                 elif [n1, n2] in [[8,16], [16,8]]:   #O-S
                     coefs[i1, i2, :] = [110160, 3.63, 906.]
                 elif [n1, n2] in [[8,17], [17,8]]:   #O-Cl
@@ -496,6 +641,7 @@ class pyxtal_molecule:
                 #HB-N(-N-H-N):   7215600, 7.78, 476
                 #HB-N(-NH2-N):   1803920, 7.37, 165
                 else:
+                    print(n1, n2)
                     return None
         return coefs
 
@@ -512,7 +658,6 @@ class pyxtal_molecule:
         """
         from pyxtal.viz import display_molecule
         return display_molecules(self.mol)
-
 
     def rdkit_mol(self, N_confs=1):
         """

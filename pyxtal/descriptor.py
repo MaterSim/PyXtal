@@ -216,6 +216,11 @@ class spherical_image():
     def __init__(self, xtal, model='molecule', max_d=10, max_CN=36, 
         factor=2.2, lmax=13, sigma=0.1, N=10000):
 
+        for i in range(len(xtal.molecules)):
+            try:
+                xtal.molecules[i].set_labels()
+            except:
+                print("Warning! Needs the smiles information!")
         self.xtal = xtal
         self.max_d = max_d
         self.max_CN = max_CN
@@ -395,9 +400,15 @@ if __name__ == '__main__':
 
     cif_path = resource_filename("pyxtal", "database/cifs/")
     c1 = pyxtal(molecular=True)
-    for name in ['benzene', 'resorcinol', 'aspirin', 'naphthalene']:
-        c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
+    #for name in ['benzene', 'resorcinol', 'aspirin', 'naphthalene']:
+    #    c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
+    #    for model in ['contact', 'molecule']:
+    #        sph = spherical_image(c1, model=model)
+    #        sph.align()
+    #        sph.plot_sph_images(figname=name+'-'+model+'.png')
+    for name in ['BENZEN', 'ACSALA', 'RESORA']:
+        c1.from_CSD(name)
         for model in ['contact', 'molecule']:
-            sph = spherical_image(c1, model=model)
+            sph = spherical_image(c1, model=model, lmax=18)
             sph.align()
-            sph.plot_sph_images(name+'-'+model+'.png')
+            sph.plot_sph_images(figname=name+'-'+model+'.png')
