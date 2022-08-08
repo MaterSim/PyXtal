@@ -2509,6 +2509,7 @@ class pyxtal:
         """
         from pyxtal.util import process_csd_cif
         from pyxtal.msg import ReadSeedError, CSDError
+        from pymatgen.core.periodic_table import Element
 
         try:
             from ccdc import io

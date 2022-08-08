@@ -640,7 +640,7 @@ class pyxtal_molecule:
                 elif [n1, n2] in [[6, 16], [16, 6]]:   #C-S
                     coefs[i1, i2, :] = [126460, 3.41, 1504.]
 
-                elif [n1, n2] in [[6, 8], [8, 6]]:     #C-Cl
+                elif [n1, n2] in [[6, 17], [17, 6]]:     #C-Cl
                     coefs[i1, i2, :] = [93370, 3.52, 923.]
 
                 elif [n1, n2] in [[7, 7]]:            #N-N
