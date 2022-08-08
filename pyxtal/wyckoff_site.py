@@ -907,7 +907,8 @@ class mol_site:
                             dists.append(d[i][id])
                         #eng = eng.sum()
                     else:
-                        engs.append(np.sum(A*np.exp(-B*d[i])-C/(d[i]**6)))
+                        eng0 = A*np.exp(-B*d[i])-C/(d[i]**6)
+                        engs.append(eng0.sum())
                 else:
                     engs.append(None)
 
@@ -918,8 +919,6 @@ class mol_site:
                 min_ds.append(min(_d)*factor)
                 neighs.append(coord2[i])
                 Ps.append(0)
-                #print('S {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                #  i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
 
         if self.wp.multiplicity > 1:
             for idx in range(1, self.wp.multiplicity):
@@ -939,22 +938,18 @@ class mol_site:
                                     pairs.append((tmp1+tmp2)/2)
                                     engs.append(eng[id])
                                     dists.append(d[i][id])
-                                #eng = eng.sum()
                             else:
-                                eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
-                                engs.append(eng)
+                                eng0 = A*np.exp(-B*d[i])-C/(d[i]**6)
+                                engs.append(eng0.sum())
                         else:
                             engs.append(None)
                         tmp = d[i]/tols_matrix
                         _d = tmp[tmp < 1]
                         id = np.argmin(tmp.flatten())
                         d_min = d[i].flatten()[id]
-                        if d_min < max_d:
-                            #print('R {:3d} {:6.3f} {:6.3f} {:6.3f} {:6.3f}'.format(\
-                            #i, min(_d)*factor, d_min, tols_matrix.flatten()[id], eng))
-                            min_ds.append(min(_d)*factor)
-                            neighs.append(coord2[i])
-                            Ps.append(P)
+                        min_ds.append(min(_d)*factor)
+                        neighs.append(coord2[i])
+                        Ps.append(P)
         if detail:
             return engs, pairs, dists
         else:
@@ -1006,17 +1001,16 @@ class mol_site:
                             engs.append(eng[id])
                             dists.append(d[i][id])
                     else:
-                        eng = np.sum(A*np.exp(-B*d[i])-C/(d[i]**6))
-                        engs.append(eng)
+                        eng0 = A*np.exp(-B*d[i])-C/(d[i]**6)
+                        engs.append(eng0.sum())
                 else:
                     engs.append(None)
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1]
                 id = np.argmin(tmp.flatten())
                 d_min = d[i].flatten()[id]
-                if d_min < max_d:
-                    min_ds.append(min(_d)*factor)
-                    neighs.append(coord2[i])
+                min_ds.append(min(_d)*factor)
+                neighs.append(coord2[i])
 
         if detail:
             return engs, pairs, dists

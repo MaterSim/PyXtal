@@ -2337,6 +2337,20 @@ class pyxtal:
             strucs.append(struc)
         return strucs
 
+    def get_intermolecular_energy(self, factor=2.0, max_d=10.0):
+        """
+        For molecular crystals, get the intermolecular interactions from
+        Gavezzotti, A., Filippini, G., J. Phys. Chem., 1994, 98 (18), 4831-4837
+
+
+        Returns:
+            Total energy
+        """
+        eng = 0
+        for i in range(len(self.mol_sites)):
+            res  = self.get_neighboring_molecules(i, factor=factor, max_d=max_d)
+            eng += np.array(res[-1]).sum()
+        return eng
 
     def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, CN=None):
         """
@@ -2350,7 +2364,7 @@ class pyxtal:
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
             comps: list of molecular types
-            Ps: list of [0, 1] to distinguish betweel self and other molecules
+            Ps: list of [0, 1] to distinguish self and other molecules
             engs: list of energies from atom-atom potential
         """
         min_ds = []
@@ -2372,12 +2386,14 @@ class pyxtal:
             Ps.extend(P)
             comps.extend(comp)
             engs.extend(eng)
+
         if engs[0] is None: #sort by distance
             ids = np.argsort(min_ds)
         else: #sort by energy
             ids = np.argsort(engs) #min_ds)
-        if CN is not None and len(ids) > CN:
-            ids = ids[:CN]
+
+        if CN is not None and len(ids) > CN: ids = ids[:CN]
+
         neighs = [neighs[i] for i in ids]
         comps = [comps[i] for i in ids]
         min_ds = [min_ds[i] for i in ids]

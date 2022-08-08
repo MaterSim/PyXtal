@@ -216,9 +216,9 @@ class spherical_image():
     def __init__(self, xtal, model='molecule', max_d=10, max_CN=36, 
         factor=2.2, lmax=13, sigma=0.1, N=10000):
 
-        for i in range(len(xtal.molecules)):
+        for i in range(len(xtal.mol_sites)):
             try:
-                xtal.molecules[i].set_labels()
+                xtal.mol_sites[i].molecule.set_labels()
             except:
                 print("Warning! Needs the smiles information!")
         self.xtal = xtal
@@ -300,20 +300,42 @@ class spherical_image():
             pts.append(pt)
         return pts
     
-    def plot_sph_images(self, lmax=None, figname=None):
+    def plot_sph_images(self, lmax=None, figname=None, molecule=False):
         """
         Plot the spherical images in both 3d and 2d
 
         Args:
             lmax: maximum truncation
             figname: name of figure file
+            molecule: draw 2D molecule diagram or not
         """
         import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
-        
-        fig = plt.figure(figsize=(9, 4*len(self.coefs)))
-        gs = gridspec.GridSpec(nrows=len(self.coefs), ncols=2, 
+        if molecule:
+            nrows = len(self.coefs) + 1
+            shift = 1
+        else:
+            nrows = len(self.coefs)
+            shift = 0
+
+        fig = plt.figure(figsize=(9, 4*nrows))
+        gs = gridspec.GridSpec(nrows=nrows, ncols=2, 
                                wspace=0.15, width_ratios=[0.7, 1])
+        if molecule:
+            from rdkit import Chem
+            from rdkit.Chem import Draw
+            smi = ''
+            for i, m in enumerate(self.xtal.molecules):
+                smi += m.smile
+                if i + 1 < len(self.xtal.molecules):
+                    smi += '.'
+
+            m = Chem.MolFromSmiles(smi)
+            im = Draw.MolToImage(m)
+            ax0 = fig.add_subplot(gs[0, :])
+            imgplot = plt.imshow(im)
+            ax0.axis('off')
+
         if lmax is None:
             lmax = self.lmax
         elif lmax > self.lmax:
@@ -321,8 +343,8 @@ class spherical_image():
             lmax = self.lmax
 
         for i in range(len(self.coefs)):
-            ax1 = fig.add_subplot(gs[i, 0])
-            ax2 = fig.add_subplot(gs[i, 1])
+            ax1 = fig.add_subplot(gs[i+shift, 0])
+            ax2 = fig.add_subplot(gs[i+shift, 1])
             coef = self.coefs[i]
             grid = coef.expand(lmax=lmax)
             grid.plot3d(0, 0, title="{:6.3f}".format(self.ds[i]), show=False, ax=ax1)
@@ -400,15 +422,16 @@ if __name__ == '__main__':
 
     cif_path = resource_filename("pyxtal", "database/cifs/")
     c1 = pyxtal(molecular=True)
-    #for name in ['benzene', 'resorcinol', 'aspirin', 'naphthalene']:
-    #    c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
-    #    for model in ['contact', 'molecule']:
-    #        sph = spherical_image(c1, model=model)
-    #        sph.align()
-    #        sph.plot_sph_images(figname=name+'-'+model+'.png')
+    for name in ['benzene', 'resorcinol', 'aspirin', 'naphthalene']:
+        c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
+        for model in ['contact', 'molecule']:
+            sph = spherical_image(c1, model=model, lmax=18)
+            sph.align()
+            sph.plot_sph_images(figname=name+'-'+model+'.png')
+
     for name in ['BENZEN', 'ACSALA', 'RESORA']:
         c1.from_CSD(name)
         for model in ['contact', 'molecule']:
             sph = spherical_image(c1, model=model, lmax=18)
             sph.align()
-            sph.plot_sph_images(figname=name+'-'+model+'.png')
+            sph.plot_sph_images(figname=name+'-'+model+'.png', molecule=True)

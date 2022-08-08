@@ -457,10 +457,12 @@ class pyxtal_molecule:
             return res
 
         # template
-        acid = Chem.MolFromSmarts('CC(=O)O') #COOH
-        amide = Chem.MolFromSmarts('CC(=O)N') #CONH
-        alcohol1 = Chem.MolFromSmarts('[CX3][OH]')  #ROH
-        alcohol2 = Chem.MolFromSmarts('c[OH]')  #ROH
+        acid1 = Chem.MolFromSmarts('[C,c]C(=O)O') #COOH
+        acid2 = Chem.MolFromSmarts('[CH](=O)O') #COOH
+        amide1 = Chem.MolFromSmarts('[C,c]C(=O)N') #CONH
+        amide2 = Chem.MolFromSmarts('[CH](=O)N') #CONH
+        alcohol = Chem.MolFromSmarts('[c,CX3][OH]')  #ROH
+        #alcohol2 = Chem.MolFromSmarts('c[OH]')  #ROH
         aromatic_carbon = Chem.MolFromSmarts("c") #Aromatic
         NH1 = Chem.MolFromSmarts("[NH1]")  #NH1
         NH2 = Chem.MolFromSmarts("[NH2]")  #NH2
@@ -483,31 +485,47 @@ class pyxtal_molecule:
         #for d in ds: labels[d[0]] += '_aromatic'
 
         #Assign O
-        count_O = 0
-        if labels.count('O') > 0:
-            for i, smart in enumerate([acid, amide, alcohol1, alcohol2]):
+        N_O = labels.count('O')
+        if N_O > 0:
+            count_O = 0
+            for i, smart in enumerate([acid1, acid2, amide1, amide2, alcohol]):
                 ds = m.GetSubstructMatches(smart)
+                #print(i, ds)
                 for d in ds:
-                    if i == 0: # COOH or COO in general
-                        labels[d[2]] += '_acid'
-                        labels[d[3]] += '_acid'
-                        Hs = search_H(pairs, d[3], pos_H)
+                    if i in [0, 1]: # COOH or COO in general
+                        if i == 0: 
+                            labels[d[2]] += '_acid'
+                            id = 3
+                            #labels[d[3]] += '_acid'
+                        else:
+                            id = 2
+                            labels[d[1]] += '_acid'
+
+                        Hs = search_H(pairs, d[id], pos_H)
                         if len(Hs) > 0:
                             labels[Hs[0]] += '_O'
                         count_O += 2
-                    elif i == 1: #CONH
-                        labels[d[2]] += '_amide'
+
+                    elif i in [2, 3]: #CONH
+                        if i == 2:
+                            id = 3
+                        else:
+                            id = 2
+                        labels[d[id-1]] += '_amide'
                         count_O += 1
+
                     else:# OH
                         labels[d[-1]] += '_alcohol'
                         labels[search_H(pairs, d[-1], pos_H)[0]] += '_O'
                         count_O += 1
-                if count_O == labels.count('O'):
+                if count_O == N_O:
+                    #print(i, count_O, 'break')
                     break
 
         #Assign N
-        count_N = 0
-        if labels.count('N') > 0:
+        N_N = labels.count('N')
+        if N_N > 0:
+            count_N = 0
             for i, smart in enumerate([NH1, NH2]):
                 ds = m.GetSubstructMatches(smart)
                 for d in ds:
@@ -520,7 +538,7 @@ class pyxtal_molecule:
                         labels[Hs[0]] += '_N'
                         labels[Hs[1]] += '_N'
                     count_N += 1
-                if count_N == labels.count('N'):
+                if count_N == N_N:
                     break
         self.labels = labels
 
@@ -556,11 +574,11 @@ class pyxtal_molecule:
         coefs = np.zeros([len(numbers1), len(numbers2), 3])
         for i1, n1 in enumerate(numbers1):
             for i2, n2 in enumerate(numbers2):
-                if [n1, n2] in [[1,1]]:              #H-H
+                if [n1, n2] in [[1, 1]]:              #H-H
                     coefs[i1, i2, :] = [5774, 4.01, 26.1]
-                elif [n1, n2] in [[1,6], [6,1]]:     #H-C
+                elif [n1, n2] in [[1, 6], [6, 1]]:     #H-C
                     coefs[i1, i2, :] = [28870, 4.10, 113.]
-                elif [n1, n2] in [[1,7]]:     #H-N
+                elif [n1, n2] in [[1, 7]]:     #H-N
                     if len(labels1[i1])>1: 
                         if labels1[i1] == 'H_N1': #HB-N(-NH-N):
                             coefs[i1, i2, :] = [7215600, 7.78, 476]
@@ -568,7 +586,7 @@ class pyxtal_molecule:
                             coefs[i1, i2, :] = 1803920, 7.37, 165
                     else:
                         coefs[i1, i2, :] = [54560, 4.52, 120.]
-                elif [n1, n2] in [[7,1]]:     #N-H
+                elif [n1, n2] in [[7, 1]]:     #N-H
                     if len(labels2[i2])>1: 
                         if labels2[i2] == 'H_N1': #HB-N(-NH-N):
                             coefs[i1, i2, :] = [7215600, 7.78, 476]
@@ -576,7 +594,7 @@ class pyxtal_molecule:
                             coefs[i1, i2, :] = 1803920, 7.37, 165
                     else:
                         coefs[i1, i2, :] = [54560, 4.52, 120.]
-                elif [n1, n2] in [[1,8]]:     #H-O
+                elif [n1, n2] in [[1, 8]]:     #H-O
                     if len(labels1[i1]) > 1: 
                         if labels2[i2] == 'O_amide': #HB...O=C-N
                             coefs[i1, i2, :] = [3607810, 7.78, 238]
@@ -585,11 +603,12 @@ class pyxtal_molecule:
                         elif labels2[i2] == 'O_alcohol': #HB...OH
                             coefs[i1, i2, :] = [4509750, 7.78, 298]
                         else:
-                            print(labels2[i2]); import sys; sys.exit()
+                            #print("Oxygen label problem", labels2[i2]); import sys; sys.exit()
+                            coefs[i1, i2, :] = [70610, 4.82, 105.]
                     else: #Normal cases:
                         coefs[i1, i2, :] = [70610, 4.82, 105.]
 
-                elif [n1, n2] in [[8,1]]:     #O-H
+                elif [n1, n2] in [[8, 1]]:     #O-H
                     if len(labels2[i2]) > 1: 
                         if labels1[i1] == 'O_amide': #HB...O=C-N
                             coefs[i1, i2, :] = [3607810, 7.78, 238]
@@ -598,48 +617,58 @@ class pyxtal_molecule:
                         elif labels1[i1] == 'O_alcohol': #HB...OH
                             coefs[i1, i2, :] = [4509750, 7.78, 298]
                         else:
-                            print(labels2[i2]); import sys; sys.exit()
+                            #print('Oxygen label problem', labels2[i1]); import sys; sys.exit()
+                            coefs[i1, i2, :] = [70610, 4.82, 105.]
                     else: #Normal cases:
                         coefs[i1, i2, :] = [70610, 4.82, 105.]
-                elif [n1, n2] in [[1,16],[16,1]]:    #H-S
+
+                elif [n1, n2] in [[1, 16], [16, 1]]:    #H-S
                     coefs[i1, i2, :] = [64190, 4.03, 279.]
-                elif [n1, n2] in [[1,17],[17,1]]:    #H-Cl
+
+                elif [n1, n2] in [[1, 17], [17, 1]]:    #H-Cl
                     coefs[i1, i2, :] = [70020, 4.09, 279.]
-                elif [n1, n2] in [[6,6]]:            #C-C
+
+                elif [n1, n2] in [[6, 6]]:            #C-C
                     coefs[i1, i2, :] = [54050, 3.47, 578.]
-                elif [n1, n2] in [[6,7], [7,6]]:     #C-N
+
+                elif [n1, n2] in [[6, 7], [7, 6]]:     #C-N
                     coefs[i1, i2, :] = [117470, 3.86, 667.]
-                elif [n1, n2] in [[6,8], [8,6]]:     #C-O
+
+                elif [n1, n2] in [[6, 8], [8, 6]]:     #C-O
                     coefs[i1, i2, :] = [93950, 3.74, 641.]
-                elif [n1, n2] in [[6,16], [16,6]]:   #C-S
+
+                elif [n1, n2] in [[6, 16], [16, 6]]:   #C-S
                     coefs[i1, i2, :] = [126460, 3.41, 1504.]
-                elif [n1, n2] in [[6,8], [8,6]]:     #C-Cl
+
+                elif [n1, n2] in [[6, 8], [8, 6]]:     #C-Cl
                     coefs[i1, i2, :] = [93370, 3.52, 923.]
-                elif [n1, n2] in [[7,7]]:            #N-N
+
+                elif [n1, n2] in [[7, 7]]:            #N-N
                     coefs[i1, i2, :] = [87300, 3.65, 691.]
-                elif [n1, n2] in [[7,8], [8,7]]:     #N-O
+
+                elif [n1, n2] in [[7, 8], [8, 7]]:     #N-O
                     coefs[i1, i2, :] = [64190, 3.86, 364.]
-                elif [n1, n2] in [[8,8]]:            #O-O
-                    if labels1[i1] == 'O_alcohol' and labels2[i2] == 'O_alcohol':
+
+                elif [n1, n2] in [[8, 8]]:            #O-O
+                    if False: #labels1[i1] == 'O_alcohol' and labels2[i2] == 'O_alcohol':
                         coefs[i1, i2, :] = [3607800, 5.00, 3372.]
                     else:
                         coefs[i1, i2, :] = [46680, 3.74, 319.]
-                elif [n1, n2] in [[8,16], [16,8]]:   #O-S
+
+                elif [n1, n2] in [[8, 16], [16, 8]]:   #O-S
                     coefs[i1, i2, :] = [110160, 3.63, 906.]
-                elif [n1, n2] in [[8,17], [17,8]]:   #O-Cl
+
+                elif [n1, n2] in [[8, 17], [17, 8]]:   #O-Cl
                     coefs[i1, i2, :] = [80855, 3.63, 665.]
+
                 elif [n1, n2] in [[16, 16]]:         #S-S
                     coefs[i1, i2, :] = [259960, 3.52, 2571]
+
                 elif [n1, n2] in [[16, 17], [17, 16]]: #S-Cl
                     coefs[i1, i2, :] = [1800000, 3.52, 2000]   #made
+
                 elif [n1, n2] in [[17, 17]]:          #Cl-Cl
                     coefs[i1, i2, :] = [140050, 3.52, 1385]
-                #todo add H-bonds
-                #HB-O(amides):   3607810, 7.78, 238
-                #HB-O(acids):    6313670, 8.75, 205
-                #HB-O(alcohols): 4509750, 7.78, 298
-                #HB-N(-N-H-N):   7215600, 7.78, 476
-                #HB-N(-NH2-N):   1803920, 7.37, 165
                 else:
                     print(n1, n2)
                     return None
