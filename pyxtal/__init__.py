@@ -2513,6 +2513,7 @@ class pyxtal:
         from pymatgen.io.cif import CifParser 
         try:
             from ccdc import io
+            from rdkit import Chem
         except:
             msg = 'No CSD-python api is available'
             raise CSDError(msg)
@@ -2523,17 +2524,20 @@ class pyxtal:
             msg = 'Unknown CSD entry: ' + csd_code
             raise CSDError(msg)
 
-
         if entry.has_3d_structure:
             smi = entry.molecule.smiles
             if smi is None:
                 raise CSDError("No smile from CSD")
-            elif len(smi) > 200:
+            elif len(smi) > 250:
                 raise CSDError("long smile {:s}".format(smi))
+            else:
+                if Chem.MolFromSmiles(smi) is None:
+                    raise CSDError("problematic smiles: {:s}".format(smi))
             
             cif = entry.to_string(format='cif')
             smiles = [s+'.smi' for s in smi.split('.')]
 
+            
             # remove duplicates
             smiles = list(set(smiles))
             smi1 = ''
