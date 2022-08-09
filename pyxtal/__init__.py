@@ -2526,8 +2526,11 @@ class pyxtal:
 
         if entry.has_3d_structure:
             smi = entry.molecule.smiles
-            if len(smi) > 200:
+            if smi is None:
+                raise CSDError("No smile from CSD")
+            elif len(smi) > 200:
                 raise CSDError("long smile", smi)
+            
 
             cif = entry.to_string(format='cif')
             smiles = [s+'.smi' for s in smi.split('.')]

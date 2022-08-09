@@ -22,7 +22,7 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.database.element import Element
 from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
 from pyxtal.database.collection import Collection
-from pyxtal.msg import ConformerError
+from pyxtal.msg import ConformerError, AtomTypeError
 
 # Define functions
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
@@ -649,6 +649,9 @@ class pyxtal_molecule:
                 elif [n1, n2] in [[7, 8], [8, 7]]:     #N-O
                     coefs[i1, i2, :] = [64190, 3.86, 364.]
 
+                elif [n1, n2] in [[7, 16], [16, 7], [7, 17], [17, 7]]:   #N-S/Cl
+                    coefs[i1, i2, :] = [0, 3.65, 0]
+
                 elif [n1, n2] in [[8, 8]]:            #O-O
                     if False: #labels1[i1] == 'O_alcohol' and labels2[i2] == 'O_alcohol':
                         coefs[i1, i2, :] = [3607800, 5.00, 3372.]
@@ -670,8 +673,9 @@ class pyxtal_molecule:
                 elif [n1, n2] in [[17, 17]]:          #Cl-Cl
                     coefs[i1, i2, :] = [140050, 3.52, 1385]
                 else:
-                    print(n1, n2)
-                    return None
+                    msg = "atom type is not supported: {:d} {:d}".format(n1, n2)
+                    raise AtomTypeError(msg)
+                    #return None
         return coefs
 
     def show(self):
