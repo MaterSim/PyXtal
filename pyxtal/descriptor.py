@@ -237,7 +237,6 @@ class spherical_image():
             self.pts = self.get_molecules()
         else:
             self.pts = self.get_contacts()
-
         self.coefs = []
         for pt in self.pts:
             grids[:, 2] = self.calculate_density(pt, xyzs)

@@ -439,7 +439,6 @@ class pyxtal_molecule:
         - N with NH2
         - N with NH
         """
-        from rdkit import Chem
 
         def search_H(pairs, ref, pos_H):
             """
@@ -455,91 +454,96 @@ class pyxtal_molecule:
                 if ref in p and max(p) >= pos_H:
                     res.append(max(p))
             return res
+        if len(self.mol) > 1:
 
-        # template
-        acid1 = Chem.MolFromSmarts('[C,c]C(=O)O') #COOH
-        acid2 = Chem.MolFromSmarts('[CH](=O)O') #COOH
-        amide1 = Chem.MolFromSmarts('[C,c]C(=O)N') #CONH
-        amide2 = Chem.MolFromSmarts('[CH](=O)N') #CONH
-        alcohol = Chem.MolFromSmarts('[c,CX3][OH]')  #ROH
-        #alcohol2 = Chem.MolFromSmarts('c[OH]')  #ROH
-        aromatic_carbon = Chem.MolFromSmarts("c") #Aromatic
-        NH1 = Chem.MolFromSmarts("[NH1]")  #NH1
-        NH2 = Chem.MolFromSmarts("[NH2]")  #NH2
-        
-        # Initialize mol
-        m = Chem.MolFromSmiles(self.smile)
-        pos_H = m.GetNumAtoms() #starting position for H
-        m = Chem.AddHs(m)
-        labels = [a.GetSymbol() for a in m.GetAtoms()]
+            from rdkit import Chem
+            # template
+            acid1 = Chem.MolFromSmarts('[C,c]C(=O)O') #COOH
+            acid2 = Chem.MolFromSmarts('[CH](=O)O') #COOH
+            amide1 = Chem.MolFromSmarts('[C,c]C(=O)N') #CONH
+            amide2 = Chem.MolFromSmarts('[CH](=O)N') #CONH
+            alcohol = Chem.MolFromSmarts('[c,CX3][OH]')  #ROH
+            #alcohol2 = Chem.MolFromSmarts('c[OH]')  #ROH
+            aromatic_carbon = Chem.MolFromSmarts("c") #Aromatic
+            NH1 = Chem.MolFromSmarts("[NH1]")  #NH1
+            NH2 = Chem.MolFromSmarts("[NH2]")  #NH2
+            
+            # Initialize mol
+            m = Chem.MolFromSmiles(self.smile)
+            pos_H = m.GetNumAtoms() #starting position for H
+            m = Chem.AddHs(m)
+            labels = [a.GetSymbol() for a in m.GetAtoms()]
     
-        # Create bonds
-        bonds = m.GetBonds()
-        pairs = np.zeros([len(bonds), 2], dtype=int)
-        for i, bond in enumerate(bonds):
-            pairs[i, 0] = bond.GetBeginAtomIdx()
-            pairs[i, 1] = bond.GetEndAtomIdx()
+            # Create bonds
+            bonds = m.GetBonds()
+            pairs = np.zeros([len(bonds), 2], dtype=int)
+            for i, bond in enumerate(bonds):
+                pairs[i, 0] = bond.GetBeginAtomIdx()
+                pairs[i, 1] = bond.GetEndAtomIdx()
 
-        # Assign aromatic
-        #ds = m.GetSubstructMatches(aromatic_carbon)
-        #for d in ds: labels[d[0]] += '_aromatic'
+            # Assign aromatic
+            #ds = m.GetSubstructMatches(aromatic_carbon)
+            #for d in ds: labels[d[0]] += '_aromatic'
 
-        #Assign O
-        N_O = labels.count('O')
-        if N_O > 0:
-            count_O = 0
-            for i, smart in enumerate([acid1, acid2, amide1, amide2, alcohol]):
-                ds = m.GetSubstructMatches(smart)
-                #print(i, ds)
-                for d in ds:
-                    if i in [0, 1]: # COOH or COO in general
-                        if i == 0: 
-                            labels[d[2]] += '_acid'
-                            id = 3
-                            #labels[d[3]] += '_acid'
+            #Assign O
+            N_O = labels.count('O')
+            if N_O > 0:
+                count_O = 0
+                for i, smart in enumerate([acid1, acid2, amide1, amide2, alcohol]):
+                    ds = m.GetSubstructMatches(smart)
+                    #print(i, ds)
+                    for d in ds:
+                        if i in [0, 1]: # COOH or COO in general
+                            if i == 0: 
+                                labels[d[2]] += '_acid'
+                                id = 3
+                                #labels[d[3]] += '_acid'
+                            else:
+                                id = 2
+                                labels[d[1]] += '_acid'
+
+                            Hs = search_H(pairs, d[id], pos_H)
+                            if len(Hs) > 0:
+                                labels[Hs[0]] += '_O'
+                            count_O += 2
+
+                        elif i in [2, 3]: #CONH
+                            if i == 2:
+                                id = 3
+                            else:
+                                id = 2
+                            labels[d[id-1]] += '_amide'
+                            count_O += 1
+
+                        else:# OH
+                            labels[d[-1]] += '_alcohol'
+                            labels[search_H(pairs, d[-1], pos_H)[0]] += '_O'
+                            count_O += 1
+                    if count_O == N_O:
+                        #print(i, count_O, 'break')
+                        break
+
+            #Assign N
+            N_N = labels.count('N')
+            if N_N > 0:
+                count_N = 0
+                for i, smart in enumerate([NH1, NH2]):
+                    ds = m.GetSubstructMatches(smart)
+                    for d in ds:
+                        if i == 0:
+                            labels[d[0]] += '_H1' #N_H2
+                            labels[search_H(pairs, d[0], pos_H)[0]] += '_N'
                         else:
-                            id = 2
-                            labels[d[1]] += '_acid'
-
-                        Hs = search_H(pairs, d[id], pos_H)
-                        if len(Hs) > 0:
-                            labels[Hs[0]] += '_O'
-                        count_O += 2
-
-                    elif i in [2, 3]: #CONH
-                        if i == 2:
-                            id = 3
-                        else:
-                            id = 2
-                        labels[d[id-1]] += '_amide'
-                        count_O += 1
-
-                    else:# OH
-                        labels[d[-1]] += '_alcohol'
-                        labels[search_H(pairs, d[-1], pos_H)[0]] += '_O'
-                        count_O += 1
-                if count_O == N_O:
-                    #print(i, count_O, 'break')
-                    break
-
-        #Assign N
-        N_N = labels.count('N')
-        if N_N > 0:
-            count_N = 0
-            for i, smart in enumerate([NH1, NH2]):
-                ds = m.GetSubstructMatches(smart)
-                for d in ds:
-                    if i == 0:
-                        labels[d[0]] += '_H1' #N_H2
-                        labels[search_H(pairs, d[0], pos_H)[0]] += '_N'
-                    else:
-                        labels[d[0]] += '_H2' #N_H2
-                        Hs = search_H(pairs, d[0], pos_H)
-                        labels[Hs[0]] += '_N'
-                        labels[Hs[1]] += '_N'
-                    count_N += 1
-                if count_N == N_N:
-                    break
+                            labels[d[0]] += '_H2' #N_H2
+                            Hs = search_H(pairs, d[0], pos_H)
+                            labels[Hs[0]] += '_N'
+                            labels[Hs[1]] += '_N'
+                        count_N += 1
+                    if count_N == N_N:
+                        break
+        else:
+            labels = self.symbols
+            print(labels)
         self.labels = labels
 
     def get_coefs_matrix(self, mol2=None):
@@ -823,7 +827,10 @@ class pyxtal_molecule:
         if geometry or self.smile is None:
             return np.mean(xyz, axis=0)
         else:
-            if self.smile in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
+            if self.smile in [
+                              "Cl-", "F-", "Br-", "I-", "Li+", "Na+",
+                              "[Cl-]", "[F-]", "[Br-]", "[I-]", "[Li+]", "[Na+]",
+                             ]:
                 return xyz[0]
             else:
                 if len(self.smile) == 1:

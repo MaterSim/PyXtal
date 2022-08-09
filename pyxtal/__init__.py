@@ -2531,9 +2531,15 @@ class pyxtal:
             elif len(smi) > 200:
                 raise CSDError("long smile", smi)
             
-
             cif = entry.to_string(format='cif')
+
+            # [Cl-]
             smiles = [s+'.smi' for s in smi.split('.')]
+            #smiles = []
+            #for s in smi.split('.'):
+            #    if s[0]=='[' and s[-1]==']' and len(s)<6:
+            #        s = s[1:-1]
+            #    smiles.append(s+'.smi')
 
             # remove duplicates
             smiles = list(set(smiles))
@@ -2574,6 +2580,7 @@ class pyxtal:
                 raise CSDError(msg)
             else:
                 try:
+                    #print(smiles)#; import sys; sys.exit()
                     self.from_seed(pmg, smiles)
                 except ReadSeedError:
                     try:
