@@ -2352,13 +2352,15 @@ class pyxtal:
             eng += np.array(res[-1]).sum()
         return eng
 
-    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, CN=None):
+    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, ignore_E=True):
         """
         For molecular crystals, get the neighboring molecules for a given WP
 
         Args:
             site_id: the index of reference site
             factor: factor of vdw tolerance
+            max_d: 
+            ignore_E: 
 
         Returns:
             min_ds: list of shortest distances
@@ -2376,9 +2378,9 @@ class pyxtal:
         site0.get_ijk_lists()
         for id0, site1 in enumerate(self.mol_sites):
             if id0 == site_id:
-                min_d0, neigh0, P, eng = site0.get_neighbors_auto(factor, max_d)
+                min_d0, neigh0, P, eng = site0.get_neighbors_auto(factor, max_d, ignore_E)
             else:
-                min_d0, neigh0, eng = site0.get_neighbors_wp2(site1, factor, max_d)
+                min_d0, neigh0, eng = site0.get_neighbors_wp2(site1, factor, max_d, ignore_E)
                 P = [1]*len(neigh0)
             comp = [site1.type]*len(min_d0)
             neighs.extend(neigh0)
@@ -2391,8 +2393,6 @@ class pyxtal:
             ids = np.argsort(min_ds)
         else: #sort by energy
             ids = np.argsort(engs) #min_ds)
-
-        if CN is not None and len(ids) > CN: ids = ids[:CN]
 
         neighs = [neighs[i] for i in ids]
         comps = [comps[i] for i in ids]
@@ -2435,9 +2435,9 @@ class pyxtal:
         site0.get_ijk_lists()
         for id0, site1 in enumerate(self.mol_sites):
             if id0 == site_id:
-                _eng, _pair, _dist = site0.get_neighbors_auto(factor, max_d, detail=True)
+                _eng, _pair, _dist = site0.get_neighbors_auto(factor, max_d, False, detail=True)
             else:
-                _eng, _pair, _dist = site0.get_neighbors_wp2(site1, factor, max_d, detail=True)
+                _eng, _pair, _dist = site0.get_neighbors_wp2(site1, factor, max_d, False, detail=True)
             pairs.extend(_pair)
             engs.extend(_eng)
             dists.extend(_dist)
@@ -2593,10 +2593,12 @@ class pyxtal:
         #check if the dumped cif is correct
         cif0 = self.to_file()
         try:
+        #if True:
             pmg_c = Structure.from_str(cif0, fmt='cif')
         except:
             print(cif0)
-            import sys; sys.exit()
+            raise CSDError("Cif Error")
+            #import sys; sys.exit()
 
         #check if the structure is consistent with the origin
         pmg0 = self.to_pymatgen() #shape='lower')

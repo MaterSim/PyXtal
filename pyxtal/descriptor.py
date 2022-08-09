@@ -208,22 +208,22 @@ class spherical_image():
         xtal: pyxtal structure
         model: 'molecule' or 'contact'
         max_d: maximum intermolecular distances
-        max_CN: maximum number of neighboring molecules
         lmax: maximum bandwidth for spherical harmonic expansion
         sigma: Gaussian width to project into the unit sphere
         N: number of grid points on the unit sphere
     """
-    def __init__(self, xtal, model='molecule', max_d=10, max_CN=36, 
+    def __init__(self, xtal, model='molecule', max_d=10, 
         factor=2.2, lmax=13, sigma=0.1, N=10000):
 
         for i in range(len(xtal.mol_sites)):
             try:
-                xtal.mol_sites[i].molecule.set_labels()
+                numbers = xtal.mol_sites[i].molecule.mol.atomic_numbers
+                if numbers.count(7)>0 or numbers.count(8)>0:
+                    xtal.mol_sites[i].molecule.set_labels()
             except:
                 print("Warning! Needs the smiles information!")
         self.xtal = xtal
         self.max_d = max_d
-        self.max_CN = max_CN
         self.factor = factor
         self.lmax = lmax
         self.sigma = sigma
@@ -269,7 +269,7 @@ class spherical_image():
             _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i, 
                                                     factor=self.factor, 
                                                     max_d=self.max_d, 
-                                                    CN=self.max_CN)
+                                                    ignore_E=False)
             xyz, _ = site._get_coords_and_species(absolute=True, first=True) 
             center = site.molecule.get_center(xyz)
             coords = np.zeros([len(neighs), 3])
@@ -425,13 +425,14 @@ if __name__ == '__main__':
     for name in ['benzene', 'resorcinol', 'aspirin', 'naphthalene']:
         c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
         for model in ['contact', 'molecule']:
+            print(name, model)
             sph = spherical_image(c1, model=model, lmax=18)
             sph.align()
             sph.plot_sph_images(figname=name+'-'+model+'.png')
 
-    for name in ['BENZEN', 'ACSALA', 'RESORA']:
-        c1.from_CSD(name)
-        for model in ['contact', 'molecule']:
-            sph = spherical_image(c1, model=model, lmax=18)
-            sph.align()
-            sph.plot_sph_images(figname=name+'-'+model+'.png', molecule=True)
+    #for name in ['BENZEN', 'ACSALA', 'RESORA']:
+    #    c1.from_CSD(name)
+    #    for model in ['contact', 'molecule']:
+    #        sph = spherical_image(c1, model=model, lmax=18)
+    #        sph.align()
+    #        sph.plot_sph_images(figname=name+'-'+model+'.png', molecule=True)
