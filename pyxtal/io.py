@@ -47,6 +47,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
     if struc.molecular:
         sites = struc.mol_sites
         molecule = True
+        special = struc.has_special_site()
     else:
         sites = struc.atom_sites
         molecule = False
@@ -116,7 +117,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         if molecule:
             if sym_num is None:
                 coord0s, specie0s = site._get_coords_and_species(first=True)
-                if struc.has_special_site():
+                if special:
                     #print("#Check if the mul is consistent!")
                     muls = []
                     coords = []
