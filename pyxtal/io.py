@@ -47,7 +47,8 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
     if struc.molecular:
         sites = struc.mol_sites
         molecule = True
-        special = struc.has_special_site()
+        #special = struc.has_special_site()
+        #print('===============================================', struc)
     else:
         sites = struc.atom_sites
         molecule = False
@@ -117,8 +118,8 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
         if molecule:
             if sym_num is None:
                 coord0s, specie0s = site._get_coords_and_species(first=True)
-                if special:
-                    #print("#Check if the mul is consistent!")
+                if site.wp.index > 0:
+                    #print("#Check if the mul is consistent!", site.wp.index)
                     muls = []
                     coords = []
                     species = []
@@ -126,17 +127,18 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
 
                     for coord, specie in zip(coord0s, specie0s):
                         _, wp, _ = G1.merge(coord, struc.lattice.matrix, 0.05)
-                        #print(coord, wp)
                         if len(wp) > mul:
                             if not in_merged_coords(G1,
                                                     [coord, specie],
                                                     merges,
                                                     struc.lattice.matrix):
+                                #print("General Position", specie, coord)
                                 coords.append(coord)
                                 species.append(specie)
                                 muls.append(len(wp))
                                 merges.append((coord, specie))
                         else:
+                            #print("Special Position", specie, coord)
                             coords.append(coord)
                             species.append(specie)
                             muls.append(mul)
@@ -303,9 +305,7 @@ class structure_from_ext():
         positions = np.zeros([len(molecules),3])
         for i in range(len(molecules)):
             positions[i] = np.dot(molecules[i].cart_coords.mean(axis=0), inv_lat)
-
-        self.wps = []
-
+        wps = []
         ids = []  #id for the generator
         visited_ids = []
         for id, pos in enumerate(positions):
@@ -313,8 +313,10 @@ class structure_from_ext():
                 centers = apply_ops(pos, self.wyc)
                 tmp_ids = find_ids(centers, positions)
                 visited_ids.extend(tmp_ids)
+                #print(id, pos, tmp_ids, len(self.wyc), len(molecules[id]))
                 if len(tmp_ids) == len(self.wyc):
-                    self.wps.append(self.wyc)
+                    #general position
+                    wps.append(self.wyc)
                     ids.append(id)
                 else: #special sites
                     for id0 in tmp_ids:
@@ -323,14 +325,17 @@ class structure_from_ext():
                         diff = p1 - p0
                         diff -= np.round(diff)
                         if np.abs(diff).sum() < 0.01: #sort position by mapping
-                            self.wps.append(wp)
+                            wps.append(wp)
                             ids.append(id0) #find the right ids
+                            #print("add special", wp.index, id0)
                             break
+        #print("===============================================================", self.wps)
 
         # add position and molecule, print("ids", ids, mults)
         N_sites = len(ids)
         self.numMols = [0] * len(self.ref_mols)
         self.positions = []
+        self.wps = []
         self.p_mols = []
         self.ids = []
         ids_done = []
@@ -369,7 +374,9 @@ class structure_from_ext():
                         self.p_mols.append(p_mol)
                         self.ids.append(j)
                         ids_done.append(id)
-                        self.numMols[j] += len(self.wps[i])
+
+                        self.wps.append(wps[i])
+                        self.numMols[j] += len(wps[i])
 
         # check if some molecules cannot be matched
         if len(ids_done) < len(ids):
@@ -424,6 +431,7 @@ class structure_from_ext():
         ori = Orientation(np.eye(3))
         sites = []
         for id, mol, pos, wp in zip(self.ids, self.p_mols, self.positions, self.wps):
+            #print(id, mol.smile, wp.multiplicity)
             site = mol_site(mol, pos, ori, wp, self.lattice)
             site.type = id
             #print(pos)

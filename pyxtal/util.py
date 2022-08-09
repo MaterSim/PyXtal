@@ -349,6 +349,69 @@ def search_csd_entries_by_code(code):
     return [c.identifier for c in unique_crysts]
 
 
+def get_struc_from__parser(p):
+    """
+    A utility to get the pymatgen structure from the CifParser
+    Sometimes the cif structure may have repeated atom entries
+
+    Args:
+        p: pymatgen CifParser object
+
+    Return:
+        a single pymatgen structure
+    """
+    from pymatgen.util.coord import find_in_coord_list_pbc
+    from collections import OrderedDict
+    from pymatgen.core.periodic_table import get_el_sp
+    from pymatgen.io.cif import str2float
+    import numpy as np
+
+    def get_matching_coord(coord, ops, atol=1e-4):
+        keys = list(coord_to_species.keys())
+        coords = np.array(keys)
+        for op in ops:
+            c = op.operate(coord)
+            inds = find_in_coord_list_pbc(coords, c, atol=atol)
+            if len(inds):
+                return keys[inds[0]]
+        return False
+
+
+    for i, d in enumerate(p._cif.data.values()):
+        ops = p.get_symops(d)
+        coord_to_species = OrderedDict()
+        d0 = {"_atom_site_label": [], 
+              "_atom_site_fract_x": [],
+              "_atom_site_fract_y": [],
+              "_atom_site_fract_z": [],
+             }
+        for i in range(len(d["_atom_site_label"])):
+            try:
+                symbol = p._parse_symbol(d["_atom_site_type_symbol"][i])
+            except KeyError:
+                symbol = p._parse_symbol(d["_atom_site_label"][i])
+        
+            el = get_el_sp(symbol)
+            x = str2float(d["_atom_site_fract_x"][i])
+            y = str2float(d["_atom_site_fract_y"][i])
+            z = str2float(d["_atom_site_fract_z"][i])
+        
+            coord = (x, y, z)
+            match = get_matching_coord(coord, ops)
+            if not match:
+                d0['_atom_site_label'].append(el)
+                d0["_atom_site_fract_x"].append(str(x))
+                d0["_atom_site_fract_y"].append(str(y))
+                d0["_atom_site_fract_z"].append(str(z))
+                coord_to_species[coord] = el
+        d.data['_atom_site_label'] = d0['_atom_site_label']
+        d.data['_atom_site_fract_x'] = d0['_atom_site_fract_x']
+        d.data['_atom_site_fract_y'] = d0['_atom_site_fract_y']
+        d.data['_atom_site_fract_z'] = d0['_atom_site_fract_z']
+    
+        s = p._get_structure(d, primitive=False, symmetrized=False)
+        return s
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 

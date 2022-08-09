@@ -2507,10 +2507,10 @@ class pyxtal:
             csd_code: e.g., ``ACSALA01``
 
         """
-        from pyxtal.util import process_csd_cif
+        from pyxtal.util import process_csd_cif, get_struc_from__parser
         from pyxtal.msg import ReadSeedError, CSDError
         from pymatgen.core.periodic_table import Element
-
+        from pymatgen.io.cif import CifParser 
         try:
             from ccdc import io
         except:
@@ -2529,17 +2529,10 @@ class pyxtal:
             if smi is None:
                 raise CSDError("No smile from CSD")
             elif len(smi) > 200:
-                raise CSDError("long smile", smi)
+                raise CSDError("long smile {:s}".format(smi))
             
             cif = entry.to_string(format='cif')
-
-            # [Cl-]
             smiles = [s+'.smi' for s in smi.split('.')]
-            #smiles = []
-            #for s in smi.split('.'):
-            #    if s[0]=='[' and s[-1]==']' and len(s)<6:
-            #        s = s[1:-1]
-            #    smiles.append(s+'.smi')
 
             # remove duplicates
             smiles = list(set(smiles))
@@ -2556,11 +2549,12 @@ class pyxtal:
                        }
 
             cif = process_csd_cif(cif) #, remove_H=True)
-            pmg = Structure.from_str(cif, fmt='cif')
             remove_H = False
             #print(cif)
             try:
-                pmg = Structure.from_str(cif, fmt='cif')
+                parser = CifParser.from_string(cif, occupancy_tolerance=2.0)
+                pmg = get_struc_from__parser(parser)
+                #pmg = Structure.from_str(cif, fmt='cif')
             except:
                 print(cif)
                 msg = "Problem in parsing CSD cif"
@@ -2584,6 +2578,7 @@ class pyxtal:
                     self.from_seed(pmg, smiles)
                 except ReadSeedError:
                     try:
+                        #print("Add_H=============================================")
                         self.from_seed(pmg, smiles, add_H=True)
                         remove_H = True
                     except:
@@ -2606,14 +2601,14 @@ class pyxtal:
             print(cif0)
             raise CSDError("Cif Error")
             #import sys; sys.exit()
+        #====================
 
-        #check if the structure is consistent with the origin
-        pmg0 = self.to_pymatgen() #shape='lower')
-        if remove_H:
-            print("REMOVE H")
-            pmg.remove_species('H')
-            pmg0.remove_species('H')
-
+        ##check if the structure is consistent with the origin
+        #pmg0 = self.to_pymatgen() #shape='lower')
+        #if remove_H:
+        #    print("REMOVE H")
+        #    pmg.remove_species('H')
+        #    pmg0.remove_species('H')
         #import pymatgen.analysis.structure_matcher as sm
         #if not sm.StructureMatcher().fit(pmg0, pmg):
         #    pmg = Structure.from_str(cif, fmt='cif')
