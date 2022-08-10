@@ -2497,6 +2497,20 @@ class pyxtal:
 
         return display_cluster(molecules, self.lattice.matrix, engs, cmap, **kwargs)
 
+    def substitute(self, dicts):
+        """
+        A quick function to apply substitution
+        For molecule only
+
+
+        Args:
+            dicts: {"F": "Cl"}
+        """
+        pmg = self.to_pymatgen()
+        pmg.replace_species({'F': 'Cl'})
+        smi = [m.smile.replace('F', 'Cl') + '.smi' for m in self.molecules]
+        self.from_seed(pmg, smi)
+
     def from_CSD(self, csd_code):
         """
         Download the crystal from CCDC
