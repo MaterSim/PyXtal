@@ -347,7 +347,7 @@ class structure_from_ext():
 
             for i, id in enumerate(ids):
                 mol1 = molecules[id]
-                #print(id, ids_done, len(mol2.mol), len(mol1))
+                #print("++++++++++++++++++++++++++", id, ids, len(mol2.mol), len(mol1))
                 #print(mol2.mol.to('xyz'))
                 if id not in ids_done and len(mol2.mol) == len(mol1):
                     p_mol = mol2_ref.copy() # create p_mol
@@ -359,6 +359,7 @@ class structure_from_ext():
                             xyz = mol1.cart_coords[order]
                             # add hydrogen positions here
                             if self.add_H:
+                                #print(mol2.smile)
                                 xyz = self.add_Hydrogens(mol2.smile, xyz)
                             #print(xyz)
                             frac = np.dot(xyz, inv_lat)
@@ -377,9 +378,11 @@ class structure_from_ext():
 
                         self.wps.append(wps[i])
                         self.numMols[j] += len(wps[i])
-
+                        #print("================================================ADDDDDD", id)
+        
         # check if some molecules cannot be matched
         if len(ids_done) < len(ids):
+            #print("==========================================================Nonmatched molecules", ids_done, ids)
             for id in ids:
                 if id not in ids_done:
                     msg = "This molecule cannot be matched to the reference\n"
@@ -397,13 +400,13 @@ class structure_from_ext():
         from rdkit.Chem import AllChem
         from rdkit.Geometry import Point3D
 
-        #print(xyz)
+        #print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS", smile)
         m1 = Chem.MolFromSmiles(smile)
         m2 = Chem.AddHs(m1)
         if len(smile) > 100:
-            AllChem.EmbedMolecule(m2,randomSeed=3)
+            AllChem.EmbedMolecule(m2, randomSeed=3)
         else:
-            AllChem.EmbedMolecule(m2,randomSeed=0xf00d)
+            AllChem.EmbedMolecule(m2, randomSeed=0xf00d)
         m2 = Chem.RemoveHs(m2)
         conf = m2.GetConformer(0)
 
@@ -418,8 +421,10 @@ class structure_from_ext():
             AllChem.EmbedMolecule(m1, randomSeed=3)
         else:
             AllChem.EmbedMolecule(m1, randomSeed=0xf00d)
+
+        #print(m1.GetNumAtoms(), m2.GetNumAtoms())
         AllChem.UFFOptimizeMolecule(m1)
-        m3 = AllChem.ConstrainedEmbed(m1,m2)
+        m3 = AllChem.ConstrainedEmbed(m1, m2)
         conf = m3.GetConformer(0) #; print(conf.GetPositions())
 
         return conf.GetPositions()

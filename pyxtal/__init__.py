@@ -2586,10 +2586,10 @@ class pyxtal:
                         self.from_seed(pmg, smiles, add_H=True)
                         remove_H = True
                     except:
-                        msg = 'unknown problems in Reading CSD file ' + csd_code
+                        msg = 'unknown problems in Reading CSD {:s} {:s}'.format(csd_code, smi)
                         raise CSDError(msg)
                 except:
-                    msg = 'unknown problems in Reading CSD file'
+                    msg = 'unknown problems in Reading CSD {:s} {:s}'.format(csd_code, smi)
                     raise CSDError(msg)
             self.source = 'CSD: ' + csd_code
         else:
@@ -2599,7 +2599,6 @@ class pyxtal:
         #check if the dumped cif is correct
         cif0 = self.to_file()
         try:
-        #if True:
             pmg_c = Structure.from_str(cif0, fmt='cif')
         except:
             print(cif0)
