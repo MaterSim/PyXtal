@@ -363,7 +363,7 @@ class spherical_image():
         return self.xtal.show_mol_cluster(id, 
                                           factor=self.factor, 
                                           max_d=self.max_d, 
-                                          N_cut=self.max_CN, 
+                                          ignore_E=False,
                                           plot=False)
 
     def align(self, M=6):

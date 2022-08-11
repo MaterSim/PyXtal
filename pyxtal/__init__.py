@@ -2348,7 +2348,7 @@ class pyxtal:
         """
         eng = 0
         for i in range(len(self.mol_sites)):
-            res  = self.get_neighboring_molecules(i, factor=factor, max_d=max_d)
+            res  = self.get_neighboring_molecules(i, factor=factor, max_d=max_d, ignore_E=False)
             eng += np.array(res[-1]).sum()
         return eng
 
@@ -2443,12 +2443,12 @@ class pyxtal:
             dists.extend(_dist)
         return engs, pairs, dists
 
-    def show_mol_cluster(self, id, factor=1.5, max_d=4.0, N_cut=12, plot=True, cmap='YlGn', **kwargs):
+    def show_mol_cluster(self, id, factor=1.5, max_d=4.0, plot=True, ignore_E=False, cmap='YlGn', **kwargs):
         """
         display the local packing environment for a selected molecule
         """
         np.set_printoptions(precision=3)
-        min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(id, factor, max_d, N_cut)
+        min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(id, factor, max_d, ignore_E)
         print("Number of neighboring molecules", len(engs))
         print(np.array(engs))
 
@@ -2473,12 +2473,8 @@ class pyxtal:
             if np.sum(y[:,1]) > 1e-1:
                 plt.plot(x, y[:,1], c='c', label='Other({:d})'.format(int(sum(y[:,1]))))
 
-            if len(min_ds) >= N_cut:
-                cut = min_ds[N_cut-1]
-                CN = N_cut
-            else:
-                cut = min_ds[-1]
-                CN = len(min_ds)
+            cut = min_ds[-1]
+            CN = len(min_ds)
 
             plt.axvline(x=cut, c='r', ls=':', label='Cutoff_{:d}'.format(CN))
             plt.legend()
