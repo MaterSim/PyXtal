@@ -1709,6 +1709,7 @@ def make_graph(mol, tol=0.2):
             key = "{:s}-{:s}".format(names[i], names[j])
             if site1.distance(site2) < bonds[key]:
                 G.add_edge(i,j)
+                #print(key, site1.distance(site2))
     nx.set_node_attributes(G, names, 'name')
 
     return G
