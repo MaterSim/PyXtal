@@ -2,6 +2,7 @@
 some utilities
 """
 
+import numpy as np
 from spglib import get_symmetry_dataset
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
 from pymatgen.core.structure import Structure
@@ -411,6 +412,27 @@ def get_struc_from__parser(p):
     
         s = p._get_structure(d, primitive=False, symmetrized=False)
         return s
+
+def Kgrid(struc, Kresol=0.10, dimension=3):
+    """
+    Assign kpoints based on the lattice
+    """
+    a, b, c, alpha, beta, gamma = struc.get_cell_lengths_and_angles()
+    vol = struc.get_volume()
+    dist    = np.zeros(3);
+    dist[2] = np.abs(vol/(a*b*np.sin(np.radians(gamma))))
+    dist[1] = np.abs(vol/(a*c*np.sin(np.radians(beta))))
+    dist[0] = np.abs(vol/(b*c*np.sin(np.radians(alpha))))
+    Kpoints = np.ceil(1./(dist*Kresol))
+    if dimension == 2:
+        Kpoints[-1] = 1;
+    #print(a, b, c, alpha, beta, gamma)
+    #print(vol/(a*b*np.sin(gamma)), a*b, np.sin(gamma))
+    #print(vol/(a*c*np.sin(beta)), a*c, np.sin(beta))
+    #print(vol/(b*c*np.sin(alpha)), b*c, np.sin(alpha))
+    #print(Kpoints)
+    #import sys; sys.exit()
+    return Kpoints.astype(int)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
