@@ -240,7 +240,8 @@ class DFTB():
         try:
             final = read('geo_end.gen')
         except:
-            final = struc
+            print("Problem in reading the final structure", time()-t0)
+            final = self.struc
 
         # get the final energy
         energy = self.struc.get_potential_energy()

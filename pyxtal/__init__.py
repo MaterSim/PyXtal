@@ -1053,23 +1053,6 @@ class pyxtal:
         else:
             for site in self.atom_sites:
                 species.extend([site.specie]*site.multiplicity)
-                #wp = Group(227, style='spglib')[0]
-                #my = wp.apply_ops(site.position)
-                #print(site); print(len(site.coords))
-                #for i, m in enumerate(site.coords):
-                #    if i > 1:
-                #        diff = site.coords[:i-1, :] - m
-                #        diff -= np.round(diff)
-                #        dist1 = np.linalg.norm(diff, axis=1)
-                #        if dist1.min() < 1e-2:
-                #            s = 0
-                #            site.wp.print_ops(site.wp.ops[s:i+1])
-                #            print('+++++=')
-                #            site.wp.print_ops(site.wp.generators[s:i+1])
-                #            print(i, m)
-                #            print(dist1[s:])
-                #            print(site.coords[s:i+1])
-                #            import sys; sys.exit()
                 if total_coords is None:
                     total_coords = site.coords
                 else:
@@ -2516,20 +2499,20 @@ class pyxtal:
         numMols = []
         sites = []
         for i, m in enumerate(self.molecules):
-            symbols = m.symbols
+            symbols = deepcopy(m.symbols)
             symbols.sort()
             if len(symbols)!=3 and symbols != ['H', 'H', 'O']:
                 molecules.append(m)
                 numMols.append(self.numMols[i])
+
         for site in self.mol_sites:
             symbols1 = site.molecule.symbols
-            symbols1.sort()
             for i, m in enumerate(molecules):
                 symbols2 = m.symbols
-                symbols2.sort()
                 if len(symbols1)==len(symbols2) and symbols1==symbols2:
                     site.type = i
                     sites.append(site)
+                    print("add sites", i, m)
                     break
 
         self.molecules = molecules
