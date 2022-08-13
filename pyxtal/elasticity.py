@@ -33,7 +33,8 @@ except:
 
 import ase.units as units
 from ase.atoms import Atoms
-
+from ase.io import read
+from time import time
 ###
 
 # The indices of the full stiffness matrix of (orthorhombic) interest
@@ -717,8 +718,9 @@ def generate_strained_configs(at0, symmetry='triclinic', N_steps=5, delta=1e-2):
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2, optimizer=None,
-                          verbose=True, GPa=True, graphics=False, logfile=None, **kwargs):
+def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2, 
+                          optimizer=None, verbose=True, GPa=True, 
+                          graphics=False, logfile=None, **kwargs):
     """
     Compute elastic constants by linear regression of stress vs. strain
 
@@ -883,11 +885,24 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2, optimi
     for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
         for step in range(N_steps):
             at = next(configs)
+            t0 = time()
+            E0 = at.get_potential_energy()
             if optimizer is not None:
-                E0 = at.get_potential_energy()
                 optimizer(at, logfile=logfile).run(**kwargs)
-                E1 = at.get_potential_energy()
-                print("Energy change:  {:.3f} -> {:.3f}, dE: {:.3f}".format(E0, E1, E1-E0))
+            else:
+                # update position
+                pos = read('geo_end.gen').get_positions()
+                at.set_positions(pos)
+            E1 = at.get_potential_energy()
+            fmax = np.abs(at.get_forces()).max()
+            t1 = time()-t0
+            strs = "Energy:  {:.4f} -> {:.4f}, ".format(E0, E1)
+            strs += "dE: {:.4f} ".format(E1-E0)
+            strs += "fmax: {:.5f} ".format(fmax)
+            strs += "time: {:.1f}".format(t1)
+            print(strs)               
+            #import sys; sys.exit()
+
             strain[pattern_index, step, :] = full_3x3_to_Voigt_6_strain(at.info['strain'])
             stress[pattern_index, step, :] = at.get_stress()
 

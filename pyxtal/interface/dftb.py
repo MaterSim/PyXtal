@@ -57,7 +57,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts):
 
 
     kwargs = {'Hamiltonian_SCC': 'yes',
-              'Hamiltonian_SCCTolerance': 1e-05,
+              'Hamiltonian_SCCTolerance': 1e-06,
               'Hamiltonian_MaxSCCIterations': 1000,
               'Hamiltonian_Mixer': 'DIIS{}',
               'Hamiltonian_Dispersion': dispersion,
@@ -190,7 +190,7 @@ class DFTB():
         if not os.path.exists(self.folder):
            os.makedirs(self.folder)   
 
-    def get_calculator(self, mode, step=500, ftol=1e-3):
+    def get_calculator(self, mode, step=500, ftol=1e-3, eVperA=True):
         """
         get the ase style calculator
 
@@ -198,10 +198,12 @@ class DFTB():
             mode: ['single', 'relax', 'vc_relax'] (str)
             step: relaxation steps (int)
             ftol: force tolerance (float)
+            eVperA: unit in eV/A
 
         Returns:
             ase calculator
         """
+        if eVperA: ftol *= 0.194469064593167E-01
         atom_types = set(self.struc.get_chemical_symbols())
         kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts)
        
@@ -234,7 +236,7 @@ class DFTB():
 
         calc = self.get_calculator(mode, step, ftol)
         self.struc.set_calculator(calc)
-
+        self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
         calc.calculate(self.struc)
         try:
