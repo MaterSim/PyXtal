@@ -2508,6 +2508,35 @@ class pyxtal:
         smi = [m.smile.replace('F', 'Cl') + '.smi' for m in self.molecules]
         self.from_seed(pmg, smi)
 
+    def remove_water(self):
+        """
+        Remove water from hydrates
+        """
+        molecules = []
+        numMols = []
+        sites = []
+        for i, m in enumerate(self.molecules):
+            symbols = m.symbols
+            symbols.sort()
+            if len(symbols)!=3 and symbols != ['H', 'H', 'O']:
+                molecules.append(m)
+                numMols.append(self.numMols[i])
+        for site in self.mol_sites:
+            symbols1 = site.molecule.symbols
+            symbols1.sort()
+            for i, m in enumerate(molecules):
+                symbols2 = m.symbols
+                symbols2.sort()
+                if len(symbols1)==len(symbols2) and symbols1==symbols2:
+                    site.type = i
+                    sites.append(site)
+                    break
+
+        self.molecules = molecules
+        self.numMols = numMols
+        self.mol_sites = sites
+
+
     def from_CSD(self, csd_code):
         """
         Download the crystal from CCDC
