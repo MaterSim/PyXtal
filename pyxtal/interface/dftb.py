@@ -223,7 +223,7 @@ class DFTB():
                     )
         return calc
 
-    def run(self, mode, step=500):
+    def run(self, mode, step=500, ftol=1e-3):
         """
         execute the actual calculation
         """
@@ -232,7 +232,7 @@ class DFTB():
         cwd = os.getcwd()
         os.chdir(self.folder)
 
-        calc = self.get_calculator(mode, step)
+        calc = self.get_calculator(mode, step, ftol)
         self.struc.set_calculator(calc)
 
         # execute the simulation
