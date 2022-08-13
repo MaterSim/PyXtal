@@ -160,56 +160,97 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, 
     os.chdir(cwd)
     return struc
 
-
-def DFTB(struc, skf_dir, mode='single', step=500, kresol=0.10, folder='tmp', disp='D3', version=False):
+class DFTB():
     """
-    DFTB optimizer
+    Modified DFTB calculator
 
     Args:
         struc: ase atoms object
-        mode: ['single', 'relax', 'vc_relax'] (str)
+        disp: dispersion (D3, D30, TS, MBD))
         step: optimization steps (int)
+        kresol: kpoint resolution (float)
+        folder: (str)
+        label: (str)
     """
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    cwd = os.getcwd()
-    os.chdir(folder)
 
-    kpts = Kgrid(struc, kresol)
-    atom_types = set(struc.get_chemical_symbols())
-    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts)
-    
-    if mode in ['relax', 'vc-relax']:
-        #kwargs['Driver_'] = 'ConjugateGradient'
-        kwargs['Driver_'] = 'FIRE'
-        kwargs['Driver_MaxForceComponent'] = 1E-3
-        kwargs['Driver_MaxSteps'] = step
-        
-        if mode == 'vc-relax':
+    def __init__(self, struc, skf_dir, 
+                 disp = 'D3', 
+                 kresol = 0.10, 
+                 folder = 'tmp', 
+                 label = 'test',
+                ):
+
+        self.struc = struc
+        self.skf_dir = skf_dir
+        self.folder = folder
+        self.kresol = kresol
+        self.disp = disp
+        self.label = label
+        self.kpts = Kgrid(struc, kresol)
+        if not os.path.exists(self.folder):
+           os.makedirs(self.folder)   
+
+    def get_calculator(self, mode, step=500, ftol=1e-3):
+        """
+        get the ase style calculator
+
+        Args:
+            mode: ['single', 'relax', 'vc_relax'] (str)
+            step: relaxation steps (int)
+            ftol: force tolerance (float)
+
+        Returns:
+            ase calculator
+        """
+        atom_types = set(self.struc.get_chemical_symbols())
+        kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts)
+       
+        if mode in ['relax', 'vc-relax']:
+            #kwargs['Driver_'] = 'ConjugateGradient'
+            kwargs['Driver_'] = 'FIRE'
+            kwargs['Driver_MaxForceComponent'] = ftol
+            kwargs['Driver_MaxSteps'] = step
             
-            kwargs['Driver_MovedAtoms'] = "1:-1"
-            kwargs['Driver_LatticeOpt'] = "Yes"
+            if mode == 'vc-relax':
+                kwargs['Driver_MovedAtoms'] = "1:-1"
+                kwargs['Driver_LatticeOpt'] = "Yes"
+    
+        calc = Dftb(label=self.label,
+                    #run_manyDftb_steps=True,
+                    atoms=self.struc,
+                    kpts=self.kpts,
+                    **kwargs,
+                    )
+        return calc
 
-    calc = Dftb(label='test',
-                #run_manyDftb_steps=True,
-                atoms=struc,
-                kpts = Kgrid(struc, kresol),
-                **kwargs,
-                )
+    def run(self, mode, step=500):
+        """
+        execute the actual calculation
+        """
+        from time import time
+        t0 = time()
+        cwd = os.getcwd()
+        os.chdir(self.folder)
 
-    struc.set_calculator(calc)
-    calc.calculate(struc)
-    try:
-        final = read('geo_end.gen')
-    except:
-        final = struc
-    energy = struc.get_potential_energy()
-    if version: 
+        calc = self.get_calculator(mode, step)
+        self.struc.set_calculator(calc)
+
+        # execute the simulation
+        calc.calculate(self.struc)
+        try:
+            final = read('geo_end.gen')
+        except:
+            final = struc
+
+        # get the final energy
+        energy = self.struc.get_potential_energy()
+
         with open('test.out') as f:
             l = f.readlines()
-            print(l[2])
-    os.chdir(cwd)
-    return final, energy
+            self.version = l[2]
+        os.chdir(cwd)
+        self.time = time() - t0
+        return final, energy
 
 
 if __name__ == '__main__':
@@ -221,7 +262,8 @@ if __name__ == '__main__':
     struc = bulk('Si', 'diamond', cubic=True)
     struc.set_cell(1.1*struc.cell)
     for mode in ['single', 'relax', 'vc-relax']:
-        struc, energy = DFTB(struc, skf_dir, mode)
+        my = DFTB(struc, skf_dir)
+        struc, energy = my.run(mode)
         res = "{:8s} ".format(mode)
         res += "{:8.4f} ".format(struc.cell[0,0])
         res += "{:8.4f} ".format(struc.cell[1,1])

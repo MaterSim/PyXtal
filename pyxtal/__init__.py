@@ -379,6 +379,7 @@ class pyxtal:
             add_H: whether or not add H atoms
             backend: structure parser, default is pymatgen
             style: pyxtal for spglib
+            standard: whether or not optimize lattice
         """
 
         if self.molecular:
