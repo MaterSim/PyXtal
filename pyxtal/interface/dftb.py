@@ -190,7 +190,7 @@ class DFTB():
         if not os.path.exists(self.folder):
            os.makedirs(self.folder)   
 
-    def get_calculator(self, mode, step=500, ftol=1e-3, eVperA=True):
+    def get_calculator(self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True):
         """
         get the ase style calculator
 
@@ -198,6 +198,7 @@ class DFTB():
             mode: ['single', 'relax', 'vc_relax'] (str)
             step: relaxation steps (int)
             ftol: force tolerance (float)
+            FixAngles: Fix angles between lattice vectors
             eVperA: unit in eV/A
 
         Returns:
@@ -216,6 +217,8 @@ class DFTB():
             if mode == 'vc-relax':
                 kwargs['Driver_MovedAtoms'] = "1:-1"
                 kwargs['Driver_LatticeOpt'] = "Yes"
+                if FixAngles:
+                    kwargs['Driver_FixAngles'] = "Yes"
     
         calc = Dftb(label=self.label,
                     #run_manyDftb_steps=True,
@@ -225,7 +228,7 @@ class DFTB():
                     )
         return calc
 
-    def run(self, mode, step=500, ftol=1e-3):
+    def run(self, mode, step=500, ftol=1e-3, FixAngles=False):
         """
         execute the actual calculation
         """
@@ -234,7 +237,7 @@ class DFTB():
         cwd = os.getcwd()
         os.chdir(self.folder)
 
-        calc = self.get_calculator(mode, step, ftol)
+        calc = self.get_calculator(mode, step, ftol, FixAngles)
         self.struc.set_calculator(calc)
         self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
