@@ -2512,7 +2512,7 @@ class pyxtal:
                 if len(symbols1)==len(symbols2) and symbols1==symbols2:
                     site.type = i
                     sites.append(site)
-                    print("add sites", i, m)
+                    #print("add sites", i, m)
                     break
 
         self.molecules = molecules
