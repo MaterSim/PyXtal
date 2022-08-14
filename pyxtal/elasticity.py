@@ -896,7 +896,8 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2,
             E1 = at.get_potential_energy()
             fmax = np.abs(at.get_forces()).max()
             t1 = time()-t0
-            strs = "Energy:  {:.4f} -> {:.4f}, ".format(E0, E1)
+            strs = "{:2d}/{:2d}".format(pattern_index, step)
+            strs += "Eng:  {:.4f} -> {:.4f}, ".format(E0, E1)
             strs += "dE: {:.4f} ".format(E1-E0)
             strs += "fmax: {:.5f} ".format(fmax)
             strs += "time: {:.1f}".format(t1)
