@@ -4,6 +4,66 @@ Database class
 import os
 from ase.db import connect
 
+def make_entry_from_CSD(code):
+    """
+    make entry dictionary from CSD codes
+
+    Args:
+        code: a list of CSD codes
+    """
+    from pyxtal.msg import CSDError
+    from pyxtal import pyxtal
+    from rdkit.Chem.Descriptors import ExactMolWt
+    from rdkit.Chem.rdMolDescriptors import CalcMolFormula
+    from rdkit import Chem
+
+    url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
+    xtal = pyxtal(molecular=True)
+    try:
+        xtal.from_CSD(code)
+    except CSDError as e:
+        print("CSDError", code, e.message)
+    if xtal.valid:
+        m = Chem.MolFromSmiles(xtal.tag['smiles'])
+        mol_wt = ExactMolWt(m)
+        mol_formula = CalcMolFormula(m)
+        kvp = {
+                "csd_code": xtal.tag['csd_code'],
+                "mol_smi": xtal.tag['smiles'],
+                "ccdc_number": xtal.tag['ccdc_number'],
+                "space_group": xtal.group.symbol,
+                "spg_num": xtal.group.number,
+                "Z": sum(xtal.numMols),
+                "Zprime": xtal.get_zprime()[0],
+                "url": url0 + str(xtal.tag['ccdc_number']),
+                "mol_formula": mol_formula,
+                "mol_weight": mol_wt,
+                "mol_name": xtal.tag['csd_code'],
+                "l_type": xtal.lattice.ltype,
+              }
+        entry = (xtal.to_ase(), kvp, None)
+        return entry
+    else:
+        return None
+
+def make_db_from_CSD(dbname, codes):
+    """
+    make database from CSD codes
+
+    Args:
+        dbname: db file name
+        codes: a list of CSD codes
+    """
+    # open
+    db = database(dbname)
+
+    # add structure
+    for i, code in enumerate(codes):
+        entry = make_entry_from_CSD(code)
+        if entry is not None:
+            db.add(entry)
+            print(i, code)
+
 class database():
     """
     This is a database class to process crystal data
@@ -49,6 +109,14 @@ class database():
         if kvp['csd_code'] not in self.codes:
             kvp0 = self.process_kvp(kvp)
             self.db.write(atom, key_value_pairs=kvp0, data=data)
+            self.codes.append(kvp['csd_code'])
+
+    def add_from_code(self, code):
+        entry = make_entry_from_CSD(code)
+        if entry is not None:
+            self.add(entry)
+        else:
+            print("{:s} is not a valid entry".format(code))
 
     def process_kvp(self, kvp):
         kvp0 = {}
