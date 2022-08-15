@@ -305,6 +305,7 @@ class structure_from_ext():
         positions = np.zeros([len(molecules),3])
         for i in range(len(molecules)):
             positions[i] = np.dot(molecules[i].cart_coords.mean(axis=0), inv_lat)
+
         wps = []
         ids = []  #id for the generator
         visited_ids = []
@@ -316,6 +317,7 @@ class structure_from_ext():
                 #print(id, pos, tmp_ids, len(self.wyc), len(molecules[id]))
                 if len(tmp_ids) == len(self.wyc):
                     #general position
+                    #if len(molecules[id])==1: print("groups", tmp_ids, '\n', centers)
                     wps.append(self.wyc)
                     ids.append(id)
                 else: #special sites
@@ -324,7 +326,7 @@ class structure_from_ext():
                         p1, wp, _ = self.wyc.merge(p0, new_lat, 0.1)
                         diff = p1 - p0
                         diff -= np.round(diff)
-                        if np.abs(diff).sum() < 0.01: #sort position by mapping
+                        if np.abs(diff).sum() < 1e-2: #sort position by mapping
                             wps.append(wp)
                             ids.append(id0) #find the right ids
                             #print("add special", wp.index, id0)
@@ -368,7 +370,8 @@ class structure_from_ext():
                             p_mol.reset_positions(xyz-center)
                             position = np.dot(center, np.linalg.inv(new_lat))
                         else:
-                            position = np.dot(mol1.cart_coords[0], np.linalg.inv(new_lat))
+                            xyz = mol1.cart_coords[0]
+                            position = np.dot(xyz, inv_lat)
                         position -= np.floor(position)
 
                         self.positions.append(position)
@@ -378,7 +381,7 @@ class structure_from_ext():
 
                         self.wps.append(wps[i])
                         self.numMols[j] += len(wps[i])
-                        #print("================================================ADDDDDD", id)
+                        #print("================================================ADDDDDD", id, len(mol1))
         
         # check if some molecules cannot be matched
         if len(ids_done) < len(ids):
@@ -424,7 +427,11 @@ class structure_from_ext():
 
         #print(m1.GetNumAtoms(), m2.GetNumAtoms())
         AllChem.UFFOptimizeMolecule(m1)
-        m3 = AllChem.ConstrainedEmbed(m1, m2)
+        try:
+            m3 = AllChem.ConstrainedEmbed(m1, m2)
+        except ValueError as e:
+            raise ReadSeedError(str(e))
+            
         conf = m3.GetConformer(0) #; print(conf.GetPositions())
 
         return conf.GetPositions()

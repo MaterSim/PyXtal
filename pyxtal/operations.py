@@ -824,7 +824,7 @@ class OperationAnalyzer(SymmOp):
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
 
-def find_ids(coords, ref):
+def find_ids(coords, ref, tol=1e-3):
     """
     find the refernce ids that can match
     """
@@ -836,7 +836,7 @@ def find_ids(coords, ref):
         norms = np.linalg.norm(diffs, axis=1)
         #print(norms, diffs)
         for i, norm in enumerate(norms):
-            if norm < 1e-3 and i not in ids:
+            if norm < tol and i not in ids:
                 ids.append(i)
                 break
     return ids
