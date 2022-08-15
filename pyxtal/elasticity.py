@@ -882,32 +882,35 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2,
                 plt.text(0.4,0.4, "n/a")
 
     # Fill in strain and stress arrays from config Atoms list
-    for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
-        for step in range(N_steps):
-            at = next(configs)
-            t0 = time()
-            E0 = at.get_potential_energy()
-            if optimizer is not None:
-                optimizer(at, logfile=logfile).run(**kwargs)
-            else:
-                # update position
-                pos = read('geo_end.gen').get_positions()
-                at.set_positions(pos)
-            E1 = at.get_potential_energy()
-            fmax = np.abs(at.get_forces()).max()
-            t1 = time()-t0
-            strs = "\n{:2d}/{:2d} ".format(pattern_index, step)
-            strs += "Eng:  {:.4f} -> {:.4f}, ".format(E0, E1)
-            strs += "dE: {:.4f} ".format(E1-E0)
-            strs += "fmax: {:.5f} ".format(fmax)
-            strs += "time: {:.1f}".format(t1)
-            strain_info = full_3x3_to_Voigt_6_strain(at.info['strain'])
-            strain[pattern_index, step, :] = strain_info
-            stress[pattern_index, step, :] = at.get_stress()
-            print(strs)               
-            #print("Cell\n", at.get_cell())
-            print("Strain       ", strain_info)
-            print("Stress (GPa) ", at.get_stress()/units.GPa)
+    with open('detail.txt', 'w') as f:
+        for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
+            for step in range(N_steps):
+                at = next(configs)
+                t0 = time()
+                E0 = at.get_potential_energy()
+                if optimizer is not None:
+                    optimizer(at, logfile=logfile).run(**kwargs)
+                else:
+                    # update position
+                    pos = read('geo_end.gen').get_positions()
+                    at.set_positions(pos)
+                E1 = at.get_potential_energy()
+                fmax = np.abs(at.get_forces()).max()
+                t1 = time()-t0
+                strs = "\n\n{:2d}/{:2d} ".format(pattern_index, step)
+                strs += "Eng:  {:.4f} -> {:.4f}, ".format(E0, E1)
+                strs += "dE: {:.4f} ".format(E1-E0)
+                strs += "fmax: {:.5f} ".format(fmax)
+                strs += "time: {:.1f}".format(t1)
+                strain_info = full_3x3_to_Voigt_6_strain(at.info['strain'])
+                stress_info = at.get_stress()
+                strain[pattern_index, step, :] = strain_info
+                stress[pattern_index, step, :] = stress_info
+                #print("Cell\n", at.get_cell())
+                strs += "\nStrain {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}".format(*strain_info)
+                strs += "\nStress (GPa) {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*(stress_info/units.GPa))
+                print(strs)
+                f.writelines(strs)               
 
     # Do the linear regression
     for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
