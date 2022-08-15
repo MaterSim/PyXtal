@@ -896,16 +896,18 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2,
             E1 = at.get_potential_energy()
             fmax = np.abs(at.get_forces()).max()
             t1 = time()-t0
-            strs = "{:2d}/{:2d} ".format(pattern_index, step)
+            strs = "\n{:2d}/{:2d} ".format(pattern_index, step)
             strs += "Eng:  {:.4f} -> {:.4f}, ".format(E0, E1)
             strs += "dE: {:.4f} ".format(E1-E0)
             strs += "fmax: {:.5f} ".format(fmax)
             strs += "time: {:.1f}".format(t1)
-            print(strs)               
-            #import sys; sys.exit()
-
-            strain[pattern_index, step, :] = full_3x3_to_Voigt_6_strain(at.info['strain'])
+            strain_info = full_3x3_to_Voigt_6_strain(at.info['strain'])
+            strain[pattern_index, step, :] = strain_info
             stress[pattern_index, step, :] = at.get_stress()
+            print(strs)               
+            #print("Cell\n", at.get_cell())
+            print("Strain       ", strain_info)
+            print("Stress (GPa) ", at.get_stress()/units.GPa)
 
     # Do the linear regression
     for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
