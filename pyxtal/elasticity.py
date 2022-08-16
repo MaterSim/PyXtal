@@ -719,7 +719,7 @@ def generate_strained_configs(at0, symmetry='triclinic', N_steps=5, delta=1e-2):
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2, 
-                          optimizer=None, verbose=True, GPa=True, 
+                          optimizer=None, verbose=True, GPa=True, tag='test',
                           graphics=False, logfile=None, **kwargs):
     """
     Compute elastic constants by linear regression of stress vs. strain
@@ -882,7 +882,7 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2,
                 plt.text(0.4,0.4, "n/a")
 
     # Fill in strain and stress arrays from config Atoms list
-    with open('detail.txt', 'w') as f:
+    with open(tag+'-detail.txt', 'w') as f:
         for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
             for step in range(N_steps):
                 at = next(configs)
@@ -897,20 +897,20 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2,
                 E1 = at.get_potential_energy()
                 fmax = np.abs(at.get_forces()).max()
                 t1 = time()-t0
-                strs = "\n\n{:2d}/{:2d} ".format(pattern_index, step)
+                strs = "\n{:8s} {:2d}/{:2d}\n".format(tag, pattern_index, step)
                 strs += "Eng:  {:.4f} -> {:.4f}, ".format(E0, E1)
-                strs += "dE: {:.4f} ".format(E1-E0)
-                strs += "fmax: {:.5f} ".format(fmax)
-                strs += "time: {:.1f}".format(t1)
+                strs += "dE: {:.4f}\n".format(E1-E0)
+                strs += "fmax: {:.5f}\n".format(fmax)
+                strs += "time: {:.1f}\n".format(t1)
                 strain_info = full_3x3_to_Voigt_6_strain(at.info['strain'])
                 stress_info = at.get_stress()
                 strain[pattern_index, step, :] = strain_info
                 stress[pattern_index, step, :] = stress_info
                 #print("Cell\n", at.get_cell())
-                strs += "\nStrain {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}".format(*strain_info)
-                strs += "\nStress (GPa) {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*(stress_info/units.GPa))
-                print(strs)
+                strs += "Strain {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n".format(*strain_info)
+                strs += "Stress (GPa) {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}\n".format(*(stress_info/units.GPa))
                 f.writelines(strs)               
+                print(strs)
 
     # Do the linear regression
     for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
