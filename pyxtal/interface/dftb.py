@@ -63,6 +63,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts):
               'Hamiltonian_Dispersion': dispersion,
               'slako_dir': skf_dir,
               'Analysis_WriteBandOut': 'No',
+              'Analysis_MullikenAnalysis': 'No',
               'Options_WriteDetailedOut': 'No',
              }
 
