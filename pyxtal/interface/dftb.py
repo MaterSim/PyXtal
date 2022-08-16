@@ -62,6 +62,8 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts):
               'Hamiltonian_Mixer': 'DIIS{}',
               'Hamiltonian_Dispersion': dispersion,
               'slako_dir': skf_dir,
+              'Analysis_WriteBandOut': 'No',
+              'Options_WriteDetailedOut': 'No',
              }
 
     if skf_dir.find('3ob') > 0: 
@@ -178,6 +180,7 @@ class DFTB():
                  kresol = 0.10, 
                  folder = 'tmp', 
                  label = 'test',
+                 prefix = 'geo_final',
                 ):
 
         self.struc = struc
@@ -213,6 +216,7 @@ class DFTB():
             kwargs['Driver_'] = 'FIRE'
             kwargs['Driver_MaxForceComponent'] = ftol
             kwargs['Driver_MaxSteps'] = step
+            kwargs['OutputPrefix'] = self.prefix
             
             if mode == 'vc-relax':
                 kwargs['Driver_MovedAtoms'] = "1:-1"
@@ -239,11 +243,11 @@ class DFTB():
 
         calc = self.get_calculator(mode, step, ftol, FixAngles)
         self.struc.set_calculator(calc)
-        self.struc.write('geo_o.gen', format='dftb')
+        # self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
         calc.calculate(self.struc)
         try:
-            final = read('geo_end.gen')
+            final = read(self.final+'.gen')
         except:
             print("Problem in reading the final structure", time()-t0)
             final = self.struc

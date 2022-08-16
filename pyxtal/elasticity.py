@@ -882,7 +882,7 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2,
                 plt.text(0.4,0.4, "n/a")
 
     # Fill in strain and stress arrays from config Atoms list
-    with open(tag+'-detail.txt', 'w') as f:
+    with open('Detail-'+tag+'.txt', 'w') as f:
         for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
             for step in range(N_steps):
                 at = next(configs)
@@ -909,7 +909,7 @@ def fit_elastic_constants(a, symmetry='triclinic', N_steps=5, delta=1e-2,
                 #print("Cell\n", at.get_cell())
                 strs += "Strain {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n".format(*strain_info)
                 strs += "Stress (GPa) {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}\n".format(*(stress_info/units.GPa))
-                f.writelines(strs)               
+                f.write(strs)               
                 print(strs)
 
     # Do the linear regression
