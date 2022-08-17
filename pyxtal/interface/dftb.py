@@ -219,7 +219,7 @@ class DFTB():
             kwargs['Driver_'] = 'FIRE'
             kwargs['Driver_MaxForceComponent'] = ftol
             kwargs['Driver_MaxSteps'] = step
-            kwargs['OutputPrefix'] = self.prefix
+            kwargs['Driver_OutputPrefix'] = self.prefix
             
             if mode == 'vc-relax':
                 kwargs['Driver_MovedAtoms'] = "1:-1"
