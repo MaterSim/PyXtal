@@ -62,9 +62,10 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts):
               'Hamiltonian_Mixer': 'DIIS{}',
               'Hamiltonian_Dispersion': dispersion,
               'slako_dir': skf_dir,
-              'Analysis_WriteBandOut': 'No',
-              'Analysis_MullikenAnalysis': 'No',
-              'Options_WriteDetailedOut': 'No',
+              #'Analysis_': '',
+              #'Analysis_WriteBandOut': 'No',
+              #'Analysis_MullikenAnalysis': 'No',
+              #'Options_WriteDetailedOut': 'No',
              }
 
     if skf_dir.find('3ob') > 0: 
@@ -191,6 +192,7 @@ class DFTB():
         self.disp = disp
         self.label = label
         self.kpts = Kgrid(struc, kresol)
+        self.prefix = prefix
         if not os.path.exists(self.folder):
            os.makedirs(self.folder)   
 
@@ -248,7 +250,7 @@ class DFTB():
         # execute the simulation
         calc.calculate(self.struc)
         try:
-            final = read(self.final+'.gen')
+            final = read(self.prefix+'.gen')
         except:
             print("Problem in reading the final structure", time()-t0)
             final = self.struc
@@ -256,7 +258,7 @@ class DFTB():
         # get the final energy
         energy = self.struc.get_potential_energy()
 
-        with open('test.out') as f:
+        with open(self.label+'.out') as f:
             l = f.readlines()
             self.version = l[2]
         os.chdir(cwd)
