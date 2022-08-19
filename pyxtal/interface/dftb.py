@@ -228,9 +228,11 @@ class DFTB():
             #kwargs['Driver_'] = 'ConjugateGradient'
             kwargs['Driver_'] = 'GeometryOptimization'
             kwargs['Driver_Optimizer'] = 'FIRE {}'
-            kwargs['Driver_MaxForceComponent'] = ftol
+            #kwargs['Driver_MaxForceComponent'] = ftol
             kwargs['Driver_MaxSteps'] = step
             kwargs['Driver_OutputPrefix'] = self.prefix
+            kwargs['Driver_Convergence_'] = ''
+            kwargs['Driver_Convergence_GradElem'] = ftol
             
             if mode == 'vc-relax':
                 kwargs['Driver_MovedAtoms'] = "1:-1"
@@ -540,7 +542,7 @@ class Dftb(FileIOCalculator):
         # stress stuff ends
 
         # calculation was carried out with atoms written in write_input
-        #os.remove(os.path.join(self.directory, 'results.tag'))
+        os.remove(os.path.join(self.directory, 'results.tag'))
 
     def read_forces(self):
         """Read Forces from dftb output file (results.tag)."""
