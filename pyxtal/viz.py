@@ -294,6 +294,33 @@ def display_mol_crystals(strucs, size=(600, 300), supercell=(1,1,1), axis=None, 
     else:
         raise ValueError("only movie or slider is supported")
        
+def display_crystals(strucs, size=(600, 300), supercell=(1,1,1), labels=None):
+    """
+    display the molecular crystals generated from pyxtal. 
+    two modes of animations are supported: slider or movie
+
+    Args:
+        size: (width, height) in tuple
+        supercell: replicate the crystal (valid only when animation is False)
+        labels: labels for each structures
+
+    Returns:
+        py3Dmol object
+    """
+    import py3Dmol
+    from ipywidgets import interact, IntSlider
+
+    (width, height) = size
+    view = py3Dmol.view(height=height, width=width)
+    if labels is None:
+        l_min, l_max = 0, len(strucs)-1
+    else:
+        l_min, l_max = labels[0], labels[-1]
+
+    def conf_viewer(idx):
+        return strucs[idx].show(size=size, supercell=supercell)
+
+    interact(conf_viewer, idx=IntSlider(min=0, max=len(strucs)-1, description='id:'))
 
 
 def display_cluster(molecules, cell, Ps, cmap='YlGn', s_opacity=0.5, size=(400,300), style='sphere'):

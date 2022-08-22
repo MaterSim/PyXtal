@@ -1,0 +1,68 @@
+#############################################################
+#             ______       _    _          _                #
+#            (_____ \     \ \  / /        | |               #
+#             _____) )   _ \ \/ / |_  ____| |               #
+#            |  ____/ | | | )  (|  _)/ _  | |               #
+#            | |    | |_| |/ /\ \ |_( (_| | |___            #
+#            |_|     \__  /_/  \_\___)__|_|_____)           #
+#                   (____/                                  #
+#---------------------(version    0.5.2)--------------------#
+#       A Python package for random crystal generation      #
+#       url: https://github.com/qzhu2017/pyxtal             #
+#       @Zhu's group at University of Nevada Las Vegas      #
+#############################################################
+data_from_pyxtal
+
+_symmetry_space_group_name_H-M 'Pmc21'
+_symmetry_Int_Tables_number                   26
+_symmetry_cell_setting              orthorhombic
+_cell_length_a           15.431269
+_cell_length_b            4.050160
+_cell_length_c           17.805399
+_cell_angle_alpha        90.000000
+_cell_angle_beta         90.000000
+_cell_angle_gamma        90.000000
+_cell_volume           1112.821563
+
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+1 'x, y, z'
+2 '-x, -y, z+1/2'
+3 'x, -y, z+1/2'
+4 '-x, y, z'
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+B      B        4     0.166738    0.009101    0.717226 1
+B      B        4     0.333339    0.996626    0.967119 1
+O      O        2     0.000000    0.999656    0.557119 1
+O      O        4     0.252202    0.006797    0.499274 1
+O      O        4     0.089573    0.995916    0.922402 1
+O      O        4     0.752192    0.020018    0.749443 1
+O      O        4     0.593969    0.975969    0.011749 1
+O      O        4     0.841585    0.008675    0.640218 1
+O      O        4     0.589643    0.987378    0.172279 1
+O      O        2     0.500000    0.520736    0.586057 1
+O      O        4     0.369201    0.481834    0.282516 1
+O      O        4     0.658205    0.020783    0.890312 1
+O      O        4     0.130819    0.493145    0.032452 1
+O      O        2     0.500000    0.988943    0.306962 1
+O      O        2     0.000000    0.499645    0.836279 1
+O      O        4     0.094015    0.000215    0.261954 1
+K      K        2     0.500000    0.506828    0.418920 1
+K      K        4     0.798347    0.496866    0.866351 1
+K      K        4     0.298499    0.491382    0.616163 1
+K      K        2     0.000000    0.485267    0.668947 1
+Nb     Nb       4     0.123539    0.964534    0.528996 1
+Nb     Nb       4     0.376444    0.024311    0.278993 1
+Nb     Nb       2     0.000000    0.957299    0.843643 1
+Nb     Nb       2     0.500000    0.021607    0.093445 1
+#END
+

@@ -464,7 +464,7 @@ class wyckoff_split:
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
         for i, wp1 in enumerate(self.wp1_lists):
-            s += "{:d}{:s} -> ".format(wp1.multiplicity, wp1.letter)
+            s += "\n{:d}{:s} -> ".format(wp1.multiplicity, wp1.letter)
 
             for j, wp2 in enumerate(self.wp2_lists[i]):
                 s += "{:d}{:s}\n".format(wp2.multiplicity, wp2.letter)

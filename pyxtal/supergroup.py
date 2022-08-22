@@ -1055,6 +1055,7 @@ class symmetry_mapper():
     #        # 1, make_subgroup to H
     #        # 2, enumerate all wycs
     #    return
+
 class supergroups():
     """
     Class to search for the feasible transition to a given super group

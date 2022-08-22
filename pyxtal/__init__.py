@@ -611,7 +611,7 @@ class pyxtal:
 
     def supergroup(self, G=None, d_tol=1.0):
         """
-        Generate a structure with lower symmetry
+        Generate a structure with higher symmetry
 
         Args:
             G: super space group number (list of integers)
@@ -626,6 +626,24 @@ class pyxtal:
         my_super = supergroup(self, G=G)
         solutions = my_super.search_supergroup(d_tol=d_tol)
         return my_super.make_supergroup(solutions)
+
+    def supergroups(self, G=None, d_tol=1.0):
+        """
+        Generate the structures with higher symmetry
+
+        Args:
+            G: super space group number (list of integers)
+            d_tol: maximum tolerance
+
+        Returns:
+            a list of pyxtal structures with minimum super group symmetries
+        """
+
+        from pyxtal.supergroup import supergroups
+
+        sup = supergroups(self, G=G, d_tol=d_tol)
+        return sup.strucs
+
 
     def subgroup(self, perms=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4, min_cell=0):
         """
@@ -1444,6 +1462,7 @@ class pyxtal:
         self.factor = 1.0
         self.PBC = [1, 1, 1]
         self.numIons = numIons
+        numIons_added = np.zeros(len(numIons), dtype=int)
         _sites = []
 
         if len(sites) != len(species):

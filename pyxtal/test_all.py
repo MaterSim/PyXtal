@@ -100,13 +100,13 @@ class TestSupergroup(unittest.TestCase):
         call supergroup from pyxtal
         """
         data = [
-                ("NbO2", 141, 2),
+                ("NbO2", 141, 5),
                ]
         for d in data:
             (cif, g, N) = d
             s = pyxtal()
             s.from_seed(cif_path + cif + '.cif')
-            strucs = s.supergroup(g, 0.5)
+            strucs, sols = s.supergroup(g, 0.5)
             self.assertTrue(len(strucs) == N)
 
     def test_make_pyxtal(self):

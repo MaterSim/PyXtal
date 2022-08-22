@@ -2174,7 +2174,7 @@ class Wyckoff_position:
 
 # --------------------------- Wyckoff Position selection  -----------------------------
 
-def choose_wyckoff(G, number, site=None, dim=3):
+def choose_wyckoff(G, number=None, site=None, dim=3):
     """
     Choose a Wyckoff position to fill based on the current number of atoms
     needed to be placed within a unit cell
