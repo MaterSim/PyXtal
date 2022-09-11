@@ -52,7 +52,7 @@ setup(
         'numba>=0.55.2', #now supports numpy 1.22
         'scipy>=1.7.3',
         'importlib_metadata>=1.4',
-        'pyshtools>=4.10',
+        'pyshtools==4.10',
         #"openbabel>=3.0.0",
     ],
     python_requires=">=3.7, <3.10", #add the restriction for now issue #189
