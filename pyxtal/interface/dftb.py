@@ -63,7 +63,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=False):
     kwargs = {'Hamiltonian_SCC': 'yes',
               'Hamiltonian_SCCTolerance': 1e-06,
               'Hamiltonian_MaxSCCIterations': 1000,
-              'Hamiltonian_Mixer': 'DIIS{}',
+              #'Hamiltonian_Mixer': 'DIIS{}', #Default is Broyden
               'Hamiltonian_Dispersion': dispersion,
               'slako_dir': skf_dir,
               'Analysis_': '',
