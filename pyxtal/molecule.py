@@ -944,7 +944,6 @@ class pyxtal_molecule:
         Returns:
             rmsd:
             transition matrix:
-            match:
         """
 
         from rdkit import Chem
@@ -957,14 +956,13 @@ class pyxtal_molecule:
         for i in range(len(self.mol)):
             x0,y0,z0 = xyz0[i]
             x1,y1,z1 = xyz1[i]
-            conf0.SetAtomPosition(i,Point3D(x0,y0,z0))
-            conf1.SetAtomPosition(i,Point3D(x1,y1,z1))
+            conf0.SetAtomPosition(i, Point3D(x0,y0,z0))
+            conf1.SetAtomPosition(i, Point3D(x1,y1,z1))
 
         mol = RemoveHs(mol)
         rmsd, trans = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
         
         return rmsd, trans
-
 
     def get_rmsd(self, xyz, debug=False):
         """
