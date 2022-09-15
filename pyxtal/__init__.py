@@ -28,7 +28,7 @@ from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.constants import letters
 from pyxtal.viz import display_molecular, display_atomic, display_cluster
 from pyxtal.constants import letters
-from pyxtal.descriptor import spherical_image
+#from pyxtal.descriptor import spherical_image
 
 # name = "pyxtal"
 
@@ -2404,18 +2404,18 @@ class pyxtal:
         engs = [engs[i] for i in ids]
         return min_ds, neighs, comps, Ps, engs
 
-    def get_spherical_images(self, **kwargs):
-        """
-        get the spherical image representation
+    #def get_spherical_images(self, **kwargs):
+    #    """
+    #    get the spherical image representation
 
-        Args:
-            model: either 'molecule' or 'contacts'
+    #    Args:
+    #        model: either 'molecule' or 'contacts'
 
-        Returns:
-            the sph class
-        """
-        sph = spherical_image(self, **kwargs)
-        return sph
+    #    Returns:
+    #        the sph class
+    #    """
+    #    sph = spherical_image(self, **kwargs)
+    #    return sph
 
     def get_neighboring_dists(self, site_id=0, factor=1.5, max_d=5.0):
         """
