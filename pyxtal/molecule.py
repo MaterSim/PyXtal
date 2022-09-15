@@ -972,9 +972,9 @@ class pyxtal_molecule:
             xyz: 3D coordinates
 
         Returns:
-            rmsd:
-            transition matrix:
-            match:
+            rmsd (float): rmsd values 
+            transition matrix: 4*4 matrix
+            match: True or False 
         """
 
         from rdkit import Chem
