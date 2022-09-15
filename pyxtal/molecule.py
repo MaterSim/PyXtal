@@ -1,7 +1,6 @@
 """
 Module for handling molecules.
 """
-# Imports
 import os
 from pkg_resources import resource_filename
 from copy import deepcopy
