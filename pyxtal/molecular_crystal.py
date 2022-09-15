@@ -7,7 +7,6 @@ import random
 from copy import deepcopy
 import numpy as np
 
-# PyXtal imports
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import mol_site
