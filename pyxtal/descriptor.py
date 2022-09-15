@@ -2,7 +2,7 @@
 Module for crystal packing descriptor from energy decomposition
 """
 import numpy as np
-
+import pyshtools as pysh
 from scipy.stats import qmc
 from scipy.spatial.transform import Rotation
 from scipy.optimize import minimize
@@ -202,7 +202,6 @@ def get_alignment(pts, degrees=True):
 
 class spherical_image():
 
-    import pyshtools as pysh
 
     """
     A class to handle the crystal packing descriptor from spherical image
