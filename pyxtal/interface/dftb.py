@@ -10,7 +10,7 @@ from ase.units import Hartree, Bohr
 import numpy as np
 
 
-def make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=False):
+def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=False):
     """
     Generate the DFTB Hamiltonian for DFTB+
     """
@@ -58,27 +58,37 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=False):
 
     elif disp == 'LJ':
         dispersion = 'LennardJones{Parameters = UFFParameters{}}'
+    else:
+        dispersion = None
 
 
     kwargs = {'Hamiltonian_SCC': 'yes',
               'Hamiltonian_SCCTolerance': 1e-06,
               'Hamiltonian_MaxSCCIterations': 1000,
               #'Hamiltonian_Mixer': 'DIIS{}', #Default is Broyden
-              'Hamiltonian_Dispersion': dispersion,
+              #'Hamiltonian_Dispersion': dispersion,
               'slako_dir': skf_dir,
               'Analysis_': '',
               'Analysis_WriteBandOut': 'No',
               'Analysis_MullikenAnalysis': 'No',
               'Analysis_CalculateForces': 'Yes',
              }
+    if write_band: 
+        kwargs['Analysis_WriteBandOut'] = 'Yes'
     if use_omp:
         kwargs['Parallel_'] = ''
         kwargs['Parallel_UseOmpThreads'] = 'Yes'
+    if dispersion is not None:
+        kwargs['Hamiltonian_Dispersion'] = dispersion
 
     if skf_dir.find('3ob') > 0: 
         calc_type = '3ob'
-    elif skf_dir.find('mio') > 0 or skf_dir.find('pbc') > 0:
+    elif skf_dir.find('mio') > 0: 
         calc_type = 'mio'
+    elif skf_dir.find('pbc') > 0:
+        calc_type = 'pbc'
+    elif skf_dir.find('matsci') > 0:
+        calc_type = 'matsci'
 
     #https://dftb.org/parameters/download/3ob/3ob-3-1-cc
     if calc_type == '3ob':
@@ -112,7 +122,29 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=False):
             strs +='\n\t'+ele+' = '+str(HD[ele])
         strs += '\n\t}'
         kwargs['Hamiltonian_HubbardDerivs'] = strs
-    #elif calc_type == 'mio':
+    elif calc_type == 'pbc':
+        #https://dftb.org/parameters/download/pbc/pbc-0-3-cc
+        for ele in atom_types:
+            if ele == 'H':
+                kwargs['Hamiltonian_MaxAngularMomentum_H']='s'
+            elif ele in ['C', 'O', 'N', 'F']:
+                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='p'
+            elif ele in ['Si', 'Fe']:
+                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='d'
+            else:
+                raise RuntimeError("pbc-0-3 doesnot support", ele)
+    elif calc_type in ['matsci', 'mio']:
+         #https://dftb.org/parameters/download/pbc/pbc-0-3-cc
+        for ele in atom_types:
+            if ele == 'H':
+                kwargs['Hamiltonian_MaxAngularMomentum_H']='s'
+            elif ele in ['B', 'O', 'C', 'N']:
+                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='p'
+            elif ele in ['Si']:
+                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='d'
+            else:
+                raise RuntimeError(calc_type, "doesnot support", ele)
+        
     #DFTB2
 
     #pbc-0-3
@@ -123,7 +155,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=False):
     return kwargs
 
 
-def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, folder='tmp', disp='D3', logfile=None):
+def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, folder='tmp', disp='D3', symmetrize=True, logfile=None):
     """
     DFTB optimizer based on ASE
 
@@ -148,7 +180,8 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, 
                 )
 
     struc.set_calculator(calc)
-    struc.set_constraint(FixSymmetry(struc)) 
+    if symmetrize:
+        struc.set_constraint(FixSymmetry(struc)) 
     if opt_cell:
         ecf = ExpCellFilter(struc)
         if logfile is not None:
@@ -162,7 +195,6 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, 
             dyn = FIRE(struc)
     try:
         dyn.run(fmax=fmax, steps=step)
-        os.remove('detailed.out')
         os.remove('dftb_pin.hsd')
         os.remove('geo_end.gen')
         os.remove('charges.bin')
@@ -170,6 +202,45 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, 
         print("Problem in DFTB calculation")
     os.chdir(cwd)
     return struc
+
+def DFTB_SCF(struc, skf_dir, kresol=0.10, folder='tmp', disp=None, filename=None):
+    """
+    DFTB SCF to get band structure
+
+    Args:
+        struc: ase atoms object
+        skf_dir: 
+        kresol: 
+        filename: band structure output
+    """
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    cwd = os.getcwd()
+    os.chdir(folder)
+
+    kpts = Kgrid(struc, kresol)
+    atom_types = set(struc.get_chemical_symbols())
+    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=True)
+
+    calc = Dftb(label='test',
+                atoms=struc,
+                kpts=kpts,
+                **kwargs,
+                )
+
+    struc.set_calculator(calc)
+    struc.get_potential_energy()
+    eigvals = calc.read_eigenvalues()[0]
+    ne = calc.read_electrons()
+    nband = int(ne/2)
+    vbm = eigvals[:, nband-1].max()
+    cbm = eigvals[:, nband].min()
+    gap = cbm - vbm
+    #if filename is not None:
+    #    # plot band structure
+    os.chdir(cwd)
+    return gap
+
 
 class DFTB():
     """
@@ -262,10 +333,9 @@ class DFTB():
         # self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
         calc.calculate(self.struc)
-        try:
+        if mode in ['relax', 'vc-relax']:
             final = read(self.prefix+'.gen')
-        except:
-            print("Problem in reading the final structure", time()-t0)
+        else:
             final = self.struc
 
         # get the final energy
@@ -568,7 +638,70 @@ class Dftb(FileIOCalculator):
         gradients = np.array(gradients)* Hartree / Bohr
 
         return gradients 
+    
+    def read_eigenvalues(self):
+        """ Read Eigenvalues from dftb output file (results.tag).
+            Unfortunately, the order seems to be scrambled. """
+        # Eigenvalue line indexes
+        index_eig_begin = None
+        for iline, line in enumerate(self.lines):
+            fstring = 'eigenvalues   '
+            if line.find(fstring) >= 0:
+                index_eig_begin = iline + 1
+                line1 = line.replace(':', ',')
+                ncol, nband, nkpt, nspin = map(int, line1.split(',')[-4:])
+                break
+        else:
+            return None
 
+        # Take into account that the last row may lack
+        # columns if nkpt * nspin * nband % ncol != 0
+        nrow = int(np.ceil(nkpt * nspin * nband * 1. / ncol))
+        index_eig_end = index_eig_begin + nrow
+        ncol_last = len(self.lines[index_eig_end - 1].split())
+        self.lines[index_eig_end - 1] += ' 0.0 ' * (ncol - ncol_last)
+
+        eig = np.loadtxt(self.lines[index_eig_begin:index_eig_end]).flatten()
+        eig *= Hartree
+        N = nkpt * nband
+        eigenvalues = [eig[i * N:(i + 1) * N].reshape((nkpt, nband))
+                       for i in range(nspin)]
+
+        return eigenvalues
+
+    def read_fermi_levels(self):
+        """ Read Fermi level(s) from dftb output file (results.tag). """
+        # Fermi level line indexes
+        for iline, line in enumerate(self.lines):
+            fstring = 'fermi_level   '
+            if line.find(fstring) >= 0:
+                index_fermi = iline + 1
+                break
+        else:
+            return None
+
+        fermi_levels = []
+        words = self.lines[index_fermi].split()
+        assert len(words) in [1, 2], 'Expected either 1 or 2 Fermi levels'
+
+        for word in words:
+            e = float(word)
+            # In non-spin-polarized calculations with DFTB+ v17.1,
+            # two Fermi levels are given, with the second one being 0,
+            # but we don't want to add that one to the list
+            if abs(e) > 1e-8:
+                fermi_levels.append(e)
+
+        return np.array(fermi_levels) * Hartree
+
+    def read_electrons(self):
+        """read number o electrons"""
+        for iline, line in enumerate(self.lines):
+            fstring = 'number_of_electrons'
+            if line.find(fstring) >= 0:
+                index_ele = iline + 1
+                break
+        return float(self.lines[index_ele].split('\n')[0])
 
 if __name__ == '__main__':
     from ase.build import bulk
@@ -587,3 +720,5 @@ if __name__ == '__main__':
         res += "{:8.4f} ".format(struc.cell[2,2])
         res += "{:12.4f}".format(energy)
         print(res)
+    gap = DFTB_SCF(struc, skf_dir)
+    print(gap)
