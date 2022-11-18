@@ -659,8 +659,10 @@ class Dftb(FileIOCalculator):
         nrow = int(np.ceil(nkpt * nspin * nband * 1. / ncol))
         index_eig_end = index_eig_begin + nrow
         ncol_last = len(self.lines[index_eig_end - 1].split())
-        self.lines[index_eig_end - 1] += ' 0.0 ' * (ncol - ncol_last)
-
+        if ncol - ncol_last > 0:
+            self.lines[index_eig_end - 1] = self.lines[index_eig_end - 1].replace('\n', '')
+            self.lines[index_eig_end - 1] += ' 0.0 ' * (ncol - ncol_last)
+            self.lines[index_eig_end - 1] += '\n'
         eig = np.loadtxt(self.lines[index_eig_begin:index_eig_end]).flatten()
         eig *= Hartree
         N = nkpt * nband
