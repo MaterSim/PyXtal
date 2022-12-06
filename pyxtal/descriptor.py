@@ -186,9 +186,12 @@ def expand_sph(pts, l_max, norm=4, csphase=-1):
             The residual sum of squares misfit for an overdetermined inversion.
     """
     thetas, phis, vals = pts[:,0], pts[:,1], pts[:,2]
-    # if thetas
-    if abs(thetas.min()) < 1e-3: thetas = np.degrees(thetas) - 90
     phis = np.degrees(phis)
+    thetas = np.degrees(thetas)
+
+    # if thetas is within [0, 180]
+    if abs(thetas.min()) < 1e-3: thetas -= 90
+    #print('check thetas', thetas.min())
     cilm, chi2 = SHExpandLSQ(vals, thetas, phis, l_max, norm=norm, csphase=csphase)
 
     return cilm, chi2
