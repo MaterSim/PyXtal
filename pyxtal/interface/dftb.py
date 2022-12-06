@@ -155,7 +155,9 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
     return kwargs
 
 
-def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, folder='tmp', disp='D3', symmetrize=True, logfile=None):
+def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
+               fmax=0.1, kresol=0.10, folder='tmp', disp='D3', \
+               mask=None, symmetrize=True, logfile=None):
     """
     DFTB optimizer based on ASE
 
@@ -163,6 +165,7 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, 
         struc: ase atoms object
         mode: [`single`, `relax`, `vc_relax`] (str)
         step: optimization steps (int)
+        mask: apply constraints on strain
     """
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -178,21 +181,17 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, fmax=0.1, kresol=0.10, 
                 kpts=kpts,
                 **kwargs,
                 )
-
     struc.set_calculator(calc)
-    if symmetrize:
-        struc.set_constraint(FixSymmetry(struc)) 
+
+    # impose symmetry
+    if symmetrize: struc.set_constraint(FixSymmetry(struc)) 
+
+    # impose cell constraints
     if opt_cell:
-        ecf = ExpCellFilter(struc)
-        if logfile is not None:
-            dyn = FIRE(ecf, logfile=logfile)
-        else:
-            dyn = FIRE(ecf)
+        ecf = ExpCellFilter(struc, mask=mask)
+        dyn = FIRE(ecf, logfile=logfile)
     else:
-        if logfile is not None:
-            dyn = FIRE(struc, logfile=logfile)
-        else:
-            dyn = FIRE(struc)
+        dyn = FIRE(struc, logfile=logfile)
     try:
         dyn.run(fmax=fmax, steps=step)
         os.remove('dftb_pin.hsd')
