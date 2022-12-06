@@ -99,6 +99,28 @@ def fibonacci_sphere(N=1000):
 
     return np.array(points)
 
+def cart2sph(x, y, z):
+    """
+    convert the x, y, z to spherical coordinates (phi, theta, r)
+    phi: [-pi, pi]
+    theta: [-pi/2, pi/2]
+    """
+    hxy = np.hypot(x, y)
+    r = np.hypot(hxy, z)
+    theta = np.arctan2(z, hxy)
+    phi = np.arctan2(y, x)
+    return phi, theta, r
+
+def sph2cart(phi, theta, r):
+    """
+    convert spherical coordinates (phi, theta, r) to Cartesian (x, y, z)
+    """
+    rcos_theta = r * np.cos(theta)
+    x = rcos_theta * np.cos(phi)
+    y = rcos_theta * np.sin(phi)
+    z = r * np.sin(theta)
+    return x, y, z
+
 def xyz2sph(xyzs, radian=True):
     """
     convert the vectors (x, y, z) to the sphere representation (theta, phi)
@@ -164,7 +186,8 @@ def expand_sph(pts, l_max, norm=4, csphase=-1):
             The residual sum of squares misfit for an overdetermined inversion.
     """
     thetas, phis, vals = pts[:,0], pts[:,1], pts[:,2]
-    thetas = np.degrees(thetas) - 90
+    # if thetas
+    if abs(thetas.min()) < 1e-3: thetas = np.degrees(thetas) - 90
     phis = np.degrees(phis)
     cilm, chi2 = SHExpandLSQ(vals, thetas, phis, l_max, norm=norm, csphase=csphase)
 
