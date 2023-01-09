@@ -6,6 +6,51 @@ import pyshtools as pysh
 from scipy.stats import qmc
 from scipy.spatial.transform import Rotation
 from scipy.optimize import minimize
+from scipy.special import sph_harm
+
+def _qlm(dists, l=4):
+    '''
+    Calculates the vector associated with an atomic site and 
+    one of its neighbors
+
+    Args:
+        distss: a list of distance vectors
+        l:  free integer quantum number
+    Returns:
+        q: numpy array(complex128), the complex vector qlm normalized
+            by the number of nearest neighbors
+    '''
+    # initiate variable as a complex number
+    q = np.zeros(2*l+1, dtype=np.complex128)
+    neighbors_count = len(dists)
+
+    for i, m in enumerate(range(-l, l+1)):
+        for j, r_vec in enumerate(dists):
+            # find the position vector of the site/neighbor pair
+            r_mag = np.linalg.norm(r_vec)
+            theta = np.arccos(r_vec[2] / r_mag)
+            if abs((r_vec[2] / r_mag) - 1.0) < 10.**(-8.):
+                theta = 0.0
+            elif abs((r_vec[2] / r_mag) + 1.0) < 10.**(-8.):
+                theta = np.pi
+
+            # phi
+            if r_vec[0] < 0.:
+                phi = np.pi + np.arctan(r_vec[1] / r_vec[0])
+            elif 0. < r_vec[0] and r_vec[1] < 0.:
+                phi = 2 * np.pi + np.arctan(r_vec[1] / r_vec[0])
+            elif 0. < r_vec[0] and 0. <= r_vec[1]:
+                phi = np.arctan(r_vec[1] / r_vec[0])
+            elif r_vec[0] == 0. and 0. < r_vec[1]:
+                phi = 0.5 * np.pi
+            elif r_vec[0] == 0. and r_vec[1] < 0.:
+                phi = 1.5 * np.pi
+            else:
+                phi = 0.
+
+            q[i] += sph_harm(m, l, phi, theta)
+    # normalize by number of neighbors
+    return q / neighbors_count
 
 def correlation(coef1, coef2, angle=None, s=0):
     """
@@ -228,7 +273,6 @@ def get_alignment(pts, degrees=True):
 
 class spherical_image():
 
-
     """
     A class to handle the crystal packing descriptor from spherical image
 
@@ -441,6 +485,64 @@ class spherical_image():
                 d, _ = correlation_go(coef1, coef2, M=M, d_cut=cutoff)
                 S[i, j] = d
         return S
+
+class orientation_order():
+
+    """
+    Computes the Steinhardt orientation order parameters
+
+    Args:
+        xtal: pyxtal structure
+        max_d: maximum intermolecular distances
+        lmax: maximum bandwidth for spherical harmonic expansion
+    """
+    def __init__(self, xtal, max_CN=14):
+
+        self.xtal = xtal
+        self.max_CN = max_CN
+        self.dists = self.get_neighbors()
+
+    def get_neighbors(self):
+        '''
+        get neighboring molecules
+    
+        Returns:
+            pts: [N, 3] array, (theta, phi, eng)
+        '''
+        pts = []
+        for i, site in enumerate(self.xtal.mol_sites):
+            _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i)
+            xyz, _ = site._get_coords_and_species(absolute=True, first=True) 
+            center = site.molecule.get_center(xyz)
+            coords = np.zeros([len(neighs), 3])
+            #print(len(neighs))
+            if len(neighs) > self.max_CN: neighs = neighs[:self.max_CN]
+            for _i, xyz in enumerate(neighs):
+                coords[_i, :] = self.xtal.molecules[comps[_i]].get_center(xyz) - center
+            pts.append(coords)
+        return pts
+ 
+    def get_parameters(self, ls=[4, 6]):
+        '''
+        Computes 
+        Args:
+            center: center xyz coordinate
+            neighbors: a list of neighboring xyz coordinates
+            weights: a list of weights for each neighbor
+        Returns:
+             q: numpy array(complex128), the complex vector qlm normalized
+                by the number of nearest neighbors
+        '''
+        qs = []
+        for dist in self.dists:
+            for l in ls:
+                factor = (4 * np.pi) / (2*l + 1)
+                qlms = _qlm(dist, l)
+                dot = float(np.sum(qlms*np.conjugate(qlms)))
+                qs.append(np.sqrt((4 * np.pi)/(2*l+1) * dot))
+
+        return qs
+ 
 
 if __name__ == '__main__':
     
