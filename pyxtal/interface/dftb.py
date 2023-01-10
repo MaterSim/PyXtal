@@ -276,7 +276,7 @@ class DFTB():
         if not os.path.exists(self.folder):
            os.makedirs(self.folder)   
 
-    def get_calculator(self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True):
+    def get_calculator(self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params={}):
         """
         get the ase style calculator
 
@@ -292,7 +292,7 @@ class DFTB():
         """
         if eVperA: ftol *= 0.194469064593167E-01
         atom_types = set(self.struc.get_chemical_symbols())
-        kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts, self.use_omp)
+        kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts, use_omp=self.use_omp)
        
         if mode in ['relax', 'vc-relax']:
             #kwargs['Driver_'] = 'ConjugateGradient'
@@ -309,6 +309,38 @@ class DFTB():
                 kwargs['Driver_LatticeOpt'] = "Yes"
                 if FixAngles:
                     kwargs['Driver_FixAngles'] = "Yes"
+
+        elif mode in ['nve', 'nvt', 'npt']:
+            # 1fs = 41.3 au
+            # 1000K = 0.0031668 au
+            dicts = {
+                     'temperature': 300,
+                     'pressure': 1e+5, #1atm
+                     'timestep': 1,
+                     'Thermostat': 'NoseHoover',
+                     'MDRestartFrequency': 1000,
+                     'band': 'No',
+                    }
+            dicts.update(md_params)
+
+            kwargs['Analysis_WriteBandOut'] = dicts['band']
+            kwargs['Driver_'] = 'VelocityVerlet'
+            kwargs['Driver_Steps'] = step
+            kwargs['Driver_TimeStep [fs]'] = dicts['timestep']
+            kwargs['Driver_MDRestartFrequency'] = dicts['MDRestartFrequency']
+            kwargs['Driver_MovedAtoms'] = "1:-1"
+            kwargs['Driver_OutputPrefix'] = self.prefix
+
+            if mode in ['nvt', 'npt']:
+                kwargs['Driver_Thermostat_'] = dicts['Thermostat']
+                kwargs['Driver_Thermostat_Temperature [Kelvin]'] = dicts['temperature']
+                kwargs['Driver_Thermostat_CouplingStrength [cm^-1]'] = 3200
+
+                if mode == 'npt':
+                    kwargs['Driver_Barostat_'] = ''
+                    kwargs['Driver_Barostat_Pressure [Pa]'] = dicts['pressure']
+                    kwargs['Driver_Barostat_Timescale [ps]'] = 0.1
+
     
         calc = Dftb(label=self.label,
                     #run_manyDftb_steps=True,
@@ -318,7 +350,7 @@ class DFTB():
                     )
         return calc
 
-    def run(self, mode, step=500, ftol=1e-3, FixAngles=False):
+    def run(self, mode, step=500, ftol=1e-3, FixAngles=False, md_params={}):
         """
         execute the actual calculation
         """
@@ -327,7 +359,7 @@ class DFTB():
         cwd = os.getcwd()
         os.chdir(self.folder)
 
-        calc = self.get_calculator(mode, step, ftol, FixAngles)
+        calc = self.get_calculator(mode, step, ftol, FixAngles, md_params=md_params)
         self.struc.set_calculator(calc)
         # self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
@@ -712,7 +744,7 @@ if __name__ == '__main__':
 
     struc = bulk('Si', 'diamond', cubic=True)
     struc.set_cell(1.1*struc.cell)
-    for mode in ['single', 'relax', 'vc-relax']:
+    for mode in ['single', 'relax', 'vc-relax', 'npt']:
         my = DFTB(struc, skf_dir)
         struc, energy = my.run(mode)
         res = "{:8s} ".format(mode)
@@ -721,5 +753,5 @@ if __name__ == '__main__':
         res += "{:8.4f} ".format(struc.cell[2,2])
         res += "{:12.4f}".format(energy)
         print(res)
-    gap = DFTB_SCF(struc, skf_dir)
-    print(gap)
+    #gap = DFTB_SCF(struc, skf_dir)
+    #print(gap)
