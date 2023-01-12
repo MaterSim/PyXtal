@@ -434,6 +434,61 @@ def Kgrid(struc, Kresol=0.10, dimension=3):
     #import sys; sys.exit()
     return Kpoints.astype(int)
 
+
+def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
+    """
+    sort the ase atoms' xyz according to dimer
+    so far only tested on aspirin
+
+    Args:
+        atoms: atoms object from pyxtal
+        N_mols: number of molecules
+        id: the refrence atom id
+        tol: tolerence distance to check if it is a dimer
+    """
+
+    N_atoms = int(len(atoms)/N_mols)
+    pos = atoms.get_scaled_positions()
+    refs = pos[id:len(pos):N_atoms, :]
+    #print(refs)
+
+    # compuate the indices and shift
+    orders = []
+    shifts = []
+    while len(orders) < N_mols:
+        lefts = [i for i in range(N_mols) if i not in orders]
+        i = lefts[0]
+        orders.append(i)
+        shifts.append(np.zeros(3))
+        ref_i = refs[i]
+        good = False
+        for j in lefts[1:]:
+            ref_j = refs[j]
+            dist = ref_j - ref_i
+            shift = np.round(dist)
+            dist -= shift
+            dist = np.linalg.norm(dist.dot(atoms.cell[:]))
+            if dist < tol:
+                orders.append(j)
+                shifts.append(shift)
+                good = True
+                break
+        if not good:
+            raise RuntimeError('Cannot find match on molecule', i)
+        else:
+            print('get', i, j, dist, shift)
+
+    pos0 = atoms.get_positions()
+    pos1 = np.zeros([len(pos), 3])
+    for i, id in enumerate(orders):
+        s1, e1 = id*N_atoms, (id+1)*N_atoms
+        s2, e2 = i*N_atoms, (i+1)*N_atoms
+        pos1[s2:e2, :] += pos0[s1:e1, :] - shifts[i].dot(atoms.cell[:])
+
+    atoms.set_positions(pos1)
+    return atoms
+ 
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
