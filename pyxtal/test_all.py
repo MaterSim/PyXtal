@@ -34,6 +34,11 @@ class TestGroup(unittest.TestCase):
         a2, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
 
+    def test_print_group(self):
+        for sg in [1, 15, 60, 143, 188]:
+            g = Group(sg)
+            print(g)
+
     def test_short_path(self):
         g = Group(217)
         path = g.short_path_to_general_wp(7)

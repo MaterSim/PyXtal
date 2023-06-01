@@ -225,6 +225,7 @@ class Group:
 
     def __init__(self, group, dim=3, use_hall=False, style='pyxtal', quick=False):
 
+        self.string = None
         self.dim = dim
         names = ['Point', 'Rod', 'Layer', 'Space']
         self.header = "-- " + names[dim] + 'group --'
@@ -293,17 +294,17 @@ class Group:
 
 
     def __str__(self):
-        try:
+        if self.string is not None:
             return self.string
-        except:
+        else:
             s = self.header
             s += "# " + str(self.number) + " (" + self.symbol + ")--"
 
             for wp in self.Wyckoff_positions:
-                ops = ss_string_from_ops(wp.symmetry[0], self.number, dim=self.dim)
                 s += "\n" + str(wp.multiplicity)
                 s += wp.letter
-                s += "\tsite symm: " + ops
+                if not hasattr(wp, "site_symm"): wp.get_site_symmetry()
+                s += "\tsite symm: " + wp.site_symm
             self.string = s
 
             return self.string
@@ -503,28 +504,6 @@ class Group:
             index = index_from_letter(letter, self.wyckoffs, dim=self.dim)
         return self.Wyckoff_positions[index]
 
-    def get_wyckoff_symmetry(self, index, molecular=False):
-        """
-        Returns the site symmetry symbol for the Wyckoff position
-
-        Args:
-            index: the index of the Wyckoff position within the group
-            molecular: use the Euclidean operations or not (for hexagonal group)
-
-        Returns: a Hermann-Mauguin style string for the site symmetry
-        """
-        if type(index) == str:
-            # Extract letter from number-letter combinations ("4d"->"d")
-            for c in index:
-                if c.isalpha():
-                    letter = c
-                    break
-            index = index_from_letter(letter, self.wyckoffs, dim=self.dim)
-        if molecular:
-            ops = self.w_symm_m[index][0]
-        else:
-            ops = self.w_symm[index][0]
-        return ss_string_from_ops(ops, self.number, dim=self.dim)
 
     def get_alternatives(self):
         """
@@ -1298,7 +1277,8 @@ class Wyckoff_position:
         elif dim == 1:
             PBC = [0, 0, 1]
 
-        if wyckoffs is None: wyckoffs = get_wyckoffs(number, dim=dim)
+        if wyckoffs is None: 
+            wyckoffs = get_wyckoffs(number, dim=dim)
 
         wpdict = {
                   "index": index,
@@ -2532,7 +2512,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
         # ops: a list of Symmetry operations about the axis
         # order: highest order of any symmetry operation about the axis
         # has_reflection: whether or not the axis has mirror symmetry
-        if has_reflection is True:
+        if has_reflection:
             # rotations have priority
             for opa in opas:
                 if opa.order == order and opa.type == "rotation":
@@ -2597,10 +2577,13 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
         else:
             return symbols[max_j]
 
-    # Return whether or not two axes are symmetrically equivalent
-    # It is assumed that both axes possess the same symbol
-    # Will be called within combine_axes
     def are_symmetrically_equivalent(index1, index2):
+        """
+        Return whether or not two axes are symmetrically equivalent
+        It is assumed that both axes possess the same symbol
+        Will be called within combine_axes
+        """
+
         axis1 = axes[index1]
         axis2 = axes[index2]
         condition1 = False
@@ -2619,11 +2602,14 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
         else:
             return False
 
-    # Given a list of axis indices, return the combined symbol
-    # Axes may or may not be symmetrically equivalent, but must be of the same
-    # type (x/y/z, face-diagonal, body-diagonal)
-    # Will be called for mid- and high-symmetry crystallographic point groups
     def combine_axes(indices):
+        """
+        Given a list of axis indices, return the combined symbol
+        Axes may or may not be symmetrically equivalent, but must be of the same
+        type (x/y/z, face-diagonal, body-diagonal)
+        Will be called for mid- and high-symmetry crystallographic point groups
+        """
+
         symbols = {}
         for index in deepcopy(indices):
             symbol = get_symbol(params[index], orders[index], reflections[index])
@@ -2631,8 +2617,10 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
                 indices.remove(index)
             else:
                 symbols[index] = symbol
-        if indices == []:
+
+        if len(indices) == 0:
             return "."
+
         # Remove redundant axes
         for i in deepcopy(indices):
             for j in deepcopy(indices):
@@ -2641,10 +2629,12 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
                         if are_symmetrically_equivalent(i, j):
                             if j in indices:
                                 indices.remove(j)
+
         # Combine symbols for non-equivalent axes
         new_symbols = []
         for i in indices:
             new_symbols.append(symbols[i])
+
         symbol = ""
         while new_symbols != []:
             highest = get_highest_symbol(new_symbols)
@@ -2659,10 +2649,12 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
     # Generate needed ops
     if not complete:
         ops = generate_full_symmops(ops, 1e-3)
+
     # Get OperationAnalyzer object for all ops
     opas = []
     for op in ops:
         opas.append(OperationAnalyzer(op))
+
     # Store the symmetry of each axis
     params = [[], [], [], [], [], [], [], [], [], [], [], [], []]
     has_inversion = False
@@ -2682,17 +2674,22 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
         [1, -1, 1],
         [1, 1, -1],
     ]
+
     for i, axis in enumerate(axes):
         axes[i] = axis / np.linalg.norm(axis)
+
     for opa in opas:
+
+        # Search for the primary rotation axis
         if opa.type != "identity" and opa.type != "inversion":
             found = False
             for i, axis in enumerate(axes):
                 if np.isclose(abs(np.dot(opa.axis, axis)), 1):
                     found = True
                     params[i].append(opa)
+
             # Store uncommon axes for trigonal and hexagonal lattices
-            if found is False:
+            if not found: #is False:
                 axes.append(opa.axis)
                 # Check that new axis is not symmetrically equivalent to others
                 unique = True
@@ -2700,12 +2697,14 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
                     if i != len(axes) - 1:
                         if are_symmetrically_equivalent(i, len(axes) - 1):
                             unique = False
-                if unique is True:
+                if unique: # is True:
                     params.append([opa])
-                elif unique is False:
+                else: #if unique is False:
                     axes.pop()
+
         elif opa.type == "inversion":
             has_inversion = True
+
     # Determine how many high-symmetry axes are present
     n_axes = 0
     # Store the order of each axis
@@ -2724,7 +2723,8 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
             if opa.order == 2 and opa.type == "rotoinversion":
                 has_reflection = True
         orders.append(order)
-        if high_symm == True:
+
+        if high_symm: #== True:
             n_axes += 1
         reflections.append(has_reflection)
     # Triclinic, monoclinic, orthorhombic
@@ -2738,7 +2738,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
         if symbol != "...":
             return symbol
         elif symbol == "...":
-            if has_inversion is True:
+            if has_inversion: #is True:
                 return "-1"
             else:
                 return "1"
@@ -2754,7 +2754,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
         if symbol != ". . .":
             return symbol
         elif symbol == ". . .":
-            if has_inversion is True:
+            if has_inversion: #is True:
                 return "-1"
             else:
                 return "1"
@@ -2771,7 +2771,7 @@ def ss_string_from_ops(ops, number, dim=3, complete=True):
         if symbol != ". . .":
             return symbol
         elif symbol == ". . .":
-            if has_inversion is True:
+            if has_inversion: #is True:
                 return "-1"
             else:
                 return "1"
