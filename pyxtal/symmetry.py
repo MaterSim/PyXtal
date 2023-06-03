@@ -1723,6 +1723,28 @@ class Wyckoff_position:
 
         return op
 
+    def get_free_xyzs(self, pos):
+        """
+        return the free xyz paramters from the given xyz position
+        """
+        #print(self.apply_ops(pos)[0])
+        res = self.apply_ops(pos)[0]
+        res = np.delete(res, self.get_frozen_axis())
+        return res
+
+    def get_position_from_free_xyzs(self, xyz):
+        """
+        generate the full xyz position from the free xyzs
+        """
+        pos = np.zeros(3)
+        frozen = self.get_frozen_axis()
+        count = 0
+        for axis in range(3):
+            if axis not in frozen:
+                pos[axis] = xyz[count]
+                count += 1
+        return pos
+
     def get_all_positions(self, pos):
         """
         return the list of position from any single coordinate from wp.
@@ -1852,7 +1874,7 @@ class Wyckoff_position:
         """
         Returns the general Wyckoff position
         """
-        return self.Wyckoff_positions[0]
+        return self.ops[0]
 
     def are_equivalent_pts(self, pt1, pt2, cell=np.eye(3), tol=0.05):
         """

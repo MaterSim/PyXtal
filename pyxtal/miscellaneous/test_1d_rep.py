@@ -13,7 +13,7 @@ import numpy as np
 np.seterr(all="ignore")
 
 matcher = sm.StructureMatcher(ltol=0.3, stol=0.3, angle_tol=10)
-codes = ['ABACOW', 'DAZJOG', 'BINREY', 'CUVLIO', 'FUPKIK', 'FURWOG', 'HUJFAV', 
+codes = ['XULDUD', 'ABACOW', 'DAZJOG', 'BINREY', 'CUVLIO', 'FUPKIK', 'FURWOG', 'HUJFAV', 
          'IJEHOU', 'IFAQUE', 'JUMTAP', 'LELVIK', 'LOPQAL']
 
 struc = pyxtal(molecular=True)

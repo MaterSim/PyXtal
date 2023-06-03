@@ -114,6 +114,17 @@ class atom_site:
                     self.position = coord - np.floor(coord)
                     break
 
+    def encode(self):
+        """
+        transform dict to 1D vector
+        [specie, wp.index, free x, y, z]
+        """
+        xyz = self.wp.get_free_xyzs(self.position)
+        #print(self.wp)
+        #print([self.specie, self.wp.index] + list(xyz))
+        return [self.specie, self.wp.index] + list(xyz)
+        
+
     def swap_axis(self, swap_id, shift=np.zeros(3)):
         """
         sometimes space groups like Pmm2 allows one to swap the a,b axes

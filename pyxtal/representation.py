@@ -2,9 +2,159 @@ import os
 import numpy as np
 from pyxtal.symmetry import Group
 from pyxtal.lattice import Lattice
-from pyxtal.wyckoff_site import mol_site
+from pyxtal.wyckoff_site import mol_site, atom_site
 from pyxtal.molecule import find_rotor_from_smile
  
+class representation_atom():
+    """
+    A class to handle the 1D representation of atomic crystal   
+    Works for Zprime > 1
+
+    Args:
+        x: a list of [cell, site_1, site_2, ...]
+    """
+
+    def __init__(self, x):
+        self.x = x
+
+    def __str__(self):
+        return self.to_string()
+
+    @classmethod
+    def from_pyxtal(cls, struc, standard=False):
+        """
+        Initialize 1D rep. from the pyxtal object
+
+        Args:
+            struc: pyxtal object
+        """
+        if standard and not struc.standard_setting:
+            pmg = struc.to_pymatgen()
+            struc.from_seed(pmg, standard=True)
+        symmetry = [struc.atom_sites[0].wp.hall_number]
+        lat = struc.lattice.encode()
+        vector = [symmetry + lat]
+        smiles = []
+        for site in struc.atom_sites:
+            vector.append(site.encode())
+        x = vector
+        return cls(x)
+    
+    def to_standard_setting(self):
+        xtal = self.to_pyxtal()
+        self.x = representation.from_pyxtal(xtal, standard=True).x
+ 
+    def to_pyxtal(self):
+        """
+        Export the pyxtal structure
+
+        Args:
+            smiles: list of smiles
+            compoisition: list of composition
+        """
+        from pyxtal import pyxtal
+
+        # symmetry
+        v = self.x[0]
+        struc = pyxtal()
+        struc.group, number = Group(v[0], use_hall=True), v[0]
+    
+        # lattice
+        ltype = struc.group.lattice_type
+        if ltype == 'triclinic':
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], v[4], v[5], v[6]
+        elif ltype == 'monoclinic':
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, v[4], 90
+        elif ltype == 'orthorhombic':
+            a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, 90, 90
+        elif ltype == 'tetragonal':
+            a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 90
+        elif ltype == 'hexagonal':
+            a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 120
+        else:
+            a, b, c, alpha, beta, gamma = v[1], v[1], v[1], 90, 90, 90
+        try:
+            struc.lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+        except:
+            print(a, b, c, alpha, beta, gamma, ltype)
+            raise ValueError("Problem in Lattice")
+    
+        # sites
+        struc.numIons = [0] * len(smiles) 
+        struc.atom_sites = [] 
+
+        count = 1
+        for i, comp in enumerate(composition): 
+            for j in range(comp):
+                v = self.x[count]
+                dicts = {}
+                dicts['type'] = i
+                dicts['dim'] = 3
+                dicts['PBC'] = [1, 1, 1]
+                dicts['hn'] = struc.group.hall_number
+                dicts['index'] = 0
+                dicts['lattice'] = struc.lattice.matrix
+                dicts['lattice_type'] = ltype
+                site = atom_site.from_1D_dicts(dicts)
+                site.type = i
+                struc.atom_sites.append(site)
+                struc.numIons[i] += site.wp.multiplicity
+                #move to next rep
+                count += 1
+            struc.species.append(site.specie)
+
+        struc._get_formula()
+        struc.source = '1D rep.'
+        struc.valid = True
+        struc.standard_setting = site.wp.is_standard_setting()
+
+        return struc
+    
+    def to_string(self, time=None, eng=None, tag=None):
+        """
+        Export string representation
+
+        Args:
+            time: float
+            eng: float
+            tag: string
+        """
+        x = self.x
+        strs = "{:3d} ".format(int(x[0][0]))
+
+        # data for cell
+        if x[0][0] <= 348:
+            num = 4
+        elif x[0][0] <= 488:
+            num = 3
+        else: #cubic
+            num = 2
+
+        for c in x[0][1:num]:
+            strs += "{:5.2f} ".format(c)
+        for c in x[0][num:]:
+            strs += "{:5.1f} ".format(c)
+        
+        # data for atoms
+        strs += "{:d} ".format(len(x)-1)  # Number of sites
+        for i in range(1, len(x)):
+            strs += "{:s} ".format(x[i][0])
+            strs += "{:d} ".format(x[i][1])
+            for v in x[i][2:]:
+                strs += "{:4.2f} ".format(v)      
+
+        if time is not None:
+            strs += "{:5.2f}".format(time)
+
+        if eng is not None:
+            strs += "{:11.3f}".format(eng)
+    
+        if tag is not None:
+            strs += " {:s}".format(tag)
+    
+        return strs
+
+
 class representation():
     """
     A class to handle the 1D representation of molecular crystal   

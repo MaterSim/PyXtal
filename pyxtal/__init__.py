@@ -23,7 +23,7 @@ from pyxtal.wyckoff_split import wyckoff_split
 from pyxtal.molecule import pyxtal_molecule
 from pyxtal.lattice import Lattice
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.representation import representation
+from pyxtal.representation import representation, representation_atom
 from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.constants import letters
 from pyxtal.viz import display_molecular, display_atomic, display_cluster
@@ -1300,7 +1300,10 @@ class pyxtal:
         """
         Get the 1D representation class for molecular crystals
         """
-        return representation.from_pyxtal(self)
+        if self.molecular:
+            return representation.from_pyxtal(self)
+        else:
+            return representation_atom.from_pyxtal(self)
 
     def transform(self, trans, lattice=None):
         """
