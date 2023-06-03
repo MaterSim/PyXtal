@@ -443,6 +443,27 @@ class Lattice:
         else:
             return [a, b, c, alpha, beta, gamma]
 
+    @classmethod
+    def from_1d_representation(self, v, ltype):
+        if ltype == 'triclinic':
+            a, b, c, alpha, beta, gamma = v[0], v[1], v[2], v[3], v[4], v[5]
+        elif ltype == 'monoclinic':
+            a, b, c, alpha, beta, gamma = v[0], v[1], v[2], 90, v[3], 90
+        elif ltype == 'orthorhombic':
+            a, b, c, alpha, beta, gamma = v[0], v[1], v[2], 90, 90, 90
+        elif ltype == 'tetragonal':
+            a, b, c, alpha, beta, gamma = v[0], v[0], v[1], 90, 90, 90
+        elif ltype == 'hexagonal':
+            a, b, c, alpha, beta, gamma = v[0], v[0], v[1], 90, 90, 120
+        else:
+            a, b, c, alpha, beta, gamma = v[0], v[0], v[0], 90, 90, 90
+        try:
+            l = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+            return l
+        except:
+            print(a, b, c, alpha, beta, gamma, ltype)
+
+
     def mutate(self, degree=0.20, frozen=False):
         """
         mutate the lattice object

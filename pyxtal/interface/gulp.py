@@ -80,12 +80,16 @@ class GULP():
         return Structure(self.lattice.matrix, self.sites, self.frac_coords)
 
     def to_pyxtal(self):
-        #print(self.sites)
-        #print(self.frac_coords)
-        #print(self.lattice.matrix)
         ase_atoms = self.to_ase()
-        struc = pyxtal()
-        struc.from_seed(ase_atoms)
+        for tol in [1e-2, 1e-3, 1e-4, 1e-5]:
+            try:
+                struc = pyxtal()
+                struc.from_seed(ase_atoms, tol=tol)
+                break
+            except:
+                pass
+                #print('Something is wrong', tol)
+                #struc.from_seed('bug.vasp', tol*10)
         return struc
 
     def write(self):
@@ -234,7 +238,7 @@ def single_optimize(struc, ff, pstress=None, opt="conp", exe="gulp", path="tmp",
         #if sum(struc.numIons) == 42:
         #    print("SSSSSSSSSSSSSS")
         #    import sys; sys.exit()   
-        return calc.to_pyxtal(), calc.energy_per_atom, calc.cputime, calc.error
+        return struc, calc.energy_per_atom, calc.cputime, calc.error
 
 def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 
             pstress=None, path="tmp", label="_", clean=True, adjust=False):
