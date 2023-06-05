@@ -144,21 +144,21 @@ class Lattice:
             self.dof = 1
 
     @classmethod
-    def get_dof(self, ltype):
+    def get_dofs(self, ltype):
         """
         get the number of degree of freedom
         """
         if ltype in ["triclinic"]:
-            dof = 6 
+            dofs = [3, 3] 
         elif ltype in ["monoclinic"]:
-            dof = 4
+            dofs = [3, 1]
         elif ltype in ['orthorhombic']:
-            dof = 3
+            dofs = [3, 0]
         elif ltype in ['tetragonal', 'hexagonal', 'trigonal']:
-            dof = 2
+            dofs = [2, 0]
         else:
-            dof = 1
-        return dof
+            dofs = [1, 0]
+        return dofs
 
     def copy(self):
         """
