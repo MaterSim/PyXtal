@@ -608,9 +608,9 @@ class supergroup():
         A short cut to print the wp information (for debug purpose)
         """
         wp1 = sp.wp1_lists[id]
-        l = str(wp1.multiplicity) + wp1.letter + '->'
+        l = wp1.get_label() + '->'
         for wp in sp.wp2_lists[id]:
-            l += str(wp.multiplicity) + wp.letter + ','
+            l += wp.get_label() + ','
         strs = '{:2s}{:s} ID-{:d} {:s}'.format(sp.elements[id], sp.group_type, id, l)
         return strs
 
@@ -884,8 +884,7 @@ class supergroup():
             strs = ''
             for wp in wp2:
                 x, y, ele = coords_H[count], coords_G[count], elements[count]
-                label = str(wp.multiplicity) + wp.letter + '->'
-                label += str(wp1.multiplicity) + wp1.letter
+                label = wp.get_label() + '->' + wp1.get_label()
                 dis = y - x - translation
                 dis -= np.round(dis)
                 dis_abs = np.linalg.norm(dis.dot(self.cell))
@@ -1134,9 +1133,9 @@ class supergroups():
             for i, wp2 in enumerate(sp.wp2_lists):
                 wp1 = sp.wp1_lists[i]
                 ele = sp.elements[i]
-                l2 = str(wp1.multiplicity) + wp1.letter
+                l2 = wp1.get_label()
                 for j, wp in enumerate(wp2):
-                    l1 = str(wp.multiplicity) + wp.letter
+                    l1 = wp.get_label()
                     output = "{:2s} [{:2d}]: ".format(ele, mapping[i][j])
                     output += "{:3s} -> {:3s}".format(l1, l2)
                     print(output)

@@ -37,7 +37,7 @@ class TestGroup(unittest.TestCase):
     def test_print_group(self):
         for sg in [1, 15, 60, 143, 188]:
             g = Group(sg)
-            print(g)
+            #print(g)
 
     def test_short_path(self):
         g = Group(217)
@@ -437,31 +437,38 @@ class TestWP(unittest.TestCase):
             wp = Group(sg)[i]
             wp.get_site_symmetry()
             self.assertTrue(wp.site_symm == symbol)
+            
+    def test_wp_dof(self):
+        for sg in range(1, 231):
+            g = Group(sg)
+            for wp in g:
+                axs = wp.get_frozen_axis()
+                self.assertTrue(wp.get_dof() + len(axs) == 3)
 
     def test_wp_label(self):
-        symbol = str(wp1.multiplicity) + wp1.letter
+        symbol = wp1.get_label()
         self.assertTrue(symbol == "8b")
-        symbol = str(wp2.multiplicity) + wp2.letter
+        symbol = wp2.get_label()
         self.assertTrue(symbol == "4a")
 
     def test_merge(self):
         pt, wp, _ = wp1.merge([0.05, 0.7, 0.24], l01.matrix, 0.5)
-        symbol = str(wp.multiplicity) + wp.letter
+        symbol = wp.get_label()
         self.assertTrue(symbol == "4a")
         pt, wp, _ = wp1.merge([0.15, 0.7, 0.24], l01.matrix, 0.5)
-        symbol = str(wp.multiplicity) + wp.letter
+        symbol = wp.get_label()
         self.assertTrue(symbol == "8b")
 
         wp = Group(167)[0]
         cell = np.diag([9, 9, 7])
         for pt in [[0.12, 0, 0.25], [0, 0.1316, 0.25]]:
             _, wpt, _ = wp.merge(pt, cell, 0.1)
-            symbol = str(wpt.multiplicity) + wpt.letter
+            symbol = wpt.get_label()
             self.assertTrue(symbol == "18e")
 
         for pt in [[0, 0, 3/4], [2/3, 1/3, 7/12]]:
             _, wpt, _ = wp.merge(pt, cell, 0.1)
-            symbol = str(wpt.multiplicity) + wpt.letter
+            symbol = wpt.get_label()
             self.assertTrue(symbol == "6a")
 
     def test_search_generator(self):

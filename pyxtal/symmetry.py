@@ -301,8 +301,7 @@ class Group:
             s += "# " + str(self.number) + " (" + self.symbol + ")--"
 
             for wp in self.Wyckoff_positions:
-                s += "\n" + str(wp.multiplicity)
-                s += wp.letter
+                s += "\n" + wp.get_label()
                 if not hasattr(wp, "site_symm"): wp.get_site_symmetry()
                 s += "\tsite symm: " + wp.site_symm
             self.string = s
@@ -548,7 +547,8 @@ class Group:
         """
         Get the reversed list of wps
         """
-        wp_list = [(str(x.multiplicity)+x.letter) for x in self.Wyckoff_positions]
+        #wp_list = [(str(x.multiplicity)+x.letter) for x in self.Wyckoff_positions]
+        wp_list = [(x.get_label()) for x in self.Wyckoff_positions]
         if reverse: wp_list.reverse()
         return wp_list
 
@@ -1019,7 +1019,8 @@ class Group:
         Return:
             a list of (g_types, subgroup_id, spg_number, wp_list (optional))
         """
-        label = [str(self[index].multiplicity) + self[index].letter]
+        #label = [str(self[index].multiplicity) + self[index].letter]
+        label = [self[index].get_label()]
         potential=[[(None, None, self.number, label)]]
         solutions=[]
 
@@ -1381,7 +1382,7 @@ class Wyckoff_position:
         if self.dim not in [0, 1, 2, 3]:
             return "invalid crystal dimension. Must be between 0 and 3."
         if not hasattr(self, "site_symm"): self.get_site_symmetry()
-        s = "Wyckoff position " + str(self.multiplicity) + self.letter + " in "
+        s = "Wyckoff position " + self.get_label() + " in "
         if self.dim == 3:
             s += "space "
         elif self.dim == 2:
@@ -1661,6 +1662,12 @@ class Wyckoff_position:
         Simply return the degree of freedom
         """
         return np.linalg.matrix_rank(self.ops[0].rotation_matrix)
+
+    def get_label(self):
+        """
+        get the string like 4a
+        """
+        return str(self.multiplicity) + self.letter
 
     def get_frozen_axis(self):
         if self.index == 0:

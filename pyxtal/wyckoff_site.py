@@ -50,7 +50,7 @@ class atom_site:
     def __str__(self):
         if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
-        s += "WP [{:}{:}] ".format(self.wp.multiplicity, self.wp.letter)
+        s += "WP [{:}] ".format(self.wp.get_label())
         s += "Site [{:}]".format(self.wp.site_symm.replace(" ",""))
 
         return s
@@ -303,7 +303,7 @@ class mol_site:
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
         formula = self.mol.formula.replace(" ","")
         s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
-        s += "WP [{:d}{:s}] ".format(self.wp.multiplicity, self.wp.letter)
+        s += "WP [{:s}] ".format(self.wp.get_label())
         s += "Site [{:}]".format(self.wp.site_symm.replace(" ",""))
         if len(self.molecule.mol) > 1:
             s += " Euler [{:6.1f} {:6.1f} {:6.1f}]".format(*self.angles)

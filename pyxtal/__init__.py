@@ -246,7 +246,7 @@ class pyxtal:
 
         dicts = {}
         for name, site in zip(names, sites):
-            label = str(site.wp.multiplicity) + site.wp.letter
+            label = site.wp.get_label() 
             if name not in dicts.keys():
                 dicts[name] = [label]
             else:
@@ -911,7 +911,7 @@ class pyxtal:
         else:
             struc_sites = self.atom_sites
 
-        sites = [str(site.wp.multiplicity)+site.wp.letter for site in struc_sites]
+        sites = [site.wp.get_label() for site in struc_sites]
 
         return idx, sites, t_types, k_types
 
@@ -2080,7 +2080,7 @@ class pyxtal:
         sites = []
         for at_site in self.atom_sites:
             e = at_site.specie
-            site = str(at_site.wp.multiplicity) + at_site.wp.letter
+            site = at_site.wp.get_label() 
             if e not in elements:
                 elements.append(e)
                 sites.append([site])
