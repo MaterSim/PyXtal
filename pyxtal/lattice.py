@@ -143,6 +143,23 @@ class Lattice:
         else:
             self.dof = 1
 
+    @classmethod
+    def get_dof(self, ltype):
+        """
+        get the number of degree of freedom
+        """
+        if ltype in ["triclinic"]:
+            dof = 6 
+        elif ltype in ["monoclinic"]:
+            dof = 4
+        elif ltype in ['orthorhombic']:
+            dof = 3
+        elif ltype in ['tetragonal', 'hexagonal', 'trigonal']:
+            dof = 2
+        else:
+            dof = 1
+        return dof
+
     def copy(self):
         """
         simply copy the structure

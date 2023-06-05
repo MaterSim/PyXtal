@@ -1095,12 +1095,16 @@ class pyxtal:
             specie_list = []
             for site in self.atom_sites:
                 specie_list.extend([site.specie]*site.wp.multiplicity)
-            species = list(set(specie_list))
+            if self.species is None:
+                species = list(set(specie_list))
+                self.species = species
+            else:
+                species = self.species
+
             numIons = np.zeros(len(species), dtype=int)
             for i, sp in enumerate(species):
                 numIons[i] = specie_list.count(sp)
             self.numIons = numIons
-            self.species = species
             numspecies = self.numIons
         for i, s in zip(numspecies, species):
             formula += "{:s}{:d}".format(s, int(i))
@@ -1465,6 +1469,7 @@ class pyxtal:
         self.factor = 1.0
         self.PBC = [1, 1, 1]
         self.numIons = numIons
+        self.species = species
         numIons_added = np.zeros(len(numIons), dtype=int)
         _sites = []
 
@@ -1543,6 +1548,20 @@ class pyxtal:
             pmg = self.to_pymatgen()
             self.from_seed(pmg, molecules=self.molecules, standard=True)
 
+    def resort_species(self, species):
+        """
+        resort the atomic species
+        """
+        sp1 = deepcopy(species).sort()
+        sp2 = deepcopy(self.species).sort()
+        if sp1 == sp2:
+            self.species = species
+            self.resort()
+            #self._get_formula()
+            #print("=========Sort", species, self.species)
+        else:
+            raise ValueError("the species are inconsistent", species, self.sepecies)
+
     def resort(self):
         """
         A short cut to resort the sites by self.molecules or self.species
@@ -1560,6 +1579,7 @@ class pyxtal:
                     if site.specie == specie and j not in ids:
                         ids.append(j)
             self.atom_sites = [self.atom_sites[j] for j in ids]
+            #print(self.atom_sites)
 
     def _get_alternative(self, wyc_sets, index, ref_lat=None, d_tol=2.0, f_tol=0.15):
         """

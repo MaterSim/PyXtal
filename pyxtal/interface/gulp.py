@@ -23,12 +23,14 @@ class GULP():
                  input='gulp.in', output='gulp.log', dump=None):
 
         if isinstance(struc, pyxtal):
-            struc = struc.to_ase()
+            self.species = struc.species
+            struc = struc.to_ase(resort=False)
 
         if isinstance(struc, Atoms):
             self.lattice = Lattice.from_matrix(struc.cell)
             self.frac_coords = struc.get_scaled_positions()
             self.sites = struc.get_chemical_symbols()
+            self.species = None
         else:
             raise NotImplementedError("only support ASE atoms object")
 
@@ -111,7 +113,10 @@ class GULP():
             symbols = []
             for coord, site in zip(self.frac_coords, self.sites):
                 f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(site, *coord))
-            species = list(set(self.sites))
+            if self.species is not None:
+                species = self.structure.species
+            else:
+                species = list(set(self.sites))
 
             f.write('\nSpecies\n')
             for specie in species:
@@ -227,8 +232,8 @@ class GULP():
             self.energy = None
             print("GULP calculation is wrong")
 
-def single_optimize(struc, ff, pstress=None, opt="conp", exe="gulp", path="tmp", label="_", clean=True):
-    calc = GULP(struc, label=label, path=path, pstress=pstress, ff=ff, opt=opt)
+def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp", exe="gulp", path="tmp", label="_", clean=True):
+    calc = GULP(struc, steps=steps, label=label, path=path, pstress=pstress, ff=ff, opt=opt)
     calc.run(clean=clean)
     if calc.error:
         print("GULP error in single optimize")

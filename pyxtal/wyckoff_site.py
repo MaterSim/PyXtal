@@ -120,7 +120,7 @@ class atom_site:
         [specie, wp.index, free x, y, z]
         """
         xyz = self.wp.get_free_xyzs(self.position)
-        #print(self.wp)
+        #print(self.wp.ops[0].rotation_matrix, self.wp.get_frozen_axis(), self.wp.get_dof())
         #print([self.specie, self.wp.index] + list(xyz))
         return [self.specie, self.wp.index] + list(xyz)
         

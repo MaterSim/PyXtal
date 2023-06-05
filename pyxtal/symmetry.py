@@ -1669,10 +1669,15 @@ class Wyckoff_position:
             return [0, 1, 2]
         else:
             if self.number >=75:
-                if self.ops[0].rotation_matrix[2,2] == 1:
-                    return [0, 1]
-                else:
-                    return [0, 1, 2]
+                #if self.ops[0].rotation_matrix[2,2] == 1:
+                #    return [0, 1]
+                #else:
+                #    return [0, 1, 2]
+                axs = []
+                for ax in range(3):
+                    if self.ops[0].rotation_matrix[ax, ax] == 0:
+                        axs.append(ax)
+                return axs
             else:
                 if self.get_dof() == 1:
                     if self.ops[0].rotation_matrix[2,2] == 1:
@@ -1743,6 +1748,8 @@ class Wyckoff_position:
             if axis not in frozen:
                 pos[axis] = xyz[count]
                 count += 1
+        pos = self.apply_ops(pos)[0]
+        pos -= np.floor(pos)
         return pos
 
     def get_all_positions(self, pos):
