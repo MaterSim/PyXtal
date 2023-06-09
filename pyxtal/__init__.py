@@ -2561,6 +2561,21 @@ class pyxtal:
         self.numMols = numMols
         self.mol_sites = sites
 
+    def set_cutoff(self):
+        """
+        get the cutoff dictionary
+        """
+        cutoff = {}
+        tm = Tol_matrix(prototype="molecular")
+        for i in range(len(self.species)):
+            s1 = self.species[i]
+            for j in range(i, len(self.species)):
+                s2 = self.species[j]
+                tuple_elements = (s1, s2)
+                cutoff[tuple_elements] = tm.get_tol(s1, s2)
+
+        self.cutoff = cutoff
+
     def set_site_coordination(self, cutoff=None, verbose=False):
         """
         Compute the coordination number from each atomic site 
@@ -2568,14 +2583,9 @@ class pyxtal:
         from ase.neighborlist import neighbor_list
 
         if cutoff is None:
-            cutoff = {}
-            tm = Tol_matrix(prototype="molecular")
-            for i in range(len(self.species)):
-                s1 = self.species[i]
-                for j in range(i, len(self.species)):
-                    s2 = self.species[j]
-                    tuple_elements = (s1, s2)
-                    cutoff[tuple_elements] = tm.get_tol(s1, s2)
+            if not hasattr(self, 'cutoff'):
+                self.set_cutoff()
+            cutoff = self.cutoff
 
         if verbose:
             print("\n The cutoff values for CN calculation are")
@@ -2590,6 +2600,19 @@ class pyxtal:
             site.coordination = coords[count]
             count += site.multiplicity
 
+    def get_dimensionality(self, cutoff=None):
+        """
+        A quick wrapper to compute dimensionality from pymatgen
+        https://pymatgen.org/pymatgen.analysis.dimensionality.html
+        The dimensionality of the structure can be 1/2/3
+        """
+        from pymatgen.analysis.dimensionality import get_dimensionality_gorai
+        if cutoff is None:
+            if not hasattr(self, 'cutoff'):
+                self.set_cutoff()
+            cutoff = self.cutoff
+
+        return get_dimensionality_gorai(self.to_pymatgen(), bonds=cutoff)
 
     def from_CSD(self, csd_code):
         """
