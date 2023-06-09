@@ -39,6 +39,7 @@ class atom_site:
         self.position = np.array(coordinate)
         self.specie = Element(specie).short_name
         self.wp = wp
+        self.coordination = None
 
         self._get_dof()
         self.PBC = self.wp.PBC
@@ -51,6 +52,8 @@ class atom_site:
         if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
         s += "WP [{:}] ".format(self.wp.get_label())
+        if self.coordination is not None:
+            s += " CN [{:2d}] ".format(self.coordination)
         s += "Site [{:}]".format(self.wp.site_symm.replace(" ",""))
 
         return s

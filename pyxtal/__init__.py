@@ -2561,6 +2561,35 @@ class pyxtal:
         self.numMols = numMols
         self.mol_sites = sites
 
+    def set_site_coordination(self, cutoff=None, verbose=False):
+        """
+        Compute the coordination number from each atomic site 
+        """
+        from ase.neighborlist import neighbor_list
+
+        if cutoff is None:
+            cutoff = {}
+            tm = Tol_matrix(prototype="molecular")
+            for i in range(len(self.species)):
+                s1 = self.species[i]
+                for j in range(i, len(self.species)):
+                    s2 = self.species[j]
+                    tuple_elements = (s1, s2)
+                    cutoff[tuple_elements] = tm.get_tol(s1, s2)
+
+        if verbose:
+            print("\n The cutoff values for CN calculation are")
+            print(cutoff)
+
+        atoms = self.to_ase(resort=False)
+        NL = neighbor_list('i', atoms, cutoff)
+        coords = np.bincount(NL)
+
+        count = 0
+        for site in self.atom_sites:
+            site.coordination = coords[count]
+            count += site.multiplicity
+
 
     def from_CSD(self, csd_code):
         """
