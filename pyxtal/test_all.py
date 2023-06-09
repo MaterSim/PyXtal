@@ -29,9 +29,9 @@ wp2 = Wyckoff_position.from_group_and_letter(36, "4a")
 class TestGroup(unittest.TestCase):
     def test_list_wyckoff_combinations(self):
         g = Group(64)
-        a1, _ = g.list_wyckoff_combinations([4, 2])
-        self.assertTrue(a1 is None)
-        a2, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
+        a1, _, _ = g.list_wyckoff_combinations([4, 2])
+        self.assertTrue(len(a1) == 0)
+        a2, _, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
 
     def test_print_group(self):

@@ -1474,6 +1474,7 @@ class pyxtal:
         _sites = []
 
         if len(sites) != len(species):
+            print(len(sites), len(species))
             raise RuntimeError("Inconsistency between sites and species")
 
         for sp, wps in zip(species, sites):

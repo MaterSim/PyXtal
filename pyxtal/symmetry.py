@@ -184,7 +184,7 @@ class Group:
     one can search the possible wyckoff_combinations by a formula
 
     >>> g.list_wyckoff_combinations([4, 2])
-    (None, False)
+    ([], [], [])
     >>> g.list_wyckoff_combinations([4, 8])
     ([[['4a'], ['8c']],
     [['4a'], ['8d']],
@@ -194,7 +194,10 @@ class Group:
     [['4b'], ['8d']],
     [['4b'], ['8e']],
     [['4b'], ['8f']]],
-    [False, True, True, True, False, True, True, True])
+    [False, True, True, True, False, True, True, True],
+    [[[6], [4]], [[6], [3]], [[6], [2]], [[6], [1]], 
+    [[5], [4]], [[5], [3]], [[5], [2]], [[5], [1]]]
+    )
 
     or search the subgroup information
 
@@ -369,7 +372,7 @@ class Group:
                     return False
         return True
 
-    def list_wyckoff_combinations(self, numIons, quick=False):
+    def list_wyckoff_combinations(self, numIons, quick=False, max_wp=None):
         """
         List all possible wyckoff combinations for the given formula. Note this
         is really designed for a light weight calculation. If the solution space
@@ -385,11 +388,16 @@ class Group:
         """
 
         numIons = np.array(numIons)
+        # Must be greater than the number of smallest wp multiplicity
+        if numIons.min() < self[-1].multiplicity:
+            return [], [], []
+        elif max_wp is not None and sum(numIons) > self[0].multiplicity*max_wp:
+            return [], [], []
 
         basis = [] # [8, 4, 4]
         letters = [] # ['c', 'b', 'a']
         freedoms = [] # [False, False, False]
-
+        ids = [] # [2, 3, 4]
         # obtain the basis
         for i, wp in enumerate(self):
             mul = wp.multiplicity
@@ -409,81 +417,102 @@ class Group:
                     basis.append(mul)
                     letters.append(letter)
                     freedoms.append(freedom)
+                    ids.append(i)
 
         basis = np.array(basis)
 
         # quickly exit
         if np.min(numIons) < np.min(basis):
             #print(numIons, basis)
-            return None, False
+            return [], []
         # odd and even
         elif np.mod(numIons, 2).sum()>0 and np.mod(basis, 2).sum()==0:
             #print("odd-even", numIons, basis)
-            return None, False
+            #return None, False
+            return [], [], []
 
+        #print("basis", basis)
+        #print("numIons", numIons)
         # obtain the maximum numbers for each basis
-        max_solutions = np.floor(numIons[:,None]/basis)
         # reset the maximum to 1 if there is no freedom
+        # find the integer solutions
+        # reset solutions according to max_wp
+        max_solutions = np.floor(numIons[:, None]/basis)
         for i in range(len(freedoms)):
             if not freedoms[i]:
-                max_solutions[:,i] = 1
+                max_solutions[:, i] = 1
 
-        # find the integer solutions
-        max_arrays = max_solutions.flatten()
-        lists = []
-        for a in max_arrays:
-            d = int(a) + 1
-            lists.append(list(range(d)))
-        if len(lists) > 20:
-            msg = "Solution space is big, rerun it by setting quick as True"
-            raise RuntimeError(msg)
+        if max_wp is not None:
+            N_max = max_wp - (len(numIons) - 1)
+            max_solutions[max_solutions > N_max] = N_max 
 
-        solutions = np.array(list(itertools.product(*lists)))
-        big_basis = np.tile(basis, len(numIons))
+        list_solutions = []
+        for i, numIon in enumerate(numIons):
+            lists = []
+            for a in max_solutions[i]:
+                d = int(a) + 1
+                lists.append(list(range(d)))
 
-        for i in range(len(numIons)):
-            N = solutions[:,i*len(basis):(i+1)*len(basis)].dot(basis)
-            solutions = solutions[N == numIons[i]]
-            if len(solutions) == 0:
-                #print("No solution is available")
-                return None, False
+            sub_solutions = np.array(list(itertools.product(*lists)))
+            N = sub_solutions.dot(basis)
+            sub_solutions = sub_solutions[N == numIon]
+            list_solutions.append(sub_solutions.tolist())
+            #print(i)
+            #print(sub_solutions)#; import sys; sys.exit()
+            if len(sub_solutions) == 0:
+                return [], [], []
+        
+        # Gather all solutions and remove very large number solutions
+        solutions = np.array(list(itertools.product(*list_solutions))) 
+        dim1 = solutions.shape[0]
+        dim2 = np.prod(solutions.shape[1:])
+        solutions = solutions.reshape([dim1, dim2])
+        if max_wp is not None:
+            solutions_total = solutions.sum(axis=1)
+            #print(solutions_total.shape, solutions.shape)
+            #print(solutions_total <= max_wp)
+            solutions = solutions[solutions_total <= max_wp]
 
         # convert the results to list
         combinations = []
         has_freedom = []
+        indices = []
         for solution in solutions:
             res = solution.reshape([len(numIons), len(basis)])
             _com = []
             _free = []
+            _ids = []
+
+            # QZ: check what's going on
             for i, numIon in enumerate(numIons):
                 tmp = []
                 bad_resolution = False
                 frozen = []
+                ids_in = []
                 for j, b in enumerate(basis):
                     if not freedoms[j] and (res[:, j]).sum() > 1:
                         bad_resolution = True
                         break
                     else:
                         if res[i, j] > 0:
-                            symbols = [str(b) + letters[j]] * res[i,j]
+                            symbols = [str(b) + letters[j]] * res[i, j]
                             tmp.extend(symbols)
                             frozen.extend([freedoms[j]])
+                            ids_in.extend([ids[j]] * res[i, j])
                 if not bad_resolution:
                     _com.append(tmp)
                     _free.extend(frozen)
+                    _ids.append(ids_in)
 
             if len(_com) == len(numIons):
                 combinations.append(_com)
+                indices.append(_ids)
                 if True in _free:
                     has_freedom.append(True)
                 else:
                     has_freedom.append(False)
 
-        if len(combinations) == 0:
-            #print("No solution is available")
-            return None, False
-        else:
-            return combinations, has_freedom
+        return combinations, has_freedom, indices
 
     def get_wyckoff_position(self, index):
         """
