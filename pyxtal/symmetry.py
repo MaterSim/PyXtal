@@ -348,6 +348,24 @@ class Group:
 
         return dof
 
+    def get_lattice_dof(self):
+        """
+        compute the degree of freedom for the lattice
+        """
+        if self.lattice_type in ["triclinic"]:
+            dof = 6
+        elif self.lattice_type in ["monoclinic"]:
+            dof = 4
+        elif self.lattice_type in ['orthorhombic']:
+            dof = 3
+        elif self.lattice_type in ['tetragonal', 'hexagonal', 'trigonal']:
+            dof = 2
+        else:
+            dof = 1
+       
+        return dof
+
+
     def is_valid_combination(self, sites):
         """
         check if the solutions are valid. A special WP with zero freedom (0,0,0)
@@ -372,7 +390,7 @@ class Group:
                     return False
         return True
 
-    def list_wyckoff_combinations(self, numIons, quick=False, max_wp=None):
+    def list_wyckoff_combinations(self, numIons, quick=False, max_wp=None, min_wp=None):
         """
         List all possible wyckoff combinations for the given formula. Note this
         is really designed for a light weight calculation. If the solution space
@@ -467,11 +485,13 @@ class Group:
         dim1 = solutions.shape[0]
         dim2 = np.prod(solutions.shape[1:])
         solutions = solutions.reshape([dim1, dim2])
+        solutions_total = solutions.sum(axis=1)
+        #print(solutions_total.shape, solutions.shape)
+        #print(solutions_total <= max_wp)
         if max_wp is not None:
-            solutions_total = solutions.sum(axis=1)
-            #print(solutions_total.shape, solutions.shape)
-            #print(solutions_total <= max_wp)
             solutions = solutions[solutions_total <= max_wp]
+        if min_wp is not None:
+            solutions = solutions[solutions_total >= min_wp]
 
         # convert the results to list
         combinations = []

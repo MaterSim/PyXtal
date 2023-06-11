@@ -34,10 +34,13 @@ class TestGroup(unittest.TestCase):
         a2, _, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
 
-    def test_print_group(self):
-        for sg in [1, 15, 60, 143, 188]:
+
+    def test_print_group_and_dof(self):
+        for d in [(1, 6), (15, 4), (60, 3), (143, 2), (208, 1)]:
+            (sg, dof_ref) = d
             g = Group(sg)
-            #print(g)
+            dof = g.get_lattice_dof()
+            self.assertTrue(dof == dof_ref)
 
     def test_short_path(self):
         g = Group(217)
