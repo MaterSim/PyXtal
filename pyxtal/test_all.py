@@ -19,6 +19,7 @@ from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
 from pyxtal.supergroup import supergroups, supergroup
 from pyxtal.descriptor import spherical_image
+from pyxtal.util import generate_wp_lib
 
 cif_path = resource_filename("pyxtal", "database/cifs/")
 l01 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
@@ -27,13 +28,19 @@ wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_letter(36, "4a")
 
 class TestGroup(unittest.TestCase):
+
+    def test_generate_wp_lib(self):
+        wps = generate_wp_lib([227, 228], composition=[1, 2])
+        self.assertTrue(len(wps) == 18)
+        wps = generate_wp_lib([227, 228], composition=[1, 1, 3])
+        self.assertTrue(len(wps) == 9)
+
     def test_list_wyckoff_combinations(self):
         g = Group(64)
         a1, _, _ = g.list_wyckoff_combinations([4, 2])
         self.assertTrue(len(a1) == 0)
         a2, _, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
         self.assertTrue(len(a2) == 8)
-
 
     def test_print_group_and_dof(self):
         for d in [(1, 6), (15, 4), (60, 3), (143, 2), (208, 1)]:

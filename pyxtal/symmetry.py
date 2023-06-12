@@ -485,12 +485,11 @@ class Group:
         dim1 = solutions.shape[0]
         dim2 = np.prod(solutions.shape[1:])
         solutions = solutions.reshape([dim1, dim2])
-        solutions_total = solutions.sum(axis=1)
-        #print(solutions_total.shape, solutions.shape)
-        #print(solutions_total <= max_wp)
         if max_wp is not None:
+            solutions_total = solutions.sum(axis=1)
             solutions = solutions[solutions_total <= max_wp]
         if min_wp is not None:
+            solutions_total = solutions.sum(axis=1)
             solutions = solutions[solutions_total >= min_wp]
 
         # convert the results to list

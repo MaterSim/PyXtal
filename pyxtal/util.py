@@ -487,6 +487,45 @@ def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
 
     atoms.set_positions(pos1)
     return atoms
+
+def generate_wp_lib(spg_list, composition, max_wp=None, min_wp=None):
+    """
+    Generate wps according to the composition constraint (e.g., SiO2)
+
+    Args;
+        - spg_list: list of space group choices
+        - composition: chemical compositions [1, 2]
+        - max_wp: the number of maximum wp sites
+        - min_wp: the number of minimum wp sites
+
+    Returns:
+        a list of wps [spg, ([wp1, ...], ... [wp1, ...]), wp_dof]
+    """
+
+    from pyxtal.symmetry import Group
+
+    composition = np.array(composition, dtype=int)
+    if max_wp is None: max_wp = len(composition)
+    if min_wp is None: min_wp = len(composition)
+    #print(max_wp, min_wp)
+    wps = []
+    for sg in spg_list:
+        g = Group(sg)
+        lat_dof = g.get_lattice_dof()
+        # determine the upper and lower limit 
+        min_repeat = max([int(len(g[-1])/min(composition)), 1])
+        max_repeat = max([int(len(g[0])/max(composition)), 1])
+        for i in range(min_repeat, max_repeat+1):
+            letters, _, wp_ids = g.list_wyckoff_combinations(
+                    composition*i, max_wp=max_wp, min_wp=min_wp)
+            for i, wp in enumerate(wp_ids):
+                wp_dofs = 0
+                for wp0 in wp:
+                    for id in wp0:
+                        wp_dofs += g[id].get_dof()
+                #print(sg, wp, letters[i])
+                wps.append((sg, wp, lat_dof + wp_dofs))
+    return wps 
  
 
 if __name__ == "__main__":
