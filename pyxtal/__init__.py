@@ -2562,7 +2562,7 @@ class pyxtal:
         self.numMols = numMols
         self.mol_sites = sites
 
-    def set_cutoff(self):
+    def set_cutoff(self, exclude_ii=False):
         """
         get the cutoff dictionary
         """
@@ -2572,12 +2572,16 @@ class pyxtal:
             s1 = self.species[i]
             for j in range(i, len(self.species)):
                 s2 = self.species[j]
-                tuple_elements = (s1, s2)
-                cutoff[tuple_elements] = tm.get_tol(s1, s2)
+                select = True
+                if exclude_ii and s1 == s2:
+                    select = False
+                if select:
+                    tuple_elements = (s1, s2)
+                    cutoff[tuple_elements] = tm.get_tol(s1, s2)
 
         self.cutoff = cutoff
 
-    def set_site_coordination(self, cutoff=None, verbose=False):
+    def set_site_coordination(self, cutoff=None, verbose=False, exclude_ii=False):
         """
         Compute the coordination number from each atomic site 
         """
@@ -2585,7 +2589,7 @@ class pyxtal:
 
         if cutoff is None:
             if not hasattr(self, 'cutoff'):
-                self.set_cutoff()
+                self.set_cutoff(exclude_ii)
             cutoff = self.cutoff
 
         if verbose:
