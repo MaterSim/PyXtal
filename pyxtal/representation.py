@@ -110,6 +110,15 @@ class representation_atom():
 
         return struc
     
+    def to_array(self):
+        """
+        Export only varibles to a 1d numpy array
+        """
+        cells, xyzs = self.x[0][1:], self.x[1:]
+        x = cells
+        for xyz in xyzs: x = np.hstack((x, xyz[2:]))
+        return x
+        
     def to_string(self, time=None, eng=None, tag=None):
         """
         Export string representation
