@@ -1703,24 +1703,27 @@ class pyxtal:
                 break
         return special
 
-    def to_subgroup(self):
+    def to_subgroup(self, path=None):
         """
-        Transform a molecular crystal with speical sites to subgroup
+        Transform a crystal with speical sites to subgroup
         represenatation with general sites
         """
         if not self.standard_setting:
             self.optimize_lattice(standard=True)
 
-        if self.molecular:
-            sites = self.mol_sites
-        else:
-            sites = self.atom_sites
+        # Compute the path is needed
+        if path is None:
+            if self.molecular:
+                sites = self.mol_sites
+            else:
+                sites = self.atom_sites
 
-        max_index = max([site.wp.index for site in sites])
-        if self.molecular:
-            path = self.group.short_path_to_general_wp(max_index, True)
-        else:
-            path = self.group.short_path_to_general_wp(max_index)
+            max_index = max([site.wp.index for site in sites])
+            if self.molecular:
+                path = self.group.short_path_to_general_wp(max_index, True)
+            else:
+                path = self.group.short_path_to_general_wp(max_index)
+
         if path is not None:
             gtypes, ids = [], []
             for p in path:
@@ -2213,7 +2216,7 @@ class pyxtal:
         for site in sites_H:
             numIons_H.append(sum([int(l[:-1]) for l in site]))
 
-        # enumerate all possible solution space
+        # enumerate all possible solutions
         ids = []
         g_types = []
         G = self.group
@@ -2525,13 +2528,13 @@ class pyxtal:
         A quick function to apply substitution
         For molecule only
 
-
         Args:
-            dicts: {"F": "Cl"}
+            dicts: e.g., {"F": "Cl"}
         """
         pmg = self.to_pymatgen()
-        pmg.replace_species({'F': 'Cl'})
-        smi = [m.smile.replace('F', 'Cl') + '.smi' for m in self.molecules]
+        pmg.replace_species(dicts)
+        for e1e in dicts.keys():
+            smi = [m.smile.replace(ele, dicts[ele]) + '.smi' for m in self.molecules]
         self.from_seed(pmg, smi)
 
     def remove_water(self):
@@ -2588,8 +2591,8 @@ class pyxtal:
         from ase.neighborlist import neighbor_list
 
         if cutoff is None:
-            if not hasattr(self, 'cutoff'):
-                self.set_cutoff(exclude_ii)
+            #if not hasattr(self, 'cutoff'):
+            self.set_cutoff(exclude_ii)
             cutoff = self.cutoff
 
         if verbose:

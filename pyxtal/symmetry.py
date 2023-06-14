@@ -583,6 +583,10 @@ class Group:
             raise NotImplementedError(msg)
 
     def get_max_subgroup(self, H):
+        """
+        Returns the dicts for both t and k subgroup, H is just track the type
+        QZ: the function name is not instructive, need to revise later
+        """
         if self.point_group == Group(H, quick=True).point_group:
             g_type = 'k'
             dicts = self.get_max_k_subgroup()
@@ -998,6 +1002,33 @@ class Group:
                          'subgroups':[]}
             layers[l-1]['subgroups'] = deepcopy(subgroups)
         return final
+
+    def path_to_subgroup(self, H):
+        """
+        For a given a path, extract the 
+            a list of (g_types, subgroup_id, spg_number, wp_list (optional))
+        """
+        path_list = []
+        paths = self.search_subgroup_paths(H)
+        if len(paths) > 0:
+            path = paths[0]
+            g0 = Group(path[0], quick=True)
+            for p in path[1:]:
+                g1 = Group(p, quick=True)
+                if g0.point_group == g1.point_group:
+                    g_type = 'k'
+                    spgs = g0.get_max_k_subgroup()['subgroup']
+                else:
+                    g_type = 't'
+                    spgs = g0.get_max_t_subgroup()['subgroup']
+                for id, spg in enumerate(spgs):
+                    if spg == p:
+                        break
+                #print(id, spgs, spgs[id])
+                path_list.append((g_type, id, p))
+                g0 = g1
+        return path_list
+
 
     def search_subgroup_paths(self, G, max_layer=5):
         """
