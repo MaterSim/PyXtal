@@ -390,7 +390,7 @@ class Group:
                     return False
         return True
 
-    def list_wyckoff_combinations(self, numIons, quick=False, max_wp=None, min_wp=None):
+    def list_wyckoff_combinations(self, numIons, quick=False, max_wp=None, min_wp=None, Nmax=10000000):
         """
         List all possible wyckoff combinations for the given formula. Note this
         is really designed for a light weight calculation. If the solution space
@@ -467,9 +467,18 @@ class Group:
         list_solutions = []
         for i, numIon in enumerate(numIons):
             lists = []
+            prod = 1
             for a in max_solutions[i]:
-                d = int(a) + 1
-                lists.append(list(range(d)))
+                if prod <= Nmax: #10000000:
+                    d = int(a) + 1
+                    lists.append(list(range(d)))
+                    prod *= d
+                else:
+                    # If the size is too big, we terminate it asap
+                    lists.append([0])
+                    # Terminate the list
+                    # break
+            #print(len(lists), prod)
 
             sub_solutions = np.array(list(itertools.product(*lists)))
             N = sub_solutions.dot(basis)
