@@ -24,7 +24,7 @@ class GULP():
     def __init__(self, struc, label="_", path='tmp', ff='reax', \
                  pstress=None, opt='conp', steps=1000, exe='gulp',\
                  input='gulp.in', output='gulp.log', dump=None,
-                 symmetry = False):
+                 symmetry=False):
 
         if isinstance(struc, pyxtal):
             self.pyxtal = struc
@@ -107,11 +107,14 @@ class GULP():
         
         with open(self.input, 'w') as f:
             if self.opt == 'conv':
-                f.write('opti stress {:s} conjugate nosymmetry\n'.format(self.opt))
+                f.write('opti stress {:s} conjugate '.format(self.opt))
             elif self.opt == "single":
-                f.write('grad conp stress\n')
+                f.write('grad conp stress ')
             else:
-                f.write('opti stress {:s} conjugate nosymmetry\n'.format(self.opt))
+                f.write('opti stress {:s} conjugate '.format(self.opt))
+
+            if not self.symmetry:
+                f.write('nosymmetry\n')
 
             f.write('\ncell\n')
             f.write('{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'.format(\
@@ -119,11 +122,11 @@ class GULP():
             f.write('\nfractional\n')
             
             symbols = []
-            if self.symmetry and self.pyxtal is not None::
+            if self.symmetry and self.pyxtal is not None:
                 # Use pyxta here
                 for site in self.pyxtal.atom_sites:
                     symbol, coord = site.specie, site.position
-                    f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(site, *coord))
+                    f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(symbol, *coord))
                 f.write('\nspace\n{:d}\n'.format(self.pyxtal.group.number))
             else:
                 # all coordinates
@@ -155,7 +158,9 @@ class GULP():
             lines = f.readlines()
         try: 
             for i, line in enumerate(lines):
-                if self.pstress is None or self.pstress == 0:
+                if self.symmetry and self.pyxtal.group.symbol[0] != 'P':
+                    m = re.match(r'\s*Non-primitive unit cell\s*=\s*(\S+)\s*eV', line)
+                elif self.pstress is None or self.pstress == 0:
                     m = re.match(r'\s*Total lattice energy\s*=\s*(\S+)\s*eV', line)
                 else:
                     m = re.match(r'\s*Total lattice enthalpy\s*=\s*(\S+)\s*eV', line)
@@ -214,6 +219,16 @@ class GULP():
 
                 elif line.find(' Cycle: ') != -1:
                     self.iter = int(line.split()[1])
+    
+                # asymmetric unit
+                elif line.find('Final asymmetric unit coordinates') != -1:
+                    s = i + 6
+                    positions = []
+                    for _i in range(len(self.pyxtal.atom_sites)):
+                        xyz = lines[s+_i].split()[3:6]
+                        XYZ = [float(x) for x in xyz]
+                        #print(XYZ)
+                        self.pyxtal.atom_sites[_i].update(XYZ)
 
                 elif line.find('Final fractional coordinates of atoms') != -1:
                     s = i + 5
@@ -239,6 +254,8 @@ class GULP():
                         for k in range(3):
                             lattice_vectors[j-s][k]=float(temp[k])
                     self.lattice = Lattice.from_matrix(lattice_vectors)
+                    if self.pyxtal is not None:
+                        self.pyxtal.lattice = self.lattice
             if np.isnan(self.energy):
                 self.error = True
                 self.energy = None
@@ -248,24 +265,37 @@ class GULP():
             self.energy = None
             print("GULP calculation is wrong")
 
-def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp", exe="gulp", path="tmp", label="_", clean=True):
-    calc = GULP(struc, steps=steps, label=label, path=path, pstress=pstress, ff=ff, opt=opt)
+def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp", 
+                    exe="gulp", path="tmp", label="_", clean=True,
+                    symmetry=False):
+
+    calc = GULP(struc, steps=steps, label=label, path=path, 
+                pstress=pstress, ff=ff, opt=opt, symmetry=symmetry)
+
     calc.run(clean=clean)
+
     if calc.error:
         print("GULP error in single optimize")
         return None, None, 0, True
     else:
-        struc = calc.to_pyxtal()
-        #if sum(struc.numIons) == 42:
-        #    print("SSSSSSSSSSSSSS")
-        #    import sys; sys.exit()   
+        if calc.pyxtal is None:
+            struc = calc.to_pyxtal()
+        else:
+            struc = calc.pyxtal
+        #if sum(struc.numIons) == 42: print("SSSSS"); import sys; sys.exit()   
         return struc, calc.energy_per_atom, calc.cputime, calc.error
 
 def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 
             pstress=None, path="tmp", label="_", clean=True, adjust=False):
+    """
+    Multiple calls
+
+    """
     time_total = 0
     for opt in optimizations:
-        struc, energy, time, error = single_optimize(struc, ff, pstress, opt, exe, path, label, clean)
+        struc, energy, time, error = single_optimize(struc, ff, 
+        pstress=pstress, opt=opt, exe=exe, path=path, label=label, clean=clean)
+
         time_total += time
         if error:
             return None, None, 0, True
@@ -283,14 +313,17 @@ if __name__ == "__main__":
         struc.from_random(3, 19, ["C"], [4])
         if struc.valid:
             break
-
+    print(struc)
     pmg1 = struc.to_pymatgen()
     calc = GULP(struc, opt="single", ff="tersoff.lib")
-    calc.run()
+    calc.run(clean=False)#; import sys; sys.exit()
     print(calc.energy)
     print(calc.stress)
     print(calc.forces)
     pmg2 = calc.to_pymatgen()
+    #xtal = calc.pyxtal #calc.to_pyxtal()
+    #print(calc.iter)
+    #print(xtal)
 
     import pymatgen.analysis.structure_matcher as sm
     print(sm.StructureMatcher().fit(pmg1, pmg2))
