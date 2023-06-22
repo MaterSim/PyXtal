@@ -6,6 +6,7 @@ Module for handling Wyckoff sites for both atom and molecule
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.distance import cdist
+from copy import deepcopy
 
 # External Libraries
 from pymatgen.core import Molecule
@@ -60,6 +61,12 @@ class atom_site:
 
     def __repr__(self):
         return str(self)
+
+    def copy(self):
+        """
+        Simply copy the structure
+        """
+        return deepcopy(self)
 
     def save_dict(self):
         dict0 = {"position": self.position,
@@ -264,6 +271,40 @@ class atom_site:
                 return False
             else:
                 return True
+
+    def substitute_with_single(self, ele):
+        """
+        chemical substitution with another element
+
+        Args:
+            ele (str): e.g. 'Zn'
+        """
+        self.specie = ele
+        return self
+
+    def substitute_with_linear(self, eles, direction, lattice):
+        """
+        chemical substitution with another linear building block, e.g. CN
+
+        Args:
+            eles (str): e.g., ['C', 'N']
+            neighbors: two nearest neiboring atom xyz
+        """
+        bond_length = 1.4
+        #direction = neighbors[1] - neighbors[0]
+        #direction = np.dot(direction, lattice)
+        #direction /= np.linalg.norm(direction)
+
+        # Get the fraction coordinates
+        shift = np.dot(bond_length/2 * direction, np.linalg.inv(lattice))
+        site1 = self.copy()
+        site2 = self.copy()
+        site1.specie = eles[0]
+        site2.specie = eles[1]
+        site1.update(site1.position + shift)
+        site2.update(site2.position - shift)
+        return site1, site2
+        
 
 class mol_site:
     """

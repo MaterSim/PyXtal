@@ -172,6 +172,10 @@ class Lattice:
         mat = np.dot(mat, self.matrix)
         return mat, np.linalg.norm(mat, axis=1)
 
+    def scale(self, factor=1.1):
+        matrix = self.matrix
+        return Lattice.from_matrix(matrix*factor, ltype=self.ltype)
+
     def get_permutation_matrices(self):
         """
         Return the possible permutation matrices that donot violate the symmetry
