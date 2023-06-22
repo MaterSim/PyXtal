@@ -1552,16 +1552,24 @@ class pyxtal:
     def resort_species(self, species):
         """
         resort the atomic species
+
+        Args:
+            species: list of elements, e.g. ['Si', 'O']
         """
-        sp1 = deepcopy(species).sort()
-        sp2 = deepcopy(self.species).sort()
+        sp1 = deepcopy(species); sp1.sort()
+        sp2 = deepcopy(self.species); sp2.sort()
         if sp1 == sp2:
             self.species = species
             self.resort()
-            #self._get_formula()
-            #print("=========Sort", species, self.species)
         else:
-            raise ValueError("the species are inconsistent", species, self.sepecies)
+            ids = []
+            for specie in species:
+                for j, site in enumerate(self.atom_sites):
+                    if site.specie == specie and j not in ids:
+                        ids.append(j)
+            self.atom_sites = [self.atom_sites[j] for j in ids]
+            self.species = species
+            self._get_formula()
 
     def resort(self):
         """
@@ -2536,6 +2544,7 @@ class pyxtal:
         for e1e in dicts.keys():
             smi = [m.smile.replace(ele, dicts[ele]) + '.smi' for m in self.molecules]
         self.from_seed(pmg, smi)
+
 
     def remove_water(self):
         """
