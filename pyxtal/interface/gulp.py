@@ -65,6 +65,15 @@ class GULP():
         self.cputime = 0
         self.error = False
 
+    def set_catlow(self):
+        """
+        set the atomic label for catlow potentials
+        O_O2- general O2- species
+        O_OH oxygen in hydroxyl group
+        H_OH hydrogen in hydroxyl group
+        """
+        pass
+
     def run(self, clean=True):
         self.write()
         self.execute()
@@ -123,14 +132,19 @@ class GULP():
             
             symbols = []
             if self.symmetry and self.pyxtal is not None:
-                # Use pyxta here
+                # Use pyxtal here
                 for site in self.pyxtal.atom_sites:
                     symbol, coord = site.specie, site.position
                     f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(symbol, *coord))
+                    if self.ff == 'catlow' and symbol == 'O':
+                        f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} shell \n'.format(symbol, *coord))
+
+
+                # Tested for all space groups
                 f.write('\nspace\n{:d}\n'.format(self.pyxtal.group.number))
                 f.write('\norigin\n0 0 0\n')
             else:
-                # all coordinates
+                # All coordinates
                 for coord, site in zip(self.frac_coords, self.sites):
                     f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(site, *coord))
             if self.species is not None:
@@ -140,7 +154,11 @@ class GULP():
 
             f.write('\nSpecies\n')
             for specie in species:
-                f.write('{:4s} core {:4s}\n'.format(specie, specie))
+                if self.ff == 'catlow' and specie == 'O':
+                    f.write('O    core O_O2- core\n')
+                    f.write('O    shell O_O2- shell\n')
+                else:
+                    f.write('{:4s} core {:4s}\n'.format(specie, specie))
 
             f.write('\nlibrary {:s}\n'.format(self.ff))
             f.write('ewald 10.0\n')
@@ -157,6 +175,11 @@ class GULP():
     def read(self):
         # for symmetry case
         lattice_para = None
+        lattice_vector = None
+        if self.pyxtal is not None:
+            ltype = self.pyxtal.lattice.ltype
+        else:
+            ltype = 'triclinic'
 
         with open(self.output, 'r') as f:
             lines = f.readlines()
@@ -256,7 +279,7 @@ class GULP():
                         temp=lines[j].split()
                         for k in range(3):
                             lattice_vectors[j-s][k]=float(temp[k])
-                    lattice_vector = Lattice.from_matrix(lattice_vectors)
+                    lattice_vector = Lattice.from_matrix(lattice_vectors, ltype)
 
                 elif line.find('Non-primitive lattice parameters') != -1:
                     s = i + 2
@@ -264,23 +287,26 @@ class GULP():
                     a, b, c = float(temp[2]), float(temp[5]), float(temp[8])
                     temp = lines[s+1].split()
                     alpha, beta, gamma = float(temp[1]), float(temp[3]), float(temp[5])
-                    lattice_para = Lattice.from_para(a, b, c, alpha, beta, gamma, self.pyxtal.lattice.ltype)
-
-            if lattice_para is not None:
-                self.lattice = lattice_para
-            else:
-                self.lattice = lattice_vector
-
-            if self.pyxtal is not None:
-                self.pyxtal.lattice = self.lattice
-            if np.isnan(self.energy):
-                self.error = True
-                self.energy = None
-                print("GULP calculation is wrong, reading------")
+                    lattice_para = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype)
         except:
             self.error = True
             self.energy = None
-            print("GULP calculation is wrong")
+
+        if lattice_para is not None:
+            self.lattice = lattice_para
+        elif lattice_vector is not None:
+            self.lattice = lattice_vector
+        else:
+            self.error = True
+            self.energy = None
+
+        if self.pyxtal is not None:
+            self.pyxtal.lattice = self.lattice
+
+        if self.energy is None or np.isnan(self.energy):
+            self.error = True
+            self.energy = None
+            print("GULP calculation is wrong, reading------")
 
 def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp", 
                     exe="gulp", path="tmp", label="_", clean=True,
