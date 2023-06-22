@@ -2545,6 +2545,67 @@ class pyxtal:
             smi = [m.smile.replace(ele, dicts[ele]) + '.smi' for m in self.molecules]
         self.from_seed(pmg, smi)
 
+    def substitute_linear(self, dicts):
+        """
+        This is mainly designed for substitution between single atom and the linear block
+        e.g., we want to make Zn(CN)2 from SiO2
+        Args:
+            dicts: e.g., {"Si": ["Zn"], "O": ["C","N"]}
+        """
+        from ase.neighborlist import neighbor_list
+
+        if not hasattr(self, 'cutoff'):
+            self.set_cutoff()
+            cutoff = self.cutoff
+
+        atoms = self.to_ase(resort=False)
+        (id1, id2, shifts) = neighbor_list('ijS', atoms, cutoff)
+
+        self.lattice = self.lattice.scale(1.5)
+        matrix = self.lattice.matrix
+        numIons = []
+        species = []
+        sites = []
+        count = 0
+        for site in self.atom_sites:
+            sp = site.specie
+            if sp in dicts.keys():
+                if len(dicts[sp]) == 1:
+                    e = dicts[sp][0]
+                    sites.append(site.substitute_with_single(e))
+                    if e in species:
+                        id = species.index(e)
+                        numIons[id] += site.wp.multiplicity
+                    else:
+                        species.append(e)
+                        numIons.append(site.wp.multiplicity)
+                else:
+                    eles = dicts[sp]
+                    ids = id2[id1==count] # index of ids
+                    neighbors = atoms.positions[ids] + shifts[id1==count].dot(atoms.cell)
+                    direction = neighbors[1] - neighbors[0]
+                    direction /= np.linalg.norm(direction)
+                    s1, s2 = site.substitute_with_linear(eles, direction, matrix)
+                    for e in eles:
+                        if e in species:
+                            id = species.index(e)
+                            numIons[id] += site.wp.multiplicity
+                        else:
+                            species.append(e)
+                            numIons.append(site.wp.multiplicity)
+                    sites.append(s1)
+                    sites.append(s2)
+            else:
+                sites.append(site)
+            count += site.wp.multiplicity
+
+        struc = self.copy()
+        struc.atom_sites = sites
+        struc.numIons = numIons
+        struc.species = species
+        struc.resort()
+        return struc
+
 
     def remove_water(self):
         """
