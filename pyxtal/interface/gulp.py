@@ -41,7 +41,7 @@ class GULP():
         else:
             raise NotImplementedError("only support ASE atoms object")
         
-        self.symmetry = symmetry
+        self.symmetry = symmetry#; print(self.pyxtal.lattice.ltype)
         self.structure = struc
         self.pstress= pstress
         self.label = label
@@ -128,6 +128,7 @@ class GULP():
                     symbol, coord = site.specie, site.position
                     f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core \n'.format(symbol, *coord))
                 f.write('\nspace\n{:d}\n'.format(self.pyxtal.group.number))
+                f.write('\norigin\n0 0 0\n')
             else:
                 # all coordinates
                 for coord, site in zip(self.frac_coords, self.sites):
@@ -154,6 +155,9 @@ class GULP():
 
 
     def read(self):
+        # for symmetry case
+        lattice_para = None
+
         with open(self.output, 'r') as f:
             lines = f.readlines()
         try: 
@@ -245,7 +249,6 @@ class GULP():
                     #if len(species) != len(self.sites):
                     #    print("Warning", len(species), len(self.sites))
                     self.frac_coords = np.array(positions)
-
                 elif line.find('Final Cartesian lattice vectors') != -1:
                     lattice_vectors = np.zeros((3,3))
                     s = i + 2
@@ -253,9 +256,23 @@ class GULP():
                         temp=lines[j].split()
                         for k in range(3):
                             lattice_vectors[j-s][k]=float(temp[k])
-                    self.lattice = Lattice.from_matrix(lattice_vectors)
-                    if self.pyxtal is not None:
-                        self.pyxtal.lattice = self.lattice
+                    lattice_vector = Lattice.from_matrix(lattice_vectors)
+
+                elif line.find('Non-primitive lattice parameters') != -1:
+                    s = i + 2
+                    temp = lines[s].split()
+                    a, b, c = float(temp[2]), float(temp[5]), float(temp[8])
+                    temp = lines[s+1].split()
+                    alpha, beta, gamma = float(temp[1]), float(temp[3]), float(temp[5])
+                    lattice_para = Lattice.from_para(a, b, c, alpha, beta, gamma, self.pyxtal.lattice.ltype)
+
+            if lattice_para is not None:
+                self.lattice = lattice_para
+            else:
+                self.lattice = lattice_vector
+
+            if self.pyxtal is not None:
+                self.pyxtal.lattice = self.lattice
             if np.isnan(self.energy):
                 self.error = True
                 self.energy = None
