@@ -1702,19 +1702,28 @@ class pyxtal:
 
     def has_special_site(self):
         """
-        Check if the molecular crystal has a special site
+        Check if the crystal has a special site
         """
         special = False
-        for msite in self.mol_sites:
+        if self.molecular:
+            sites = self.mol_sites
+        else:
+            sites = self.atom_sites
+
+        for msite in sites:
             if msite.wp.index > 0:
                 special = True
                 break
         return special
 
-    def to_subgroup(self, path=None):
+    def to_subgroup(self, path=None, iterate=False):
         """
         Transform a crystal with speical sites to subgroup
         represenatation with general sites
+
+        Args:
+            Path: list of path to get the general sites
+            iterate (bool): whether or not do it iteratively
         """
         if not self.standard_setting:
             self.optimize_lattice(standard=True)
@@ -1727,10 +1736,12 @@ class pyxtal:
                 sites = self.atom_sites
 
             max_index = max([site.wp.index for site in sites])
+            #print([site.wp.index for site in sites])
             if self.molecular:
                 path = self.group.short_path_to_general_wp(max_index, True)
             else:
                 path = self.group.short_path_to_general_wp(max_index)
+            #print(max_index, path)
 
         if path is not None:
             gtypes, ids = [], []
@@ -1742,6 +1753,11 @@ class pyxtal:
             sub.source = "subgroup"
         else:
             sub = self.copy()
+
+        if iterate:
+            if sub.has_special_site(): 
+                sub = sub.to_subgroup()
+
         return sub
 
     def show(self, **kwargs):

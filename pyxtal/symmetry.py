@@ -1130,7 +1130,7 @@ class Group:
             potential=deepcopy(_potential)
 
             for p in deepcopy(potential):
-                   #Check there's only one wp.  #Check that the 1 wp is the general position
+                #Check there's only one wp.  #Check that the 1 wp is the general position
                 if (len(set(p[-1][3]))==1) and (p[-1][3][0][-1]==Group(p[-1][2])[0].letter):
                     solutions.append(deepcopy(p)[1:])
                     potential.remove(p)
