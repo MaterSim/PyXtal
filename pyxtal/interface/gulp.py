@@ -24,7 +24,7 @@ class GULP():
     def __init__(self, struc, label="_", path='tmp', ff='reax', \
                  pstress=None, opt='conp', steps=1000, exe='gulp',\
                  input='gulp.in', output='gulp.log', dump=None,
-                 symmetry=False):
+                 symmetry=False, labels=None):
 
         if isinstance(struc, pyxtal):
             self.pyxtal = struc
@@ -45,6 +45,7 @@ class GULP():
         self.structure = struc
         self.pstress= pstress
         self.label = label
+        self.labels = labels
         self.ff = ff
         self.opt = opt
         self.exe = exe
@@ -153,12 +154,20 @@ class GULP():
                 species = list(set(self.sites))
 
             f.write('\nSpecies\n')
-            for specie in species:
-                if self.ff == 'catlow' and specie == 'O':
-                    f.write('O    core O_O2- core\n')
-                    f.write('O    shell O_O2- shell\n')
-                else:
-                    f.write('{:4s} core {:4s}\n'.format(specie, specie))
+            if self.labels is not None:
+                for specie in species:
+                    if specie in self.labels.keys():
+                        sp = self.labels[specie]
+                        f.write('{:4s} core {:s}\n'.format(specie, sp))
+                    else:
+                        f.write('{:4s} core {:4s}\n'.format(specie, specie))
+            else:
+                for specie in species:
+                    if self.ff == 'catlow' and specie == 'O':
+                        f.write('O    core O_O2- core\n')
+                        f.write('O    shell O_O2- shell\n')
+                    else:
+                        f.write('{:4s} core {:4s}\n'.format(specie, specie))
 
             f.write('\nlibrary {:s}\n'.format(self.ff))
             f.write('ewald 10.0\n')
@@ -279,7 +288,7 @@ class GULP():
                         temp=lines[j].split()
                         for k in range(3):
                             lattice_vectors[j-s][k]=float(temp[k])
-                    lattice_vector = Lattice.from_matrix(lattice_vectors, ltype)
+                    lattice_vector = Lattice.from_matrix(lattice_vectors, ltype=ltype)
 
                 elif line.find('Non-primitive lattice parameters') != -1:
                     s = i + 2
@@ -291,7 +300,6 @@ class GULP():
         except:
             self.error = True
             self.energy = None
-
         if lattice_para is not None:
             self.lattice = lattice_para
         elif lattice_vector is not None:
@@ -310,10 +318,11 @@ class GULP():
 
 def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp", 
                     exe="gulp", path="tmp", label="_", clean=True,
-                    symmetry=False):
+                    symmetry=False, labels=None):
 
     calc = GULP(struc, steps=steps, label=label, path=path, 
-                pstress=pstress, ff=ff, opt=opt, symmetry=symmetry)
+                pstress=pstress, ff=ff, opt=opt, 
+                symmetry=symmetry, labels=labels)
 
     calc.run(clean=clean)
 
