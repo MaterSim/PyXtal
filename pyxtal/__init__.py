@@ -2561,6 +2561,36 @@ class pyxtal:
             smi = [m.smile.replace(ele, dicts[ele]) + '.smi' for m in self.molecules]
         self.from_seed(pmg, smi)
 
+    def remove_species(self, species):
+        """
+        To remove the atom_sites by specie name
+        Args:
+            dicts: e.g., ["O"]
+        """
+        numIons = []
+        new_species = []
+        sites = []
+        count = 0
+        for site in self.atom_sites:
+            sp = site.specie
+            if sp not in species:
+                num = site.wp.multiplicity 
+                sites.append(site)
+                if sp in new_species:
+                    id = new_species.index(sp)
+                    numIons[id] += num
+                else:
+                    new_species.append(sp)
+                    numIons.append(num)
+            count += num
+        struc = self.copy()
+        struc.atom_sites = sites
+        struc.numIons = numIons
+        struc.species = new_species
+        struc.resort()
+        return struc
+
+
     def substitute_linear(self, dicts):
         """
         This is mainly designed for substitution between single atom and the linear block
