@@ -1700,23 +1700,25 @@ class pyxtal:
         """
         return self.to_pymatgen().density
 
-    def has_special_site(self):
+    def has_special_site(self, species=None):
         """
         Check if the crystal has a special site
         """
         special = False
+        if species is None: species = self.species
+
         if self.molecular:
             sites = self.mol_sites
         else:
             sites = self.atom_sites
 
         for msite in sites:
-            if msite.wp.index > 0:
+            if msite.specie in species and msite.wp.index > 0:
                 special = True
                 break
         return special
 
-    def to_subgroup(self, path=None, iterate=False):
+    def to_subgroup(self, path=None, iterate=False, species=None):
         """
         Transform a crystal with speical sites to subgroup
         represenatation with general sites
@@ -1727,6 +1729,7 @@ class pyxtal:
         """
         if not self.standard_setting:
             self.optimize_lattice(standard=True)
+        if species is None: species = self.species
 
         # Compute the path is needed
         if path is None:
@@ -1735,7 +1738,7 @@ class pyxtal:
             else:
                 sites = self.atom_sites
 
-            max_index = max([site.wp.index for site in sites])
+            max_index = max([site.wp.index for site in sites if site.specie in species])
             #print([site.wp.index for site in sites])
             if self.molecular:
                 path = self.group.short_path_to_general_wp(max_index, True)
