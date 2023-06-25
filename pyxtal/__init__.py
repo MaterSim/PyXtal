@@ -1717,7 +1717,7 @@ class pyxtal:
                 break
         return special
 
-    def to_subgroup(self, path=None, iterate=False, species=None):
+    def to_subgroup(self, path=None, t_only=True,iterate=False, species=None):
         """
         Transform a crystal with speical sites to subgroup
         represenatation with general sites
@@ -1740,9 +1740,9 @@ class pyxtal:
             max_index = max([site.wp.index for site in sites if site.specie in species])
             #print([site.wp.index for site in sites])
             if self.molecular:
-                path = self.group.short_path_to_general_wp(max_index, True)
+                path = self.group.short_path_to_general_wp(max_index, t_only)
             else:
-                path = self.group.short_path_to_general_wp(max_index)
+                path = self.group.short_path_to_general_wp(max_index, t_only)
             #print(max_index, path)
 
         if path is not None:
