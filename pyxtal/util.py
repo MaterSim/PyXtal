@@ -489,7 +489,7 @@ def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
     return atoms
 
 def generate_wp_lib(spg_list, composition, max_wp=None, min_wp=None, 
-                    min_repeat=None, max_repeat=None, N_max=1000):
+                    max_fu=None, min_fu=None, N_max=1000):
     """
     Generate wps according to the composition constraint (e.g., SiO2)
 
@@ -514,10 +514,10 @@ def generate_wp_lib(spg_list, composition, max_wp=None, min_wp=None,
         g = Group(sg)
         lat_dof = g.get_lattice_dof()
         # determine the upper and lower limit 
-        if min_repeat is None: min_repeat = max([int(len(g[-1])/min(composition)), 1])
-        if max_repeat is None: max_repeat = max([int(len(g[0])/max(composition)), 1])
+        if min_fu is None: min_fu = max([int(len(g[-1])/min(composition)), 1])
+        if max_fu is None: max_fu = max([int(len(g[0])/max(composition)), 1])
         count = 0
-        for i in range(max_repeat, min_repeat-1, -1):
+        for i in range(max_fu, min_fu-1, -1):
             letters, _, wp_ids = g.list_wyckoff_combinations(
                     composition*i, max_wp=max_wp, 
                     min_wp=min_wp, Nmax=100000)
