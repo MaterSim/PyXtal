@@ -28,7 +28,6 @@ from pyxtal.io import read_cif, write_cif, structure_from_ext
 from pyxtal.constants import letters
 from pyxtal.viz import display_molecular, display_atomic, display_cluster
 from pyxtal.constants import letters
-from pyxtal.descriptor import spherical_image
 
 # name = "pyxtal"
 
@@ -2468,6 +2467,8 @@ class pyxtal:
         Returns:
             the sph class
         """
+        from pyxtal.descriptor import spherical_image
+
         sph = spherical_image(self, **kwargs)
         return sph
 
