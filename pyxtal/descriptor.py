@@ -232,11 +232,13 @@ def expand_sph(pts, l_max, norm=4, csphase=-1):
     """
     thetas, phis, vals = pts[:,0], pts[:,1], pts[:,2]
     phis = np.degrees(phis)
+    # shift from (0, 180) to (-90, 90)
     thetas = np.degrees(thetas)
+    thetas -= 90
 
     # if thetas is within [0, 180]
-    if abs(thetas.min()) < 1e-3: thetas -= 90
-    #print('check thetas', thetas.min())
+    #print('check thetas', thetas.min(), thetas.max())
+    #if abs(thetas.min()) < 1e-3: thetas -= 90
     cilm, chi2 = SHExpandLSQ(vals, thetas, phis, l_max, norm=norm, csphase=csphase)
 
     return cilm, chi2
