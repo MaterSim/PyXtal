@@ -2554,16 +2554,18 @@ class pyxtal:
     def substitute(self, dicts):
         """
         A quick function to apply substitution
-        For molecule only
 
         Args:
             dicts: e.g., {"F": "Cl"}
         """
         pmg = self.to_pymatgen()
         pmg.replace_species(dicts)
-        for e1e in dicts.keys():
-            smi = [m.smile.replace(ele, dicts[ele]) + '.smi' for m in self.molecules]
-        self.from_seed(pmg, smi)
+        if self.molecular:
+            for e1e in dicts.keys():
+                smi = [m.smile.replace(ele, dicts[ele]) + '.smi' for m in self.molecules]
+            self.from_seed(pmg, smi)
+        else:
+            self.from_seed(pmg)
 
     def remove_species(self, species):
         """
