@@ -196,12 +196,13 @@ class pyxtal:
             s += "\nDimension: {}".format(self.dim)
             s += "\nComposition: {}".format(self.formula)
             #if not self.standard_setting:
-            if self.molecular:
-                symbol = self.mol_sites[0].wp.get_hm_symbol()
+            if self.dim < 3:
+                symbol = self.group.symbol
             else:
-                symbol = self.atom_sites[0].wp.get_hm_symbol()
-            #else:
-            #    symbol = self.group.symbol
+                if self.molecular:
+                    symbol = self.mol_sites[0].wp.get_hm_symbol()
+                else:
+                    symbol = self.atom_sites[0].wp.get_hm_symbol()
             s += "\nGroup: {} ({})".format(symbol, self.group.number)
             s += "\n{}".format(self.lattice)
             s += "\nWyckoff sites:"

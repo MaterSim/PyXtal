@@ -91,6 +91,15 @@ if __name__ == "__main__":
         help="molecular? default: False",
     )
 
+    parser.add_argument(
+        "-c",
+        "--conventional",
+        dest="conventional",
+        action = 'store_true',
+        default = False,
+        help="conventional setting? default: False",
+    )
+
     print_logo()
     options = parser.parse_args()
     sg = options.sg
@@ -119,19 +128,20 @@ if __name__ == "__main__":
     dimension = options.dimension
     thickness = options.thickness
     molecular = options.molecular
+    conventional = options.conventional
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     for i in range(attempts):
         numIons0 = np.array(numIons)
-        rand_crystal = pyxtal(molecular=options.molecular)
+        rand_crystal = pyxtal(molecular=molecular)
         if dimension == 3:
-            rand_crystal.from_random(3, sg, system, numIons0, factor)
+            rand_crystal.from_random(3, sg, system, numIons0, factor, conventional=conventional)
         elif dimension == 2:
-            rand_crystal.from_random(2, sg, system, numIons0, factor, thickness)
+            rand_crystal.from_random(2, sg, system, numIons0, factor, thickness, conventional=conventional)
         elif dimension == 1:                                             
-            rand_crystal.from_random(1, sg, system, numIons0, factor, thickness)
+            rand_crystal.from_random(1, sg, system, numIons0, factor, thickness, conventional=conventional)
         if dimension == 0:
             rand_crystal.from_random(0, sg, system, numIons0, factor)
         # Output a cif or xyz file
