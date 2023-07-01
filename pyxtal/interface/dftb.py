@@ -157,7 +157,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
 
 def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
                fmax=0.1, kresol=0.10, folder='tmp', disp='D3', \
-               mask=None, symmetrize=True, logfile=None):
+               mask=None, symmetrize=True, logfile=None, use_omp=False):
     """
     DFTB optimizer based on ASE
 
@@ -174,7 +174,7 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
 
     kpts = Kgrid(struc, kresol)
     atom_types = set(struc.get_chemical_symbols())
-    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts)
+    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=use_omp)
 
     calc = Dftb(label='test',
                 atoms=struc,
@@ -199,6 +199,7 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
         os.remove('charges.bin')
     except:
         print("Problem in DFTB calculation")
+        struc = None
     os.chdir(cwd)
     return struc
 
