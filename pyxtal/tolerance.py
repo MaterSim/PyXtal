@@ -99,7 +99,7 @@ class Tol_matrix:
         Returns:
             the tolerance between the provided pair of atomic species
         """
-        if self.prototype == "single_value":
+        if self.prototype == "single value":
             return self.matrix[0][0]
         index1 = Element.number_from_specie(specie1)
         index2 = Element.number_from_specie(specie2)
