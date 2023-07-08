@@ -2,6 +2,7 @@
 Module for crystal packing descriptor from energy decomposition
 """
 import numpy as np
+import pyshtools as pysh
 from scipy.stats import qmc
 from scipy.spatial.transform import Rotation
 from scipy.optimize import minimize
@@ -285,7 +286,6 @@ class spherical_image():
         sigma: Gaussian width to project into the unit sphere
         N: number of grid points on the unit sphere
     """
-    import pyshtools as pysh
 
     def __init__(self, xtal, model='molecule', max_d=10, 
         factor=2.2, lmax=13, sigma=0.1, N=10000):
