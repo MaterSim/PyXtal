@@ -502,8 +502,8 @@ class mol_site:
             #op2_m = self.wp.generators_m[point_index]
             op2_m = self.wp.get_euclidean_generator(self.lattice.matrix, point_index)
             rot = op2_m.affine_matrix[:3, :3].T
-            #NOTE=====the euclidean_generator has wrong translation vectors,
-            #but we don't care. This needs to be fixed later
+            # NOTE=====the euclidean_generator has wrong translation vectors,
+            # but we don't care. This needs to be fixed later
 
             #if self.diag and self.wp.index > 0:
             #    tau = op2.translation_vector
@@ -723,7 +723,7 @@ class mol_site:
                 mol.to(filename='Wrong.xyz', fmt='xyz')
                 self.mol.to(filename='Ref.xyz', fmt='xyz')
             raise ValueError("molecular connectivity changes! Exit")
-        #todo check if connectivty changed
+        # todo check if connectivty changed
 
     def _create_matrix(self, center=False, ignore=False):
         """
@@ -744,7 +744,7 @@ class mol_site:
             ijk_lists = []
             for id in range(3):
                 if self.PBC[id]:
-                    if not ignore and abc[id] > 20 and self.radius<10:
+                    if not ignore and abc[id] > 25 and self.radius < 10:
                         ijk_lists.append([0])
                     elif abc[id] < 7.0:
                         ijk_lists.append([-3, -2, -1, 0, 1, 2, 3])
@@ -762,7 +762,7 @@ class mol_site:
                 for k in ijk_lists[2]:
                     if [i, j, k] != [0, 0, 0]:
                         matrix.append([i, j, k])
-        #In case a,b,c are all greater than 20
+        # In case a,b,c are all greater than 20
         if len(matrix) == 0:
             matrix = [[1,0,0]]
         return np.array(matrix, dtype=float)
@@ -784,15 +784,14 @@ class mol_site:
             coord2 under PBC: [pbc, m2, 3]
         """
         m1 = len(coord1)
-        if m2 is None:
-            m2 = m1
+        if m2 is None: m2 = m1
         N2 = int(len(coord2)/m2)
 
-        #peridoic images
+        # peridoic images
         m = self._create_matrix(center, ignore) #PBC matrix
         coord2 = np.vstack([coord2 + v for v in m])
 
-        #absolute xyz
+        # absolute xyz
         coord1 = np.dot(coord1, self.lattice.matrix)
         coord2 = np.dot(coord2, self.lattice.matrix)
 
@@ -839,15 +838,15 @@ class mol_site:
         Returns:
             minimum distance
         """
-        #Self image
+        # Self image
         ds, _ = self.get_dists_auto()
         min_dist = np.min(ds)
 
         if min_dist < 0.9:
-            #terminate earlier
+            # terminate earlier
             return min_dist
         else:
-            #Other molecules
+            # Other molecules
             if self.wp.multiplicity > 1:
                 ds, _ = self.get_dists_WP()
                 if min_dist > np.min(ds):
@@ -910,7 +909,9 @@ class mol_site:
             m2 = m_length1
 
         # compute the distance matrix
-        d, _ = self.get_distances(coord1, coord2, m2)
+        d, _ = self.get_distances(coord1-np.floor(coord1), coord2-np.floor(coord2), m2)
+        #print("short dist", len(c1), len(c2), d.min())
+        
         if np.min(d) < np.max(tols_matrix):
             tols = np.min(d, axis=0)
             if (tols < tols_matrix).any():

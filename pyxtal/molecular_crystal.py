@@ -413,9 +413,12 @@ class molecular_crystal:
                     if ms0 is not None:
                         # Check current WP against existing WP's
                         passed_wp_check = True
-                        for ms1 in mol_sites_tmp + mol_wyks:
+                        #print("Checking", ms0)
+                        for ms1 in mol_wyks + mol_sites_tmp:
                             if not ms0.short_dist_with_wp2(ms1, tm=self.tol_matrix):
                                 passed_wp_check = False
+                            #else:
+                            #    print("passing", ms1)
 
                         if passed_wp_check:
                             if sites_list is not None:
