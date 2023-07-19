@@ -1463,7 +1463,11 @@ class pyxtal:
         if self.molecular:
             raise RuntimeError("Cannot support the molecular crystal")
 
-        self.group = Group(group)
+        if type(group) == Group:
+            self.group = group
+        else:
+            self.group = Group(group)
+ 
         self.lattice = lattice
         self.dim = 3
         self.factor = 1.0
@@ -1478,23 +1482,35 @@ class pyxtal:
             raise RuntimeError("Inconsistency between sites and species")
 
         for sp, wps in zip(species, sites):
-            if type(wps) is dict:
-                for pair in wps.items():
-                    (key, pos) = pair
+            for wp in wps:
+                if type(wp) is dict:
+                    for pair in wp.items():
+                        (key, pos) = pair
+                        _wp = choose_wyckoff(self.group, site=key)
+                        if _wp is not False:
+                            if _wp.get_dof() == 0: #fixed pos
+                                pt = [0.0, 0.0, 0.0]
+                            else:
+                                pt = _wp.get_all_positions(pos)[0]
+                            _sites.append(atom_site(_wp, pt, sp))
+                        else:
+                            raise RuntimeError("Cannot interpret site", key)
+                elif len(wp) == 4: # tuple:
+                    (key, x, y, z) = wp
                     _wp = choose_wyckoff(self.group, site=key)
                     if _wp is not False:
                         if _wp.get_dof() == 0: #fixed pos
                             pt = [0.0, 0.0, 0.0]
                         else:
-                            pt = _wp.get_all_positions(pos)[0]
+                            pt = _wp.get_all_positions([x, y, z])[0]
                         _sites.append(atom_site(_wp, pt, sp))
                     else:
                         raise RuntimeError("Cannot interpret site", key)
-            else: #List of atomic coordinates
-                wp0 = self.group[0]
-                for pos in wps:
-                    pt, _wp, _ = wp0.merge(pos, lattice.matrix, tol=0.1)
-                    _sites.append(atom_site(_wp, pt, sp))
+                else: #List of atomic coordinates
+                    wp0 = self.group[0]
+                    for pos in wps:
+                        pt, _wp, _ = wp0.merge(pos, lattice.matrix, tol=0.1)
+                        _sites.append(atom_site(_wp, pt, sp))
 
         self.atom_sites = _sites
         self.standard_setting = True
