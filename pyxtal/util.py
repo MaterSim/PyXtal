@@ -488,8 +488,11 @@ def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
     atoms.set_positions(pos1)
     return atoms
 
-def generate_wp_lib(spg_list, composition, max_wp=None, min_wp=None, 
-                    max_fu=None, min_fu=None, N_max=1000):
+def generate_wp_lib(spg_list, composition, 
+                    num_wp=(None, None), 
+                    num_fu=(None, None), 
+                    num_dof=(None, None), 
+                    N_max=1000):
     """
     Generate wps according to the composition constraint (e.g., SiO2)
 
@@ -506,8 +509,14 @@ def generate_wp_lib(spg_list, composition, max_wp=None, min_wp=None,
     from pyxtal.symmetry import Group
 
     composition = np.array(composition, dtype=int)
+    (min_wp, max_wp) = num_wp
+    (min_fu, max_fu) = num_fu
+    (min_dof, max_dof) = num_dof
+
     if max_wp is None: max_wp = len(composition)
     if min_wp is None: min_wp = len(composition)
+    if min_dof is None: min_dof = 1
+    if max_dof is None: max_dof = 1000
     #print(max_wp, min_wp)
     wps = []
     for sg in spg_list:
@@ -527,8 +536,10 @@ def generate_wp_lib(spg_list, composition, max_wp=None, min_wp=None,
                     for id in wp0:
                         wp_dofs += g[id].get_dof()
                 #print(sg, wp, letters[j])
-                wps.append((sg, wp, lat_dof + wp_dofs))
-            count += len(letters)
+                num_dof = lat_dof + wp_dofs
+                if min_dof <= num_dof <= max_dof:
+                    wps.append((sg, wp, lat_dof + wp_dofs))
+                    count += 1
             if count >= N_max:
                 break
     return wps 
