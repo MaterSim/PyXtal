@@ -499,11 +499,12 @@ def generate_wp_lib(spg_list, composition,
     Args;
         - spg_list: list of space group choices
         - composition: chemical compositions [1, 2]
-        - max_wp: the number of maximum wp sites
-        - min_wp: the number of minimum wp sites
+        - num_wp: (min_wp, max_wp)
+        - num_fu: (min_fu, max_fu)
+        - num_dof: (min_dof, max_dof)
 
     Returns:
-        a list of wps [spg, ([wp1, ...], ... [wp1, ...]), wp_dof]
+        a list of wps [spg, ([wp1, ...], ... [wp1, ...]), dof]
     """
 
     from pyxtal.symmetry import Group
