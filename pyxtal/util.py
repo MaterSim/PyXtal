@@ -533,13 +533,15 @@ def generate_wp_lib(spg_list, composition,
                     min_wp=min_wp, Nmax=100000)
             for j, wp in enumerate(wp_ids):
                 wp_dofs = 0
+                num = 0
                 for wp0 in wp:
                     for id in wp0:
                         wp_dofs += g[id].get_dof()
+                        num += g[id].multiplicity
                 #print(sg, wp, letters[j])
                 num_dof = lat_dof + wp_dofs
                 if min_dof <= num_dof <= max_dof:
-                    wps.append((sg, wp, lat_dof + wp_dofs))
+                    wps.append((num, sg, wp, lat_dof + wp_dofs))
                     count += 1
             if count >= N_max:
                 break
