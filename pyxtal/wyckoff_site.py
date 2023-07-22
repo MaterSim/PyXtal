@@ -79,8 +79,10 @@ class atom_site:
         """
         get the number of dof for the given structures:
         """
-        freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
-        self.dof = len(freedom[freedom==True])
+        self.dof = self.wp.get_dof()
+        #freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
+        #self.dof = len(freedom[freedom==True])
+        #self.dof = len(freedom[freedom==True])
 
 
     @classmethod
