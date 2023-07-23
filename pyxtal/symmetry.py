@@ -2000,6 +2000,34 @@ class Wyckoff_position:
             else:
                 return False
 
+    def distance_check(self, pt, lattice, tol):
+        """
+        Given a list of fractional coordinates, merges them within a given
+        tolerance, and checks if the merged coordinates satisfy a Wyckoff
+        position.
+
+        Args:
+            pt: the originl point (3-vector)
+            lattice: a 3x3 matrix representing the unit cell
+            tol: the cutoff distance for merging coordinates
+
+        Returns:
+            True or False
+        """
+        PBC = self.PBC
+        pt = self.project(pt, lattice, PBC)
+        coor = self.apply_ops(pt)
+        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
+        passed_distance_check = True
+        x = np.argwhere(dm < tol)
+        for y in x:
+            # Ignore distance from atom to itself
+            if y[0] == 0 and y[1] == 0:
+                pass
+            else:
+                return False
+        return True
+
     def merge(self, pt, lattice, tol, orientations=None):
         """
         Given a list of fractional coordinates, merges them within a given

@@ -309,6 +309,7 @@ class random_crystal:
             wyckoff_attempts = max(2*min_wyckoffs, 10)
 
         cycle = 0
+        wp_prev = None # to remember it no need to regenerate
         while cycle < wyckoff_attempts:
             # Choose a random WP for given multiplicity: 2a, 2b
             if sites_list is not None and len(sites_list)>0:
@@ -322,13 +323,29 @@ class random_crystal:
                 wp = choose_wyckoff(self.group, numIon-numIon_added, key, self.dim)
                 new_site = atom_site(wp, site[key], specie)
             else:
-                wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
+                if wp_prev is None:
+                    wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
+                    if site is not None: wp_prev = wp
+                else:
+                    wp = wp_prev
+
                 if wp is not False:
                     # Generate a list of coords from ops
-                    mult = wp.multiplicity # remember the original multiplicity
+                    # mult = wp.multiplicity # remember the original multiplicity
                     pt = self.lattice.generate_point()
-                    # Merge coordinates if the atoms are close
-                    pt, wp, _ = wp.merge(pt, cell, tol)
+                    if site is None:
+                        # Merge coordinates if the atoms are close
+                        pt, wp, _ = wp.merge(pt, cell, tol)
+                    else:
+                        # check distance
+                        if not wp.distance_check(pt, cell, tol):
+                            #print("no merge", site, cycle, wyckoff_attempts)
+                            if wp.get_dof() == 0:
+                                cycle = wyckoff_attempts
+                            else:
+                                cycle += 1
+                            continue
+
                     # For pure planar structure
                     if self.dim == 2 and self.thickness is not None and \
                         self.thickness < 0.1:
@@ -336,9 +353,9 @@ class random_crystal:
 
                     # If site the pre-assigned, do not accept merge
                     if wp is not False:
-                        if site is not None and mult != wp.multiplicity:
-                            cycle += 1
-                            continue
+                        #if site is not None and mult != wp.multiplicity:
+                        #    cycle += 1
+                        #    continue
                         # Use a Wyckoff_site object for the current site
                         new_site = atom_site(wp, pt, specie)
 
@@ -346,6 +363,7 @@ class random_crystal:
             if self.check_wp(wyckoff_sites_tmp, wyks, cell, new_site):
                 if sites_list is not None and len(sites_list)>0:
                     sites_list.pop(0)
+                    wp_prev = None # to remember it no need to regenerate
                 wyckoff_sites_tmp.append(new_site)
                 numIon_added += new_site.multiplicity
 
