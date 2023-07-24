@@ -63,6 +63,7 @@ class random_crystal:
         self.dim = dim
         self.area = area  # Cross-section area for 1D
         self.thickness = thickness # Thickness of 2D slab
+        self.lattice0 = lattice
 
         #The periodic boundary condition
         if dim == 3:
@@ -109,8 +110,9 @@ class random_crystal:
             msg += str(self.group.number)
             raise Comp_CompatibilityError(msg)
         else:
-            self.set_volume()
-            self.set_lattice(lattice)
+            #self.set_volume()
+            #self.set_lattice(self.lattice0)
+            self.set_elemental_volumes()
             self.set_crystal()
 
     def __str__(self):
@@ -150,6 +152,16 @@ class random_crystal:
             else:
                 self.sites[specie] = None
 
+    def set_elemental_volumes(self):
+        """
+        set up the radii for each specie
+        """
+        self.elemental_volumes = []
+        for specie in self.species:
+            sp = Element(specie)
+            vol1, vol2 = sp.covalent_radius ** 3, sp.vdw_radius ** 3
+            self.elemental_volumes.append([4/3*np.pi*vol1, 4/3*np.pi*vol2])
+
     def set_volume(self):
         """
         Estimates the volume of a unit cell based on the number/types of ions.
@@ -163,11 +175,9 @@ class random_crystal:
             a float value for the estimated volume
         """
         volume = 0
-        for numIon, specie in zip(self.numIons, self.species):
-            r = random.uniform(
-                Element(specie).covalent_radius, Element(specie).vdw_radius
-            )
-            volume += numIon * 4 / 3 * np.pi * r ** 3
+        for i, numIon in enumerate(self.numIons):
+            [vmin, vmax] = self.elemental_volumes[i]
+            volume += numIon * random.uniform(vmin, vmax)
         self.volume = self.factor * volume
 
         #make sure the volume is not too small
@@ -238,11 +248,15 @@ class random_crystal:
         else:
             self.lattice_attempts = 40
             self.coord_attempts = 10
-
-        if not self.lattice.allow_volume_reset:
-            self.lattice_attempts = 1
+        
+        #QZ: Maybe we no longer need this tag
+        #if not self.lattice.allow_volume_reset:
+        #    self.lattice_attempts = 1
 
         for cycle1 in range(self.lattice_attempts):
+            self.set_volume()
+            self.set_lattice(self.lattice0)
+            #print("VOLUME", cycle1, self.volume)
             self.cycle1 = cycle1
             for cycle2 in range(self.coord_attempts):
                 self.cycle2 = cycle2
