@@ -1729,9 +1729,14 @@ class pyxtal:
             sites = self.atom_sites
 
         for msite in sites:
-            if msite.specie in species and msite.wp.index > 0:
-                special = True
-                break
+            if self.molecular:
+                if msite.wp.index > 0:
+                    special = True
+                    break
+            else:
+                if msite.specie in species and msite.wp.index > 0:
+                    special = True
+                    break
         return special
 
     def to_subgroup(self, path=None, t_only=True,iterate=False, species=None):
