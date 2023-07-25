@@ -47,7 +47,6 @@ setup(
         "pymatgen>=2022.0.17",
         "pandas>=0.24.2",
         "networkx>=2.3",
-        "py3Dmol>=0.8.0",
         'ase>=3.18.0',  #covered by pymatgen
         'numba>=0.55.2', #now supports numpy 1.22
         'scipy>=1.7.3',
@@ -55,6 +54,11 @@ setup(
         'pyshtools>=4.10.3',
         #"openbabel>=3.0.0",
     ],
+    extra_require={
+        'visualization': ["py3Dmol>=0.8.0"],
+        #'descriptor': ["pyshtools>=4.10.3"],
+        #'pxrd': ["numba>=0.55.2"],
+        }
     python_requires=">=3.7, <=3.12", #add the restriction for now issue #189
     license="MIT",
 )
