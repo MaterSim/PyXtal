@@ -58,7 +58,7 @@ setup(
         'visualization': ["py3Dmol>=0.8.0"],
         #'descriptor': ["pyshtools>=4.10.3"],
         #'pxrd': ["numba>=0.55.2"],
-        }
+        },
     python_requires=">=3.7, <=3.12", #add the restriction for now issue #189
     license="MIT",
 )
