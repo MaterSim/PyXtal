@@ -2014,19 +2014,29 @@ class Wyckoff_position:
         Returns:
             True or False
         """
-        PBC = self.PBC
-        pt = self.project(pt, lattice, PBC)
+        if len(self.short_distances(pt, lattice, tol)) > 0:
+            return False
+        else:
+            return True
+
+    def short_distances(self, pt, lattice, tol):
+        """
+        Given a list of fractional coordinates, merges them within a given
+        tolerance, and checks if the merged coordinates satisfy a Wyckoff
+        position.
+
+        Args:
+            pt: the originl point (3-vector)
+            lattice: a 3x3 matrix representing the unit cell
+            tol: the cutoff distance for merging coordinates
+
+        Returns:
+            a list of short distances
+        """
+        pt = self.project(pt, lattice, self.PBC)
         coor = self.apply_ops(pt)
-        dm = distance_matrix([coor[0]], coor, lattice, PBC=PBC)
-        passed_distance_check = True
-        x = np.argwhere(dm < tol)
-        for y in x:
-            # Ignore distance from atom to itself
-            if y[0] == 0 and y[1] == 0:
-                pass
-            else:
-                return False
-        return True
+        dm = distance_matrix([coor[0]], coor, lattice, PBC=self.PBC)[0][1:]
+        return dm[dm<tol]
 
     def merge(self, pt, lattice, tol, orientations=None):
         """

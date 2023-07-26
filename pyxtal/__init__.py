@@ -1481,9 +1481,10 @@ class pyxtal:
             print(len(sites), len(species))
             raise RuntimeError("Inconsistency between sites and species")
 
+        wp0 = self.group[0]
         for sp, wps in zip(species, sites):
             for wp in wps:
-                if type(wp) is dict:
+                if type(wp) is dict: #dict
                     for pair in wp.items():
                         (key, pos) = pair
                         _wp = choose_wyckoff(self.group, site=key)
@@ -1506,11 +1507,9 @@ class pyxtal:
                         _sites.append(atom_site(_wp, pt, sp))
                     else:
                         raise RuntimeError("Cannot interpret site", key)
-                else: #List of atomic coordinates
-                    wp0 = self.group[0]
-                    for pos in wps:
-                        pt, _wp, _ = wp0.merge(pos, lattice.matrix, tol=0.1)
-                        _sites.append(atom_site(_wp, pt, sp))
+                else: # List of atomic coordinates
+                    pt, _wp, _ = wp0.merge(wp, lattice.matrix, tol=0.1)
+                    _sites.append(atom_site(_wp, pt, sp))
 
         self.atom_sites = _sites
         self.standard_setting = True
