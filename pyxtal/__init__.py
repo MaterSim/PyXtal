@@ -2748,7 +2748,10 @@ class pyxtal:
 
         count = 0
         for site in self.atom_sites:
-            site.coordination = coords[count]
+            if count >= len(coords):
+                site.coordination = 0
+            else:
+                site.coordination = coords[count]
             count += site.multiplicity
 
     def get_dimensionality(self, cutoff=None):
