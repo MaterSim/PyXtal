@@ -44,8 +44,8 @@ setup(
     ],
     install_requires=[
         "spglib>=1.10.4",
-        "pymatgen>=2022.0.17",
-        "pandas>=0.24.2",
+        "pymatgen>=2023.2.28",
+        "pandas>=2.0.2",
         "networkx>=2.3",
         'ase>=3.18.0',  #covered by pymatgen
         'numba>=0.55.2', #now supports numpy 1.22
