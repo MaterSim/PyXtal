@@ -473,7 +473,7 @@ class pyxtal:
                 wp = Wyckoff_position.from_group_and_letter(number, letter, style=style, hn=hn)
                 specie = site[0].specie.number
                 #if wp.index>0: print(wp)
-                pos1 = wp.search_generator(pos, self.group[0])
+                pos1 = wp.search_generator(pos, self.group[0], tol=tol)
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
