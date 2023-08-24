@@ -1455,7 +1455,7 @@ class pyxtal:
             species: ['Na', 'Cl']
             numIons: [4, 4]
             lattice: lattice object
-            sites: [{"4a": [0.0, 0.0, 0.0]}, {"4b": [0.5, 0.5, 0.5]}]
+            sites: [[{"4a": [0.0, 0.0, 0.0]}], [{"4b": [0.5, 0.5, 0.5]}]]
         """
 
         from pyxtal.symmetry import choose_wyckoff
