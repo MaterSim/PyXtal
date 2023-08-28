@@ -104,7 +104,7 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
     pos = dataset['std_positions']
     numbers = dataset['std_types']
 
-    return Structure(cell, numbers, pos)
+    return Structure(cell, numbers, pos), hn
 
 def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
     """
@@ -123,11 +123,11 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style='pyxtal', hn=None):
         pymatgen structure with symmetrized lattice
     """
 
-    pmg = symmetrize(pmg, tol, a_tol=a_tol, style=style, hn=hn)
+    pmg, hn = symmetrize(pmg, tol, a_tol=a_tol, style=style, hn=hn)
     s = sga(pmg, symprec=tol, angle_tolerance=a_tol)
     # make sure that the coordinates are in standard setting
-    if hn is None:
-        hn = Hall(s._space_group_data['number'], style=style).hall_default
+    #if hn is None:
+    #    hn = Hall(s._space_group_data['number'], style=style).hall_default
     if hn != s._space_group_data["hall_number"]:
         s._space_group_data = get_symmetry_dataset(s._cell, tol,
                                                    angle_tolerance=a_tol,
