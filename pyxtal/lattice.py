@@ -1707,7 +1707,11 @@ def para2matrix(cell_para, radians=True, format="upper"):
         tmp = a ** 2 - a3 ** 2 - a2 ** 2
         if tmp > 0:
             matrix[0][0] = np.sqrt(a ** 2 - a3 ** 2 - a2 ** 2)
+        #elif abs(tmp) < 1e-5: #tmp is very close to 0
+        #    matrix[0][0] = 0
+        #    print(matrix)
         else:
+            #print(tmp)
             return None
         #pass
     return matrix

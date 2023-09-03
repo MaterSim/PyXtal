@@ -339,38 +339,26 @@ class random_crystal:
             else:
                 if wp_prev is None:
                     wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
-                    if site is not None: wp_prev = wp
+                    if site is not None: wp_prev = wp.copy() #; print(site, wp.letter, wp_prev.letter)
                 else:
-                    wp = wp_prev
+                    wp = wp_prev.copy()
 
                 if wp is not False:
+                    #print(wp.letter)
+                    mult = wp.multiplicity # remember the original multiplicity
+                    passed_wp_check = True
                     # Generate a list of coords from ops
-                    # mult = wp.multiplicity # remember the original multiplicity
                     pt = self.lattice.generate_point()
-                    if site is None:
-                        # Merge coordinates if the atoms are close
-                        pt, wp, _ = wp.merge(pt, cell, tol)
-                    else:
-                        # check distance
-                        if not wp.distance_check(pt, cell, tol):
-                            #print("no merge", site, cycle, wyckoff_attempts)
-                            if wp.get_dof() == 0:
-                                cycle = wyckoff_attempts
-                            else:
-                                cycle += 1
-                            continue
-
-                    # For pure planar structure
-                    if self.dim == 2 and self.thickness is not None and \
-                        self.thickness < 0.1:
-                        pt[-1] = 0.5
-
-                    # If site the pre-assigned, do not accept merge
+                    pt, wp, _ = wp.merge(pt, cell, tol)
+                    
                     if wp is not False:
-                        #if site is not None and mult != wp.multiplicity:
-                        #    cycle += 1
-                        #    continue
-                        # Use a Wyckoff_site object for the current site
+                        if site is not None and mult != wp.multiplicity:
+                            #print(wp.letter, wp_prev.letter)
+                            continue
+                        # For pure planar structure
+                        if self.dim == 2 and self.thickness is not None and \
+                            self.thickness < 0.1:
+                            pt[-1] = 0.5
                         new_site = atom_site(wp, pt, specie)
 
             # Check current WP against existing WP's

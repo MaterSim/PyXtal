@@ -1446,7 +1446,7 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
-    def build(self, group, species, numIons, lattice, sites):
+    def build(self, group, species, numIons, lattice, sites, tol=1e-2):
         """
         Build a atomic crystal based on the necessary input
 
@@ -1508,7 +1508,7 @@ class pyxtal:
                     else:
                         raise RuntimeError("Cannot interpret site", key)
                 else: # List of atomic coordinates
-                    pt, _wp, _ = wp0.merge(wp, lattice.matrix, tol=0.1)
+                    pt, _wp, _ = wp0.merge(wp, lattice.matrix, tol=tol)
                     _sites.append(atom_site(_wp, pt, sp))
 
         self.atom_sites = _sites

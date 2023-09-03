@@ -653,6 +653,14 @@ class TestMolecular(unittest.TestCase):
                 print(pair)
             self.assertTrue(len(pair) == 0)
 
+    def test_from_random_site(self):
+        spg, wps, elements, numIons = 224, [['24j']], ['C'], [24]
+        for i in range(10):
+            c = pyxtal()
+            c.from_random(3, spg, elements, numIons, sites=wps)
+            pair = c.check_short_distances(0.5)
+            self.assertTrue(len(pair) == 0)
+
     def test_c60(self):
         struc = pyxtal(molecular=True)
         struc.from_random(3, 36, ["C60"], [4], 1.0)
