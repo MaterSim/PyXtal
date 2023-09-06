@@ -353,7 +353,8 @@ class random_crystal:
                     
                     if wp is not False:
                         if site is not None and mult != wp.multiplicity:
-                            #print(wp.letter, wp_prev.letter)
+                            #print('BBBBBBBBB', cycle); print(wp.letter, wp_prev.letter)
+                            cycle += 1
                             continue
                         # For pure planar structure
                         if self.dim == 2 and self.thickness is not None and \
