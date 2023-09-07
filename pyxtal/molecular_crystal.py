@@ -400,7 +400,7 @@ class molecular_crystal:
                     pt = self.lattice.generate_point()
                     # merge coordinates if the atoms are close
                 mtol = pyxtal_mol.radius * 0.5
-                pt, wp, oris = wp.merge(pt, self.lattice.matrix, mtol, valid_ori)
+                pt, wp, oris = wp.merge(pt, self.lattice.matrix, mtol, valid_ori, self.group)
 
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:

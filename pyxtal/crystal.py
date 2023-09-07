@@ -134,7 +134,8 @@ class random_crystal:
     def set_sites(self, sites):
         """
         initialize Wyckoff sites
-
+        Update 2023/09, track the wp index instead of letters to
+        avoid many inquiries
         Args:
             sites: list
         """
@@ -142,13 +143,23 @@ class random_crystal:
         self.sites = {}
         for i, specie in enumerate(self.species):
             if sites is not None and sites[i] is not None and len(sites[i])>0:
+                self.sites[specie] = []
                 self._check_consistency(sites[i], self.numIons[i])
+
                 if type(sites[i]) is dict:
-                    self.sites[specie] = []
                     for item in sites[i].items():
-                        self.sites[specie].append({item[0]: item[1]})
-                else:
-                    self.sites[specie] = sites[i]
+                        # keep the record of wp index
+                        id = self.group.get_wp_by_letter(item[0])
+                        self.sites[specie].append((id, item[1]))
+                elif type(sites[i]) is list: #tuple
+                    for site in sites[i]:
+                        if type(site) is tuple:
+                            (letter, x, y, z) = site
+                            id = self.group.get_index_by_letter(letter)
+                            self.sites[specie].append((id, (x, y, z)))
+                        else:
+                            id = self.group.get_index_by_letter(site)
+                            self.sites[specie].append(id)
             else:
                 self.sites[specie] = None
 
@@ -332,14 +343,18 @@ class random_crystal:
                 site = None
 
             new_site = None
-            if type(site) is dict: #site with coordinates
-                key = list(site.keys())[0]
-                wp = choose_wyckoff(self.group, numIon-numIon_added, key, self.dim)
-                new_site = atom_site(wp, site[key], specie)
+            if type(site) is tuple: #site with coordinates
+                (index, xyz) = site
+                wp = self.group[index]
+                new_site = atom_site(wp, xyz, specie)
             else:
                 if wp_prev is None:
-                    wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
-                    if site is not None: wp_prev = wp.copy() #; print(site, wp.letter, wp_prev.letter)
+                    if site is not None:
+                        wp = self.group[site]
+                        wp_prev = wp.copy()
+                    else:
+                        wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
+                    #if site is not None: wp_prev = wp.copy() #; print(site, wp.letter, wp_prev.letter)
                 else:
                     wp = wp_prev.copy()
 
@@ -349,7 +364,7 @@ class random_crystal:
                     passed_wp_check = True
                     # Generate a list of coords from ops
                     pt = self.lattice.generate_point()
-                    pt, wp, _ = wp.merge(pt, cell, tol)
+                    pt, wp, _ = wp.merge(pt, cell, tol, self.group)
                     
                     if wp is not False:
                         if site is not None and mult != wp.multiplicity:

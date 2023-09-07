@@ -1271,7 +1271,22 @@ class Group:
         pd.set_option("display.max_rows", len(df))
         print(df)
 
-# --------------------------- Wyckoff Position class  -----------------------------
+
+    def get_index_by_letter(self, letter):
+        """
+        get the wp object by the letter
+        """
+        if len(letter) > 1: letter = letter[-1]
+        #print(letter); print(letters.index(letter))
+        return len(self) - letters.index(letter) - 1
+
+    def get_wp_by_letter(self, letter):
+        """
+        get the wp object by the letter
+        """
+        return self[self.get_index_by_letter(letter)]
+#
+# ----------------------- Wyckoff Position class  ------------------------
 
 class Wyckoff_position:
     """
@@ -2038,7 +2053,7 @@ class Wyckoff_position:
         dm = distance_matrix([coor[0]], coor, lattice, PBC=self.PBC)[0][1:]
         return dm[dm<tol]
 
-    def merge(self, pt, lattice, tol, orientations=None):
+    def merge(self, pt, lattice, tol, orientations=None, group=None):
         """
         Given a list of fractional coordinates, merges them within a given
         tolerance, and checks if the merged coordinates satisfy a Wyckoff
@@ -2058,7 +2073,7 @@ class Wyckoff_position:
         """
         wp = deepcopy(self)
         PBC = wp.PBC
-        group = Group(wp.number, wp.dim)
+        if group is None: group = Group(wp.number, wp.dim)
         pt = self.project(pt, lattice, PBC)
         coor = apply_ops(pt, wp)
         if orientations is None:
@@ -2108,12 +2123,13 @@ class Wyckoff_position:
                         possible.append(i)
                 if possible == []:
                     return None, False, valid_ori
+
                 # Calculate minimum separation for each WP
                 distances = []
                 pts = []
                 for i in possible:
                     wp = group[i]
-                    p, d = wp.search_generator_dist(pt.copy(), lattice)
+                    p, d = wp.search_generator_dist(pt.copy(), lattice, group)
                     distances.append(d)
                     pts.append(p)
 
@@ -2154,7 +2170,7 @@ class Wyckoff_position:
                 convert = True
         self.euclidean = convert
 
-    def search_generator_dist(self, pt, lattice=np.eye(3)):
+    def search_generator_dist(self, pt, lattice=np.eye(3), group=None):
         """
         For a given special wp, (e.g., [(x, 0, 1/4), (0, x, 1/4)]),
         return the first position and distance
@@ -2179,7 +2195,10 @@ class Wyckoff_position:
                     d.append(distance(p0, lattice, PBC=self.PBC))
 
             else: # sites like (x, 0, 0)
-                ops = get_wyckoffs(self.number, dim=self.dim)[0]
+                if group is not None: 
+                    ops = group[0].ops
+                else:
+                    ops = get_wyckoffs(self.number, dim=self.dim)[0]
                 pts = []
                 for op in ops:
                     pt0 = op.operate(pt)
@@ -2314,7 +2333,7 @@ class Wyckoff_position:
             i = np.argmin(distances)
             return filtered_coords(new_vectors[i], PBC=PBC)
 
-# --------------------------- Wyckoff Position selection  -----------------------------
+# ----------------- Wyckoff Position selection  --------------------------
 
 def choose_wyckoff(G, number=None, site=None, dim=3):
     """
