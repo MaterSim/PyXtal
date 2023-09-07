@@ -2050,7 +2050,10 @@ class Wyckoff_position:
         """
         pt = self.project(pt, lattice, self.PBC)
         coor = self.apply_ops(pt)
+        #coor -= np.round(coor)
+        coor -= np.floor(coor)
         dm = distance_matrix([coor[0]], coor, lattice, PBC=self.PBC)[0][1:]
+        #if len(dm[dm<tol]==0): print('+++++', pt, dm.shape, tol, dm[dm<tol], len(dm[dm<tol]))
         return dm[dm<tol]
 
     def merge(self, pt, lattice, tol, orientations=None, group=None):

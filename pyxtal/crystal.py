@@ -97,7 +97,6 @@ class random_crystal:
             self.tol_matrix = tm
         else:
             self.tol_matrix = Tol_matrix(prototype=tm)
-
         # Wyckoff sites
         self.set_sites(sites)
 
@@ -352,10 +351,14 @@ class random_crystal:
                     wp = self.group[site]
                     pt = self.lattice.generate_point()
                     # avoid using the merge function
-                    if len(wp.short_distances(pt, cell, tol))>0:
+                    if len(wp.short_distances(pt, cell, tol)) > 0:
                         #print('bad pt', pt, wp.short_distances(pt, cell, tol))
                         cycle += 1
                         continue
+                    else:
+                        # update pt
+                        pt = wp.project(pt, cell, self.PBC)
+                        #print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
                 else:
                     # generate wp
                     wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
