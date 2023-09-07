@@ -149,7 +149,7 @@ class random_crystal:
                 if type(sites[i]) is dict:
                     for item in sites[i].items():
                         # keep the record of wp index
-                        id = self.group.get_wp_by_letter(item[0])
+                        id = self.group.get_index_by_letter(item[0])
                         self.sites[specie].append((id, item[1]))
                 elif type(sites[i]) is list: #tuple
                     for site in sites[i]:
@@ -344,6 +344,7 @@ class random_crystal:
 
             new_site = None
             if type(site) is tuple: #site with coordinates
+                #print(site)
                 (index, xyz) = site
                 wp = self.group[index]
                 new_site = atom_site(wp, xyz, specie)
