@@ -2071,7 +2071,7 @@ class Wyckoff_position:
             valid_ori: the valid orientations after merge
 
         """
-        wp = deepcopy(self)
+        wp = self.copy()
         PBC = wp.PBC
         if group is None: group = Group(wp.number, wp.dim)
         pt = self.project(pt, lattice, PBC)
@@ -2128,8 +2128,8 @@ class Wyckoff_position:
                 distances = []
                 pts = []
                 for i in possible:
-                    wp = group[i]
-                    p, d = wp.search_generator_dist(pt.copy(), lattice, group)
+                    #wp = group[i]
+                    p, d = group[i].search_generator_dist(pt.copy(), lattice, group)
                     distances.append(d)
                     pts.append(p)
 

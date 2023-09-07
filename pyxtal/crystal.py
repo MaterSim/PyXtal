@@ -334,7 +334,6 @@ class random_crystal:
             wyckoff_attempts = max(2*min_wyckoffs, 10)
 
         cycle = 0
-        wp_prev = None # to remember it no need to regenerate
         while cycle < wyckoff_attempts:
             # Choose a random WP for given multiplicity: 2a, 2b
             if sites_list is not None and len(sites_list)>0:
@@ -349,40 +348,35 @@ class random_crystal:
                 wp = self.group[index]
                 new_site = atom_site(wp, xyz, specie)
             else:
-                if wp_prev is None:
-                    if site is not None:
-                        wp = self.group[site]
-                        wp_prev = wp.copy()
-                    else:
-                        wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
-                    #if site is not None: wp_prev = wp.copy() #; print(site, wp.letter, wp_prev.letter)
-                else:
-                    wp = wp_prev.copy()
-
-                if wp is not False:
-                    #print(wp.letter)
-                    mult = wp.multiplicity # remember the original multiplicity
-                    passed_wp_check = True
-                    # Generate a list of coords from ops
+                if site is not None:
+                    wp = self.group[site]
                     pt = self.lattice.generate_point()
-                    pt, wp, _ = wp.merge(pt, cell, tol, group=self.group)
-                    
+                    # avoid using the merge function
+                    if len(wp.short_distances(pt, cell, tol))>0:
+                        #print('bad pt', pt, wp.short_distances(pt, cell, tol))
+                        cycle += 1
+                        continue
+                else:
+                    # generate wp
+                    wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
                     if wp is not False:
-                        if site is not None and mult != wp.multiplicity:
-                            #print('BBBBBBBBB', cycle); print(wp.letter, wp_prev.letter)
-                            cycle += 1
-                            continue
-                        # For pure planar structure
-                        if self.dim == 2 and self.thickness is not None and \
-                            self.thickness < 0.1:
-                            pt[-1] = 0.5
-                        new_site = atom_site(wp, pt, specie)
+                        #print(wp.letter)
+                        passed_wp_check = True
+                        # Generate a list of coords from ops
+                        pt = self.lattice.generate_point()
+                        pt, wp, _ = wp.merge(pt, cell, tol, group=self.group)
+                #print('good pt', pt)  
+                if wp is not False:
+                    # For pure planar structure
+                    if self.dim == 2 and self.thickness is not None and \
+                        self.thickness < 0.1:
+                        pt[-1] = 0.5
+                    new_site = atom_site(wp, pt, specie)
 
             # Check current WP against existing WP's
             if self.check_wp(wyckoff_sites_tmp, wyks, cell, new_site):
                 if sites_list is not None and len(sites_list)>0:
                     sites_list.pop(0)
-                    wp_prev = None # to remember it no need to regenerate
                 wyckoff_sites_tmp.append(new_site)
                 numIon_added += new_site.multiplicity
 
