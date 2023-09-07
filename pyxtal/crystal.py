@@ -364,7 +364,7 @@ class random_crystal:
                     passed_wp_check = True
                     # Generate a list of coords from ops
                     pt = self.lattice.generate_point()
-                    pt, wp, _ = wp.merge(pt, cell, tol, self.group)
+                    pt, wp, _ = wp.merge(pt, cell, tol, group=self.group)
                     
                     if wp is not False:
                         if site is not None and mult != wp.multiplicity:
