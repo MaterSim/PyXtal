@@ -100,8 +100,8 @@ class database():
             if row.csd_code not in codes:
                 codes.append(row.csd_code)
             else:
-                print('find duplicate! remove', row.csd_code)
-                self.db.delete(row.id)
+                print('find duplicate! remove', row.id, row.csd_code)
+                self.db.delete([row.id])
         self.codes = codes
 
     def add(self, entry):
