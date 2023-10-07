@@ -3,27 +3,25 @@ Database class
 """
 import os
 from ase.db import connect
+from pyxtal import pyxtal
 
-def make_entry_from_CSD(code):
+def make_entry_from_pyxtal(xtal):
     """
-    make entry dictionary from CSD codes
-
+    make entry from the pyxtal object, assuming that 
+    the smiles/ccdc_number info is given
+    
     Args:
-        code: a list of CSD codes
+        xtal: pyxtal object
+
+    Returns:
+        entry dictionary
     """
-    from pyxtal.msg import CSDError
-    from pyxtal import pyxtal
     from rdkit.Chem.Descriptors import ExactMolWt
     from rdkit.Chem.rdMolDescriptors import CalcMolFormula
     from rdkit import Chem
-
-    url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
-    xtal = pyxtal(molecular=True)
-    try:
-        xtal.from_CSD(code)
-    except CSDError as e:
-        print("CSDError", code, e.message)
+ 
     if xtal.valid:
+        url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
         m = Chem.MolFromSmiles(xtal.tag['smiles'])
         mol_wt = ExactMolWt(m)
         mol_formula = CalcMolFormula(m)
@@ -44,6 +42,42 @@ def make_entry_from_CSD(code):
         entry = (xtal.to_ase(), kvp, None)
         return entry
     else:
+        return None
+
+def make_entry_from_CSD_web(code, number, smiles, name=None):
+    """
+    make enetry dictionary from csd web https://www.ccdc.cam.ac.uk/structures
+
+    Args:
+        code: CSD style letter entry
+        number: ccdc number
+        smiles: the corresponding molecular smiles
+        name: name of the compound
+    """
+   
+    url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
+    #xtal = pyxtal(molecular=True)
+    #
+    #return make_entry_from_pyxtal(xtal)
+    raise NotImplementedError('To do in future')
+
+
+def make_entry_from_CSD(code):
+    """
+    make entry dictionary from CSD codes
+
+    Args:
+        code: a list of CSD codes
+    """
+    from pyxtal.msg import CSDError
+
+    xtal = pyxtal(molecular=True)
+    try:
+        xtal.from_CSD(code)
+        return make_entry_from_pyxtal(xtal)
+
+    except CSDError as e:
+        print("CSDError", code, e.message)
         return None
 
 def make_db_from_CSD(dbname, codes):
