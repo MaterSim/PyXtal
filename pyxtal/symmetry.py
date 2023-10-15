@@ -1416,7 +1416,7 @@ class Wyckoff_position:
         _, spg_num = get_symmetry_from_ops(ops)
         wp = Wyckoff_position.from_group_and_index(spg_num, 0)
         if isinstance(ops[0], str):
-            ops = [SymmOp.from_xyz_string(op) for op in ops]
+            ops = [SymmOp.from_xyz_str(op) for op in ops]
         wp.ops = ops
         match_spg, match_hm = wp.update()
         #print("match_spg", match_spg, "match_hall", match_hm)
@@ -1437,7 +1437,7 @@ class Wyckoff_position:
 
         """
         if isinstance(ops[0], str):
-            ops = [SymmOp.from_xyz_string(op) for op in ops]
+            ops = [SymmOp.from_xyz_str(op) for op in ops]
     
         for wp in G:
             if wp.has_equivalent_ops(ops):
@@ -1699,12 +1699,12 @@ class Wyckoff_position:
         opss = [self.ops]
         if self.number in [5, 12] and self.index > 0:
             # replace y with y+1/2
-            op2 = SymmOp.from_xyz_string('x, y+1/2, z')
+            op2 = SymmOp.from_xyz_str('x, y+1/2, z')
             ops = [op2*op for op in self.ops]
             opss.append(ops)
 
         if self.number in [13] and self.index > 0:
-            op2 = SymmOp.from_xyz_string('x, -y, z')
+            op2 = SymmOp.from_xyz_str('x, -y, z')
             ops = [op2*op for op in self.ops]
             opss.append(ops)
 
@@ -2559,7 +2559,7 @@ def letter_from_index(index, group, dim=3):
     elif dim == 0:
         checko = True
     if checko is True:
-        if len(group[-1]) == 1 and group[-1][0] == SymmOp.from_xyz_string("0,0,0"):
+        if len(group[-1]) == 1 and group[-1][0] == SymmOp.from_xyz_str("0,0,0"):
             # o comes before a
             letters1 = "o" + letters
     length = len(group)
@@ -2586,7 +2586,7 @@ def index_from_letter(letter, group, dim=3):
     elif dim == 0:
         checko = True
     if checko is True:
-        if len(group[-1]) == 1 and group[-1][0] == SymmOp.from_xyz_string("0,0,0"):
+        if len(group[-1]) == 1 and group[-1][0] == SymmOp.from_xyz_str("0,0,0"):
             # o comes before a
             letters1 = "o" + letters
     length = len(group)
@@ -3066,7 +3066,7 @@ def get_wyckoffs(num, organized=False, dim=3):
             if dim == 0:
                 wyckoffs[-1].append(SymmOp(y))
             else:
-                wyckoffs[-1].append(SymmOp.from_xyz_string(y))
+                wyckoffs[-1].append(SymmOp.from_xyz_str(y))
     if organized:
         wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
         old = len(wyckoffs[0])
@@ -3117,7 +3117,7 @@ def get_wyckoff_symmetry(num, dim=3):
                 if dim == 0:
                     op = SymmOp(z)
                 else:
-                    op = SymmOp.from_xyz_string(z)
+                    op = SymmOp.from_xyz_str(z)
                 symmetry[-1][-1].append(op)
     return symmetry
 
@@ -3156,7 +3156,7 @@ def get_generators(num, dim=3):
         # Loop over ops
         for y in x:
             if dim > 0:
-                op = SymmOp.from_xyz_string(y)
+                op = SymmOp.from_xyz_str(y)
             else:
                 op = SymmOp(y)
             generators[-1].append(op)
@@ -3738,7 +3738,7 @@ def get_symmetry_from_ops(ops, tol=1e-5):
     from spglib import get_hall_number_from_symmetry
 
     if isinstance(ops[0], str):
-        ops = [SymmOp.from_xyz_string(op) for op in ops]
+        ops = [SymmOp.from_xyz_str(op) for op in ops]
     rot = [op.rotation_matrix for op in ops]
     tran = [op.translation_vector for op in ops]
     hall_number = get_hall_number_from_symmetry(rot, tran, tol)

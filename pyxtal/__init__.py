@@ -1140,7 +1140,7 @@ class pyxtal:
             N_torsions += len(s.molecule.torsionlist)
         return N_torsions
 
-    def to_ase(self, resort=True):
+    def to_ase(self, resort=True, center_only=False):
         """
         Export to ase Atoms object.
         """
@@ -1148,7 +1148,15 @@ class pyxtal:
             if self.dim > 0:
                 lattice = self.lattice.copy()
                 if self.molecular:
-                    coords, species = self._get_coords_and_species(True)
+                    if center_only:
+                        coords, species = [], []
+                        for site in self.mol_sites:
+                            _coords = site.wp.apply_ops(site.position)
+                            _coords -= np.floor(_coords)
+                            coords.extend(_coords.dot(self.lattice.matrix))
+                            species.extend([site.type+1] * site.wp.multiplicity)
+                    else:
+                        coords, species = self._get_coords_and_species(True)
                     latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
                     atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
                 else:
