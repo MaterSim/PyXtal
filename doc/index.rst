@@ -26,8 +26,8 @@ ab-initio generation of random crystal structures. It has the following features
 
 The current version is ``0.6.1`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_.
 It is available for use under the MIT license. Expect updates upon request by
-`Qiang Zhu\'s group <http://www.physics.unlv.edu/~qzhu/index.html>`_ at the
-University of Nevada Las Vegas.
+`Qiang Zhu\'s group <https://qzhu2017.github.io>`_ at the
+University of North Carolina at Charlotte.
 
 PyXtal is an open source project. You are welcome to contribute it directly via
 the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your
