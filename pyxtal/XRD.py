@@ -4,7 +4,6 @@ Module for XRD simulation (experimental stage)
 import os
 import collections
 import numpy as np
-import numba as nb
 from scipy.interpolate import interp1d
 from monty.serialization import loadfn
 from pkg_resources import resource_filename
@@ -763,7 +762,6 @@ class Similarity():
             plt.savefig(filename)
             plt.close()
 
-@nb.njit(nb.f8[:](nb.f8[:], nb.f8, nb.f8, nb.f8, nb.f8, nb.i8), cache = True)
 def mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N):
 
     """
@@ -789,7 +787,6 @@ def mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N):
             2/fwhm *np.exp(-np.log(2) * ((1+A)/A)**2 * (dx/fwhm)**2))
     return tmp
 
-@nb.njit(nb.f8[:](nb.f8, nb.f8[:], nb.f8), cache = True)
 def gaussian(theta2, alpha, fwhm):
 
     """
@@ -799,7 +796,6 @@ def gaussian(theta2, alpha, fwhm):
     tmp = ((alpha - theta2)/fwhm)**2
     return np.exp(-4*np.log(2)*tmp)
 
-@nb.njit(nb.f8[:](nb.f8, nb.f8[:], nb.f8), cache = True)
 def lorentzian(theta2, alpha, fwhm):
 
     """
@@ -820,7 +816,6 @@ def pseudo_voigt(theta2, alpha, fwhm, eta):
     G = gaussian(theta2, alpha, fwhm)
     return eta * L + (1 - eta) * G
 
-@nb.njit(nb.f8(nb.f8[:], nb.f8[:], nb.f8, nb.i8, nb.f8[:], nb.f8[:]))
 def similarity_calculate(r, w, d, Npts, fy, gy):
 
     """
@@ -859,7 +854,6 @@ def create_index(imax=1, jmax=1, kmax=1):
     return hkl_index
 
 
-#@nb.njit(nb.f8[:](nb.f8[:], nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:]), cache = True)
 def get_intensity(positions, hkl, s2, coeffs, z):
     const = 2j * np.pi
     g_dot_rs = np.dot(positions, hkl) # N*M

@@ -1147,17 +1147,17 @@ class pyxtal_molecule:
                         # To the rotational axis. pymatgen does not add this symmetry
                         # for all linear molecules - for example, hydrogen
                         if i == 0:
-                            symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
-                            symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                            #r = SymmOp.from_xyz_string("-x,y,-z")
+                            symm_m.append(SymmOp.from_xyz_str("x,-y,z"))
+                            symm_m.append(SymmOp.from_xyz_str("x,y,-z"))
+                            #r = SymmOp.from_xyz_str("-x,y,-z")
                         elif i == 1:
-                            symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
-                            symm_m.append(SymmOp.from_xyz_string("x,y,-z"))
-                            #r = SymmOp.from_xyz_string("-x,-y,z")
+                            symm_m.append(SymmOp.from_xyz_str("-x,y,z"))
+                            symm_m.append(SymmOp.from_xyz_str("x,y,-z"))
+                            #r = SymmOp.from_xyz_str("-x,-y,z")
                         elif i == 2:
-                            symm_m.append(SymmOp.from_xyz_string("-x,y,z"))
-                            symm_m.append(SymmOp.from_xyz_string("x,-y,z"))
-                            #r = SymmOp.from_xyz_string("x,-y,-z")
+                            symm_m.append(SymmOp.from_xyz_str("-x,y,z"))
+                            symm_m.append(SymmOp.from_xyz_str("x,-y,z"))
+                            #r = SymmOp.from_xyz_str("x,-y,-z")
                         # Generate a full list of SymmOps for the pointgroup
                         symm_m = generate_full_symmops(symm_m, 1e-3)
                         break
@@ -1681,7 +1681,7 @@ def is_compatible_symmetry(mol, wp):
         return True
     pga = PointGroupAnalyzer(mol)
     for op in wp.get_site_symm_wo_translation(): #symmetry without translation
-        #print("XXXX", pga.is_valid_op(op), op.as_xyz_string())
+        #print("XXXX", pga.is_valid_op(op), op.as_xyz_str())
         if not pga.is_valid_op(op):
             return False
     return True

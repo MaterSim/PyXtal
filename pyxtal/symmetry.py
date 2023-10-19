@@ -343,7 +343,7 @@ class Group:
             if len(site) > 1:
                 site = site[-1]
             id = len(self) - letters.index(site) - 1
-            string = self[id].ops[0].as_xyz_string()
+            string = self[id].ops[0].as_xyz_str()
             dof[i] = len(set(re.sub('[^a-z]+', '', string)))
 
         return dof
@@ -1447,7 +1447,7 @@ class Wyckoff_position:
             print(ops)
         else:
             for op in ops:
-                print(op.as_xyz_string())
+                print(op.as_xyz_str())
         raise RuntimeError("Cannot find the right wp")
 
     def from_index_quick(self, wyckoffs, index, P=None, P1=None):
@@ -1500,7 +1500,7 @@ class Wyckoff_position:
 
         if not supress:
             for op in self.ops:
-                s += "\n" + op.as_xyz_string()
+                s += "\n" + op.as_xyz_str()
 
         self.string = s
         return self.string
@@ -1561,7 +1561,7 @@ class Wyckoff_position:
                     rot = rot_Q.dot(op.rotation_matrix).dot(rot_P)
                     op0 = SymmOp.from_rotation_and_translation(rot, tran)
                     ops1.append(op0)
-                    #print(op0.as_xyz_string())
+                    #print(op0.as_xyz_str())
                 ops1 = trim_ops(ops1)
             else:
                 op0 = self.ops[0]
@@ -1709,7 +1709,7 @@ class Wyckoff_position:
             opss.append(ops)
 
 
-            #for op in ops: print('AAAA', op.as_xyz_string())
+            #for op in ops: print('AAAA', op.as_xyz_str())
         return opss
 
     def equivalent_set(self, index):
@@ -1972,7 +1972,7 @@ class Wyckoff_position:
                             op = op_translation(op_perm, tran)
                         else:
                             op = op_perm
-                        #print(id, op.as_xyz_string(),tran)
+                        #print(id, op.as_xyz_str(),tran)
                         if are_equivalent_ops(op, ops[0]):
                             perm_id = id
                             return Group(self.number)[id], tran
@@ -1985,7 +1985,7 @@ class Wyckoff_position:
         if ops is None:
             ops = self.ops
         for op in ops:
-            print(op.as_xyz_string())
+            print(op.as_xyz_str())
 
     def gen_pos(self):
         """
@@ -2236,7 +2236,7 @@ class Wyckoff_position:
             diff = pos1 - pos0
             diff -= np.round(diff)
             diff = np.abs(diff)
-            #print(self.letter, "{:24s}".format(op.as_xyz_string()), pos, pos0, pos1, diff)
+            #print(self.letter, "{:24s}".format(op.as_xyz_str()), pos, pos0, pos1, diff)
             if diff.sum() < tol:
                 pos1 -= np.floor(pos1)
                 match = True
@@ -3839,8 +3839,8 @@ def trim_ops(ops):
         ops1.append(SymmOp.from_rotation_and_translation(rot, tran))
 
     return ops
-#op = SymmOp.from_xyz_string('y+1/8, -y+1/8, 0')
-#op = SymmOp.from_xyz_string('1/8, y+1/8, -y+1/8')
-#op = SymmOp.from_xyz_string(['x+1/8,x+1/8,z+1/8', '')
-#print(trim_op(op).as_xyz_string())
+#op = SymmOp.from_xyz_str('y+1/8, -y+1/8, 0')
+#op = SymmOp.from_xyz_str('1/8, y+1/8, -y+1/8')
+#op = SymmOp.from_xyz_str(['x+1/8,x+1/8,z+1/8', '')
+#print(trim_op(op).as_xyz_str())
 #from_symops(ops, group=None, permutation=True)

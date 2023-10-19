@@ -89,13 +89,12 @@ class planes():
             cp_planes = sorted(cp_planes, key=lambda x: -x[-1][0])
         return cp_planes
 
-    def get_separation(self, hkl, tol=-0.1, slab_factor=1.5):
+    def get_separation(self, hkl):
         """
         Compute the separation for the given hkl plane
     
         Args:
             - hkl: three indices
-            - slab factor
         """
         hkl_reduced, hkl_factor = reduced_hkl(hkl)
         d_spacing = get_dspacing(self.cell_reciprocal, hkl_reduced)
@@ -117,9 +116,9 @@ class planes():
                 coords_hkl = np.dot(coords, hkl_reduced)
                 
                 # Terminate only if the molecular slab width is s
-                width = coords_hkl.max() - coords_hkl.min()
-                if width > slab_factor/hkl_factor:
-                    return None
+                # width = coords_hkl.max() - coords_hkl.min()
+                # if width > slab_factor/hkl_factor:
+                #     return None
                 lower, upper = center_hkl+coords_hkl.min(), center_hkl+coords_hkl.max()
                 slabs.append([center_hkl, lower, upper])
 
@@ -164,12 +163,16 @@ class planes():
         separations = np.unique(-1*np.array(separations).round(decimals=3))
         return -np.sort(separations)
 
-    def gather(self, planes):
+    def gather(self, planes, tol=-0.1):
         for _plane in planes:
             (hkl, _, separations) = _plane
-            for separation in separations:
-                p = plane(hkl, self.cell_reciprocal, separation)
-                print(p)
+            if separations[0] > tol:
+                for separation in separations:
+                    if separation > tol:
+                        p = plane(hkl, self.cell_reciprocal, separation)
+                        print(p)
+            else:
+                break
 
 class plane():
     """
@@ -192,11 +195,27 @@ class plane():
 
 if __name__ == "__main__":
     from pyxtal.db import database
+    try: 
+        from ccdc import io
+        from ccdc.particle import SlipPlanes
+        csd = io.EntryReader('CSD')
+    except:
+        csd = None
+        print("Cannot import ccdc to check")
 
     db = database('pyxtal/database/mech.db') 
-    for code in db.codes[:2]:
+
+    for code in ['HCLBNZ14']: #db.codes:
         print('\n', code)
         p = planes()
         p.set_xtal(db.get_pyxtal(code))
         cp_planes = p.search_close_packing_planes()
         p.gather(cp_planes)
+
+        # Crossvalidation with csd_python
+        if csd is not None:
+            splanes = SlipPlanes(csd.crystal(code))
+            for splane in splanes:
+                print(code, splane.orientation, round(splane.repeat_distance, 3), round(splane.slab_separation, 3))
+
+ 

@@ -539,8 +539,8 @@ class TestWP(unittest.TestCase):
                     diff = p1-p2
                     diff -= np.round(diff)
                     if np.linalg.norm(diff) > 0.02:
-                        #res = '{:2d} {:28s}'.format(i, op0.as_xyz_string())
-                        #res += ' {:28s}'.format(op1.as_xyz_string())
+                        #res = '{:2d} {:28s}'.format(i, op0.as_xyz_str())
+                        #res += ' {:28s}'.format(op1.as_xyz_str())
                         #res += '{:6.3f} {:6.3f} {:6.3f} -> '.format(*p1)
                         #res += '{:6.3f} {:6.3f} {:6.3f} -> '.format(*p2)
                         #res += '{:6.3f} {:6.3f} {:6.3f}'.format(*diff)
@@ -1121,15 +1121,15 @@ class Test_operations(unittest.TestCase):
                 ]
         
         for i, xyz in enumerate(xyzs):
-            op = SymmOp.from_xyz_string(xyz)
+            op = SymmOp.from_xyz_str(xyz)
             inv_op = get_inverse(op)
             coord1 = op.operate(coord0)
             coord2 = inv_op.operate(coord1)
             self.assertTrue(np.allclose(coord2, coords[i], rtol=1e-2))
             #strs = "{:6.3f} {:6.3f} {:6.3f}".format(*coord0)
-            #strs += "  {:12s}  ".format(op.as_xyz_string())
+            #strs += "  {:12s}  ".format(op.as_xyz_str())
             #strs += "{:6.3f} {:6.3f} {:6.3f}".format(*coord1)
-            #strs += "  {:12s}  ".format(inv_op.as_xyz_string())
+            #strs += "  {:12s}  ".format(inv_op.as_xyz_str())
             #strs += "{:6.3f} {:6.3f} {:6.3f}".format(*coord2)
             #print(strs)
 

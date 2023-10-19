@@ -1628,7 +1628,7 @@ class pyxtal:
         new_struc = self.copy()
         # xyz_string like 'x+1/4,y+1/4,z+1/4'
         xyz_string = wyc_sets['Coset Representative'][index]
-        op = get_inverse(SymmOp.from_xyz_string(xyz_string))
+        op = get_inverse(SymmOp.from_xyz_str(xyz_string))
 
         # transform lattice
         R = op.affine_matrix[:3,:3] #rotation
@@ -1677,8 +1677,8 @@ class pyxtal:
 
         # xyz_string like 'x+1/4,y+1/4,z+1/4'
         xyz_string = wyc_sets['Coset Representative'][index]
-        op = SymmOp.from_xyz_string(xyz_string)
-        #op = get_inverse(SymmOp.from_xyz_string(xyz_string))
+        op = SymmOp.from_xyz_str(xyz_string)
+        #op = get_inverse(SymmOp.from_xyz_str(xyz_string))
         letters = wyc_sets['Transformed WP'][0].split()
         letters1 = wyc_sets['Transformed WP'][index].split()
 
@@ -2426,7 +2426,6 @@ class pyxtal:
         """
         For molecular crystals, get the intermolecular interactions from
         Gavezzotti, A., Filippini, G., J. Phys. Chem., 1994, 98 (18), 4831-4837
-
 
         Returns:
             Total energy

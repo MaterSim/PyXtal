@@ -99,7 +99,7 @@ def write_cif(struc, filename=None, header="", permission='w', sym_num=None, sty
     lines += ' _symmetry_equiv_pos_as_xyz\n'
 
     for i, op in enumerate(G1):
-        lines += "{:d} '{:s}'\n".format(i+1, op.as_xyz_string())
+        lines += "{:d} '{:s}'\n".format(i+1, op.as_xyz_str())
 
     lines += '\nloop_\n'
     lines += ' _atom_site_label\n'

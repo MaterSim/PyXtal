@@ -759,7 +759,7 @@ class OperationAnalyzer(SymmOp):
                         self.axis[i] = 0.0
         return (
             "~~ Operation: "
-            + self.op.as_xyz_string()
+            + self.op.as_xyz_str()
             + " ~~"
             + "\nType: "
             + str(self.type)
