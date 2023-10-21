@@ -25,9 +25,6 @@ def reduced_hkl(hkl):
     else:
         return [h, k, l], 1
 
-def get_structure_factor(atoms, hkl):
-    return structure_factor(atoms.get_scaled_positions(), hkl)
-
 def structure_factor(pos, hkl, total=True):
     coords = np.dot(pos, hkl)
     F = np.exp(-2*np.pi*(1j)*coords)
@@ -47,11 +44,14 @@ class planes():
 
     Args:
         db_name: *.db format from ase database
+        d_min: the minimum layer spacing
+        cp_factor: skip non-close packed plane
     """
 
-    def __init__(self, extent=6, d_min=1.0):
+    def __init__(self, extent=6, d_min=1.5, cp_factor=0.5):
         self.d_min = d_min
         self.extent = extent
+        self.cp_factor = cp_factor
         self.set_planes()
         #self.set_xtal()
 
@@ -64,10 +64,27 @@ class planes():
         planes = list(itertools.product(range(-self.extent, self.extent+1), repeat=3))
         planes = [hkl for hkl in planes if hkl != (0, 0, 0) and not has_reduction(hkl)]
         self.planes = planes
- 
+
+    def get_cp_factor(self, hkl):
+        hkl, hkl_factor = reduced_hkl(hkl)
+        hkl = np.array(hkl)
+        dspacing = get_dspacing(self.cell_reciprocal, hkl)
+        cp_factor = 0
+        for n in range(1, 10):
+            if dspacing/n > self.d_min:
+                _factor = np.abs(self.get_structure_factor(n*hkl))/len(self.atoms)
+                if _factor > cp_factor:
+                    cp_factor = _factor
+            else:
+                break
+        return cp_factor
+
     def search_close_packing_planes(self, N_max=10):
         """
         Search for the close-packed molecular plane for a given crystal
+
+        Args:
+            N_max: maximum number of multiples
         """
         cp_planes = []
         for hkl in self.planes:
@@ -75,8 +92,8 @@ class planes():
             for n in range(1, N_max):
                 if dspacing/n > self.d_min:
                     hkl1 = n*np.array(hkl)
-                    F = get_structure_factor(self.atoms, hkl1)
-                    if np.abs(F) >= len(self.atoms) * 0.5: 
+                    F = self.get_structure_factor(hkl1)
+                    if np.abs(F) >= len(self.atoms) * self.cp_factor: 
                         # Scan the plane with high density
                         plane = self.get_separation(hkl1)
                         if plane is not None:
@@ -88,6 +105,10 @@ class planes():
         if len(cp_planes) > 0:
             cp_planes = sorted(cp_planes, key=lambda x: -x[-1][0])
         return cp_planes
+
+    def get_structure_factor(self, hkl):
+        return structure_factor(self.atoms.get_scaled_positions(), hkl)
+
 
     def get_separation(self, hkl):
         """
@@ -115,16 +136,14 @@ class planes():
                 center_hkl -= np.floor(center_hkl)
                 coords_hkl = np.dot(coords, hkl_reduced)
                 
-                # Terminate only if the molecular slab width is s
-                # width = coords_hkl.max() - coords_hkl.min()
-                # if width > slab_factor/hkl_factor:
-                #     return None
                 lower, upper = center_hkl+coords_hkl.min(), center_hkl+coords_hkl.max()
                 slabs.append([center_hkl, lower, upper])
-
+        #if np.abs(hkl-np.array([0, 8, 0])).sum()==0: 
         groups = self.group_slabs(slabs, 0.5/hkl_factor)
+        groups = self.group_slabs(groups, 0.5/hkl_factor)   
+        #print(hkl); print(groups)
         separations = self.find_unique_separations(groups, d_spacing)
-        return (hkl, d_spacing, separations)
+        return (hkl, d_spacing/abs(hkl_factor), separations)
  
     def group_slabs(self, slabs, tol):
         groups = [] 
@@ -132,10 +151,24 @@ class planes():
             new = True
             center, lower, upper = slab
             for group in groups:
+                # Center is within the group
                 if group[1] <= center <= group[2]:
                     new = False
+                # to include
+                elif lower >= group[1] and upper <= group[2]:
+                    new = False
+                # to include
+                elif lower <= group[1] and upper >= group[2]:
+                    new = False
+                # to include
+                elif lower - 1  <= group[1] and upper - 1 >= group[2]:
+                    center, lower, upper = center-1, lower-1, upper-1
+                    new = False
+                elif lower - 1 >= group[1] and upper -1 <= group[2]:
+                    center, lower, upper = center-1, lower-1, upper-1
+                    new = False
                 else:
-                    dist = center-group[0]
+                    dist = center - group[0]
                     shift = np.round(dist)
                     if abs(dist-shift) < tol:
                         new = False
@@ -143,6 +176,7 @@ class planes():
                         upper -= shift
     
                 if not new:
+                    # Update group
                     if lower < group[1]:
                         group[1] = lower
                     if upper > group[2]:
@@ -151,7 +185,6 @@ class planes():
                     break
             if new:
                 groups.append([center, lower, upper])
-    
         return sorted(groups)
 
     def find_unique_separations(self, groups, d):
@@ -164,15 +197,19 @@ class planes():
         return -np.sort(separations)
 
     def gather(self, planes, tol=-0.1):
+        output = []
         for _plane in planes:
-            (hkl, _, separations) = _plane
-            if separations[0] > tol:
-                for separation in separations:
-                    if separation > tol:
-                        p = plane(hkl, self.cell_reciprocal, separation)
-                        print(p)
-            else:
-                break
+            (hkl, d, separations) = _plane
+            if separations[0] <= d: 
+                if separations[0] > tol:
+                    for separation in separations:
+                        if separation > tol:
+                            p = plane(hkl, self.cell_reciprocal, separation)
+                            print(p)
+                            output.append(_plane)
+                else:
+                    break
+        return output
 
 class plane():
     """
@@ -195,6 +232,7 @@ class plane():
 
 if __name__ == "__main__":
     from pyxtal.db import database
+    import sys
     try: 
         from ccdc import io
         from ccdc.particle import SlipPlanes
@@ -205,17 +243,31 @@ if __name__ == "__main__":
 
     db = database('pyxtal/database/mech.db') 
 
-    for code in ['HCLBNZ14']: #db.codes:
-        print('\n', code)
-        p = planes()
-        p.set_xtal(db.get_pyxtal(code))
-        cp_planes = p.search_close_packing_planes()
-        p.gather(cp_planes)
+    if len(sys.argv) == 1:
+        codes = ['ANLINB02', 'ADIPAC', 'CHEXDC']
+        for code in [c for c in db.codes if c not in codes]:
+        #for code in codes:
+            print('\n', code)
+            p = planes()
+            p.set_xtal(db.get_pyxtal(code))
+            cp_planes = p.search_close_packing_planes()
+            ps = p.gather(cp_planes, 0)
 
-        # Crossvalidation with csd_python
-        if csd is not None:
-            splanes = SlipPlanes(csd.crystal(code))
-            for splane in splanes:
-                print(code, splane.orientation, round(splane.repeat_distance, 3), round(splane.slab_separation, 3))
-
+            # Crossvalidation with csd_python
+            if csd is not None:
+                splanes = SlipPlanes(csd.crystal(code))
+                splanes = [splane for splane in splanes if splane.repeat_distance > p.d_min and p.get_cp_factor(list(splane.orientation.hkl)) > p.cp_factor]
+                if len(splanes) > len(ps):
+                    for splane in splanes:
+                        print(code, splane.orientation, round(splane.repeat_distance, 3), round(splane.slab_separation, 3))
+    else:
+        data = [
+                ('UCECAG01', [3, 0, -2]),
+                ('PIDGOZ', [1, 0, 2]),
+               ]
+        p = planes(cp_factor=0.2)
+        for (code, hkl) in data:
+            print(hkl, tuple(hkl) in p.planes)
+            p.set_xtal(db.get_pyxtal(code))
+            print(code, hkl, p.get_separation(hkl))
  
