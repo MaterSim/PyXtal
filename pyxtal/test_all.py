@@ -107,6 +107,12 @@ class TestGroup(unittest.TestCase):
             solutions = gr.add_k_transitions(p)
             self.assertTrue(len(solutions) == n_path)
 
+    def test_to_subgroup(self):
+        s = pyxtal(molecular=True)
+        s.from_seed(cif_path+'benzene.cif', ['benzene'])
+        c = s.to_subgroup()
+        self.assertTrue(c.valid)
+
 
 class TestSupergroup(unittest.TestCase):
 
