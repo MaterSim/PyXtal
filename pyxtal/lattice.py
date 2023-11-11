@@ -976,6 +976,83 @@ class Lattice:
     def __repr__(self):
         return str(self)
 
+    def find_transition_to_orthoslab(self, direction=(0, 0, 1), m=5):
+        """
+        Create the slab model with an approximate orthogonal box shape
+        """
+        from pyxtal.plane import has_reduction
+
+        tol = 1e-3
+        direction = np.array(direction)
+    
+        # find the simplest a-direction
+        if np.dot(np.array([1, 0, 0]), direction) < tol:
+            a_hkl = np.array([1, 0, 0])
+        else:
+            a_hkls = []
+            for h in range(-m, m+1):
+                for k in range(-m, m+1):
+                    for l in range(-m, m+1):
+                        hkl = np.array([h, k, l])
+                        if [h, k, l] != [0, 0, 0] and not has_reduction(hkl):
+                            if abs(np.dot(hkl, direction)) < tol:
+                                a_hkls.append(hkl)
+            a_hkls = np.array(a_hkls) #; print(a_hkls)
+            a_hkl = a_hkls[np.argmin(np.abs(a_hkls).sum(axis=1))]
+        a_vector = np.dot(a_hkl, self.matrix)
+        #print('a_hkl', a_hkl)
+    
+        # find the simplest b-direction
+        b_hkl = None
+        min_angle_ab = float('inf')
+        for h in range(-m, m+1):
+            for k in range(-m, m+1):
+                for l in range(-m, m+1):
+                    hkl = np.array([h, k, l])
+                    if [h, k, l] != [0, 0, 0] and not has_reduction(hkl):
+                        if abs(np.dot(hkl, direction)) < tol: 
+                            vector = np.dot(hkl, self.matrix)
+                            angle1 = angle(vector, a_vector, radians=False)
+                            if abs(90-angle1) < min_angle_ab:
+                                min_angle_ab = abs(90-angle1)
+                                b_hkl = hkl
+                                b_vector = vector
+    
+        #print('b_hkl', b_hkl, min_angle_ab)
+        # change the sign
+        if abs(angle(np.cross(a_hkl, b_hkl), direction))>tol: 
+            b_hkl *= -1
+            b_vector *= -1
+    
+        ## update the c_direction
+        ab_plane = np.cross(a_vector, b_vector)#; print('ab_plane', ab_plane)
+        c_hkl = None
+        min_angle_c = float('inf')
+        for h in range(-m, m+1):
+            for k in range(-m, m+1):
+                for l in range(-m, m+1):
+                    hkl = np.array([h, k, l])
+                    if [h, k, l] != [0, 0, 0] and not has_reduction(hkl):
+                        vector = np.dot(hkl, self.matrix)
+                        angle1 = angle(vector, ab_plane, radians=False)
+                        #print(hkl, angle)
+                        if abs(angle1) < abs(min_angle_c):
+                            min_angle_c = angle1
+                            c_hkl = hkl
+                            c_vector = vector
+    
+        #print(a_hkl, b_hkl, c_hkl)
+        return np.vstack([a_hkl, b_hkl, c_hkl])
+
+    def apply_transformation(self, trans):
+        """
+        Optimize the lattice's inclination angles
+        """
+        cell_new = np.dot(trans, self.matrix)
+        lat_new = Lattice.from_matrix(cell_new)
+        return lat_new
+
+
 def generate_lattice(
     ltype,
     volume,
