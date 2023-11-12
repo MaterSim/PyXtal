@@ -2907,3 +2907,19 @@ class pyxtal:
         #    #print(cif)
         #    #print(self.to_file())
         #    print("Wrong", csd_code); import sys; sys.exit()
+
+    def get_structure_factor(self, hkl, coeffs=None):
+        """
+        Compute the structure factor for a given hkl plane
+
+
+        Args:
+            - hkl: three indices hkl plane
+            - coeffs (N lengths): Atomic scatering factors
+        """
+        coords, species = self._get_coords_and_species()
+        g_dot_rs = np.dot(coords, np.array(hkl))
+        F = np.exp(-2*np.pi*(1j)*g_dot_rs)
+        if coeffs is not None:
+            F *= coeffs
+        return F.sum()

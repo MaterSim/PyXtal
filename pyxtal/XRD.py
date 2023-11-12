@@ -171,9 +171,9 @@ class XRD():
             TWO_THETA_TOL: tolerance to find repeating angles
             SCALED_INTENSITY_TOL: threshold for intensities
         """
-        # obtiain scattering parameters, atomic numbers, and occus (need to look into occus)
+        # obtain scattering parameters, atomic numbers, and occus 
         #print("total number of hkl lists", len(self.hkl_list))
-        #print("total number of coordinates:", len(crystal.get_scaled_positions()))
+        #print("total number of coords:", len(crystal.get_scaled_positions()))
         #from time import time
         #t0 = time()
 
@@ -184,14 +184,14 @@ class XRD():
         coeffs = np.zeros([N_atom, 4, 2])
         zs = np.zeros([N_atom, 1], dtype=int)
         for i, elem in enumerate(crystal.get_chemical_symbols()):
-            if elem == 'D':
-                elem = 'H'
+            if elem == 'D': elem = 'H'
             coeffs[i, :, :] = ATOMIC_SCATTERING_PARAMS[elem]
             zs[i] = Element(elem).z
 
         # A heavy calculation, Partition it to prevent the memory issue
         s2s = (np.sin(self.theta)/self.wavelength)**2 # M
-        hkl_per_proc = int(self.per_N/N_atom); N_cycle = int(np.ceil(N_hkls/hkl_per_proc))
+        hkl_per_proc = int(self.per_N/N_atom)
+        N_cycle = int(np.ceil(N_hkls/hkl_per_proc))
         positions = crystal.get_scaled_positions()
 
         if self.ncpu == 1:
