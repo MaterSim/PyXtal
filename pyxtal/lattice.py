@@ -976,18 +976,18 @@ class Lattice:
     def __repr__(self):
         return str(self)
 
-    def find_transition_to_orthoslab(self, direction=(0, 0, 1), m=5):
+    def find_transition_to_orthoslab(self, c=(0,0,1), a=(1,0,0), m=5):
         """
         Create the slab model with an approximate orthogonal box shape
         """
         from pyxtal.plane import has_reduction
 
         tol = 1e-3
-        direction = np.array(direction)
+        direction = np.array(c)
     
         # find the simplest a-direction
-        if np.dot(np.array([1, 0, 0]), direction) < tol:
-            a_hkl = np.array([1, 0, 0])
+        if np.dot(np.array(a), direction) < tol:
+            a_hkl = np.array(a)
         else:
             a_hkls = []
             for h in range(-m, m+1):
