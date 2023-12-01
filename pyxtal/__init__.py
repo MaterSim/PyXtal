@@ -2524,7 +2524,7 @@ class pyxtal:
                 _eng, _pair, _dist = site0.get_neighbors_auto(factor, max_d, False, detail=True)
             else:
                 _eng, _pair, _dist = site0.get_neighbors_wp2(site1, factor, max_d, False, detail=True)
-            pairs.extend(_pair)
+            pairs.extend([p[1] for p in _pair])
             engs.extend(_eng)
             dists.extend(_dist)
         return engs, pairs, dists
