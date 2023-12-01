@@ -608,6 +608,10 @@ class mol_site:
         self.orientation.r = o
         self.orientation.matrix = o.as_matrix()
 
+    def update_orientation(self, angles):
+        self.orientation.r = R.from_euler('zxy', angles, degrees=True)
+        self.orientation.matrix = self.orientation.r.as_matrix()
+
     #def is_compatible_symmetry(self, tol=0.3):
     #    """
     #    Check if the molecular symmetry matches the site symmetry
@@ -934,6 +938,8 @@ class mol_site:
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
         """
+        mol_center = np.dot(self.position, self.lattice.matrix)
+        numbers = self.molecule.mol.atomic_numbers
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
         tm = Tol_matrix(prototype="vdW", factor=factor)
         m_length = len(self.numbers)
@@ -961,17 +967,32 @@ class mol_site:
                     if detail:
                         eng = A*np.exp(-B*d[i])-C/(d[i]**6)
                         ids = np.where(eng < etol)
-                        for id in zip(*ids):
-                            tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
-                            pairs.append((tmp1+tmp2)/2)
-                            engs.append(eng[id])
-                            dists.append(d[i][id])
-                        #eng = eng.sum()
+                        #for id in zip(*ids):
+                        #    tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
+                        #    pairs.append((tmp1+tmp2)/2)
+                        #    engs.append(eng[id])
+                        #    dists.append(d[i][id])
+                        for id in range(len(ids[0])):
+                            n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
+                            if 1 not in [n1, n2]:
+                                pos = coord2[i][ids[1][id]] - mol_center
+                                pairs.append((n2, pos))
+                                engs.append(eng[ids[0][id], ids[1][id]])
+                                dists.append(d[i][ids[0][id], ids[1][id]])
                     else:
                         eng0 = A*np.exp(-B*d[i])-C/(d[i]**6)
                         engs.append(eng0.sum())
                 else:
                     engs.append(None)
+                    if detail:
+                        #print('MMMMM', d[i].min())
+                        ids = np.where(d[i] < max_d)#; print(ids)
+                        for id in range(len(ids[0])): #zip(*ids):
+                            n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
+                            if 1 not in [n1, n2]:# != [1, 1]:
+                                pos = coord2[i][ids[1][id]] - mol_center
+                                pairs.append((n2, pos))#; print('add self', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], np.linalg.norm(pos))
+                                dists.append(np.linalg.norm(pos))
 
                 tmp = d[i]/tols_matrix
                 _d = tmp[tmp < 1.0]
@@ -994,16 +1015,35 @@ class mol_site:
                             if detail:
                                 eng = A*np.exp(-B*d[i])-C/(d[i]**6)
                                 ids = np.where(eng < etol)
-                                for id in zip(*ids):
-                                    tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
-                                    pairs.append((tmp1+tmp2)/2)
-                                    engs.append(eng[id])
-                                    dists.append(d[i][id])
+                                #for id in zip(*ids):
+                                #    tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
+                                #    pairs.append((tmp1+tmp2)/2)
+                                #    engs.append(eng[id])
+                                #    dists.append(d[i][id])
+                                for id in range(len(ids[0])):
+                                    n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
+                                    if 1 not in [n1, n2]:
+                                        pos = coord2[i][ids[1][id]] - mol_center
+                                        pairs.append((n2, pos))
+                                        engs.append(eng[ids[0][id], ids[1][id]])
+                                        dists.append(d[i][ids[0][id], ids[1][id]])
+                                        
                             else:
                                 eng0 = A*np.exp(-B*d[i])-C/(d[i]**6)
                                 engs.append(eng0.sum())
                         else:
                             engs.append(None)
+                            if detail:
+                                #print('OMMMM', d[i].min())
+                                ids = np.where(d[i] < max_d)
+                                #for id in zip(*ids):
+                                for id in range(len(ids[0])): #zip(*ids):
+                                    n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
+                                    if 1 not in [n1, n2]: # != [1, 1]:
+                                        pos = coord2[i][ids[1][id]] - mol_center
+                                        pairs.append((n2, pos))#; print('add other', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], np.linalg.norm(pos))
+                                        dists.append(np.linalg.norm(pos))
+
                         tmp = d[i]/tols_matrix
                         _d = tmp[tmp < 1]
                         id = np.argmin(tmp.flatten())
