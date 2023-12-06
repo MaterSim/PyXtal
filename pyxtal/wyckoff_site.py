@@ -335,19 +335,35 @@ class mol_site:
         else:
             self.lattice = Lattice.from_matrix(lattice)
         self.PBC = self.wp.PBC
-        self.mol = mol.mol # A Pymatgen molecule object
+        #self.mol = mol.mol # A Pymatgen molecule object
         self.symbols = mol.symbols #[site.specie.value for site in self.mol.sites]
-        self.numbers = self.mol.atomic_numbers
+        self.numbers = self.molecule.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
         self.type = stype
+
+    def update_molecule(self, mol):
+        self.molecule = mol 
+        self.numbers = mol.mol.atomic_numbers
+        self.symbols = mol.symbols
+        self.tols_matrix = mol.tols_matrix
+        self.radius = mol.radius
+
+    def update_orientation(self, angles):
+        # QZ: Symmetrize the angle to the compatible orientation first
+        self.orientation.r = R.from_euler('zxy', angles, degrees=True)
+        self.orientation.matrix = self.orientation.r.as_matrix()
+
+    def update_lattice(self, lattice):
+        # QZ: Symmetrize the angle to the compatible orientation first
+        self.lattice = lattice
 
     def __str__(self):
         if not hasattr(self.wp, "site_symm"): 
             self.wp.get_site_symmetry()
 
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
-        formula = self.mol.formula.replace(" ","")
+        formula = self.molecule.mol.formula.replace(" ","")
         s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
         s += "WP [{:s}] ".format(self.wp.get_label())
         s += "Site [{:}]".format(self.wp.site_symm.replace(" ",""))
@@ -406,9 +422,9 @@ class mol_site:
             #if len(xyz)==3: print("encode: \n", self.molecule.mol.cart_coords)
             rotor = self.molecule.get_torsion_angles(xyz)
             ori, _, reflect = self.molecule.get_orientation(xyz)
-            return list(self.position) + list(ori) + rotor + [reflect]
+            return [self.wp.index] + list(self.position) + list(ori) + rotor + [reflect]
         else:
-            return list(self.position) + [0]
+            return [self.wp.index] + list(self.position) + [0]
 
     def to_1D_dicts(self):
         """
@@ -489,7 +505,7 @@ class mol_site:
             atomic coords: a numpy array of atomic coordinates in the site
             species: a list of atomic species for the atomic coords
         """
-        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
+        coord0 = self.molecule.mol.cart_coords.dot(self.orientation.matrix.T)
         wp_atomic_sites = []
         wp_atomic_coords = None
 
@@ -521,7 +537,6 @@ class mol_site:
             else:
                 wp_atomic_coords = np.append(wp_atomic_coords, tmp, axis=0)
             wp_atomic_sites.extend(self.symbols)
-
             if first:
                 break
 
@@ -600,17 +615,13 @@ class mol_site:
         if ax_vector is not None:
             ax = ax_vector/np.linalg.norm(ax_vector)
         else:
-            xyz = self.mol.cart_coords.dot(p.as_matrix().T)
+            xyz = self.molecule.mol.cart_coords.dot(p.as_matrix().T)
             ax = self.molecule.get_principle_axes(xyz).T[ax_id]
 
         q = R.from_rotvec(ax*rad*angle)
         o = q*p
         self.orientation.r = o
         self.orientation.matrix = o.as_matrix()
-
-    def update_orientation(self, angles):
-        self.orientation.r = R.from_euler('zxy', angles, degrees=True)
-        self.orientation.matrix = self.orientation.r.as_matrix()
 
     #def is_compatible_symmetry(self, tol=0.3):
     #    """
@@ -639,7 +650,7 @@ class mol_site:
         Returns:
             a molecule object
         """
-        coord0 = self.mol.cart_coords.dot(self.orientation.matrix.T)  #
+        coord0 = self.molecule.mol.cart_coords.dot(self.orientation.matrix.T)  #
         # Obtain the center in absolute coords
         if not hasattr(self.wp, "generators"): self.wp.set_generators()
 
@@ -697,16 +708,16 @@ class mol_site:
         mol = Molecule(self.symbols, coords-center)
 
         #match, _ = compare_mol_connectivity(mol, self.mol, True)
-        match, _ = compare_mol_connectivity(mol, self.mol)
+        match, _ = compare_mol_connectivity(mol, self.molecule.mol)
         if match:
             #position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
             position = center.dot(self.lattice.inv_matrix)
             self.position = position - np.floor(position)
             if update_mol:
                 self.orientation = Orientation(np.eye(3))
-                self.mol = mol
+                self.molecule.mol = mol
             else:
-                m1 = pybel.readstring('xyz', self.mol.to('xyz'))
+                m1 = pybel.readstring('xyz', self.molecule.mol.to('xyz'))
                 m2 = pybel.readstring('xyz', mol.to('xyz'))
                 aligner = openbabel.OBAlign(True, False)
                 aligner.SetRefMol(m1.OBMol)
@@ -725,9 +736,9 @@ class mol_site:
         else:
             import pickle
             with open('wrong.pkl', "wb") as f:
-                pickle.dump([mol, self.mol], f)
+                pickle.dump([mol, self.molecule.mol], f)
                 mol.to(filename='Wrong.xyz', fmt='xyz')
-                self.mol.to(filename='Ref.xyz', fmt='xyz')
+                self.molecule.mol.to(filename='Ref.xyz', fmt='xyz')
             raise ValueError("molecular connectivity changes! Exit")
         # todo check if connectivty changed
 
@@ -736,6 +747,10 @@ class mol_site:
         Used for calculating distances in lattices with periodic boundary
         conditions. When multiplied with a set of points, generates additional
         points in cells adjacent to and diagonal to the original cell
+
+        Args:
+            center: 
+            ignore: 
 
         Returns:
             A numpy array of matrices which can be multiplied by a set of
@@ -784,6 +799,7 @@ class mol_site:
             coord2: fractional coordinates of the reference neighbors
             m2: the length of reference molecule
             center: whether or not consider the self image for coord2
+            ignore: 
 
         Returns:
             distance matrix: [m1*m2*pbc, m1, m2]
@@ -938,7 +954,7 @@ class mol_site:
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
         """
-        mol_center = np.dot(self.position, self.lattice.matrix)
+        mol_center = np.dot(self.position-np.floor(self.position), self.lattice.matrix)
         numbers = self.molecule.mol.atomic_numbers
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
         tm = Tol_matrix(prototype="vdW", factor=factor)
@@ -976,7 +992,7 @@ class mol_site:
                             n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
                             if 1 not in [n1, n2]:
                                 pos = coord2[i][ids[1][id]] - mol_center
-                                pairs.append((n2, pos))
+                                pairs.append((n2, pos))#; print('add self', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], id, np.linalg.norm(pos))
                                 engs.append(eng[ids[0][id], ids[1][id]])
                                 dists.append(d[i][ids[0][id], ids[1][id]])
                     else:
@@ -1024,7 +1040,7 @@ class mol_site:
                                     n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
                                     if 1 not in [n1, n2]:
                                         pos = coord2[i][ids[1][id]] - mol_center
-                                        pairs.append((n2, pos))
+                                        pairs.append((n2, pos))#; print('add other', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], np.linalg.norm(pos))
                                         engs.append(eng[ids[0][id], ids[1][id]])
                                         dists.append(d[i][ids[0][id], ids[1][id]])
                                         

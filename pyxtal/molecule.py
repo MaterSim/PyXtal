@@ -850,7 +850,7 @@ class pyxtal_molecule:
 
     def get_principle_axes(self, xyz, rdmt=True):
         """
-        get the principle axis for a rotated xyz
+        get the principle axis for a rotated xyz, sorted by the moments
         """
         if self.smile is None or len(self.smile)==1 or not rdmt:
             Inertia = get_inertia_tensor(xyz)
@@ -1374,9 +1374,9 @@ class pyxtal_molecule:
         for i in list_i:
             orientations_new.append(orientations[i])
 
-        #Check each of the found orientations for consistency with Wyckoff site.
-        #If consistent, put into an array of valid orientations
-        #print("======", orientations_new)
+        # Check each of the found orientations for consistency with Wyckoff site.
+        # If consistent, put into an array of valid orientations
+        # print("======", orientations_new)
         allowed = []
         for o in orientations_new:
             op = o.get_op()

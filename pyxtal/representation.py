@@ -262,7 +262,8 @@ class representation():
 
     def to_standard_setting(self):
         xtal = self.to_pyxtal()
-        self.x = representation.from_pyxtal(xtal, standard=True).x
+        rep0 = representation.from_pyxtal(xtal, standard=True)
+        self.x = rep0.x
  
     def to_pyxtal(self, smiles=None, composition=None):
         """
@@ -328,13 +329,13 @@ class representation():
                 dicts['PBC'] = [1, 1, 1]
                 #dicts['number'] = number
                 dicts['hn'] = struc.group.hall_number
-                dicts['index'] = 0
+                dicts['index'] = v[0]
                 dicts['lattice'] = struc.lattice.matrix
                 dicts['lattice_type'] = ltype
-                dicts['center'] = v[:3]
+                dicts['center'] = v[1:4]
                 if smile not in ["Cl-"]:
-                    dicts['orientation'] = np.array(v[3:6])
-                    dicts['rotor'] = v[6:-1]
+                    dicts['orientation'] = np.array(v[4:7])
+                    dicts['rotor'] = v[7:-1]
                     dicts['reflect'] = int(v[-1])
                 site = mol_site.from_1D_dicts(dicts)
                 site.type = i

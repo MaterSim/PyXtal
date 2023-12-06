@@ -1313,9 +1313,10 @@ class pyxtal:
         Get the 1D representation class for molecular crystals
         """
         if self.molecular:
-            return representation.from_pyxtal(self)
+            rep = representation.from_pyxtal(self)
         else:
-            return representation_atom.from_pyxtal(self)
+            rep = representation_atom.from_pyxtal(self)
+        return rep
 
     def transform(self, trans, lattice=None):
         """
