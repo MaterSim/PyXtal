@@ -1455,7 +1455,7 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
-    def build(self, group, species, numIons, lattice, sites, tol=1e-2):
+    def build(self, group, species, numIons, lattice, sites, tol=1e-2, use_hall=False):
         """
         Build a atomic crystal based on the necessary input
 
@@ -1475,7 +1475,7 @@ class pyxtal:
         if type(group) == Group:
             self.group = group
         else:
-            self.group = Group(group)
+            self.group = Group(group, use_hall=use_hall)
  
         self.lattice = lattice
         self.dim = 3
@@ -2924,3 +2924,53 @@ class pyxtal:
         if coeffs is not None:
             F *= coeffs
         return F.sum()
+
+    def to_molecular_xtal(self, molecules, oris=None, reflects=None):
+        """
+        Convert the atomic xtal to molecular xtal
+        the input molecules must have the same length of the self.atom_sites
+        """
+        if not self.molecular:
+            xtal = pyxtal(molecular=True)
+            # updates mol_sites
+            sites = []
+            for i, site in enumerate(self.atom_sites):
+                if oris is None:
+                    ori = [0, 0, 0]
+                else:
+                    ori = oris[i]
+                if reflects is None:
+                    reflect = False
+                else:
+                    reflect = reflects[i]
+                sites.append(site.to_mol_site(self.lattice, molecules[i], ori=ori, reflect=reflect))
+            xtal.lattice = self.lattice
+            xtal.group = self.group
+            xtal.mol_sites = sites
+            xtal.numMols = [sum([wp.multiplicity for wp in self.atom_sites])]
+            xtal._get_formula()
+            xtal.valid = True
+            xtal.source = 'Center'
+            
+            return xtal
+        else:
+            raise RuntimeError('The input must be molecular xtal')
+
+    def to_atomic_xtal(self):
+        """
+        Convert the molecular
+        """
+        if self.molecular:
+            xtal = pyxtal()
+            sites = []
+            for i, site in enumerate(self.mol_sites):
+                sites.append(site.to_atom_site(i+1))
+            xtal.lattice = self.lattice
+            xtal.group = self.group
+            xtal.atom_sites = sites
+            xtal._get_formula()
+            xtal.valid = True
+            xtal.source = 'Mol. Center'
+            return xtal
+        else:
+            raise RuntimeError('The input must be molecular xtal')

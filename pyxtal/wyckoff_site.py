@@ -84,7 +84,6 @@ class atom_site:
         #self.dof = len(freedom[freedom==True])
         #self.dof = len(freedom[freedom==True])
 
-
     @classmethod
     def load_dict(cls, dicts):
         """
@@ -92,7 +91,11 @@ class atom_site:
         """
         position = dicts["position"]
         specie = dicts["specie"]
-        wp = Wyckoff_position.load_dict(dicts['wp'])
+        if 'wp' in dicts:
+            wp = Wyckoff_position.load_dict(dicts['wp'])
+        else:
+            hn, index = dicts['hn'], dicts['index']
+            wp = Wyckoff_position.from_group_and_index(hn, index, use_hall=True)
         return cls(wp, position, specie)
 
     def perturbate(self, lattice, magnitude=0.1):
@@ -307,6 +310,26 @@ class atom_site:
         site2.update(site2.position - shift)
         return site1, site2
         
+    def to_mol_site(self, lattice, molecule, ori=[0, 0, 0], reflect=False, type_id=0):
+        """
+        transform it to the mol_sites, i.e., to build a molecule on 
+        the current WP
+        """
+        dicts = {}
+        dicts['smile'] = molecule.smile
+        dicts['type'] = type_id
+        dicts['dim'] = 3
+        dicts['PBC'] = [1, 1, 1]
+        dicts['hn'] = self.wp.hall_number
+        dicts['index'] = self.wp.index
+        dicts['lattice'] = lattice.matrix
+        dicts['lattice_type'] = lattice.ltype
+        dicts['center'] = self.position
+        if molecule.smile not in ["Cl-"]:
+            dicts['orientation'] = np.array(ori)
+            dicts['rotor'] = molecule.get_torsion_angles()
+            dicts['reflect'] = reflect
+        return mol_site.from_1D_dicts(dicts)
 
 class mol_site:
     """
@@ -481,6 +504,7 @@ class mol_site:
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
         position = dicts["center"] #np.dot(dicts["center"], lattice.inv_matrix)
         position, wp, _ = wp.merge(position, lattice.matrix, 0.01)
+
 
         return cls(mol, position, orientation, wp, lattice)
 
@@ -1162,3 +1186,19 @@ class mol_site:
             self.ijk_lists = ijk_lists
         else:
             self.ijk_lists = value
+
+    def to_atom_site(self, specie=1):
+        """
+        transform it to the mol_sites, i.e., to build a molecule on 
+        the current WP
+        """
+        dicts = {}
+        dicts['specie'] = specie
+        dicts['position'] = self.position
+        dicts['hn'] = self.wp.hall_number
+        dicts['index'] = self.wp.index
+        return atom_site.load_dict(dicts)
+
+
+
+

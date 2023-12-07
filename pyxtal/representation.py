@@ -380,9 +380,10 @@ class representation():
         # data for molecule
         strs += "{:d} ".format(len(x)-1)
         for i in range(1, len(x)):
-            for v in x[i][:3]:
+            strs += "{:d} ".format(x[i][0])
+            for v in x[i][1:4]:
                 strs += "{:4.2f} ".format(v)      
-            for v in x[i][3:-1]:
+            for v in x[i][4:-1]:
                 strs += "{:6.1f} ".format(v)      
             strs += "{:d} ".format(int(x[i][-1]))
 
