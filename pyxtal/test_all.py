@@ -1,5 +1,6 @@
 # python -m unittest pyxtal/test_all.py
 import unittest
+import os
 
 from random import choice, shuffle
 import numpy as np
@@ -39,7 +40,7 @@ class TestGroup(unittest.TestCase):
         g = Group(64)
         a1, _, _ = g.list_wyckoff_combinations([4, 2])
         self.assertTrue(len(a1) == 0)
-        a2, _, _ = g.list_wyckoff_combinations([4, 8], quick=False) 
+        a2, _, _ = g.list_wyckoff_combinations([4, 8], quick=False)
         self.assertTrue(len(a2) == 8)
 
     def test_print_group_and_dof(self):
@@ -82,7 +83,7 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(Group(19).check_compatible([6]) == (False, False))
 
     def test_search_supergroup_paths(self):
-        paths = Group(59, quick=True).search_supergroup_paths(139, 2) 
+        paths = Group(59, quick=True).search_supergroup_paths(139, 2)
         self.assertTrue(paths == [[71, 139], [129, 139], [137, 139]])
 
     def test_get_splitters(self):
@@ -144,7 +145,7 @@ class TestSupergroup(unittest.TestCase):
             sols = my.search_supergroup(max_solutions=1)
             for sol in sols:
                 struc_high = my.make_pyxtal_in_supergroup(sol)
-                strucs = my.make_pyxtals_in_subgroup(sol, 3) 
+                strucs = my.make_pyxtals_in_subgroup(sol, 3)
                 pmg1 = struc_high.to_pymatgen()
                 pmg2 = strucs[-1].to_pymatgen()
                 rms = sm.StructureMatcher().get_rms_dist(pmg1, pmg2)[0]
@@ -280,7 +281,7 @@ class TestSupergroup(unittest.TestCase):
             strucs, _, _, _ = s2.get_transition(s1)
 
             if strucs is None:
-                print("Problem between ", cif1, cif2) 
+                print("Problem between ", cif1, cif2)
             else:
                 struc_G_in_H = strucs[-1]
                 s3 = pyxtal()
@@ -315,7 +316,7 @@ class TestOptLat(unittest.TestCase):
         c2.optimize_lattice(1)
         pmg2 = c2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg1, pmg2))
-        
+
         c3 = pyxtal()
         c3.from_seed(cif_path + "LiCs.cif")
         pmg3 = c3.to_pymatgen()
@@ -349,9 +350,9 @@ class TestOptLat(unittest.TestCase):
         sgs = [5, 7, 8, 9, 12, 13, 14, 15]
         c1 = pyxtal(molecular=True)
         for sg in sgs:
-            hns = Hall(sg).hall_numbers 
+            hns = Hall(sg).hall_numbers
             for hn in hns[1:]:
-                c1.from_random(3, hn, ["aspirin"], use_hall=True) 
+                c1.from_random(3, hn, ["aspirin"], use_hall=True)
                 pmg1 = c1.to_pymatgen()
                 c2 = c1.copy()
                 c2.optimize_lattice(1)
@@ -365,7 +366,7 @@ class TestOptLat(unittest.TestCase):
         c1 = pyxtal(molecular=True)
         for i in range(20):
             sg = choice(sgs)
-            c1.from_random(3, sg, ["aspirin"]) 
+            c1.from_random(3, sg, ["aspirin"])
             pmg1 = c1.to_pymatgen()
             c2 = c1.copy()
             c2.optimize_lattice(1)
@@ -396,12 +397,12 @@ class TestOptLat(unittest.TestCase):
                  (9.4913,  8.5844,  5.3358, 90.0000, 110.0035,  90.0000, 'monoclinic', 3),
                  (3.7727,  6.7490,  7.6446, 64.4392,  77.9087,  75.7214,  'triclinic', 1),
                  (3.7297,  6.5421,  7.9915, 73.9361,  71.5867, 103.2590,  'triclinic', 1),
-                 (5.5740,  7.0902, 11.4529, 96.5703,  90.0224, 108.1857,  'triclinic', 2),  
+                 (5.5740,  7.0902, 11.4529, 96.5703,  90.0224, 108.1857,  'triclinic', 2),
                  (5.5487,  7.1197, 11.4349, 83.0223,  89.8479,  72.0003,  'triclinic', 2),
-                 (5.7985, 30.6352,  7.6374, 90.0000, 112.2615,  90.0000, 'monoclinic', 3),  
+                 (5.7985, 30.6352,  7.6374, 90.0000, 112.2615,  90.0000, 'monoclinic', 3),
                  (5.8280, 30.5992,  7.6373, 90.0000, 112.6020,  90.0000, 'monoclinic', 3),
                 ]
-        
+
         for i in range(int(len(paras)/2)):
             (a1, b1, c1, alpha1, beta1, gamma1, ltype1, N) = paras[i*2]
             (a2, b2, c2, alpha2, beta2, gamma2, ltype2, N) = paras[i*2+1]
@@ -444,8 +445,8 @@ class TestWP(unittest.TestCase):
         pass
 
     def test_wp_site_symm(self):
-        data = [(143, 1, '3 . .'), 
-                (230, 6, '. 3 2'), 
+        data = [(143, 1, '3 . .'),
+                (230, 6, '. 3 2'),
                 (160, 1, '. . m'),
                 (160, 2, '3 m .')]
         for d in data:
@@ -453,7 +454,7 @@ class TestWP(unittest.TestCase):
             wp = Group(sg)[i]
             wp.get_site_symmetry()
             self.assertTrue(wp.site_symm == symbol)
-            
+
     def test_wp_dof(self):
         for sg in range(1, 231):
             g = Group(sg)
@@ -534,12 +535,12 @@ class TestWP(unittest.TestCase):
                 for i in range(len(wp)):
                     op0 = wp[i]
                     p1 = op0.operate(pt)
-                    
+
                     op1 = wp.get_euclidean_generator(cell.matrix, i)
                     if wp.euclidean:
                         p2 = np.dot(op1.operate(p0), cell.inv_matrix)
                     else:
-                        p2 = np.dot(op1.apply_rotation_only(p0), cell.inv_matrix) 
+                        p2 = np.dot(op1.apply_rotation_only(p0), cell.inv_matrix)
                         p2 += op1.translation_vector
 
                     diff = p1-p2
@@ -556,29 +557,29 @@ class TestWP(unittest.TestCase):
 
 
         pt = [0.1333, 0.1496, 0.969]
-        
+
         cell = Lattice.from_para(9.395, 7.395, 8.350, 91, 101, 92, ltype='triclinic')
         self.assertTrue(check_error(range(1, 3), pt, cell))
-        
+
         cell = Lattice.from_para(9.395, 7.395, 8.350, 90, 101, 90, ltype='monoclinic')
         self.assertTrue(check_error(range(3, 16), pt, cell))
-        
+
         cell = Lattice.from_para(9.395, 7.395, 8.350, 90, 90, 90, ltype='orthorhombic')
         self.assertTrue(check_error(range(16, 74), pt, cell))
-        
+
         cell = Lattice.from_para(9.395, 9.395, 8.350, 90, 90, 90, ltype='tetragonal')
         self.assertTrue(check_error(range(74, 143), pt, cell))
-        
+
         cell = Lattice.from_para(9.395, 9.395, 8.350, 90, 90, 120, ltype='hexagonal')
         self.assertTrue(check_error(range(143, 195), pt, cell))
-        
+
         cell = Lattice.from_para(9.395, 9.395, 9.395, 90, 90, 90, ltype='cubic')
         self.assertTrue(check_error(range(195, 231), pt, cell))
 
 
 class TestDof(unittest.TestCase):
     def test_atomic(self):
-        s = pyxtal() 
+        s = pyxtal()
         s.from_random(3, 225, ['C'], [8])
         ans = s.get_dof()
         self.assertTrue(s.lattice.dof == 1)
@@ -694,7 +695,7 @@ class TestMolecular(unittest.TestCase):
         AgC2N2H
         Ag         4.30800        8.26300       -0.2200
         """
-        
+
         C2N2H7_xyz = """12
         AgC2N2H
         H          5.95800        5.80600       -0.9530
@@ -713,12 +714,14 @@ class TestMolecular(unittest.TestCase):
             f.write(Ag_xyz)
         with open('C2N2H7.xyz', "w") as f:
             f.write(C2N2H7_xyz)
-        
+
         for i in range(10):
             c = pyxtal(molecular=True)
             c.from_random(3, 9, ['Ag.xyz', 'C2N2H7.xyz'], [12, 12])
             short_bonds = c.check_short_distances(r=1.1)
             self.assertTrue(len(short_bonds)==0)
+        os.remove('Ag.xyz')
+        os.remove('C2N2H7.xyz')
 
     def test_molecular_2d(self):
         # print("test_molecular_2d")
@@ -785,7 +788,7 @@ class TestAtomic3D(unittest.TestCase):
             self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg1))
         # more space groups
         for name in ['I41amd', 'P4nmm', 'Pmmn', 'Pn3m', 'Fd3', 'Pn3']:
-            cif_file = cif_path + name + ".vasp" 
+            cif_file = cif_path + name + ".vasp"
             pmg1 = Structure.from_file(cif_file)
             struc = pyxtal()
             struc.from_seed(seed=cif_file, style='spglib')
@@ -885,7 +888,7 @@ class TestSymmetry(unittest.TestCase):
     def test_from_symops_wo_grou(self):
         data = [
         (["x, y, z", "-x, y+1/2, -z"], 4, 6),
-        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31, 155), 
+        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31, 155),
         (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z", "x+1/2, -y+1/2, z"], 14, 83),
         (["x, y, z", "-x, -y, -z", "-x+1/2, y+1/2, -z+1/2", "x+1/2, -y+1/2, z+1/2"], 14, 82),
         ]
@@ -898,7 +901,7 @@ class TestSymmetry(unittest.TestCase):
     def test_from_symops(self):
         data = [
         (["x, y, z", "-x, y+1/2, -z"], 4, 6),
-        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31, 155), 
+        (["x, y, z", "-x+1/2, -y, z+1/2", "-x, y, z", "x+1/2, -y, z+1/2"], 31, 155),
         ]
         for d in data:
             (strs, spg, hall) = d
@@ -924,14 +927,14 @@ class TestNeighbour(unittest.TestCase):
                      ("xxvi", 15),
                      ("resorcinol", 14),
                     ]:
- 
+
             (name, CN) = data
             c.from_seed(seed=cif_path+name+".cif", molecules=[name])
             ds, _, _, _, engs = c.get_neighboring_molecules(0, 1.5)
             #print(engs)
             #print(name, CN, len(ds))
             self.assertTrue(len(ds) == CN)
- 
+
 class TestSubgroup(unittest.TestCase):
     def test_cubic_cubic(self):
         sites = ['8a', '32e']
@@ -945,7 +948,7 @@ class TestSubgroup(unittest.TestCase):
         for C2 in C2s:
             pmg_s2 = C2.to_pymatgen()
             #sga2 = SpacegroupAnalyzer(pmg_s2).get_space_group_symbol()
-            # prevent some numerical error 
+            # prevent some numerical error
             if not sm.StructureMatcher().fit(pmg_s1, pmg_s2):
                 C12 = pyxtal(); C12.from_seed(pmg_s2); pmg_12 = C12.to_pymatgen()
                 self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_12))
@@ -965,7 +968,7 @@ class TestSubgroup(unittest.TestCase):
         pmg_s1 = s1.to_pymatgen()
         pmg_s2 = s2.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg_s1, pmg_s2))
-    
+
     def test_molecules(self):
         for name in ["aspirin", "resorcinol", "coumarin", "HAHCOI", "xxvi",\
                      "WEXBOS", "MERQIM", "LAGNAL", "YICMOP", "LUFHAW", \
@@ -997,7 +1000,7 @@ class TestSubgroup(unittest.TestCase):
         struc.from_seed(seed=cif)
         for i in range(100):
             s = struc.subgroup_once(0.2, None, None, 't+k', 2)
- 
+
 class TestPXRD(unittest.TestCase):
     def test_similarity(self):
         sites = ['8a']
@@ -1010,7 +1013,7 @@ class TestPXRD(unittest.TestCase):
         p2 = xrd2.get_profile()
         s = Similarity(p1, p2, x_range=[15, 90])
         self.assertTrue( 0.9 <s.value <1.001)
-     
+
 
         C2.apply_perturbation(1e-3, 1e-3)
         xrd3 = C2.get_XRD()
@@ -1060,7 +1063,7 @@ class TestPartial(unittest.TestCase):
                   {"4g": [0.2458, 0.2522, 0.0000]},
                   {"4g": [0.4241, 0.3636, 0.0000]}, #partial info on O
                  ]
-        
+
         s = pyxtal()
         s.from_random(3, spg, elements, composition, lattice=cell, sites=sites2)
         self.assertTrue(s.valid)
@@ -1077,7 +1080,7 @@ class resort(unittest.TestCase):
         struc.mol_sites = [struc.mol_sites[i] for i in l]
         struc.resort()
         N2 = len(struc.mol_sites)
-        self.assertTrue(N1 == N2) 
+        self.assertTrue(N1 == N2)
 
     def test_atom(self):
         cif = cif_path + "aspirin.cif"
@@ -1125,7 +1128,7 @@ class Test_operations(unittest.TestCase):
                 '-y/2+1/2,-z,0',
                 '-z,-x/2+1/2,0',
                 ]
-        
+
         for i, xyz in enumerate(xyzs):
             op = SymmOp.from_xyz_str(xyz)
             inv_op = get_inverse(op)
@@ -1143,7 +1146,7 @@ class Test_operations(unittest.TestCase):
         g = Group(38)
         wp = g[4]
         wp1, trans = wp.swap_axis([1,0,2])
-        
+
         g = Group(71)
         wp = g[5]
         wp1, trans = wp.swap_axis([0,2,1])
@@ -1169,7 +1172,7 @@ class Test_operations(unittest.TestCase):
                 np.array([[1,0,1],[0,1,0],[0,0,1]]),
                 np.array([[1,0,-1],[0,1,0],[0,0,1]]),
                ]
-        
+
         for n in range(3, 16):
             hns = Hall(n).hall_numbers
             for hn in hns:
