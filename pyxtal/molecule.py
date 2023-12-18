@@ -193,6 +193,7 @@ class pyxtal_molecule:
         mo = None
         self.smile = None
         self.torsionlist = None
+        self.reflect = False
         if seed is None: seed = 0xf00d
         self.seed = seed
 
@@ -244,7 +245,8 @@ class pyxtal_molecule:
         self.tols_matrix = self.get_tols_matrix()
         xyz = self.mol.cart_coords
         self.reset_positions(xyz-self.get_center(xyz))
-
+        if self.smile is not None: ori, _, self.reflect = self.get_orientation(xyz)
+        
     def __str__(self):
         return '[' + self.name + ']'
 

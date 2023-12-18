@@ -390,9 +390,9 @@ class structure_from_ext():
                 if id not in ids_done:
                     msg = "This molecule cannot be matched to the reference\n"
                     msg += 'Molecules extracted from the structure\n'
-                    msg += molecules[id].to('xyz') + '\n'
+                    msg += molecules[id].to(fmt='xyz') + '\n'
                     msg += "Reference molecule from smiles or xyz\n"
-                    msg += mol2.mol.to('xyz')
+                    msg += mol2.mol.to(fmt='xyz')
                     raise ReadSeedError(msg)
 
     def add_Hydrogens(self, smile, xyz):

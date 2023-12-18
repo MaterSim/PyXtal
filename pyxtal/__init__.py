@@ -2847,7 +2847,7 @@ class pyxtal:
             for ele in pmg.composition.elements:
                 if ele.symbol == 'D':
                     pmg.replace_species({ele: Element("H")})
-                elif ele.value not in ["C", "H", "O", "N", "S", "F", "Cl", "Br", "I", "P"]:
+                elif ele.value not in ["C", "Si", "H", "O", "N", "S", "F", "Cl", "Br", "I", "P"]:
                     organic = False
                     break
 
@@ -2856,6 +2856,7 @@ class pyxtal:
                 msg += entry.formula
                 raise CSDError(msg)
             else:
+                #print(smiles); self.from_seed(pmg, smiles)
                 try:
                     #print(smiles)#; import sys; sys.exit()
                     self.from_seed(pmg, smiles)
