@@ -115,6 +115,24 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(c.valid)
 
 
+    def test_get_wyckoff_position_from_xyz(self):
+        g = Group(5)
+        pos = [([0.0, 0.0, 0.0], '2a'),
+               ([0.5, 0.5, 0.5], None),
+               ([0.1, 0.0, 0.1], '4c'),
+               ([0.5, 0.0, 0.0], None),
+               ([0.0, 0.1, 0.0], '2a'),
+               ([0.0, 0.5, 0.5], '2b'),
+               ([0.1, 0.2, 0.3], '4c'),
+               ]
+        for d in pos:
+            (p0, wp0) = d
+            wp = g.get_wyckoff_position_from_xyz(p0)
+            if wp is None:
+                self.assertTrue(wp0 is None)
+            else:
+                self.assertTrue(wp.get_label() == wp0)
+
 class TestSupergroup(unittest.TestCase):
 
     def test_supergroup(self):

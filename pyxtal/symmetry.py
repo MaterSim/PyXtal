@@ -195,7 +195,7 @@ class Group:
     [['4b'], ['8e']],
     [['4b'], ['8f']]],
     [False, True, True, True, False, True, True, True],
-    [[[6], [4]], [[6], [3]], [[6], [2]], [[6], [1]], 
+    [[[6], [4]], [[6], [3]], [[6], [2]], [[6], [1]],
     [[5], [4]], [[5], [3]], [[5], [2]], [[5], [1]]]
     )
 
@@ -362,7 +362,7 @@ class Group:
             dof = 2
         else:
             dof = 1
-       
+
         return dof
 
 
@@ -462,7 +462,7 @@ class Group:
 
         if max_wp is not None:
             N_max = max_wp - (len(numIons) - 1)
-            max_solutions[max_solutions > N_max] = N_max 
+            max_solutions[max_solutions > N_max] = N_max
 
         list_solutions = []
         for i, numIon in enumerate(numIons):
@@ -488,9 +488,9 @@ class Group:
             #print(sub_solutions)#; import sys; sys.exit()
             if len(sub_solutions) == 0:
                 return [], [], []
-        
+
         # Gather all solutions and remove very large number solutions
-        solutions = np.array(list(itertools.product(*list_solutions))) 
+        solutions = np.array(list(itertools.product(*list_solutions)))
         dim1 = solutions.shape[0]
         dim2 = np.prod(solutions.shape[1:])
         solutions = solutions.reshape([dim1, dim2])
@@ -559,6 +559,29 @@ class Group:
                     break
             index = index_from_letter(letter, self.wyckoffs, dim=self.dim)
         return self.Wyckoff_positions[index]
+
+    def get_wyckoff_position_from_xyz(self, xyz, decimals=4):
+        """
+        Returns a single Wyckoff_position object.
+
+        Args:
+            xyz: a trial [x, y, z] coordinate
+
+        Returns: a Wyckoff_position object
+        """
+        xyz = np.round(np.array(xyz, dtype=float), decimals=decimals)
+        xyz -= np.floor(xyz)
+
+        for wp in self.Wyckoff_positions:
+            pos = wp.apply_ops(xyz)
+            pos -= np.floor(pos)
+            is_present = np.any(np.all(pos == xyz, axis=1))
+            if is_present:
+                if len(pos) == len(np.unique(pos, axis=0)):
+                    return wp
+
+        print("Cannot find the suitable wp for the given input")
+        return None
 
 
     def get_alternatives(self):
@@ -1014,7 +1037,7 @@ class Group:
 
     def path_to_subgroup(self, H):
         """
-        For a given a path, extract the 
+        For a given a path, extract the
             a list of (g_types, subgroup_id, spg_number, wp_list (optional))
         """
         path_list = []
@@ -1381,7 +1404,7 @@ class Wyckoff_position:
         elif dim == 1:
             PBC = [0, 0, 1]
 
-        if wyckoffs is None: 
+        if wyckoffs is None:
             wyckoffs = get_wyckoffs(number, dim=dim)
 
         wpdict = {
@@ -1426,7 +1449,7 @@ class Wyckoff_position:
     def from_symops(ops, G):
         """
         search Wyckoff Position by symmetry operations
-        
+
 
         Args:
             ops: a list of symmetry operations
@@ -1438,11 +1461,11 @@ class Wyckoff_position:
         """
         if isinstance(ops[0], str):
             ops = [SymmOp.from_xyz_str(op) for op in ops]
-    
+
         for wp in G:
             if wp.has_equivalent_ops(ops):
                 return wp
-        
+
         if isinstance(ops[0], str):
             print(ops)
         else:
@@ -1630,7 +1653,7 @@ class Wyckoff_position:
                 self.P = wp2.P
                 self.P1 = wp2.P1
                 self.ops = wp2.ops
-                
+
                 return True
         return False
 
@@ -1899,7 +1922,7 @@ class Wyckoff_position:
                 self.index = i
                 self.letter = letter_from_index(i, G_ops, dim=self.dim)
                 return True
-        
+
         return False
 
     def has_equivalent_ops(self, wp2, tol=1e-3):
@@ -2198,7 +2221,7 @@ class Wyckoff_position:
                     d.append(distance(p0, lattice, PBC=self.PBC))
 
             else: # sites like (x, 0, 0)
-                if group is not None: 
+                if group is not None:
                     ops = group[0].ops
                 else:
                     ops = get_wyckoffs(self.number, dim=self.dim)[0]
@@ -2226,7 +2249,7 @@ class Wyckoff_position:
             pos1: the position that matchs the standard setting
         """
 
-        if ops is None: 
+        if ops is None:
             ops = get_wyckoffs(self.number, dim=self.dim)[0]
 
         match = False
@@ -2260,7 +2283,7 @@ class Wyckoff_position:
         Return:
             pos1: the position that matchs the standard setting
         """
-        if ops is None: 
+        if ops is None:
             ops = get_wyckoffs(self.number, dim=self.dim)[0]
 
         coords = []
@@ -2396,7 +2419,7 @@ def choose_wyckoff_mol(G, number, site, orientations, gen_site=True, dim=3):
     Args:
         G: a pyxtal.symmetry.Group object
         number: the number of molecules still needed in the unit cell
-        orientations: the valid orientations for a given molecule. 
+        orientations: the valid orientations for a given molecule.
         gen_site: general WP only
 
     Returns:
@@ -2411,7 +2434,7 @@ def choose_wyckoff_mol(G, number, site, orientations, gen_site=True, dim=3):
         else:
             hn = None
         return Wyckoff_position.from_group_and_letter(number, site, dim, hn=hn)
- 
+
     elif gen_site or np.random.random() > 0.5:  # choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
@@ -2573,7 +2596,7 @@ def index_from_letter(letter, group, dim=3):
     Args:
         letter: The wyckoff letter
         group: an unorganized Wyckoff position array or Group object (preferred)
-        dim: the periodicity dimension of the symmetry group. 
+        dim: the periodicity dimension of the symmetry group.
 
     Returns:
         a single index specifying the location of the Wyckoff position.
@@ -3426,7 +3449,7 @@ def search_cloest_wp(G, wp, op, pos):
     closest match is (0.11, 0.11, 0.2)
 
     Args:
-        G: space group number 
+        G: space group number
         wp: Wyckoff object
         op: symmetry operation belonging to wp
         pos: initial xyz position
