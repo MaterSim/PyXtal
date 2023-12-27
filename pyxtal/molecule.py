@@ -35,7 +35,7 @@ def find_rotor_from_smile(smile):
         """
         Remove duplicate torsion from a list of atom index tuples.
         """
-        
+
         for_remove = []
         for x in reversed(range(len(list_to_clean))):
             ix0 = itemgetter(0)(list_to_clean[x])
@@ -188,7 +188,8 @@ class pyxtal_molecule:
                  fix = False,
                  torsions = None,
                  seed = None,
-                 tm = Tol_matrix(prototype="molecular")):
+                 tm = Tol_matrix(prototype="molecular"),
+                 symtol = 0.3):
 
         mo = None
         self.smile = None
@@ -232,8 +233,12 @@ class pyxtal_molecule:
         self.props = mo.site_properties
         if len(mo) > 1:
             if symmetrize:
-                pga = PointGroupAnalyzer(mo, 0.5)
-                mo = pga.symmetrize_molecule()["sym_mol"]
+                try:
+                    pga = PointGroupAnalyzer(mo, symtol)
+                    mo = pga.symmetrize_molecule()["sym_mol"]
+                except:
+                    print("Warning: Problem in parsing molecular symmetry with symtol=", symtol)
+                    print("Proceed with no symmetrization")
         self.mol = mo
         self.get_symmetry()
 
@@ -246,7 +251,7 @@ class pyxtal_molecule:
         xyz = self.mol.cart_coords
         self.reset_positions(xyz-self.get_center(xyz))
         if self.smile is not None: ori, _, self.reflect = self.get_orientation(xyz)
-        
+
     def __str__(self):
         return '[' + self.name + ']'
 
@@ -468,13 +473,13 @@ class pyxtal_molecule:
             aromatic_carbon = Chem.MolFromSmarts("c") #Aromatic
             NH1 = Chem.MolFromSmarts("[NH1]")  #NH1
             NH2 = Chem.MolFromSmarts("[NH2]")  #NH2
-            
+
             # Initialize mol
             m = Chem.MolFromSmiles(self.smile)
             pos_H = m.GetNumAtoms() #starting position for H
             m = Chem.AddHs(m)
             labels = [a.GetSymbol() for a in m.GetAtoms()]
-    
+
             # Create bonds
             bonds = m.GetBonds()
             pairs = np.zeros([len(bonds), 2], dtype=int)
@@ -495,7 +500,7 @@ class pyxtal_molecule:
                     #print(i, ds)
                     for d in ds:
                         if i in [0, 1]: # COOH or COO in general
-                            if i == 0: 
+                            if i == 0:
                                 labels[d[2]] += '_acid'
                                 id = 3
                                 #labels[d[3]] += '_acid'
@@ -561,7 +566,7 @@ class pyxtal_molecule:
         Returns:
             a 3D matrix for computing the intermolecular energy
         """
-        if hasattr(self, 'labels'): 
+        if hasattr(self, 'labels'):
             labels1 = self.labels
         else:
             labels1 = self.symbols
@@ -571,7 +576,7 @@ class pyxtal_molecule:
             labels2 = labels1
         else:
             numbers2 = mol2.mol.atomic_numbers
-            if hasattr(mol2, 'labels'): 
+            if hasattr(mol2, 'labels'):
                 labels2 = mol2.labels
             else:
                 labels2 = mol2.symbols
@@ -584,23 +589,23 @@ class pyxtal_molecule:
                 elif [n1, n2] in [[1, 6], [6, 1]]:     #H-C
                     coefs[i1, i2, :] = [28870, 4.10, 113.]
                 elif [n1, n2] in [[1, 7]]:     #H-N
-                    if len(labels1[i1])>1: 
+                    if len(labels1[i1])>1:
                         if labels1[i1] == 'H_N1': #HB-N(-NH-N):
                             coefs[i1, i2, :] = [7215600, 7.78, 476]
-                        else: #HB-N(-NH2-N):   
+                        else: #HB-N(-NH2-N):
                             coefs[i1, i2, :] = 1803920, 7.37, 165
                     else:
                         coefs[i1, i2, :] = [54560, 4.52, 120.]
                 elif [n1, n2] in [[7, 1]]:     #N-H
-                    if len(labels2[i2])>1: 
+                    if len(labels2[i2])>1:
                         if labels2[i2] == 'H_N1': #HB-N(-NH-N):
                             coefs[i1, i2, :] = [7215600, 7.78, 476]
-                        else: #HB-N(-NH2-N):   
+                        else: #HB-N(-NH2-N):
                             coefs[i1, i2, :] = 1803920, 7.37, 165
                     else:
                         coefs[i1, i2, :] = [54560, 4.52, 120.]
                 elif [n1, n2] in [[1, 8]]:     #H-O
-                    if len(labels1[i1]) > 1: 
+                    if len(labels1[i1]) > 1:
                         if labels2[i2] == 'O_amide': #HB...O=C-N
                             coefs[i1, i2, :] = [3607810, 7.78, 238]
                         elif labels2[i2] == 'O_acid': #HB...O=C-OH
@@ -614,7 +619,7 @@ class pyxtal_molecule:
                         coefs[i1, i2, :] = [70610, 4.82, 105.]
 
                 elif [n1, n2] in [[8, 1]]:     #O-H
-                    if len(labels2[i2]) > 1: 
+                    if len(labels2[i2]) > 1:
                         if labels1[i1] == 'O_amide': #HB...O=C-N
                             coefs[i1, i2, :] = [3607810, 7.78, 238]
                         elif labels1[i1] == 'O_acid': #HB...O=C-OH
@@ -953,7 +958,7 @@ class pyxtal_molecule:
 
         mol = self.rdkit_mol(3)
         conf0 = mol.GetConformer(0)
-        conf1 = mol.GetConformer(1) 
+        conf1 = mol.GetConformer(1)
         for i in range(len(self.mol)):
             x0,y0,z0 = xyz0[i]
             x1,y1,z1 = xyz1[i]
@@ -962,7 +967,7 @@ class pyxtal_molecule:
 
         mol = RemoveHs(mol)
         rmsd, trans = rdMolAlign.GetAlignmentTransform(mol, mol, 1, 0)
-        
+
         return rmsd, trans
 
     def get_rmsd(self, xyz, debug=False):
@@ -973,9 +978,9 @@ class pyxtal_molecule:
             xyz: 3D coordinates
 
         Returns:
-            rmsd (float): rmsd values 
+            rmsd (float): rmsd values
             transition matrix: 4*4 matrix
-            match: True or False 
+            match: True or False
         """
 
         from rdkit import Chem
@@ -1003,7 +1008,7 @@ class pyxtal_molecule:
         mol = RemoveHs(mol)
         rmsd1, trans1 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 0)
         rmsd2, trans2 = rdMolAlign.GetAlignmentTransform(mol, mol, 2, 1)
-        
+
         if debug:
             from rdkit.Chem import rdmolfiles
             rdmolfiles.MolToXYZFile(mol, '1.xyz', 0)
