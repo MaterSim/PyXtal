@@ -138,7 +138,7 @@ class atom_site:
         #print(self.wp.ops[0].rotation_matrix, self.wp.get_frozen_axis(), self.wp.get_dof())
         #print([self.specie, self.wp.index] + list(xyz))
         return [self.specie, self.wp.index] + list(xyz)
-        
+
 
     def swap_axis(self, swap_id, shift=np.zeros(3)):
         """
@@ -309,10 +309,10 @@ class atom_site:
         site1.update(site1.position + shift)
         site2.update(site2.position - shift)
         return site1, site2
-        
+
     def to_mol_site(self, lattice, molecule, ori=[0, 0, 0], reflect=False, type_id=0):
         """
-        transform it to the mol_sites, i.e., to build a molecule on 
+        transform it to the mol_sites, i.e., to build a molecule on
         the current WP
         """
         dicts = {}
@@ -366,7 +366,7 @@ class mol_site:
         self.type = stype
 
     def update_molecule(self, mol):
-        self.molecule = mol 
+        self.molecule = mol
         self.numbers = mol.mol.atomic_numbers
         self.symbols = mol.symbols
         self.tols_matrix = mol.tols_matrix
@@ -382,7 +382,7 @@ class mol_site:
         self.lattice = lattice
 
     def __str__(self):
-        if not hasattr(self.wp, "site_symm"): 
+        if not hasattr(self.wp, "site_symm"):
             self.wp.get_site_symmetry()
 
         self.angles = self.orientation.r.as_euler('zxy', degrees=True)
@@ -773,8 +773,8 @@ class mol_site:
         points in cells adjacent to and diagonal to the original cell
 
         Args:
-            center: 
-            ignore: 
+            center:
+            ignore:
 
         Returns:
             A numpy array of matrices which can be multiplied by a set of
@@ -823,7 +823,7 @@ class mol_site:
             coord2: fractional coordinates of the reference neighbors
             m2: the length of reference molecule
             center: whether or not consider the self image for coord2
-            ignore: 
+            ignore:
 
         Returns:
             distance matrix: [m1*m2*pbc, m1, m2]
@@ -957,7 +957,7 @@ class mol_site:
         # compute the distance matrix
         d, _ = self.get_distances(coord1-np.floor(coord1), coord2-np.floor(coord2), m2)
         #print("short dist", len(c1), len(c2), d.min())
-        
+
         if np.min(d) < np.max(tols_matrix):
             tols = np.min(d, axis=0)
             if (tols < tols_matrix).any():
@@ -971,7 +971,7 @@ class mol_site:
         Args:
             factor: volume factor
             max_d: maximum intermolecular distance
-            ignore_E: 
+            ignore_E:
             detail: show detailed energies
 
         Returns
@@ -1067,7 +1067,7 @@ class mol_site:
                                         pairs.append((n2, pos))#; print('add other', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], np.linalg.norm(pos))
                                         engs.append(eng[ids[0][id], ids[1][id]])
                                         dists.append(d[i][ids[0][id], ids[1][id]])
-                                        
+
                             else:
                                 eng0 = A*np.exp(-B*d[i])-C/(d[i]**6)
                                 engs.append(eng0.sum())
@@ -1189,7 +1189,7 @@ class mol_site:
 
     def to_atom_site(self, specie=1):
         """
-        transform it to the mol_sites, i.e., to build a molecule on 
+        transform it to the mol_sites, i.e., to build a molecule on
         the current WP
         """
         dicts = {}

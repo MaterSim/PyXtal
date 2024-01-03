@@ -552,7 +552,7 @@ class pyxtal_molecule:
             print(labels)
         self.labels = labels
 
-    def get_coefs_matrix(self, mol2=None):
+    def get_coefs_matrix(self, mol2=None, ignore_error=True):
         """
         Get the Atom-Atom potential parameters
         E = A*exp(-B*R) - C*R^(-6)
@@ -683,9 +683,12 @@ class pyxtal_molecule:
                 elif [n1, n2] in [[17, 17]]:          #Cl-Cl
                     coefs[i1, i2, :] = [140050, 3.52, 1385]
                 else:
-                    msg = "atom type is not supported: {:d} {:d}".format(n1, n2)
-                    raise AtomTypeError(msg)
-                    #return None
+                    if ignore_error:
+                        coefs[i1, i2, :] = [0.0, 0.0, 0.0]
+                    else:
+                        msg = "atom type is not supported: {:d} {:d}".format(n1, n2)
+                        raise AtomTypeError(msg)
+                        #return None
         return coefs
 
     def show(self):

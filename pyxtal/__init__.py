@@ -246,7 +246,7 @@ class pyxtal:
 
         dicts = {}
         for name, site in zip(names, sites):
-            label = site.wp.get_label() 
+            label = site.wp.get_label()
             if name not in dicts.keys():
                 dicts[name] = [label]
             else:
@@ -1476,7 +1476,7 @@ class pyxtal:
             self.group = group
         else:
             self.group = Group(group, use_hall=use_hall)
- 
+
         self.lattice = lattice
         self.dim = 3
         self.factor = 1.0
@@ -1787,7 +1787,7 @@ class pyxtal:
             sub = self.copy()
 
         if iterate:
-            if sub.has_special_site(): 
+            if sub.has_special_site():
                 sub = sub.to_subgroup()
 
         return sub
@@ -2140,7 +2140,7 @@ class pyxtal:
         sites = []
         for at_site in self.atom_sites:
             e = at_site.specie
-            site = at_site.wp.get_label() 
+            site = at_site.wp.get_label()
             if e not in elements:
                 elements.append(e)
                 sites.append([site])
@@ -2444,8 +2444,8 @@ class pyxtal:
         Args:
             site_id: the index of reference site
             factor: factor of vdw tolerance
-            max_d: 
-            ignore_E: 
+            max_d:
+            ignore_E:
 
         Returns:
             min_ds: list of shortest distances
@@ -2609,7 +2609,7 @@ class pyxtal:
         for site in self.atom_sites:
             sp = site.specie
             if sp not in species:
-                num = site.wp.multiplicity 
+                num = site.wp.multiplicity
                 sites.append(site)
                 if sp in new_species:
                     id = new_species.index(sp)
@@ -2737,7 +2737,7 @@ class pyxtal:
 
     def set_site_coordination(self, cutoff=None, verbose=False, exclude_ii=False):
         """
-        Compute the coordination number from each atomic site 
+        Compute the coordination number from each atomic site
         """
         from ase.neighborlist import neighbor_list
 
@@ -2789,7 +2789,7 @@ class pyxtal:
         from pyxtal.util import process_csd_cif, get_struc_from__parser
         from pyxtal.msg import ReadSeedError, CSDError
         from pymatgen.core.periodic_table import Element
-        from pymatgen.io.cif import CifParser 
+        from pymatgen.io.cif import CifParser
         try:
             from ccdc import io
             from rdkit import Chem
@@ -2812,11 +2812,11 @@ class pyxtal:
             else:
                 if Chem.MolFromSmiles(smi) is None:
                     raise CSDError("problematic smiles: {:s}".format(smi))
-            
+
             cif = entry.to_string(format='cif')
             smiles = [s+'.smi' for s in smi.split('.')]
 
-            
+
             # remove duplicates
             smiles = list(set(smiles))
             smi1 = ''
@@ -2952,7 +2952,6 @@ class pyxtal:
             xtal._get_formula()
             xtal.valid = True
             xtal.source = 'Center'
-            
             return xtal
         else:
             raise RuntimeError('The input must be molecular xtal')
