@@ -1085,12 +1085,12 @@ class pyxtal:
         """
         A quick function to get the formula.
         """
+        from pyxtal.database.element import Element
 
         formula = ""
         if self.molecular:
             numspecies = self.numMols
             species = [str(mol) for mol in self.molecules]
-            #print(species, numspecies)
         else:
             specie_list = []
             for site in self.atom_sites:
@@ -1107,6 +1107,7 @@ class pyxtal:
             self.numIons = numIons
             numspecies = self.numIons
         for i, s in zip(numspecies, species):
+            if type(s) == int: s = Element(s).short_name
             formula += "{:s}{:d}".format(s, int(i))
         self.formula = formula
 
@@ -2974,3 +2975,83 @@ class pyxtal:
             return xtal
         else:
             raise RuntimeError('The input must be molecular xtal')
+
+
+    def get_forcefield(self, ff_style='openff', code='lammps',
+                       chargemethod='am1bcc'):
+        """
+        An interface to create forcefield for molecular simulation with
+        - Charmm
+        - LAMMPS
+        Note that the current approach generates charge with its own conformer,
+        need to provide the option to use the conformer from the given molecule
+
+        Args:
+            - ff_style: 'gaff' or 'openff'
+            - code: 'lammps' or 'charmm'
+            - charge_method: 'am1bcc', 'am1-mulliken', 'mmff94', 'gasteiger'
+
+        Returns:
+            An ase_atoms_objects with force field information
+        """
+        from ost.forcefield import forcefield
+        from ost.lmp import LAMMPSStructure
+        from ost.charmm import CHARMMStructure
+        from ost.interfaces.parmed import ParmEdStructure
+
+        if self.molecular:
+            smiles = [mol.smile for mol in self.molecules]
+            assert(smiles[0] is not None)
+
+            # Lammps needs the xyz for all molecules
+            if code == 'lammps':
+                # reset lammps cell
+                from pyxtal.util import reset_lammps_cell
+                atoms = self.to_ase(resort=False)
+                atoms = reset_lammps_cell(atoms)
+                converter = LAMMPSStructure
+                n_mols = self.numMols
+
+            # Charmm only needs the xyz for the asymmetric unit
+            else:
+                converter = CHARMMStructure
+                coords, species = [], []
+                checked = []
+                for site in self.mol_sites:
+                    if site.type not in checked:
+                        _coords, _species = site._get_coords_and_species(
+                            absolute=True, first=True)
+                        coords.extend(_coords)
+                        species.extend(_species)
+                        checked.append(site.type)
+                n_mols = [1] * len(self.molecules)
+                atoms = Atoms(symbols=species, positions=coords)
+
+            # print(len(atoms), n_mols)
+            # Initialize the forcefield instance from ost
+            ff = forcefield(smiles, style=ff_style, chargemethod=chargemethod)
+
+            # Create the Parmed to handle FF parameters
+            if sum(n_mols) == 1:
+                pd_struc = ff.molecules[0].copy(cls=ParmEdStructure)
+            else:
+                from functools import reduce
+                from operator import add
+                mols = []
+                for i, m in enumerate(n_mols):
+                    mols += [ff.molecules[i] * m]
+                pd_struc = reduce(add, mols)
+            pd_struc.update(atoms)
+
+            ase_with_ff = converter.from_structure(pd_struc)
+            if code == 'lammps':
+                print("\n Write lmp.in and lmp.dat ......")
+                ase_with_ff.write_lammps()
+            else:
+                print("\n Write charmm.rtf and charmm.prm ......")
+                ase_with_ff.write_charmmfiles()
+                #ase_with_ff.write_charmmfiles_by_parmd()
+
+            return ase_with_ff
+        else:
+            raise NotImplementedError("\nNo support for atomic crystals")

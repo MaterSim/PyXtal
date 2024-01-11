@@ -1084,6 +1084,12 @@ class pyxtal_molecule:
             ang = r.as_euler('zxy', degrees=True)
             return ang, 0, False
 
+    def to_ase(self):
+        """
+        Convert to ase atoms
+        """
+        return self.mol.to_ase_atoms()
+
     def reset_positions(self, coors):
         """
         reset the coordinates

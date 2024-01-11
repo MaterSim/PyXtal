@@ -382,7 +382,7 @@ class structure_from_ext():
                         self.wps.append(wps[i])
                         self.numMols[j] += len(wps[i])
                         #print("================================================ADDDDDD", id, len(mol1))
-        
+
         # check if some molecules cannot be matched
         if len(ids_done) < len(ids):
             #print("==========================================================Nonmatched molecules", ids_done, ids)
@@ -431,7 +431,7 @@ class structure_from_ext():
             m3 = AllChem.ConstrainedEmbed(m1, m2)
         except ValueError as e:
             raise ReadSeedError(str(e))
-            
+
         conf = m3.GetConformer(0) #; print(conf.GetPositions())
 
         return conf.GetPositions()

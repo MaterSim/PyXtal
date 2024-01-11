@@ -381,7 +381,7 @@ def get_struc_from__parser(p):
     for i, d in enumerate(p._cif.data.values()):
         ops = p.get_symops(d)
         coord_to_species = OrderedDict()
-        d0 = {"_atom_site_label": [], 
+        d0 = {"_atom_site_label": [],
               "_atom_site_fract_x": [],
               "_atom_site_fract_y": [],
               "_atom_site_fract_z": [],
@@ -391,12 +391,12 @@ def get_struc_from__parser(p):
                 symbol = p._parse_symbol(d["_atom_site_type_symbol"][i])
             except KeyError:
                 symbol = p._parse_symbol(d["_atom_site_label"][i])
-        
+
             el = get_el_sp(symbol)
             x = str2float(d["_atom_site_fract_x"][i])
             y = str2float(d["_atom_site_fract_y"][i])
             z = str2float(d["_atom_site_fract_z"][i])
-        
+
             coord = (x, y, z)
             match = get_matching_coord(coord, ops)
             if not match:
@@ -409,7 +409,7 @@ def get_struc_from__parser(p):
         d.data['_atom_site_fract_x'] = d0['_atom_site_fract_x']
         d.data['_atom_site_fract_y'] = d0['_atom_site_fract_y']
         d.data['_atom_site_fract_z'] = d0['_atom_site_fract_z']
-    
+
         s = p._get_structure(d, primitive=False, symmetrized=False)
         return s
 
@@ -488,10 +488,10 @@ def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
     atoms.set_positions(pos1)
     return atoms
 
-def generate_wp_lib(spg_list, composition, 
-                    num_wp=(None, None), 
-                    num_fu=(None, None), 
-                    num_dof=(None, None), 
+def generate_wp_lib(spg_list, composition,
+                    num_wp=(None, None),
+                    num_fu=(None, None),
+                    num_dof=(None, None),
                     N_max=1000):
     """
     Generate wps according to the composition constraint (e.g., SiO2)
@@ -523,13 +523,13 @@ def generate_wp_lib(spg_list, composition,
     for sg in spg_list:
         g = Group(sg)
         lat_dof = g.get_lattice_dof()
-        # determine the upper and lower limit 
+        # determine the upper and lower limit
         if min_fu is None: min_fu = max([int(len(g[-1])/min(composition)), 1])
         if max_fu is None: max_fu = max([int(len(g[0])/max(composition)), 1])
         count = 0
         for i in range(max_fu, min_fu-1, -1):
             letters, _, wp_ids = g.list_wyckoff_combinations(
-                    composition*i, max_wp=max_wp, 
+                    composition*i, max_wp=max_wp,
                     min_wp=min_wp, Nmax=100000)
             for j, wp in enumerate(wp_ids):
                 wp_dofs = 0
@@ -545,8 +545,23 @@ def generate_wp_lib(spg_list, composition,
                     count += 1
             if count >= N_max:
                 break
-    return wps 
- 
+    return wps
+
+
+def reset_lammps_cell(atoms0):
+    """
+    set the cell into lammps format
+    """
+    from ase.calculators.lammpslib import convert_cell
+
+    atoms = atoms0.copy()
+    mat, coord_transform = convert_cell(atoms0.cell)
+    if coord_transform is not None:
+        pos = np.dot(atoms0.positions, coord_transform.T)
+        atoms.set_cell(mat.T)
+        atoms.set_positions(pos)
+    return atoms
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
