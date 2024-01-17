@@ -4,10 +4,10 @@ from pyxtal.symmetry import Group
 from pyxtal.lattice import Lattice
 from pyxtal.wyckoff_site import mol_site, atom_site
 from pyxtal.molecule import find_rotor_from_smile
- 
+
 class representation_atom():
     """
-    A class to handle the 1D representation of atomic crystal   
+    A class to handle the 1D representation of atomic crystal
     Works for Zprime > 1
 
     Args:
@@ -39,11 +39,11 @@ class representation_atom():
             vector.append(site.encode())
         x = vector
         return cls(x)
-    
+
     def to_standard_setting(self):
         xtal = self.to_pyxtal()
         self.x = representation.from_pyxtal(xtal, standard=True).x
- 
+
     def to_pyxtal(self):
         """
         Export the pyxtal structure
@@ -58,7 +58,7 @@ class representation_atom():
         v = self.x[0]
         struc = pyxtal()
         struc.group, number = Group(v[0], use_hall=True), v[0]
-    
+
         # lattice
         ltype = struc.group.lattice_type
         if ltype == 'triclinic':
@@ -78,13 +78,13 @@ class representation_atom():
         except:
             print(a, b, c, alpha, beta, gamma, ltype)
             raise ValueError("Problem in Lattice")
-    
+
         # sites
-        struc.numIons = [0] * len(smiles) 
-        struc.atom_sites = [] 
+        struc.numIons = [0] * len(smiles)
+        struc.atom_sites = []
 
         count = 1
-        for i, comp in enumerate(composition): 
+        for i, comp in enumerate(composition):
             for j in range(comp):
                 v = self.x[count]
                 dicts = {}
@@ -109,7 +109,7 @@ class representation_atom():
         struc.standard_setting = site.wp.is_standard_setting()
 
         return struc
-    
+
     def to_array(self):
         """
         Export only varibles to a 1d numpy array
@@ -118,7 +118,7 @@ class representation_atom():
         x = cells
         for xyz in xyzs: x = np.hstack((x, xyz[2:]))
         return x
-        
+
     def to_string(self, time=None, eng=None, tag=None):
         """
         Export string representation
@@ -143,30 +143,30 @@ class representation_atom():
             strs += "{:5.2f} ".format(c)
         for c in x[0][num:]:
             strs += "{:5.1f} ".format(c)
-        
+
         # data for atoms
         strs += "{:d} ".format(len(x)-1)  # Number of sites
         for i in range(1, len(x)):
             strs += "{:s} ".format(x[i][0])
             strs += "{:d} ".format(x[i][1])
             for v in x[i][2:]:
-                strs += "{:4.2f} ".format(v)      
+                strs += "{:4.2f} ".format(v)
 
         if time is not None:
             strs += "{:5.2f}".format(time)
 
         if eng is not None:
             strs += "{:11.3f}".format(eng)
-    
+
         if tag is not None:
             strs += " {:s}".format(tag)
-    
+
         return strs
 
 
 class representation():
     """
-    A class to handle the 1D representation of molecular crystal   
+    A class to handle the 1D representation of molecular crystal
     Works for Zprime > 1
 
     Args:
@@ -178,7 +178,7 @@ class representation():
         if smiles is not None:
             self.smiles = []
             for i, smile in enumerate(smiles):
-                if smile.endswith('.smi'): 
+                if smile.endswith('.smi'):
                     smile = smile[:-4]
                 self.smiles.append(smile)
         else:
@@ -209,14 +209,14 @@ class representation():
             smiles.append(site.molecule.smile)
         x = vector
         return cls(x, smiles)
-    
+
     @classmethod
     def from_string(cls, inputs, smiles, composition=None):
         """
         Initialize 1D rep. from the string
 
         Args:
-            inputs: input string 
+            inputs: input string
             smiles: list of smiles
         """
         #parse the cell
@@ -236,7 +236,7 @@ class representation():
         else:
             n_cell = 3 #cubic
         cell = [hn] + inputs[1:n_cell-1]
-        
+
         x = [cell]
         n_site = int(inputs[n_cell-1])
         if n_site != sum(composition):
@@ -246,7 +246,7 @@ class representation():
         n_cell += 1
 
         for i, smile in enumerate(smiles):
-            if smile.endswith('.smi'): 
+            if smile.endswith('.smi'):
                 smile=smile[:-4]
             for c in range(composition[i]):
                 if smile in ["Cl-"]:
@@ -264,7 +264,7 @@ class representation():
         xtal = self.to_pyxtal()
         rep0 = representation.from_pyxtal(xtal, standard=True)
         self.x = rep0.x
- 
+
     def to_pyxtal(self, smiles=None, composition=None):
         """
         Export the pyxtal structure
@@ -290,7 +290,7 @@ class representation():
         v = self.x[0]
         struc = pyxtal(molecular=True)
         struc.group, number = Group(v[0], use_hall=True), v[0]
-    
+
         # lattice
         ltype = struc.group.lattice_type
         if ltype == 'triclinic':
@@ -310,14 +310,14 @@ class representation():
         except:
             print(a, b, c, alpha, beta, gamma, ltype)
             raise ValueError("Problem in Lattice")
-    
+
         # sites
-        struc.numMols = [0] * len(smiles) 
+        struc.numMols = [0] * len(smiles)
         struc.molecules = []
-        struc.mol_sites = [] 
+        struc.mol_sites = []
 
         count = 1
-        for i, comp in enumerate(composition): 
+        for i, comp in enumerate(composition):
             smile = smiles[i]
             if smile.endswith('.smi'): smile=smile[:-4]
             for j in range(comp):
@@ -337,6 +337,7 @@ class representation():
                     dicts['orientation'] = np.array(v[4:7])
                     dicts['rotor'] = v[7:-1]
                     dicts['reflect'] = int(v[-1])
+                print(dicts)
                 site = mol_site.from_1D_dicts(dicts)
                 site.type = i
                 struc.mol_sites.append(site)
@@ -351,7 +352,7 @@ class representation():
         struc.standard_setting = site.wp.is_standard_setting()
 
         return struc
-    
+
     def to_string(self, time=None, eng=None, tag=None):
         """
         Export string representation
@@ -376,15 +377,15 @@ class representation():
             strs += "{:5.2f} ".format(c)
         for c in x[0][num:]:
             strs += "{:5.1f} ".format(c)
-        
+
         # data for molecule
         strs += "{:d} ".format(len(x)-1)
         for i in range(1, len(x)):
             strs += "{:d} ".format(x[i][0])
             for v in x[i][1:4]:
-                strs += "{:4.2f} ".format(v)      
+                strs += "{:4.2f} ".format(v)
             for v in x[i][4:-1]:
-                strs += "{:6.1f} ".format(v)      
+                strs += "{:6.1f} ".format(v)
             strs += "{:d} ".format(int(x[i][-1]))
 
         if time is not None:
@@ -392,10 +393,10 @@ class representation():
 
         if eng is not None:
             strs += "{:11.3f}".format(eng)
-    
+
         if tag is not None:
             strs += " {:s}".format(tag)
-    
+
         return strs
 
     def same_smiles(self, smiles):
@@ -406,7 +407,7 @@ class representation():
             return True
         else:
             return False
-            
+
     def get_dist(self, rep):
         """
         get distance with the other rep1

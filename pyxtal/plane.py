@@ -93,7 +93,7 @@ class planes():
                 if dspacing/n > self.d_min:
                     hkl1 = n*np.array(hkl)
                     F = self.get_structure_factor(hkl1)
-                    if np.abs(F) >= len(self.atoms) * self.cp_factor: 
+                    if np.abs(F) >= len(self.atoms) * self.cp_factor:
                         # Scan the plane with high density
                         plane = self.get_separation(hkl1)
                         if plane is not None:
@@ -113,7 +113,7 @@ class planes():
     def get_separation(self, hkl):
         """
         Compute the separation for the given hkl plane
-    
+
         Args:
             - hkl: three indices
         """
@@ -135,18 +135,18 @@ class planes():
                 center_hkl = np.dot(center_frac, hkl_reduced)
                 center_hkl -= np.floor(center_hkl)
                 coords_hkl = np.dot(coords, hkl_reduced)
-                
+
                 lower, upper = center_hkl+coords_hkl.min(), center_hkl+coords_hkl.max()
                 slabs.append([center_hkl, lower, upper])
-        #if np.abs(hkl-np.array([0, 8, 0])).sum()==0: 
+        #if np.abs(hkl-np.array([0, 8, 0])).sum()==0:
         groups = self.group_slabs(slabs, 0.5/hkl_factor)
-        groups = self.group_slabs(groups, 0.5/hkl_factor)   
+        groups = self.group_slabs(groups, 0.5/hkl_factor)
         #print(hkl); print(groups)
         separations = self.find_unique_separations(groups, d_spacing)
         return (hkl, d_spacing/abs(hkl_factor), separations)
- 
+
     def group_slabs(self, slabs, tol):
-        groups = [] 
+        groups = []
         for slab in slabs:
             new = True
             center, lower, upper = slab
@@ -174,7 +174,7 @@ class planes():
                         new = False
                         lower -= shift
                         upper -= shift
-    
+
                 if not new:
                     # Update group
                     if lower < group[1]:
@@ -192,7 +192,7 @@ class planes():
         groups[-1] = [g+1 for g in groups[-1]]
         separations = []
         for i in range(len(groups)-1):
-            separations.append(d*(groups[i+1][1] - groups[i][2])) 
+            separations.append(d*(groups[i+1][1] - groups[i][2]))
         separations = np.unique(-1*np.array(separations).round(decimals=3))
         return -np.sort(separations)
 
@@ -200,7 +200,7 @@ class planes():
         output = []
         for _plane in planes:
             (hkl, d, separations) = _plane
-            if separations[0] <= d: 
+            if separations[0] <= d:
                 if separations[0] > tol:
                     for separation in separations:
                         if separation > tol:
@@ -213,7 +213,7 @@ class planes():
 
 class plane():
     """
-    This simplest possible plane object 
+    This simplest possible plane object
     """
 
     def __init__(self, hkl, cell_reciprocal, separation=None):
@@ -227,13 +227,12 @@ class plane():
         s = "({:2d} {:2d} {:2d})".format(*self.indices)
         s += " Spacing: {:6.3f}".format(self.d_spacing)
         s += " Separation: {:6.3f}".format(self.separation)
-        
         return s
 
 if __name__ == "__main__":
     from pyxtal.db import database
     import sys
-    try: 
+    try:
         from ccdc import io
         from ccdc.particle import SlipPlanes
         csd = io.EntryReader('CSD')
@@ -241,7 +240,7 @@ if __name__ == "__main__":
         csd = None
         print("Cannot import ccdc to check")
 
-    db = database('pyxtal/database/mech.db') 
+    db = database('pyxtal/database/mech.db')
 
     if len(sys.argv) == 1:
         codes = ['ANLINB02', 'ADIPAC', 'CHEXDC']
@@ -270,4 +269,4 @@ if __name__ == "__main__":
             print(hkl, tuple(hkl) in p.planes)
             p.set_xtal(db.get_pyxtal(code))
             print(code, hkl, p.get_separation(hkl))
- 
+

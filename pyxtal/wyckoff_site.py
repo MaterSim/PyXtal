@@ -498,7 +498,7 @@ class mol_site:
             orientation = Orientation(np.eye(3))
 
         g = dicts["hn"]
-        index = dicts["index"]
+        index = int(dicts["index"])
         dim = dicts["dim"]
         wp = Wyckoff_position.from_group_and_index(g, index, dim, dicts["PBC"])
         lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
