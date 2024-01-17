@@ -149,7 +149,7 @@ class Lattice:
         get the number of degree of freedom
         """
         if ltype in ["triclinic"]:
-            dofs = [3, 3] 
+            dofs = [3, 3]
         elif ltype in ["monoclinic"]:
             dofs = [3, 1]
         elif ltype in ['orthorhombic']:
@@ -984,7 +984,7 @@ class Lattice:
 
         tol = 1e-3
         direction = np.array(c)
-    
+
         # find the simplest a-direction
         if np.dot(np.array(a), direction) < tol:
             a_hkl = np.array(a)
@@ -1001,7 +1001,7 @@ class Lattice:
             a_hkl = a_hkls[np.argmin(np.abs(a_hkls).sum(axis=1))]
         a_vector = np.dot(a_hkl, self.matrix)
         #print('a_hkl', a_hkl)
-    
+
         # find the simplest b-direction
         b_hkl = None
         min_angle_ab = float('inf')
@@ -1010,20 +1010,20 @@ class Lattice:
                 for l in range(-m, m+1):
                     hkl = np.array([h, k, l])
                     if [h, k, l] != [0, 0, 0] and not has_reduction(hkl):
-                        if abs(np.dot(hkl, direction)) < tol: 
+                        if abs(np.dot(hkl, direction)) < tol:
                             vector = np.dot(hkl, self.matrix)
                             angle1 = angle(vector, a_vector, radians=False)
                             if abs(90-angle1) < min_angle_ab:
                                 min_angle_ab = abs(90-angle1)
                                 b_hkl = hkl
                                 b_vector = vector
-    
+
         #print('b_hkl', b_hkl, min_angle_ab)
         # change the sign
-        if abs(angle(np.cross(a_hkl, b_hkl), direction))>tol: 
+        if abs(angle(np.cross(a_hkl, b_hkl), direction))>tol:
             b_hkl *= -1
             b_vector *= -1
-    
+
         ## update the c_direction
         ab_plane = np.cross(a_vector, b_vector)#; print('ab_plane', ab_plane)
         c_hkl = None
@@ -1040,7 +1040,7 @@ class Lattice:
                             min_angle_c = angle1
                             c_hkl = hkl
                             c_vector = vector
-    
+
         #print(a_hkl, b_hkl, c_hkl)
         return np.vstack([a_hkl, b_hkl, c_hkl])
 

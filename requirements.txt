@@ -5,4 +5,3 @@ networkx>=2.3
 scipy>=1.7.3
 importlib_metadata>=1.4
 ase>=3.18.0
-pyshtools>=4.10.3

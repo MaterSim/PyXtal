@@ -457,7 +457,7 @@ class supergroup():
                 if mask is None or len(mask)<3:
                     def fun(translation, mapping, splitter, mask):
                         return self.symmetrize_dist(splitter, mapping, mask, translation)[0]
-                        
+
                     res = minimize(fun, translations[id], args=(mappings[id], splitter, mask),
                             method='Nelder-Mead', options={'maxiter': 10})
                     if res.fun < max_disp:
