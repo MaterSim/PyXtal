@@ -50,12 +50,12 @@ setup(
         'ase>=3.18.0',  #covered by pymatgen
         'scipy>=1.7.3',
         'importlib_metadata>=1.4',
-        'pyshtools>=4.10.3',
+        #'pyshtools>=4.10.3',
         #"openbabel>=3.0.0",
     ],
     extra_require={
         'visualization': ["py3Dmol>=0.8.0"],
-        #'descriptor': ["pyshtools>=4.10.3"],
+        'descriptor': ["pyshtools>=4.10.3"],
         },
     python_requires=">=3.7, <=3.12", #add the restriction for now issue #189
     license="MIT",

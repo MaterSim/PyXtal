@@ -2,7 +2,6 @@
 Module for crystal packing descriptor from energy decomposition
 """
 import numpy as np
-import pyshtools as pysh
 from scipy.stats import qmc
 from scipy.spatial.transform import Rotation
 from scipy.optimize import minimize
@@ -10,7 +9,7 @@ from scipy.special import sph_harm
 
 def _qlm(dists, l=4):
     '''
-    Calculates the vector associated with an atomic site and 
+    Calculates the vector associated with an atomic site and
     one of its neighbors
 
     Args:
@@ -56,7 +55,7 @@ def correlation(coef1, coef2, angle=None, s=0):
     """
     Compute the correlation between to sph coefs
 
-    Args: 
+    Args:
         coef1: sph coefficients 1
         coef2: sph coefficients 2
         angle: [alpha, beta, gamma]
@@ -65,7 +64,7 @@ def correlation(coef1, coef2, angle=None, s=0):
     Return:
         distance scaled in [0, 1]
     """
-    if angle is not None: 
+    if angle is not None:
         coef2 = coef2.rotate(angle[0], angle[1], angle[2], degrees=True)
     power = np.sqrt(coef1.spectrum()[s:].sum()*coef2.spectrum()[s:].sum())
     cross = coef1.cross_spectrum(coef2)[s:]
@@ -75,7 +74,7 @@ def correlation_opt(coef1, coef2, angle, s=0):
     """
     Compute the correlation between two sph coefs
 
-    Args: 
+    Args:
         coef1: sph coefficients 1
         coef2: sph coefficients 2
         angle: [alpha, beta, gamma]
@@ -88,7 +87,7 @@ def correlation_opt(coef1, coef2, angle, s=0):
         coef = coef2.rotate(x0[0], x0[1], x0[2], degrees=True)
         return -correlation(coef1, coef, s=s)
 
-    res = minimize(fun, angle, args=(coef1, coef2, s), 
+    res = minimize(fun, angle, args=(coef1, coef2, s),
             method='Nelder-Mead', options={'maxiter': 20})
     return -res.fun, res.x
 
@@ -96,7 +95,7 @@ def correlation_go(coef1, coef2, M=6, s=0, d_cut=0.92):
     """
     global optimization of two coefs based on quasi random sampling
 
-    Args: 
+    Args:
         coef1: sph coefficients 1
         coef2: sph coefficients 2
         M: 2^M sampling points
@@ -125,7 +124,7 @@ def correlation_go(coef1, coef2, M=6, s=0, d_cut=0.92):
 def fibonacci_sphere(N=1000):
     """
     Sampling the sphere grids
-    
+
     Args:
         N: number of pts to generate
 
@@ -174,7 +173,7 @@ def xyz2sph(xyzs, radian=True):
         xyzs: 3D xyz coordinates
         radian: return in radian (otherwise degree)
     """
-    pts = np.zeros([len(xyzs), 2])   
+    pts = np.zeros([len(xyzs), 2])
     for i, r_vec in enumerate(xyzs):
         r_mag = np.linalg.norm(r_vec)
         theta0 = np.arccos(r_vec[2]/r_mag)
@@ -182,7 +181,7 @@ def xyz2sph(xyzs, radian=True):
             theta0 = 0.0
         elif abs((r_vec[2] / r_mag) + 1.0) < 10.**(-8.):
             theta0 = np.pi
-       
+
         if r_vec[0] < 0.:
             phi0 = np.pi + np.arctan(r_vec[1] / r_vec[0])
         elif 0. < r_vec[0] and r_vec[1] < 0.:
@@ -207,17 +206,17 @@ def expand_sph(pts, l_max, norm=4, csphase=-1):
     Transform the grid points to spherical harmonics
 
     Args:
-        pts: 3D array 
+        pts: 3D array
             (thetas, phis, vals) with a length of N
 
         lmax: Integer
             The maximum degree of spherical harmonic.
 
         coeff_norm: integer
-            The normalization of SHExpandLSQ(). 
+            The normalization of SHExpandLSQ().
             1 (default) = Geodesy 4-pi normalized harmonics;
-            2 = Schmidt semi-normalized harmonics; 
-            3 = unnormalized harmonics; 
+            2 = Schmidt semi-normalized harmonics;
+            3 = unnormalized harmonics;
             4 = orthonormal harmonics.
 
         csphase: Integer
@@ -275,6 +274,7 @@ def get_alignment(pts, degrees=True):
 
 class spherical_image():
 
+    import pyshtools as pysh
     """
     A class to handle the crystal packing descriptor from spherical image
 
@@ -287,7 +287,7 @@ class spherical_image():
         N: number of grid points on the unit sphere
     """
 
-    def __init__(self, xtal, model='molecule', max_d=10, 
+    def __init__(self, xtal, model='molecule', max_d=10,
         factor=2.2, lmax=13, sigma=0.1, N=10000):
 
         for i in range(len(xtal.mol_sites)):
@@ -328,23 +328,23 @@ class spherical_image():
             t0, p0, h = _pt
             x0, y0, z0 = np.sin(t0)*np.cos(p0), np.sin(t0)*np.sin(p0), np.cos(t0)
             dst = np.linalg.norm(xyzs - np.array([x0, y0, z0]), axis=1)
-            vals += h*np.exp(-(dst**2/(2.0*self.sigma**2))) 
+            vals += h*np.exp(-(dst**2/(2.0*self.sigma**2)))
         return vals
-            
+
     def get_molecules(self):
         '''
         compute the spherical images from neighboring molecules
-    
+
         Returns:
             pts: [N, 3] array, (theta, phi, eng)
         '''
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
-            _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i, 
-                                                    factor=self.factor, 
-                                                    max_d=self.max_d, 
+            _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i,
+                                                    factor=self.factor,
+                                                    max_d=self.max_d,
                                                     ignore_E=False)
-            xyz, _ = site._get_coords_and_species(absolute=True, first=True) 
+            xyz, _ = site._get_coords_and_species(absolute=True, first=True)
             center = site.molecule.get_center(xyz)
             coords = np.zeros([len(neighs), 3])
             for _i, xyz in enumerate(neighs):
@@ -355,25 +355,25 @@ class spherical_image():
             pt[:, 2] = engs/np.sum(engs)
             pts.append(pt)
         return pts
-    
+
     def get_contacts(self):
         '''
         Compute the spherical images from the neighboring distances
-    
+
         Returns:
             pts: [N, 3] array, (theta, phi, eng)
         '''
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
-            engs, pairs, dists = self.xtal.get_neighboring_dists(i, 
-                                            factor=self.factor, 
+            engs, pairs, dists = self.xtal.get_neighboring_dists(i,
+                                            factor=self.factor,
                                             max_d=self.max_d)
             pt = np.zeros([len(pairs), 3])
             pt[:, :2] = xyz2sph(pairs)
             pt[:, 2] = engs/np.sum(engs)
             pts.append(pt)
         return pts
-    
+
     def plot_sph_images(self, lmax=None, figname=None, molecule=False):
         """
         Plot the spherical images in both 3d and 2d
@@ -393,7 +393,7 @@ class spherical_image():
             shift = 0
 
         fig = plt.figure(figsize=(9, 4*nrows))
-        gs = gridspec.GridSpec(nrows=nrows, ncols=2, 
+        gs = gridspec.GridSpec(nrows=nrows, ncols=2,
                                wspace=0.15, width_ratios=[0.7, 1])
         if molecule:
             from rdkit import Chem
@@ -422,7 +422,7 @@ class spherical_image():
             coef = self.coefs[i]
             grid = coef.expand(lmax=lmax)
             grid.plot3d(0, 0, title="{:6.3f}".format(self.ds[i]), show=False, ax=ax1)
-            grid.plot(show=False, ax=ax2, tick_interval=[120, 90], 
+            grid.plot(show=False, ax=ax2, tick_interval=[120, 90],
                     tick_labelsize=14, axes_labelsize=16)
             ax2.set_xlim([1, 359])
 
@@ -435,9 +435,9 @@ class spherical_image():
         """
         Plot the real molecular contacts in the crystal
         """
-        return self.xtal.show_mol_cluster(id, 
-                                          factor=self.factor, 
-                                          max_d=self.max_d, 
+        return self.xtal.show_mol_cluster(id,
+                                          factor=self.factor,
+                                          max_d=self.max_d,
                                           ignore_E=False,
                                           plot=False)
 
@@ -451,13 +451,13 @@ class spherical_image():
         """
         coef0 = self.coefs[0]
         angles = get_alignment(self.pts[0])
-        self.coefs[0] = self.coefs[0].rotate(angles[0], angles[1], angles[2]) 
+        self.coefs[0] = self.coefs[0].rotate(angles[0], angles[1], angles[2])
 
         for i in range(1, len(self.coefs)):
             coef1 = self.coefs[i]
             d, angles = correlation_go(self.coefs[0], coef1, M=M)
-            self.coefs[i] = coef1.rotate(angles[0], angles[1], angles[2]) 
-            self.ds[i] = d 
+            self.coefs[i] = coef1.rotate(angles[0], angles[1], angles[2])
+            self.ds[i] = d
 
     def rotate(self, alpha=0, beta=0, gamma=0):
         """
@@ -474,7 +474,7 @@ class spherical_image():
     def get_similarity(self, sph2, M=6, cutoff=0.95):
         """
         Compute the similarity matrix between two sphs
-        
+
         Args:
             sph2: the 2nd sph class
             M: number of power in quasi random sampling
@@ -508,14 +508,14 @@ class orientation_order():
     def get_neighbors(self):
         '''
         get neighboring molecules
-    
+
         Returns:
             pts: [N, 3] array, (theta, phi, eng)
         '''
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
             _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i)
-            xyz, _ = site._get_coords_and_species(absolute=True, first=True) 
+            xyz, _ = site._get_coords_and_species(absolute=True, first=True)
             center = site.molecule.get_center(xyz)
             coords = np.zeros([len(neighs), 3])
             #print(len(neighs))
@@ -524,10 +524,10 @@ class orientation_order():
                 coords[_i, :] = self.xtal.molecules[comps[_i]].get_center(xyz) - center
             pts.append(coords)
         return pts
- 
+
     def get_parameters(self, ls=[4, 6]):
         '''
-        Computes 
+        Computes
         Args:
             center: center xyz coordinate
             neighbors: a list of neighboring xyz coordinates
@@ -545,10 +545,10 @@ class orientation_order():
                 qs.append(np.sqrt((4 * np.pi)/(2*l+1) * dot))
 
         return qs
- 
+
 
 if __name__ == '__main__':
-    
+
     from pkg_resources import resource_filename
     from pyxtal import pyxtal
 

@@ -318,9 +318,9 @@ class wyckoff_split:
 
         all_g2_orbits = []
         translations = self.translation_generator()
-        # the translation generator provides all the possible ways to translate 
+        # the translation generator provides all the possible ways to translate
         # the starting positions, then they are shifted
-        for translation in translations: 
+        for translation in translations:
             for gen in wp1_generators:#into the proper orientation
                 orbit = np.matmul(self.inv_R,gen)
                 orbit[np.abs(orbit)<1e-5] = 0
@@ -451,7 +451,7 @@ class wyckoff_split:
         if len(g1_orbits) < len(wp2):
             s2 = ""
             for wp2 in wp2_lists:
-                s2 += wp2.get_label() 
+                s2 += wp2.get_label()
                 s2 += ', '
             # g, h = self.G.number, self.H.number
             # print("Error between {:d}[{:s}] -> {:d}[{:s}]".format(g, s1, h, s2))
@@ -463,10 +463,10 @@ class wyckoff_split:
     def __str__(self):
         s = "Wycokff split from {:d} to {:d}\n".format(self.G.number, self.H.number)
         for i, wp1 in enumerate(self.wp1_lists):
-            s += "\n{:s} -> ".format(wp1.get_label()) 
+            s += "\n{:s} -> ".format(wp1.get_label())
 
             for j, wp2 in enumerate(self.wp2_lists[i]):
-                s += "{:s}\n".format(wp2.get_label()) 
+                s += "{:s}\n".format(wp2.get_label())
                 g1s = self.G1_orbits[i][j]
                 g2s = self.G2_orbits[i][j]
                 Hs = self.H_orbits[i][j]
