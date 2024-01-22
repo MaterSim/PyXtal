@@ -711,7 +711,7 @@ class pyxtal_molecule:
         """
         from rdkit import Chem
 
-        mol = Chem.MolFromMolBlock(self.rdkit_mb, removeHs=False)
+        mol = Chem.MolFromMolBlock(self.rdkit_mol, removeHs=False)
         if N_confs > 1:
             conf = mol.GetConformer(0)
             for i in range(N_confs-1):

@@ -337,7 +337,6 @@ class representation():
                     dicts['orientation'] = np.array(v[4:7])
                     dicts['rotor'] = v[7:-1]
                     dicts['reflect'] = int(v[-1])
-                print(dicts)
                 site = mol_site.from_1D_dicts(dicts)
                 site.type = i
                 struc.mol_sites.append(site)

@@ -7,9 +7,9 @@ from pyxtal import pyxtal
 
 def make_entry_from_pyxtal(xtal):
     """
-    make entry from the pyxtal object, assuming that 
+    make entry from the pyxtal object, assuming that
     the smiles/ccdc_number info is given
-    
+
     Args:
         xtal: pyxtal object
 
@@ -19,7 +19,7 @@ def make_entry_from_pyxtal(xtal):
     from rdkit.Chem.Descriptors import ExactMolWt
     from rdkit.Chem.rdMolDescriptors import CalcMolFormula
     from rdkit import Chem
- 
+
     if xtal.valid:
         url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
         m = Chem.MolFromSmiles(xtal.tag['smiles'])
@@ -54,7 +54,7 @@ def make_entry_from_CSD_web(code, number, smiles, name=None):
         smiles: the corresponding molecular smiles
         name: name of the compound
     """
-   
+
     url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
     #xtal = pyxtal(molecular=True)
     #

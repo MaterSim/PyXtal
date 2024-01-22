@@ -2793,9 +2793,13 @@ class pyxtal:
         from pymatgen.io.cif import CifParser
         try:
             from ccdc import io
-            from rdkit import Chem
         except:
             msg = 'No CSD-python api is available'
+            raise CSDError(msg)
+        try:
+            from rdkit import Chem
+        except:
+            msg = 'No rdkit is available'
             raise CSDError(msg)
 
         try:
