@@ -1478,7 +1478,26 @@ class pyxtal:
         else:
             self.group = Group(group, use_hall=use_hall)
 
+        # Lattica needs some special handling heree
+        if not isinstance(lattice, Lattice):
+            if type(lattice) == np.ndarray:
+                ltype = self.group.lattice_type
+                if len(lattice) == 3:
+                    lattice = Lattice.from_matrix(lattice, ltype=ltype)
+                elif len(lattice) == 6: # cell para
+                    [a, b, c, alpha, beta, gamma] = lattice
+                    lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
+                else:
+                    msg = 'Cannot convert the input array to pyxtal.lattice.Lattice'
+                    raise ValueError(msg, lattice)
+            else:
+                msg = 'Cannot convert the input array to pyxtal.lattice.Lattice'
+                raise ValueError(msg, lattice)
+        else:
+            msg = 'The input lattice needs to be a pyxtal.lattice.Lattice class'
+            raise ValueError(msg)
         self.lattice = lattice
+
         self.dim = 3
         self.factor = 1.0
         self.PBC = [1, 1, 1]

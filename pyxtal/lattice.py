@@ -526,13 +526,13 @@ class Lattice:
 
     def generate_para(self):
         if self.dim == 3:
-            return generate_lattice(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara(self.ltype, self.volume, **self.kwargs)
         elif self.dim == 2:
-            return generate_lattice_2D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_2D(self.ltype, self.volume, **self.kwargs)
         elif self.dim == 1:
-            return generate_lattice_1D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_1D(self.ltype, self.volume, **self.kwargs)
         elif self.dim == 0:
-            return generate_lattice_0D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_0D(self.ltype, self.volume, **self.kwargs)
 
     def generate_matrix(self):
         """
@@ -1053,7 +1053,7 @@ class Lattice:
         return lat_new
 
 
-def generate_lattice(
+def generate_cellpara(
     ltype,
     volume,
     minvec=1.2,
@@ -1063,11 +1063,11 @@ def generate_lattice(
     **kwargs
 ):
     """
-    Generates a lattice (3x3 matrix) according to the space group symmetry and
-    number of atoms. If the spacegroup has centering, we will transform to
-    conventional cell setting. If the generated lattice does not meet the
-    minimum angle and vector requirements, we try to generate a new one, up to
-    maxattempts times.
+    Generates the cell parameter (a, b, c, alpha, beta, gamma) according
+    to the space group symmetry and number of atoms. If the spacegroup
+    has centering, we will transform to conventional cell setting. If the
+    generated lattice does not meet the minimum angle and vector
+    requirements, we try to generate a new one, up to maxattempts times.
 
     Args:
         volume: volume of the conventional unit cell
@@ -1082,7 +1082,7 @@ def generate_lattice(
             'max_l': the third smallest allowed cell vector.
 
     Returns:
-        a 3x3 matrix representing the lattice vectors of the unit cell. If
+        a 6-length array representing the lattice of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
     maxangle = np.pi - minangle
@@ -1210,7 +1210,7 @@ def generate_lattice(
     raise VolumeError(msg)
     #return
 
-def generate_lattice_2D(
+def generate_cellpara_2D(
     ltype,
     volume,
     thickness=None,
@@ -1221,11 +1221,12 @@ def generate_lattice_2D(
     **kwargs
 ):
     """
-    Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
-    number of atoms. If the layer group has centering, we will use the
-    conventional cell setting. If the generated lattice does not meet the
-    minimum angle and vector requirements, we try to generate a new one, up to
-    maxattempts times.
+    Generates the cell parameter (a, b, c, alpha, beta, gamma) according
+    to the layer group symmetry and number of atoms. If the layer group
+    has centering, we will transform to conventional cell setting. If the
+    generated lattice does not meet the minimum angle and vector
+    requirements, we try to generate a new one, up to maxattempts times.
+
     Note: The monoclinic layer groups have different unique axes. Groups 3-7
         have unique axis c, while 8-18 have unique axis a. We use non-periodic
         axis c for all layer groups.
@@ -1246,7 +1247,7 @@ def generate_lattice_2D(
             'max_l': the third smallest allowed cell vector.
 
     Returns:
-        a 3x3 matrix representing the lattice vectors of the unit cell. If
+        a 6-length representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
     if "unique_axis" not in kwargs:
@@ -1420,7 +1421,7 @@ def generate_lattice_2D(
     msg = "Cannot get lattice after {:d} cycles for volume {:.2f}".format(maxattempts, volume)
     raise VolumeError(msg)
 
-def generate_lattice_1D(
+def generate_cellpara_1D(
     ltype,
     volume,
     area=None,
@@ -1431,11 +1432,12 @@ def generate_lattice_1D(
     **kwargs
 ):
     """
-    Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
-    number of atoms. If the spacegroup has centering, we will transform to
-    conventional cell setting. If the generated lattice does not meet the
-    minimum angle and vector requirements, we try to generate a new one, up to
-    maxattempts times.
+    Generates a cell parameter (a, b, c, alpha, beta, gamma) according to
+    the rod group symmetry and number of atoms. If the rod group has centering,
+    we will transform to conventional cell setting. If the generated lattice
+    does not meet the minimum angle and vector requirements, we try to
+    generate a new one, up to maxattempts times.
+
     Note: The monoclinic Rod groups have different unique axes. Groups 3-7
         have unique axis a, while 8-12 have unique axis c. We use periodic
         axis c for all Rod groups.
@@ -1456,7 +1458,7 @@ def generate_lattice_1D(
             'max_l': the third smallest allowed cell vector.
 
     Returns:
-        a 3x3 matrix representing the lattice vectors of the unit cell. If
+        a 6-length array representing the lattice of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
     try:
@@ -1631,18 +1633,14 @@ def generate_lattice_1D(
     raise VolumeError(msg)
 
 
-def generate_lattice_0D(
+def generate_cellpara_0D(
     ltype, volume, area=None, minvec=1.2, max_ratio=10.0, maxattempts=100, **kwargs
 ):
     """
-    Generates a lattice (3x3 matrix) according to the spacegroup symmetry and
-    number of atoms. If the spacegroup has centering, we will transform to
-    conventional cell setting. If the generated lattice does not meet the
-    minimum angle and vector requirements, we try to generate a new one, up to
-    maxattempts times.
-    Note: The monoclinic Rod groups have different unique axes. Groups 3-7
-        have unique axis a, while 8-12 have unique axis c. We use periodic
-        axis c for all Rod groups.
+    Generates a cell parameter (a, b, c, alpha, beta, gamma) according to the
+    point group symmetry and number of atoms. If the generated lattice does
+    not meet the minimum angle and vector requirements, we try to generate
+    a new one, up to maxattempts times.
 
     Args:
         num: number of the Rod group

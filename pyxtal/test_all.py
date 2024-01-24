@@ -406,6 +406,31 @@ class TestOptLat(unittest.TestCase):
         pmg1 = c.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg0, pmg1))
 
+    def test_build(self):
+        l = np.array([48.005, 7.320, 35.864, 90.000, 174.948, 90.000])
+        sites = [
+                [0.0000,  0.0000,  0.1250],
+                [0.2296,  0.7704,  0.5370],
+                [0.2296,  0.2296,  0.5370],
+                [0.5408,  0.0000,  0.6186],
+                [0.0000,  0.0000,  0.3074],
+                ]
+        c = pyxtal()
+        c.build(9, ['S'], [8], lattice=l, sites=[sites])
+        pmg0 = c.to_pymatgen()
+        l1 = c.lattice.matrix
+
+        c.optimize_lattice()
+        pmg1 = c.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg0, pmg1))
+
+        c1 = pyxtal()
+        c1.build(9, ['S'], [8], lattice=l1, sites=[sites])
+        c1.optimize_lattice()
+        pmg2 = c1.to_pymatgen()
+        self.assertTrue(sm.StructureMatcher().fit(pmg0, pmg2))
+
+
     def test_transforms(self):
         paras = [
                  (5.0317, 19.2982,  5.8004, 90.0000, 122.2672,  90.0000, 'monoclinic', 6),
