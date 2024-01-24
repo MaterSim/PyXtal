@@ -1479,7 +1479,7 @@ class pyxtal:
             self.group = Group(group, use_hall=use_hall)
 
         # Lattica needs some special handling heree
-        if not isinstance(lattice, Lattice):
+        if type(lattice) != Lattice:
             if type(lattice) == np.ndarray:
                 ltype = self.group.lattice_type
                 if len(lattice) == 3:
@@ -1493,9 +1493,10 @@ class pyxtal:
             else:
                 msg = 'Cannot convert the input array to pyxtal.lattice.Lattice'
                 raise ValueError(msg, lattice)
-        else:
-            msg = 'The input lattice needs to be a pyxtal.lattice.Lattice class'
-            raise ValueError(msg)
+        #else:
+        #    print(lattice, type(lattice), type(lattice)==Lattice, type(lattice)!=Lattice)
+        #    msg = 'The input lattice needs to be a pyxtal.lattice.Lattice class'
+        #    raise ValueError(msg, lattice)
         self.lattice = lattice
 
         self.dim = 3
