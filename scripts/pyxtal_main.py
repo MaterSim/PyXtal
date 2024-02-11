@@ -140,7 +140,7 @@ if __name__ == "__main__":
             rand_crystal.from_random(3, sg, system, numIons0, factor, conventional=conventional)
         elif dimension == 2:
             rand_crystal.from_random(2, sg, system, numIons0, factor, thickness, conventional=conventional)
-        elif dimension == 1:                                             
+        elif dimension == 1:
             rand_crystal.from_random(1, sg, system, numIons0, factor, thickness, conventional=conventional)
         if dimension == 0:
             rand_crystal.from_random(0, sg, system, numIons0, factor)

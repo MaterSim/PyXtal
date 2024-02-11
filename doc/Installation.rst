@@ -53,7 +53,7 @@ or make a copy of the source code, and then install it manually.
 
     $ git clone https://github.com/qzhu2017/pyxtal
     $ cd pyxtal
-    $ python setup.py install
+    $ pip install .
 
 
 or update the code to our developing version

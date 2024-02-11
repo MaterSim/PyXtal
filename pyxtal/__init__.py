@@ -3002,7 +3002,7 @@ class pyxtal:
 
 
     def get_forcefield(self, ff_style='openff', code='lammps',
-                       chargemethod='am1bcc'):
+                       chargemethod='am1bcc', parameters=None):
         """
         An interface to create forcefield for molecular simulation with
         - Charmm
@@ -3014,6 +3014,7 @@ class pyxtal:
             - ff_style: 'gaff' or 'openff'
             - code: 'lammps' or 'charmm'
             - charge_method: 'am1bcc', 'am1-mulliken', 'mmff94', 'gasteiger'
+            - parameters: 1D-array of user-specified FF parameters
 
         Returns:
             An ase_atoms_objects with force field information
@@ -3054,6 +3055,10 @@ class pyxtal:
             # print(len(atoms), n_mols)
             # Initialize the forcefield instance from ost
             ff = forcefield(smiles, style=ff_style, chargemethod=chargemethod)
+
+            # update the parameters from the user
+            if parameters is not None:
+                ff.update_parameters(parameters)
 
             # Create the Parmed to handle FF parameters
             if sum(n_mols) == 1:
