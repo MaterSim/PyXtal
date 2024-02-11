@@ -171,8 +171,7 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
         os.makedirs(folder)
     cwd = os.getcwd()
     os.chdir(folder)
-
-    kpts = Kgrid(struc, kresol)
+    if type(kresol) != list: kpts = Kgrid(struc, kresol)
     atom_types = set(struc.get_chemical_symbols())
     kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=use_omp)
 
@@ -192,6 +191,7 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
         dyn = FIRE(ecf, logfile=logfile)
     else:
         dyn = FIRE(struc, logfile=logfile)
+
     try:
         dyn.run(fmax=fmax, steps=step)
         os.remove('dftb_pin.hsd')
@@ -200,6 +200,7 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
     except:
         print("Problem in DFTB calculation")
         struc = None
+
     os.chdir(cwd)
     return struc
 
