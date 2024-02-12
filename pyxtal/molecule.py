@@ -39,10 +39,17 @@ def find_rotor_from_smile(smile):
         for_remove = []
         for x in reversed(range(len(list_to_clean))):
             ix0 = itemgetter(0)(list_to_clean[x])
+            ix1 = itemgetter(0)(list_to_clean[x])
+            ix2 = itemgetter(0)(list_to_clean[x])
             ix3 = itemgetter(3)(list_to_clean[x])
             # for i-j-k-l, we don't want i, l are the ending members
-            # here C-C-S=O is not a good choice since O is only 1-coordinated
-            if neighbors[ix0] > 1 and neighbors[ix3] > 1:
+            # C-C-S=O is not a good choice since O is only 1-coordinated
+            # C-C-NO2 is a good choice since O is only 1-coordinated
+            if neighbors[ix0] == 1 and neighbors[ix1] == 2:
+                for_remove.append(x)
+            elif neighbors[ix3] == 1 and neighbors[ix2] == 2:
+                for_remove.append(x)
+            else:
                 for y in reversed(range(x)):
                     ix1 = itemgetter(1)(list_to_clean[x])
                     ix2 = itemgetter(2)(list_to_clean[x])
@@ -50,8 +57,6 @@ def find_rotor_from_smile(smile):
                     iy2 = itemgetter(2)(list_to_clean[y])
                     if [ix1, ix2] == [iy1, iy2] or [ix1, ix2] == [iy2, iy1]:
                         for_remove.append(y)
-            else:
-                for_remove.append(x)
         clean_list = []
         for i, v in enumerate(list_to_clean):
             if i not in set(for_remove):
@@ -67,11 +72,11 @@ def find_rotor_from_smile(smile):
         #smarts_torsion2="[*]~[^1]#[^1]~[*]" # C-C triples bonds, to be fixed
 
         mol = Chem.MolFromSmiles(smile)
+        mol_with_H = Chem.AddHs(mol)
         N_atom = mol.GetNumAtoms()
-        neighbors = [len(a.GetNeighbors()) for a in mol.GetAtoms()]
+        neighbors = [len(a.GetNeighbors()) for a in mol_with_H.GetAtoms()][:N_atom]
         #make sure that the ending members will be counted
-        neighbors[0] += 1
-        neighbors[-1] += 1
+        #neighbors[0] += 1; neighbors[-1] += 1
         patn_tor1 = Chem.MolFromSmarts(smarts_torsion1)
         torsion1 = cleaner(list(mol.GetSubstructMatches(patn_tor1)), neighbors)
         patn_tor2 = Chem.MolFromSmarts(smarts_torsion2)
@@ -84,7 +89,7 @@ def find_rotor_from_smile(smile):
             if not b.IsInRing():
                 torsions.append(t)
         #if len(torsions) > 6: torsions[1] = (4, 7, 10, 15)
-        return torsions
+        return torsions #+ [(6, 7, 8, 3), (6, 5, 4, 3)]
 
 def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
     """
@@ -1741,3 +1746,20 @@ def compare_mol_connectivity(mol1, mol2, ignore_name=False):
         GM = nx.isomorphism.GraphMatcher(G1, G2, node_match=fun)
 
     return GM.is_isomorphic(), GM.mapping
+
+
+if __name__ == "__main__":
+    smiles = 'CCN1C(=O)c2ccc3C(=O)N(CC)C(=O)c4ccc(C1=O)c2c34'
+    ans1 = [(0, 1, 2, 20), (13, 12, 11, 14)]; print(ans1)
+    ans2 = find_rotor_from_smile(smiles); print(ans2)
+    assert(ans1==ans2)
+
+    smiles = 'Nc1c(Cl)cc(cc1N(=O)=O)N(=O)=O'
+    ans2 = find_rotor_from_smile(smiles); print(ans2)
+    ans1 = [(6, 5, 11, 13), (6, 7, 8, 10)]; print(ans1)
+    assert(ans1==ans2)
+
+    smiles = 'COc1cc(C=O)ccc1O'
+    ans2 = find_rotor_from_smile(smiles); print(ans2)
+    ans1 = [(0, 1, 2, 9), (6, 5, 4, 7)]; print(ans1)
+    assert(ans1==ans2)

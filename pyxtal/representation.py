@@ -338,12 +338,23 @@ class representation():
                     dicts['rotor'] = v[7:-1]
                     dicts['reflect'] = int(v[-1])
                 site = mol_site.from_1D_dicts(dicts)
-                site.type = i
+
+                bypass = False
+                for mol_id, molecule in enumerate(struc.molecules):
+                    if str(site.molecule) == str(molecule):
+                        site.type = mol_id
+                        struc.numMols[mol_id] += site.wp.multiplicity
+                        bypass = True
+                        break
+                if not bypass:
+                    struc.molecules.append(site.molecule)
+                    site.type = len(struc.molecules) - 1
+                    struc.numMols[site.type] += site.wp.multiplicity
+
+                #site.type = i
                 struc.mol_sites.append(site)
-                struc.numMols[i] += site.wp.multiplicity
                 #move to next rep
                 count += 1
-            struc.molecules.append(site.molecule)
 
         struc._get_formula()
         struc.source = '1D rep.'
