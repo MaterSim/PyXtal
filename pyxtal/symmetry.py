@@ -390,22 +390,26 @@ class Group:
                     return False
         return True
 
-    def list_wyckoff_combinations(self, numIons, quick=False, max_wp=None, min_wp=None, Nmax=10000000):
+    def list_wyckoff_combinations(self, numIons, quick=False, numWp=(None, None), Nmax=10000000):
         """
         List all possible wyckoff combinations for the given formula. Note this
         is really designed for a light weight calculation. If the solution space
         is big, set quick as True.
 
         Args:
-            numIons: [12, 8]
-            quick: Boolean, quickly generate some solutions
+            numIons (list): [12, 8]
+            quick ()Boolean): quickly generate some solutions
+            numWp (tuple): (min_wp, max_wp)
+            Nmax: maximumly allowed combinations
 
         Returns:
             Combinations: list of possible sites
             has_freedom: list of boolean numbers
+            indices: list of wp indices
         """
 
         numIons = np.array(numIons)
+        (min_wp, max_wp) = numWp
         # Must be greater than the number of smallest wp multiplicity
         if numIons.min() < self[-1].multiplicity:
             return [], [], []
