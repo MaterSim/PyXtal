@@ -529,7 +529,7 @@ def generate_wp_lib(spg_list, composition,
         count = 0
         for i in range(max_fu, min_fu-1, -1):
             letters, _, wp_ids = g.list_wyckoff_combinations(
-                    composition*i, num_wp=(min_wp, max_wp), Nmax=100000)
+                    composition*i, numWp=num_wp, Nmax=100000)
             for j, wp in enumerate(wp_ids):
                 wp_dofs = 0
                 num = 0
