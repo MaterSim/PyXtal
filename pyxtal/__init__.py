@@ -470,21 +470,26 @@ class pyxtal:
             for i, site in enumerate(sym_struc.equivalent_sites):
                 pos = site[0].frac_coords
                 letter = sym_struc.wyckoff_symbols[i]
+                #print(letter)
                 wp = Wyckoff_position.from_group_and_letter(number, letter, style=style, hn=hn)
                 specie = site[0].specie.number
                 #if wp.index>0: print(wp)
                 pos1 = wp.search_generator(pos, self.group[0], tol=tol)
+                #print(pos, pos1, self.group[0])
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
-                    break
+                    pos1, wp, _ = self.group[0].merge(pos, matrix, 1e-3)
+                    if pos1 is None:
+                        print("Problem in ", site)
+                        print(wp.symbol, wp.number, wp.letter, wp)
+                        print('sym_struc_sites', sym_struc)
+                        raise RuntimeError("Cannot extract the right mapping from spglib")
+                        #break
 
-            if len(atom_sites) != len(sym_struc.equivalent_sites):
-                print(len(atom_sites))
-                print(len(sym_struc.equivalent_sites))
-                raise RuntimeError("Cannot extract the right mapping from spglib")
-            else:
-                self.atom_sites = atom_sites
+            #if len(atom_sites) != len(sym_struc.equivalent_sites):
+            #else:
+            self.atom_sites = atom_sites
             #import pymatgen.analysis.structure_matcher as sm
             #self.dim = 3
             #self.PBC = [1, 1, 1]
