@@ -411,7 +411,7 @@ class pyxtal:
                 self._from_pymatgen(seed, tol, style=style)
             elif isinstance(seed, str):
                 if backend=='pymatgen':
-                    pmg_struc = Structure.from_file(seed)
+                    pmg_struc = Structure.from_file(seed, primitive=True)
                     self._from_pymatgen(pmg_struc, tol, a_tol, style=style)
                 else:
                     #Need to check

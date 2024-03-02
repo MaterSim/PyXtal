@@ -813,7 +813,7 @@ class TestAtomic3D(unittest.TestCase):
         # test reading xtal from cif
         for name in ["FAU", "NaSb3F10", "PVO", "lt_quartz"]:
             cif_file = cif_path + name + ".cif"
-            pmg1 = Structure.from_file(cif_file)
+            pmg1 = Structure.from_file(cif_file, primitive=True)
             struc = pyxtal()
             struc.from_seed(seed=cif_file)
             pmg_struc = struc.to_pymatgen()
@@ -823,7 +823,7 @@ class TestAtomic3D(unittest.TestCase):
         # test reading xtal from cif
         for name in ["FAU"]:
             cif_file = cif_path + name + ".cif"
-            pmg1 = Structure.from_file(cif_file)
+            pmg1 = Structure.from_file(cif_file, primitive=True)
             struc = pyxtal()
             struc.from_seed(seed=cif_file, style='spglib')
             pmg_struc = struc.to_pymatgen()
@@ -831,7 +831,7 @@ class TestAtomic3D(unittest.TestCase):
         # more space groups
         for name in ['I41amd', 'P4nmm', 'Pmmn', 'Pn3m', 'Fd3', 'Pn3']:
             cif_file = cif_path + name + ".vasp"
-            pmg1 = Structure.from_file(cif_file)
+            pmg1 = Structure.from_file(cif_file, primitive=True)
             struc = pyxtal()
             struc.from_seed(seed=cif_file, style='spglib')
             pmg_struc = struc.to_pymatgen()
@@ -840,7 +840,7 @@ class TestAtomic3D(unittest.TestCase):
     def test_read_by_HN(self):
         for name in ["aspirin"]:
             cif_file = cif_path + name + '.cif'
-            pmg1 = Structure.from_file(cif_file)
+            pmg1 = Structure.from_file(cif_file, primitive=True)
             struc = pyxtal()
             for hn in Hall(14).hall_numbers:
                 struc._from_pymatgen(pmg1, hn=hn)
@@ -1019,7 +1019,7 @@ class TestSubgroup(unittest.TestCase):
             struc = pyxtal(molecular=True)
             struc.from_seed(seed=cif, molecules=[name])
             pmg_struc = struc.to_pymatgen()
-            pmg_s1 = Structure.from_file(cif)
+            pmg_s1 = Structure.from_file(cif, primitive=True)
             self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s1))
 
             Cs = struc.subgroup(eps=0, max_cell=1)
@@ -1033,7 +1033,7 @@ class TestSubgroup(unittest.TestCase):
         struc = pyxtal(molecular=True)
         struc.from_seed(seed=cif, molecules=['Glycine-z', 'H2O'])
         pmg_struc = struc.to_pymatgen()
-        pmg_s1 = Structure.from_file(cif)
+        pmg_s1 = Structure.from_file(cif, primitive=True)
         self.assertTrue(sm.StructureMatcher().fit(pmg_struc, pmg_s1))
 
     def test_special(self):
