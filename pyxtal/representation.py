@@ -243,7 +243,7 @@ class representation():
             msg = "Composition is inconsistent: {:d}/{:d}\n".format(sum(composition), n_site)
             msg += str(inputs)
             raise ValueError(msg)
-        n_cell += 1
+        #n_cell += 1
 
         for i, smile in enumerate(smiles):
             if smile.endswith('.smi'):
@@ -253,16 +253,20 @@ class representation():
                     n_mol = 4
                 else:
                     n_torsion = len(find_rotor_from_smile(smile))
-                    n_mol = 7 + n_torsion
+                    n_mol = 8 + n_torsion # (wp_id, x, y, z, ori_x, ori_y, ori_z, inv) + torsion
                 #inversion
-                inputs[n_cell+n_mol-2] = int(inputs[n_cell+n_mol-2])
-                x.append(inputs[n_cell-1:n_cell+n_mol-1])
+                #print(n_mol, n_cell, len(inputs))
+                inputs[n_cell] = int(inputs[n_cell])
+                inputs[n_cell+n_mol-1] = int(inputs[n_cell+n_mol-1])
+                x.append(inputs[n_cell:n_cell+n_mol])#; print('string', x[-1])
                 n_cell += n_mol
+        assert(n_cell == len(inputs))
         return cls(x, smiles)
 
     def to_standard_setting(self):
         xtal = self.to_pyxtal()
-        rep0 = representation.from_pyxtal(xtal, standard=True)
+        xtal.optimize_lattice(standard=True)
+        rep0 = representation.from_pyxtal(xtal)
         self.x = rep0.x
 
     def to_pyxtal(self, smiles=None, composition=None):
@@ -335,7 +339,7 @@ class representation():
                 dicts['center'] = v[1:4]
                 if smile not in ["Cl-"]:
                     dicts['orientation'] = np.array(v[4:7])
-                    dicts['rotor'] = v[7:-1]
+                    dicts['rotor'] = v[7:-1]#; print('ro', dicts['rotor'])
                     dicts['reflect'] = int(v[-1])
                 site = mol_site.from_1D_dicts(dicts)
 
@@ -389,7 +393,7 @@ class representation():
             strs += "{:5.1f} ".format(c)
 
         # data for molecule
-        strs += "{:d} ".format(len(x)-1)
+        strs += "{:d} ".format(len(x)-1)#; print(x[1])
         for i in range(1, len(x)):
             strs += "{:d} ".format(x[i][0])
             for v in x[i][1:4]:
@@ -472,7 +476,7 @@ if __name__ == "__main__":
 
     #aspirin
     smiles = ['CC(=O)OC1=CC=CC=C1C(=O)O']
-    x = [[81,11.43,6.49,11.19,83.31],[0.77,0.57,0.53,48.55,24.31,145.94,-77.85,-4.40,170.86,False]]
+    x = [[81,11.43,6.49,11.19,83.31],[0, 0.77,0.57,0.53,48.55,24.31,145.94,-77.85,-4.40,170.86,False]]
     #rep0 = representation(x, smiles)
     #print(rep0.to_string())
     rep1 = representation(x, smiles)
@@ -481,16 +485,20 @@ if __name__ == "__main__":
     rep2 = representation.from_pyxtal(xtal)
     print(rep2.to_pyxtal())
     print(rep2.to_string())
-    string = "82 11.43  6.49 11.19 83.31 1  0.77  0.57  0.53 48.55 24.31 145.9 -77.85 -4.40 170.9 0"
+
+    print('Test read from string')
+    string = "82 11.43  6.49 11.19 83.31 1  0 0.77  0.57  0.53 48.55 24.31 145.9 -77.85 -4.40 170.9 0"
     rep3 = representation.from_string(string, smiles)
     print(rep3.to_string())
     print(rep3.to_pyxtal())
+    #x = rep3.to_pyxtal(); x.optimize_lattice(standard=True); print(x)
     rep3.to_standard_setting()
     print(rep3.to_pyxtal())
     print(rep3.to_string())
 
-    string1 = "81 14.08  6.36 25.31  83.9 1 0.83 0.40 0.63  136.6  -21.6 -151.1 -101.1 -131.2  154.7 -176.4 -147.8  178.2 -179.1  -53.3 0"
-    string2 = "81 14.08  6.36 25.31  83.9 1 0.03 0.84 0.89  149.1   -8.0  -37.8  -39.9 -104.2  176.2 -179.6  137.8 -178.5 -173.3 -103.6 0"
+    print("Test other cases")
+    string1 = "81 14.08  6.36 25.31  83.9 1 0 0.83 0.40 0.63  136.6  -21.6 -151.1 -101.1 -131.2  154.7 -176.4 -147.8  178.2 -179.1  -53.3 0"
+    string2 = "81 14.08  6.36 25.31  83.9 1 0 0.03 0.84 0.89  149.1   -8.0  -37.8  -39.9 -104.2  176.2 -179.6  137.8 -178.5 -173.3 -103.6 0"
     smiles = ['CC1=CC=C(C=C1)S(=O)(=O)C2=C(N=C(S2)C3=CC=C(C=C3)NC(=O)OCC4=CC=CC=C4)C']
     rep4 = representation.from_string(string1, smiles)
     rep5 = representation.from_string(string2, smiles)

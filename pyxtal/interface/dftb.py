@@ -73,7 +73,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
               'Analysis_MullikenAnalysis': 'No',
               'Analysis_CalculateForces': 'Yes',
              }
-    if write_band: 
+    if write_band:
         kwargs['Analysis_WriteBandOut'] = 'Yes'
     if use_omp:
         kwargs['Parallel_'] = ''
@@ -81,9 +81,9 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
     if dispersion is not None:
         kwargs['Hamiltonian_Dispersion'] = dispersion
 
-    if skf_dir.find('3ob') > 0: 
+    if skf_dir.find('3ob') > 0:
         calc_type = '3ob'
-    elif skf_dir.find('mio') > 0: 
+    elif skf_dir.find('mio') > 0:
         calc_type = 'mio'
     elif skf_dir.find('pbc') > 0:
         calc_type = 'pbc'
@@ -97,16 +97,16 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
         HD = {"Br": -0.0573,
               "C":  -0.1492,
               "N":  -0.1535,
-              "Ca": -0.0340, 
+              "Ca": -0.0340,
               "Na": -0.0454,
-              "Cl": -0.0697, 
+              "Cl": -0.0697,
               "Zn": -0.03,
               "O":  -0.1575,
               "F":  -0.1623,
               "P":  -0.14,
-              "H":  -0.1857, 
+              "H":  -0.1857,
               "S":  -0.11,
-              "I":  -0.0433, 
+              "I":  -0.0433,
               "K":  -0.0339,
              }
         strs = '{'
@@ -144,7 +144,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
                 kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='d'
             else:
                 raise RuntimeError(calc_type, "doesnot support", ele)
-        
+
     #DFTB2
 
     #pbc-0-3
@@ -183,7 +183,7 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
     struc.set_calculator(calc)
 
     # impose symmetry
-    if symmetrize: struc.set_constraint(FixSymmetry(struc)) 
+    if symmetrize: struc.set_constraint(FixSymmetry(struc))
 
     # impose cell constraints
     if opt_cell:
@@ -210,8 +210,8 @@ def DFTB_SCF(struc, skf_dir, kresol=0.10, folder='tmp', disp=None, filename=None
 
     Args:
         struc: ase atoms object
-        skf_dir: 
-        kresol: 
+        skf_dir:
+        kresol:
         filename: band structure output
     """
     if not os.path.exists(folder):
@@ -257,10 +257,10 @@ class DFTB():
         use_omp: True/False
     """
 
-    def __init__(self, struc, skf_dir, 
-                 disp = 'D3', 
-                 kresol = 0.10, 
-                 folder = 'tmp', 
+    def __init__(self, struc, skf_dir,
+                 disp = 'D3',
+                 kresol = 0.10,
+                 folder = 'tmp',
                  label = 'test',
                  prefix = 'geo_final',
                  use_omp = False,
@@ -276,7 +276,7 @@ class DFTB():
         self.prefix = prefix
         self.use_omp = use_omp
         if not os.path.exists(self.folder):
-           os.makedirs(self.folder)   
+           os.makedirs(self.folder)
 
     def get_calculator(self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params={}):
         """
@@ -295,7 +295,7 @@ class DFTB():
         if eVperA: ftol *= 0.194469064593167E-01
         atom_types = set(self.struc.get_chemical_symbols())
         kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts, use_omp=self.use_omp)
-       
+
         if mode in ['relax', 'vc-relax']:
             #kwargs['Driver_'] = 'ConjugateGradient'
             kwargs['Driver_'] = 'GeometryOptimization'
@@ -305,7 +305,7 @@ class DFTB():
             kwargs['Driver_OutputPrefix'] = self.prefix
             kwargs['Driver_Convergence_'] = ''
             kwargs['Driver_Convergence_GradElem'] = ftol
-            
+
             if mode == 'vc-relax':
                 kwargs['Driver_MovedAtoms'] = "1:-1"
                 kwargs['Driver_LatticeOpt'] = "Yes"
@@ -343,7 +343,7 @@ class DFTB():
                     kwargs['Driver_Barostat_Pressure [Pa]'] = dicts['pressure']
                     kwargs['Driver_Barostat_Timescale [ps]'] = 0.1
 
-    
+
         calc = Dftb(label=self.label,
                     #run_manyDftb_steps=True,
                     atoms=self.struc,
@@ -383,10 +383,10 @@ class DFTB():
 
 class Dftb(FileIOCalculator):
     """ This module defines a FileIOCalculator for DFTB+
-    
+
     http://www.dftbplus.org/
     http://www.dftb.org/
-    
+
     Initial development: markus.kaukonen@iki.fi
     Modified by QZ to avoid the I/O load
     """
@@ -654,7 +654,7 @@ class Dftb(FileIOCalculator):
         # reaches outside of the for loop
         index_force_begin = -1
         index_force_end = -1
-        
+
         # Force line indexes
         fstring = 'forces   '
         for iline, line in enumerate(self.lines):
@@ -670,8 +670,8 @@ class Dftb(FileIOCalculator):
             gradients.append([float(word[k]) for k in range(0, 3)])
         gradients = np.array(gradients)* Hartree / Bohr
 
-        return gradients 
-    
+        return gradients
+
     def read_eigenvalues(self):
         """ Read Eigenvalues from dftb output file (results.tag).
             Unfortunately, the order seems to be scrambled. """

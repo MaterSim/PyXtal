@@ -32,7 +32,7 @@ def opt_lammpslib(struc, lmp, parameters=None, mask=None, logfile='-',
 
     #check_symmetry(si, 1.0e-6, verbose=True)
     struc.set_calculator(lammps)
-    struc.set_constraint(FixSymmetry(struc)) 
+    struc.set_constraint(FixSymmetry(struc))
     if opt_cell:
         ecf = ExpCellFilter(struc, mask)
         if method == 'FIRE':
@@ -84,17 +84,17 @@ def run_lammpslib(struc, lmp, parameters=None, path='tmp', \
                            f"min_style {min_style}",
                            f"minimize 1e-15 1e-15 {steps} {steps}",
                           ]
-        
+
         else:
             parameter0 += ['run 0']
-        
+
         lammps = LAMMPSlib(lmp=lmp, lmpcmds=parameter0, molecule=molecule, \
                            lmp_file=lmp_file, log_file='lammps.log', path=path)
-    
+
     struc.set_calculator(lammps)
-    
+
     Eng = struc.get_potential_energy()
-    
+
     return struc, Eng
 
 
@@ -159,7 +159,7 @@ class LAMMPSlib(Calculator):
                 if not self.molecule and para.find('pair_coeff') >= 0:
                     tmp = para.split()
                     filename = tmp[3]
-                    filename1 = self.ffpath + '/' + filename 
+                    filename1 = self.ffpath + '/' + filename
                     para = para.replace(filename, filename1)
                 self.paras.append(para)
 
@@ -172,7 +172,7 @@ class LAMMPSlib(Calculator):
         boundary = ''
         for i in range(3):
             if atoms.pbc[i]:
-                boundary += 'p ' 
+                boundary += 'p '
             else:
                 boundary += 'f '
         if boundary in ['f f p ', 'p p f ']: #needs some work later
@@ -203,8 +203,8 @@ class LAMMPSlib(Calculator):
 
         pos = np.array(
                 [x for x in self.lmp.gather_atoms("x", 1, 3)]).reshape(-1, 3)
-        
-        self.energy = self.lmp.extract_variable('pe', None, 0) 
+
+        self.energy = self.lmp.extract_variable('pe', None, 0)
         #print('update lammps energy')
 
         xlo = self.lmp.extract_global("boxxlo", 1)
@@ -274,7 +274,7 @@ class LAMMPSlib(Calculator):
                     fh.write('boundary p p s\n')
                 else:
                     fh.write('boundary {:s}\n'.format(self.boundary))
-                fh.write('atom_modify sort 0 0.0\n') 
+                fh.write('atom_modify sort 0 0.0\n')
                 if not self.molecule:
                     fh.write('read_data {:s}\n'.format(self.lammps_data))
                 fh.write('\n### interactions\n')
@@ -297,7 +297,7 @@ class LAMMPSlib(Calculator):
                     tmp += LAMMPS_collections().dict['GB_opt']
                     for i in tmp:
                         fh.write(i)
-                
+
                 if self.calc_type.find('GB') >= 0:
                     fh.write('thermo_style custom pe pxx pyy pzz pyz pxz pxy c_eatoms\n')
                 else:
@@ -306,7 +306,7 @@ class LAMMPSlib(Calculator):
                 fh.write('thermo 1\n')
                 fh.write('run 1\n')
 
-                #fh.write('print "__end_of_ase_invoked_calculation__"\n') 
+                #fh.write('print "__end_of_ase_invoked_calculation__"\n')
 
     def write_lammps_data(self, atoms):
         atom_types = np.array(atoms.get_tags()) #[1]*len(atoms)
@@ -399,11 +399,11 @@ class LAMMPSlib(Calculator):
             for i in range(N_mol):
                 fh.write('{:4d} {:4d} {:4d} {:4d}\n'.format(i*2+1,1,i*3+1,i*3+2))
                 fh.write('{:4d} {:4d} {:4d} {:4d}\n'.format(i*2+2,1,i*3+1,i*3+3))
-                   
+
             fh.write('\nAngles \n\n')
             for i in range(N_angle):
                 fh.write('{:4d} {:4d} {:4d} {:4d} {:4d}\n'.format(i+1,1,i*3+2,i*3+1,i*3+3))
-                   
+
 
     def update(self, atoms):
         if not hasattr(self, 'atoms') or self.atoms != atoms:
@@ -458,7 +458,7 @@ class LAMMPS_collections():
         "unfix f1\n",
         "unfix f2\n",
         ]
-        
+
         self.dict['GB_md'] = [
         "# ---------- Run GB MD ---------\n",
         "thermo 100\n",
