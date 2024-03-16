@@ -44,7 +44,7 @@ setup(
     ],
     install_requires=[
         "spglib>=1.10.4",
-        "pymatgen>=2023.10.3",
+        "pymatgen>=2024.3.1",
         "pandas>=2.0.2",
         "networkx>=2.3",
         'ase>=3.18.0',  #covered by pymatgen
