@@ -895,7 +895,7 @@ class supergroup():
                 disps.append(dis_abs)
                 print(output)
         output = "Cell: {:7.3f}{:7.3f}{:7.3f}".format(*translation)
-        output += ", Disp (A): {:6.3f}".format(max(max_disps))
+        output += ", Disp (A): {:6.3f}".format(max(disps))
         print(output)
 
     def sort_solutions(self, solutions):
@@ -1025,35 +1025,24 @@ class supergroup():
         return struc
 
 
-class symmetry_mapper():
-    """
-    Class to map the symmetry relation between two structures
+#class symmetry_mapper():
+#    """
+#    Class to map the symmetry relation between two structures
+#    QZ: not needed now
+#    Args:
+#        struc_H: pyxtal structure with low symmetry (H)
+#        struc_G: pyxtal structure with high symmetry (G)
+#        max_d: maximum displacement to be considered
+#    """
+#    def __init__(self, struc_H, struc_G, max_d=1.0):
+#        # initilize the necesary parameters
+#        G = struc_G.group
+#        H = struc_H.group
+#        elements, sites = struc_G._get_elements_and_sites()
+#        strucs, disp, cell, path, gts, sols = struc_G.get_transition(struc_H, d_tol=max_d)
+#        if path is not None:
+#            struc_G.subgroup_by_path(gts, sols)
 
-    Args:
-        struc_H: pyxtal structure with low symmetry (H)
-        struc_G: pyxtal structure with high symmetry (G)
-        max_d: maximum displacement to be considered
-    """
-    def __init__(self, struc_H, struc_G, max_d=1.0):
-        # initilize the necesary parameters
-        G = struc_G.group
-        H = struc_H.group
-        elements, sites = struc._get_elements_and_sites()
-        paths = G.search_subgroup_paths(H.number)
-        for path in paths:
-            sols = self.along_path(path)
-            for i, sol in enumerate(sols):
-                max_disp, trans, mapping, sp = self.calc_disps(id, sol, self.max_d)
-                if max_disp < d_tol:
-                    break
-
-    #def along_path(self, path):
-    #    #letters_H
-    #    #letters_G
-    #    for ele in eles:
-    #        # 1, make_subgroup to H
-    #        # 2, enumerate all wycs
-    #    return
 
 class supergroups():
     """
@@ -1130,13 +1119,14 @@ class supergroups():
             output = "Cell: {:7.3f}{:7.3f}{:7.3f}".format(*trans)
             output += ", Disp (A): {:6.3f}".format(max_disp)
             print(output)
+            #print('mapping', mapping)
             for i, wp2 in enumerate(sp.wp2_lists):
                 wp1 = sp.wp1_lists[i]
                 ele = sp.elements[i]
                 l2 = wp1.get_label()
                 for j, wp in enumerate(wp2):
                     l1 = wp.get_label()
-                    output = "{:2s} [{:2d}]: ".format(ele, mapping[i][j])
+                    output = "{:2s} [{:2d}]: ".format(ele, mapping[i])
                     output += "{:3s} -> {:3s}".format(l1, l2)
                     print(output)
 
@@ -1150,7 +1140,7 @@ class supergroups():
         Returns:
             a series of pyxtal structures
         """
-        #self.print_solutions()
+        # self.print_solutions()
         # derive the backward subgroup representation
         struc0 = self.strucs[-1]
         for i in range(1, len(self.solutions)+1):

@@ -122,7 +122,7 @@ class pyxtal:
     >>> s2 = pyxtal()
     >>> s1.from_seed("pyxtal/database/cifs/0-G62.cif") #structure with low symmetry
     >>> s2.from_seed("pyxtal/database/cifs/2-G71.cif") #structure with high symmetry
-    >>> strucs, _, _, _ = s2.get_transition(s1) # get the transition from high to low
+    >>> strucs, _, _, _, _ = s2.get_transition(s1) # get the transition from high to low
     >>> strucs
     [
     ------Crystal from Transition 0  0.000------
@@ -735,9 +735,10 @@ class pyxtal:
 
         Returns:
             a pyxtal structure with lower symmetries
+            list of splitters
         """
         struc = self.copy()
-
+        splitters = []
         G = self.group
         for g_type, id in zip(gtypes, ids):
             if self.molecular:
@@ -750,8 +751,9 @@ class pyxtal:
             struc = struc._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
             if struc is None:
                 return None
+            splitters.append(splitter)
             G = splitter.H
-        return struc
+        return struc, splitters
 
     def subgroup_once(self, eps=0.1, H=None, perms=None, group_type='t', \
             max_cell=4, min_cell=0, mut_lat=True, ignore_special=False):
@@ -1806,7 +1808,7 @@ class pyxtal:
             for p in path:
                 gtypes.append(p[0])
                 ids.append(p[1])
-            sub = self.subgroup_by_path(gtypes, ids, eps=0)
+            sub, _ = self.subgroup_by_path(gtypes, ids, eps=0)
             sub.optimize_lattice()
             sub.source = "subgroup"
         else:
@@ -2224,16 +2226,17 @@ class pyxtal:
             good_disps = []
             good_paths = []
             good_trans = []
+            good_splitters = []
 
             for p in paths:
                 r = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images, both)
-                (strucs, disp, tran, count) = r
+                (strucs, disp, tran, count, sps) = r
                 if count == 0:
                     # prepare more paths to increase diversity
                     add_paths = self.group.add_k_transitions(p)
                     for p0 in add_paths:
                         r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images, both)
-                        (strucs, disp, tran, count) = r
+                        (strucs, disp, tran, count, sps) = r
                         if strucs is not None:
                             if strucs[-1].disp < d_tol2: #stop
                                 return strucs, disp, tran, p0
@@ -2243,16 +2246,18 @@ class pyxtal:
                                 good_paths.append(p0)
                                 good_strucs.append(strucs)
                                 good_trans.append(tran)
+                                good_splitters.append(sps)
                 else:
                     if strucs is not None:
                         if strucs[-1].disp < d_tol2:
-                            return strucs, disp, tran, p
+                            return strucs, disp, tran, p, sps
                         else:
                             good_ds.append(strucs[-1].disp)
                             good_disps.append(disp)
                             good_paths.append(p)
                             good_strucs.append(strucs)
                             good_trans.append(tran)
+                            good_splitters.append(sps)
                 # Early stop
                 if len(good_ds) > 5:
                     break
@@ -2260,12 +2265,12 @@ class pyxtal:
                 #print("Number of candidate path:", len(good_ds))
                 good_ds = np.array(good_ds)
                 id = np.argmin(good_ds)
-                return good_strucs[id], good_disps[id], good_trans[id], good_paths[id]
+                return good_strucs[id], good_disps[id], good_trans[id], good_paths[id], good_splitters[id]
 
             if Skipped > 0:
                 print("Warning: ignore some solutions: ", Skipped)
 
-            return None, None, None, p
+            return None, None, None, p, None
 
     def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2, both=False):
         """
@@ -2321,6 +2326,7 @@ class pyxtal:
         refs = []
         trans = []
         ds = []
+        splitters = []
 
         for sol in sols:
             _sites = deepcopy(sites_G)
@@ -2365,7 +2371,7 @@ class pyxtal:
             # make subgroup
             if match:
                 count_match += 1
-                s = self.subgroup_by_path(g_types, ids=sol, eps=0)
+                s, sps = self.subgroup_by_path(g_types, ids=sol, eps=0)
                 if s is not None:
                     disp, tran, s, max_disp = ref_struc.get_disps_sets(s, d_tol, d_tol2)
                     #import sys; sys.exit()
@@ -2374,12 +2380,13 @@ class pyxtal:
                         if max_disp < d_tol2:
                             cell = s.lattice.matrix
                             strucs = ref_struc.make_transitions(disp, cell, tran, N_images, both)
-                            return strucs, disp, tran, count_match
+                            return strucs, disp, tran, count_match, sps
                         else:
                             disps.append(disp)
                             refs.append(s)
                             trans.append(tran)
                             ds.append(max_disp)
+                            splitters.append(sps)
 
         if len(ds) > 0:
             ds = np.array(ds)
@@ -2387,11 +2394,12 @@ class pyxtal:
             cell = refs[id].lattice.matrix
             tran = trans[id]
             disp = disps[id]
+            sps = splitters[id]
             strucs = ref_struc.make_transitions(disp, cell, tran, N_images, both)
-            return strucs, disp, tran, count_match
+            return strucs, disp, tran, count_match, splitters
 
         else:
-            return None, None, None, count_match
+            return None, None, None, count_match, None
 
     def translate(self, trans, reset_wp=False):
         """
