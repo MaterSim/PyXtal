@@ -1170,7 +1170,7 @@ class supergroups():
 
         Returns:
             strucs: list of structures along the path
-            working_path:
+            working_path: list of space group path
             valid: True or False
         """
         strucs = []
