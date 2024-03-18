@@ -2210,13 +2210,14 @@ class pyxtal:
             - displacements:
             - cell translation:
             - the list of space groups along the path
+            - the list of splitters along the path
         """
         #ref_struc.sort_sites_by_numIons()
         #self.sort_sites_by_numIons()
         paths = self.group.search_subgroup_paths(ref_struc.group.number)
         if len(paths) == 0:
             print("No valid paths between the structure pairs")
-            return None, None, None, None
+            return None, None, None, None, None
         else:
             Skipped = len(paths) - max_path
             if Skipped > 0: paths = paths[:max_path] #sample(paths, max_path)
@@ -2239,7 +2240,7 @@ class pyxtal:
                         (strucs, disp, tran, count, sps) = r
                         if strucs is not None:
                             if strucs[-1].disp < d_tol2: #stop
-                                return strucs, disp, tran, p0
+                                return strucs, disp, tran, p0, sps
                             else:
                                 good_ds.append(strucs[-1].disp)
                                 good_disps.append(disp)
