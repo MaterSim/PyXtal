@@ -91,7 +91,36 @@ def find_rotor_from_smile(smile):
         #if len(torsions) > 6: torsions[1] = (4, 7, 10, 15)
         return torsions #+ [(6, 7, 8, 3), (6, 5, 4, 3)]
 
-def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
+def has_non_aromatic_ring(smiles):
+    """
+    Determine if a molecule has a non-aromatic ring.
+    Mainly used to check if a cyclic ring exists.
+
+    Args:
+        smiles: smiles string
+
+    Returns:
+        True or False
+    """
+    from rdkit import Chem
+    # Convert the SMILES string to an RDKit molecule object
+    mol = Chem.MolFromSmiles(smiles)
+
+    # Check if the molecule has rings at all
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts('[R]')):
+        return False  # No rings present
+
+    # Get information about the rings in the molecule
+    ring_info = mol.GetRingInfo()
+
+    # Check each ring to see if it is aromatic; return True if a non-aromatic ring is found
+    for ring in ring_info.BondRings():
+        if not all(mol.GetBondWithIdx(idx).GetIsAromatic() for idx in ring):
+            return True  # Found a non-aromatic ring
+    return False  # No non-aromatic rings found
+
+
+def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
     """
     generate pyxtal_molecules from smiles codes.
 
@@ -110,6 +139,11 @@ def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
     from rdkit.Chem import AllChem
 
     torsionlist = find_rotor_from_smile(smile)
+    if len(torsionlist) == 0:
+        if has_non_aromatic_ring(smile):
+            Num = 10
+    else:
+        Num = len(tor)
 
     def get_conformers(smile, seed):
         mol = Chem.MolFromSmiles(smile)
@@ -117,7 +151,7 @@ def generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5):
         ps = AllChem.ETKDGv3()
         ps.randomSeed = seed
         ps.runeRmsThresh = tol
-        AllChem.EmbedMultipleConfs(mol, max([4, 4*len(torsionlist)]), ps)
+        AllChem.EmbedMultipleConfs(mol, max([4, Num]), ps)
         return mol
 
     m0 = pyxtal_molecule(smile+'.smi', fix=True)
