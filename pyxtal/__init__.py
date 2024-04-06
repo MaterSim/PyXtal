@@ -2874,7 +2874,7 @@ class pyxtal:
             remove_H = False
             #print(cif)
             try:
-                parser = CifParser.from_string(cif, occupancy_tolerance=2.0)
+                parser = CifParser.from_str(cif, occupancy_tolerance=2.0)
                 pmg = get_struc_from__parser(parser)
                 #pmg = Structure.from_str(cif, fmt='cif')
             except:

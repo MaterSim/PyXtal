@@ -97,6 +97,7 @@ def make_db_from_CSD(dbname, codes):
         if entry is not None:
             db.add(entry)
             print(i, code)
+    return db
 
 class database():
     """

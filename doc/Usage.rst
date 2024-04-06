@@ -782,3 +782,89 @@ Alternatively, one can read the structure from the 1D representation and smile s
     11.2330,   6.5440,  11.2310,  90.0000,  95.8900,  90.0000, monoclinic
     Wyckoff sites:
 	H8C9O4       @ [ 0.2252  0.5852  0.0308]  WP [4e] Site [1] Euler [  44.1  -25.2   32.5]
+
+
+Database
+--------------------------------
+
+For molecular crystals, PyXtal provides a
+`db <pyxtal.db.html>`_ class to handle store the database with additional information related to the Cambridge Crystallographic Database. **This function requires the access of `CSD Python-api <https://downloads.ccdc.cam.ac.uk/documentation/API/index.html>`.**
+
+To create a new database file (e.g., `test.db`),
+
+.. code-block:: Python
+    
+    from pyxtal.db import make_db_from_CSD
+    db = make_db_from_CSD('test.db', ['ACSALA', 'BENZEN', 'COUMAR01'])
+    print("Initial list of codes", db.codes)
+    db.add_from_code('NAPHTA')
+    print("Updated list of codes", db.codes)
+::
+
+    0 ACSALA
+    1 BENZEN
+    2 COUMAR01
+    Initial list of codes ['ACSALA', 'BENZEN', 'COUMAR01']
+    Updated list of codes ['ACSALA', 'BENZEN', 'COUMAR01', 'NAPHTA']
+
+
+To view the database file, 
+
+.. code-block:: Python
+    
+    $ ase db test.db
+::
+
+    csd_code|space_group|mol_smi              
+    ACSALA  |P21/c      |CC(=O)Oc1ccccc1C(O)=O
+    BENZEN  |Pbca       |c1ccccc1             
+    COUMAR01|Pca21      |O=C1Oc2ccccc2C=C1    
+    NAPHTA  |P21/c      |c1ccc2ccccc2c1       
+    Rows: 4
+
+To update some information,
+
+.. code-block:: Python
+
+::
+
+    from pyxtal.db import database
+    db = database('test.db')
+    db.add_from_code('XATJOT')
+    print("Updated list of codes", db.codes)
+    row = db.get_row('XATJOT')
+    print("Original smiles", row.mol_smi)
+    db.db.update(row.id, mol_smi='[nH+]1cccc2cccnc12.OC(=O)/C=C/C(=O)[O-]')
+    row = db.get_row('XATJOT')
+    print("Update smiles", row.mol_smi)
+
+::
+
+    Updated list of codes ['ACSALA', 'BENZEN', 'COUMAR01', 'NAPHTA', 'XATJOT']
+    Original smiles [nH+]1cccc2cccnc12.OC(=O)/C=C/C(=O)[O-]
+    Update smiles [nH+]1cccc2cccnc12.OC(=O)/C=C/C(=O)[O-]
+
+
+To access the pyxtal structure
+
+.. code-block:: Python
+
+::
+
+    from pyxtal.db import database
+    db = database('test.db')
+    xtal = db.get_pyxtal('XATJOT')
+    print(xtal)
+
+::
+
+    ------Crystal from Seed------
+    Dimension: 3
+    Composition: [[nH+]1cccc2cccnc12]4[OC(=O)/C=C/C(=O)[O-]]4
+    Group: P c a 21 (29)
+    23.5010,   3.7141,  12.6535,  90.0000,  90.0000,  90.0000, orthorhombic
+    Wyckoff sites:
+	    H7C8N2       @ [ 0.2272  0.3356  0.8232]  WP [4a] Site [1] Euler [   0.0    0.0    0.0]
+	    H3C4O4       @ [ 0.5328  0.0993  0.0601]  WP [4a] Site [1] Euler [   0.0    0.0    0.0]
+
+
