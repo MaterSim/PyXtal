@@ -2846,7 +2846,7 @@ class pyxtal:
             smi = entry.molecule.smiles
             if smi is None:
                 raise CSDError("No smile from CSD")
-            elif len(smi) > 250:
+            elif len(smi) > 350:
                 raise CSDError("long smile {:s}".format(smi))
             else:
                 if Chem.MolFromSmiles(smi) is None:

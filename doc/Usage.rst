@@ -625,13 +625,13 @@ O atoms.
     Group: Pnnm (58)
       7.8758,   7.9794,   5.6139,  90.0000,  90.0000,  90.0000, orthorhombic
     Wyckoff sites:
-    	Al @ [ 0.0000  0.0000  0.2418], WP [4e] Site [..2]
-    	Al @ [ 0.1294  0.6392  0.0000], WP [4g] Site [..m]
-    	Si @ [ 0.2458  0.2522  0.0000], WP [4g] Site [..m]
-    	 O @ [ 0.4241  0.3636  0.0000], WP [4g] Site [..m]
-    	 O @ [ 0.5538  0.2648  0.0000], WP [4g] Site [..m]
-    	 O @ [ 0.0000  0.5000  0.6057], WP [4f] Site [..2]
-    	 O @ [ 0.8809  0.5970  0.0786], WP [8h] Site [1]
+    Al @ [ 0.0000  0.0000  0.2418], WP [4e] Site [..2]
+    Al @ [ 0.1294  0.6392  0.0000], WP [4g] Site [..m]
+    Si @ [ 0.2458  0.2522  0.0000], WP [4g] Site [..m]
+    O @ [ 0.4241  0.3636  0.0000], WP [4g] Site [..m]
+    O @ [ 0.5538  0.2648  0.0000], WP [4g] Site [..m]
+    O @ [ 0.0000  0.5000  0.6057], WP [4f] Site [..2]
+    O @ [ 0.8809  0.5970  0.0786], WP [8h] Site [1]
 
 
 Similarly, PyXtal allows the user to pre-assign the partial information (e.g.,
@@ -788,7 +788,7 @@ Database
 --------------------------------
 
 For molecular crystals, PyXtal provides a
-`db <pyxtal.db.html>`_ class to handle store the database with additional information related to the Cambridge Crystallographic Database. **This function requires the access of `CSD Python-api <https://downloads.ccdc.cam.ac.uk/documentation/API/index.html>`.**
+`db <pyxtal.db.html>`_ class to handle store the database with additional information related to the Cambridge Crystallographic Database. **This function requires the access of `CSD Python-api <https://downloads.ccdc.cam.ac.uk/documentation/API/index.html>`_.**
 
 To create a new database file (e.g., `test.db`),
 
@@ -826,8 +826,6 @@ To update some information,
 
 .. code-block:: Python
 
-::
-
     from pyxtal.db import database
     db = database('test.db')
     db.add_from_code('XATJOT')
@@ -848,8 +846,6 @@ To update some information,
 To access the pyxtal structure
 
 .. code-block:: Python
-
-::
 
     from pyxtal.db import database
     db = database('test.db')
