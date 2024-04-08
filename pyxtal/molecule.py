@@ -22,11 +22,15 @@ from pyxtal.database.element import Element
 from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
 from pyxtal.database.collection import Collection
 from pyxtal.msg import ConformerError, AtomTypeError
+from pyxtal.constants import single_smiles
 
 # Define functions
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 molecule_collection = Collection("molecules")
-
+#single_smiles = [
+#                 "Cl-", "F-", "Br-", "I-", "Li+", "Na+", "Cs+", "Rb+",
+#                 "[Cl-]", "[F-]", "[Br-]", "[I-]", "[Li+]", "[Na+]", "[Cs+]", "Rb+",
+#                ]
 def find_rotor_from_smile(smile):
     """
     Find the positions of rotatable bonds in the molecule.
@@ -289,7 +293,7 @@ class pyxtal_molecule:
         self.tols_matrix = self.get_tols_matrix()
         xyz = self.mol.cart_coords
         self.reset_positions(xyz-self.get_center(xyz))
-        if self.smile is not None and self.smile not in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
+        if self.smile is not None and self.smile not in single_smiles:
             #print(self.smile)
             ori, _, self.reflect = self.get_orientation(xyz)
 
@@ -773,7 +777,7 @@ class pyxtal_molecule:
         from rdkit.Chem import AllChem
         from rdkit.Chem import rdMolTransforms as rdmt
 
-        if smile not in ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
+        if smile not in single_smiles: #["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
             torsionlist = find_rotor_from_smile(smile)
             mol = Chem.MolFromSmiles(smile)
             mol = Chem.AddHs(mol)
@@ -820,7 +824,12 @@ class pyxtal_molecule:
                 xyz -= self.get_center(xyz)
         else:
             #single atom cation or anions
-            symbols = ["Cl"]
+            pattern = r'[A-Za-z]+(?=[+\-]?[^A-Za-z]|$)'
+            matches = re.findall(pattern, smile)
+            if matches:
+                symbols = matches[0] #["Cl"]
+            else:
+                raise ValueError("the input smiles cannot be analyzed", smile)
             xyz = np.zeros([1,3])
             torsionlist = []
         return symbols, xyz, torsionlist

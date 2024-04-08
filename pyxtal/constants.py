@@ -25,6 +25,10 @@ ltype_keywords = [
                   "spherical", "Spherical",
                   "ellipsoidal", "Ellipsoidal",
                  ]
+single_smiles = [
+                 "Cl-", "F-", "Br-", "I-", "Li+", "Na+", "Cs+", "Rb+",
+                 "[Cl-]", "[F-]", "[Br-]", "[I-]", "[Li+]", "[Na+]", "[Cs+]", "Rb+",
+                ]
 
 logo = """#############################################################
 #             ______       _    _          _                #
