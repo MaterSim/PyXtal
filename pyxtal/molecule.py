@@ -827,7 +827,7 @@ class pyxtal_molecule:
             pattern = r'[A-Za-z]+(?=[+\-]?[^A-Za-z]|$)'
             matches = re.findall(pattern, smile)
             if matches:
-                symbols = matches[0] #["Cl"]
+                symbols = [matches[0]] #["Cl"]
             else:
                 raise ValueError("the input smiles cannot be analyzed", smile)
             xyz = np.zeros([1,3])
