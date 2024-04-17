@@ -487,10 +487,11 @@ class TestWP(unittest.TestCase):
         pass
 
     def test_wp_site_symm(self):
-        data = [(143, 1, '3 . .'),
-                (230, 6, '. 3 2'),
-                (160, 1, '. . m'),
-                (160, 2, '3 m .')]
+        data = [(143, 1, '3..'),
+                (160, 1, '.m'),
+                (160, 2, '3m'),
+                (230, 6, '.32'),
+               ]
         for d in data:
             (sg, i, symbol) = d
             wp = Group(sg)[i]

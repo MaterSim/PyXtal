@@ -282,6 +282,8 @@ class Group:
                     "P": self.P,
                     "P1": self.P1,
                     "hall_number": self.hall_number,
+                    "directions": self.get_symmetry_directions(),
+                    "lattice_type": self.lattice_type,
                 }
                 for i in range(len(self.wyckoffs))
             ]
@@ -1312,6 +1314,19 @@ class Group:
         get the wp object by the letter
         """
         return self[self.get_index_by_letter(letter)]
+
+    def get_symmetry_directions(self):
+        """
+        Table 2.1.3.1 from International Tables for Crystallography (2016).
+        Vol. A, Chapter 2.1, pp. 142–174.
+        including Primary, secondary and Tertiary
+        """
+        #if self.dim == 3:
+        return get_symmetry_directions(self.lattice_type, self.symbol[0])
+        #else:
+        #    print("Cannot handle dimension other than 3")
+        #    pass
+
 #
 # ----------------------- Wyckoff Position class  ------------------------
 
@@ -1389,6 +1404,7 @@ class Wyckoff_position:
         else:
             symbol = hall_table['Symbol'][group-1]
             number = hall_table['Spg_num'][group-1]
+        pbc, lattice_type = get_pbc_and_lattice(number, dim)
 
         if dim == 3:
             PBC = [1, 1, 1]
@@ -1403,10 +1419,14 @@ class Wyckoff_position:
                 hall_number = group
                 P = abc2matrix(hall_table['P'][hall_number-1])
                 P1 = abc2matrix(hall_table['P^-1'][hall_number-1])
+            directions = get_symmetry_directions(lattice_type, symbol[0])
+
         elif dim == 2:
             PBC = [1, 1, 0]
+            directions = None
         elif dim == 1:
             PBC = [0, 0, 1]
+            directions = None
 
         if wyckoffs is None:
             wyckoffs = get_wyckoffs(number, dim=dim)
@@ -1425,7 +1445,10 @@ class Wyckoff_position:
                   "P1": P1,
                   "hall_number": hall_number,
                   "symbol": symbol,
+                  "directions": directions,
+                  "lattice_type": lattice_type,
                  }
+
         return Wyckoff_position.from_dict(wpdict)
 
     def from_symops_wo_group(ops):
@@ -1772,7 +1795,9 @@ class Wyckoff_position:
             ops = self.get_euclidean_symmetries()
         else:
             ops = self.symmetry[0]
-        self.site_symm = ss_string_from_ops(ops, self.number, dim=self.dim)
+
+        ss = site_symmetry(ops, self.lattice_type, self.directions)
+        self.site_symm = ss.name #ss_string_from_ops(ops, self.number, dim=self.dim)
 
     def get_hm_number(tol=1e-5):
         if self.index == 0:
@@ -2512,7 +2537,7 @@ def swap_xyz_ops(ops, permutation):
     Returns:
         the new xyz string after transformation
     """
-    if permutation == [0,1,2]:
+    if permutation == [0, 1, 2]:
         return ops
     else:
         new = []
@@ -2646,349 +2671,163 @@ def jk_from_i(i, olist):
     return None
 
 
-def i_from_jk(j, k, olist):
+class site_symmetry:
     """
-    Inverse operation of jk_from_i: gives one list index from 2
-
-    Args:
-        j, k: indices corresponding to the location of an element in the
-            organized list
-        olist: the organized list of Wyckoff positions or molecular orientations
-
-    Returns:
-        i: one index corresponding to the item's location in the
-            unorganized list
-    """
-    num = -1
-    for x, a in enumerate(olist):
-        for y, b in enumerate(a):
-            num += 1
-            if x == j and y == k:
-                return num
-    return None
-
-
-def ss_string_from_ops(ops, number, dim=3, complete=True):
-    """
-    Print the Hermann-Mauguin symbol for a site symmetry group, using a list of
-    SymmOps as input. Note that the symbol does not necessarily refer to the
-    x,y,z axes. For information on reading these symbols, see:
-    http://en.wikipedia.org/wiki/Hermann-Mauguin_notation#Point_groups
+    Derive the site symmetry group from symmetry operations
+    site-symmetry group is indicated by an oriented symbol,
+    which is a variation of the Hermann–Mauguin point-group
+    symbol that provides information about the orientation
+    of the symmetry elements. The constituents of the oriented
+    symbol are ordered according to the symmetry directions of
+    the corresponding crystal lattice (primary, secondary and tertiary)
 
     Args:
         ops: a list of SymmOp objects representing the site symmetry
-        number: International number of the symmetry group. Used to determine which
-            axes to show. For example, a 3-fold rotation in a cubic system is
-            written as ".3.", whereas a 3-fold rotation in a trigonal system is
-            written as "3.."
-        dim: the dimension of the crystal. Also used to determine notation type
-        complete: whether or not all symmetry operations in the group
-            are present. If False, we generate the rest
+        lattice_type (str): e.g., 'cubic'
+        directions (list): the required directions to explore symmetry
 
     Returns:
         a string representing the site symmetry (e.g., `2mm`)
     """
-    # TODO: Automatically detect which symm_type to use based on ops
-    # Determine which notation to use
-    symm_type = "high"
-    if dim == 3:
-        if number >= 1 and number <= 74:
-            # Triclinic, monoclinic, orthorhombic
-            symm_type = "low"
-        elif number >= 75 and number <= 194:
-            # Trigonal, Hexagonal, Tetragonal
-            symm_type = "medium"
-        elif number >= 195 and number <= 230:
-            # cubic
-            symm_type = "high"
-    if dim == 2:
-        if number >= 1 and number <= 48:
-            # Triclinic, monoclinic, orthorhombic
-            symm_type = "low"
-        elif number >= 49 and number <= 80:
-            # Trigonal, Hexagonal, Tetragonal
-            symm_type = "medium"
-    if dim == 1:
-        if number >= 1 and number <= 22:
-            # Triclinic, monoclinic, orthorhombic
-            symm_type = "low"
-        elif number >= 23 and number <= 75:
-            # Trigonal, Hexagonal, Tetragonal
-            symm_type = "medium"
+    def __init__(self, ops, lattice_type, directions):
 
-    # TODO: replace sg with number, add dim variable
-    # Return the symbol for a single axis
-    # Will be called later in the function
-    def get_symbol(opas, order, has_reflection):
-        # ops: a list of Symmetry operations about the axis
-        # order: highest order of any symmetry operation about the axis
-        # has_reflection: whether or not the axis has mirror symmetry
-        if has_reflection:
-            # rotations have priority
-            for opa in opas:
-                if opa.order == order and opa.type == "rotation":
-                    return str(opa.rotation_order) + "/m"
-            for opa in opas:
-                if (
-                    opa.order == order
-                    and opa.type == "rotoinversion"
-                    and opa.order != 2
-                ):
-                    return "-" + str(opa.rotation_order)
-            return "m"
-        elif has_reflection is False:
-            # rotoinversion has priority
-            for opa in opas:
-                if opa.order == order and opa.type == "rotoinversion":
-                    return "-" + str(opa.rotation_order)
-            for opa in opas:
-                if opa.order == order and opa.type == "rotation":
-                    return str(opa.rotation_order)
-            return "."
+        #self.G = G
+        opas = [OperationAnalyzer(op) for op in ops]
+        self.directions = directions
+        self.lattice_type = lattice_type
 
-    # Given a list of single-axis symbols, return the one with highest symmetry
-    # Will be called later in the function
-    def get_highest_symbol(symbols):
-        symbol_list = [
-            ".",
-            "2",
-            "m",
-            "-2",
-            "2/m",
-            "3",
-            "4",
-            "-4",
-            "4/m",
-            "-3",
-            "6",
-            "-6",
-            "6/m",
-        ]
-        max_index = 0
-        use_list = True
-        for j, symbol in enumerate(symbols):
-            if symbol in symbol_list:
-                i = symbol_list.index(symbol)
-            else:
-                use_list = False
-                num_str = "".join(c for c in symbol if c.isdigit())
-                i1 = int(num_str)
-                if "m" in symbol or "-" in symbol:
-                    if i1 % 2 == 0:
-                        i = i1
-                    elif i1 % 2 == 1:
-                        i = i1 * 2
+        rotations = []
+        for i in range(len(self.directions)): rotations.append({})
+        self.inversion = False
+
+        for opa in opas:
+            #print(opa.type, opa.order)
+            # Search for the primary rotation axis
+            if opa.type == "inversion":
+                self.inversion = True
+            elif opa.type != "identity":
+                if opa.type == 'rotoinversion':
+                    if opa.order == 2:
+                        symbol = 'm'
+                    else:
+                        symbol = '-' + str(opa.order)
                 else:
-                    i = i1
-            if i > max_index:
-                max_j = j
-                max_index = i
-        if use_list is True:
-            return symbol_list[max_index]
+                    symbol = str(opa.order)
+
+                for i, axes in enumerate(self.directions):
+                    store = False
+                    for ax in axes:
+                        if opa.axis is not None:
+                            if self.lattice_type in ['hexagonal', 'trigonal']:
+                                ax0 = np.dot(ax, hex_cell.T)
+                                ax0 /= np.linalg.norm(ax0)#; print('dddd', ax, ax0, opa.axis, np.isclose(abs(np.dot(opa.axis, ax0)), 1), i)
+                            else:
+                                ax0 = ax / np.linalg.norm(ax)
+
+                            if np.isclose(abs(np.dot(opa.axis, ax0)), 1):
+                                store = True
+                        # rotation axis
+                        #print(store, 'update')
+                        if store:
+                            if ax in rotations[i].keys():
+                                if opa.order >= rotations[i][ax][-1]:
+                                    #print('update ax', opa.order, opa.type, ax, i, symbol, self.inversion)
+                                    rotations[i][ax] = (symbol, opa.order)
+                            else:
+                                #print('add   ax', opa.order, opa.type, ax, i, symbol, self.inversion)
+                                rotations[i][ax] = (symbol, opa.order)
+
+        self.get_symbols(rotations)
+        self.get_name()
+
+    def get_symbols(self, rotations):
+
+        self.symbols = []
+        for rotation in rotations:
+            #print('debug', rotation, len(rotation), len(rotations))
+            if len(rotation) == 0:
+                symbol = '.'
+            else:
+                symbol = ""
+                for key in rotation.keys():
+                    if rotation[key][0]  == '-6' and self.lattice_type in ['trigonal', 'cubic']:
+                        symbol += '-3'
+                    else:
+                        symbol += rotation[key][0]
+                if self.inversion:
+                    if symbol in ['2', '4', '-4', '6']:
+                        symbol += '/m'
+                        if symbol == '-4/m': symbol = '4/m'
+                    elif symbol in ['m', 'mm']:
+                        symbol = '2/m'
+                    #elif symbol == '22':
+                    #    if key in [(1, 1, 0), (1, -1, 0)]:
+                    #        symbol = 'mm' #
+                    #    else:
+                    #        symbol = 'm' # 'short for 2/m'
+            self.symbols.append(symbol)
+
+        # Some simplifications
+        # 2/m => m for higher than mmm
+        if self.lattice_type == 'orthorhombic':
+            if self.symbols == ['2/m', '2/m', '2/m']:
+                self.symbols = ['m', 'm', 'm']
+        elif self.lattice_type == 'tetragonal':
+            if self.symbols[0] in ['4', '-4']:
+                for i, symbol in enumerate(self.symbols[1:]):
+                    if symbol == '22':
+                        self.symbols[i+1] = '2'
+                    elif symbol == 'mm':
+                        self.symbols[i+1] = 'm'
+            if self.symbols == ['4/m', '2/m', '2/m']:
+                self.symbols = ['4/mmm']
+
+        elif self.lattice_type in ['trigonal', 'hexagonal']:
+            for i, symbol in enumerate(self.symbols):
+                if symbol in ['222']:
+                    self.symbols[i] = '2'
+                elif symbol in ['mmm']:
+                    self.symbols[i] = 'm'
+            if self.symbols == ['2/m', '2/m', '2/m']:
+                self.symbols = ['m', 'm', 'm']
+
+        elif self.lattice_type == 'cubic':
+            for i, symbol in enumerate(self.symbols):
+                #if symbol in ['22', '222', '222222']:
+                # if 222 appears alone, don't symplify
+                if symbol in ['22', '2222', '222222']:
+                    self.symbols[i] = '2'
+                elif symbol in ['333', '3333']:
+                    self.symbols[i] = '3'
+                elif symbol in ['-3-3-3-3']:
+                    self.symbols[i] = '-3'
+                elif symbol == '444':
+                    self.symbols[i] = '4'
+                elif symbol == '-4-4-4':
+                    self.symbols[i] = '-4'
+                elif symbol == '224':
+                    self.symbols[i] = '42'
+                elif symbol == '22-4':
+                    self.symbols[i] = '-42'
+                elif symbol in ['mmm', 'mmmm', 'mmmmmm']:
+                    self.symbols[i] = 'm'
+                elif symbol in ['2mm']:
+                    self.symbols[i] = 'mm2'
+                elif symbol in ['2m']:
+                    self.symbols[i] = 'm2'
+            if self.symbols in [['4', '-3', '2'], ['-4', '-3', 'm']]:
+                self.symbols = ['m', '-3', 'm']
+
+    def get_name(self):
+        if self.symbols in [['.', '.', '.'], ['.', '.'], ['.']]:
+            if self.inversion:
+                self.name = '-1'
+            else:
+                self.name = '1'
         else:
-            return symbols[max_j]
-
-    def are_symmetrically_equivalent(index1, index2):
-        """
-        Return whether or not two axes are symmetrically equivalent
-        It is assumed that both axes possess the same symbol
-        Will be called within combine_axes
-        """
-
-        axis1 = axes[index1]
-        axis2 = axes[index2]
-        condition1 = False
-        condition2 = False
-        # Check for an operation mapping one axis onto the other
-        for op in ops:
-            if condition1 is False or condition2 is False:
-                new1 = op.operate(axis1)
-                new2 = op.operate(axis2)
-                if np.isclose(abs(np.dot(new1, axis2)), 1):
-                    condition1 = True
-                if np.isclose(abs(np.dot(new2, axis1)), 1):
-                    condition2 = True
-        if condition1 is True and condition2 is True:
-            return True
-        else:
-            return False
-
-    def combine_axes(indices):
-        """
-        Given a list of axis indices, return the combined symbol
-        Axes may or may not be symmetrically equivalent, but must be of the same
-        type (x/y/z, face-diagonal, body-diagonal)
-        Will be called for mid- and high-symmetry crystallographic point groups
-        """
-
-        symbols = {}
-        for index in deepcopy(indices):
-            symbol = get_symbol(params[index], orders[index], reflections[index])
-            if symbol == ".":
-                indices.remove(index)
-            else:
-                symbols[index] = symbol
-
-        if len(indices) == 0:
-            return "."
-
-        # Remove redundant axes
-        for i in deepcopy(indices):
-            for j in deepcopy(indices):
-                if j > i:
-                    if symbols[i] == symbols[j]:
-                        if are_symmetrically_equivalent(i, j):
-                            if j in indices:
-                                indices.remove(j)
-
-        # Combine symbols for non-equivalent axes
-        new_symbols = []
-        for i in indices:
-            new_symbols.append(symbols[i])
-
-        symbol = ""
-        while new_symbols != []:
-            highest = get_highest_symbol(new_symbols)
-            symbol += highest
-            new_symbols.remove(highest)
-        if symbol == "":
-            printx("Error: could not combine site symmetry axes.", priority=1)
-            return
-        else:
-            return symbol
-
-    # Generate needed ops
-    if not complete:
-        ops = generate_full_symmops(ops, 1e-3)
-
-    # Get OperationAnalyzer object for all ops
-    opas = []
-    for op in ops:
-        opas.append(OperationAnalyzer(op))
-
-    # Store the symmetry of each axis
-    params = [[], [], [], [], [], [], [], [], [], [], [], [], []]
-    has_inversion = False
-    # Store possible symmetry axes for crystallographic point groups
-    axes = [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-        [1, 1, 0],
-        [0, 1, 1],
-        [1, 0, 1],
-        [1, -1, 0],
-        [0, 1, -1],
-        [1, 0, -1],
-        [1, 1, 1],
-        [-1, 1, 1],
-        [1, -1, 1],
-        [1, 1, -1],
-    ]
-
-    for i, axis in enumerate(axes):
-        axes[i] = axis / np.linalg.norm(axis)
-
-    for opa in opas:
-
-        # Search for the primary rotation axis
-        if opa.type != "identity" and opa.type != "inversion":
-            found = False
-            for i, axis in enumerate(axes):
-                if np.isclose(abs(np.dot(opa.axis, axis)), 1):
-                    found = True
-                    params[i].append(opa)
-
-            # Store uncommon axes for trigonal and hexagonal lattices
-            if not found: #is False:
-                axes.append(opa.axis)
-                # Check that new axis is not symmetrically equivalent to others
-                unique = True
-                for i, axis in enumerate(axes):
-                    if i != len(axes) - 1:
-                        if are_symmetrically_equivalent(i, len(axes) - 1):
-                            unique = False
-                if unique: # is True:
-                    params.append([opa])
-                else: #if unique is False:
-                    axes.pop()
-
-        elif opa.type == "inversion":
-            has_inversion = True
-
-    # Determine how many high-symmetry axes are present
-    n_axes = 0
-    # Store the order of each axis
-    orders = []
-    # Store whether or not each axis has reflection symmetry
-    reflections = []
-    for axis in params:
-        order = 1
-        high_symm = False
-        has_reflection = False
-        for opa in axis:
-            if opa.order >= 3:
-                high_symm = True
-            if opa.order > order:
-                order = opa.order
-            if opa.order == 2 and opa.type == "rotoinversion":
-                has_reflection = True
-        orders.append(order)
-
-        if high_symm: #== True:
-            n_axes += 1
-        reflections.append(has_reflection)
-    # Triclinic, monoclinic, orthorhombic
-    # Positions in symbol refer to x,y,z axes respectively
-    if symm_type == "low":
-        symbol = (
-            get_symbol(params[0], orders[0], reflections[0])
-            + get_symbol(params[1], orders[1], reflections[1])
-            + get_symbol(params[2], orders[2], reflections[2])
-        )
-        if symbol != "...":
-            return symbol
-        elif symbol == "...":
-            if has_inversion: #is True:
-                return "-1"
-            else:
-                return "1"
-    # Trigonal, Hexagonal, Tetragonal
-    elif symm_type == "medium":
-        # 1st symbol: z axis
-        s1 = get_symbol(params[2], orders[2], reflections[2])
-        # 2nd symbol: x or y axes (whichever have higher symmetry)
-        s2 = combine_axes([0, 1])
-        # 3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        s3 = combine_axes(list(range(3, len(axes))))
-        symbol = s1 + " " + s2 + " " + s3
-        if symbol != ". . .":
-            return symbol
-        elif symbol == ". . .":
-            if has_inversion: #is True:
-                return "-1"
-            else:
-                return "1"
-    # Cubic
-    elif symm_type == "high":
-        pass
-        # 1st symbol: x, y, and/or z axes (whichever have highest symmetry)
-        s1 = combine_axes([0, 1, 2])
-        # 2nd symbol: body-diagonal axes (whichever has highest symmetry)
-        s2 = combine_axes([9, 10, 11, 12])
-        # 3rd symbol: face-diagonal axes (whichever have highest symmetry)
-        s3 = combine_axes([3, 4, 5, 6, 7, 8])
-        symbol = s1 + " " + s2 + " " + s3
-        if symbol != ". . .":
-            return symbol
-        elif symbol == ". . .":
-            if has_inversion: #is True:
-                return "-1"
-            else:
-                return "1"
-    else:
-        printx("Error: invalid spacegroup number", priority=1)
-        return
+            self.name = ''
+            for symbol in self.symbols:
+                self.name += symbol
 
 
 def organized_wyckoffs(group):
@@ -3407,6 +3246,8 @@ def get_pbc_and_lattice(number, dim):
             lattice_type = "orthorhombic"
         elif number <= 142:
             lattice_type = "tetragonal"
+        elif number <= 167:
+            lattice_type = "trigonal"
         elif number <= 194:
             lattice_type = "hexagonal"
         elif number <= 230:
@@ -3866,8 +3707,61 @@ def trim_ops(ops):
         ops1.append(SymmOp.from_rotation_and_translation(rot, tran))
 
     return ops
-#op = SymmOp.from_xyz_str('y+1/8, -y+1/8, 0')
-#op = SymmOp.from_xyz_str('1/8, y+1/8, -y+1/8')
-#op = SymmOp.from_xyz_str(['x+1/8,x+1/8,z+1/8', '')
-#print(trim_op(op).as_xyz_str())
-#from_symops(ops, group=None, permutation=True)
+
+def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
+    """
+    Get the symmetry directions
+    """
+    if lattice_type == 'monoclinic':
+        if unique_axis == 'b':
+            return [[(0, 1, 0)]]
+        elif unique_axis == 'c':
+            return [[(0, 0, 1)]]
+        else:
+            return [[(1, 0, 0)]]
+    elif lattice_type == 'orthorhombic':
+        return [[(1, 0, 0)],
+                [(0, 1, 0)],
+                [(0, 0, 1)]]
+    elif lattice_type == 'tetragonal':
+        return [[(0, 0, 1)],
+                [(1, 0, 0), (0, 1, 0)],
+                [(1, -1, 0), (1, 1, 0)]]
+    elif lattice_type == 'hexagonal' or (lattice_type == 'trigonal' and symbol=='P'):
+        return [[(0, 0, 1)],
+                [(1, 0, 0), (0, 1, 0), (-1, -1, 0)],
+                [(1, -1, 0), (1, 2, 0), (-2, -1, 0)]]
+    elif lattice_type == 'trigonal' and symbol=='R':
+        return [[(0, 0, 1)],
+                [(1, 0, 0), (0, 1, 0), (-1, -1, 0)]]
+    elif lattice_type == 'rhombohedral':
+        return [[(0, 0, 1)],
+                [(1, 0, 0), (0, 1, 0), (-1, -1, 0)]]
+    elif lattice_type == 'cubic':
+        return [[(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+                [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)],
+                [(1, -1, 0), (1, 1, 0), (0, 1, -1),
+                 (0, 1, 1), (-1, 0, 1), (1, 0, 1)]]
+    else:
+        return [[(0, 1, 0)]]
+
+
+if __name__ == "__main__":
+    print("Test of pyxtal.symmetry")
+    #for i in range(1, 231):
+    for i in [143, 160, 230]:
+        g = Group(i)
+        print(g.lattice_type, g.symbol)
+        for wp in g:
+            if wp.euclidean:
+                ops = wp.get_euclidean_symmetries()
+                #print(ops)
+            else:
+                ops = wp.symmetry[0]
+            ss = site_symmetry(ops, g.lattice_type, g.get_symmetry_directions())
+            print(wp.number, wp.multiplicity, wp.letter, ss.symbols, ss.name)
+    #op = SymmOp.from_xyz_str('y+1/8, -y+1/8, 0')
+    #op = SymmOp.from_xyz_str('1/8, y+1/8, -y+1/8')
+    #op = SymmOp.from_xyz_str(['x+1/8,x+1/8,z+1/8', '')
+    #print(trim_op(op).as_xyz_str())
+    #from_symops(ops, group=None, permutation=True)
