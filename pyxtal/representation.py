@@ -80,29 +80,32 @@ class representation_atom():
             raise ValueError("Problem in Lattice")
 
         # sites
-        struc.numIons = [0] * len(smiles)
+        struc.numIons = []
         struc.atom_sites = []
+        species = []
 
-        count = 1
-        for i, comp in enumerate(composition):
-            for j in range(comp):
-                v = self.x[count]
-                dicts = {}
-                dicts['type'] = i
-                dicts['dim'] = 3
-                dicts['PBC'] = [1, 1, 1]
-                dicts['hn'] = struc.group.hall_number
-                dicts['index'] = 0
-                dicts['lattice'] = struc.lattice.matrix
-                dicts['lattice_type'] = ltype
-                site = atom_site.from_1D_dicts(dicts)
-                site.type = i
-                struc.atom_sites.append(site)
-                struc.numIons[i] += site.wp.multiplicity
-                #move to next rep
-                count += 1
-            struc.species.append(site.specie)
+        for _x in self.x[1:]:
+            dicts = {}
+            specie, index, pos = _x[0], _x[1], _x[2:]
+            dicts['specie'] = specie
+            dicts['index'] = index
+            dicts['dim'] = 3
+            dicts['PBC'] = [1, 1, 1]
+            dicts['hn'] = struc.group.hall_number
+            wp = struc.group[index]
+            dicts['position'] = wp.get_position_from_free_xyzs(pos)
+            site = atom_site.load_dict(dicts)
+            struc.atom_sites.append(site)
 
+            if specie not in species:
+                species.append(specie)
+                struc.numIons.append(wp.multiplicity)
+            else:
+                for i, _specie in enumerate(species):
+                    if _specie == specie:
+                        struc.numIons[i] += site.wp.multiplicity
+
+        struc.species = species
         struc._get_formula()
         struc.source = '1D rep.'
         struc.valid = True
@@ -150,7 +153,7 @@ class representation_atom():
             strs += "{:s} ".format(x[i][0])
             strs += "{:d} ".format(x[i][1])
             for v in x[i][2:]:
-                strs += "{:4.2f} ".format(v)
+                strs += "{:6.4f} ".format(v)
 
         if time is not None:
             strs += "{:5.2f}".format(time)
@@ -506,6 +509,14 @@ if __name__ == "__main__":
     print(string2)
     print(rep4.get_dist(rep5))
 
+    from pyxtal import pyxtal
+    xtal = pyxtal()
+    xtal.from_seed('pyxtal/database/cifs/Fd3.cif')
+    xtal.from_seed('pyxtal/database/cifs/NaSb3F10.cif')
+    rep = representation_atom.from_pyxtal(xtal)
+    print(rep)
+    print(xtal)
+    print(rep.to_pyxtal())
     #strings = [
     #"83 14.08  6.36 25.31  83.9 1 0.72 0.40 0.27  131.6  -17.0 -120.0  -83.8 -134.1 -174.5 -175.7 -168.8  173.9  178.0 -157.4 0",
     #"81 14.08  6.36 25.31  83.9 1 0.59 0.81 0.39 -117.8  -50.1  -95.3  -25.8  -80.6  164.7  155.9 -124.9 -159.2  178.6 -154.7 0",

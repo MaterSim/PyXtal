@@ -2692,7 +2692,7 @@ class site_symmetry:
     def __init__(self, ops, lattice_type, directions):
 
         #self.G = G
-        opas = [OperationAnalyzer(op) for op in ops]
+        self.opas = [OperationAnalyzer(op) for op in ops]
         self.directions = directions
         self.lattice_type = lattice_type
 
@@ -2700,7 +2700,7 @@ class site_symmetry:
         for i in range(len(self.directions)): rotations.append({})
         self.inversion = False
 
-        for opa in opas:
+        for opa in self.opas:
             #print(opa.type, opa.order)
             # Search for the primary rotation axis
             if opa.type == "inversion":
@@ -2726,16 +2726,17 @@ class site_symmetry:
 
                             if np.isclose(abs(np.dot(opa.axis, ax0)), 1):
                                 store = True
+                                break
                         # rotation axis
                         #print(store, 'update')
-                        if store:
-                            if ax in rotations[i].keys():
-                                if opa.order >= rotations[i][ax][-1]:
-                                    #print('update ax', opa.order, opa.type, ax, i, symbol, self.inversion)
-                                    rotations[i][ax] = (symbol, opa.order)
-                            else:
-                                #print('add   ax', opa.order, opa.type, ax, i, symbol, self.inversion)
+                    if store:
+                        if ax in rotations[i].keys():
+                            if opa.order >= rotations[i][ax][-1]:
+                                #print('update ax', opa.axis, opa.order, opa.type, ax, i, symbol, self.inversion, np.dot(opa.axis, ax0))
                                 rotations[i][ax] = (symbol, opa.order)
+                        else:
+                            #print('add   ax', opa.axis, opa.order, opa.type, ax, i, symbol, self.inversion, np.dot(opa.axis, ax0))
+                            rotations[i][ax] = (symbol, opa.order)
 
         self.get_symbols(rotations)
         self.get_name()
@@ -2768,7 +2769,6 @@ class site_symmetry:
             self.symbols.append(symbol)
 
         # Some simplifications
-        # 2/m => m for higher than mmm
         if self.lattice_type == 'orthorhombic':
             if self.symbols == ['2/m', '2/m', '2/m']:
                 self.symbols = ['m', 'm', 'm']
@@ -2781,6 +2781,8 @@ class site_symmetry:
                         self.symbols[i+1] = 'm'
             if self.symbols == ['4/m', '2/m', '2/m']:
                 self.symbols = ['4/mmm']
+            elif self.symbols == ['2/m', '2/m', '.']:
+                self.symbols = ['m', 'mm', '.']
 
         elif self.lattice_type in ['trigonal', 'hexagonal']:
             for i, symbol in enumerate(self.symbols):
@@ -2795,7 +2797,7 @@ class site_symmetry:
             for i, symbol in enumerate(self.symbols):
                 #if symbol in ['22', '222', '222222']:
                 # if 222 appears alone, don't symplify
-                if symbol in ['22', '2222', '222222']:
+                if symbol in ['2222', '222222']:
                     self.symbols[i] = '2'
                 elif symbol in ['333', '3333']:
                     self.symbols[i] = '3'
@@ -2815,9 +2817,16 @@ class site_symmetry:
                     self.symbols[i] = 'mm2'
                 elif symbol in ['2m']:
                     self.symbols[i] = 'm2'
+                elif symbol in ['4mm']:
+                    self.symbols[i] = '4m'
+
             if self.symbols in [['4', '-3', '2'], ['-4', '-3', 'm']]:
                 self.symbols = ['m', '-3', 'm']
-
+            if '222' in self.symbols:
+                if len(self.opas) > 4:
+                    for i in range(len(self.symbols)):
+                        if self.symbols[i] == '222':
+                            self.symbols[i] = '2'#; print('Find ===')
     def get_name(self):
         if self.symbols in [['.', '.', '.'], ['.', '.'], ['.']]:
             if self.inversion:
@@ -2828,6 +2837,7 @@ class site_symmetry:
             self.name = ''
             for symbol in self.symbols:
                 self.name += symbol
+
 
 
 def organized_wyckoffs(group):
@@ -3749,7 +3759,7 @@ def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
 if __name__ == "__main__":
     print("Test of pyxtal.symmetry")
     #for i in range(1, 231):
-    for i in [143, 160, 230]:
+    for i in [225, 227, 230]:#93, 123]: #143, 160, 230]:
         g = Group(i)
         print(g.lattice_type, g.symbol)
         for wp in g:
@@ -3760,8 +3770,3 @@ if __name__ == "__main__":
                 ops = wp.symmetry[0]
             ss = site_symmetry(ops, g.lattice_type, g.get_symmetry_directions())
             print(wp.number, wp.multiplicity, wp.letter, ss.symbols, ss.name)
-    #op = SymmOp.from_xyz_str('y+1/8, -y+1/8, 0')
-    #op = SymmOp.from_xyz_str('1/8, y+1/8, -y+1/8')
-    #op = SymmOp.from_xyz_str(['x+1/8,x+1/8,z+1/8', '')
-    #print(trim_op(op).as_xyz_str())
-    #from_symops(ops, group=None, permutation=True)
