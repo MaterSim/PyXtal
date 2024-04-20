@@ -55,7 +55,7 @@ hall_table = read_csv(rf("pyxtal", "database/HM_Full.csv"), sep=',')
 all_directions = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1),
                   (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (1, -1, 0),
                   (1, 1, 0), (0, 1, -1), (0, 1, 1), (-1, 0, 1),
-                  (1, 0, 1), (1, 2, 0), (-2, -1, 0)]
+                  (1, 0, 1), (1, 2, 0), (-2, -1, 0), (-1, -1, 0)]
 
 #The map between spglib default space group and hall numbers
 spglib_hall_numbers = [
@@ -1795,14 +1795,16 @@ class Wyckoff_position:
         return ops
 
     def get_site_symmetry(self):
+        ops = self.get_site_symm_ops()
+        ss = site_symmetry(ops, self.lattice_type, self.symbol[0])
+        self.site_symm = ss.name #ss_string_from_ops(ops, self.number, dim=self.dim)
+
+    def get_site_symm_ops(self):
         if self.euclidean:
             ops = self.get_euclidean_symmetries()
         else:
             ops = self.symmetry[0]
-
-        ss = site_symmetry(ops, self.lattice_type, self.directions)
-        ss.assign_symmetry_to_axes()
-        self.site_symm = ss.name #ss_string_from_ops(ops, self.number, dim=self.dim)
+        return ops
 
     def get_hm_number(tol=1e-5):
         if self.index == 0:
@@ -2689,17 +2691,20 @@ class site_symmetry:
     Args:
         ops: a list of SymmOp objects representing the site symmetry
         lattice_type (str): e.g., 'cubic'
-        directions (list): the required directions to explore symmetry
+        hm_symbol (str): hm_symbol for lattice 'P', 'R'
 
     Returns:
         a string representing the site symmetry (e.g., `2mm`)
     """
-    def __init__(self, ops, lattice_type, directions):
+    def __init__(self, ops, lattice_type, hm_symbol):
 
         #self.G = G
         self.opas = [OperationAnalyzer(op) for op in ops]
-        self.directions = directions
         self.lattice_type = lattice_type
+        self.directions = get_symmetry_directions(lattice_type, hm_symbol)
+        tables = self.to_table()
+        self.set_full_hm_symbols(tables)
+        self.set_short_symbols()
 
     def to_matrix_representation(self):
         """
@@ -2708,8 +2713,7 @@ class site_symmetry:
         #[1, -1, 2, m, 3, 2/m, 4, -3, 6, 4/m, -6, 6/m]
         [1, -1, 2, m, 3, 4, -3, 6, -6]
         """
-        symbols = ['1', '-1', '2', 'm', '3',
-                   '4', '-4', '-3', '6', '-6']
+        symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
         matrix = np.zeros([len(all_directions), len(symbols)], dtype=int)
         # every direction must has identity symmetry
         matrix[:, 0] = 1
@@ -2744,146 +2748,165 @@ class site_symmetry:
                         else:
                             raise RuntimeError("Unexpected rotation order", opa.order)
                     elif opa.type == 'rotoinversion':
-                        self.inversion = True
                         if opa.order == 2:
                             matrix[i, 3] = 1 # -2 is m
+                        elif opa.order == 3:
+                            matrix[i, 7] = 1 # -2 is m
                         elif opa.order == 4:
                             matrix[i, 6] = 1 # -4
                         elif opa.order == 6:
-                            if self.lattice_type in ['trigonal', 'cubic']:
-                                matrix[i, 7] = 1
-                            else:
-                                matrix[i, 9] = 1
+                            matrix[i, 9] = 1
                         else:
                             raise RuntimeError("Unexpected rotinversion order", opa.order)
-
             if self.inversion:
                 matrix[:, 1] = 1 # if inversion is present
         return matrix
 
-    def to_beautiful_matrix_representation(self, skip=True):
+    def to_table(self, skip=False):
         """
-        A shortcut to check the representation
+        Get the complete table representation.
 
         Args:
             skip (bool): whether or not skip 1 or -1 symmetry
+
+        Returns:
+            sorted table with (list of symmetry elements, symbols, order)
         """
+        # Complete list of symmetry for one given axis
+        # symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
+        if self.lattice_type == 'triclinic': skip = False
+
         matrix = self.to_matrix_representation()
-        print('    Axis       1  -1   2   m   3   4  -4  -3   6  -6')
-        for i, axis in enumerate(self.directions):
-            if skip:
-                num_symmetries = matrix[i, 2:].sum()
-            else:
-                num_symmetries = matrix[i].sum()
-            if num_symmetries > 0:
-                strs = '({:2d} {:2d} {:2d}): '.format(*axis)
-                strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
-                print(strs)
-
-    def assign_symmetry_to_axes(self):
-        """
-        Assign symmetry to each axes
-        This is mainly to parse the site symmetry symbol
-        """
-        rotations = []
-        for i in range(len(self.directions)): rotations.append({})
-        self.inversion = False
-
-        for opa in self.opas:
-            # Search for the primary rotation axis
-            if opa.type == "inversion":
-                self.inversion = True
-            elif opa.type != "identity":
-                if opa.type == 'rotoinversion':
-                    if opa.order == 2:
-                        symbol = 'm'
-                    else:
-                        symbol = '-' + str(opa.order)
+        tables = []
+        for i, axis in enumerate(all_directions):
+            direction_id = find_axis_order(axis, self.directions)
+            if direction_id is not None:
+                if skip:
+                    num_symmetries = matrix[i, 2:].sum()
                 else:
-                    symbol = str(opa.order)
+                    num_symmetries = matrix[i].sum()
+                if num_symmetries > 0:
+                    strs = '{:4d} ({:2d} {:2d} {:2d}): '.format(direction_id, *axis)
+                    strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
+                    symbol = self.get_highest_symmetry(matrix[i])
+                    strs += "{:>6s}".format(symbol)
+                    tables.append((strs, symbol, direction_id))
+            #else:
+            #    raise ValueError('Wrong input axis', axis, 'lattice_type', self.lattice_type)
+        sorted_tables = sorted(tables, key=lambda x: x[-1])
+        return sorted_tables
 
-                for i, axes in enumerate(self.directions):
-                    store = False
-                    for ax in axes:
-                        if opa.axis is not None:
-                            if self.lattice_type in ['hexagonal', 'trigonal']:
-                                ax0 = np.dot(ax, hex_cell.T)
-                                ax0 /= np.linalg.norm(ax0)#; print('dddd', ax, ax0, opa.axis, np.isclose(abs(np.dot(opa.axis, ax0)), 1), i)
-                            else:
-                                ax0 = ax / np.linalg.norm(ax)
+    def set_full_hm_symbols(self, tables):
+        """
+        Set the full hm symbols for each axis
 
-                            if np.isclose(abs(np.dot(opa.axis, ax0)), 1):
-                                store = True
-                                break
-                    if store:
-                        if ax in rotations[i].keys():
-                            if opa.order >= rotations[i][ax][-1]:
-                                #print('update ax', opa.axis, opa.order, opa.type, ax, i, symbol, self.inversion, np.dot(opa.axis, ax0))
-                                rotations[i][ax] = (symbol, opa.order)
-                        else:
-                            #print('add   ax', opa.axis, opa.order, opa.type, ax, i, symbol, self.inversion, np.dot(opa.axis, ax0))
-                            rotations[i][ax] = (symbol, opa.order)
+        Args:
+            tables: sorted table with (list of symmetry elements, symbols, order)
 
-        self.get_symbols(rotations)
-        self.get_name()
+        Returns:
+            a list of symmetry elements on {primary, secondary, tertiery} directions
+        """
+        hm_symbols = [[] for _ in range(len(self.directions))]
+        #for row in tables: print(row)
+        for row in tables:
+            (_, symbol, direction_id) = row
+            if symbol not in ['1', '-1']:
+                hm_symbols[direction_id].append(symbol)
+            #print(hm_symbols, direction_id)
 
-    def get_symbols(self, rotations):
+        for i, hm_symbol in enumerate(hm_symbols):
+            if len(hm_symbol) == 0:
+                hm_symbols[i] = ['.']
+            #elif hm_symbol == ['1']:
+            #    hm_symbols[i] = ['.']
+        self.hm_symbols  = hm_symbols
+
+    def unique_symmetry(self, symbols, symmetry):
+        for symbol in symbols:
+            if symbol not in ['.', symmetry]:
+                return False
+        return True
+
+    def ref_symmetry(self, symbols, reference):
+        for symbol in symbols:
+            if symbol in reference:
+                return True
+        return False
+
+
+    def set_short_symbols(self):
+        """
+        Set short symbols from the Full symbols
+        """
+        #if hasattr(self, 'hm_symbols'):
+        #    self.set_full_hm_symbols()
 
         self.symbols = []
-        for rotation in rotations:
-            #print('debug', rotation, len(rotation), len(rotations))
-            if len(rotation) == 0:
-                symbol = '.'
+        #print(self.hm_symbols)
+        for hm_symbol in self.hm_symbols:
+            if len(hm_symbol) == 1:
+                #print('single', hm_symbol)
+                self.symbols.append(hm_symbol[0])
             else:
-                symbol = ""
-                for key in rotation.keys():
-                    if rotation[key][0]  == '-6' and self.lattice_type in ['trigonal', 'cubic']:
-                        symbol += '-3'
-                    else:
-                        symbol += rotation[key][0]
-                if self.inversion:
-                    if symbol in ['2', '4', '-4', '6']:
-                        symbol += '/m'
-                        if symbol == '-4/m': symbol = '4/m'
-                    elif symbol in ['m', 'mm']:
-                        symbol = '2/m'
-                    #elif symbol == '22':
-                    #    if key in [(1, 1, 0), (1, -1, 0)]:
-                    #        symbol = 'mm' #
-                    #    else:
-                    #        symbol = 'm' # 'short for 2/m'
-            self.symbols.append(symbol)
+                symbol = ''
+                for hm in hm_symbol:
+                    symbol += hm
+                self.symbols.append(symbol)
+                #print('multi', hm_symbol)
 
         # Some simplifications
         if self.lattice_type == 'orthorhombic':
             if self.symbols == ['2/m', '2/m', '2/m']:
                 self.symbols = ['m', 'm', 'm']
+
         elif self.lattice_type == 'tetragonal':
-            if self.symbols[0] in ['4', '-4']:
-                for i, symbol in enumerate(self.symbols[1:]):
-                    if symbol == '22':
-                        self.symbols[i+1] = '2'
-                    elif symbol == 'mm':
-                        self.symbols[i+1] = 'm'
-            if self.symbols == ['4/m', '2/m', '2/m']:
-                self.symbols = ['4/mmm']
-            elif self.symbols == ['2/m', '2/m', '.']:
-                self.symbols = ['m', 'mm', '.']
+            for i, symbol in enumerate(self.symbols):
+                if symbol == '2/m2/m':
+                    self.symbols[i] = 'mm'
+                elif symbol == '2/m':
+                    if not self.unique_symmetry(self.symbols, '2/m'):
+                        self.symbols[i] = 'm'
+                elif symbol == 'm2':
+                    self.symbols[i] = '2m'
+            if self.symbols == ['4', '22', '22']:
+                self.symbols = ['4', '2', '2']
+            elif self.symbols == ['4', 'mm', 'mm']:
+                self.symbols = ['4', 'm', 'm']
+            elif self.symbols == ['-4', '22', 'mm']:
+                self.symbols = ['-4', '2', 'm']
+            elif self.symbols == ['-4', 'mm', '22']:
+                self.symbols = ['-4', 'm', '2']
+            elif self.symbols == ['2/m', '2/m', '2/m']:
+                self.symbols = ['m', 'm', 'm']
+            elif self.symbols == ['4/m', 'mm', 'mm']:
+                self.symbols = ['4/m', 'm', 'm']
 
         elif self.lattice_type in ['trigonal', 'hexagonal']:
             for i, symbol in enumerate(self.symbols):
-                if symbol in ['222']:
-                    self.symbols[i] = '2'
-                elif symbol in ['mmm']:
-                    self.symbols[i] = 'm'
+                if symbol in ['2/m2/m', '2/m2/m2/m', 'mm', 'mmm']:
+                    if not self.unique_symmetry(self.symbols, symbol):
+                        self.symbols[i] = 'm'
+                elif symbol in ['22', '222']:
+                    if not self.unique_symmetry(self.symbols, symbol):
+                        self.symbols[i] = '2'
             if self.symbols == ['2/m', '2/m', '2/m']:
                 self.symbols = ['m', 'm', 'm']
 
         elif self.lattice_type == 'cubic':
             for i, symbol in enumerate(self.symbols):
-                #if symbol in ['22', '222', '222222']:
-                # if 222 appears alone, don't symplify
-                if symbol in ['2222', '222222']:
+                if symbol in ['2/m2/m2/m']:
+                    if not self.unique_symmetry(self.symbols, symbol):
+                        self.symbols[i] = 'm'
+                    else:
+                        self.symbols[i] = 'mmm'
+                elif symbol == 'mmm':
+                    if not self.unique_symmetry(self.symbols, symbol):
+                        self.symbols[i] = 'm'
+                elif symbol == '222':
+                    #print(symbol, self.unique_symmetry(self.symbols, symbol))
+                    if not self.unique_symmetry(self.symbols, symbol):
+                        self.symbols[i] = '2'
+                elif symbol in ['2222', '222222']:
                     self.symbols[i] = '2'
                 elif symbol in ['333', '3333']:
                     self.symbols[i] = '3'
@@ -2893,26 +2916,52 @@ class site_symmetry:
                     self.symbols[i] = '4'
                 elif symbol == '-4-4-4':
                     self.symbols[i] = '-4'
-                elif symbol == '224':
+                elif symbol == '422':
                     self.symbols[i] = '42'
-                elif symbol == '22-4':
+                elif symbol == '-422':
                     self.symbols[i] = '-42'
-                elif symbol in ['mmm', 'mmmm', 'mmmmmm']:
-                    self.symbols[i] = 'm'
-                elif symbol in ['2mm']:
+                elif symbol == '2mm':
                     self.symbols[i] = 'mm2'
+                elif symbol in ['mmmm', 'mmmmmm']:
+                    self.symbols[i] = 'm'
                 elif symbol in ['2m']:
                     self.symbols[i] = 'm2'
                 elif symbol in ['4mm']:
                     self.symbols[i] = '4m'
+                elif symbol in ['-4mm']:
+                    self.symbols[i] = '-4m'
+                elif symbol == '4/m2/m2/m':
+                    self.symbols[i] = '4/mm'
+                elif symbol in ['4/m4/m4/m', '2/m2/m2/m2/m2/m2/m']:
+                    self.symbols[i] = 'm'
+                elif symbol == '2/m2/m':
+                    if self.ref_symmetry(self.symbols, ['4/mm']):
+                        self.symbols[i] = 'm'
+                    else:
+                        self.symbols[i] = 'mm'
+                elif symbol == '2/m':
+                    if not self.unique_symmetry(self.symbols, symbol):
+                        self.symbols[i] = 'm'
 
-            if self.symbols in [['4', '-3', '2'], ['-4', '-3', 'm']]:
-                self.symbols = ['m', '-3', 'm']
-            if '222' in self.symbols:
-                if len(self.opas) > 4:
-                    for i in range(len(self.symbols)):
-                        if self.symbols[i] == '222':
-                            self.symbols[i] = '2'#; print('Find ===')
+            for i, symbol in enumerate(self.symbols):
+                if symbol == 'mm':
+                    if self.ref_symmetry(self.symbols, ['-42', '4m']):
+                        self.symbols[i] = 'm'
+                if symbol == '22':
+                    if self.ref_symmetry(self.symbols, ['42', '-4m']):
+                        self.symbols[i] = '2'
+
+
+        #    #if self.symbols in [['4', '-3', '2'], ['-4', '-3', 'm']]:
+        #    #    self.symbols = ['m', '-3', 'm']
+        #    #if '222' in self.symbols:
+        #    #    if len(self.opas) > 4:
+        #    #        for i in range(len(self.symbols)):
+        #    #            if self.symbols[i] == '222':
+        #    #                self.symbols[i] = '2'#; print('Find ===')
+
+        self.get_name()
+
     def get_name(self):
         if self.symbols in [['.', '.', '.'], ['.', '.'], ['.']]:
             if self.inversion:
@@ -2922,8 +2971,58 @@ class site_symmetry:
         else:
             self.name = ''
             for symbol in self.symbols:
-                self.name += symbol
+                #self.name += ' '
+                for s in symbol:
+                    self.name += s
 
+    def to_beautiful_matrix_representation(self, skip=True):
+        """
+        A shortcut to check the representation
+
+        Args:
+            skip (bool): whether or not skip 1 or -1 symmetry
+        """
+        print('Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group')
+        sorted_tables = self.to_table(skip)
+        for row in sorted_tables:
+            print(row[0])
+
+    def get_highest_symmetry(self, row):
+        #['1']
+        #['1', '-1']
+        #['1', '2']
+        #['1', 'm']
+        #['1', '3']
+        #['1', '2', 'm', '2/m']
+        #['1', '2', '4']
+        #['1', '2', '-4']
+        #['1', '-1', '3', '-3']
+        #['1', '2', '3', '6']
+        #['1', 'm', '3', '-6']
+        #['1', '-1', '2', 'm', '4', '-4', '4/m']
+        #['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
+        ref_arrays = [
+            (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), '1'),
+            (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), '-1'),
+            (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), '2'),
+            (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), 'm'),
+            (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), '3'),
+            (np.array([1, 1, 1, 1, 0, 0, 0, 0, 0, 0], dtype=int), '2/m'),
+            (np.array([1, 0, 1, 0, 0, 1, 0, 0, 0, 0], dtype=int), '4'),
+            (np.array([1, 0, 1, 0, 0, 0, 1, 0, 0, 0], dtype=int), '-4'),
+            (np.array([1, 1, 0, 0, 1, 0, 0, 1, 0, 0], dtype=int), '-3'),
+            (np.array([1, 0, 1, 0, 1, 0, 0, 0, 1, 0], dtype=int), '6'),
+            (np.array([1, 0, 0, 1, 1, 0, 0, 0, 0, 1], dtype=int), '-6'),
+            (np.array([1, 1, 1, 1, 0, 1, 1, 0, 0, 0], dtype=int), '4/m'),
+            (np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 1], dtype=int), '6/m')]
+
+        for ref_array in ref_arrays:
+            if np.array_equal(row, ref_array[0]):
+                return ref_array[1]
+        else:
+            symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
+            strs = [symbols[i] for i, x in enumerate(row) if x == 1]
+            raise ValueError("Incompatible symmetry list", strs)
 
 
 def organized_wyckoffs(group):
@@ -3804,6 +3903,13 @@ def trim_ops(ops):
 
     return ops
 
+def find_axis_order(axis, directions):
+    for i, axes in enumerate(directions):
+        for ax in axes:
+            if ax == axis:
+                return i
+
+
 def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
     """
     Get the symmetry directions
@@ -3825,14 +3931,14 @@ def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
                 [(1, -1, 0), (1, 1, 0)]]
     elif lattice_type == 'hexagonal' or (lattice_type == 'trigonal' and symbol=='P'):
         return [[(0, 0, 1)],
-                [(1, 0, 0), (0, 1, 0), (-1, -1, 0)],
-                [(1, -1, 0), (1, 2, 0), (-2, -1, 0)]]
+                [(1, 0, 0), (0, 1, 0), (1, 1, 0)],
+                [(1, -1, 0), (1, 2, 0), (2, 1, 0)]]
     elif lattice_type == 'trigonal' and symbol=='R':
         return [[(0, 0, 1)],
-                [(1, 0, 0), (0, 1, 0), (-1, -1, 0)]]
-    elif lattice_type == 'rhombohedral':
-        return [[(0, 0, 1)],
-                [(1, 0, 0), (0, 1, 0), (-1, -1, 0)]]
+                [(1, 0, 0), (0, 1, 0), (1, 1, 0)]]
+    #elif lattice_type == 'rhombohedral':
+    #    return [[(0, 0, 1)],
+    #            [(1, 0, 0), (0, 1, 0), (-1, -1, 0)]]
     elif lattice_type == 'cubic':
         return [[(1, 0, 0), (0, 1, 0), (0, 0, 1)],
                 [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)],
@@ -3843,21 +3949,21 @@ def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
 
 
 if __name__ == "__main__":
-    print("Test of pyxtal.symmetry")
-    #for i in range(1, 231):
-    #for i in [225, 227, 230]:#93, 123]: #143, 160, 230]:
-    for i in [62, 143, 160, 182, 191, 225, 230]:
+    print("Test of pyxtal.wp.site symmetry")
+    for i in [14, 36, 62, 99, 143, 160, 182, 191, 225, 230]:
         g = Group(i)
         for wp in g:
-            if wp.euclidean:
-                ops = wp.get_euclidean_symmetries()
-                #print(ops)
-            else:
-                ops = wp.symmetry[0]
             wp.get_site_symmetry()
-            print(g.lattice_type, g.number, g.symbol, wp.multiplicity, wp.letter, wp.site_symm)
-            #ss = site_symmetry(ops, g.lattice_type, all_symmetry_directions)
-            #print(wp.number, wp.multiplicity, wp.letter, ss.symbols, ss.name)
-            ss = site_symmetry(ops, g.lattice_type, all_directions)
-            #print(ss.to_matrix_representation())
-            ss.to_beautiful_matrix_representation()
+            print("{:4d} {:10s} {:10s}".format(wp.number, wp.get_label(), wp.site_symm))
+
+    print("Test of pyxtal.wp.site symmetry representation")
+    for i in [14, 36, 62, 99, 143, 160, 182, 191, 225, 230]:
+        g = Group(i)
+        for wp in g:
+            ss = site_symmetry(wp.get_site_symm_ops(), g.lattice_type, g.symbol[0])
+            if wp.index > 0:
+                print('\n{:4d} {:10s} {:10s}'.format(wp.number, wp.get_label(), ss.name), ss.hm_symbols)
+                ss.to_beautiful_matrix_representation(skip=True)
+                #print(ss.to_matrix_representation())
+                #if ss.name == '1':
+                #    print("Problem eixt")

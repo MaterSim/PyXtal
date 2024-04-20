@@ -649,13 +649,13 @@ class OperationAnalyzer(SymmOp):
                 break
         if found:
             # Double order of odd-rotation rotoinversions
-            if rotoinversion:
-                if n % 2 == 1:
-                    return int(n * 2)
-                else:
-                    return int(n)
-            else:
-                return int(n)
+            #if rotoinversion:
+            #    if n % 2 == 1:
+            #        return int(n * 2)
+            #    else:
+            #        return int(n)
+            #else:
+            return int(n)
         if not found:
             return "irrational"
 
