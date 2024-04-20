@@ -496,6 +496,7 @@ class TestWP(unittest.TestCase):
             (sg, i, symbol) = d
             wp = Group(sg)[i]
             wp.get_site_symmetry()
+            print(wp.site_symm, symbol)
             self.assertTrue(wp.site_symm == symbol)
 
     def test_wp_dof(self):

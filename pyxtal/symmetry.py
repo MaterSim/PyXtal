@@ -52,6 +52,10 @@ k_subgroup = loadfn(rf("pyxtal",'database/k_subgroup.json'))
 wyc_sets = loadfn(rf("pyxtal",'database/wyckoff_sets.json'))
 hex_cell = np.array([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]])
 hall_table = read_csv(rf("pyxtal", "database/HM_Full.csv"), sep=',')
+all_directions = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1),
+                  (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (1, -1, 0),
+                  (1, 1, 0), (0, 1, -1), (0, 1, 1), (-1, 0, 1),
+                  (1, 0, 1), (1, 2, 0), (-2, -1, 0)]
 
 #The map between spglib default space group and hall numbers
 spglib_hall_numbers = [
@@ -1797,6 +1801,7 @@ class Wyckoff_position:
             ops = self.symmetry[0]
 
         ss = site_symmetry(ops, self.lattice_type, self.directions)
+        ss.assign_symmetry_to_axes()
         self.site_symm = ss.name #ss_string_from_ops(ops, self.number, dim=self.dim)
 
     def get_hm_number(tol=1e-5):
@@ -2696,12 +2701,95 @@ class site_symmetry:
         self.directions = directions
         self.lattice_type = lattice_type
 
+    def to_matrix_representation(self):
+        """
+        To create a 15 * 14 binary matrix to represent the
+        symmetry elements on each axes
+        #[1, -1, 2, m, 3, 2/m, 4, -3, 6, 4/m, -6, 6/m]
+        [1, -1, 2, m, 3, 4, -3, 6, -6]
+        """
+        symbols = ['1', '-1', '2', 'm', '3',
+                   '4', '-4', '-3', '6', '-6']
+        matrix = np.zeros([len(all_directions), len(symbols)], dtype=int)
+        # every direction must has identity symmetry
+        matrix[:, 0] = 1
+        self.inversion = False
+
+        for opa in self.opas:
+            if opa.type == 'inversion':
+                self.inversion = True
+            elif opa.type != 'identity':
+                for i, ax in enumerate(all_directions):
+                    store = False
+                    if self.lattice_type in ['hexagonal', 'trigonal']:
+                        ax0 = np.dot(ax, hex_cell.T)
+                        ax0 /= np.linalg.norm(ax0)
+                    else:
+                        ax0 = ax / np.linalg.norm(ax)
+                    if np.isclose(abs(np.dot(opa.axis, ax0)), 1):
+                        store = True
+                        break
+                if store:
+                    # Pure rotation
+                    #print('add symmetry', i, ax, opa.type, opa.order)
+                    if opa.type == 'rotation':
+                        if opa.order == 2:
+                            matrix[i, 2] = 1
+                        elif opa.order == 3:
+                            matrix[i, 4] = 1
+                        elif opa.order == 4:
+                            matrix[i, 5] = 1
+                        elif opa.order == 6:
+                            matrix[i, 8] = 1
+                        else:
+                            raise RuntimeError("Unexpected rotation order", opa.order)
+                    elif opa.type == 'rotoinversion':
+                        self.inversion = True
+                        if opa.order == 2:
+                            matrix[i, 3] = 1 # -2 is m
+                        elif opa.order == 4:
+                            matrix[i, 6] = 1 # -4
+                        elif opa.order == 6:
+                            if self.lattice_type in ['trigonal', 'cubic']:
+                                matrix[i, 7] = 1
+                            else:
+                                matrix[i, 9] = 1
+                        else:
+                            raise RuntimeError("Unexpected rotinversion order", opa.order)
+
+            if self.inversion:
+                matrix[:, 1] = 1 # if inversion is present
+        return matrix
+
+    def to_beautiful_matrix_representation(self, skip=True):
+        """
+        A shortcut to check the representation
+
+        Args:
+            skip (bool): whether or not skip 1 or -1 symmetry
+        """
+        matrix = self.to_matrix_representation()
+        print('    Axis       1  -1   2   m   3   4  -4  -3   6  -6')
+        for i, axis in enumerate(self.directions):
+            if skip:
+                num_symmetries = matrix[i, 2:].sum()
+            else:
+                num_symmetries = matrix[i].sum()
+            if num_symmetries > 0:
+                strs = '({:2d} {:2d} {:2d}): '.format(*axis)
+                strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
+                print(strs)
+
+    def assign_symmetry_to_axes(self):
+        """
+        Assign symmetry to each axes
+        This is mainly to parse the site symmetry symbol
+        """
         rotations = []
         for i in range(len(self.directions)): rotations.append({})
         self.inversion = False
 
         for opa in self.opas:
-            #print(opa.type, opa.order)
             # Search for the primary rotation axis
             if opa.type == "inversion":
                 self.inversion = True
@@ -2727,8 +2815,6 @@ class site_symmetry:
                             if np.isclose(abs(np.dot(opa.axis, ax0)), 1):
                                 store = True
                                 break
-                        # rotation axis
-                        #print(store, 'update')
                     if store:
                         if ax in rotations[i].keys():
                             if opa.order >= rotations[i][ax][-1]:
@@ -3759,14 +3845,19 @@ def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
 if __name__ == "__main__":
     print("Test of pyxtal.symmetry")
     #for i in range(1, 231):
-    for i in [225, 227, 230]:#93, 123]: #143, 160, 230]:
+    #for i in [225, 227, 230]:#93, 123]: #143, 160, 230]:
+    for i in [62, 143, 160, 182, 191, 225, 230]:
         g = Group(i)
-        print(g.lattice_type, g.symbol)
         for wp in g:
             if wp.euclidean:
                 ops = wp.get_euclidean_symmetries()
                 #print(ops)
             else:
                 ops = wp.symmetry[0]
-            ss = site_symmetry(ops, g.lattice_type, g.get_symmetry_directions())
-            print(wp.number, wp.multiplicity, wp.letter, ss.symbols, ss.name)
+            wp.get_site_symmetry()
+            print(g.lattice_type, g.number, g.symbol, wp.multiplicity, wp.letter, wp.site_symm)
+            #ss = site_symmetry(ops, g.lattice_type, all_symmetry_directions)
+            #print(wp.number, wp.multiplicity, wp.letter, ss.symbols, ss.name)
+            ss = site_symmetry(ops, g.lattice_type, all_directions)
+            #print(ss.to_matrix_representation())
+            ss.to_beautiful_matrix_representation()
