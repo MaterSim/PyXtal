@@ -868,7 +868,7 @@ Site Symmetry
 --------------------------------
 
 PyXtal provides a
-`site_symmetry <pyxtal.symmetry.site_symmetry.html>`_ class to handle the conversion of site symmetry symbols and operations.
+`site_symmetry <pyxtal.symmetry.html#pyxtal.symmetry.site_symmetry>`_ class to handle the conversion of site symmetry symbols and operations.
 
 
 .. code-block:: Python
@@ -883,8 +883,8 @@ PyXtal provides a
 ::
 
     Na @ [ 0.3333  0.6667  0.0330], WP [2b] Site [3..]
-    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
-    0 ( 0  0  1):    1   0   0   0   1   0   0   0   0   0     3
+    Order    Axis        1  -1   2   m   3   4  -4  -3   6  -6   Group
+        0 ( 0  0  1):    1   0   0   0   1   0   0   0   0   0     3
     
     Sb @ [ 0.1163  0.3406  0.4500], WP [6c] Site [1]
     Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
@@ -900,10 +900,10 @@ PyXtal provides a
  
     F @ [ 0.3333  0.6667  0.4550], WP [2b] Site [3..]
     Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
-    0 ( 0  0  1):    1   0   0   0   1   0   0   0   0   0     3
+        0 ( 0  0  1):   1   0   0   0   1   0   0   0   0   0     3
 
 
-One can also access the matrix representation via the `to_matrix_representation <pyxtal.symmetry.site_symmetry.html>`_ method.
+One can also access the matrix representation via the `to_matrix_representation <pyxtal.symmetry.html#pyxtal.symmetry.site_symmetry>`_ method.
 
 .. code-block:: Python
 

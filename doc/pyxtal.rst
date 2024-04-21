@@ -22,6 +22,7 @@ Submodules
    pyxtal.block_crystal
    pyxtal.crystal
    pyxtal.descriptor
+   pyxtal.db
    pyxtal.io
    pyxtal.lattice
    pyxtal.molecular_crystal
