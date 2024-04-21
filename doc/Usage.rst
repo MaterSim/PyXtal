@@ -864,3 +864,110 @@ To access the pyxtal structure
 	    H3C4O4       @ [ 0.5328  0.0993  0.0601]  WP [4a] Site [1] Euler [   0.0    0.0    0.0]
 
 
+Site Symmetry
+--------------------------------
+
+PyXtal provides a
+`site_symmetry <pyxtal.symmetry.site_symmetry.html>`_ class to handle the conversion of site symmetry symbols and operations.
+
+
+.. code-block:: Python
+    
+    from pyxtal import pyxtal
+    c = pyxtal()
+    c.from_seed('pyxtal/database/cifs/NaSb3F10.cif')
+    for site in c.atom_sites:
+        print(site)
+        ss = site.wp.get_site_symmetry_object()
+        ss.to_beautiful_matrix_representation()
+::
+
+    Na @ [ 0.3333  0.6667  0.0330], WP [2b] Site [3..]
+    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+    0 ( 0  0  1):    1   0   0   0   1   0   0   0   0   0     3
+    
+    Sb @ [ 0.1163  0.3406  0.4500], WP [6c] Site [1]
+    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+ 
+    F @ [ 0.9650  0.4560  0.4190], WP [6c] Site [1]
+    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+ 
+    F @ [ 0.7960  0.1890  0.7060], WP [6c] Site [1]
+    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+ 
+    F @ [ 0.8890  0.1180  0.3600], WP [6c] Site [1]
+    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+ 
+    F @ [ 0.3333  0.6667  0.4550], WP [2b] Site [3..]
+    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+    0 ( 0  0  1):    1   0   0   0   1   0   0   0   0   0     3
+
+
+One can also access the matrix representation via the `to_matrix_representation <pyxtal.symmetry.site_symmetry.html>`_ method.
+
+.. code-block:: Python
+
+    matrix = ss.to_matrix_representation()
+
+
+This will results in a `15*10` array to represent the presence of 10 fundamental symmetry elements in 15 possible high symmetry crystallograph axes.
+::
+    
+    # An example of 3-fold rotation symmetry on the (0 0 1) axis
+    array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]])   
+
+The list of 15 possible high symmetry crystallograph axes include
+
+
+::
+
+    (1, 0, 0), 
+    (0, 1, 0), 
+    (0, 0, 1), 
+    (1, 1, 1), 
+    (1, -1, -1), 
+    (-1, 1, -1), 
+    (-1, -1, 1), 
+    (1, -1, 0), 
+    (1, 1, 0), 
+    (0, 1, -1), 
+    (0, 1, 1), 
+    (-1, 0, 1), 
+    (1, 0, 1), 
+    (1, 2, 0), 
+    (2, 1, 0), 
+
+And the 10 fundamental symmetry elements are `1, -1, 2, m, 3, 4, -4, -3, 6, -6`.
+Possible combinations include
+
+::
+
+    ['1']
+    ['1', '-1']
+    ['1', '2']
+    ['1', 'm']
+    ['1', '3']
+    ['1', '2', 'm', '2/m']
+    ['1', '2', '4']
+    ['1', '2', '-4']
+    ['1', '-1', '3', '-3']
+    ['1', '2', '3', '6']
+    ['1', 'm', '3', '-6']
+    ['1', '-1', '2', 'm', '4', '-4', '4/m']
+    ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
+

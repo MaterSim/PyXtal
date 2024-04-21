@@ -7,7 +7,8 @@ Module for storing & accessing symmetry group information, including
 # Imports ------------------------------
 # Standard Libraries
 import numpy as np
-from pkg_resources import resource_filename as rf
+#from pkg_resources import resource_filename as rf
+
 from copy import deepcopy
 import random
 import itertools
@@ -32,6 +33,12 @@ from pyxtal.operations import (
     check_images,
 )
 from pyxtal.constants import letters
+import importlib.util
+import os
+
+def rf(package_name, resource_path):
+    package_path = importlib.util.find_spec(package_name).submodule_search_locations[0]
+    return os.path.join(package_path, resource_path)
 # ------------------------------ Constants ---------------------------------------
 
 wyckoff_df = read_csv(rf("pyxtal", "database/wyckoff_list.csv"))
@@ -55,7 +62,7 @@ hall_table = read_csv(rf("pyxtal", "database/HM_Full.csv"), sep=',')
 all_directions = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1),
                   (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (1, -1, 0),
                   (1, 1, 0), (0, 1, -1), (0, 1, 1), (-1, 0, 1),
-                  (1, 0, 1), (1, 2, 0), (-2, -1, 0), (-1, -1, 0)]
+                  (1, 0, 1), (1, 2, 0), (2, 1, 0)]
 
 #The map between spglib default space group and hall numbers
 spglib_hall_numbers = [
@@ -1794,9 +1801,12 @@ class Wyckoff_position:
             ops.append(op)
         return ops
 
-    def get_site_symmetry(self):
+    def get_site_symmetry_object(self):
         ops = self.get_site_symm_ops()
-        ss = site_symmetry(ops, self.lattice_type, self.symbol[0])
+        return site_symmetry(ops, self.lattice_type, self.symbol[0])
+
+    def get_site_symmetry(self):
+        ss = self.get_site_symmetry_object()
         self.site_symm = ss.name #ss_string_from_ops(ops, self.number, dim=self.dim)
 
     def get_site_symm_ops(self):
@@ -3960,8 +3970,9 @@ if __name__ == "__main__":
     for i in [14, 36, 62, 99, 143, 160, 182, 191, 225, 230]:
         g = Group(i)
         for wp in g:
-            ss = site_symmetry(wp.get_site_symm_ops(), g.lattice_type, g.symbol[0])
+            #ss = site_symmetry(wp.get_site_symm_ops(), g.lattice_type, g.symbol[0])
             if wp.index > 0:
+                ss = wp.get_site_symmetry_object()
                 print('\n{:4d} {:10s} {:10s}'.format(wp.number, wp.get_label(), ss.name), ss.hm_symbols)
                 ss.to_beautiful_matrix_representation(skip=True)
                 #print(ss.to_matrix_representation())

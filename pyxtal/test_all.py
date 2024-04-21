@@ -1,10 +1,10 @@
 # python -m unittest pyxtal/test_all.py
 import unittest
 import os
+import importlib.util
 
 from random import choice, shuffle
 import numpy as np
-from pkg_resources import resource_filename
 from pymatgen.core import Structure
 from pymatgen.core import Lattice as pmg_Lattice
 from pymatgen.core.structure import Molecule
@@ -20,6 +20,11 @@ from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
 from pyxtal.supergroup import supergroups, supergroup
 from pyxtal.util import generate_wp_lib
+
+
+def resource_filename(package_name, resource_path):
+    package_path = importlib.util.find_spec(package_name).submodule_search_locations[0]
+    return os.path.join(package_path, resource_path)
 
 cif_path = resource_filename("pyxtal", "database/cifs/")
 l01 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
