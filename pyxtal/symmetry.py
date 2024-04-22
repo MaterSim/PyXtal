@@ -2712,13 +2712,21 @@ class site_symmetry:
         self.opas = [OperationAnalyzer(op) for op in ops]
         self.lattice_type = lattice_type
         self.directions = get_symmetry_directions(lattice_type, hm_symbol)
-        tables = self.to_table()
-        self.set_full_hm_symbols(tables)
+        self.set_table()
+        self.set_full_hm_symbols(self.table)
         self.set_short_symbols()
+
+    def to_one_hot(self):
+        matrix = self.to_matrix_representation()
+        one_hot_matrix = np.zeros([len(matrix), 13], dtype=int)
+        for i, axis in enumerate(all_directions):
+            symbol, id = self.get_highest_symmetry(matrix[i])
+            one_hot_matrix[i, id] = 1
+        return one_hot_matrix
 
     def to_matrix_representation(self):
         """
-        To create a 15 * 14 binary matrix to represent the
+        To create a 15 * 10 binary matrix to represent the
         symmetry elements on each axes
         #[1, -1, 2, m, 3, 2/m, 4, -3, 6, 4/m, -6, 6/m]
         [1, -1, 2, m, 3, 4, -3, 6, -6]
@@ -2772,7 +2780,7 @@ class site_symmetry:
                 matrix[:, 1] = 1 # if inversion is present
         return matrix
 
-    def to_table(self, skip=False):
+    def set_table(self, skip=False):
         """
         Get the complete table representation.
 
@@ -2798,13 +2806,12 @@ class site_symmetry:
                 if num_symmetries > 0:
                     strs = '{:4d} ({:2d} {:2d} {:2d}): '.format(direction_id, *axis)
                     strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
-                    symbol = self.get_highest_symmetry(matrix[i])
+                    symbol, _ = self.get_highest_symmetry(matrix[i])
                     strs += "{:>6s}".format(symbol)
                     tables.append((strs, symbol, direction_id))
             #else:
             #    raise ValueError('Wrong input axis', axis, 'lattice_type', self.lattice_type)
-        sorted_tables = sorted(tables, key=lambda x: x[-1])
-        return sorted_tables
+        self.table = sorted(tables, key=lambda x: x[-1])
 
     def set_full_hm_symbols(self, tables):
         """
@@ -2993,8 +3000,8 @@ class site_symmetry:
             skip (bool): whether or not skip 1 or -1 symmetry
         """
         print('Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group')
-        sorted_tables = self.to_table(skip)
-        for row in sorted_tables:
+        if not hasattr(self, 'table'): self.set_table(skip)
+        for row in self.table:
             print(row[0])
 
     def get_highest_symmetry(self, row):
@@ -3026,9 +3033,9 @@ class site_symmetry:
             (np.array([1, 1, 1, 1, 0, 1, 1, 0, 0, 0], dtype=int), '4/m'),
             (np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 1], dtype=int), '6/m')]
 
-        for ref_array in ref_arrays:
+        for i, ref_array in enumerate(ref_arrays):
             if np.array_equal(row, ref_array[0]):
-                return ref_array[1]
+                return ref_array[1], i
         else:
             symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
             strs = [symbols[i] for i, x in enumerate(row) if x == 1]
@@ -3976,5 +3983,6 @@ if __name__ == "__main__":
                 print('\n{:4d} {:10s} {:10s}'.format(wp.number, wp.get_label(), ss.name), ss.hm_symbols)
                 ss.to_beautiful_matrix_representation(skip=True)
                 #print(ss.to_matrix_representation())
+                print(ss.to_one_hot())
                 #if ss.name == '1':
-                #    print("Problem eixt")
+                #    print("Problem exit")
