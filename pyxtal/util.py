@@ -595,6 +595,38 @@ def new_struc(xtal, xtals):
                         return False
         return True
 
+def new_struc_wo_energy(xtal, xtals):
+    """
+    check if this is a new structure
+
+    Args:
+        xtal: input structure
+        xtals: list of reference structures
+
+    Return:
+        `None` or the id of matched structure
+    """
+    import pymatgen.analysis.structure_matcher as sm
+
+    if xtal is None:
+        return False
+    else:
+        pmg_s1 = xtal.to_pymatgen()
+        pmg_s1.remove_species("H")
+        vol1 = pmg_s1.lattice.volume
+
+        for xtal2 in xtals:
+            #print(rep); print(rep2)
+            pmg_s2 = xtal2.to_pymatgen()
+            vol2 = pmg_s2.lattice.volume
+            if abs(vol1-vol2)/vol1<5e-2:
+                pmg_s2.remove_species("H")
+                if sm.StructureMatcher().fit(pmg_s1, pmg_s2):
+                    #print(pmg_s2); import sys; sys.exit()
+                    return False
+        return True
+
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

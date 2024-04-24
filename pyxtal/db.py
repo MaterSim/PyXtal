@@ -301,6 +301,53 @@ class database():
             self.db.update(row.id, data=data)
             print('updated the data for', row.csd_code)
 
+class database_topology():
+    """
+    This is a database class to process atomic crystal data
+
+    Args:
+        db_name: *.db format from ase database
+    """
+
+    def __init__(self, db_name):
+        self.db_name = db_name
+        #if not os.path.exists(db_name):
+        #    raise ValueError(db_name, 'doesnot exist')
+
+        self.db = connect(db_name)
+        self.keys = ['space_group', 'spg_num',
+                     'topology', 'ff_energy',
+                     'similarity',
+                    ]
+
+    def vacuum(self):
+        self.db.vacuum()
+
+
+    def get_pyxtal(self, id):
+        from pyxtal import pyxtal
+        from pyxtal.util import ase2pymatgen
+
+        atom = self.db.get_atoms(id=id)
+        pmg = ase2pymatgen(atom)
+        xtal = pyxtal()
+        try:
+            xtal.from_seed(pmg)
+            return xtal
+        except:
+            print('Cannot load the structure')
+
+
+    def get_all_xtals(self):
+        xtals = []
+        for row in self.db.select():
+            xtal = self.get_pyxtal(id=row.id)
+            if xtal is not None and xtal.valid:
+                xtal.ff_energy = row.ff_energy
+                xtal.similarity = row.similarity
+                xtal.topology = row.topology
+                xtals.append(xtal)
+        return xtals
 
 if __name__ == "__main__":
     # open

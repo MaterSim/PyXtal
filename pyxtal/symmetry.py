@@ -1951,7 +1951,7 @@ class Wyckoff_position:
                [0.5, 0.5, 0.5]])
         """
 
-        pos0, _, _ = self.merge(pos, np.eye(3), 0.01)
+        pos0 = self.search_generator(pos)
         res = self.apply_ops(pos0)
         res -= np.floor(res)
         return res
@@ -2165,6 +2165,7 @@ class Wyckoff_position:
                 if y[0] == 0 and y[1] == 0:
                     pass
                 else:
+                    #print(dm); print(y)
                     passed_distance_check = False
                     break
 
