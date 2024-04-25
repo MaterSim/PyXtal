@@ -1801,19 +1801,19 @@ class Wyckoff_position:
             ops.append(op)
         return ops
 
-    def get_site_symmetry_object(self):
-        ops = self.get_site_symm_ops()
+    def get_site_symmetry_object(self, idx=0):
+        ops = self.get_site_symm_ops(idx)
         return site_symmetry(ops, self.lattice_type, self.symbol[0])
 
-    def get_site_symmetry(self):
-        ss = self.get_site_symmetry_object()
+    def get_site_symmetry(self, idx=0):
+        ss = self.get_site_symmetry_object(idx)
         self.site_symm = ss.name #ss_string_from_ops(ops, self.number, dim=self.dim)
 
-    def get_site_symm_ops(self):
+    def get_site_symm_ops(self, idx=0):
         if self.euclidean:
-            ops = self.get_euclidean_symmetries()
+            ops = self.get_euclidean_symmetries(idx)
         else:
-            ops = self.symmetry[0]
+            ops = self.symmetry[idx]
         return ops
 
     def get_hm_number(tol=1e-5):
@@ -1873,15 +1873,17 @@ class Wyckoff_position:
                     elif self.ops[0].rotation_matrix[0,0] != 1:
                         return [0]
 
-    def get_euclidean_symmetries(self):
+    def get_euclidean_symmetries(self, idx=0):
         """
         return the symmetry operation object at the Euclidean space
 
         Returns:
             list of pymatgen SymmOp object
         """
+        if idx >= len(self.symmetry):
+            raise ValueError("Cannot pick {:d} in {:d} operations".format(idx, len(self.symmetry)))
         ops = []
-        for op in self.symmetry[0]:
+        for op in self.symmetry[idx]:
             hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
             ops.append(hat * op * hat.inverse)
         return ops
@@ -3980,10 +3982,11 @@ if __name__ == "__main__":
         for wp in g:
             #ss = site_symmetry(wp.get_site_symm_ops(), g.lattice_type, g.symbol[0])
             if wp.index > 0:
-                ss = wp.get_site_symmetry_object()
-                print('\n{:4d} {:10s} {:10s}'.format(wp.number, wp.get_label(), ss.name), ss.hm_symbols)
-                ss.to_beautiful_matrix_representation(skip=True)
-                #print(ss.to_matrix_representation())
-                print(ss.to_one_hot())
-                #if ss.name == '1':
-                #    print("Problem exit")
+                for idx in range(wp.multiplicity):
+                    ss = wp.get_site_symmetry_object(idx)
+                    print('\n{:4d} {:10s} {:10s}'.format(wp.number, wp.get_label(), ss.name), ss.hm_symbols)
+                    ss.to_beautiful_matrix_representation(skip=True)
+                    #print(ss.to_matrix_representation())
+                    #print(ss.to_one_hot())
+                    #if ss.name == '1':
+                    #    print("Problem exit")
