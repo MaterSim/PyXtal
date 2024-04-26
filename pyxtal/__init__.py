@@ -3098,3 +3098,76 @@ class pyxtal:
             return ase_with_ff
         else:
             raise NotImplementedError("\nNo support for atomic crystals")
+
+    def update_from_1d_rep(self, x):
+        """
+        update the xtal from the 1d representation
+        Group: I 41/a m d:2 (141)
+        2.5019,   2.5019,   8.7534,  90.0000,  90.0000,  90.0000, tetragonal
+        Wyckoff sites:
+        C @ [ 0.0000  0.2500  0.4614], WP [8e] Site [2mm.]
+
+        the above rep is [2.5019, 8.7514, 0.4614]
+
+        Args:
+            x (float): input variable array to describe a xtal
+        """
+        N = self.lattice.dof
+        cell, pos = x[:N], x[N:]
+
+        # update cell
+        l_type = self.lattice.ltype
+        self.lattice = Lattice.from_1d_representation(cell, l_type)
+
+        # update position
+        start = 0
+        for site in self.atom_sites:
+            end = start + site.wp.get_dof()
+            xyz = site.wp.get_position_from_free_xyzs(pos[start:end])
+            site.update(xyz)
+            start = end
+        #xtal.to_ase().write('init.vasp', vasp5=True, format='vasp', direct=True)
+
+    def from_1d_rep(self, x, sites):
+        """
+        An advanced way to build pyxtal from the 1d representation
+
+        Args:
+            x: 1d representation
+            sites: list of (element, wp)
+        """
+        l_type = sites[0][1].lattice_type
+        N = sum(Lattice.get_dofs(l_type))
+        cell, pos = x[:N], x[N:]
+        lat = Lattice.from_1d_representation(cell, l_type)
+
+        species, numIons = [], []
+        total_sites = []
+
+        start = 0
+        for site in sites:
+            (specie, _wp) = site
+            end = start + _wp.get_dof()
+            xyz = pos[start:end]
+            full_xyz = _wp.get_position_from_free_xyzs(xyz)
+            [x, y, z] = full_xyz
+            start = end
+            label = _wp.get_label()
+            if specie not in species:
+                species.append(specie)
+                numIons.append(_wp.multiplicity)
+                total_sites.append([(label, x, y, z)])
+            else:
+                idx = species.index(specie)
+                numIons[idx] += _wp.multiplicity
+                total_sites[idx].append((label, x, y, z))
+        #print(species, numIons,  total_sites)
+
+        spg = sites[0][1].number
+        try:
+            self.build(spg, species, numIons, lat, total_sites)
+        except:
+            print("input x", x)
+            print("input build", spg, numIons, lat, total_sites)
+            raise ValueError('Problem in build')
+
