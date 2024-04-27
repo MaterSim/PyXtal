@@ -3171,3 +3171,107 @@ class pyxtal:
             print("input build", spg, numIons, lat, total_sites)
             raise ValueError('Problem in build')
 
+
+    def check_validity(self, criteria, verbose=False):
+        """
+        Check if the xtal is valid for a given list of criteria.
+        Currently support the following keywords
+        - MIN_Density (float)
+        - CN: coordination number (int)
+        - Dimension: (int)
+
+        Args:
+            criteria (dict): keywords and the threshhold values
+            verbose (bool): whether or not print out details
+
+        Return:
+            bool value regarding the validity
+        """
+
+        if len(criteria.keys()) == 0:
+            return True
+
+        if 'MIN_Density' in criteria:
+            den1 = self.get_density()
+            den2 = criteria['MIN_Density']
+            if den1 < den2:
+                if verbose:
+                    msg = "===Invalid in MIN_density {:.2f}=>{:.2f}".format(den1, den2)
+                    print(msg)
+                return False
+
+        if 'CN' in criteria:
+            if criteria['exclude_ii']:
+                options = [True, False]
+            else:
+                options = [False]
+
+            for option in options:
+                try:
+                    self.set_site_coordination(criteria['cutoff'], exclude_ii=option)
+                except:
+                    if verbose:
+                        print("=====Invalid in CN calculation")
+                    return False
+                for s in self.atom_sites:
+                    ele = s.specie
+                    cn1 = s.coordination
+                    cn2 = criteria['CN'][ele]
+                    #print(ele, cn1, option)
+                    if cn1 != cn2:
+                        if verbose:
+                            strs = "=====Invalid CN {:s} [{:d}=>{:d}]".format(ele, cn1, cn2)
+                            strs += ", exclude ii: " + str(option)
+                            print(strs)
+                        return False
+
+        if 'Dimension' in criteria:
+            try:
+                dim1 = self.get_dimensionality(criteria_cutoff)
+            except:
+                dim1 = 3
+            dim2 = criteria['Dimension'];
+            if dim1 != dim2:
+                if verbose:
+                    print("=====Invalid in Dimension {:d}=>{:d}".format(dim1, dim2))
+                return False
+
+        return True
+
+    def get_xtal_string(self, dicts=None, header=None):
+        """
+        get the xtal string
+
+        Args:
+            xtal: pyxtal instance
+            sim (float): similarity metric
+            status (bool): whether or not the structure is valid
+            energy (float): the energy value
+        """
+        spg_num, spg_symbol = self.group.number, self.group.symbol
+        density = self.get_density()
+        dof = self.get_dof()
+        N_atoms = sum(self.numIons)
+        if header is not None:
+            strs = header
+        else:
+            strs = ""
+        strs = "*{:3d} {:3d} {:4d} {:10s} {:8.2f}".format(
+                N_atoms, dof, spg_num, spg_symbol, density)
+
+        if dicts is not None:
+            # Similarity, energy, status
+            for key in dicts:
+                value = dicts[key]
+                if type(value) == float:
+                    strs += " {:8.3f} ".format(value)
+                elif type(value) == str:
+                    strs += " {:24s} ".format(value)
+                elif type(value) == bool:
+                    strs += " {:5s} ".format(str(value))
+
+        for s in self.atom_sites:
+            strs += "{:s} ".format(s.wp.get_label())
+        return strs
+
+

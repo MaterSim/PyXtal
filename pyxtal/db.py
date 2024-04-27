@@ -4,6 +4,7 @@ Database class
 import os
 from ase.db import connect
 from pyxtal import pyxtal
+import pymatgen.analysis.structure_matcher as sm
 
 def make_entry_from_pyxtal(xtal):
     """
@@ -309,20 +310,26 @@ class database_topology():
         db_name: *.db format from ase database
     """
 
-    def __init__(self, db_name):
-        self.db_name = db_name
+
+    def __init__(self, db_name, ltol=0.05, stol=0.05, atol=3):
         #if not os.path.exists(db_name):
         #    raise ValueError(db_name, 'doesnot exist')
-
+        self.db_name = db_name
         self.db = connect(db_name)
-        self.keys = ['space_group', 'spg_num',
-                     'topology', 'ff_energy',
+        self.keys = ['space_group_number',
                      'similarity',
+                     'ff_energy',
+                     'density',
+                     'dof',
+                     'topology',
+                     'dimension',
+                     'similarity0',
+                     'wps'
                     ]
+        self.matcher = sm.StructureMatcher(ltol=ltol, stol=stol, angle_tol=atol)
 
     def vacuum(self):
         self.db.vacuum()
-
 
     def get_pyxtal(self, id):
         from pyxtal import pyxtal
@@ -333,21 +340,286 @@ class database_topology():
         xtal = pyxtal()
         try:
             xtal.from_seed(pmg)
+            if xtal is not None and xtal.valid:
+                for key in self.keys:
+                    if hasattr(row, key):
+                        setattr(xtal, key, getattr(row, key))
+                xtals.append(xtal)
             return xtal
         except:
             print('Cannot load the structure')
 
-
     def get_all_xtals(self):
+        """
+        Get all pyxtal instances from the current db
+        """
         xtals = []
         for row in self.db.select():
             xtal = self.get_pyxtal(id=row.id)
-            if xtal is not None and xtal.valid:
-                xtal.ff_energy = row.ff_energy
-                xtal.similarity = row.similarity
-                xtal.topology = row.topology
-                xtals.append(xtal)
+
         return xtals
+
+    def add_xtal(self, xtal, kvp):
+        """
+        Add new xtal to the given db
+        """
+        spg_num = xtal.group.number
+        atoms = xtal.to_ase(resort=False)
+        density = xtal.get_density()
+        dof = xtal.get_dof()
+        wps = [s.wp.get_label() for s in xtal.atom_sites]
+        _kvp = {"space_group_number": spg_num,
+                "wps": str(wps),
+                "density": density,
+                "dof": dof,
+               }
+        kvp.update(_kvp)
+        self.db.write(atoms, key_value_pairs=kvp)
+
+    def check_new_structure(self, xtal, same_group=True):
+        """
+        Check if the input xtal already exists in the db
+
+        Args:
+            xtal: pyxtal object
+            same_group (bool): keep the same group or not
+        """
+        from pyxtal.util import ase2pymatgen
+
+        s_pmg = xtal.to_pymatgen()
+        for row in self.db.select():
+            ref = self.db.get_atoms(id=row.id)
+            ref_pmg = None
+            if same_group:
+                if row.space_group_number != xtal.group.number:
+                    continue
+            ref_pmg = ase2pymatgen(ref)
+            if self.matcher.fit(s_pmg, ref_pmg, symmetric=True):
+                return False
+        return True
+
+    def clean_structures(self, dtol=1e-3, etol=1e-3):
+        """
+        Clean up the db by removing the duplicate structures
+        Here we check the follow criteria
+            - same number of atoms
+            - same density
+            - same energy
+
+        Args:
+            dtol (float): tolerance of density
+            etol (float): tolerance of energy
+        """
+
+        unique_rows = []
+        to_delete = []
+
+        for row in self.db.select():
+            unique = True
+            for prop in unique_rows:
+                (natoms, den, ff_energy) = prop
+                if natoms==row.natoms and abs(den-row.density) < dtol:
+                    if hasattr(row, 'ff_energy'):
+                        if abs(row.ff_energy-ff_energy) < etol:
+                            unique = False
+                            break
+                    else:
+                        unique = False
+                        break
+            if unique:
+                unique_rows.append((row.natoms, row.density, row.ff_energy))
+            else:
+                to_delete.append(row.id)
+        print("The following structures were deleted", to_delete)
+        self.db.delete(to_delete)
+
+    def update_row_topology(self):
+        """
+        Update row topology base on the CrystalNets.jl
+        """
+        try:
+            import juliacall
+        except:
+            print("Cannot load JuliaCall, no support on topology parser")
+
+        def parse_topology(topology_info):
+            """
+            Obtain the dimensionality and topology name
+            """
+            dim = 0
+            name = ""
+            for i, x in enumerate(topology_info):
+                (d, n) = x
+                if d > dim: dim = d
+                tmp = n.split(',')[0]
+                if tmp.startswith("UNKNOWN"):
+                    tmp = 'aaa'
+                elif tmp.startswith("unstable"):
+                    tmp = 'unstable'
+                name += tmp
+                if i + 1 < len(topology_info): name += '-'
+            return dim, name
+
+
+        jl.seval("using CrystalNets")
+        jl.CrystalNets.toggle_warning(False) # to disable warnings
+        jl.CrystalNets.toggle_export(False) # to disable exports
+        if StructureType == 'Zeolite':
+            option = jl.CrystalNets.Options(structure=jl.StructureType.Zeolite)
+        elif StructureType == 'MOF':
+            option = jl.CrystalNets.Options(structure=jl.StructureType.MOF)
+        else:
+            option = jl.CrystalNets.Options(structure=jl.StructureType.Auto)
+
+        for row in self.db.select():
+            if overwrite or not hasattr(row, 'topology'):
+                atoms = self.db.get_atoms(row.id)
+                atoms.write('tmp.cif', format='cif')
+
+                # Call crystalnet.jl
+                result = jl.determine_topology('tmp.cif', option)
+                #print(result)
+                if len(result) > 1:
+                    results = [x for x in result]
+                else:
+                    results = [result[0]]
+                try:
+                    topo = []
+                    for res in results:
+                        # topology for SingleNodes
+                        name = str(res[0])
+                        if res[1] > 1: name += '(' + str(res[1]) + ')'
+                        genome = res[0][jl.Clustering.Auto]
+                        dim = jl.ndims(jl.CrystalNets.PeriodicGraph(genome))
+                        topo.append((dim, name))
+
+                    # The maximum dimensionality and topology name
+                    dim, name = parse_topology(topo)
+                except:
+                    dim, name = 3, 'error'
+                print("Updating", row.spg, row.wps, dim, name)
+                # Unknown will be labeled as aaa
+                self.db.update(row.id, topology=name, dimension=dim)
+            else:
+                print("Existing", row.topology)
+
+    def update_db_description(self):
+        """
+        update db description based on robocrys
+        Call robocrys: https://github.com/hackingmaterials/robocrystallographer
+        """
+        from robocrys import StructureCondenser, StructureDescriber
+        condenser = StructureCondenser()
+        describer = StructureDescriber()
+
+        for row in self.db.select():
+            if not hasattr(row, 'description'):
+                atoms = self.db.get_atoms(row.id)
+                pmg = ase2pymatgen(atoms)
+                try:
+                    condensed_structure = condenser.condense_structure(pmg)
+                    description = describer.describe(condensed_structure)
+                except:
+                    description = 'N/A'
+
+                self.db.update(row.id, description=description)
+                print("\n======Updating\n", description)
+            else:
+                print("\n======Existing\n", row.description)
+
+    def export_structures(self, fmt='vasp', folder='mof_out', check=False,
+                          sort_by='similairty'):
+        """
+        export structures from database according to the given criterion
+
+        Args:
+            fmt (str): 'vasp' or 'cif'
+            folder (str): 'path of output folders'
+            check (bool): whether or not check the validity
+            sort_by (str): sort by which attribute
+        """
+
+        if not os.path.exists(folder): os.makedirs(folder)
+        keys = ['space_group_number',
+                'density',
+                'dof',
+                'similarity',
+                'ff_energy',
+                'topology',
+               ]
+        properties, atoms = [], []
+        for row in self.db.select():
+            spg = row.space_group_number
+            den = row.density
+            dof = row.dof
+            sim = row.similarity if hasattr(row, 'similarity') else None
+            top = row.topology if hasattr(row, 'topology') else None
+            eng = row.ff_energy if hasattr(row, 'ff_energy') else None
+            properties.append([row.id, spg, den, dof, sim, eng, top])
+            atoms.append(db.get_atoms(id=row.id))
+
+        if sort_by in keys:
+            col = keys.index(sort_by) + 1
+        else:
+            print("supported attributes", keys)
+            raise ValueError("Cannot sort by", sort_by)
+
+        print("====Exporting {:} structures".format(len(atoms)))
+        if len(atoms)>0:
+            properties = np.array(properties)
+            mids = np.argsort(properties[:, col])
+
+            for mid in mids:
+                [id, spg, den, dof, sim, eng, top] = properties[mid]
+                id = int(id)
+                spg = int(spg)
+                sim = float(sim)
+                den = float(den)
+                dof = int(dof)
+                if eng is not None: eng = float(eng)
+                xtal = pyxtal()
+                try:
+                    xtal.from_seed(atoms[mid])
+                    number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
+                    # convert to the desired subgroup representation if needed
+                    if number != spg:
+                        paths = xtal.group.path_to_subgroup(spg)
+                        xtal = xtal.to_subgroup(paths)
+                        number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
+
+                    label = os.path.join(folder, '{:d}-{:d}-{:s}'.format(id, number, symbol))
+
+                    if check:
+                        status = xtal.check_validity(self.criteria)
+                    else:
+                        status = True
+                except:
+                    status = False
+
+                if status:
+                    if top is not None: print(top)
+                    try:
+                        xtal.set_site_coordination()
+                        for s in xtal.atom_sites:
+                            _l, _sp, _cn = s.wp.get_label(), s.specie, s.coordination
+                            label += '-{:s}-{:s}{:d}'.format(_l, _sp, _cn)
+                        label += '-S{:.3f}'.format(sim)
+                    except:
+                        print('Problem in setting site coordination')
+                    if len(label)>40: label = label[:40]
+
+                    if den is not None: label += '-D{:.2f}'.format(abs(den))
+                    if eng is not None: label += '-E{:.3f}'.format(abs(eng))
+                    if top is not None: label += '-{:s}'.format(top)
+
+                    print("====Exporting:", label)
+                    if fmt == 'vasp':
+                        atoms[mid].write(label+'.vasp', format='vasp', vasp5=True, direct=True)
+                    elif fmt == 'cif':
+                        xtal.to_file(label+'.cif')
+                else:
+                    print("====Skippng:  ", label)
+
 
 if __name__ == "__main__":
     # open
