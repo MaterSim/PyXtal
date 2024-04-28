@@ -325,7 +325,7 @@ class structure_from_ext():
                         p0 = positions[id0]
                         p1, wp, _ = self.wyc.merge(p0, new_lat, 0.1)
                         diff = p1 - p0
-                        diff -= np.round(diff)
+                        diff -= np.rint(diff)
                         if np.abs(diff).sum() < 1e-2: #sort position by mapping
                             wps.append(wp)
                             ids.append(id0) #find the right ids

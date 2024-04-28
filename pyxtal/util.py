@@ -465,7 +465,7 @@ def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
         for j in lefts[1:]:
             ref_j = refs[j]
             dist = ref_j - ref_i
-            shift = np.round(dist)
+            shift = np.rint(dist)
             dist -= shift
             dist = np.linalg.norm(dist.dot(atoms.cell[:]))
             if dist < tol:

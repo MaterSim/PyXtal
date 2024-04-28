@@ -30,14 +30,16 @@ class atom_site:
     Class for storing atomic Wyckoff positions with a single coordinate.
 
     Args:
-        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html> object
-        coordinate: a fractional 3-vector for the generating atom's coordinate
-        specie: an Element, element name or symbol, or atomic number of the atom
-        search: to search for the optimum position for special wyckoff site
+        wp: a `WP <pyxtal.symmetry.Wyckoff_position.html> object
+        coordinate (float): a fractional (x, y, z) coordinate
+        specie (str): element name or symbol, or atomic number
+        search (bool): whether or not search generator for special WP
     """
 
     def __init__(self, wp=None, coordinate=None, specie=1, search=False):
+
         self.position = np.array(coordinate)
+        self.position -= np.floor(self.position)
         self.specie = Element(specie).short_name
         self.wp = wp
         self.coordination = None
@@ -45,11 +47,12 @@ class atom_site:
         self._get_dof()
         self.PBC = self.wp.PBC
         self.multiplicity = self.wp.multiplicity
-        if search:
-            self.search_position()
+        if search: self.search_position()
+
         self.update()
 
     def __str__(self):
+
         if not hasattr(self.wp, "site_symm"): self.wp.get_site_symmetry()
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
         s += "WP [{:}] ".format(self.wp.get_label())
@@ -60,15 +63,18 @@ class atom_site:
         return s
 
     def __repr__(self):
+
         return str(self)
 
     def copy(self):
         """
         Simply copy the structure
         """
+
         return deepcopy(self)
 
     def save_dict(self):
+
         dict0 = {"position": self.position,
                  "specie": self.specie,
                  "wp": self.wp.save_dict(),
@@ -79,16 +85,15 @@ class atom_site:
         """
         get the number of dof for the given structures:
         """
+
         self.dof = self.wp.get_dof()
-        #freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
-        #self.dof = len(freedom[freedom==True])
-        #self.dof = len(freedom[freedom==True])
 
     @classmethod
     def load_dict(cls, dicts):
         """
         load the sites from a dictionary
         """
+
         position = dicts["position"]
         specie = dicts["specie"]
         if 'wp' in dicts:
@@ -96,6 +101,7 @@ class atom_site:
         else:
             hn, index = dicts['hn'], dicts['index']
             wp = Wyckoff_position.from_group_and_index(hn, index, use_hall=True)
+
         return cls(wp, position, specie)
 
     def perturbate(self, lattice, magnitude=0.1):
@@ -112,22 +118,30 @@ class atom_site:
         pos = self.position + dis.dot(np.linalg.inv(lattice))
         self.update(pos)
 
-    def search_position(self):
+    def search_position(self, tol=1e-3):
         """
-        Sometimes, the initial posiition is not the proper generator
+        Sometimes, the initial position is not the proper generator
         Needs to find the proper generator
         """
+
+        found = False
         if self.wp.index > 0:
             wp0 = Group(self.wp.number, self.wp.dim)[0]
-            pos = self.position
-            coords = wp0.apply_ops(pos)
-            for coord in coords:
+            for coord in wp0.apply_ops(self.position):
+                coord -= np.floor(coord)
                 ans = self.wp.ops[0].operate(coord)
                 diff = coord - ans
-                diff -= np.floor(diff)
-                if np.sum(diff**2)<1e-4:
+                diff -= np.rint(diff)
+                if np.sum(diff**2) < tol:
+                    found = True
+                    #print(found, coord, coord-ans)
                     self.position = coord - np.floor(coord)
                     break
+
+        if not found:
+            print("\nInput xyz", self.position)
+            print("Target operation", self.wp.ops[0].as_xyz_str())
+            raise ValueError("Cannot generate the desried generator")
 
     def encode(self):
         """
@@ -186,6 +200,7 @@ class atom_site:
         """
         Used to generate coords from self.position
         """
+
         if pos is None:
             pos = self.position
         if reset_wp:
@@ -195,7 +210,7 @@ class atom_site:
 
     def get_translations(self, pos, axis):
         """
-        return the displacement towards the reference positions
+        Get the displacement towards the reference positions
 
         Args:
             pos: reference position (1*3 vector)
@@ -203,12 +218,14 @@ class atom_site:
             translation:
             axis:
         """
+
         #diffs0 = pos - self.coords
         diffs0 = self.wp.apply_ops(pos) - self.position
         diffs = diffs0.copy()
-        diffs -= np.round(diffs)
+        diffs -= np.rint(diffs)
         diffs[:, axis] = 0
         translations = diffs0 - diffs
+
         return translations
 
     def get_disp(self, pos, lattice, translation):
@@ -225,7 +242,7 @@ class atom_site:
         #coords = self.wp.apply_ops(self.position + translation)
         #diffs = pos - coords
 
-        diffs -= np.round(diffs)
+        diffs -= np.rint(diffs)
         dists = np.linalg.norm(diffs.dot(lattice), axis=1)
         id = np.argmin(dists)
 
@@ -237,15 +254,15 @@ class atom_site:
         Given two Wyckoff sites, checks the inter-atomic distances between them.
 
         Args:
-            ws2: a different Wyckoff_site object (will always return False if
+            - ws2: a different WP object (will always return False if
             two identical WS's are provided)
-            lattice: a 3x3 cell matrix
-            same_group: whether or not the two WS's are in the same structure.
+            - lattice: a 3x3 cell matrix
+            - same_group: whether or not two WS's are in the same structure.
             Default value True reduces the calculation cost
         Returns:
-            True if all distances are greater than the allowed tolerances.
-            False if any distance is smaller than the allowed tolerance
+            True or False
         """
+
         # Ensure the PBC values are valid
         if self.PBC != ws2.PBC:
             raise ValueError("PBC values do not match between Wyckoff sites")
@@ -312,9 +329,10 @@ class atom_site:
 
     def to_mol_site(self, lattice, molecule, ori=[0, 0, 0], reflect=False, type_id=0):
         """
-        transform it to the mol_sites, i.e., to build a molecule on
+        Transform it to the mol_sites, i.e., to build a molecule on
         the current WP
         """
+
         dicts = {}
         dicts['smile'] = molecule.smile
         dicts['type'] = type_id
@@ -329,6 +347,7 @@ class atom_site:
             dicts['orientation'] = np.array(ori)
             dicts['rotor'] = molecule.get_torsion_angles()
             dicts['reflect'] = reflect
+
         return mol_site.from_1D_dicts(dicts)
 
 class mol_site:
@@ -348,6 +367,7 @@ class mol_site:
     """
 
     def __init__(self, mol, position, orientation, wp, lattice=None, stype=0):
+
         # describe the molecule
         self.molecule = mol
         self.wp = wp

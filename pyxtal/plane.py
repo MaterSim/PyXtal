@@ -169,7 +169,7 @@ class planes():
                     new = False
                 else:
                     dist = center - group[0]
-                    shift = np.round(dist)
+                    shift = np.rint(dist)
                     if abs(dist-shift) < tol:
                         new = False
                         lower -= shift

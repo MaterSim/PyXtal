@@ -187,7 +187,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
         res = np.dot(rot, pos + shift) + tran.T
         tmp = sym.search_cloest_wp(G, wp1, op, res)
         diff = res - tmp
-        diff -= np.round(diff)
+        diff -= np.rint(diff)
         dist = np.linalg.norm(diff)
         diffs.append(dist)
         coords.append(tmp)
@@ -197,7 +197,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
     diffs = np.array(diffs)
     minID = np.argmin(diffs)
     tmp = coords[minID]
-    tmp -= np.round(tmp)
+    tmp -= np.rint(tmp)
     return tmp, np.min(diffs)
 
 
@@ -217,14 +217,14 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
         dist: relative distance
     """
 
-    pos1 -= np.round(pos1)
+    pos1 -= np.rint(pos1)
     shifts = ALL_SHIFTS
 
     dists = []
     for shift in shifts:
         res = np.dot(rot, pos1 + shift + tran.T)
         diff = res - pos2
-        diff -= np.round(diff)
+        diff -= np.rint(diff)
         dist = np.linalg.norm(diff)
         dists.append(dist)
         if dist < 1e-1:
@@ -236,7 +236,7 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
 
 
     diff = pos - pos2
-    diff -= np.round(diff)
+    diff -= np.rint(diff)
 
     if cell is not None:
         diff = np.dot(diff, cell)
@@ -661,7 +661,7 @@ class supergroup():
             if translation is None:
                 coord_G2, dist1 = search_G2(inv_rot, -tran, tmp, coord_H, None)
                 diff = coord_G2 - coord_H
-                diff -= np.round(diff)
+                diff -= np.rint(diff)
                 translation = diff.copy()
                 for m in range(3):
                     if abs(diff[m])<1e-4:
@@ -712,7 +712,7 @@ class supergroup():
             if np.sum(diff**2) < 1e-3:
                 trans = op_G22.translation_vector - op_G21.translation_vector
                 break
-        trans -= np.round(trans)
+        trans -= np.rint(trans)
         coords11 = apply_ops(coord1_G2, ops_H1)
         coords11 += trans
         tmp, dist = get_best_match(coords11, coord2_G2, self.cell)
@@ -722,7 +722,7 @@ class supergroup():
             return dist/2 #np.linalg.norm(np.dot(d/2, self.cell))
         else:
             d = coord2_G2 - tmp
-            d -= np.round(d)
+            d -= np.rint(d)
             op_G11 = splitter.G1_orbits[id][0][0]
             coord2_G2 -= d/2
             coord1_G2 += d/2
@@ -769,7 +769,7 @@ class supergroup():
         else:
             # G1->G2->H
             d = coord2_G1 - tmp
-            d -= np.round(d)
+            d -= np.rint(d)
             coord2_G1 -= d/2
 
             coords22 = apply_ops(coord2_G1, ops_G1)
@@ -886,7 +886,7 @@ class supergroup():
                 x, y, ele = coords_H[count], coords_G[count], elements[count]
                 label = wp.get_label() + '->' + wp1.get_label()
                 dis = y - x - translation
-                dis -= np.round(dis)
+                dis -= np.rint(dis)
                 dis_abs = np.linalg.norm(dis.dot(self.cell))
                 output = "{:2s}[{:8s}] {:8.4f}{:8.4f}{:8.4f}".format(ele, label, *x)
                 output += " -> {:8.4f}{:8.4f}{:8.4f}".format(*y)
@@ -927,7 +927,7 @@ class supergroup():
             for wp in wp2:
                 x, y, ele = coords_H1[count], coords_G2[count], elements[count]
                 disp = y - x - translation
-                disp -= np.round(disp)
+                disp -= np.rint(disp)
                 disps.append(disp)
                 count += 1
 

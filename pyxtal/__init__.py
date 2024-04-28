@@ -2044,7 +2044,7 @@ class pyxtal:
             match = False
             for trans_ref in good_translations:
                 diff = trans - trans_ref
-                diff -= np.round(diff)
+                diff -= np.rint(diff)
                 diff = np.dot(diff, self.lattice.matrix)
                 if np.linalg.norm(diff) < tol:
                     match = True

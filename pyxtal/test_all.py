@@ -20,7 +20,7 @@ from pyxtal.XRD import Similarity
 from pyxtal.operations import get_inverse
 from pyxtal.supergroup import supergroups, supergroup
 from pyxtal.util import generate_wp_lib
-
+from pyxtal.wyckoff_site import atom_site
 
 def resource_filename(package_name, resource_path):
     package_path = importlib.util.find_spec(package_name).submodule_search_locations[0]
@@ -593,7 +593,7 @@ class TestWP(unittest.TestCase):
                         p2 += op1.translation_vector
 
                     diff = p1-p2
-                    diff -= np.round(diff)
+                    diff -= np.rint(diff)
                     if np.linalg.norm(diff) > 0.02:
                         #res = '{:2d} {:28s}'.format(i, op0.as_xyz_str())
                         #res += ' {:28s}'.format(op1.as_xyz_str())
@@ -1142,6 +1142,22 @@ class resort(unittest.TestCase):
         struc.resort()
         N2 = len(struc.atom_sites)
         self.assertTrue(N1 == N2)
+
+class Test_wyckoff_site(unittest.TestCase):
+    def test_atom_site(self):
+        """
+        Test the search function
+        """
+        wp = Group(227)[-5]
+        arr = np.array([0.1, 0.1, 0.1])
+        for xyz in [[0.6501, 0.15001, 0.5999],
+                    [0.6501, 0.14999, 0.5999],
+                    [0.6499, 0.14999, 0.5999],
+                    [0.6499, 0.14999, 0.60001],
+                   ]:
+            site = atom_site(wp, xyz, search=True)
+            self.assertTrue(np.allclose(site.position, arr, rtol=1e-3))
+
 
 class Test_operations(unittest.TestCase):
     def test_inverse(self):

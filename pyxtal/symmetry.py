@@ -1990,7 +1990,7 @@ class Wyckoff_position:
             for i, op0 in enumerate(ops0):
                 for j, op1 in enumerate(self.ops):
                     diff0 = op0.translation_vector - op1.translation_vector
-                    diff0 -= np.round(diff0)
+                    diff0 -= np.rint(diff0)
                     diff1 = op0.rotation_matrix - op1.rotation_matrix
                     if max([np.abs(diff0).sum(), np.abs(diff1).sum()]) < tol:
                         count += 1
@@ -2077,7 +2077,7 @@ class Wyckoff_position:
             pt2 = np.array(pt2); pt2 -= np.floor(pt2)
             pts = self.apply_ops(pt1); pts -= np.floor(pts)
             diffs = pt2 - pts
-            diffs -= np.round(diffs)
+            diffs -= np.rint(diffs)
             diffs = np.dot(diffs, cell)
             dists = np.linalg.norm(diffs, axis=1)
             #print(dists)
@@ -2306,7 +2306,7 @@ class Wyckoff_position:
             pos1 = op.operate(pos) #
             pos0 = self.ops[0].operate(pos1)
             diff = pos1 - pos0
-            diff -= np.round(diff)
+            diff -= np.rint(diff)
             diff = np.abs(diff)
             #print(self.letter, "{:24s}".format(op.as_xyz_str()), pos, pos0, pos1, diff)
             if diff.sum() < tol:
@@ -2340,7 +2340,7 @@ class Wyckoff_position:
             pos1 = op.operate(pos)
             pos0 = self.ops[0].operate(pos1)
             diff = pos1 - pos0
-            diff -= np.round(diff)
+            diff -= np.rint(diff)
             diff = np.abs(diff)
             #print(wp.letter, pos1, pos0, diff)
             if diff.sum() < tol:
@@ -2601,7 +2601,7 @@ def are_equivalent_ops(op1, op2, tol=1e-2):
     check if two ops are equivalent, assuming the same ordering
     """
     diff = op1.affine_matrix - op2.affine_matrix
-    diff[:,3] -= np.round(diff[:,3])
+    diff[:,3] -= np.rint(diff[:,3])
     diff = np.abs(diff.flatten())
     if np.sum(diff) < tol:
         return True
@@ -3308,7 +3308,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
             by (+1,-1,0) and (0,0,+1), respectively.
             """
             el = SymmOp.from_rotation_and_translation(
-                op.rotation_matrix, op.translation_vector - np.round(displacement)
+                op.rotation_matrix, op.translation_vector - np.rint(displacement)
             )
             symmetry.append(el)
     return symmetry
@@ -3533,7 +3533,7 @@ def search_cloest_wp(G, wp, op, pos):
             for coord in coords:
                 tmp = op.operate(coord)
                 diff1 = tmp - pos
-                diff1 -= np.round(diff1)
+                diff1 -= np.rint(diff1)
                 dist = np.linalg.norm(diff1)
                 if dist < 1e-3:
                     return tmp
@@ -3547,12 +3547,12 @@ def search_cloest_wp(G, wp, op, pos):
             # extract all possible xyzs
             all_xyz = apply_ops(pos, wp0)[1:]
             dists = all_xyz - pos
-            dists -= np.round(dists)
+            dists -= np.rint(dists)
             ds = np.linalg.norm(dists, axis=1)
             ids = np.argsort(ds)
             for id in ids:
                 d = all_xyz[id] - pos
-                d -= np.round(d)
+                d -= np.rint(d)
                 res = pos + d/2
                 if wp.search_generator(res, wp0) is not None:
                     #print(ds[id], pos, res)
@@ -3865,7 +3865,7 @@ def transform_ops(ops, P, P1):
         for i, op in enumerate(ops):
             inv = np.linalg.inv(op.affine_matrix)
             trans = inv[:3, 3] + base
-            trans -= np.round(trans)
+            trans -= np.rint(trans)
             rot_ops = ops[i].rotation_matrix
             ops[i] = SymmOp.from_rotation_and_translation(rot_ops, trans)
 

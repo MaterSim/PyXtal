@@ -330,6 +330,7 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
     def filter_vector_euclidean(vector):
         for i, a in enumerate(PBC):
             if a:
+                # QZ: check if this is equivalent to -= np.rint()
                 vector[i] -= np.floor(vector[i])
                 if vector[i] > 0.5:
                     vector[i] = 1 - vector[i]
@@ -606,7 +607,7 @@ def are_equal(op1, op2, PBC=[1, 1, 1], rtol=1e-3, atol=1e-3):
 
     for i, a in enumerate(PBC):
         if a:
-            difference[i] -= np.floor(difference[i])
+            difference[i] -= np.rint(difference[i])
 
     d = np.linalg.norm(difference)
 
@@ -643,7 +644,7 @@ class OperationAnalyzer(SymmOp):
         found = False
         for n in range(1, 61):
             x = (n * angle) / (2.0 * np.pi)
-            y = x - np.round(x)
+            y = x - np.rint(x)
             if abs(y) <= tol:
                 found = True
                 break
@@ -832,7 +833,7 @@ def find_ids(coords, ref, tol=1e-3):
     #print('ref', ref)
     for coord in coords:
         diffs = ref - coord
-        diffs -= np.round(diffs)
+        diffs -= np.rint(diffs)
         norms = np.linalg.norm(diffs, axis=1)
         #print(norms, diffs)
         for i, norm in enumerate(norms):
@@ -856,7 +857,7 @@ def get_best_match(positions, ref, cell):
         id: matched id
     """
     diffs = positions - ref
-    diffs -= np.round(diffs)
+    diffs -= np.rint(diffs)
     diffs = np.dot(diffs, cell)
     dists = np.linalg.norm(diffs, axis=1)
     id = np.argmin(dists)

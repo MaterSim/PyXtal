@@ -459,16 +459,16 @@ class representation():
                     # symmmetry variation
                     xyzs = wp.apply_ops(tmp2[:3])
                     diff_xyzs = xyzs - tmp1[:3]
-                    diff_xyzs -= np.round(diff_xyzs)
+                    diff_xyzs -= np.rint(diff_xyzs)
                     id = np.argmin(np.linalg.norm(diff_xyzs, axis=1))
                     diff_xyz = diff_xyzs[id]
                     diff_ori = tmp2[3:6] - tmp1[3:6]
                     diff_ori /= [360.0, 180.0, 360.0]
-                    diff_ori -= np.round(diff_ori)
+                    diff_ori -= np.rint(diff_ori)
                     diff_ori *= [360.0, 180.0, 360.0]
                     diff_tor = tmp2[6:] - tmp1[6:]
                     diff_tor /= 360.0
-                    diff_tor -= np.round(diff_tor)
+                    diff_tor -= np.rint(diff_tor)
                     diff_tor *= 360.0
                     diffs.extend(diff_xyz)
                     diffs.extend(diff_ori)

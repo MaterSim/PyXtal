@@ -395,7 +395,7 @@ class wyckoff_split:
         """
         modulo = round(np.linalg.det(self.R[:3,:3]))
         inv_rotation = np.array(self.inv_R[:3,:3])*modulo
-        subgroup_basis_vectors = (np.round(inv_rotation.transpose()).astype(int)%modulo).tolist()
+        subgroup_basis_vectors = (np.rint(inv_rotation.transpose()).astype(int)%modulo).tolist()
 
         # remove the [0,0,0] vectors
         translations = [x for x in subgroup_basis_vectors if x!=[0,0,0]]
@@ -414,7 +414,7 @@ class wyckoff_split:
             else:
                 independent_vectors = translations
         else:
-            norms=np.round([np.linalg.norm(translations[i])*np.linalg.norm(translations[j]) for i in range(2) for j in range(i+1,3)])
+            norms=np.rint([np.linalg.norm(translations[i])*np.linalg.norm(translations[j]) for i in range(2) for j in range(i+1,3)])
             inner_products = np.array([np.inner(translations[i],translations[j]) for i in range(2) for j in range(i+1,3)])
             differences = inner_products - norms
             independent_vectors=[translations[0]]
@@ -489,9 +489,9 @@ def in_lists(mat1, mat2, eps=1e-2, PBC=True):
             if np.array_equal(mat[:3,:3], mat1[:3,:3]):
                 diffs = np.abs(mat[:3,3] - mat1[:3,3])
                 if PBC:
-                    diffs -= np.floor(diffs)
+                    diffs -= np.rint(diffs)
                 #print("diffs", diffs)
-                if (diffs*diffs).sum() < eps:
+                if (diffs**2).sum() < eps:
                     return True
         return False
 
