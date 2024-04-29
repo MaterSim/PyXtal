@@ -3128,6 +3128,25 @@ class pyxtal:
             start = end
         #xtal.to_ase().write('init.vasp', vasp5=True, format='vasp', direct=True)
 
+    def get_1d_rep_x(self):
+        """
+        Get a simplified x representation for a crystal
+        Group: I 41/a m d:2 (141)
+        2.5019,   2.5019,   8.7534,  90.0000,  90.0000,  90.0000, tetragonal
+        Wyckoff sites:
+        C @ [ 0.0000  0.2500  0.4614], WP [8e] Site [2mm.]
+
+        The above rep is [2.5019, 8.7514, 0.4614]
+        """
+
+        rep = self.get_1D_representation()
+        cell, xyzs = rep.x[0][1:], rep.x[1:]
+        x = cell
+        for xyz in xyzs:
+            x = np.hstack((x, xyz[2:]))
+
+        return x
+
     def from_1d_rep(self, x, sites):
         """
         An advanced way to build pyxtal from the 1d representation
@@ -3256,7 +3275,7 @@ class pyxtal:
             strs = header
         else:
             strs = ""
-        strs = "*{:3d} {:3d} {:4d} {:10s} {:8.2f}".format(
+        strs += "*{:3d} {:3d} {:4d} {:10s} {:8.2f}".format(
                 N_atoms, dof, spg_num, spg_symbol, density)
 
         if dicts is not None:
