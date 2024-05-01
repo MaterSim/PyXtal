@@ -2374,7 +2374,12 @@ class Wyckoff_position:
         Returns:
             a transformed 3-vector (numpy array)
         """
-        op = self.ops[id]
+        # Must be different for hexcell
+        if self.euclidean:
+            op = self.get_euclidean_generator(cell, id)
+        else:
+            op = self.ops[id]
+
         rot = op.rotation_matrix
         trans = op.translation_vector
         point = np.array(point, dtype=float)

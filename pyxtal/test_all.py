@@ -575,6 +575,14 @@ class TestWP(unittest.TestCase):
         b = [-0.01, -0.127, -0.250]
         self.assertTrue(wp.are_equivalent_pts(a,b))
 
+    def test_project(self):
+        pt = np.array([0.0629, 0.1258, 0.25])
+        g = Group(178)
+        wp = g[1]
+        xyz0 = wp.project(pt, np.eye(3))
+        diff = np.sum((pt - xyz0)**2)
+        self.assertTrue(diff < 1e-8)
+
     def test_euclidean(self):
 
         def check_error(spg, pt, cell):

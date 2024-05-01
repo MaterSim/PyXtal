@@ -3147,6 +3147,28 @@ class pyxtal:
 
         return x
 
+    def from_spg_wps_rep(self, spg, wps, x, elements=None):
+        """
+        An advanced way to build pyxtal from wyckoff position
+        and compacted 1d x representation
+
+        Args:
+            spg (int): space group number 1-230
+            wps (list): wyckoff representation (e.g., ['6a', '6a'])
+            x (array): 1d representation
+            elements (list): list of element string
+        """
+        if elements is None: elements = ['C'] * len(wps)
+        group = Group(spg)
+        sites = []
+        for i, _wp in enumerate(wps):
+            letter = _wp[-1]
+            for wp in group:
+                if wp.letter == letter:
+                    sites.append((elements[i], wp))
+                    break
+        self.from_1d_rep(x, sites)
+
     def from_1d_rep(self, x, sites):
         """
         An advanced way to build pyxtal from the 1d representation
@@ -3275,7 +3297,7 @@ class pyxtal:
             strs = header
         else:
             strs = ""
-        strs += "*{:3d} {:3d} {:4d} {:10s} {:8.2f}".format(
+        strs += "*{:3d} {:3d} {:4d} {:10s} {:8.2f} ".format(
                 N_atoms, dof, spg_num, spg_symbol, density)
 
         if dicts is not None:

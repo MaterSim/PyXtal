@@ -2,6 +2,7 @@
 Database class
 """
 import os
+import numpy as np
 from ase.db import connect
 from pyxtal import pyxtal
 import pymatgen.analysis.structure_matcher as sm
@@ -335,6 +336,7 @@ class database_topology():
         from pyxtal import pyxtal
         from pyxtal.util import ase2pymatgen
 
+        row = self.db.get(id) #; print(id, row.id)
         atom = self.db.get_atoms(id=id)
         pmg = ase2pymatgen(atom)
         xtal = pyxtal()
@@ -344,7 +346,6 @@ class database_topology():
                 for key in self.keys:
                     if hasattr(row, key):
                         setattr(xtal, key, getattr(row, key))
-                xtals.append(xtal)
             return xtal
         except:
             print('Cannot load the structure')
@@ -356,7 +357,8 @@ class database_topology():
         xtals = []
         for row in self.db.select():
             xtal = self.get_pyxtal(id=row.id)
-
+            if xtal is not None:
+                xtals.append(xtal)
         return xtals
 
     def add_xtal(self, xtal, kvp):
@@ -364,7 +366,6 @@ class database_topology():
         Add new xtal to the given db
         """
         spg_num = xtal.group.number
-        atoms = xtal.to_ase(resort=False)
         density = xtal.get_density()
         dof = xtal.get_dof()
         wps = [s.wp.get_label() for s in xtal.atom_sites]
@@ -374,6 +375,7 @@ class database_topology():
                 "dof": dof,
                }
         kvp.update(_kvp)
+        atoms = xtal.to_ase(resort=False)
         self.db.write(atoms, key_value_pairs=kvp)
 
     def check_new_structure(self, xtal, same_group=True):
@@ -427,7 +429,10 @@ class database_topology():
                         unique = False
                         break
             if unique:
-                unique_rows.append((row.natoms, row.density, row.ff_energy))
+                if hasattr(row, 'ff_energy'):
+                    unique_rows.append((row.natoms, row.density, row.ff_energy))
+                else:
+                    unique_rows.append((row.natoms, row.density, None))
             else:
                 to_delete.append(row.id)
         print("The following structures were deleted", to_delete)
@@ -528,7 +533,7 @@ class database_topology():
                 print("\n======Existing\n", row.description)
 
     def export_structures(self, fmt='vasp', folder='mof_out', check=False,
-                          sort_by='similairty'):
+                          sort_by='similarity'):
         """
         export structures from database according to the given criterion
 
@@ -556,7 +561,7 @@ class database_topology():
             top = row.topology if hasattr(row, 'topology') else None
             eng = row.ff_energy if hasattr(row, 'ff_energy') else None
             properties.append([row.id, spg, den, dof, sim, eng, top])
-            atoms.append(db.get_atoms(id=row.id))
+            atoms.append(self.db.get_atoms(id=row.id))
 
         if sort_by in keys:
             col = keys.index(sort_by) + 1
@@ -623,9 +628,15 @@ class database_topology():
 
 if __name__ == "__main__":
     # open
-    db = database('test.db')
-    print("Total number of entries", len(db.codes))
+    if False:
+        db = database('test.db')
+        print("Total number of entries", len(db.codes))
 
-    # view structure
-    c = db.get_pyxtal('HXMTAM')
-    print(c)
+        # view structure
+        c = db.get_pyxtal('HXMTAM')
+        print(c)
+    if True:
+        db = database_topology('../MOF-Builder/reaxff.db')
+        xtal = db.get_pyxtal(1)
+        print(xtal)
+        db.add_xtal(xtal, kvp={'similarity': 0.1})
