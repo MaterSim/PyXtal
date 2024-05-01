@@ -483,7 +483,7 @@ class database_topology():
 
 
 
-    def update_row_topology(self):
+    def update_row_topology(self, StructureType='Auto', overwrite=True):
         """
         Update row topology base on the CrystalNets.jl
         """
@@ -510,7 +510,7 @@ class database_topology():
                 if i + 1 < len(topology_info): name += '-'
             return dim, name
 
-
+        jl = juliacall.newmodule("MOF_Builder")
         jl.seval("using CrystalNets")
         jl.CrystalNets.toggle_warning(False) # to disable warnings
         jl.CrystalNets.toggle_export(False) # to disable exports
@@ -547,7 +547,7 @@ class database_topology():
                     dim, name = parse_topology(topo)
                 except:
                     dim, name = 3, 'error'
-                print("Updating", row.spg, row.wps, dim, name)
+                print("Updating", row.space_group_number, row.wps, dim, name)
                 # Unknown will be labeled as aaa
                 self.db.update(row.id, topology=name, dimension=dim)
             else:
