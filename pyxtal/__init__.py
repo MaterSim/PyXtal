@@ -3232,6 +3232,10 @@ class pyxtal:
         if len(criteria.keys()) == 0:
             return True
 
+        if 'exclude_ii' not in criteria:
+            criteria['exclude_ii'] = False
+
+
         if 'MIN_Density' in criteria:
             den1 = self.get_density()
             den2 = criteria['MIN_Density']

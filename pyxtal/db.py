@@ -6,6 +6,7 @@ import numpy as np
 from ase.db import connect
 from pyxtal import pyxtal
 import pymatgen.analysis.structure_matcher as sm
+from pyxtal.util import ase2pymatgen
 
 def make_entry_from_pyxtal(xtal):
     """
@@ -386,7 +387,6 @@ class database_topology():
             xtal: pyxtal object
             same_group (bool): keep the same group or not
         """
-        from pyxtal.util import ase2pymatgen
 
         s_pmg = xtal.to_pymatgen()
         for row in self.db.select():
@@ -437,6 +437,51 @@ class database_topology():
                 to_delete.append(row.id)
         print("The following structures were deleted", to_delete)
         self.db.delete(to_delete)
+
+    def clean_structures_pmg(self, dtol=5e-2, criteria=None, max_sim=None):
+        """
+        Clean up the db by removing the duplicate structures
+        Here we check the follow criteria
+            - same density
+            - pymatgen check
+
+        Args:
+            dtol (float): tolerance of density
+        """
+
+        unique_rows = []
+        to_delete = []
+
+        for row in self.db.select():
+            xtal = self.get_pyxtal(id=row.id)
+            unique = True
+
+            if criteria is not None:
+                if not xtal.check_validity(criteria, True):
+                    unique = False
+                    print('Found unsatisfied criteria', row.id, row.space_group_number, row.wps)
+            if max_sim is not None:
+                if hasattr(row, 'similarity') and row.similarity > max_sim:
+                    unique = False
+                    print('Found unsatisfied similarity', row.id, row.similarity, row.space_group_number, row.wps)
+            if unique:
+                for prop in unique_rows:
+                    (rowid, den) = prop
+                    if abs(den-row.density) < dtol:
+                        ref_pmg = xtal.to_pymatgen()
+                        s_pmg = ase2pymatgen(self.db.get_atoms(id=rowid))
+                        if self.matcher.fit(s_pmg, ref_pmg):#, symmetric=True):
+                            print('Found duplicate', row.id, row.space_group_number, row.wps)
+                            unique = False
+                            break
+            if unique:
+                unique_rows.append((row.id, row.density))
+            else:
+                to_delete.append(row.id)
+        print("The following structures were deleted", to_delete)
+        self.db.delete(to_delete)
+
+
 
     def update_row_topology(self):
         """
@@ -532,7 +577,7 @@ class database_topology():
             else:
                 print("\n======Existing\n", row.description)
 
-    def export_structures(self, fmt='vasp', folder='mof_out', check=False,
+    def export_structures(self, fmt='vasp', folder='mof_out', criteria=None,
                           sort_by='similarity'):
         """
         export structures from database according to the given criterion
@@ -540,7 +585,7 @@ class database_topology():
         Args:
             fmt (str): 'vasp' or 'cif'
             folder (str): 'path of output folders'
-            check (bool): whether or not check the validity
+            criteria (dict): check the validity with dict
             sort_by (str): sort by which attribute
         """
 
@@ -582,8 +627,8 @@ class database_topology():
                 den = float(den)
                 dof = int(dof)
                 if eng is not None: eng = float(eng)
-                xtal = pyxtal()
                 try:
+                    xtal = pyxtal()
                     xtal.from_seed(atoms[mid])
                     number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
                     # convert to the desired subgroup representation if needed
@@ -594,8 +639,8 @@ class database_topology():
 
                     label = os.path.join(folder, '{:d}-{:d}-{:s}'.format(id, number, symbol))
 
-                    if check:
-                        status = xtal.check_validity(self.criteria)
+                    if criteria is not None:
+                        status = xtal.check_validity(criteria, True)
                     else:
                         status = True
                 except:
@@ -615,7 +660,8 @@ class database_topology():
 
                     if den is not None: label += '-D{:.2f}'.format(abs(den))
                     if eng is not None: label += '-E{:.3f}'.format(abs(eng))
-                    if top is not None: label += '-{:s}'.format(top)
+                    if top is not None: label += '-T{:s}'.format(top)
+                    if sim is not None: label += '-S{:.2f}'.format(sim)
 
                     print("====Exporting:", label)
                     if fmt == 'vasp':
