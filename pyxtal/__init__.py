@@ -3316,3 +3316,83 @@ class pyxtal:
         return strs
 
 
+    def get_tabular_representation(self, ids=None, normalize=True, N_wp=6, max_abc=50.0, max_angle=np.pi):
+        """
+        Convert the xtal to a 1D reprsentation organized as
+        (space_group_number, a, b, c, alpha, beta, gamma, wp1, wp2, ....)
+        each wp is represented by 4 numbers (wp_id, x, y, z)
+
+        Args:
+            ids (list): index of generators for each wp
+            normalize (bool): whether or not normalize the data to (0, 1)
+            N_wp (int): number of maximum wp sites
+            max_abc (float): maximum a, b, c length (used in normalization)
+            max_angle (float): maximum angle in radian (used in normalization)
+
+        Returns:
+            a 1D vector such as (141, 3, 3, 3, pi/2, pi/2, pi/2, wp_id, x, y, z)
+        """
+
+        if ids is None:
+            ids = [0] * len(xtal.atom_sites)
+        else:
+            assert(len(ids) == len(xtal.atom_sites))
+
+        if len(ids) > N_wp:
+            raise ValueError("Cannot handle too many atom sites", len(ids), N_wp)
+
+        N_cell, N_site = 7, N_wp * 4
+
+        # If the number of wp is less then 6, assign -1
+        rep = -np.ones(N_cell + N_site) # 7 + 6 + 18 = 31
+        rep[0] = xtal.group.number
+        rep[1:7] = xtal.lattice.get_para()
+
+        if normalize:
+            rep[0] /= 230
+            rep[1:4] /= max_abc
+            rep[4:7] /= max_angle
+
+        count = N_cell
+        for id, site in zip(ids, xtal.atom_sites):
+            rep[count] = site.wp.index
+            if normalize: rep[count] /= len(xtal.group)
+            xyz = site.coords[id] # position
+            xyz -= np.floor(xyz)
+            rep[count+1:count+4] = xyz
+            count += 4
+        return rep
+
+
+    def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180):
+        """
+        Reconstruc xtal from 1d tabular_representation
+        Currently assuming the elemental composition like carbon
+
+        Args:
+            rep: 1D array
+            max_abc (float): maximum a, b, c length (used in normalization)
+            max_angle (float): maximum angle in radian (used in normalization)
+
+        """
+        group = Group(int(np.round(rep[0] * 230)))
+        [a, b, c, alpha, beta, gamma] = rep[1:7]
+        a, b, c = a * max_abc, b * max_abc, c * max_abc
+        alpha, beta, gamma = alpha*max_angle, beta*max_angle, gamma*max_angle
+        lattice = np.array([a, b, c, alpha, beta, gamma])
+        sites_info = np.reshape(rep[7:], (int((len(rep)-7)/4), 4))
+        sites = []
+        numIons = 0
+        for site_info in sites_info:
+            [id, x, y, z] = site_info
+            if min(site_info) > -0.01:
+                wp_id = int(np.round(len(group)*id))
+                if wp_id >= len(group): wp_id = -1
+                wp = group[wp_id]
+                xyz = wp.search_generator([x, y, z])#; print(wp.get_label(), xyz)
+                if xyz is not None:
+                    xyz, wp, _ = wp.merge(xyz, np.eye(3), 1e-3)
+                    label = wp.get_label()
+                    sites.append((label, xyz[0], xyz[1], xyz[2]))#; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
+                    numIons += wp.multiplicity
+        self.build(group, ['C'], [numIons], lattice, [sites])
