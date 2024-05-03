@@ -1888,6 +1888,24 @@ class Wyckoff_position:
             ops.append(hat * op * hat.inverse)
         return ops
 
+    def get_euclidean_ops(self):
+        """
+        return the symmetry operation object at the Euclidean space
+
+        Returns:
+            list of pymatgen SymmOp object
+        """
+        ops = [None] * len(self.ops)
+        for i, op in enumerate(self.ops):
+            hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
+            op_tmp = hat * op * hat.inverse
+            ops[i] = op_tmp.from_rotation_and_translation(op_tmp.rotation_matrix,
+                                                          op.translation_vector)
+            #ops[i].translation_vector = op.translation_vector
+
+        return ops
+
+
     def get_euclidean_generator(self, cell, idx=0):
         """
         return the symmetry operation object at the Euclidean space
@@ -2714,9 +2732,15 @@ class site_symmetry:
     Returns:
         a string representing the site symmetry (e.g., `2mm`)
     """
-    def __init__(self, ops, lattice_type, hm_symbol):
+    def __init__(self, ops, lattice_type, hm_symbol, euclidean=False):
 
         #self.G = G
+        if euclidean:
+            for i, op in enumerate(ops):
+                hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
+                ops[i] = hat * op * hat.inverse
+                ops[i].translation_vector = op.translation_vector
+
         self.opas = [OperationAnalyzer(op) for op in ops]
         self.lattice_type = lattice_type
         self.directions = get_symmetry_directions(lattice_type, hm_symbol)
@@ -2732,10 +2756,50 @@ class site_symmetry:
             one_hot_matrix[i, id] = 1
         return one_hot_matrix
 
+    def to_matrix_representation_spg(self):
+        """
+        To create a binary matrix to represent the symmetry elements on each axis
+        Translation is alos counted here.
+        """
+        symbols = ['1', '-1', '2', '2_1', 'm', 'a', 'b', 'c', 'n', 'd',
+                   '3', '3_1', '3_2', '4', '-4', '4_1', '4_2', '4_3',
+                   '-3', '6', '6_1', '6_2', '6_3', '6_4', '6_5', '-6']
+
+        matrix = np.zeros([len(all_directions), len(symbols)], dtype=int)
+        # every direction must has identity symmetry
+        matrix[:, 0] = 1
+        self.inversion = False
+
+        for opa in self.opas:
+            if opa.type == 'inversion':
+                self.inversion = True
+            elif opa.type != 'identity':
+                for i, ax in enumerate(all_directions):
+                    store = False
+                    if self.lattice_type in ['hexagonal', 'trigonal']:
+                        ax0 = np.dot(ax, hex_cell.T)
+                        ax0 /= np.linalg.norm(ax0)
+                    else:
+                        ax0 = ax / np.linalg.norm(ax)
+                    if np.isclose(abs(np.dot(opa.axis, ax0)), 1):
+                        store = True
+                        break
+                if store:
+                    # Pure rotation
+                    #print('add symmetry', i, ax, opa.type, opa.order)
+                    if opa.symbol in symbols:
+                        matrix[i, 2] = symbols.index(opa.symbol)
+                    else:
+                        print("To debug", opa.symbol)
+            if self.inversion:
+                matrix[:, 1] = 1 # if inversion is present
+        return matrix
+
+
     def to_matrix_representation(self):
         """
         To create a 15 * 10 binary matrix to represent the
-        symmetry elements on each axes
+        symmetry elements on each axis
         #[1, -1, 2, m, 3, 2/m, 4, -3, 6, 4/m, -6, 6/m]
         [1, -1, 2, m, 3, 4, -3, 6, -6]
         """
@@ -2774,13 +2838,13 @@ class site_symmetry:
                         else:
                             raise RuntimeError("Unexpected rotation order", opa.order)
                     elif opa.type == 'rotoinversion':
-                        if opa.order == 2:
+                        if opa.rotation_order == 2:
                             matrix[i, 3] = 1 # -2 is m
-                        elif opa.order == 3:
-                            matrix[i, 7] = 1 # -2 is m
-                        elif opa.order == 4:
+                        elif opa.rotation_order == 3:
+                            matrix[i, 7] = 1 # -3
+                        elif opa.rotation_order == 4:
                             matrix[i, 6] = 1 # -4
-                        elif opa.order == 6:
+                        elif opa.rotation_order == 6:
                             matrix[i, 9] = 1
                         else:
                             raise RuntimeError("Unexpected rotinversion order", opa.order)

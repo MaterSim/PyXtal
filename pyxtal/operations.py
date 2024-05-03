@@ -636,7 +636,7 @@ class OperationAnalyzer(SymmOp):
         SymmOp: a pymatgen.core.structure.SymmOp object to analyze
     """
 
-    # TODO: include support for off-center operations
+    # ++++: include support for off-center operations
     # TODO: include support for shear and scaling operations
     # TODO: include support for matrix-column and axis-angle initialization
     def get_order(angle, rotoinversion=False, tol=1e-2):
@@ -650,36 +650,40 @@ class OperationAnalyzer(SymmOp):
                 break
         if found:
             # Double order of odd-rotation rotoinversions
-            #if rotoinversion:
-            #    if n % 2 == 1:
-            #        return int(n * 2)
-            #    else:
-            #        return int(n)
-            #else:
-            return int(n)
+            if rotoinversion:
+                if n % 2 == 1:
+                    return int(n * 2)
+                else:
+                    return int(n)
+            else:
+                return int(n)
         if not found:
             return "irrational"
 
-    def __init__(self, op):
+    def __init__(self, op, parse_trans=False):
+
         if type(op) == deepcopy(SymmOp):
+            # The numerical tolerance associated with op
+            # The 4x4 affine matrix of the op
+            # The 3x3 rotation (or rotoinversion) matrix
+            # The determinant of self.m
             self.op = op
-            """The original SymmOp object being analyzed"""
             self.tol = op.tol
-            """The numerical tolerance associated with self.op"""
             self.affine_matrix = op.affine_matrix
-            """The 4x4 affine matrix of the op"""
             self.m = op.rotation_matrix
-            """The 3x3 rotation (or rotoinversion) matrix, which ignores the
-            translational part of self.op"""
             self.det = np.linalg.det(self.m)
-            """The determinant of self.m"""
+
         elif (type(op) == np.ndarray) or (type(op) == np.matrix):
             if op.shape == (3, 3):
                 self.op = SymmOp.from_rotation_and_translation(op, [0, 0, 0])
                 self.m = self.op.rotation_matrix
                 self.det = np.linalg.det(op)
         else:
-            printx("Error: OperationAnalyzer requires a SymmOp or 3x3 array.", priority=1)
+            raise ValueError("Error: OperationAnalyzer requires a SymmOp or 3x3 array.")
+
+        self.symbol = None
+        self.parse_trans = parse_trans # only for space group
+
         # If rotation matrix is not orthogonal
         if not is_orthogonal(self.m):
             self.type = "general"
@@ -691,7 +695,7 @@ class OperationAnalyzer(SymmOp):
             )
         # If rotation matrix is orthogonal
         else:
-            # If determinant is positive
+            # If determinant is positive, rotation
             if np.linalg.det(self.m) > 0:
                 self.inverted = False
                 rotvec = Rotation.from_matrix(self.m).as_rotvec()
@@ -701,24 +705,28 @@ class OperationAnalyzer(SymmOp):
                 else:
                     self.angle = np.linalg.norm(rotvec)
                     self.axis = rotvec / self.angle
+                    #parse symmetry direction
+                    if self.parse_trans and not self.parse_axis():
+                        self.axis *= -1
+                        self.angle = 2*np.pi - self.angle
+                        #print('switch angle', self.angle)
+
                 if np.isclose(self.angle, 0):
+                    # Types: 'identity', 'inversion', 'rotation', or 'rotoinversion'.
+                    # order: the number of times to get to origin
+                    # rotation_order: 2, 3, 4, 6
                     self.type = "identity"
-                    """The type of operation. Is one of 'identity', 'inversion',
-                    'rotation', or 'rotoinversion'."""
                     self.order = int(1)
-                    """The order of the operation. This is the number of times
-                    the operation must be applied consecutively to return to the
-                    identity operation. If no integer number if found, we set
-                    this to 'irrational'."""
                     self.rotation_order = int(1)
-                    """The order of the rotational (non-inversional) part of the
-                    operation. Must be used in conjunction with self.order to
-                    determine the properties of the operation."""
+                    self.symbol = '1'
                 else:
                     self.type = "rotation"
                     self.order = OperationAnalyzer.get_order(self.angle)
                     self.rotation_order = self.order
-            # If determinant is negative
+                    if self.parse_trans:
+                        self.symbol = self.parse_screw_symmetry()
+
+            # If determinant is negative, rotoinversion (including reflection)
             elif np.linalg.det(self.m) < 0:
                 self.inverted = True
                 rotvec = Rotation.from_matrix(-1 * self.m).as_rotvec()
@@ -728,12 +736,18 @@ class OperationAnalyzer(SymmOp):
                 else:
                     self.angle = np.linalg.norm(rotvec)
                     self.axis = rotvec / self.angle
-
                 if np.isclose(self.angle, 0):
+                    self.symbol = '-1'
                     self.type = "inversion"
                     self.order = int(2)
                     self.rotation_order = int(1)
                 else:
+                    #parse symmetry direction
+                    #if self.parse_trans and not self.parse_axis():
+                    #    self.axis *= -1
+                    #    self.angle = 2*np.pi - self.angle
+                    #    print('switch angle', self.angle)
+
                     self.axis *= -1
                     self.type = "rotoinversion"
                     self.order = OperationAnalyzer.get_order(
@@ -742,9 +756,147 @@ class OperationAnalyzer(SymmOp):
                     self.rotation_order = OperationAnalyzer.get_order(
                         self.angle, rotoinversion=False
                     )
+                    if self.parse_trans:
+                        self.symbol = self.parse_glide_symmetry()
             elif np.linalg.det(self.m) == 0:
                 self.type = "degenerate"
                 self.axis, self.angle = None, None
+
+    def parse_screw_symmetry(self, tol=1e-2):
+        """
+        If the point group symmetry is rotation, parse the screw vector
+
+        Returns:
+            0, 2_1, 3_1, 3_2, 4_1, 4_2, 4_3, 6_1, 6_2, 6_3, 6_4, 6_5
+        """
+        # only count the translation on the given axis
+        vec = self.translation_vector.copy()
+        if np.isclose(abs(np.dot(self.axis, np.array([1, 0, 0]))), 1):
+            vec[1] = 0
+            vec[2] = 0
+        elif np.isclose(abs(np.dot(self.axis, np.array([0, 1, 0]))), 1):
+            vec[0] = 0
+            vec[2] = 0
+        elif np.isclose(abs(np.dot(self.axis, np.array([0, 0, 1]))), 1):
+            vec[0] = 0
+            vec[1] = 0
+        else:
+            vec = 0
+        # No screw symmetry for other directios for tetragonal????
+
+        if np.linalg.norm(vec) < tol:
+            return str(self.order) # 2, 3, 4, 6
+        else:
+            trans = np.sum(vec)
+            if self.order == 2:
+                return '2_1'
+            elif self.order == 3:
+                if abs(self.angle/trans - 2*np.pi) < tol:
+                    return '3_1'
+                else:
+                    return '3_2'
+            elif self.order == 4:
+                if abs(trans) < tol: #
+                    return '4_2'
+                elif abs(self.angle/trans - 2*np.pi) < tol:
+                    return '4_1'
+                elif abs(self.angle/trans - np.pi) < tol or \
+                    abs(self.angle/trans - 3*np.pi) < tol:
+                    return '4_2'
+                elif abs(self.angle/trans - 2/3*np.pi) < tol or \
+                    abs(self.angle/trans - 6*np.pi) < tol:
+                    return '4_3'
+            elif self.order == 6:
+                if abs(trans) < tol: #
+                    return '6_3'
+                elif abs(self.angle/trans - 2*np.pi) < tol:
+                    return '6_1'
+                elif abs(self.angle/trans - np.pi) < tol or\
+                    abs(self.angle/trans - 5/2*np.pi) < tol:
+                    return '6_2'
+                elif abs(self.angle/trans - 2/3*np.pi) < tol or\
+                    abs(self.angle/trans - 10/3*np.pi) < tol:
+                    return '6_3'
+                elif abs(self.angle/trans - 1/2*np.pi) < tol or\
+                    abs(self.angle/trans - 5*np.pi) < tol:
+                    return '6_4'
+                elif abs(self.angle/trans - 2/5*np.pi) < tol or\
+                    abs(self.angle/trans - 10*np.pi) < tol:
+                    return '6_5'
+
+        print("Cannot assign symbol", self.angle, trans)
+
+
+    def parse_glide_symmetry(self, tol=1e-2):
+        """
+        If the point group symmetry is rotation, parse the screw vector
+        Returns:
+            m, a, b, c, n, d
+        """
+        if self.rotation_order > 2:
+            return '-'+str(self.rotation_order)
+        elif abs(self.angle - np.pi) > tol:
+            return 'm' # just indicate
+        else:
+            vec = self.translation_vector.copy()
+            if np.isclose(abs(np.dot(self.axis, np.array([1, 0, 0]))), 1):
+                vec[0] = 0
+            elif np.isclose(abs(np.dot(self.axis, np.array([0, 1, 0]))), 1):
+                vec[1] = 0
+            elif np.isclose(abs(np.dot(self.axis, np.array([0, 0, 1]))), 1):
+                vec[2] = 0
+
+            if np.linalg.norm(vec) < tol:
+                return 'm'
+            else:
+                if np.linalg.norm(vec - np.array([1/2, 0, 0])) < tol:
+                    return 'a'
+                elif np.linalg.norm(vec - np.array([0, 1/2, 0])) < tol:
+                    return 'b'
+                elif np.linalg.norm(vec - np.array([0, 0, 1/2])) < tol:
+                    return 'c'
+                elif np.linalg.norm(vec - np.array([0, 1/2, 1/2])) < tol or\
+                    np.linalg.norm(vec - np.array([1/2, 0, 1/2])) < tol or\
+                    np.linalg.norm(vec - np.array([1/2, 1/2, 0])) < tol:
+                    return 'n'
+                elif np.linalg.norm(vec - np.array([1/2, 1/2, 1/2])) < tol:
+                    if np.isclose(abs(np.dot(self.axis, np.array([0, -0.7071, 0.7071]))), 1) or\
+                       np.isclose(abs(np.dot(self.axis, np.array([-0.7071, 0, 0.7071]))), 1):
+                        return 'n'
+                    else:
+                        return 'c'
+                else:
+                    return 'd'
+
+
+    def parse_axis(self):
+        """
+        parse if the axis follows the standard convention
+        """
+        ax = self.axis
+        ax /= np.linalg.norm(ax)
+        for direction in np.array([[1, 0, 0],
+                                   [0, 1, 0],
+                                   [0, 0, 1],
+                                   [1, -1, 0],
+                                   [1, 1, 0],
+                                   [1, 2, 0],
+                                   [2, 1, 0],
+                                   [1, 1, 1],
+                                   [1, -1, -1],
+                                   [-1, 1, -1],
+                                   [-1, -1, 1],
+                                   [0, 1, -1],
+                                   [0, 1, 1],
+                                   [-1, 0, 1],
+                                   [1, 0, 1]], dtype=float):
+            direction /= np.linalg.norm(direction)
+            #print(direction, np.dot(direction, ax))
+            if np.isclose(np.dot(direction, ax), 1):
+                return True
+            elif np.isclose(np.dot(direction, ax), -1):
+                return False
+        raise ValueError("Cannot find the symmetry direction", ax)
 
     def __str__(self):
         """
@@ -824,6 +976,8 @@ class OperationAnalyzer(SymmOp):
         if type(op1) != OperationAnalyzer:
             opa1 = OperationAnalyzer(op1)
         return opa1.is_conjugate(op2)
+
+
 
 def find_ids(coords, ref, tol=1e-3):
     """
