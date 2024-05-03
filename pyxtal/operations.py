@@ -20,7 +20,7 @@ from pymatgen.core.operations import SymmOp
 # PyXtal imports
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.constants import rad, deg, pyxtal_verbosity
+from pyxtal.constants import rad, deg, hex_cell, all_sym_directions
 
 # ------------------------------
 # Define functions
@@ -100,8 +100,8 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]):
                 specie2 = species[j]
                 diff = np.array(c2) - np.array(c1)
                 d_min = distance(diff, lattice, PBC=PBC)
-                rad = Element(specie1).covalent_radius + Element(specie2).covalent_radius
-                tol = factor * 0.5 * rad
+                radius = Element(specie1).covalent_radius + Element(specie2).covalent_radius
+                tol = factor * 0.5 * radius
                 if d_min < tol:
                     return False
     return True
@@ -660,7 +660,7 @@ class OperationAnalyzer(SymmOp):
         if not found:
             return "irrational"
 
-    def __init__(self, op, parse_trans=False):
+    def __init__(self, op, parse_trans=False, hexagonal=False):
 
         if type(op) == deepcopy(SymmOp):
             # The numerical tolerance associated with op
@@ -672,6 +672,7 @@ class OperationAnalyzer(SymmOp):
             self.affine_matrix = op.affine_matrix
             self.m = op.rotation_matrix
             self.det = np.linalg.det(self.m)
+            self.hexagonal = hexagonal
 
         elif (type(op) == np.ndarray) or (type(op) == np.matrix):
             if op.shape == (3, 3):
@@ -705,6 +706,9 @@ class OperationAnalyzer(SymmOp):
                 else:
                     self.angle = np.linalg.norm(rotvec)
                     self.axis = rotvec / self.angle
+                    if self.hexagonal:
+                        #print('convert hex', self.axis, np.dot(self.axis, hex_cell))
+                        self.axis = np.dot(self.axis, hex_cell)
                     #parse symmetry direction
                     if self.parse_trans and not self.parse_axis():
                         self.axis *= -1
@@ -736,6 +740,9 @@ class OperationAnalyzer(SymmOp):
                 else:
                     self.angle = np.linalg.norm(rotvec)
                     self.axis = rotvec / self.angle
+                    if self.hexagonal:
+                        #print('convert hex', self.axis, np.dot(self.axis, hex_cell))
+                        self.axis = np.dot(self.axis, hex_cell)
                 if np.isclose(self.angle, 0):
                     self.symbol = '-1'
                     self.type = "inversion"
@@ -875,21 +882,7 @@ class OperationAnalyzer(SymmOp):
         """
         ax = self.axis
         ax /= np.linalg.norm(ax)
-        for direction in np.array([[1, 0, 0],
-                                   [0, 1, 0],
-                                   [0, 0, 1],
-                                   [1, -1, 0],
-                                   [1, 1, 0],
-                                   [1, 2, 0],
-                                   [2, 1, 0],
-                                   [1, 1, 1],
-                                   [1, -1, -1],
-                                   [-1, 1, -1],
-                                   [-1, -1, 1],
-                                   [0, 1, -1],
-                                   [0, 1, 1],
-                                   [-1, 0, 1],
-                                   [1, 0, 1]], dtype=float):
+        for direction in all_sym_directions:
             direction /= np.linalg.norm(direction)
             #print(direction, np.dot(direction, ax))
             if np.isclose(np.dot(direction, ax), 1):
