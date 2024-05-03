@@ -3394,24 +3394,26 @@ class pyxtal:
             max_angle (float): maximum angle in radian (used in normalization)
 
         """
-        group = Group(int(np.round(rep[0] * 230)))
-        [a, b, c, alpha, beta, gamma] = rep[1:7]
-        a, b, c = a * max_abc, b * max_abc, c * max_abc
-        alpha, beta, gamma = alpha*max_angle, beta*max_angle, gamma*max_angle
-        lattice = np.array([a, b, c, alpha, beta, gamma])
-        sites_info = np.reshape(rep[7:], (int((len(rep)-7)/4), 4))
-        sites = []
-        numIons = 0
-        for site_info in sites_info:
-            [id, x, y, z] = site_info
-            if min(site_info) > -0.01:
-                wp_id = int(np.round(len(group)*id))
-                if wp_id >= len(group): wp_id = -1
-                wp = group[wp_id]
-                xyz = wp.search_generator([x, y, z])#; print(wp.get_label(), xyz)
-                if xyz is not None:
-                    xyz, wp, _ = wp.merge(xyz, np.eye(3), 1e-3)
-                    label = wp.get_label()
-                    sites.append((label, xyz[0], xyz[1], xyz[2]))#; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
-                    numIons += wp.multiplicity
-        self.build(group, ['C'], [numIons], lattice, [sites])
+        number = int(np.round(rep[0] * 230))
+        if 1 <= number <= 230:
+            group = Group(number)
+            [a, b, c, alpha, beta, gamma] = rep[1:7]
+            a, b, c = a * max_abc, b * max_abc, c * max_abc
+            alpha, beta, gamma = alpha*max_angle, beta*max_angle, gamma*max_angle
+            lattice = np.array([a, b, c, alpha, beta, gamma])
+            sites_info = np.reshape(rep[7:], (int((len(rep)-7)/4), 4))
+            sites = []
+            numIons = 0
+            for site_info in sites_info:
+                [id, x, y, z] = site_info
+                if min(site_info) > -0.01:
+                    wp_id = int(np.round(len(group)*id))
+                    if wp_id >= len(group): wp_id = -1
+                    wp = group[wp_id]
+                    xyz = wp.search_generator([x, y, z])#; print(wp.get_label(), xyz)
+                    if xyz is not None:
+                        xyz, wp, _ = wp.merge(xyz, np.eye(3), 1e-3)
+                        label = wp.get_label()
+                        sites.append((label, xyz[0], xyz[1], xyz[2]))#; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
+                        numIons += wp.multiplicity
+            self.build(group, ['C'], [numIons], lattice, [sites])
