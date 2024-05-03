@@ -497,6 +497,19 @@ class pyxtal:
             #if not sm.StructureMatcher().fit(struc, pmg1):
             #    raise RuntimeError("The structure is inconsistent after conversion")
 
+    def are_valid_numIons(self):
+        """
+        Check if the numIons are correct for debugging
+        """
+
+        N = [s.wp.multiplicity for s in self.atom_sites]
+        #for s in self.atom_sites: print(s.wp.multiplicity, s.wp.get_label())
+        if sum(N) != sum(self.numIons):
+            print("Inconsistent numIons", sum(N), self.numIons)
+            return False
+        else:
+            return True
+
     def check_H_coordination(self, r=1.12):
         """
         A function to check short if H is connected to more than one atom
@@ -659,8 +672,9 @@ class pyxtal:
             H: space group number (int)
             eps: pertubation term (float)
             idx: list
-            group_type: `t`, `k` or `t+k`
-            max_cell: maximum cell reconstruction (float)
+            group_type (string): `t`, `k` or `t+k`
+            max_cell (float): maximum cell reconstruction
+            min_cell (float): maximum cell reconstruction
 
         Returns:
             a list of pyxtal structures with lower symmetries
@@ -672,7 +686,7 @@ class pyxtal:
         valid_splitters = []
         bad_splitters = []
         for id in idx:
-            gtype = (t_types+k_types)[id]
+            gtype = (t_types + k_types)[id]
             if gtype == 'k':
                 id -= len(t_types)
             splitter = wyckoff_split(G=self.group, wp1=sites, idx=id, group_type=gtype)
@@ -720,6 +734,7 @@ class pyxtal:
                     new_struc = self._subgroup_by_splitter(splitter, eps=eps)
                 else:
                     new_struc = self._apply_substitution(splitter, perms)
+                #if not new_struc.are_valid_numIons(): print(new_struc); import sys; sys.exit()
                 new_strucs.append(new_struc)
             return new_strucs
 
@@ -1008,7 +1023,7 @@ class pyxtal:
                     split_sites.append(_site)
                     id += wp.multiplicity
             new_struc.mol_sites = split_sites
-            new_struc.numMols = [int(multiples*numMol) for numMol in self.numMols]
+            new_struc.numMols = [int(round(multiples*numMol)) for numMol in self.numMols]
 
         else:
             for i, site in enumerate(self.atom_sites):
@@ -1023,7 +1038,7 @@ class pyxtal:
                     split_sites.append(atom_site(wp, pos0, site.specie))
 
             new_struc.atom_sites = split_sites
-            new_struc.numIons = [int(multiples*numIon) for numIon in self.numIons]
+            new_struc.numIons = [int(round(multiples*numIon)) for numIon in self.numIons]
         new_struc.lattice = lattice
         new_struc.source = 'subgroup'
 
