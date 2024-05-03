@@ -786,6 +786,14 @@ class pyxtal:
             a pyxtal structure with lower symmetries
         """
         idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell, min_cell)
+        #print("Test subgroup_once", self.group.number, idx, sites)
+
+        if idx is None or len(idx) == 0:
+            msg = "Cannot find the valid splitter id\n"
+            msg += "This is most likely due to the cell size is not sufficient for k-subgroup\n"
+            msg += "You may increase the max_cell"
+            print(msg)
+            return None
 
         # Try 100 times to see if a valid split can be found
         count = 0
@@ -837,7 +845,9 @@ class pyxtal:
                             if ans.group.number > 1:
                                 return ans
             count += 1
-        raise RuntimeError("Cannot find the splitter")
+
+        print("Cannot find the splitter")
+        return None
 
     def _apply_substitution(self, splitter, perms):
         """
@@ -901,7 +911,7 @@ class pyxtal:
 
         if idx is None:
             idx = []
-            if not self.molecular or self.group.number>142:
+            if not self.molecular or self.group.number > 142:
                 for i, tran in enumerate(trans):
                     if min_cell<=np.linalg.det(tran[:3,:3])<=max_cell:
                         idx.append(i)
@@ -925,8 +935,8 @@ class pyxtal:
         if H is not None:
             idx = [id for id in idx if Hs[id] == H]
 
-        if len(idx) == 0:
-            raise RuntimeError("Cannot find the splitter")
+        #if len(idx) == 0:
+        #    raise RuntimeError("Cannot find the splitter")
 
         if self.molecular:
             struc_sites = self.mol_sites
@@ -3353,9 +3363,9 @@ class pyxtal:
         """
 
         if ids is None:
-            ids = [0] * len(xtal.atom_sites)
+            ids = [0] * len(self.atom_sites)
         else:
-            assert(len(ids) == len(xtal.atom_sites))
+            assert(len(ids) == len(self.atom_sites))
 
         if len(ids) > N_wp:
             raise ValueError("Cannot handle too many atom sites", len(ids), N_wp)
@@ -3364,8 +3374,8 @@ class pyxtal:
 
         # If the number of wp is less then 6, assign -1
         rep = -np.ones(N_cell + N_site) # 7 + 6 + 18 = 31
-        rep[0] = xtal.group.number
-        rep[1:7] = xtal.lattice.get_para()
+        rep[0] = self.group.number
+        rep[1:7] = self.lattice.get_para()
 
         if normalize:
             rep[0] /= 230
@@ -3373,9 +3383,9 @@ class pyxtal:
             rep[4:7] /= max_angle
 
         count = N_cell
-        for id, site in zip(ids, xtal.atom_sites):
+        for id, site in zip(ids, self.atom_sites):
             rep[count] = site.wp.index
-            if normalize: rep[count] /= len(xtal.group)
+            if normalize: rep[count] /= len(self.group)
             xyz = site.coords[id] # position
             xyz -= np.floor(xyz)
             rep[count+1:count+4] = xyz

@@ -102,26 +102,26 @@ class wyckoff_split:
         """
         query the wp2 and transformation matrix from the given {G, H, wp1}
         """
-        #print("trans", idx)
         #print(self.wyc['transformation'])
         #subgroup_relations.reverse()
-        trans = self.wyc['transformation'][idx]
-        subgroup_relations = self.wyc['relations'][idx]
+        trans = self.wyc['transformation'][idx]#; print("trans", trans)
+        subgroup_relations = self.wyc['relations'][idx] #; print('subgroup_relations', subgroup_relations)
         subgroup_relations = list(reversed(subgroup_relations))
 
-        self.R = np.zeros([4,4])
-        self.R[:3,:3] += trans[:3,:3]
-        self.R[3,3] = 1
+        self.R = np.zeros([4, 4])
+        self.R[:3, :3] += trans[:3, :3]
+        self.R[3, 3] = 1
         self.inv_R = np.linalg.inv(self.R)
-        inv_t = np.dot(self.inv_R[:3,:3], trans[:,3].T)
-        self.inv_R[:3,3] = -1*inv_t.T
-        self.R[:3,3] = trans[:3,3]
+        inv_t = np.dot(self.inv_R[:3, :3], trans[:,3].T)
+        self.inv_R[:3, 3] = -1*inv_t.T
+        self.R[:3, 3] = trans[:3, 3]
         self.multi = np.linalg.det(self.R[:3, :3])
 
         wp2_lists = []
         for wp1_index in self.wp1_indices:
             wp2_list = []
             for letter in subgroup_relations[wp1_index]:
+                #if letter == '4a': letter = '8c'
                 id = sym.index_from_letter(letter[-1], self.H)
                 wp2_list.append(self.H[id])
             wp2_lists.append(wp2_list)
@@ -299,7 +299,7 @@ class wyckoff_split:
         return G1_orbits, G2_orbits
 
 
-    def split_k(self, wp1, wp2_lists):
+    def split_k(self, wp1, wp2_lists, tol=1e-5):
         """
         split the generators in w1 to different w2s for k-subgroup
         """
@@ -308,34 +308,36 @@ class wyckoff_split:
 
         G1_orbits = []
         G2_orbits = []
-        quadrant=deepcopy(self.inv_R[:3,3])
-        quadrant[np.abs(quadrant)<1e-5] = 0 #finds the orientation of the subgroup_basis
+        quadrant = deepcopy(self.inv_R[:3, 3])
+        quadrant[np.abs(quadrant) < tol] = 0 #finds the orientation of the subgroup_basis
+
         for i in range(3):
-            if quadrant[i]>=0:
+            if quadrant[i] >= 0:
                 quadrant[i] = 1
             else:
                 quadrant[i] = -1
 
         all_g2_orbits = []
         translations = self.translation_generator()
+
         # the translation generator provides all the possible ways to translate
         # the starting positions, then they are shifted
         for translation in translations:
             for gen in wp1_generators:#into the proper orientation
                 orbit = np.matmul(self.inv_R,gen)
-                orbit[np.abs(orbit)<1e-5] = 0
-                orbit[np.abs(orbit-1)<1e-5] = 1
-                orbit[np.abs(orbit+1)<1e-5] = -1
+                orbit[np.abs(orbit) < tol] = 0
+                orbit[np.abs(orbit-1) < tol] = 1
+                orbit[np.abs(orbit+1) < tol] = -1
                 for i in range(3):
                     if quadrant[i] == 1:
                         orbit[i][3] += translation[i]
-                        orbit[i][3] = orbit[i][3]%1
-                        if np.abs(orbit[i][3]-1) < 1e-5:
+                        orbit[i][3] = orbit[i][3] % 1
+                        if np.abs(orbit[i][3]-1) < tol:
                             orbit[i][3] = 0
                     else:
                         orbit[i][3] += (translation[i])%-1
-                        orbit[i][3] = orbit[i][3]%-1
-                        if np.abs(orbit[i][3]) < 1e-5:
+                        orbit[i][3] = orbit[i][3] % -1
+                        if np.abs(orbit[i][3]) < tol:
                             orbit[i][3] = -1
                 all_g2_orbits.append(orbit)
 
@@ -343,7 +345,7 @@ class wyckoff_split:
 
             #final_G2=[]
             temp = np.array(deepcopy(all_g2_orbits))
-            temp[np.abs(temp) <1e-5] = 0
+            temp[np.abs(temp) < tol] = 0
             temp = temp.tolist()
 
             for j, x in enumerate(temp):
@@ -351,9 +353,12 @@ class wyckoff_split:
 
             for orbit in temp:
                 try_match = np.array([np.matmul(x.as_dict()['matrix'], orbit.as_dict()['matrix']) for x in wp2])
-                try_match[np.abs(try_match) <1e-5] = 0
-                try_match[np.abs(try_match-1) <1e-5] = 1
-                try_match[np.abs(try_match+1) <1e-5] = -1
+                try_match[np.abs(try_match) < tol] = 0
+                try_match[np.abs(try_match-1) < tol] = 1
+                try_match[np.abs(try_match+1) < tol] = -1
+
+                #print('\norbit\n', orbit)
+                #print('\ntry_match\n', try_match)
 
                 for j in range(len(try_match)):
                     for k in range(3):
@@ -385,7 +390,10 @@ class wyckoff_split:
             G1_orbits.append(final_G1)
 
         if len(G1_orbits) != len(wp2_lists):
-            raise ValueError('inaccurate')
+            print('wp2_lists', wp2_lists)
+            print('G1_orbits', G1_orbits)
+            print('G2_orbits', G2_orbits)
+            raise ValueError('inconsistent G1_orbits and wp2_lists')
         else:
             return G1_orbits, G2_orbits
 
@@ -497,5 +505,10 @@ def in_lists(mat1, mat2, eps=1e-2, PBC=True):
 
 if __name__ == "__main__":
 
-    sp = wyckoff_split(G=14, idx=1, wp1=['2c', '4e'], group_type='t')
-    print(sp)
+    #sp = wyckoff_split(G=14, idx=1, wp1=['2c', '4e'], group_type='t')
+    #print(sp)
+    for idx in range(4):
+        #sp = wyckoff_split(G=210, idx=idx, wp1=['8b'], group_type='k')
+        sp = wyckoff_split(G=224, idx=idx, wp1=['24j'], group_type='k')
+        #print(sp)
+        print(sp.error)

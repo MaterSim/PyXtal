@@ -777,7 +777,7 @@ class Group:
             for sg in sgs:
                 subgroups = None
                 if group_type == 't':
-                    if sg>self.number:
+                    if sg > self.number:
                         subgroups = Group(sg, quick=True).get_max_t_subgroup()
                 else:
                     g1 = Group(sg)
