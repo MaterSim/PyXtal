@@ -144,11 +144,12 @@ class Lattice:
             self.dof = 1
 
     @classmethod
-    def get_dofs(self, ltype=None):
+    def get_dofs(self, ltype):
         """
         get the number of degree of freedom
         """
-        if ltype is None: ltype = self.ltype
+        #if ltype is None: ltype = self.ltype
+
         if ltype in ["triclinic"]:
             dofs = [3, 3]
         elif ltype in ["monoclinic"]:
@@ -467,6 +468,7 @@ class Lattice:
 
     @classmethod
     def from_1d_representation(self, v, ltype):
+        #print('test', v, type(v), len(v), v[0])
         if ltype == 'triclinic':
             a, b, c, alpha, beta, gamma = v[0], v[1], v[2], v[3], v[4], v[5]
         elif ltype == 'monoclinic':
@@ -912,6 +914,30 @@ class Lattice:
             return True
         except:
             return False
+
+    def is_valid_lattice(self, tol=1e-3):
+        if self.ltype in ['cubic', 'Cubic']:
+            if (self.a-self.b) > tol or (self.a-self.c) > tol or \
+                (self.alpha-np.pi/2) > tol or (self.beta-np.pi/2) > tol \
+                or (self.gamma-np.pi/2) > tol:
+                return False
+        if self.ltype in ['hexagonal', 'trigonal', 'Hexagonal', 'Trigonal']:
+            if (self.a-self.b) > tol or (self.alpha-np.pi/2) > tol \
+                or (self.beta-np.pi/2) > tol or (self.gamma-2/3*np.pi) > tol:
+                return False
+        elif self.ltype in ['tetragonal', 'Tetragonal']:
+            if (self.a-self.b) > tol or (self.alpha-np.pi/2) > tol \
+                or (self.beta-np.pi/2) > tol or (self.gamma-np.pi/2) > tol:
+                return False
+        elif self.ltype in ['orthorhombic', 'Orthorhombic']:
+            if (self.alpha-np.pi/2) > tol or (self.beta-np.pi/2) > tol \
+                    or (self.gamma-np.pi/2) > tol:
+                return False
+        elif self.ltype in ['monoclinic', 'Monoclinic']:
+            if (self.alpha-np.pi/2) > tol or (self.gamma-np.pi/2) > tol:
+                return False
+
+        return True
 
     def check_mismatch(self, trans, l_type, tol=1.0, a_tol=10):
         """

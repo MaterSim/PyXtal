@@ -941,6 +941,15 @@ class TestLattice(unittest.TestCase):
         l7 = l7.transform_multi(trans)
         self.assertTrue(np.abs(l7.matrix-l6.matrix).sum() < 0.25)
 
+    def test_is_valid_lattice(self):
+        l8 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 105.80, 91.00, ltype='monoclinic')
+        l9 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 105.80, 90.00, ltype='monoclinic')
+        l10 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 90.00, 90.00, ltype='cubic')
+        self.assertTrue(not l8.is_valid_lattice())
+        self.assertTrue(l9.is_valid_lattice())
+        self.assertTrue(not l10.is_valid_lattice())
+
+
 class TestSymmetry(unittest.TestCase):
     def test_from_symops_wo_grou(self):
         data = [

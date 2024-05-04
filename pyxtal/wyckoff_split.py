@@ -26,7 +26,7 @@ class wyckoff_split:
     def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t', elements=None):
         self.error = False
         self.elements = elements
-        if type(G) is int:
+        if type(G) in [int, np.int64]:
             self.G = sym.Group(G)  # Group object
         else:
             self.G = G
