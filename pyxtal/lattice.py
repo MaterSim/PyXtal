@@ -144,10 +144,11 @@ class Lattice:
             self.dof = 1
 
     @classmethod
-    def get_dofs(self, ltype):
+    def get_dofs(self, ltype=None):
         """
         get the number of degree of freedom
         """
+        if ltype is None: ltype = self.ltype
         if ltype in ["triclinic"]:
             dofs = [3, 3]
         elif ltype in ["monoclinic"]:

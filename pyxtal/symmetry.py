@@ -1966,9 +1966,12 @@ class Wyckoff_position:
         """
 
         pos0 = self.search_generator(pos)
-        res = self.apply_ops(pos0)
-        res -= np.floor(res)
-        return res
+        if pos0 is not None:
+            res = self.apply_ops(pos0)
+            res -= np.floor(res)
+            return res
+        else:
+            return None
 
     #=============================Evaluations===========================
     def is_standard_setting(self):

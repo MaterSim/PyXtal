@@ -1565,8 +1565,13 @@ class pyxtal:
                         if _wp.get_dof() == 0: #fixed pos
                             pt = [0.0, 0.0, 0.0]
                         else:
-                            pt = _wp.get_all_positions([x, y, z])[0]
-                        _sites.append(atom_site(_wp, pt, sp))
+                            ans = _wp.get_all_positions([x, y, z])
+                            if ans is not None:
+                                pt = ans[0]
+                            else:
+                                pt = None
+                        if pt is not None:
+                            _sites.append(atom_site(_wp, pt, sp))
                     else:
                         raise RuntimeError("Cannot interpret site", key)
                 else: # List of atomic coordinates
