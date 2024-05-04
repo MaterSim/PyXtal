@@ -949,6 +949,12 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(l9.is_valid_lattice())
         self.assertTrue(not l10.is_valid_lattice())
 
+    def test_from_1d_representation(self):
+        lat = Lattice.from_1d_representation([5.09, 6.11], 'trigonal')
+        self.assertTrue(abs(lat.a-5.09)<1e-3)
+        self.assertTrue(abs(lat.c-6.11)<1e-3)
+        self.assertTrue(abs(lat.gamma-2/3*np.pi)<1e-3)
+
 
 class TestSymmetry(unittest.TestCase):
     def test_from_symops_wo_grou(self):

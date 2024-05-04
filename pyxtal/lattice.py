@@ -477,7 +477,7 @@ class Lattice:
             a, b, c, alpha, beta, gamma = v[0], v[1], v[2], 90, 90, 90
         elif ltype == 'tetragonal':
             a, b, c, alpha, beta, gamma = v[0], v[0], v[1], 90, 90, 90
-        elif ltype == 'hexagonal':
+        elif ltype in ['trigonal', 'hexagonal']:
             a, b, c, alpha, beta, gamma = v[0], v[0], v[1], 90, 90, 120
         else:
             a, b, c, alpha, beta, gamma = v[0], v[0], v[0], 90, 90, 90

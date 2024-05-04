@@ -21,7 +21,7 @@ class representation_atom():
         return self.to_string()
 
     @classmethod
-    def from_pyxtal(cls, struc, standard=False):
+    def from_pyxtal(cls, struc, standard=True):
         """
         Initialize 1D rep. from the pyxtal object
 

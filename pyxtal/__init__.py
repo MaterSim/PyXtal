@@ -1341,14 +1341,14 @@ class pyxtal:
         """
         pass
 
-    def get_1D_representation(self):
+    def get_1D_representation(self, standard=False):
         """
         Get the 1D representation class for molecular crystals
         """
         if self.molecular:
             rep = representation.from_pyxtal(self)
         else:
-            rep = representation_atom.from_pyxtal(self)
+            rep = representation_atom.from_pyxtal(self, standard=standard)
         return rep
 
     def transform(self, trans, lattice=None):
@@ -3148,6 +3148,7 @@ class pyxtal:
         # update cell
         l_type = self.lattice.ltype
         self.lattice = Lattice.from_1d_representation(cell, l_type)
+        #print("lattice dof", N, cell, l_type, self.lattice)
 
         # update position
         start = 0
@@ -3169,7 +3170,7 @@ class pyxtal:
         The above rep is [2.5019, 8.7514, 0.4614]
         """
 
-        rep = self.get_1D_representation()
+        rep = self.get_1D_representation(standard=True)
         cell, xyzs = rep.x[0][1:], rep.x[1:]
         x = cell
         for xyz in xyzs:
