@@ -1352,11 +1352,12 @@ class Wyckoff_position:
     """
 
     #=============================Initialization===========================
-    def from_dict(dictionary):
+    @classmethod
+    def from_dict(cls, dictionary):
         """
         Constructs a Wyckoff_position object using a dictionary.
         """
-        wp = Wyckoff_position()
+        wp = cls()
         for key in dictionary:
             setattr(wp, key, dictionary[key])
         #wp.get_site_symmetry()
@@ -1367,8 +1368,8 @@ class Wyckoff_position:
             wp.set_ops()
         return wp
 
-
-    def from_group_and_letter(group, letter, dim=3, style='pyxtal', hn=None):
+    @classmethod
+    def from_group_and_letter(cls, group, letter, dim=3, style='pyxtal', hn=None):
         """
         Creates a Wyckoff_position using the space group number and index
 
@@ -1387,12 +1388,13 @@ class Wyckoff_position:
         ops_all = get_wyckoffs(group, dim=dim)
         index = index_from_letter(letter, ops_all, dim=dim)
         if hn is not None:
-            wp = Wyckoff_position.from_group_and_index(hn, index, dim, use_hall=True, wyckoffs=ops_all)
+            wp = cls.from_group_and_index(hn, index, dim, use_hall=True, wyckoffs=ops_all)
         else:
-            wp = Wyckoff_position.from_group_and_index(group, index, dim, style=style, wyckoffs=ops_all)
+            wp = cls.from_group_and_index(group, index, dim, style=style, wyckoffs=ops_all)
         return wp
 
-    def from_group_and_index(group, index, dim=3, use_hall=False, style='pyxtal', wyckoffs=None):
+    @classmethod
+    def from_group_and_index(cls, group, index, dim=3, use_hall=False, style='pyxtal', wyckoffs=None):
         """
         Creates a Wyckoff_position using the space group number and index
 
@@ -1454,9 +1456,10 @@ class Wyckoff_position:
                   "lattice_type": lattice_type,
                  }
 
-        return Wyckoff_position.from_dict(wpdict)
+        return cls.from_dict(wpdict)
 
-    def from_symops_wo_group(ops):
+    @classmethod
+    def from_symops_wo_group(cls, ops):
         """
         search Wyckoff Position by symmetry operations
         Now only supports space group symmetry
@@ -1469,7 +1472,7 @@ class Wyckoff_position:
             `Wyckoff_position`
         """
         _, spg_num = get_symmetry_from_ops(ops)
-        wp = Wyckoff_position.from_group_and_index(spg_num, 0)
+        wp = cls.from_group_and_index(spg_num, 0)
         if isinstance(ops[0], str):
             ops = [SymmOp.from_xyz_str(op) for op in ops]
         wp.ops = ops
@@ -1477,8 +1480,8 @@ class Wyckoff_position:
         #print("match_spg", match_spg, "match_hall", match_hm)
         return wp
 
-
-    def from_symops(ops, G):
+    @classmethod
+    def from_symops(cls,ops, G):
         """
         search Wyckoff Position by symmetry operations
 
