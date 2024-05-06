@@ -560,6 +560,76 @@ class database_topology():
                                            ff_relaxed=xtal.to_file())
 
 
+    def update_row_dftb_energy(self, skf_dir, cmd, steps=500,
+                               ids=(None, None),
+                               calc_folder='tmp',
+                               criteria=None,
+                               overwrite=False):
+        """
+        Update row ff_energy with GULP calculator
+
+        Args:
+            skf_dir (str): GULP force field library (e.g., 'reaxff', 'tersoff')
+            cmd (str): DFTB command
+            steps (int): relaxation steps
+            ids (tuple): row ids e.g., (0, 100)
+            calc_folder (str): temporary folder for GULP calculations
+            overwrite (bool): remove the existing attributes
+        """
+        from pyxtal.interface.dftb import DFTB_relax
+
+        if not os.path.exists(calc_folder): os.makedirs(calc_folder)
+
+        (min_id, max_id) = ids
+        if min_id is None: min_id = 1
+        if max_id is None: max_id = self.db.count() + 10000
+
+        cwd = os.getcwd()
+        for row in self.db.select():
+            if overwrite or not hasattr(row, 'dftb_energy'):
+                if min_id <= row.id <= max_id:
+                    if hasattr(row, 'similarity'):
+                        sim0 = row.similarity
+                    else:
+                        sim0 = 0.0
+
+                    xtal = self.get_pyxtal(row.id)
+                    atoms = xtal.to_ase(resort=False)
+
+                    os.environ['ASE_DFTB_COMMAND'] = cmd
+
+                    # Actual geometry optimization
+                    try:
+                        s = DFTB_relax(atoms, skf_dir, True, steps, logfile='ase.log')
+                    except:
+                        s = None
+                        print("Problem in DFTB Geometry optimization", row.id)
+                        xtal.to_file('bug.cif')
+                        os.chdir(cwd)
+
+                    #s = DFTB_relax(atoms, skf_dir, True, steps, logfile='ase.log')
+
+                    if s is not None:
+                        c = pyxtal(); c.from_seed(s)
+                        eng = s.get_potential_energy()/len(s)
+                        stress = s.get_stress()/0.006241509125883258
+
+                        if criteria is not None:
+                            status = xtal.check_validity(criteria)
+                        else:
+                            status = True
+
+                        header = "{:4d}".format(row.id)
+                        dicts = {'validity': status, 'energy': eng}
+                        print(xtal.get_xtal_string(header=header, dicts=dicts))
+                        print(" Stress: {:7.2f}{:7.2f}{:7.2f}".format(*stress[:3]))
+
+                        if status:
+                            self.db.update(row.id,
+                                           dftb_energy=eng,
+                                           dftb_relaxed=xtal.to_file())
+
+
     def update_row_topology(self, StructureType='Auto', overwrite=True):
         """
         Update row topology base on the CrystalNets.jl

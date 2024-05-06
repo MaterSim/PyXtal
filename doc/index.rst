@@ -24,7 +24,7 @@ ab-initio generation of random crystal structures. It has the following features
 - Structural manipulation via symmetry relation (both subgroup and supergroup)
 - Geometry optimization from built-in and external optimization methods
 
-The current version is ``0.6.6`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_.
+The current version is ``0.6.7`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_.
 It is available for use under the MIT license. Expect updates upon request by
 `Qiang Zhu\'s group <https://qzhu2017.github.io>`_ at the
 University of North Carolina at Charlotte.

@@ -72,6 +72,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
               'Analysis_WriteBandOut': 'No',
               'Analysis_MullikenAnalysis': 'No',
               'Analysis_CalculateForces': 'Yes',
+              'Analysis_PrintForces': 'Yes',
              }
     if write_band:
         kwargs['Analysis_WriteBandOut'] = 'Yes'
