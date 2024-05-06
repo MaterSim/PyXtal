@@ -511,9 +511,62 @@ class database_topology():
         self.db.delete(to_delete)
 
 
+    def update_row_ff_energy(self, ff='reaxff', ids=(None, None),
+                             calc_folder='tmp',
+                             criteria=None,
+                             overwrite=False):
+        """
+        Update row ff_energy with GULP calculator
+
+        Args:
+            ff (str): GULP force field library (e.g., 'reaxff', 'tersoff')
+            ids (tuple): row ids e.g., (0, 100)
+            calc_folder (str): temporary folder for GULP calculations
+            overwrite (bool): remove the existing attributes
+        """
+        from pyxtal.interface.gulp import single_optimize as gulp_opt
+
+        if not os.path.exists(calc_folder): os.makedirs(calc_folder)
+        (min_id, max_id) = ids
+        if min_id is None: min_id = 1
+        if max_id is None: max_id = self.db.count() + 10000
+
+        for row in self.db.select():
+            if overwrite or not hasattr(row, 'ff_energy'):
+                if min_id <= row.id <= max_id:
+                    if hasattr(row, 'similarity'):
+                        sim0 = row.similarity
+                    else:
+                        sim0 = 0.0
+
+                    xtal = self.get_pyxtal(row.id)
+                    xtal, eng, _, error = gulp_opt(xtal, ff=ff, clean=False,
+                                                path=calc_folder, symmetry=True)
+
+                    if not error:
+                        if criteria is not None:
+                            status = xtal.check_validity(criteria)
+                        else:
+                            status = True
+
+                        header = "{:4d}".format(row.id)
+                        dicts = {'validity': status, 'energy': eng}
+                        print(xtal.get_xtal_string(header=header, dicts=dicts))
+
+                        if status:
+                            self.db.update(row.id,
+                                           ff_energy=eng,
+                                           ff_lib=ff,
+                                           ff_relaxed=xtal.to_file())
+
+
     def update_row_topology(self, StructureType='Auto', overwrite=True):
         """
         Update row topology base on the CrystalNets.jl
+
+        Args:
+            StructureType (str): 'Zeolite', 'MOF' or 'Auto'
+            overwrite (bool): remove the existing attributes
         """
         try:
             import juliacall
@@ -586,6 +639,7 @@ class database_topology():
         update db description based on robocrys
         Call robocrys: https://github.com/hackingmaterials/robocrystallographer
         """
+
         from robocrys import StructureCondenser, StructureDescriber
         condenser = StructureCondenser()
         describer = StructureDescriber()
@@ -606,7 +660,7 @@ class database_topology():
                 print("\n======Existing\n", row.description)
 
     def export_structures(self, fmt='vasp', folder='mof_out', criteria=None,
-                          sort_by='similarity'):
+                          sort_by='similarity', overwrite=True):
         """
         export structures from database according to the given criterion
 
@@ -615,9 +669,17 @@ class database_topology():
             folder (str): 'path of output folders'
             criteria (dict): check the validity with dict
             sort_by (str): sort by which attribute
+            overwrite (bool): remove the existing folder
         """
 
-        if not os.path.exists(folder): os.makedirs(folder)
+        import shutil
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        else:
+            if overwrite:
+                shutil.rmtree(folder)
+                os.makedirs(folder)
+
         keys = ['space_group_number',
                 'density',
                 'dof',
@@ -675,7 +737,7 @@ class database_topology():
                     status = False
 
                 if status:
-                    if top is not None: print(top)
+                    #if top is not None: print(top)
                     try:
                         xtal.set_site_coordination()
                         for s in xtal.atom_sites:

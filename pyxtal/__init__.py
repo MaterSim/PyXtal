@@ -3339,7 +3339,7 @@ class pyxtal:
             # Similarity, energy, status
             for key in dicts:
                 value = dicts[key]
-                if type(value) == float:
+                if type(value) in [float, np.float64]:
                     strs += " {:8.3f} ".format(value)
                 elif type(value) == str:
                     strs += " {:24s} ".format(value)
