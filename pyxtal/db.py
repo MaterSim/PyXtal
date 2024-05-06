@@ -438,15 +438,25 @@ class database_topology():
         print("The following structures were deleted", to_delete)
         self.db.delete(to_delete)
 
-    def clean_structures_pmg(self, dtol=5e-2, criteria=None, max_sim=None):
+    def clean_structures_pmg(self, dtol=5e-2, criteria=None):
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
             - same density
             - pymatgen check
 
+        criteria should look like the following,
+        {'CN': {'C': 3},
+         'cutoff': 1.8,
+         'MAX_energy': -8.00,
+         #'MAX_similarity': 0.2,
+         'BAD_topology': ['hcb'],
+         'BAD_dimension': [0, 2],
+        }
+
         Args:
             dtol (float): tolerance of density
+            criteria (dict): including
         """
 
         unique_rows = []
@@ -460,10 +470,29 @@ class database_topology():
                 if not xtal.check_validity(criteria, True):
                     unique = False
                     print('Found unsatisfied criteria', row.id, row.space_group_number, row.wps)
-            if max_sim is not None:
-                if hasattr(row, 'similarity') and row.similarity > max_sim:
-                    unique = False
-                    print('Found unsatisfied similarity', row.id, row.similarity, row.space_group_number, row.wps)
+
+                if unique:
+                    if 'MAX_energy' in criteria and hasattr(row, 'ff_energy') \
+                        and row.ff_energy > criteria['MAX_energy']:
+                        unique = False
+                        print('Found unsatisfied energy', row.id, row.ff_energy, row.space_group_number, row.wps)
+                if unique:
+                    if 'MAX_similarity' in criteria and hasattr(row, 'similarity') \
+                        and row.similarity > criteria['MAX_similarity']:
+                        unique = False
+                        print('Found unsatisfied similarity', row.id, row.similarity, row.space_group_number, row.wps)
+                if unique:
+                    if 'BAD_topology' in criteria and hasattr(row, 'topology') \
+                        and row.topology[:3] in criteria['BAD_topology']:
+                        unique = False
+                        print('Found unsatisfied topology', row.id, row.topology, row.space_group_number, row.wps)
+                if unique:
+                    if 'BAD_dimension' in criteria and hasattr(row, 'dimension') \
+                        and row.dimension in criteria['BAD_dimension']:
+                        unique = False
+                        print('Found unsatisfied dimension', row.id, row.topology, row.space_group_number, row.wps)
+
+
             if unique:
                 for prop in unique_rows:
                     (rowid, den) = prop
@@ -480,7 +509,6 @@ class database_topology():
                 to_delete.append(row.id)
         print("The following structures were deleted", to_delete)
         self.db.delete(to_delete)
-
 
 
     def update_row_topology(self, StructureType='Auto', overwrite=True):

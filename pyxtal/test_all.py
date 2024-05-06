@@ -54,6 +54,15 @@ class TestGroup(unittest.TestCase):
             dof = g.get_lattice_dof()
             self.assertTrue(dof == dof_ref)
 
+    def test_get_spg_symmetry_object(self):
+        spg_list = [14, 36, 62, 99, 143, 160, 182, 191, 225, 230]
+        ans = [32, 18, 36, 21, 16, 19, 24, 48, 62, 62]
+        for spg, num in zip(spg_list, ans):
+            g = Group(spg)
+            ss = g.get_spg_symmetry_object()
+            matrix = ss.to_matrix_representation_spg()
+            self.assertTrue(num == sum(sum(matrix)))
+
     def test_short_path(self):
         g = Group(217)
         path = g.short_path_to_general_wp(7)

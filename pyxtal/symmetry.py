@@ -553,6 +553,34 @@ class Group:
 
         return combinations, has_freedom, indices
 
+    def get_spg_symmetry_object(self):
+        """
+        Generate the symmetry table for the given space group
+        It only supports space group now!
+        """
+
+        if self.dim == 3:
+            l_type, bravis = self.lattice_type, self.symbol[0]
+            wp = self.get_wyckoff_position(0)
+
+            if 143 <= self.number <= 194:
+                ops = wp.get_euclidean_ops()
+                hexagonal = True
+            else:
+                ops = wp.ops
+
+            if bravis in ['A', 'B', 'C', 'I']:
+                ops = ops[:int(len(ops)/2)]
+            elif bravis == 'R':
+                ops = ops[:int(len(ops)/3)]
+            elif bravis == 'F':
+                ops = ops[:int(len(ops)/4)]
+
+            return site_symmetry(ops, l_type, bravis, True)
+            #ss.to_beautiful_matrix_representation()
+        else:
+            raise ValueError("Only supports space group symmetry")
+
     def get_wyckoff_position(self, index):
         """
         Returns a single Wyckoff_position object.
@@ -2894,7 +2922,7 @@ class site_symmetry:
                 if num_symmetries > 0:
                     strs = '{:4d} ({:2d} {:2d} {:2d}): '.format(direction_id, *axis)
                     for sym in matrix[i]:
-                        strs +="{:4d}".format(sym)
+                        strs +="{:4d} ".format(sym)
                     #strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
                     if not self.parse_trans:
                         symbol, _ = self.get_highest_symmetry(matrix[i])
@@ -3101,7 +3129,7 @@ class site_symmetry:
             symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
 
         for symbol in symbols:
-            strs += '{:4s}'.format(symbol)
+            strs += '{:<4s} '.format(symbol)
         print(strs)
         if not hasattr(self, 'table'): self.set_table(skip)
         for row in self.table:
@@ -4070,17 +4098,17 @@ def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
 
 if __name__ == "__main__":
     print("Test pyxtal.wp.site symmetry")
-    for i in [14, 36, 62, 99, 143, 160, 182, 191, 225, 230]:
+    spg_list = [14, 36, 62, 99, 143, 160, 182, 191, 225, 230]
+    for i in spg_list:
         g = Group(i)
         for wp in g:
             wp.get_site_symmetry()
             print("{:4d} {:10s} {:10s}".format(wp.number, wp.get_label(), wp.site_symm))
 
     print("Test pyxtal.wp.site symmetry representation")
-    for i in range(1, 231): #[14, 36, 62, 99, 143, 160, 182, 191, 225, 230]:
+    for i in spg_list:
         g = Group(i)
         for wp in g:
-            #ss = site_symmetry(wp.get_site_symm_ops(), g.lattice_type, g.symbol[0])
             if wp.index > 0:
                 for idx in range(1): #wp.multiplicity):
                     ss = wp.get_site_symmetry_object(idx)
@@ -4088,27 +4116,13 @@ if __name__ == "__main__":
                     #ss.to_beautiful_matrix_representation(skip=True)
                     #print(ss.to_matrix_representation())
                     #print(ss.to_one_hot())
-                    #if ss.name == '1':
-                    #    print("Problem exit")
 
     print("Test pyxtal.wp.site space group")
-    for i in range(1, 231):
+    for i in spg_list:
         g = Group(i)
         print('\n', g.number, g.symbol)
-        wp = g[0]
-        if 143 <= i <= 194:
-            ops = wp.get_euclidean_ops()
-            hexagonal = True
-        else:
-            ops = wp.ops
-            hexagonal = False
-
-        if g.symbol[0] in ['A', 'B', 'C', 'I']:
-            ops = ops[:int(len(ops)/2)]
-        elif g.symbol[0] == 'R':
-            ops = ops[:int(len(ops)/3)]
-        elif g.symbol[0] == 'F':
-            ops = ops[:int(len(ops)/4)]
-
-        ss = site_symmetry(ops, g.lattice_type, g.symbol[0], True)
+        ss = g.get_spg_symmetry_object()
         ss.to_beautiful_matrix_representation()
+        #matrix = ss.to_matrix_representation_spg()
+        #print(matrix)
+        #print(sum(sum(matrix)))

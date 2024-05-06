@@ -864,8 +864,8 @@ To access the pyxtal structure
 	    H3C4O4       @ [ 0.5328  0.0993  0.0601]  WP [4a] Site [1] Euler [   0.0    0.0    0.0]
 
 
-Site Symmetry
---------------------------------
+Space Group and Site Symmetry table
+-----------------------------------
 
 PyXtal provides a
 `site_symmetry <pyxtal.symmetry.html#pyxtal.symmetry.site_symmetry>`_ class to handle the conversion of site symmetry symbols and operations.
@@ -972,7 +972,7 @@ Possible combinations include
     ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
 
 
-Finally, a one-hot matrix representation `(15, 13)` can also be obtained via 
+The one-hot matrix representation `(15, 13)` can also be obtained via 
 
 .. code-block:: Python
 
@@ -997,3 +997,48 @@ Finally, a one-hot matrix representation `(15, 13)` can also be obtained via
      [1 0 0 0 0 0 0 0 0 0 0 0 0] # 1
      [1 0 0 0 0 0 0 0 0 0 0 0 0] # 1
     ]
+
+
+Finally, the both Group and Wyckoff_position classes support the access of the symmetry element analysis via
+
+.. code-block:: Python
+
+    from pyxtal.symmetry import Group
+    g = Group(14)
+    ss_spg = g.get_spg_symmetry_object()
+    print('Space group symmetry table', g.number, g.symbol)
+    ss_spg.to_beautiful_matrix_representation()
+
+    for wp in g:
+        print('\nWp symmetry table', wp.get_label())
+        ss_wp = wp.get_site_symmetry_object()
+        ss_wp.to_beautiful_matrix_representation()
+
+::
+
+    Space group symmetry table 14 P21/c
+    Order    Axis       1    -1   2    2_1  m    a    b    c    n    d    3    3_1  3_2  4    -4   4_1  4_2  4_3  -3   6    6_1  6_2  6_3  6_4  6_5  -6   
+       0 ( 0  1  0):    1    1    0    1    0    0    0    1    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0 
+    
+    Wp symmetry table 4e
+    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
+       0 ( 0  1  0):    1    0    0    0    0    0    0    0    0    0      1
+    
+    Wp symmetry table 2d
+    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
+       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    
+    Wp symmetry table 2c
+    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
+       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    
+    Wp symmetry table 2b
+    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
+       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    
+    Wp symmetry table 2a
+    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
+       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    
+
+Note that the space group symmetry has 26 symmetry elements as it includes additional screw axis (`2_1`, `3_1`, `3_2`, `4_1`, `4_2`, `4_3`, `6_1`, `6_2`, `6_3, `6_4`, `6_5`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
