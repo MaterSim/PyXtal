@@ -3432,4 +3432,8 @@ class pyxtal:
                         label = wp.get_label()
                         sites.append((label, xyz[0], xyz[1], xyz[2]))#; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
                         numIons += wp.multiplicity
-            self.build(group, ['C'], [numIons], lattice, [sites])
+            try:
+                self.build(group, ['C'], [numIons], lattice, [sites])
+            except:
+                print("Invalid Build", lattice, numIons, sites)
+                self.valid = False
