@@ -21,7 +21,7 @@ class GULP():
     symm (bool): whether or not impose the symmetry
     """
 
-    def __init__(self, struc, label="_", path='tmp', ff='reax', \
+    def __init__(self, struc, label="_", path='tmp', ff='reaxff', \
                  pstress=None, opt='conp', steps=1000, exe='gulp',\
                  input='gulp.in', output='gulp.log', dump=None,
                  symmetry=False, labels=None):
@@ -40,7 +40,7 @@ class GULP():
             self.species = None
         else:
             raise NotImplementedError("only support ASE atoms object")
-        
+
         self.symmetry = symmetry#; print(self.pyxtal.lattice.ltype)
         self.structure = struc
         self.pstress= pstress
@@ -50,7 +50,7 @@ class GULP():
         self.opt = opt
         self.exe = exe
         self.steps = steps
-        self.folder = path  
+        self.folder = path
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
         self.input = self.folder + '/' + self.label + input
@@ -114,7 +114,7 @@ class GULP():
 
     def write(self):
         a, b, c, alpha, beta, gamma = self.lattice.get_para(degree=True)
-        
+
         with open(self.input, 'w') as f:
             if self.opt == 'conv':
                 f.write('opti stress {:s} conjugate '.format(self.opt))
@@ -130,7 +130,7 @@ class GULP():
             f.write('{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'.format(\
                     a, b, c, alpha, beta, gamma))
             f.write('\nfractional\n')
-            
+
             symbols = []
             if self.symmetry and self.pyxtal is not None:
                 # Use pyxtal here
@@ -192,7 +192,7 @@ class GULP():
 
         with open(self.output, 'r') as f:
             lines = f.readlines()
-        try: 
+        try:
             for i, line in enumerate(lines):
                 if self.symmetry and self.pyxtal.group.symbol[0] != 'P':
                     m = re.match(r'\s*Non-primitive unit cell\s*=\s*(\S+)\s*eV', line)
@@ -255,7 +255,7 @@ class GULP():
 
                 elif line.find(' Cycle: ') != -1:
                     self.iter = int(line.split()[1])
-    
+
                 # asymmetric unit
                 elif line.find('Final asymmetric unit coordinates') != -1:
                     s = i + 6
@@ -316,12 +316,12 @@ class GULP():
             self.energy = None
             print("GULP calculation is wrong, reading------")
 
-def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp", 
+def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp",
                     exe="gulp", path="tmp", label="_", clean=True,
                     symmetry=False, labels=None):
 
-    calc = GULP(struc, steps=steps, label=label, path=path, 
-                pstress=pstress, ff=ff, opt=opt, 
+    calc = GULP(struc, steps=steps, label=label, path=path,
+                pstress=pstress, ff=ff, opt=opt,
                 symmetry=symmetry, labels=labels)
 
     calc.run(clean=clean)
@@ -334,10 +334,10 @@ def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp",
             struc = calc.to_pyxtal()
         else:
             struc = calc.pyxtal
-        #if sum(struc.numIons) == 42: print("SSSSS"); import sys; sys.exit()   
+        #if sum(struc.numIons) == 42: print("SSSSS"); import sys; sys.exit()
         return struc, calc.energy_per_atom, calc.cputime, calc.error
 
-def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp", 
+def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp",
             pstress=None, path="tmp", label="_", clean=True, adjust=False):
     """
     Multiple calls
@@ -345,7 +345,7 @@ def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp",
     """
     time_total = 0
     for opt in optimizations:
-        struc, energy, time, error = single_optimize(struc, ff, 
+        struc, energy, time, error = single_optimize(struc, ff,
         pstress=pstress, opt=opt, exe=exe, path=path, label=label, clean=clean)
 
         time_total += time
@@ -354,7 +354,7 @@ def optimize(struc, ff, optimizations=["conp", "conp"], exe="gulp",
         elif adjust and abs(energy)<1e-8:
             matrix = struc.lattice.matrix
             struc.lattice.set_matrix(matrix*0.8)
-            
+
     return struc, energy, time_total, False
 
 
