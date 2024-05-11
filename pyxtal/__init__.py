@@ -404,8 +404,10 @@ class pyxtal:
             if isinstance(seed, dict):
                 self.from_dict()
             elif isinstance(seed, Atoms): #ASE atoms
-                from pymatgen.io.ase import AseAtomsAdaptor
-                pmg_struc = AseAtomsAdaptor.get_structure(seed)
+                #from pymatgen.io.ase import AseAtomsAdaptor
+                #pmg_struc = AseAtomsAdaptor.get_structure(seed)
+                from pyxtal.util import ase2pymatgen
+                pmg_struc = ase2pymatgen(seed)
                 self._from_pymatgen(pmg_struc, tol, a_tol, style=style)
             elif isinstance(seed, Structure): #Pymatgen
                 self._from_pymatgen(seed, tol, style=style)
@@ -1173,9 +1175,14 @@ class pyxtal:
             N_torsions += len(s.molecule.torsionlist)
         return N_torsions
 
-    def to_ase(self, resort=True, center_only=False):
+    def to_ase(self, resort=True, center_only=False, add_vaccum=True):
         """
         Export to ase Atoms object.
+
+        Args:
+            resort (bool): resort atoms
+            center (bool): dump only molculer center for mol. xtal
+            add_vaccum (bool): add vaccum for 0/1/2D systems
         """
         if self.valid:
             if self.dim > 0:
@@ -1190,11 +1197,17 @@ class pyxtal:
                             species.extend([site.type+1] * site.wp.multiplicity)
                     else:
                         coords, species = self._get_coords_and_species(True)
-                    latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
+                    if add_vaccum:
+                        latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
+                    else:
+                        latt = lattice.matrix
                     atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
                 else:
                     coords, species = self._get_coords_and_species()
-                    latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
+                    if add_vaccum:
+                        latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
+                    else:
+                        latt = lattice.matrix
                     atoms = Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
                 if resort:
                     permutation = np.argsort(atoms.numbers)
@@ -1488,16 +1501,18 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
-    def build(self, group, species, numIons, lattice, sites, tol=1e-2, use_hall=False):
+    def build(self, group, species, numIons, lattice, sites, tol=1e-2, dim=3, use_hall=False):
         """
         Build a atomic crystal based on the necessary input
 
         Args:
-            group: 225
-            species: ['Na', 'Cl']
-            numIons: [4, 4]
+            group (int): 225
+            species (list): ['Na', 'Cl']
+            numIons (list): [4, 4]
             lattice: lattice object
-            sites: [[{"4a": [0.0, 0.0, 0.0]}], [{"4b": [0.5, 0.5, 0.5]}]]
+            sites (list): [[{"4a": [0.0, 0.0, 0.0]}], [{"4b": [0.5, 0.5, 0.5]}]]
+            dim (int):
+            use_hll (bool):
         """
 
         from pyxtal.symmetry import choose_wyckoff
@@ -1508,9 +1523,9 @@ class pyxtal:
         if type(group) == Group:
             self.group = group
         else:
-            self.group = Group(group, use_hall=use_hall)
+            self.group = Group(group, dim=dim, use_hall=use_hall)
 
-        # Lattica needs some special handling heree
+        # Lattica needs some special handling here
         if type(lattice) != Lattice:
             if type(lattice) == np.ndarray:
                 ltype = self.group.lattice_type
@@ -1531,9 +1546,9 @@ class pyxtal:
         #    raise ValueError(msg, lattice)
         self.lattice = lattice
 
-        self.dim = 3
+        self.dim = dim
         self.factor = 1.0
-        self.PBC = [1, 1, 1]
+        self.PBC = self.group.PBC
         self.numIons = numIons
         self.species = species
         numIons_added = np.zeros(len(numIons), dtype=int)
@@ -1560,7 +1575,7 @@ class pyxtal:
                             raise RuntimeError("Cannot interpret site", key)
                 elif len(wp) == 4: # tuple:
                     (key, x, y, z) = wp
-                    _wp = choose_wyckoff(self.group, site=key)
+                    _wp = choose_wyckoff(self.group, site=key, dim=dim)
                     if _wp is not False:
                         if _wp.get_dof() == 0: #fixed pos
                             pt = [0.0, 0.0, 0.0]
@@ -3200,7 +3215,7 @@ class pyxtal:
                     break
         self.from_1d_rep(x, sites)
 
-    def from_1d_rep(self, x, sites):
+    def from_1d_rep(self, x, sites, dim=3):
         """
         An advanced way to build pyxtal from the 1d representation
 
@@ -3237,7 +3252,7 @@ class pyxtal:
 
         spg = sites[0][1].number
         try:
-            self.build(spg, species, numIons, lat, total_sites)
+            self.build(spg, species, numIons, lat, total_sites, dim=dim)
         except:
             print("input x", x)
             print("input build", spg, numIons, lat, total_sites)

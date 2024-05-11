@@ -444,6 +444,26 @@ class TestOptLat(unittest.TestCase):
         pmg2 = c1.to_pymatgen()
         self.assertTrue(sm.StructureMatcher().fit(pmg0, pmg2))
 
+    def test_build_1D(self):
+        lat = Lattice.from_para(6.8472, 6.8472, 3.3198, 90, 90, 90, 'tetragonal')
+        c1 = pyxtal()
+        sites = [[('4g', 0.9236547993389047, 0.0, 0.5), ('4f', 0.39177300078207977, 0.0, 0.0)]]
+        c1.build(30, ['C'], [8], lat, sites=sites, dim=1)
+        self.assertTrue(c1.valid)
+
+    def test_build_2D(self):
+        lat = Lattice.from_para(6.8472, 6.8472, 3.3198, 90, 90, 90, 'tetragonal')
+        c1 = pyxtal()
+        sites = [[('4c', 0.15, 0.50, 0.28), ('4c', 0.59, 0.85, 0.87)]]
+        c1.build(30, ['C'], [8], lat, sites=sites, dim=2)
+        self.assertTrue(c1.valid)
+
+    #def test_build_0D(self):
+    #    lat = Lattice.from_para(2.85, 2.85, 2.85, 90, 90, 90, 'spherical')
+    #    c1 = pyxtal()
+    #    sites = [[('8b', 0.70, 0.70, 0.70)]]
+    #    c1.build(30, ['C'], [8], lat, sites=sites, dim=0)
+    #    self.assertTrue(c1.valid)
 
     def test_transforms(self):
         paras = [
@@ -510,7 +530,7 @@ class TestWP(unittest.TestCase):
             (sg, i, symbol) = d
             wp = Group(sg)[i]
             wp.get_site_symmetry()
-            print("\n========", wp.site_symm, symbol, "==========\n")
+            #print("\n========", wp.site_symm, symbol, "==========\n")
             self.assertTrue(wp.site_symm == symbol)
 
     def test_wp_dof(self):

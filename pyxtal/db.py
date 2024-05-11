@@ -9,6 +9,66 @@ from pyxtal import pyxtal
 import pymatgen.analysis.structure_matcher as sm
 from pyxtal.util import ase2pymatgen
 
+def dftb_opt_par(ids, xtals, skf_dir, steps, folder, criteria):
+    """
+    Run GULP optimization in parallel for a list of atomic xtals
+    Args:
+        xtal: pyxtal instance
+        ff (str): e.g., `reaxff`, `tersoff`
+        path (str): path of calculation folder
+        criteria (dicts): to check if the structure
+    """
+    cwd = os.getcwd()
+    os.chdir(folder)
+    results = []
+    for id, xtal in zip(ids, xtals):
+        res = dftb_opt_single(id, xtal, skf_dir, steps, criteria)
+        (xtal, eng, status) = res
+        if not status:
+            results.append((id, xtal, eng))
+    os.chdir(cwd)
+    return results
+
+def dftb_opt_single(id, xtal, skf_dir, steps, criteria):
+    """
+    Single DFTB optimization for a given atomic xtal
+
+    Args:
+        id (int): id of the give xtal
+        xtal: pyxtal instance
+        skf_dir (str): path of skf files
+        steps (int): number of relaxation steps
+        criteria (dicts): to check if the structure
+    """
+    from pyxtal.interface.dftb import DFTB_relax
+    cwd = os.getcwd()
+    atoms = xtal.to_ase(resort=False)
+    try:
+        s = DFTB_relax(atoms, skf_dir, True, steps, folder='.', logfile='ase.log')
+    except:
+        s = None
+        print("Problem in DFTB Geometry optimization", id)
+        xtal.to_file('bug.cif')
+    os.chdir(cwd)
+
+    if s is not None:
+        c = pyxtal(); c.from_seed(s)
+        eng = s.get_potential_energy()/len(s)
+        stress = np.sum(s.get_stress()[:3])/0.006241509125883258/3
+
+        if criteria is not None:
+            status = xtal.check_validity(criteria)
+        else:
+            status = True
+
+        header = "{:4d}".format(id)
+        dicts = {'validity': status, 'energy': eng, 'stress': stress}
+        print(xtal.get_xtal_string(header=header, dicts=dicts))
+
+        return xtal, eng, status
+    else:
+        return None, None, False
+
 def gulp_opt_par(ids, xtals, ff, path, criteria):
     """
     Run GULP optimization in parallel for a list of atomic xtals
@@ -25,6 +85,7 @@ def gulp_opt_par(ids, xtals, ff, path, criteria):
         if not status:
             results.append((id, xtal, eng))
     return results
+
 
 def gulp_opt_single(id, xtal, ff, path, criteria):
     """
@@ -608,8 +669,26 @@ class database_topology():
         self.db.delete(to_delete)
 
 
+    def select_xtals(self, ids, overwrite, attribute):
+        """
+        Extract xtals based on attribute name.
+        Mostly called by update_row_ff_energy or update_row_dftb_energy.
+        """
+        (min_id, max_id) = ids
+        if min_id is None: min_id = 1
+        if max_id is None: max_id = self.db.count() + 10000
+
+        ids, xtals = [], []
+        for row in self.db.select():
+            if overwrite or not hasattr(row, 'ff_energy'):
+                if min_id <= row.id <= max_id:
+                    xtal = self.get_pyxtal(row.id)
+                    ids.append(row.id)
+                    xtals.append(xtal)
+        return ids, xtals
+
     def update_row_ff_energy(self, ff='reaxff', ids=(None, None), ncpu=1,
-                             calc_folder='tmp',
+                             calc_folder='gulp_calc',
                              criteria=None,
                              overwrite=False):
         """
@@ -623,18 +702,8 @@ class database_topology():
             overwrite (bool): remove the existing attributes
         """
 
-        if not os.path.exists(calc_folder): os.makedirs(calc_folder)
-        (min_id, max_id) = ids
-        if min_id is None: min_id = 1
-        if max_id is None: max_id = self.db.count() + 10000
-
-        ids, xtals = [], []
-        for row in self.db.select():
-            if overwrite or not hasattr(row, 'ff_energy'):
-                if min_id <= row.id <= max_id:
-                    xtal = self.get_pyxtal(row.id)
-                    ids.append(row.id)
-                    xtals.append(xtal)
+        os.makedirs(calc_folder, exist_ok=True)
+        ids, xtals = self.select_xtals(ids, overwrite, 'ff_energy')
 
         gulp_results = []
 
@@ -643,8 +712,7 @@ class database_topology():
             for id, xtal in zip(ids, xtals):
                 res = gulp_opt_single(id, xtal, ff, calc_folder, criteria)
                 (xtal, eng, status) = res
-                if status:
-                    gulp_results.append((id, xtal, eng))
+                if status: gulp_results.append((id, xtal, eng))
         else:
             N_cycle = int(np.ceil(len(ids)/ncpu))
             print("\n# Parallel GULP optimizations", ncpu, N_cycle, len(ids))
@@ -668,9 +736,10 @@ class database_topology():
                            ff_lib=ff,
                            ff_relaxed=xtal.to_file())
 
-    def update_row_dftb_energy(self, skf_dir, cmd, steps=500,
+    def update_row_dftb_energy(self, skf_dir, steps=500,
                                ids=(None, None),
-                               calc_folder='tmp',
+                               ncpu=1,
+                               calc_folder='dftb_calc',
                                criteria=None,
                                overwrite=False):
         """
@@ -678,59 +747,53 @@ class database_topology():
 
         Args:
             skf_dir (str): GULP force field library (e.g., 'reaxff', 'tersoff')
-            cmd (str): DFTB command
             steps (int): relaxation steps
             ids (tuple): row ids e.g., (0, 100)
+            ncpu (int): number of parallel processes
             calc_folder (str): temporary folder for GULP calculations
             overwrite (bool): remove the existing attributes
         """
-        from pyxtal.interface.dftb import DFTB_relax
 
-        if not os.path.exists(calc_folder): os.makedirs(calc_folder)
+        os.makedirs(calc_folder, exist_ok=True)
+        ids, xtals = self.select_xtals(ids, overwrite, 'dftb_energy')
 
-        (min_id, max_id) = ids
-        if min_id is None: min_id = 1
-        if max_id is None: max_id = self.db.count() + 10000
+        dftb_results = []
+        os.chdir(calc_folder)
 
-        cwd = os.getcwd()
-        for row in self.db.select():
-            if overwrite or not hasattr(row, 'dftb_energy'):
-                if min_id <= row.id <= max_id:
-                    xtal = self.get_pyxtal(row.id)
-                    atoms = xtal.to_ase(resort=False)
+        # Serial or Parallel computation
+        if ncpu == 1:
+            for id, xtal in zip(ids, xtals):
+                res = dftb_opt_single(id, xtal, skf_dir, steps, criteria)
+                (xtal, eng, status) = res
+                if status: dftb_results.append((id, xtal, eng))
+        else:
+            N_cycle = int(np.ceil(len(ids)/ncpu))
+            print("\n# Parallel DFTB optimizations", ncpu, N_cycle, len(ids))
+            args_list = []
 
-                    os.environ['ASE_DFTB_COMMAND'] = cmd
+            for i in range(ncpu):
+                id1 = i * N_cycle
+                id2 = min([id1 + N_cycle, len(ids)])
+                folder = self.get_label(i)
+                os.makedirs(folder, exist_ok=True)
+                args_list.append((ids[id1:id2],
+                                  xtals[id1:id2],
+                                  skf_dir,
+                                  steps,
+                                  folder,
+                                  criteria))
 
-                    # Actual geometry optimization
-                    try:
-                        s = DFTB_relax(atoms, skf_dir, True, steps, logfile='ase.log')
-                    except:
-                        s = None
-                        print("Problem in DFTB Geometry optimization", row.id)
-                        xtal.to_file('bug.cif')
-                        os.chdir(cwd)
+            with ProcessPoolExecutor(max_workers=ncpu) as executor:
+                results = [executor.submit(dftb_opt_par, *p) for p in args_list]
+                for result in results:
+                    dftb_results.extend(result.result())
 
-                    #s = DFTB_relax(atoms, skf_dir, True, steps, logfile='ase.log')
-
-                    if s is not None:
-                        c = pyxtal(); c.from_seed(s)
-                        eng = s.get_potential_energy()/len(s)
-                        stress = s.get_stress()/0.006241509125883258
-
-                        if criteria is not None:
-                            status = xtal.check_validity(criteria)
-                        else:
-                            status = True
-
-                        header = "{:4d}".format(row.id)
-                        dicts = {'validity': status, 'energy': eng}
-                        print(xtal.get_xtal_string(header=header, dicts=dicts))
-                        print(" Stress: {:7.2f}{:7.2f}{:7.2f}".format(*stress[:3]))
-
-                        if status:
-                            self.db.update(row.id,
-                                           dftb_energy=eng,
-                                           dftb_relaxed=xtal.to_file())
+        # Wrap up the final results and update db
+        for dftb_result in dftb_results:
+            (id, xtal, eng) = dftb_result
+            self.db.update(id,
+                           dftb_energy=eng,
+                           dftb_relaxed=xtal.to_file())
 
 
     def update_row_topology(self, StructureType='Auto', overwrite=True):
@@ -812,8 +875,8 @@ class database_topology():
         update db description based on robocrys
         Call robocrys: https://github.com/hackingmaterials/robocrystallographer
         """
-
         from robocrys import StructureCondenser, StructureDescriber
+
         condenser = StructureCondenser()
         describer = StructureDescriber()
 
@@ -934,6 +997,15 @@ class database_topology():
                 else:
                     print("====Skippng:  ", label)
 
+    def get_label(self, i):
+        if i < 10:
+            folder = f"cpu00{i}"
+        elif i < 100:
+            folder = f"cpu0{i}"
+        else:
+            folder = f"cpu0{i}"
+        return folder
+
 
 if __name__ == "__main__":
     # open
@@ -945,8 +1017,16 @@ if __name__ == "__main__":
         c = db.get_pyxtal('HXMTAM')
         print(c)
     if True:
+
         db = database_topology('../MOF-Builder/reaxff.db')
-        xtal = db.get_pyxtal(1)
-        print(xtal)
-        db.add_xtal(xtal, kvp={'similarity': 0.1})
-        db.update_row_ff_energy(ncpu=2, ids=(0, 20), overwrite=True)
+        #xtal = db.get_pyxtal(1)
+        #print(xtal)
+        #db.add_xtal(xtal, kvp={'similarity': 0.1})
+
+        db.update_row_ff_energy(ids=(0, 2), overwrite=True)
+        db.update_row_ff_energy(ncpu=2, ids=(2, 20), overwrite=True)
+        # brew install coreutils to get timeout in maca
+        #os.environ['ASE_DFTB_COMMAND'] = 'timeout 1m /Users/qzhu8/opt/dftb+/bin/dftb+ > PREFIX.out'
+        #skf_dir = '/Users/qzhu8/GitHub/MOF-Builder/3ob-3-1/'
+        #db.update_row_dftb_energy(skf_dir, ncpu=1, ids=(0, 2), overwrite=True)
+        #db.update_row_dftb_energy(skf_dir, ncpu=2, ids=(0, 4), overwrite=True)

@@ -417,7 +417,8 @@ def Kgrid(struc, Kresol=0.10, dimension=3):
     """
     Assign kpoints based on the lattice
     """
-    a, b, c, alpha, beta, gamma = struc.get_cell_lengths_and_angles()
+    #a, b, c, alpha, beta, gamma = struc.get_cell_lengths_and_angles()
+    a, b, c, alpha, beta, gamma = struc.cell.cellpar()
     vol = struc.get_volume()
     dist    = np.zeros(3);
     dist[2] = np.abs(vol/(a*b*np.sin(np.radians(gamma))))
