@@ -24,7 +24,7 @@ def dftb_opt_par(ids, xtals, skf_dir, steps, folder, criteria):
     for id, xtal in zip(ids, xtals):
         res = dftb_opt_single(id, xtal, skf_dir, steps, criteria)
         (xtal, eng, status) = res
-        if not status:
+        if status:
             results.append((id, xtal, eng))
     os.chdir(cwd)
     return results
@@ -82,7 +82,7 @@ def gulp_opt_par(ids, xtals, ff, path, criteria):
     for id, xtal in zip(ids, xtals):
         res = gulp_opt_single(id, xtal, ff, path, criteria)
         (xtal, eng, status) = res
-        if not status:
+        if status:
             results.append((id, xtal, eng))
     return results
 
@@ -554,7 +554,7 @@ class database_topology():
         self.db.delete(to_delete)
 
 
-    def clean_structures(self, dtol=2e-3, etol=1e-3):
+    def clean_structures(self, ids=(None, None), dtol=2e-3, etol=1e-3, criteria=None):
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
@@ -565,65 +565,16 @@ class database_topology():
         Args:
             dtol (float): tolerance of density
             etol (float): tolerance of energy
-        """
-
-        unique_rows = []
-        to_delete = []
-
-        for row in self.db.select():
-            unique = True
-            for prop in unique_rows:
-                (natoms, den, ff_energy) = prop
-                if natoms==row.natoms and abs(den-row.density) < dtol:
-                    if hasattr(row, 'ff_energy'):
-                        if abs(row.ff_energy-ff_energy) < etol:
-                            unique = False
-                            break
-                    else:
-                        unique = False
-                        break
-            if unique:
-                if hasattr(row, 'ff_energy'):
-                    unique_rows.append((row.natoms,
-                                        row.density,
-                                        row.ff_energy))
-                else:
-                    unique_rows.append((row.natoms,
-                                        row.density,
-                                        None))
-            else:
-                to_delete.append(row.id)
-        print("The following structures were deleted", to_delete)
-        self.db.delete(to_delete)
-
-    def clean_structures_pmg(self, dtol=5e-2, criteria=None):
-        """
-        Clean up the db by removing the duplicate structures
-        Here we check the follow criteria
-            - same density
-            - pymatgen check
-
-        criteria should look like the following,
-        {'CN': {'C': 3},
-         'cutoff': 1.8,
-         'MAX_energy': -8.00,
-         #'MAX_similarity': 0.2,
-         'BAD_topology': ['hcb'],
-         'BAD_dimension': [0, 2],
-        }
-
-        Args:
-            dtol (float): tolerance of density
             criteria (dict): including
         """
 
         unique_rows = []
         to_delete = []
-
-        for row in self.db.select():
-            xtal = self.get_pyxtal(id=row.id)
+        ids, xtals = self.select_xtals(ids)
+        for id, xtal in zip(ids, xtals):
+            row = self.db.get(id)
+            xtal = self.get_pyxtal(id)
             unique = True
-
             if criteria is not None:
                 if not xtal.check_validity(criteria, True):
                     unique = False
@@ -653,6 +604,95 @@ class database_topology():
 
             if unique:
                 for prop in unique_rows:
+                    (natoms, spg, wps, den, ff_energy) = prop
+                    if natoms==row.natoms and spg==row.space_group_number and wps==row.wps:
+                        if hasattr(row, 'ff_energy') and ff_energy is not None:
+                            if abs(row.ff_energy-ff_energy) < etol:
+                                unique = False
+                                break
+                        elif abs(den-row.density) < dtol:
+                            unique = False
+                            break
+
+            if unique:
+                if hasattr(row, 'ff_energy'):
+                    unique_rows.append((row.natoms,
+                                        row.space_group_number,
+                                        row.wps,
+                                        row.density,
+                                        row.ff_energy))
+                else:
+                    unique_rows.append((row.natoms,
+                                        row.space_group_number,
+                                        row.wps,
+                                        row.density,
+                                        None))
+            else:
+                to_delete.append(row.id)
+        print("The following structures were deleted", to_delete)
+        self.db.delete(to_delete)
+
+    def clean_structures_pmg(self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None):
+        """
+        Clean up the db by removing the duplicate structures
+        Here we check the follow criteria
+            - same density
+            - pymatgen check
+
+        criteria should look like the following,
+        {'CN': {'C': 3},
+         'cutoff': 1.8,
+         'MAX_energy': -8.00,
+         #'MAX_similarity': 0.2,
+         'BAD_topology': ['hcb'],
+         'BAD_dimension': [0, 2],
+        }
+
+        Args:
+            dtol (float): tolerance of density
+            criteria (dict): including
+        """
+
+        unique_rows = []
+        to_delete = []
+
+        ids, xtals = self.select_xtals(ids)
+        if min_id is None: min_id = min(ids)
+
+        for id, xtal in zip(ids, xtals):
+            row = self.db.get(id)
+            xtal = self.get_pyxtal(id)
+            unique = True
+
+            if id > min_id and criteria is not None:
+                if not xtal.check_validity(criteria, True):
+                    unique = False
+                    print('Found unsatisfied criteria', row.id, row.space_group_number, row.wps)
+
+                if unique:
+                    if 'MAX_energy' in criteria and hasattr(row, 'ff_energy') \
+                        and row.ff_energy > criteria['MAX_energy']:
+                        unique = False
+                        print('Unsatisfied energy', row.id, row.ff_energy, row.space_group_number, row.wps)
+                if unique:
+                    if 'MAX_similarity' in criteria and hasattr(row, 'similarity') \
+                        and row.similarity > criteria['MAX_similarity']:
+                        unique = False
+                        print('Unsatisfied similarity', row.id, row.similarity, row.space_group_number, row.wps)
+                if unique:
+                    if 'BAD_topology' in criteria and hasattr(row, 'topology') \
+                        and row.topology[:3] in criteria['BAD_topology']:
+                        unique = False
+                        print('Unsatisfied topology', row.id, row.topology, row.space_group_number, row.wps)
+                if unique:
+                    if 'BAD_dimension' in criteria and hasattr(row, 'dimension') \
+                        and row.dimension in criteria['BAD_dimension']:
+                        unique = False
+                        print('Unsatisfied dimension', row.id, row.topology, row.space_group_number, row.wps)
+
+
+            if unique and id > min_id:
+                for prop in unique_rows:
                     (rowid, den) = prop
                     if abs(den-row.density) < dtol:
                         ref_pmg = xtal.to_pymatgen()
@@ -669,7 +709,7 @@ class database_topology():
         self.db.delete(to_delete)
 
 
-    def select_xtals(self, ids, overwrite, attribute):
+    def select_xtals(self, ids, overwrite=False, attribute=None):
         """
         Extract xtals based on attribute name.
         Mostly called by update_row_ff_energy or update_row_dftb_energy.
@@ -680,11 +720,13 @@ class database_topology():
 
         ids, xtals = [], []
         for row in self.db.select():
-            if overwrite or not hasattr(row, 'ff_energy'):
+            if overwrite or attribute is None or not hasattr(row, attribute):
                 if min_id <= row.id <= max_id:
                     xtal = self.get_pyxtal(row.id)
                     ids.append(row.id)
                     xtals.append(xtal)
+                    if len(xtals) % 100 == 0:
+                        print('Loading xtals from db', len(xtals))
         return ids, xtals
 
     def update_row_ff_energy(self, ff='reaxff', ids=(None, None), ncpu=1,
@@ -728,13 +770,14 @@ class database_topology():
                 for result in results:
                     gulp_results.extend(result.result())
 
-        # Wrap up the final results and update db
+        print("Wrap up the final results and update db", len(gulp_results))
         for gulp_result in gulp_results:
             (id, xtal, eng) = gulp_result
-            self.db.update(id,
-                           ff_energy=eng,
-                           ff_lib=ff,
-                           ff_relaxed=xtal.to_file())
+            if xtal is not None:
+                self.db.update(id,
+                               ff_energy=eng,
+                               ff_lib=ff,
+                               ff_relaxed=xtal.to_file())
 
     def update_row_dftb_energy(self, skf_dir, steps=500,
                                ids=(None, None),
