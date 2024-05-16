@@ -1,4 +1,4 @@
-import os
+import os, re
 from ase.io import read
 from ase.optimize.fire import FIRE
 from ase.constraints import ExpCellFilter
@@ -10,7 +10,8 @@ from ase.units import Hartree, Bohr
 import numpy as np
 
 
-def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06, write_band=False, use_omp=False):
+def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06,
+                     scc_iter=500, write_band=False, use_omp=False):
     """
     Generate the DFTB Hamiltonian for DFTB+
     """
@@ -64,7 +65,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06, write_ban
 
     kwargs = {'Hamiltonian_SCC': 'yes',
               'Hamiltonian_SCCTolerance': scc_error, #1e-06,
-              'Hamiltonian_MaxSCCIterations': 1000,
+              'Hamiltonian_MaxSCCIterations': scc_iter, #1000,
               #'Hamiltonian_Mixer': 'DIIS{}', #Default is Broyden
               #'Hamiltonian_Dispersion': dispersion,
               'slako_dir': skf_dir,
@@ -159,7 +160,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06, write_ban
 def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
                fmax=0.1, kresol=0.10, folder='tmp', disp='D3', \
                mask=None, symmetrize=True, logfile=None, \
-               scc_error=1e-6, use_omp=False):
+               scc_error=1e-6, scc_iter=500, use_omp=False):
     """
     DFTB optimizer based on ASE
 
@@ -269,6 +270,7 @@ class DFTB():
                  prefix = 'geo_final',
                  use_omp = False,
                  scc_error = 1e-6,
+                 scc_iter = 500,
                 ):
 
         self.struc = struc
@@ -281,6 +283,7 @@ class DFTB():
         self.prefix = prefix
         self.use_omp = use_omp
         self.scc_error = scc_error
+        self.scc_iter = scc_iter
         if not os.path.exists(self.folder):
            os.makedirs(self.folder)
 
@@ -302,6 +305,7 @@ class DFTB():
         atom_types = set(self.struc.get_chemical_symbols())
         kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts,
                                   scc_error=self.scc_error,
+                                  scc_iter=self.scc_iter,
                                   use_omp=self.use_omp)
 
         if mode in ['relax', 'vc-relax']:
@@ -369,11 +373,11 @@ class DFTB():
         cwd = os.getcwd()
         os.chdir(self.folder)
 
-        calc = self.get_calculator(mode, step, ftol, FixAngles, md_params=md_params)
-        self.struc.set_calculator(calc)
+        self.calc = self.get_calculator(mode, step, ftol, FixAngles, md_params=md_params)
+        self.struc.set_calculator(self.calc)
         # self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
-        calc.calculate(self.struc)
+        self.calc.calculate(self.struc)
         if mode in ['relax', 'vc-relax']:
             final = read(self.prefix+'.gen')
         else:
@@ -382,7 +386,7 @@ class DFTB():
         # get the final energy
         energy = self.struc.get_potential_energy()
 
-        with open(self.label+'.out') as f:
+        with open(self.label + '.out') as f:
             l = f.readlines()
             self.version = l[2]
         os.chdir(cwd)
@@ -626,34 +630,53 @@ class Dftb(FileIOCalculator):
         """ all results are read from results.tag file
             It will be destroyed after it is read to avoid
             reading it once again after some runtime error """
-
         with open(os.path.join(self.directory, 'results.tag'), 'r') as fd:
             self.lines = fd.readlines()
+        if len(self.lines) == 0:
+            #print("READ RESULTS from test.out")
+            self.results['energy'] = self.read_energy()
+            self.results['forces'] = None
+            self.results['stress'] = None
+        else:
+            self.atoms = self.atoms_input
+            self.results['energy'] = float(self.lines[1])*Hartree
+            forces = self.read_forces()
+            self.results['forces'] = forces
 
-        self.atoms = self.atoms_input
-        self.results['energy'] = float(self.lines[1])*Hartree
-        forces = self.read_forces()
-        self.results['forces'] = forces
+            # stress stuff begins
+            sstring = 'stress'
+            have_stress = False
+            stress = list()
+            for iline, line in enumerate(self.lines):
+                if sstring in line:
+                    have_stress = True
+                    start = iline + 1
+                    end = start + 3
+                    for i in range(start, end):
+                        cell = [float(x) for x in self.lines[i].split()]
+                        stress.append(cell)
+            if have_stress:
+                stress = -np.array(stress) * Hartree / Bohr**3
+                self.results['stress'] = stress.flat[[0, 4, 8, 5, 2, 1]]
+            # stress stuff ends
 
-        # stress stuff begins
-        sstring = 'stress'
-        have_stress = False
-        stress = list()
-        for iline, line in enumerate(self.lines):
-            if sstring in line:
-                have_stress = True
-                start = iline + 1
-                end = start + 3
-                for i in range(start, end):
-                    cell = [float(x) for x in self.lines[i].split()]
-                    stress.append(cell)
-        if have_stress:
-            stress = -np.array(stress) * Hartree / Bohr**3
-            self.results['stress'] = stress.flat[[0, 4, 8, 5, 2, 1]]
-        # stress stuff ends
+            # calculation was carried out with atoms written in write_input
+            os.remove(os.path.join(self.directory, 'results.tag'))
 
-        # calculation was carried out with atoms written in write_input
-        os.remove(os.path.join(self.directory, 'results.tag'))
+    def read_energy(self):
+        """
+        If SCC is not converged, read the last step energy from test.out
+        """
+        outfile = self.label + '.out'
+        energies = []
+        with open(os.path.join(self.directory, outfile), 'r') as fd:
+            lines = fd.readlines()
+        for line in lines:
+            m = re.match(r'Total Energy:\s+[-\d.]+ H\s+([-.\d]+) eV', line)
+            if m:
+                energies.append(float(m.group(1)))
+        return energies[-1]
+
 
     def read_forces(self):
         """Read Forces from dftb output file (results.tag)."""

@@ -8,6 +8,7 @@ from ase.db import connect
 from pyxtal import pyxtal
 import pymatgen.analysis.structure_matcher as sm
 from pyxtal.util import ase2pymatgen
+from ase.calculators.calculator import CalculationFailed
 
 def dftb_opt_par(ids, xtals, skf_dir, steps, folder, symmetrize, criteria):
     """
@@ -29,7 +30,7 @@ def dftb_opt_par(ids, xtals, skf_dir, steps, folder, symmetrize, criteria):
     os.chdir(cwd)
     return results
 
-def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.04):
+def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05):
     """
     Single DFTB optimization for a given atomic xtal
 
@@ -44,21 +45,33 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.04)
     cwd = os.getcwd()
     atoms = xtal.to_ase(resort=False)
     eng = None
+    stress = None
     try:
         if symmetrize:
-            s = DFTB_relax(atoms, skf_dir, True, 250,
+            s = DFTB_relax(atoms, skf_dir, True, int(steps/2),
                            kresol=kresol*1.2, folder='.',
-                           scc_error = 0.1,
+                           scc_iter = 100,
                            logfile='ase.log')
-            s = DFTB_relax(atoms, skf_dir, True, steps,
+            s = DFTB_relax(atoms, skf_dir, True, int(steps/2),
                            kresol=kresol, folder='.',
                            scc_error = 1e-5,
+                           scc_iter = 100,
                            logfile='ase.log')
+            stress = np.sum(s.get_stress()[:3])/0.006241509125883258/3
         else:
-            my = DFTB(atoms, skf_dir, kresol=kresol*1.2, folder='.', scc_error=0.1)
-            s, eng = my.run(mode='vc-relax', step=250)
-            my = DFTB(s, skf_dir, kresol=kresol, folder='.', scc_error=1e-4)
-            s, eng = my.run(mode='vc-relax', step=steps)
+            my = DFTB(atoms, skf_dir, kresol=kresol*1.5, folder='.',
+                      scc_error=0.1, scc_iter=100)
+            s, eng = my.run(mode='vc-relax', step=int(steps/2))
+            my = DFTB(s, skf_dir, kresol=kresol, folder='.',
+                      scc_error=1e-4, scc_iter=100)
+            s, eng = my.run(mode='vc-relax', step=int(steps/2))
+            s = my.struc
+    except CalculationFailed:
+        # This is due to covergence error in geometry optimization
+        # Here we simply read the last energy
+        my.calc.read_results()
+        eng = my.calc.results['energy']
+        s = my.struc
     except:
         s = None
         print("Problem in DFTB Geometry optimization", id)
@@ -71,7 +84,6 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.04)
             eng = s.get_potential_energy()/len(s)
         else:
             eng /= len(s)
-        stress = np.sum(s.get_stress()[:3])/0.006241509125883258/3
 
         if criteria is not None:
             status = xtal.check_validity(criteria)
@@ -79,7 +91,8 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.04)
             status = True
 
         header = "{:4d}".format(id)
-        dicts = {'validity': status, 'energy': eng, 'stress': stress}
+        dicts = {'validity': status, 'energy': eng}
+        if stress is not None: dicts['stress'] = stress
         print(xtal.get_xtal_string(header=header, dicts=dicts))
 
         return xtal, eng, status
