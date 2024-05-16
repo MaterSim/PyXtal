@@ -9,7 +9,7 @@ from pyxtal import pyxtal
 import pymatgen.analysis.structure_matcher as sm
 from pyxtal.util import ase2pymatgen
 
-def dftb_opt_par(ids, xtals, skf_dir, steps, folder, criteria):
+def dftb_opt_par(ids, xtals, skf_dir, steps, folder, symmetrize, criteria):
     """
     Run GULP optimization in parallel for a list of atomic xtals
     Args:
@@ -22,14 +22,14 @@ def dftb_opt_par(ids, xtals, skf_dir, steps, folder, criteria):
     os.chdir(folder)
     results = []
     for id, xtal in zip(ids, xtals):
-        res = dftb_opt_single(id, xtal, skf_dir, steps, criteria)
+        res = dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria)
         (xtal, eng, status) = res
         if status:
             results.append((id, xtal, eng))
     os.chdir(cwd)
     return results
 
-def dftb_opt_single(id, xtal, skf_dir, steps, criteria):
+def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.04):
     """
     Single DFTB optimization for a given atomic xtal
 
@@ -40,20 +40,37 @@ def dftb_opt_single(id, xtal, skf_dir, steps, criteria):
         steps (int): number of relaxation steps
         criteria (dicts): to check if the structure
     """
-    from pyxtal.interface.dftb import DFTB_relax
+    from pyxtal.interface.dftb import DFTB_relax, DFTB
     cwd = os.getcwd()
     atoms = xtal.to_ase(resort=False)
+    eng = None
     try:
-        s = DFTB_relax(atoms, skf_dir, True, steps, folder='.', logfile='ase.log')
+        if symmetrize:
+            s = DFTB_relax(atoms, skf_dir, True, 250,
+                           kresol=kresol*1.2, folder='.',
+                           scc_error = 0.1,
+                           logfile='ase.log')
+            s = DFTB_relax(atoms, skf_dir, True, steps,
+                           kresol=kresol, folder='.',
+                           scc_error = 1e-5,
+                           logfile='ase.log')
+        else:
+            my = DFTB(atoms, skf_dir, kresol=kresol*1.2, folder='.', scc_error=0.1)
+            s, eng = my.run(mode='vc-relax', step=250)
+            my = DFTB(s, skf_dir, kresol=kresol, folder='.', scc_error=1e-4)
+            s, eng = my.run(mode='vc-relax', step=steps)
     except:
         s = None
         print("Problem in DFTB Geometry optimization", id)
-        xtal.to_file('bug.cif')
+        xtal.to_file('bug.cif')#; import sys; sys.exit()
     os.chdir(cwd)
 
     if s is not None:
         c = pyxtal(); c.from_seed(s)
-        eng = s.get_potential_energy()/len(s)
+        if eng is None:
+            eng = s.get_potential_energy()/len(s)
+        else:
+            eng /= len(s)
         stress = np.sum(s.get_stress()[:3])/0.006241509125883258/3
 
         if criteria is not None:
@@ -429,27 +446,39 @@ class database_topology():
         self.db_name = db_name
         self.db = connect(db_name)
         self.keys = ['space_group_number',
+                     'similarity0',
                      'similarity',
-                     'ff_energy',
                      'density',
                      'dof',
                      'topology',
+                     'topology_detail',
                      'dimension',
-                     'similarity0',
-                     'wps'
+                     'wps',
+                     'ff_energy',
+                     'ff_lib',
+                     'ff_relaxed',
+                     'dftb_energy',
+                     'dftb_relaxed',
                     ]
         self.matcher = sm.StructureMatcher(ltol=ltol, stol=stol, angle_tol=atol)
 
     def vacuum(self):
         self.db.vacuum()
 
-    def get_pyxtal(self, id):
+    def get_pyxtal(self, id, use_ff):
+        """
+        Get pyxtal based on row_id, if use_ff, get pyxtal from the ff_relaxed file
+        """
         from pyxtal import pyxtal
         from pyxtal.util import ase2pymatgen
+        from pymatgen.core import Structure
 
         row = self.db.get(id) #; print(id, row.id)
-        atom = self.db.get_atoms(id=id)
-        pmg = ase2pymatgen(atom)
+        if use_ff and hasattr(row, 'ff_relaxed'):
+            pmg = Structure.from_str(row.ff_relaxed, fmt='cif')
+        else:
+            atom = self.db.get_atoms(id=id)
+            pmg = ase2pymatgen(atom)
         xtal = pyxtal()
         try:
             xtal.from_seed(pmg)
@@ -489,6 +518,51 @@ class database_topology():
         atoms = xtal.to_ase(resort=False)
         self.db.write(atoms, key_value_pairs=kvp)
 
+    def add_strucs_from_db(self, db_file, check=False, tol=0.1, freq=50):
+        """
+        Add new structures from the given db_file
+
+        Args:
+            db_file (str): database path
+            tol (float): tolerance in angstrom for symmetry detection
+            freq (int): print frequency
+        """
+        print("\nAdding new strucs from {:s}".format(db_file))
+
+        count = 0
+        with connect(db_file) as db:
+            for row in db.select():
+                atoms = row.toatoms()
+                xtal = pyxtal()
+                try:
+                    xtal.from_seed(atoms, tol=tol)
+                except:
+                    xtal = None
+                if xtal is not None and xtal.valid:
+                    if check:
+                        add = self.check_new_structure(xtal)
+                    else:
+                        add = True
+                    if add:
+                        kvp = {}
+                        for key in self.keys:
+                            if hasattr(row, key):
+                                kvp[key] = getattr(row, key)
+                            elif key == 'space_group_number':
+                                kvp[key] = xtal.group.number
+                            elif key == 'density':
+                                kvp[key] = xtal.get_density()
+                            elif key == 'dof':
+                                kvp[key] = xtal.get_dof()
+                            elif key == 'wps':
+                                kvp[key] == str(s.wp.get_label() for s in xtal.atom_sites)
+                        self.db.write(atoms, key_value_pairs=kvp)
+                        count += 1
+
+                if count % freq == 0:
+                    print("Adding {:4d} strucs from {:s}".format(count, db_file))
+
+
     def check_new_structure(self, xtal, same_group=True):
         """
         Check if the input xtal already exists in the db
@@ -500,11 +574,10 @@ class database_topology():
 
         s_pmg = xtal.to_pymatgen()
         for row in self.db.select():
-            ref = self.db.get_atoms(id=row.id)
-            ref_pmg = None
             if same_group:
                 if row.space_group_number != xtal.group.number:
                     continue
+            ref = self.db.get_atoms(id=row.id)
             ref_pmg = ase2pymatgen(ref)
             if self.matcher.fit(s_pmg, ref_pmg, symmetric=True):
                 return False
@@ -534,7 +607,11 @@ class database_topology():
                 if natoms==row.natoms and spg == row.space_group_number \
                     and wps == row.wps:
                     if hasattr(row, 'topology'):
-                        if topology != 'aaa' and row.topology == topology:
+                        if row.topology == 'aaa':
+                            if row.topology_detail == topology:
+                                unique = False
+                                break
+                        elif row.topology == topology:
                             unique = False
                             break
             if unique:
@@ -542,7 +619,7 @@ class database_topology():
                     unique_rows.append((row.natoms,
                                         row.space_group_number,
                                         row.wps,
-                                        row.topology))
+                                        row.topology if row.topology !='aaa' else row.topology_detail))
                 else:
                     unique_rows.append((row.natoms,
                                         row.space_group_number,
@@ -709,10 +786,14 @@ class database_topology():
         self.db.delete(to_delete)
 
 
-    def select_xtals(self, ids, overwrite=False, attribute=None):
+    def select_xtals(self, ids, overwrite=False, attribute=None, use_ff=False):
         """
         Extract xtals based on attribute name.
         Mostly called by update_row_ff_energy or update_row_dftb_energy.
+
+        Args:
+            ids:
+            overwrite:
         """
         (min_id, max_id) = ids
         if min_id is None: min_id = 1
@@ -722,7 +803,7 @@ class database_topology():
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
                 if min_id <= row.id <= max_id:
-                    xtal = self.get_pyxtal(row.id)
+                    xtal = self.get_pyxtal(row.id, use_ff)
                     ids.append(row.id)
                     xtals.append(xtal)
                     if len(xtals) % 100 == 0:
@@ -756,6 +837,7 @@ class database_topology():
                 (xtal, eng, status) = res
                 if status: gulp_results.append((id, xtal, eng))
         else:
+            if len(ids) < ncpu: ncpu = len(ids)
             N_cycle = int(np.ceil(len(ids)/ncpu))
             print("\n# Parallel GULP optimizations", ncpu, N_cycle, len(ids))
             args_list = []
@@ -781,9 +863,11 @@ class database_topology():
 
     def update_row_dftb_energy(self, skf_dir, steps=500,
                                ids=(None, None),
+                               use_ff = True,
                                ncpu=1,
                                calc_folder='dftb_calc',
                                criteria=None,
+                               symmetrize=False,
                                overwrite=False):
         """
         Update row ff_energy with GULP calculator
@@ -794,11 +878,12 @@ class database_topology():
             ids (tuple): row ids e.g., (0, 100)
             ncpu (int): number of parallel processes
             calc_folder (str): temporary folder for GULP calculations
+            symmetrize (bool): impose symmetry in optimization
             overwrite (bool): remove the existing attributes
         """
 
         os.makedirs(calc_folder, exist_ok=True)
-        ids, xtals = self.select_xtals(ids, overwrite, 'dftb_energy')
+        ids, xtals = self.select_xtals(ids, overwrite, 'dftb_energy', use_ff)
 
         dftb_results = []
         os.chdir(calc_folder)
@@ -806,10 +891,12 @@ class database_topology():
         # Serial or Parallel computation
         if ncpu == 1:
             for id, xtal in zip(ids, xtals):
-                res = dftb_opt_single(id, xtal, skf_dir, steps, criteria)
+                res = dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria)
                 (xtal, eng, status) = res
                 if status: dftb_results.append((id, xtal, eng))
         else:
+            # reset ncpus if the cpu is greater than the actual number of jobs
+            if len(ids) < ncpu: ncpu = len(ids)
             N_cycle = int(np.ceil(len(ids)/ncpu))
             print("\n# Parallel DFTB optimizations", ncpu, N_cycle, len(ids))
             args_list = []
@@ -824,6 +911,7 @@ class database_topology():
                                   skf_dir,
                                   steps,
                                   folder,
+                                  symmetrize,
                                   criteria))
 
             with ProcessPoolExecutor(max_workers=ncpu) as executor:
@@ -858,17 +946,19 @@ class database_topology():
             """
             dim = 0
             name = ""
+            detail = 'None'
             for i, x in enumerate(topology_info):
                 (d, n) = x
                 if d > dim: dim = d
                 tmp = n.split(',')[0]
                 if tmp.startswith("UNKNOWN"):
+                    detail = tmp[7:] #tuple(int(num) for num in tmp[7:].split())
                     tmp = 'aaa'
                 elif tmp.startswith("unstable"):
                     tmp = 'unstable'
                 name += tmp
                 if i + 1 < len(topology_info): name += '-'
-            return dim, name
+            return dim, name, detail
 
         jl = juliacall.newmodule("MOF_Builder")
         jl.seval("using CrystalNets")
@@ -904,14 +994,14 @@ class database_topology():
                         topo.append((dim, name))
 
                     # The maximum dimensionality and topology name
-                    dim, name = parse_topology(topo)
+                    dim, name, detail = parse_topology(topo)
                 except:
-                    dim, name = 3, 'error'
-                print("Updating", row.space_group_number, row.wps, dim, name)
+                    dim, name, detail = 3, 'error', 'error'
+                print("Updating Topology", row.space_group_number, row.wps, dim, name, detail[:10])
                 # Unknown will be labeled as aaa
-                self.db.update(row.id, topology=name, dimension=dim)
+                self.db.update(row.id, topology=name, dimension=dim, topology_detail=detail)
             else:
-                print("Existing", row.topology)
+                print("Existing Topology", row.topology)
 
     def update_db_description(self):
         """
@@ -1006,7 +1096,7 @@ class database_topology():
                         xtal = xtal.to_subgroup(paths)
                         number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
 
-                    label = os.path.join(folder, '{:d}-{:d}-{:s}'.format(id, number, symbol))
+                    label = os.path.join(folder, '{:d}-{:d}-{:s}-N{:d}'.format(id, number, symbol, sum(xtal.numIons)))
 
                     if criteria is not None:
                         status = xtal.check_validity(criteria, True)
@@ -1025,7 +1115,7 @@ class database_topology():
                         label += '-S{:.3f}'.format(sim)
                     except:
                         print('Problem in setting site coordination')
-                    if len(label)>40: label = label[:40]
+                    if len(label) > 40: label = label[:40]
 
                     if den is not None: label += '-D{:.2f}'.format(abs(den))
                     if eng is not None: label += '-E{:.3f}'.format(abs(eng))
@@ -1061,15 +1151,16 @@ if __name__ == "__main__":
         print(c)
     if True:
 
-        db = database_topology('../MOF-Builder/reaxff.db')
+        db = database_topology('../MOF-Builder/C-sp2/sp2-sacada-0506.db')
         #xtal = db.get_pyxtal(1)
         #print(xtal)
         #db.add_xtal(xtal, kvp={'similarity': 0.1})
 
-        db.update_row_ff_energy(ids=(0, 2), overwrite=True)
-        db.update_row_ff_energy(ncpu=2, ids=(2, 20), overwrite=True)
+        #db.update_row_ff_energy(ids=(0, 2), overwrite=True)
+        #db.update_row_ff_energy(ncpu=2, ids=(2, 20), overwrite=True)
         # brew install coreutils to get timeout in maca
         #os.environ['ASE_DFTB_COMMAND'] = 'timeout 1m /Users/qzhu8/opt/dftb+/bin/dftb+ > PREFIX.out'
-        #skf_dir = '/Users/qzhu8/GitHub/MOF-Builder/3ob-3-1/'
+        os.environ['ASE_DFTB_COMMAND'] = '/Users/qzhu8/opt/dftb+/bin/dftb+ > PREFIX.out'
+        skf_dir = '/Users/qzhu8/GitHub/MOF-Builder/3ob-3-1/'
         #db.update_row_dftb_energy(skf_dir, ncpu=1, ids=(0, 2), overwrite=True)
-        #db.update_row_dftb_energy(skf_dir, ncpu=2, ids=(0, 4), overwrite=True)
+        db.update_row_dftb_energy(skf_dir, ncpu=1, ids=(17, 17), overwrite=True)

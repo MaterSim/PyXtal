@@ -10,7 +10,7 @@ from ase.units import Hartree, Bohr
 import numpy as np
 
 
-def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=False):
+def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06, write_band=False, use_omp=False):
     """
     Generate the DFTB Hamiltonian for DFTB+
     """
@@ -63,7 +63,7 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
 
 
     kwargs = {'Hamiltonian_SCC': 'yes',
-              'Hamiltonian_SCCTolerance': 1e-06,
+              'Hamiltonian_SCCTolerance': scc_error, #1e-06,
               'Hamiltonian_MaxSCCIterations': 1000,
               #'Hamiltonian_Mixer': 'DIIS{}', #Default is Broyden
               #'Hamiltonian_Dispersion': dispersion,
@@ -158,7 +158,8 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=False, use_omp=
 
 def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
                fmax=0.1, kresol=0.10, folder='tmp', disp='D3', \
-               mask=None, symmetrize=True, logfile=None, use_omp=False):
+               mask=None, symmetrize=True, logfile=None, \
+               scc_error=1e-6, use_omp=False):
     """
     DFTB optimizer based on ASE
 
@@ -174,7 +175,9 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
     os.chdir(folder)
     if type(kresol) != list: kpts = Kgrid(struc, kresol)
     atom_types = set(struc.get_chemical_symbols())
-    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts, use_omp=use_omp)
+    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts,
+                              scc_error=scc_error,
+                              use_omp=use_omp)
 
     calc = Dftb(label='test',
                 atoms=struc,
@@ -265,6 +268,7 @@ class DFTB():
                  label = 'test',
                  prefix = 'geo_final',
                  use_omp = False,
+                 scc_error = 1e-6,
                 ):
 
         self.struc = struc
@@ -276,6 +280,7 @@ class DFTB():
         self.kpts = Kgrid(struc, kresol)
         self.prefix = prefix
         self.use_omp = use_omp
+        self.scc_error = scc_error
         if not os.path.exists(self.folder):
            os.makedirs(self.folder)
 
@@ -295,7 +300,9 @@ class DFTB():
         """
         if eVperA: ftol *= 0.194469064593167E-01
         atom_types = set(self.struc.get_chemical_symbols())
-        kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts, use_omp=self.use_omp)
+        kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts,
+                                  scc_error=self.scc_error,
+                                  use_omp=self.use_omp)
 
         if mode in ['relax', 'vc-relax']:
             #kwargs['Driver_'] = 'ConjugateGradient'
