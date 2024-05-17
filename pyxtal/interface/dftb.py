@@ -675,8 +675,18 @@ class Dftb(FileIOCalculator):
             m = re.match(r'Total Energy:\s+[-\d.]+ H\s+([-.\d]+) eV', line)
             if m:
                 energies.append(float(m.group(1)))
-        return energies[-1]
-
+        if len(energies) > 0:
+            return energies[-1]
+        else:
+            try:
+                #   100   -0.38553421E+03    0.29798304E-03    0.12389437E-01
+                #ERROR!
+                #-> SCC is NOT converged, maximal SCC iterations exceeded
+                print("Cannot read energy from this file", os.getcwd())
+                eng = float(lines[-3].split()[1]) * 27.2114 # hatree to eV
+                return eng
+            except:
+                return 1.0e+5
 
     def read_forces(self):
         """Read Forces from dftb output file (results.tag)."""
