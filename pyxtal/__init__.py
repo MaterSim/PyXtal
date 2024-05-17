@@ -3452,3 +3452,9 @@ class pyxtal:
             except:
                 print("Invalid Build", lattice, numIons, sites)
                 self.valid = False
+
+    def get_Pearson_Symbol(self):
+        """
+        Return the Pearson symbol: https://en.wikipedia.org/wiki/Pearson_symbol
+        """
+        return self.group.lattice_type[0] + self.group.symbol[0] + str(sum(self.numIons))
