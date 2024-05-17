@@ -459,6 +459,7 @@ class database_topology():
         self.db_name = db_name
         self.db = connect(db_name)
         self.keys = ['space_group_number',
+                     'pearson_symbol',
                      'similarity0',
                      'similarity',
                      'density',
@@ -478,7 +479,7 @@ class database_topology():
     def vacuum(self):
         self.db.vacuum()
 
-    def get_pyxtal(self, id, use_ff):
+    def get_pyxtal(self, id, use_ff=True):
         """
         Get pyxtal based on row_id, if use_ff, get pyxtal from the ff_relaxed file
         """
@@ -523,6 +524,7 @@ class database_topology():
         dof = xtal.get_dof()
         wps = [s.wp.get_label() for s in xtal.atom_sites]
         _kvp = {"space_group_number": spg_num,
+                'pearson_symbol': xtal.get_Pearson_Symbol(),
                 "wps": str(wps),
                 "density": density,
                 "dof": dof,
@@ -569,6 +571,9 @@ class database_topology():
                                 kvp[key] = xtal.get_dof()
                             elif key == 'wps':
                                 kvp[key] == str(s.wp.get_label() for s in xtal.atom_sites)
+                            elif key == 'pearson_symbol':
+                                kvp[key] = xtal.get_Pearson_Symbol()
+
                         self.db.write(atoms, key_value_pairs=kvp)
                         count += 1
 
@@ -1062,7 +1067,9 @@ class database_topology():
                 shutil.rmtree(folder)
                 os.makedirs(folder)
 
-        keys = ['space_group_number',
+        keys = [
+                'pearson_symbol',
+                'space_group_number',
                 'density',
                 'dof',
                 'similarity',
@@ -1074,10 +1081,11 @@ class database_topology():
             spg = row.space_group_number
             den = row.density
             dof = row.dof
+            ps = row.pearson_symbol
             sim = row.similarity if hasattr(row, 'similarity') else None
             top = row.topology if hasattr(row, 'topology') else None
             eng = row.ff_energy if hasattr(row, 'ff_energy') else None
-            properties.append([row.id, spg, den, dof, sim, eng, top])
+            properties.append([row.id, ps, spg, den, dof, sim, eng, top])
             atoms.append(self.db.get_atoms(id=row.id))
 
         if sort_by in keys:
@@ -1087,12 +1095,12 @@ class database_topology():
             raise ValueError("Cannot sort by", sort_by)
 
         print("====Exporting {:} structures".format(len(atoms)))
-        if len(atoms)>0:
+        if len(atoms) > 0:
             properties = np.array(properties)
             mids = np.argsort(properties[:, col])
 
             for mid in mids:
-                [id, spg, den, dof, sim, eng, top] = properties[mid]
+                [id, ps, spg, den, dof, sim, eng, top] = properties[mid]
                 id = int(id)
                 spg = int(spg)
                 sim = float(sim)
@@ -1109,7 +1117,7 @@ class database_topology():
                         xtal = xtal.to_subgroup(paths)
                         number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
 
-                    label = os.path.join(folder, '{:d}-{:d}-{:s}-N{:d}'.format(id, number, symbol, sum(xtal.numIons)))
+                    label = os.path.join(folder, '{:s}-{:d}-{:d}-{:s}'.format(xtal.get_Pearson_Symbol(), id, number, symbol))
 
                     if criteria is not None:
                         status = xtal.check_validity(criteria, True)

@@ -3457,4 +3457,22 @@ class pyxtal:
         """
         Return the Pearson symbol: https://en.wikipedia.org/wiki/Pearson_symbol
         """
-        return self.group.lattice_type[0] + self.group.symbol[0] + str(sum(self.numIons))
+        if self.group.number <= 2:
+            l = 'a'
+        elif self.group.number <= 15:
+            l = 'm'
+        elif self.group.number <= 74:
+            l = 'o'
+        elif self.group.number <= 142:
+            l = 't'
+        elif self.group.number <= 194:
+            l = 'h'
+        else:
+            l = 'c'
+
+        if self.group.symbol[0] in ['A', 'B', 'C']:
+            b = 'S'
+        else:
+            b = self.group.symbol[0]
+
+        return l + b + str(sum(self.numIons))
