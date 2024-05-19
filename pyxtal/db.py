@@ -601,7 +601,7 @@ class database_topology():
                 return False
         return True
 
-    def clean_structures_spg_topology(self):
+    def clean_structures_spg_topology(self, dim=None):
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
@@ -611,8 +611,7 @@ class database_topology():
             - same wps
 
         Args:
-            dtol (float): tolerance of density
-            etol (float): tolerance of energy
+            dim (int): wanted dimension
         """
 
         unique_rows = []
@@ -630,6 +629,10 @@ class database_topology():
                                 unique = False
                                 break
                         elif row.topology == topology:
+                            unique = False
+                            break
+                        # Ignore unwanted dimension
+                        elif dim is not None and row.dimension != dim:
                             unique = False
                             break
             if unique:
@@ -1173,15 +1176,16 @@ class database_topology():
         unique_props = []
         for row in self.db.select():
             if hasattr(row, 'topology') and hasattr(row, 'ff_energy'):
-                spg = row.space_group_number
+                #spg = row.space_group_number
                 top, top_detail = row.topology, row.topology_detail
-                ff_energy = row.ff_energy
-                prop = (row.id, spg, top, top_detail, ff_energy)
+                dof, ff_energy = row.dof, row.ff_energy
+                prop = (row.id, dof, top, top_detail, ff_energy)
                 unique = True
                 for unique_prop in unique_props:
-                    (_id, _spg, _top, _top_detail, _ff_energy) = unique_prop
+                    #(_id, _spg, _top, _top_detail, _ff_energy) = unique_prop
+                    (_id, _dof, _top, _top_detail, _ff_energy) = unique_prop
                     if top == _top and top_detail == _top_detail and abs(ff_energy-_ff_energy)<etol:
-                        if spg > _spg:
+                        if dof < _dof:
                             print("updating", row.id, top, ff_energy)
                             unique_prop = prop
                         else:
@@ -1228,14 +1232,14 @@ class database_topology():
                         #strs = 'Find {:4d} {:6s}'.format(row.id, row.pearson_symbol)
                         #strs += ' {:12s} {:10.3f}'.format(row.topology, row.ff_energy)
                         #print(strs)
-                        overlaps.append((row.id, row.pearson_symbol, row.topology, row.ff_energy))
+                        overlaps.append((row.id, row.pearson_symbol, row.dof, row.topology, row.ff_energy))
                         break
         strs = "\nThe number of overlap is: {:d}".format(len(overlaps))
         strs += "/{:d}/{:d}".format(self.db.count(), db_ref.db.count())
         print(strs)
         sorted_overlaps = sorted(overlaps, key=lambda x: x[-1])
         for entry in sorted_overlaps:
-            print('{:4d} {:6s} {:12s} {:10.3f}'.format(*entry))
+            print('{:4d} {:6s} {:4d} {:12s} {:10.3f}'.format(*entry))
 
         return overlaps
 
@@ -1267,8 +1271,8 @@ if __name__ == "__main__":
 
     db = database_topology('total.db')
     db.get_db_unique()
-    db1 = database_topology('bak_sp2_sacada.db')
+    db1 = database_topology('sp2_sacada.db')
     db1.get_db_unique()
     db = database_topology('total_unique.db')
-    db.check_overlap('bak_sp2_sacada_unique.db')
-
+    db.check_overlap('sp2_sacada_unique.db')
+    db1.export_structures(folder='mof_out_sacada')
