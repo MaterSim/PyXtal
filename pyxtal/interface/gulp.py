@@ -87,8 +87,12 @@ class GULP():
         os.system(cmd)
 
     def clean(self):
-        os.remove(self.input)
-        os.remove(self.output)
+        if self.error:
+            os.system('mv ' + self.input + ' error_' + self.input)
+            os.system('mv ' + self.output + ' error_' + self.output)
+        else:
+            os.remove(self.input)
+            os.remove(self.output)
         if self.dump is not None:
             os.remove(self.dump)
 
