@@ -1160,6 +1160,84 @@ class database_topology():
             folder = f"cpu0{i}"
         return folder
 
+    def get_db_unique(self, db_name=None, etol=2e-3):
+        """
+        Get a db file with only unique structures
+        with the following identical attributes:
+        (topology, ff_energy)
+        """
+        print("The {:s} has {:d} strucs".format(self.db_name, self.db.count()))
+        if db_name is None: db_name = self.db_name[:-3] + '_unique.db'
+        if os.path.exists(db_name): os.remove(db_name)
+
+        unique_props = []
+        for row in self.db.select():
+            if hasattr(row, 'topology') and hasattr(row, 'ff_energy'):
+                spg = row.space_group_number
+                top, top_detail = row.topology, row.topology_detail
+                ff_energy = row.ff_energy
+                prop = (row.id, spg, top, top_detail, ff_energy)
+                unique = True
+                for unique_prop in unique_props:
+                    (_id, _spg, _top, _top_detail, _ff_energy) = unique_prop
+                    if top == _top and top_detail == _top_detail and abs(ff_energy-_ff_energy)<etol:
+                        if spg > _spg:
+                            print("updating", row.id, top, ff_energy)
+                            unique_prop = prop
+                        else:
+                            print("Duplicate", row.id, top, ff_energy)
+                        unique = False
+                        break
+
+                if unique:
+                    print("Adding", row.id, top, ff_energy)
+                    unique_props.append(prop)
+
+        ids = [prop[0] for prop in unique_props]
+        with connect(db_name) as db:
+            for id in ids:
+                row = self.db.get(id)
+                kvp = {}
+                for key in self.keys:
+                    if hasattr(row, key):
+                        kvp[key] = getattr(row, key)
+                db.write(row.toatoms(), key_value_pairs=kvp)
+        print("Created {:s} with {:d} strucs".format(db_name, db.count()))
+
+    def check_overlap(self, reference_db, etol=2e-3):
+        """
+        Check the overlap w.r.t the reference database
+        """
+
+        db_ref = database_topology(reference_db)
+        print("\nCurrent   database {:s}: {:d}".format(self.db_name, self.db.count()))
+        print("Reference database {:s}: {:d}".format(db_ref.db_name, db_ref.db.count()))
+
+        ref_data = []
+        for row in db_ref.db.select():
+            if hasattr(row, 'topology') and hasattr(row, 'ff_energy'):
+                ref_data.append((row.topology, row.topology_detail, row.ff_energy))
+
+        overlaps = []
+        for row in self.db.select():
+            if hasattr(row, 'topology') and hasattr(row, 'ff_energy'):
+                for ref in ref_data:
+                    (top, top_detail, ff_energy) = ref
+                    if row.topology==top and row.topology_detail==top_detail \
+                            and abs(row.ff_energy-ff_energy) < etol:
+                        #strs = 'Find {:4d} {:6s}'.format(row.id, row.pearson_symbol)
+                        #strs += ' {:12s} {:10.3f}'.format(row.topology, row.ff_energy)
+                        #print(strs)
+                        overlaps.append((row.id, row.pearson_symbol, row.topology, row.ff_energy))
+                        break
+        strs = "\nThe number of overlap is: {:d}".format(len(overlaps))
+        strs += "/{:d}/{:d}".format(self.db.count(), db_ref.db.count())
+        print(strs)
+        sorted_overlaps = sorted(overlaps, key=lambda x: x[-1])
+        for entry in sorted_overlaps:
+            print('{:4d} {:6s} {:12s} {:10.3f}'.format(*entry))
+
+        return overlaps
 
 if __name__ == "__main__":
     # open
@@ -1170,7 +1248,7 @@ if __name__ == "__main__":
         # view structure
         c = db.get_pyxtal('HXMTAM')
         print(c)
-    if True:
+    if False:
 
         db = database_topology('../MOF-Builder/C-sp2/sp2-sacada-0506.db')
         #xtal = db.get_pyxtal(1)
@@ -1185,3 +1263,12 @@ if __name__ == "__main__":
         skf_dir = '/Users/qzhu8/GitHub/MOF-Builder/3ob-3-1/'
         #db.update_row_dftb_energy(skf_dir, ncpu=1, ids=(0, 2), overwrite=True)
         db.update_row_dftb_energy(skf_dir, ncpu=1, ids=(17, 17), overwrite=True)
+
+
+    db = database_topology('total.db')
+    db.get_db_unique()
+    db1 = database_topology('bak_sp2_sacada.db')
+    db1.get_db_unique()
+    db = database_topology('total_unique.db')
+    db.check_overlap('bak_sp2_sacada_unique.db')
+
