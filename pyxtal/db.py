@@ -619,22 +619,23 @@ class database_topology():
 
         for row in self.db.select():
             unique = True
-            for prop in unique_rows:
-                (natoms, spg, wps, topology) = prop
-                if natoms==row.natoms and spg == row.space_group_number \
-                    and wps == row.wps:
-                    if hasattr(row, 'topology'):
-                        if row.topology == 'aaa':
-                            if row.topology_detail == topology:
+            # Ignore unwanted dimension
+            if dim is not None and hasattr(row, 'dimension') and row.dimension != dim:
+                #print(row.dimension, dim)
+                unique = False
+            else:
+                for prop in unique_rows:
+                    (natoms, spg, wps, topology) = prop
+                    if natoms==row.natoms and spg == row.space_group_number \
+                        and wps == row.wps:
+                        if hasattr(row, 'topology'):
+                            if row.topology == 'aaa':
+                                if row.topology_detail == topology:
+                                    unique = False
+                                    break
+                            elif row.topology == topology:
                                 unique = False
                                 break
-                        elif row.topology == topology:
-                            unique = False
-                            break
-                        # Ignore unwanted dimension
-                        elif dim is not None and row.dimension != dim:
-                            unique = False
-                            break
             if unique:
                 if hasattr(row, 'topology'):
                     unique_rows.append((row.natoms,
@@ -648,7 +649,7 @@ class database_topology():
                                         None))
             else:
                 to_delete.append(row.id)
-        print("The following structures were deleted", to_delete)
+        print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
 
 
@@ -727,7 +728,7 @@ class database_topology():
                                         None))
             else:
                 to_delete.append(row.id)
-        print("The following structures were deleted", to_delete)
+        print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
 
     def clean_structures_pmg(self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None):
@@ -803,7 +804,7 @@ class database_topology():
                 unique_rows.append((row.id, row.density))
             else:
                 to_delete.append(row.id)
-        print("The following structures were deleted", to_delete)
+        print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
 
 
