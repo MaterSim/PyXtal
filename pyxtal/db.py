@@ -1050,7 +1050,7 @@ class database_topology():
                 print("\n======Existing\n", row.description)
 
     def export_structures(self, fmt='vasp', folder='mof_out', criteria=None,
-                          sort_by='similarity', overwrite=True):
+                          sort_by='similarity', overwrite=True, cutoff=None):
         """
         export structures from database according to the given criterion
 
@@ -1060,9 +1060,12 @@ class database_topology():
             criteria (dict): check the validity with dict
             sort_by (str): sort by which attribute
             overwrite (bool): remove the existing folder
+            cutoff (int): the maximum number of structures for export
         """
 
         import shutil
+
+        if cutoff is None: cutoff = self.db.count()
         if not os.path.exists(folder):
             os.makedirs(folder)
         else:
@@ -1079,17 +1082,16 @@ class database_topology():
                 'ff_energy',
                 'topology',
                ]
-        properties, atoms = [], []
+        properties = []
         for row in self.db.select():
             spg = row.space_group_number
             den = row.density
             dof = row.dof
             ps = row.pearson_symbol
-            sim = row.similarity if hasattr(row, 'similarity') else None
+            sim = float(row.similarity) if hasattr(row, 'similarity') else None
             top = row.topology if hasattr(row, 'topology') else None
-            eng = row.ff_energy if hasattr(row, 'ff_energy') else None
-            properties.append([row.id, ps, spg, den, dof, sim, eng, top])
-            atoms.append(self.db.get_atoms(id=row.id))
+            eng = float(row.ff_energy) if hasattr(row, 'ff_energy') else None
+            properties.append([row.id, ps, spg, den, dof, sim, eng, top, ])
 
         if sort_by in keys:
             col = keys.index(sort_by) + 1
@@ -1097,62 +1099,64 @@ class database_topology():
             print("supported attributes", keys)
             raise ValueError("Cannot sort by", sort_by)
 
-        print("====Exporting {:} structures".format(len(atoms)))
-        if len(atoms) > 0:
-            properties = np.array(properties)
-            mids = np.argsort(properties[:, col])
+        print("====Exporting {:} structures".format(len(properties)))
+        #properties = np.array(properties)
+        #mids = np.argsort(properties[:, col])[:cutoff]
+        #sorted_properties = []
+        sorted_properties = sorted(properties, key=lambda x: x[col])
 
-            for mid in mids:
-                [id, ps, spg, den, dof, sim, eng, top] = properties[mid]
-                id = int(id)
-                spg = int(spg)
-                sim = float(sim)
-                den = float(den)
-                dof = int(dof)
-                if eng is not None: eng = float(eng)
-                try:
-                    xtal = pyxtal()
-                    xtal.from_seed(atoms[mid])
+        #for mid in mids:
+        for entry in sorted_properties[:cutoff]:
+            [id, ps, spg, den, dof, sim, eng, top] = entry
+            id = int(id)
+            spg = int(spg)
+            sim = float(sim)
+            den = float(den)
+            dof = int(dof)
+            if eng is not None: eng = float(eng)
+            try:
+            #if True:
+                xtal = self.get_pyxtal(id)
+                number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
+                # convert to the desired subgroup representation if needed
+                if number != spg:
+                    paths = xtal.group.path_to_subgroup(spg)
+                    xtal = xtal.to_subgroup(paths)
                     number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
-                    # convert to the desired subgroup representation if needed
-                    if number != spg:
-                        paths = xtal.group.path_to_subgroup(spg)
-                        xtal = xtal.to_subgroup(paths)
-                        number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
 
-                    label = os.path.join(folder, '{:s}-{:d}-{:d}-{:s}'.format(xtal.get_Pearson_Symbol(), id, number, symbol))
+                label = os.path.join(folder, '{:s}-{:d}-{:d}-{:s}'.format(xtal.get_Pearson_Symbol(), id, number, symbol))
 
-                    if criteria is not None:
-                        status = xtal.check_validity(criteria, True)
-                    else:
-                        status = True
-                except:
-                    status = False
-
-                if status:
-                    #if top is not None: print(top)
-                    try:
-                        xtal.set_site_coordination()
-                        for s in xtal.atom_sites:
-                            _l, _sp, _cn = s.wp.get_label(), s.specie, s.coordination
-                            label += '-{:s}-{:s}{:d}'.format(_l, _sp, _cn)
-                        label += '-S{:.3f}'.format(sim)
-                    except:
-                        print('Problem in setting site coordination')
-                    if len(label) > 40: label = label[:40]
-
-                    if den is not None: label += '-D{:.2f}'.format(abs(den))
-                    if eng is not None: label += '-E{:.3f}'.format(abs(eng))
-                    if top is not None: label += '-T{:s}'.format(top)
-                    if sim is not None: label += '-S{:.2f}'.format(sim)
-
-                    print("====Exporting:", label)
-                    if fmt == 'vasp':
-                        atoms[mid].write(label+'.vasp', format='vasp', vasp5=True, direct=True)
-                    elif fmt == 'cif':
-                        xtal.to_file(label+'.cif')
+                if criteria is not None:
+                    status = xtal.check_validity(criteria, True)
                 else:
-                    print("====Skippng:  ", label)
+                    status = True
+            except:
+                status = False
+
+            if status:
+                #if top is not None: print(top)
+                try:
+                    xtal.set_site_coordination()
+                    for s in xtal.atom_sites:
+                        _l, _sp, _cn = s.wp.get_label(), s.specie, s.coordination
+                        label += '-{:s}-{:s}{:d}'.format(_l, _sp, _cn)
+                    label += '-S{:.3f}'.format(sim)
+                except:
+                    print('Problem in setting site coordination')
+                if len(label) > 40: label = label[:40]
+
+                if den is not None: label += '-D{:.2f}'.format(abs(den))
+                if eng is not None: label += '-E{:.3f}'.format(abs(eng))
+                if top is not None: label += '-T{:s}'.format(top)
+                if sim is not None: label += '-S{:.2f}'.format(sim)
+
+                print("====Exporting:", label)
+                if fmt == 'vasp':
+                    xtal.to_file(label+'.vasp', fmt='poscar')
+                elif fmt == 'cif':
+                    xtal.to_file(label+'.cif')
+            else:
+                print("====Skippng:  ", label)
 
     def get_label(self, i):
         if i < 10:
@@ -1239,9 +1243,26 @@ class database_topology():
         print(strs)
         sorted_overlaps = sorted(overlaps, key=lambda x: x[-1])
         for entry in sorted_overlaps:
-            print('{:4d} {:6s} {:4d} {:12s} {:10.3f}'.format(*entry))
+            print('{:4d} {:6s} {:4d} {:20s} {:10.3f}'.format(*entry))
 
         return overlaps
+
+    def print_info(self, excluded_ids=[], cutoff=100):
+
+        print("\nCurrent   database {:s}: {:d}".format(self.db_name, self.db.count()))
+        output = []
+        for row in self.db.select():
+            if row.id not in excluded_ids:
+                if hasattr(row, 'topology') and hasattr(row, 'ff_energy'):
+                    output.append((row.id, row.pearson_symbol, row.dof, row.topology, row.ff_energy))
+
+        sorted_output = sorted(output, key=lambda x: x[-1])
+        for entry in sorted_output[:cutoff]:
+            print('{:4d} {:6s} {:4d} {:20s} {:10.3f}'.format(*entry))
+
+        strs = "Output structures: {:d}/{:d}".format(len(sorted_output), self.db.count())
+        print(strs)
+
 
 if __name__ == "__main__":
     # open
