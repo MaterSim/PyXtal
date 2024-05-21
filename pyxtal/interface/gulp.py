@@ -88,8 +88,8 @@ class GULP():
 
     def clean(self):
         if self.error:
-            os.system('mv ' + self.input + ' error_' + self.input)
-            os.system('mv ' + self.output + ' error_' + self.output)
+            os.system('mv ' + self.input + ' ' + self.input + '_error')
+            os.system('mv ' + self.output + ' ' + self.output + '_error')
         else:
             os.remove(self.input)
             os.remove(self.output)
