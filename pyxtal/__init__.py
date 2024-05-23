@@ -664,7 +664,6 @@ class pyxtal:
         sup = supergroups(self, G=G, d_tol=d_tol)
         return sup.strucs
 
-
     def subgroup(self, perms=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4, min_cell=0):
         """
         Generate a structure with lower symmetry
@@ -985,7 +984,10 @@ class pyxtal:
             #print(lat1); import sys; sys.exit()
         #print(lattice); print(lattice.matrix)
         if mut_lat:
-            lattice=lattice.mutate(degree=eps, frozen=True)
+            try:
+                lattice=lattice.mutate(degree=eps, frozen=True)
+            except:
+                print('skip lattice mutation mostly for triclinic system')
 
         h = splitter.H
         split_sites = []
@@ -1204,6 +1206,7 @@ class pyxtal:
                     atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
                 else:
                     coords, species = self._get_coords_and_species()
+                    coords -= np.floor(coords)
                     if add_vaccum:
                         latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
                     else:
@@ -1828,6 +1831,7 @@ class pyxtal:
         Args:
             Path: list of path to get the general sites
             iterate (bool): whether or not do it iteratively
+            species : to add
         """
         if not self.standard_setting:
             self.optimize_lattice(standard=True)
@@ -2659,6 +2663,119 @@ class pyxtal:
             molecules.append(Molecule(specie0, neigh))
 
         return display_cluster(molecules, self.lattice.matrix, engs, cmap, **kwargs)
+
+    def substitute_1_2(self, dicts, ratio=[1, 1], group_type='t+k', max_cell=4, min_cell=0):
+        """
+        Derive the BC compounds from A via subgroup relation
+        For example, from C to BN or from SiO2 to AlPO3.
+        The key is to split A's wyckoff site to B and C by w.r.t. composition relation.
+        If the current parent crystal doesn't allow splitting, look for the subgroup
+
+        Args:
+            dicts: e.g., {"F": "Cl"}
+            ratio: e.g., [1, 1]
+            group_type (string): `t`, `k` or `t+k`
+            max_cell (float): maximum cell reconstruction
+            min_cell (float): maximum cell reconstruction
+
+        Returns:
+            A list of pyxtal structures
+        """
+        xtals = self._substitute_1_2(dicts, ratio)
+        if len(xtals) == 0:
+            #print("\nCannot split, look for subgroup representation")
+            subs = self.subgroup(group_type=group_type, max_cell=max_cell, min_cell=min_cell)
+            #print("Found {:d} subgroup representatios".format(len(subs)))
+            for sub in subs:
+                #print(sub)
+                _xtals = sub._substitute_1_2(dicts, ratio)
+                if len(_xtals) > 0:
+                    xtals.extend(_xtals)
+                    print('Good representation ({:d})'.format(len(_xtals)), sub.get_xtal_string())
+                    #print('Add {:d} substitutions in subgroup {:d}'.format(len(_xtals), sub.group.number))
+        else:
+            print('Good representation ({:d})'.format(len(xtals)), self.get_xtal_string())
+        print('Found {:d} substitutions in total\n'.format(len(xtals)))
+        return xtals
+
+    def _substitute_1_2(self, dicts, ratio=[1, 1]): #, group_type='t', max_cell=4, min_cell=0):
+        """
+        Derive the BC compounds from A via subgroup relation
+        For example, from C to BN or from SiO2 to AlPO3.
+        The key is to split A's wyckoff site to B and C by w.r.t. composition relation.
+
+        Args:
+            dicts: e.g., {"F": "Cl"}
+            ratio: e.g., [1, 1]
+            group_type (string): `t`, `k` or `t+k`
+            max_cell (float): maximum cell reconstruction
+            min_cell (float): maximum cell reconstruction
+
+        Returns:
+            A list of pyxtal structures
+        """
+        from pyxtal.util import split_list_by_ratio
+
+        if len(dicts) > 1:
+            raise ValueError('Only one item allowed in the input dicts', dicts)
+
+        A, [B, C] = next(iter(dicts.items()))
+
+        numbers = []
+        for site in self.atom_sites:
+            if site.specie == A:
+                numbers.append(site.wp.multiplicity)
+        solutions = split_list_by_ratio(numbers, ratio)
+
+        # Output all possible substitutions
+        xtals = []
+        for (group1, group2) in solutions:
+            xtal0 = self.copy()
+            count = 0
+            for site in xtal0.atom_sites:
+                if site.specie == A:
+                    if count in group1:
+                        site.specie = B
+                    else:
+                        site.specie = C
+                    count += 1
+            xtals.append(xtal0)
+        return xtals
+
+        #idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell, min_cell)
+        #elements = [site.species for site in self.atom_sites]
+
+        #valid_splitters = []
+        #for id in idx:
+        #    gtype = (t_types + k_types)[id]
+        #    if gtype == 'k': id -= len(t_types)
+        #    splitter = wyckoff_split(G=self.group, wp1=sites, idx=id, gtype, elements)
+        #    # QZ: check if there is a redundancy in error and valid_split
+        #    if not splitter.error and splitter.valid_split:
+        #        for key in dicts.keys():
+        #            # check whether the splitter can make valid decomposition
+        #            # e.g., if we want to make a BN from C
+        #            # The splitter from 8 to 4+4 is valid
+        #            # The splitter from 8 to 6+2 is invalid
+        #            numbers = []
+        #            for i, wp2 in enumerate(splitter.wp2_lists):
+        #                if sp.elements[i] == key:
+        #                    for _wp2 in wp2:
+        #                        numbers.append(_wp2.multiplicity)
+        #            if not get_integer_solutions(numbers, ratio, quick=True):
+        #                bad_splitter = True
+        #                break
+        #        if bad_splitter:
+        #            continue
+        #        else:
+        #            valid_splitters.append(splitter)
+
+        #new_strucs = []
+        #for splitter in valid_splitters:
+        #    #print(splitter)
+        #    new_struc = self._apply_substitution(splitter, perms)
+        #    new_strucs.append(new_struc)
+        #return new_strucs
 
     def substitute(self, dicts):
         """

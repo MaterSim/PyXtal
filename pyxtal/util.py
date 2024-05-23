@@ -627,6 +627,42 @@ def new_struc_wo_energy(xtal, xtals):
                     return False
         return True
 
+def split_list_by_ratio(nums, ratio):
+    """
+    Splits a list of integers into two groups such that the sum of each group
+    satisfies a given ratio and returns all possible ways of combinations
+    tracking the indices of the numbers.
+
+    Parameters:
+    nums (list of int): The list of integers to split.
+    ratio (tuple of int): A tuple representing the desired ratio (e.g., (1, 1) for 1:1 ratio).
+
+    Returns:
+    list of tuple: A list of tuples where each tuple contains two lists of indices.
+                   Each pair of lists represents one possible way to split the numbers
+                   to satisfy the given ratio.
+    """
+    def find_splits(i, sum1, sum2, group1, group2):
+        if i == len(nums):
+            if sum1 * ratio[1] == sum2 * ratio[0]:
+                solutions.append((group1.copy(), group2.copy()))
+            return
+
+        # Try adding the current number's index to the first group
+        group1.append(i)
+        find_splits(i + 1, sum1 + nums[i], sum2, group1, group2)
+        group1.pop()
+
+        # Try adding the current number's index to the second group
+        group2.append(i)
+        find_splits(i + 1, sum1, sum2 + nums[i], group1, group2)
+        group2.pop()
+
+    solutions = []
+    nums = sorted(nums, reverse=True)  # Optional: Sorting can sometimes speed up the process
+
+    find_splits(0, 0, 0, [], [])
+    return solutions
 
 
 if __name__ == "__main__":

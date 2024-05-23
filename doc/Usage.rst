@@ -585,6 +585,72 @@ when calling the ``to_ase()`` function.
     Atoms(symbols='H8O4', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
 
 
+Subgroup manipulation
+----------------------
+
+.. code-block:: Python
+
+    from pyxtal import pyxtal
+
+    # load a diamond crystal
+    xtal=pyxtal()
+    xtal.from_spg_wps_rep(227, ['8a'], [3.6], ['C'])
+
+    print("Derive symmetry related BN crystal from diamond")
+    xtals = xtal.substitute_1_2({'C': ['B', 'N']})
+
+    print("Derive even more BN crystals from diamond subgroup representations")
+    for sub in xtal.subgroup(group_type='t+k'):
+        xtals = sub.substitute_1_2({'C': ['B', 'N']})
+
+
+::
+
+    Derive symmetry related BN crystal from diamond
+    Good representation (2) *  8   1  216 F-43m          3.42 4a 4d
+    Found 2 substitutions in total
+    
+    
+    Derive even more BN crystals from diamond subgroup representations
+    Good representation (2) *  4   2  119 I-4m2          3.42 2d 2b
+    Found 2 substitutions in total
+    
+    Good representation (2) *  4   2  119 I-4m2          3.42 2d 2b
+    Found 2 substitutions in total
+    
+    Good representation (2) *  4   2  119 I-4m2          3.42 2d 2b
+    Found 2 substitutions in total
+    
+    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Found 6 substitutions in total
+    
+    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Found 6 substitutions in total
+    
+    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Found 6 substitutions in total
+    
+    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
+    Found 6 substitutions in total
+    
+    Good representation (2) *  8   1  196 F23            3.42 4a 4d
+    Found 2 substitutions in total
+    
+    Good representation (2) *  8   1  196 F23            3.42 4b 4d
+    Found 2 substitutions in total
+    
+    Good representation (2) *  8   1  216 F-43m          3.42 4a 4d
+    Found 2 substitutions in total
+
+
 
 Advanced examples in random structure generation
 -------------------------------------------------
