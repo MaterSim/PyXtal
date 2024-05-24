@@ -1051,7 +1051,8 @@ class database_topology():
                 print("\n======Existing\n", row.description)
 
     def export_structures(self, fmt='vasp', folder='mof_out', criteria=None,
-                          sort_by='similarity', overwrite=True, cutoff=None):
+                          sort_by='similarity', overwrite=True, cutoff=None,
+                          use_ff=True):
         """
         export structures from database according to the given criterion
 
@@ -1089,7 +1090,7 @@ class database_topology():
             den = row.density
             dof = row.dof
             ps = row.pearson_symbol
-            sim = float(row.similarity) if hasattr(row, 'similarity') else None
+            sim = float(row.similarity) if hasattr(row, 'similarity') and row.similarity is not None else None
             top = row.topology if hasattr(row, 'topology') else None
             eng = float(row.ff_energy) if hasattr(row, 'ff_energy') else None
             properties.append([row.id, ps, spg, den, dof, sim, eng, top, ])
@@ -1104,6 +1105,7 @@ class database_topology():
         #properties = np.array(properties)
         #mids = np.argsort(properties[:, col])[:cutoff]
         #sorted_properties = []
+        properties = [prop for prop in properties if prop[col] is not None]
         sorted_properties = sorted(properties, key=lambda x: x[col])
 
         #for mid in mids:
@@ -1117,7 +1119,7 @@ class database_topology():
             if eng is not None: eng = float(eng)
             try:
             #if True:
-                xtal = self.get_pyxtal(id)
+                xtal = self.get_pyxtal(id, use_ff)
                 number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
                 # convert to the desired subgroup representation if needed
                 if number != spg:
@@ -1137,6 +1139,7 @@ class database_topology():
             if status:
                 #if top is not None: print(top)
                 try:
+                #if True:
                     xtal.set_site_coordination()
                     for s in xtal.atom_sites:
                         _l, _sp, _cn = s.wp.get_label(), s.specie, s.coordination

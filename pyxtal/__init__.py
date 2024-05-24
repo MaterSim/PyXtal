@@ -2664,7 +2664,7 @@ class pyxtal:
 
         return display_cluster(molecules, self.lattice.matrix, engs, cmap, **kwargs)
 
-    def substitute_1_2(self, dicts, ratio=[1, 1], group_type='t+k', max_cell=4, min_cell=0):
+    def substitute_1_2(self, dicts, ratio=[1, 1], group_type='t+k', max_cell=4, min_cell=0, max_wp=None):
         """
         Derive the BC compounds from A via subgroup relation
         For example, from C to BN or from SiO2 to AlPO3.
@@ -2677,10 +2677,13 @@ class pyxtal:
             group_type (string): `t`, `k` or `t+k`
             max_cell (float): maximum cell reconstruction
             min_cell (float): maximum cell reconstruction
+            max_wp (int): maximum number of wp
 
         Returns:
             A list of pyxtal structures
         """
+        from pyxtal.util import new_struc_wo_energy
+
         xtals = self._substitute_1_2(dicts, ratio)
         if len(xtals) == 0:
             #print("\nCannot split, look for subgroup representation")
@@ -2689,9 +2692,13 @@ class pyxtal:
             for sub in subs:
                 #print(sub)
                 _xtals = sub._substitute_1_2(dicts, ratio)
-                if len(_xtals) > 0:
-                    xtals.extend(_xtals)
-                    print('Good representation ({:d})'.format(len(_xtals)), sub.get_xtal_string())
+                for _xtal in _xtals:
+                    if max_wp is not None and len(_xtal.atom_sites) > max_wp:
+                        continue
+                    else:
+                        if new_struc_wo_energy(_xtal, xtals):
+                            xtals.append(_xtal)
+                            print('Add substitution', _xtal.get_xtal_string())
                     #print('Add {:d} substitutions in subgroup {:d}'.format(len(_xtals), sub.group.number))
         else:
             print('Good representation ({:d})'.format(len(xtals)), self.get_xtal_string())
@@ -2739,6 +2746,8 @@ class pyxtal:
                     else:
                         site.specie = C
                     count += 1
+            xtal0.species = None
+            xtal0._get_formula() # update species
             xtals.append(xtal0)
         return xtals
 
@@ -2913,9 +2922,13 @@ class pyxtal:
         self.numMols = numMols
         self.mol_sites = sites
 
-    def set_cutoff(self, exclude_ii=False):
+    def set_cutoff(self, exclude_ii=False, value=None):
         """
         get the cutoff dictionary
+
+        Args:
+            exclude_ii (bool): whether or not exclude A-A distance
+            value (float): cutoff distance
         """
         cutoff = {}
         tm = Tol_matrix(prototype="molecular")
@@ -2928,7 +2941,10 @@ class pyxtal:
                     select = False
                 if select:
                     tuple_elements = (s1, s2)
-                    cutoff[tuple_elements] = tm.get_tol(s1, s2)
+                    if value is None:
+                        cutoff[tuple_elements] = tm.get_tol(s1, s2)
+                    else:
+                        cutoff[tuple_elements] = value
 
         self.cutoff = cutoff
 
@@ -2938,17 +2954,16 @@ class pyxtal:
         """
         from ase.neighborlist import neighbor_list
 
-        if cutoff is None:
-            #if not hasattr(self, 'cutoff'):
-            self.set_cutoff(exclude_ii)
-            cutoff = self.cutoff
+        #if not hasattr(self, 'cutoff'):
+        self.set_cutoff(exclude_ii, cutoff)
+        my_cutoff = self.cutoff
 
         if verbose:
             print("\n The cutoff values for CN calculation are")
-            print(cutoff)
+            print(my_cutoff)
 
         atoms = self.to_ase(resort=False)
-        NL = neighbor_list('i', atoms, cutoff)
+        NL = neighbor_list('i', atoms, my_cutoff)
         coords = np.bincount(NL)
 
         count = 0
@@ -3407,7 +3422,6 @@ class pyxtal:
                     msg = "===Invalid in MIN_density {:.2f}=>{:.2f}".format(den1, den2)
                     print(msg)
                 return False
-
         if 'CN' in criteria:
             if criteria['exclude_ii']:
                 options = [True, False]
@@ -3417,9 +3431,9 @@ class pyxtal:
             for option in options:
                 try:
                     self.set_site_coordination(criteria['cutoff'], exclude_ii=option)
+                    #print('exclude_ii', option, criteria['cutoff'], self)
                 except:
-                    if verbose:
-                        print("=====Invalid in CN calculation")
+                    if verbose: print("=====Invalid in CN calculation")
                     return False
                 for s in self.atom_sites:
                     ele = s.specie
