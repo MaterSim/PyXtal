@@ -664,7 +664,8 @@ class pyxtal:
         sup = supergroups(self, G=G, d_tol=d_tol)
         return sup.strucs
 
-    def subgroup(self, perms=None, H=None, eps=0.05, idx=None, group_type='t', max_cell=4, min_cell=0):
+    def subgroup(self, perms=None, H=None, eps=0.05, idx=None, group_type='t',
+                 max_cell=4, min_cell=0, N_groups=None):
         """
         Generate a structure with lower symmetry
 
@@ -676,13 +677,20 @@ class pyxtal:
             group_type (string): `t`, `k` or `t+k`
             max_cell (float): maximum cell reconstruction
             min_cell (float): maximum cell reconstruction
-
+            max_subgroups (int): maximum number of trial subgroups
         Returns:
             a list of pyxtal structures with lower symmetries
         """
 
+        idx, sites, t_types, k_types = self._get_subgroup_ids(H,
+                                                              group_type,
+                                                              idx,
+                                                              max_cell,
+                                                              min_cell)
         #randomly choose a subgroup from the available list
-        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell, min_cell)
+        if N_groups is not None and len(idx) >= N_groups:
+            idx = sample(idx, N_groups)
+            #print('max_sub_group', len(idx), max_subgroups)
 
         valid_splitters = []
         bad_splitters = []
@@ -2664,7 +2672,9 @@ class pyxtal:
 
         return display_cluster(molecules, self.lattice.matrix, engs, cmap, **kwargs)
 
-    def substitute_1_2(self, dicts, ratio=[1, 1], group_type='t+k', max_cell=4, min_cell=0, max_wp=None):
+    def substitute_1_2(self, dicts, ratio=[1, 1], group_type='t+k', max_cell=4,
+                       min_cell=0, max_wp=None, N_groups=None,
+                       N_max=10, criteria=None):
         """
         Derive the BC compounds from A via subgroup relation
         For example, from C to BN or from SiO2 to AlPO3.
@@ -2678,6 +2688,9 @@ class pyxtal:
             max_cell (float): maximum cell reconstruction
             min_cell (float): maximum cell reconstruction
             max_wp (int): maximum number of wp
+            N_groups (int): maximum number of trial subgroups
+            N_max (int): maximum number of structures
+            criteria (dict): dictionary criteria
 
         Returns:
             A list of pyxtal structures
@@ -2685,9 +2698,14 @@ class pyxtal:
         from pyxtal.util import new_struc_wo_energy
 
         xtals = self._substitute_1_2(dicts, ratio)
+        xtals = [xtal for xtal in xtals if criteria is None or xtal.check_validity(criteria)]
+
         if len(xtals) == 0:
             #print("\nCannot split, look for subgroup representation")
-            subs = self.subgroup(group_type=group_type, max_cell=max_cell, min_cell=min_cell)
+            subs = self.subgroup(group_type=group_type,
+                                 max_cell=max_cell,
+                                 min_cell=min_cell,
+                                 N_groups=N_groups)
             #print("Found {:d} subgroup representatios".format(len(subs)))
             for sub in subs:
                 #print(sub)
@@ -2697,12 +2715,20 @@ class pyxtal:
                         continue
                     else:
                         if new_struc_wo_energy(_xtal, xtals):
-                            xtals.append(_xtal)
-                            print('Add substitution', _xtal.get_xtal_string())
+                            add = True
+
+                            if criteria is not None and not _xtal.check_validity(criteria):
+                                add = False
+
+                            if add:
+                                xtals.append(_xtal)
+                                print('Add substitution', _xtal.get_xtal_string())
+                                if len(xtals) == N_max:
+                                    break
                     #print('Add {:d} substitutions in subgroup {:d}'.format(len(_xtals), sub.group.number))
         else:
             print('Good representation ({:d})'.format(len(xtals)), self.get_xtal_string())
-        print('Found {:d} substitutions in total\n'.format(len(xtals)))
+        print('Found {:d} substitutions in total'.format(len(xtals)))
         return xtals
 
     def _substitute_1_2(self, dicts, ratio=[1, 1]): #, group_type='t', max_cell=4, min_cell=0):
