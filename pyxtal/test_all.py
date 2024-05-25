@@ -1312,5 +1312,24 @@ class Test_operations(unittest.TestCase):
     #            sph.align()
     #            print(name, model)
 
+    class TestSubstitution(unittest.TestCase):
+
+        def test_substitute_1_2(self):
+            data = [
+                    (227, ['8a'], [3.6], ['C'], 1),
+                    (92, ['4a', '8b'], [5.0847, 7.0986, 0.2944, 0.0941, 0.2410, 0.8256], ['Si', 'O'], 1),
+                   ]
+            for d in data:
+                (spg, wps, rep, elements, N) = d
+                s = pyxtal()
+                xtals = s.from_spg_wps_rep(spg, wps, rep, elements)
+                self.assertTrue(len(xtals)==N)
+
+        def test_criteria(self):
+            criteria = {'CN': {'B': 4, 'N': 4}, 'cutoff': 1.9, 'exclude_ii': True}
+            xtals = xtal.substitute_1_2({'C': ['B', 'N']}, ratio=[1, 1], criteria=criteria)
+            self.assertTrue(xtals[0].check_validity(criteria))
+
+
 if __name__ == "__main__":
     unittest.main()

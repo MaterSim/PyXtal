@@ -501,8 +501,8 @@ point groups), or by a symbol (see the `Settings <Settings.html>`_ page).
     my_crystal.from_random(1, 20, ['H2O'], [4])
 
 
-Crystal structure manipulation
-------------------------------
+Crystal structure Post Analysis
+-------------------------------
 After the crystal is built, PyXtal allows one to manipulate the structure in
 different ways. The following script illustrate some useful functions.
 
@@ -585,8 +585,18 @@ when calling the ``to_ase()`` function.
     Atoms(symbols='H8O4', pbc=True, cell=[[6.503138824544265, 0.0, 0.0], [3.0183112928813903e-16, 4.929276416649856, 0.0], [3.025303230945897e-16, 3.025303230945897e-16, 4.940695118057273]])
 
 
-Subgroup manipulation
+Subgroup/supergroup manipulation
+--------------------------------
+Symmetry relation has been playing an important role in crystallography. PyXtal provides several utilities to allow one to conveniently explore the subgroup or supergroup symmetries. (To add)
+
+
+
+Chemical Substitution
 ----------------------
+
+In many cases, the crystal structures of mutlicompnent systems are strongly related to the structure of simple systems. For instance, the 1: 1 ratio boron nitrides, as an isoelectronic analogue to carbon,  exihibit structural behaviors that are very similar to elemental carbon allotropes. Similarly, many of the known AlPO4 polymorphs are related to SiO2. Inspired by these known correlation, PyXtal offers the `substitue_1_2 <pyxtal.html#pyxtal.substitue_1_2>`_  function to derive the BC compounds from A via subgroup relation (e.g., from C to BN or from SiO2 to AlPO4). The key idea is to split A's wyckoff site to B and C according to the BC composition constraints. Unlike the random substituion, the wyckoff position splitting strictly follow the group-subgroup relation. As such, the resulting compounds will retain a high space group symmetry from the parental structure. Below, we illustrate this function via a few examples.
+
+Below is an example to make a BN compound from the given carbon allotrope diamond.
 
 .. code-block:: Python
 
@@ -599,58 +609,98 @@ Subgroup manipulation
     print("Derive symmetry related BN crystal from diamond")
     xtals = xtal.substitute_1_2({'C': ['B', 'N']})
 
+
+    Derive symmetry related BN crystal from diamond
+    Add substitution *  8   1  216 F-43m          3.53 4a 4d
+    Found 1 substitutions in total
+
+
+If you want to generate more BN crystal, you can first generate the subgroup representation and then apply the `substitute_1_2` function.
+
+.. code-block:: Python
+
     print("Derive even more BN crystals from diamond subgroup representations")
     for sub in xtal.subgroup(group_type='t+k'):
         xtals = sub.substitute_1_2({'C': ['B', 'N']})
 
-
-::
-
-    Derive symmetry related BN crystal from diamond
-    Good representation (2) *  8   1  216 F-43m          3.42 4a 4d
-    Found 2 substitutions in total
-    
-    
     Derive even more BN crystals from diamond subgroup representations
-    Good representation (2) *  4   2  119 I-4m2          3.42 2d 2b
-    Found 2 substitutions in total
-    
-    Good representation (2) *  4   2  119 I-4m2          3.42 2d 2b
-    Found 2 substitutions in total
-    
-    Good representation (2) *  4   2  119 I-4m2          3.42 2d 2b
-    Found 2 substitutions in total
-    
-    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Found 6 substitutions in total
-    
-    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Found 6 substitutions in total
-    
-    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Found 6 substitutions in total
-    
-    Good representation (2) *  6   4  160 R3m            3.42 3a 3a
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Good representation (2) * 12   4  166 R-3m           3.42 6c 6c
-    Found 6 substitutions in total
-    
-    Good representation (2) *  8   1  196 F23            3.42 4a 4d
-    Found 2 substitutions in total
-    
-    Good representation (2) *  8   1  196 F23            3.42 4b 4d
-    Found 2 substitutions in total
-    
-    Good representation (2) *  8   1  216 F-43m          3.42 4a 4d
-    Found 2 substitutions in total
+    Add substitution *  4   2  119 I-4m2          3.53 2d 2b
+    Found 1 substitutions in total
+    Add substitution *  4   2  119 I-4m2          3.53 2d 2b
+    Found 1 substitutions in total
+    Add substitution *  4   2  119 I-4m2          3.53 2d 2b
+    Found 1 substitutions in total
+    Add substitution *  6   4  160 R3m            3.53 3a 3a
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Found 3 substitutions in total
+    Add substitution *  6   4  160 R3m            3.53 3a 3a
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Found 3 substitutions in total
+    Add substitution *  6   4  160 R3m            3.53 3a 3a
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Found 3 substitutions in total
+    Add substitution *  6   4  160 R3m            3.53 3a 3a
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Add substitution * 12   4  166 R-3m           3.53 6c 6c
+    Found 3 substitutions in total
+    Add substitution *  8   1  196 F23            3.53 4a 4d
+    Found 1 substitutions in total
+    Add substitution *  8   1  196 F23            3.53 4b 4d
+    Found 1 substitutions in total
 
 
+Additionally, you may want to generate a more homogeously substituted BN crystal in which each B(N) is 4-coordinated to N(B) from the diamond crystal. In this case, you can set a criteria dictionary to filter the unsatsified structure as follows.
+
+
+.. code-block:: Python
+
+    print("\nDerive a BN crystal in which each B(N) is 4-coordinated to N(B)")
+    criteria = {'CN': {'B': 4, 'N': 4}, 'cutoff': 1.9, 'exclude_ii': True}
+    xtals = sub.substitute_1_2({'C': ['B', 'N']}, ratio=[1, 1], criteria=criteria)
+
+    Derive a BN crystal in which each B(N) is 4-coordinated to N(B)
+    Add substitution *  8   1  216 F-43m          3.53 4a 4d
+    Found 1 substitutions in total
+
+Finally, this function is not limited to elemental-binary substitution. You can selectively consider substitution on a given element in any compounds. Below is a case to generate derivative AlPO4 structure from the alpha-cristobalite SiO2.
+
+
+.. code-block:: Python
+
+    # load the alpha-cristobalite SiO2
+    xtal_sio2 = pyxtal()
+    xtal_sio2.from_spg_wps_rep(92, ['4a', '8b'], [5.0847, 7.0986, 0.2944, 0.0941, 0.2410, 0.8256], ['Si', 'O'])
+    print(xtal_sio2)
+
+    xtals_alpo4 = xtal_sio2.substitute_1_2({'Si': ['Al', 'P']})
+    print(xtals_alpo4)
+
+
+    ------Crystal from Build------
+    Dimension: 3
+    Composition: Si4O8
+    Group: P 41 21 2 (92)
+    5.0847,   5.0847,   7.0986,  90.0000,  90.0000,  90.0000, tetragonal
+    Wyckoff sites:
+	    Si @ [ 0.2944  0.2944  0.0000], WP [4a] Site [..2]
+	     O @ [ 0.0941  0.2410  0.8256], WP [8b] Site [1]
+
+    Add substitution * 24  11   20 C2221          2.21 4b 4a 8c 8c
+    Found 1 substitutions in total
+    [
+    ------Crystal from subgroup------
+    Dimension: 3
+    Composition: O16P4Al4
+    Group: C 2 2 21 (20)
+      7.1909,   7.1909,   7.0986,  90.0000,  90.0000,  90.0000, orthorhombic
+    Wyckoff sites:
+    	Al @ [ 0.0000  0.7089  0.2500], WP [4b] Site [.2.]
+    	 P @ [ 0.2077  0.0000  0.0000], WP [4a] Site [2..]
+    	 O @ [ 0.9261  0.1658  0.5751], WP [8c] Site [1]
+    	 O @ [ 0.8325  0.4278  0.8240], WP [8c] Site [1]]
 
 Advanced examples in random structure generation
 -------------------------------------------------
@@ -933,8 +983,8 @@ To access the pyxtal structure
 Space Group and Site Symmetry table
 -----------------------------------
 
-PyXtal provides a
-`site_symmetry <pyxtal.symmetry.html#pyxtal.symmetry.site_symmetry>`_ class to handle the conversion of site symmetry symbols and operations.
+PyXtal provides a `site_symmetry <pyxtal.symmetry.html#pyxtal.symmetry.site_symmetry>`_ 
+class to handle the conversion of site symmetry symbols and operations.
 
 
 .. code-block:: Python
