@@ -21,7 +21,7 @@
 
 ## Introduction
 
-PyXtal is an open source Python package which was initiated by [Qiang Zhu](http://qzhu2017.github.io) and Scott Fredericks at department of Physics and Astronomy, University of Nevada Las Vegas. The goal of PyXtal is to develop a fundamental library to allow one to design the material structure with a certain symmetry constraint. These structures can exported to various structural formats for further study. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for more information.
+PyXtal is an open source Python package which was initiated by [Qiang Zhu](http://qzhu2017.github.io) and Scott Fredericks. The goal of PyXtal is to develop a fundamental library to allow one to design the material structure with a certain symmetry constraint. These structures can exported to various structural formats for further study. See the [documentation](https://pyxtal.readthedocs.io/en/latest/) for more information.
 
 To contribute to this project, please check [How to contribute?](#how-to-contribute).
 
@@ -58,6 +58,8 @@ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
 
 ## Citation
 
+### General PyXtal
+
 Fredericks S, Parrish K, Sayre D, Zhu Q\*(2020)
 [PyXtal: a Python Library for Crystal Structure Generation and Symmetry Analysis](https://www.sciencedirect.com/science/article/pii/S0010465520304057).
 \[[arXiv link](https://arxiv.org/pdf/1911.11123.pdf)\]
@@ -73,6 +75,39 @@ issn = "0010-4655",
 doi = "https://doi.org/10.1016/j.cpc.2020.107810",
 url = "http://www.sciencedirect.com/science/article/pii/S0010465520304057",
 author = "Scott Fredericks and Kevin Parrish and Dean Sayre and Qiang Zhu",
+}
+```
+
+### Symmetry relation
+Zhu Q, Kang B, Parrish K (2022). 
+[Symmetry Relation Database and Its Application to Ferroelectric Materials Discovery](https://link.springer.com/article/10.1557/s43579-022-00268-4)
+
+```bib
+@article{zhu2022symmetry,
+  title="Symmetry relation database and its application to ferroelectric materials discovery",
+  author="Zhu, Qiang and Kang, Byungkyun and Parrish, Kevin",
+  journal="MRS Communications",
+  volume="12",
+  number="5",
+  pages="686--691",
+  year="2022",
+  doi="https://doi.org/10.1557/s43579-022-00268-4",
+```
+
+### Organic crystal packing motif
+Zhu Q, Tang W-L, Hattori S. (2022). 
+[Quantification of Crystal Packing Similarity from Spherical Harmonic Transform](https://pubs.acs.org/doi/10.1021/acs.cgd.2c00933)
+
+```bib
+@article{zhu2022quantification,
+  title="Quantification of Crystal Packing Similarity from Spherical Harmonic Transform",
+  author="Zhu, Qiang and Tang, Weilun and Hattori, Shinnosuke",
+  journal="Crystal Growth \& Design",
+  volume="22",
+  number="12",
+  pages="7308--7316",
+  year="2022",
+  doi="https://doi.org/10.1021/acs.cgd.2c00933",
 }
 ```
 

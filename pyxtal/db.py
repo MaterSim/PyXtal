@@ -479,17 +479,28 @@ class database_topology():
     def vacuum(self):
         self.db.vacuum()
 
-    def get_pyxtal(self, id, use_ff=True):
+    def get_pyxtal(self, id, use_relaxed=None):
         """
-        Get pyxtal based on row_id, if use_ff, get pyxtal from the ff_relaxed file
+        Get pyxtal based on row_id, if use_relaxed, get pyxtal from the ff_relaxed file
+
+        Args:
+            id (int): row id
+            use_relaxed (str): 'ff_relaxed', 'vasp_relaxed'
         """
         from pyxtal import pyxtal
         from pyxtal.util import ase2pymatgen
         from pymatgen.core import Structure
 
         row = self.db.get(id) #; print(id, row.id)
-        if use_ff and hasattr(row, 'ff_relaxed'):
-            pmg = Structure.from_str(row.ff_relaxed, fmt='cif')
+        if use_relaxed is not None:
+
+            if hasattr(row, use_relaxed):
+                xtal_str = getattr(row, use_relaxed)
+            else:
+                raise ValueError('No ff or vasp relaxed attributes for structure', id)
+
+            pmg = Structure.from_str(xtal_str, fmt='cif')
+
         else:
             atom = self.db.get_atoms(id=id)
             pmg = ase2pymatgen(atom)
@@ -808,7 +819,7 @@ class database_topology():
         self.db.delete(to_delete)
 
 
-    def select_xtals(self, ids, overwrite=False, attribute=None, use_ff=False):
+    def select_xtals(self, ids, overwrite=False, attribute=None, use_relaxed=None):
         """
         Extract xtals based on attribute name.
         Mostly called by update_row_ff_energy or update_row_dftb_energy.
@@ -816,6 +827,8 @@ class database_topology():
         Args:
             ids:
             overwrite:
+            atttribute:
+            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
         """
         (min_id, max_id) = ids
         if min_id is None: min_id = 1
@@ -825,7 +838,7 @@ class database_topology():
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
                 if min_id <= row.id <= max_id:
-                    xtal = self.get_pyxtal(row.id, use_ff)
+                    xtal = self.get_pyxtal(row.id, use_relaxed)
                     ids.append(row.id)
                     xtals.append(xtal)
                     if len(xtals) % 100 == 0:
@@ -898,6 +911,7 @@ class database_topology():
             skf_dir (str): GULP force field library (e.g., 'reaxff', 'tersoff')
             steps (int): relaxation steps
             ids (tuple): row ids e.g., (0, 100)
+            use_ff (bool): use the prerelaxed ff structure or not
             ncpu (int): number of parallel processes
             calc_folder (str): temporary folder for GULP calculations
             symmetrize (bool): impose symmetry in optimization
@@ -905,7 +919,12 @@ class database_topology():
         """
 
         os.makedirs(calc_folder, exist_ok=True)
-        ids, xtals = self.select_xtals(ids, overwrite, 'dftb_energy', use_ff)
+        if use_ff:
+            use_relaxed = 'ff_relaxed'
+        else:
+            use_relaxed = None
+
+        ids, xtals = self.select_xtals(ids, overwrite, 'dftb_energy', use_relaxed)
 
         dftb_results = []
         os.chdir(calc_folder)
@@ -949,13 +968,14 @@ class database_topology():
                            dftb_relaxed=xtal.to_file())
 
 
-    def update_row_topology(self, StructureType='Auto', overwrite=True):
+    def update_row_topology(self, StructureType='Auto', overwrite=True, prefix=None):
         """
         Update row topology base on the CrystalNets.jl
 
         Args:
             StructureType (str): 'Zeolite', 'MOF' or 'Auto'
             overwrite (bool): remove the existing attributes
+            prefix (str): prefix for tmp cif file
         """
         try:
             import juliacall
@@ -993,13 +1013,18 @@ class database_topology():
         else:
             option = jl.CrystalNets.Options(structure=jl.StructureType.Auto)
 
+        if prefix is not None:
+            cif_file = prefix + '.cif'
+        else:
+            cif_file = 'tmp.cif'
+
         for row in self.db.select():
             if overwrite or not hasattr(row, 'topology'):
                 atoms = self.db.get_atoms(row.id)
-                atoms.write('tmp.cif', format='cif')
+                atoms.write(cif_file, format='cif')
 
                 # Call crystalnet.jl
-                result = jl.determine_topology('tmp.cif', option)
+                result = jl.determine_topology(cif_file, option)
                 #print(result)
                 if len(result) > 1:
                     results = [x for x in result]
@@ -1052,7 +1077,7 @@ class database_topology():
 
     def export_structures(self, fmt='vasp', folder='mof_out', criteria=None,
                           sort_by='similarity', overwrite=True, cutoff=None,
-                          use_ff=True):
+                          use_relaxed=None):
         """
         export structures from database according to the given criterion
 
@@ -1076,12 +1101,14 @@ class database_topology():
                 os.makedirs(folder)
 
         keys = [
+                'id',
                 'pearson_symbol',
                 'space_group_number',
                 'density',
                 'dof',
                 'similarity',
                 'ff_energy',
+                'vasp_energy',
                 'topology',
                ]
         properties = []
@@ -1092,34 +1119,39 @@ class database_topology():
             ps = row.pearson_symbol
             sim = float(row.similarity) if hasattr(row, 'similarity') and row.similarity is not None else None
             top = row.topology if hasattr(row, 'topology') else None
-            eng = float(row.ff_energy) if hasattr(row, 'ff_energy') else None
-            properties.append([row.id, ps, spg, den, dof, sim, eng, top, ])
+            ff_eng = float(row.ff_energy) if hasattr(row, 'ff_energy') else None
+            vasp_eng = float(row.vasp_energy) if hasattr(row, 'vasp_energy') else None
+            properties.append([row.id, ps, spg, den, dof, sim, ff_eng, vasp_eng, top])
+
+        dicts = {}
+        for i, key in enumerate(keys):
+            if properties[0][i] is not None:
+                dicts[key] = [prop[i] for prop in properties]
 
         if sort_by in keys:
-            col = keys.index(sort_by) + 1
+            col = keys.index(sort_by) #+ 1
         else:
             print("supported attributes", keys)
             raise ValueError("Cannot sort by", sort_by)
 
         print("====Exporting {:} structures".format(len(properties)))
-        #properties = np.array(properties)
-        #mids = np.argsort(properties[:, col])[:cutoff]
-        #sorted_properties = []
         properties = [prop for prop in properties if prop[col] is not None]
         sorted_properties = sorted(properties, key=lambda x: x[col])
 
-        #for mid in mids:
         for entry in sorted_properties[:cutoff]:
-            [id, ps, spg, den, dof, sim, eng, top] = entry
+            [id, ps, spg, den, dof, sim, ff_eng, vasp_eng, top] = entry
             id = int(id)
             spg = int(spg)
             sim = float(sim)
             den = float(den)
             dof = int(dof)
-            if eng is not None: eng = float(eng)
-            try:
+            if vasp_eng is not None:
+                eng = float(vasp_eng)
+            elif ff_eng is not None:
+                eng = float(ff_eng)
             #if True:
-                xtal = self.get_pyxtal(id, use_ff)
+            try:
+                xtal = self.get_pyxtal(id, use_relaxed)
                 number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
                 # convert to the desired subgroup representation if needed
                 if number != spg:
@@ -1127,7 +1159,7 @@ class database_topology():
                     xtal = xtal.to_subgroup(paths)
                     number, symbol = xtal.group.number, xtal.group.symbol.replace('/','')
 
-                label = os.path.join(folder, '{:s}-{:d}-{:d}-{:s}'.format(xtal.get_Pearson_Symbol(), id, number, symbol))
+                label = os.path.join(folder, '{:d}-{:s}-{:d}-{:s}'.format(id, xtal.get_Pearson_Symbol(), number, symbol))
 
                 if criteria is not None:
                     status = xtal.check_validity(criteria, True)
@@ -1137,7 +1169,6 @@ class database_topology():
                 status = False
 
             if status:
-                #if top is not None: print(top)
                 try:
                 #if True:
                     xtal.set_site_coordination()
@@ -1152,7 +1183,7 @@ class database_topology():
                 if den is not None: label += '-D{:.2f}'.format(abs(den))
                 if eng is not None: label += '-E{:.3f}'.format(abs(eng))
                 if top is not None: label += '-T{:s}'.format(top)
-                if sim is not None: label += '-S{:.2f}'.format(sim)
+                #if sim is not None: label += '-S{:.2f}'.format(sim)
 
                 print("====Exporting:", label)
                 if fmt == 'vasp':
@@ -1161,6 +1192,8 @@ class database_topology():
                     xtal.to_file(label+'.cif')
             else:
                 print("====Skippng:  ", label)
+
+        return dicts
 
     def get_label(self, i):
         if i < 10:

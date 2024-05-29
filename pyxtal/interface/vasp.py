@@ -29,7 +29,7 @@ class VASP():
             raise NotImplementedError("only support ASE atoms object")
 
         self.structure = struc
-        self.folder = path  
+        self.folder = path
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
         self.pstress = 0.0
@@ -41,9 +41,9 @@ class VASP():
         self.cputime = 0
         self.error = True
         self.cmd = cmd
-    
+
     def set_vasp(self, level=0, pstress=0.0000, setup=None):
-        self.pstress = pstress 
+        self.pstress = pstress
         default0 = {'xc': 'pbe',
                 'npar': 8,
                 'kgamma': True,
@@ -95,7 +95,7 @@ class VASP():
                     'ediff': 1e-4,
                     'nsw': 0,
                     }
-    
+
         dict_vasp = dict(default0, **default1)
         return Vasp(**dict_vasp)
 
@@ -122,7 +122,7 @@ class VASP():
     def read_bandgap(self, path='vasprun.xml'):
         from pyxtal.interface.vasprun import vasprun
         myrun = vasprun(path)
-        self.gap = myrun.values['gap'] 
+        self.gap = myrun.values['gap']
 
     def run(self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None):
         if walltime is not None:
@@ -182,11 +182,11 @@ def single_optimize(struc, level, pstress, setup, path, clean,
     """
     single optmization
 
-    Args: 
+    Args:
         struc: pyxtal structure
         level: vasp calc level
         pstress: external pressure
-        setup: vasp setup 
+        setup: vasp setup
         path: calculation directory
 
     Returns:
@@ -209,11 +209,11 @@ def single_point(struc, setup=None, path=None, clean=True):
     """
     single optmization
 
-    Args: 
+    Args:
         struc: pyxtal structure
         level: vasp calc level
         pstress: external pressure
-        setup: vasp setup 
+        setup: vasp setup
         path: calculation directory
 
     Returns:
@@ -223,9 +223,9 @@ def single_point(struc, setup=None, path=None, clean=True):
     calc.run(setup, level=4, clean=clean)
     return calc.energy, calc.forces, calc.error
 
-def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None, 
+def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None,
         clean=True, cmd='mpirun -np 16 vasp_std', walltime="30m"):
-    
+
     """
     multi optimization
 
@@ -234,7 +234,7 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None,
         path: calculation directory
         levels: list of vasp calc levels
         pstress: external pressure
-        setup: vasp setup 
+        setup: vasp setup
 
     Returns:
         list of structures, energies and time costs
@@ -242,7 +242,7 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None,
 
     time_total = 0
     for i, level in enumerate(levels):
-        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path, 
+        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path,
                 clean, cmd, walltime)
 
         time_total += time
@@ -263,7 +263,6 @@ if __name__ == "__main__":
     os.system("source /share/intel/mkl/bin/mklvars.sh intel64")
     cmd='mpirun -n 4 /share/apps/bin/vasp544-2019u2/vasp_std'
 
-    
     calc = VASP(struc, path='tmp', cmd=cmd)
     calc.run()
     print("Energy:", calc.energy)

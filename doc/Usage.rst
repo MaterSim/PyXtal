@@ -594,9 +594,11 @@ Symmetry relation has been playing an important role in crystallography. PyXtal 
 Chemical Substitution
 ----------------------
 
-In many cases, the crystal structures of mutlicompnent systems are strongly related to the structure of simple systems. For instance, the 1: 1 ratio boron nitrides, as an isoelectronic analogue to carbon,  exihibit structural behaviors that are very similar to elemental carbon allotropes. Similarly, many of the known AlPO4 polymorphs are related to SiO2. Inspired by these known correlation, PyXtal offers the `substitue_1_2 <pyxtal.html#pyxtal.substitue_1_2>`_  function to derive the BC compounds from A via subgroup relation (e.g., from C to BN or from SiO2 to AlPO4). The key idea is to split A's wyckoff site to B and C according to the BC composition constraints. Unlike the random substituion, the wyckoff position splitting strictly follow the group-subgroup relation. As such, the resulting compounds will retain a high space group symmetry from the parental structure. Below, we illustrate this function via a few examples.
+In many cases, the crystal structures of mutlicompnent systems are strongly related to the structure of simple systems. For instance, the 1: 1 ratio boron nitrides, as an isoelectronic analogue to carbon, exihibit very similar structural behaviors as compared to elemental carbon allotropes. Similarly, many of the known AlPO4 polymorphs are related to SiO2. 
 
-Below is an example to make a BN compound from the given carbon allotrope diamond.
+Inspired by these known correlation, PyXtal offers the `substitue_1_2 <pyxtal.html#pyxtal.substitue_1_2>`_  function to derive the BC compounds from A via subgroup relation (e.g., from C to BN or from SiO2 to AlPO4). The key idea is to split A's Wyckoff sites to B and C according to the BC composition constraints. Unlike the random substitution, the Wyckoff position splitting strictly follows the group-subgroup relation. As such, the resulting compound retains a high space group symmetry from the parental structure. Below, we illustrate this function via a few examples.
+
+Below is a script to make a 1:1 ratio BN compound from the diamond carbon allotrope.
 
 .. code-block:: Python
 
@@ -615,7 +617,7 @@ Below is an example to make a BN compound from the given carbon allotrope diamon
     Found 1 substitutions in total
 
 
-If you want to generate more BN crystal, you can first generate the subgroup representation and then apply the `substitute_1_2` function.
+If you want to generate more BN crystals, you can first generate the subgroup representation and then apply the ``substitute_1_2`` function.
 
 .. code-block:: Python
 
