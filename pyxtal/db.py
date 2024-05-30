@@ -848,7 +848,8 @@ class database_topology():
     def update_row_ff_energy(self, ff='reaxff', ids=(None, None), ncpu=1,
                              calc_folder='gulp_calc',
                              criteria=None,
-                             overwrite=False):
+                             overwrite=False,
+                             write_freq=10):
         """
         Update row ff_energy with GULP calculator
 
@@ -858,6 +859,7 @@ class database_topology():
             ncpu (int): number of parallel processes
             calc_folder (str): temporary folder for GULP calculations
             overwrite (bool): remove the existing attributes
+            write_freq (int): frequency to write results to db for ncpu=1
         """
 
         os.makedirs(calc_folder, exist_ok=True)
@@ -870,7 +872,11 @@ class database_topology():
             for id, xtal in zip(ids, xtals):
                 res = gulp_opt_single(id, xtal, ff, calc_folder, criteria)
                 (xtal, eng, status) = res
-                if status: gulp_results.append((id, xtal, eng))
+                if status:
+                    gulp_results.append((id, xtal, eng))
+                if len(gulp_results) >= write_freq:
+                    self._update_db_gulp(gulp_results)
+                    gulp_results = []
         else:
             if len(ids) < ncpu: ncpu = len(ids)
             N_cycle = int(np.ceil(len(ids)/ncpu))
@@ -886,7 +892,12 @@ class database_topology():
                 results = [executor.submit(gulp_opt_par, *p) for p in args_list]
                 for result in results:
                     gulp_results.extend(result.result())
+        self._update_db_gulp(gulp_results)
 
+    def _update_db_gulp(self, gulp_results):
+        """
+        Update db with the gulp_results
+        """
         print("Wrap up the final results and update db", len(gulp_results))
         for gulp_result in gulp_results:
             (id, xtal, eng) = gulp_result
