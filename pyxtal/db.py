@@ -875,7 +875,7 @@ class database_topology():
                 if status:
                     gulp_results.append((id, xtal, eng))
                 if len(gulp_results) >= write_freq:
-                    self._update_db_gulp(gulp_results)
+                    self._update_db_gulp(gulp_results, ff)
                     gulp_results = []
         else:
             if len(ids) < ncpu: ncpu = len(ids)
@@ -892,11 +892,15 @@ class database_topology():
                 results = [executor.submit(gulp_opt_par, *p) for p in args_list]
                 for result in results:
                     gulp_results.extend(result.result())
-        self._update_db_gulp(gulp_results)
+        self._update_db_gulp(gulp_results, ff)
 
-    def _update_db_gulp(self, gulp_results):
+    def _update_db_gulp(self, gulp_results, ff):
         """
         Update db with the gulp_results
+
+        Args:
+            gulp_results: list of (id, xtal, eng) tuples
+            ff (str): forcefield type (e.g., 'reaxff')
         """
         print("Wrap up the final results and update db", len(gulp_results))
         for gulp_result in gulp_results:
