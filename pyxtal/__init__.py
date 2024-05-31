@@ -798,9 +798,7 @@ class pyxtal:
         #print("Test subgroup_once", self.group.number, idx, sites)
 
         if idx is None or len(idx) == 0:
-            msg = "Cannot find the valid splitter id\n"
-            msg += "This is most likely due to the cell size is not sufficient for k-subgroup\n"
-            msg += "You may increase the max_cell"
+            msg = "Cannot find valid splitter id (likely due to insufficient cellsize)"
             print(msg)
             return None
 
@@ -3523,7 +3521,8 @@ class pyxtal:
         return strs
 
 
-    def get_tabular_representation(self, ids=None, normalize=True, N_wp=6, max_abc=50.0, max_angle=np.pi):
+    def get_tabular_representation(self, ids=None, normalize=True,
+                                   N_wp=6, max_abc=50.0, max_angle=np.pi):
         """
         Convert the xtal to a 1D reprsentation organized as
         (space_group_number, a, b, c, alpha, beta, gamma, wp1, wp2, ....)
@@ -3563,7 +3562,8 @@ class pyxtal:
         count = N_cell
         for id, site in zip(ids, self.atom_sites):
             rep[count] = site.wp.index
-            if normalize: rep[count] /= len(self.group)
+            if normalize:
+                rep[count] /= len(self.group)
             xyz = site.coords[id] # position
             xyz -= np.floor(xyz)
             rep[count+1:count+4] = xyz
@@ -3571,7 +3571,7 @@ class pyxtal:
         return rep
 
 
-    def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180):
+    def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180, normalize=True):
         """
         Reconstruc xtal from 1d tabular_representation
         Currently assuming the elemental composition like carbon
@@ -3582,12 +3582,20 @@ class pyxtal:
             max_angle (float): maximum angle in radian (used in normalization)
 
         """
-        number = int(np.round(rep[0] * 230))
+        if normalize:
+            number = int(np.round(rep[0] * 230))
+        else:
+            number = int(rep[0])
+
         if 1 <= number <= 230:
             group = Group(number)
             [a, b, c, alpha, beta, gamma] = rep[1:7]
-            a, b, c = a * max_abc, b * max_abc, c * max_abc
-            alpha, beta, gamma = alpha*max_angle, beta*max_angle, gamma*max_angle
+            if normalize:
+                a, b, c = a * max_abc, b * max_abc, c * max_abc
+                alpha, beta, gamma = alpha*max_angle, beta*max_angle, gamma*max_angle
+            else:
+                alpha, beta, gamma = np.degrees(alpha), np.degrees(beta), np.degrees(gamma)
+
             lattice = np.array([a, b, c, alpha, beta, gamma])
             sites_info = np.reshape(rep[7:], (int((len(rep)-7)/4), 4))
             sites = []
@@ -3595,7 +3603,10 @@ class pyxtal:
             for site_info in sites_info:
                 [id, x, y, z] = site_info
                 if min(site_info) > -0.01:
-                    wp_id = int(np.round(len(group)*id))
+                    if normalize:
+                        wp_id = int(np.round(len(group)*id))
+                    else:
+                        wp_id = int(id)
                     if wp_id >= len(group): wp_id = -1
                     wp = group[wp_id]
                     xyz = wp.search_generator([x, y, z])#; print(wp.get_label(), xyz)
@@ -3607,7 +3618,7 @@ class pyxtal:
             try:
                 self.build(group, ['C'], [numIons], lattice, [sites])
             except:
-                print("Invalid Build", lattice, numIons, sites)
+                print("Invalid Build", number, lattice, numIons, sites)
                 self.valid = False
 
     def get_Pearson_Symbol(self):
