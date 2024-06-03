@@ -6,3 +6,4 @@ scipy>=1.7.3
 importlib_metadata>=1.4
 ase>=3.18.0
 monty>=2024.2.26
+typing-extensions>=4.12

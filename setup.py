@@ -50,6 +50,7 @@ setup(
         'ase>=3.18.0',  #covered by pymatgen
         'scipy>=1.7.3',
         'importlib_metadata>=1.4',
+        'typing-extensions>=4.12',
         #'pyshtools>=4.10.3',
         #"openbabel>=3.0.0",
     ],
