@@ -276,6 +276,29 @@ class pyxtal:
         tm = None,
         use_hall = False,
     ):
+        """
+        The main function to generate random crystals.
+        It calls `block_crysstal` or `random_crystal` internally.
+
+
+        Args:
+            dim (int): dimenion (0, 1, 2, 3)
+            group (int): the group number (1-56, 1-75, 1-80, 1-230)
+            species (list): a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
+            numIons (list): a list of the number of each type of atom within the
+                primitive cell (NOT the conventional cell), e.g., `[4, 2]`
+            factor (optional): volume factor used to generate the crystal
+            thickness:
+            area (float):
+            lattice (optional): `Lattice <pyxtal.lattice.Lattice.html>`_ to define the cell
+            sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
+            conventional (bool): whether or not use the conventional setting
+            t_factor ():
+            max_count ():
+            tm (optional): `Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ object
+                to define the distances
+
+        """
         if self.molecular:
             prototype = "molecular"
         else:

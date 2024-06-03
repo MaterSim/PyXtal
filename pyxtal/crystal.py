@@ -258,7 +258,7 @@ class random_crystal:
         else:
             self.lattice_attempts = 40
             self.coord_attempts = 10
-        
+
         #QZ: Maybe we no longer need this tag
         #if not self.lattice.allow_volume_reset:
         #    self.lattice_attempts = 1
@@ -368,7 +368,7 @@ class random_crystal:
                         # Generate a list of coords from ops
                         pt = self.lattice.generate_point()
                         pt, wp, _ = wp.merge(pt, cell, tol, group=self.group)
-                #print('good pt', pt)  
+                #print('good pt', pt)
                 if wp is not False:
                     # For pure planar structure
                     if self.dim == 2 and self.thickness is not None and \

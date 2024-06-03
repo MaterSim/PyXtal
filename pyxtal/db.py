@@ -1164,6 +1164,8 @@ class database_topology():
                 eng = float(vasp_eng)
             elif ff_eng is not None:
                 eng = float(ff_eng)
+            else:
+                eng = None
             #if True:
             try:
                 xtal = self.get_pyxtal(id, use_relaxed)
@@ -1264,9 +1266,14 @@ class database_topology():
                 db.write(row.toatoms(), key_value_pairs=kvp)
         print("Created {:s} with {:d} strucs".format(db_name, db.count()))
 
-    def check_overlap(self, reference_db, etol=2e-3):
+    def check_overlap(self, reference_db, etol=2e-3, verbose=True):
         """
         Check the overlap w.r.t the reference database
+
+        Args:
+            reference_db (str): path of reference database
+            etol (float): energy tolerence to distinguish the identical structure
+            verbose (bool): whether or not print out details
         """
 
         db_ref = database_topology(reference_db)
@@ -1294,13 +1301,22 @@ class database_topology():
         strs += "/{:d}/{:d}".format(self.db.count(), db_ref.db.count())
         print(strs)
         sorted_overlaps = sorted(overlaps, key=lambda x: x[-1])
-        for entry in sorted_overlaps:
-            print('{:4d} {:6s} {:4d} {:20s} {:10.3f}'.format(*entry))
+        if verbose:
+            for entry in sorted_overlaps:
+                print('{:4d} {:6s} {:4d} {:20s} {:10.3f}'.format(*entry))
 
         return overlaps
 
     def print_info(self, excluded_ids=[], cutoff=100):
+        """
+        Print out the summary of the database based on the calculated energy
+        Mostly used to quickly view the most interesting low-energy structures.
+        Todo: show vasp_energy if available
 
+        Args:
+            excluded_ids (list): list of unwanted row ids
+            cutoff (int): the cutoff value for the print
+        """
         print("\nCurrent   database {:s}: {:d}".format(self.db_name, self.db.count()))
         output = []
         for row in self.db.select():
@@ -1312,7 +1328,7 @@ class database_topology():
         for entry in sorted_output[:cutoff]:
             print('{:4d} {:6s} {:4d} {:20s} {:10.3f}'.format(*entry))
 
-        strs = "Output structures: {:d}/{:d}".format(len(sorted_output), self.db.count())
+        strs = "Showed structures: {:d}/{:d}".format(len(sorted_output), self.db.count())
         print(strs)
 
 
