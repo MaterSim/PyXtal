@@ -1011,10 +1011,10 @@ class pyxtal:
             #print(self.lattice.matrix)
             #print(splitter.R[:3,:3].T)
             #print(lat1); import sys; sys.exit()
-        #print(lattice); print(lattice.matrix)
         if mut_lat:
             try:
-                lattice=lattice.mutate(degree=eps, frozen=True)
+                lattice=lattice.mutate(degree=eps, frozen=False) #True)
+                #print('debug subgroup', mut_lat, eps, lattice)
             except:
                 print('skip lattice mutation mostly for triclinic system')
 
@@ -3544,8 +3544,44 @@ class pyxtal:
         return strs
 
 
-    def get_tabular_representation(self, ids=None, normalize=True,
-                                   N_wp=6, max_abc=50.0, max_angle=np.pi):
+    def get_tabular_representations(self, N_max=30, N_wp=8, normalize=False,
+                                    perturb=True, eps=0.05):
+        """
+        Enumerate the equivalent representations for a give crystal.
+        For the example of 8a in space group 227, there exist 8 equivalent positions
+
+        Args:
+            N_max (int): the maximum number of samples from the enumeration
+            N_wp (int): the maximum number of allowed WP sites
+            normalize (bool): whether or not normalize all number to (0, 1)
+            perturb (bool): whether or not apply perturbation on the variables
+            eps (float): a float number to control the degree of perturbation
+
+        Returns:
+            a list of equivalent 1D tabular representations
+        """
+        reps = []
+        # To prevent the explosion of big multiplicity number
+        if len(self.atom_sites) <= 5:
+            min_wp = 20
+        else:
+            min_wp = int(np.power(1e+6, 1/len(self.atom_sites)))
+        sites_mul = [range(min([min_wp, site.wp.multiplicity])) for site in self.atom_sites]
+        ids = list(itertools.product(*sites_mul))
+        if len(ids) > N_max: ids = sample(ids, N_max)
+
+        print("Number of augments {:4d} from ".format(len(ids)), self.get_xtal_string())
+        for sites_id in ids:
+            rep = self.get_tabular_representation(sites_id, normalize, N_wp,
+                                                  perturb, eps=eps)
+            reps.append(rep)
+        return reps
+
+
+
+    def get_tabular_representation(self, ids=None, normalize=True, N_wp=6,
+                                   perturb=False, max_abc=50.0,
+                                   max_angle=np.pi, eps=0.05):
         """
         Convert the xtal to a 1D reprsentation organized as
         (space_group_number, a, b, c, alpha, beta, gamma, wp1, wp2, ....)
@@ -3555,8 +3591,10 @@ class pyxtal:
             ids (list): index of generators for each wp
             normalize (bool): whether or not normalize the data to (0, 1)
             N_wp (int): number of maximum wp sites
+            perturb (bool): whether or not perturb the variables
             max_abc (float): maximum a, b, c length (used in normalization)
             max_angle (float): maximum angle in radian (used in normalization)
+            eps (float): a float number to control the degree of perturbation
 
         Returns:
             a 1D vector such as (141, 3, 3, 3, pi/2, pi/2, pi/2, wp_id, x, y, z)
@@ -3575,7 +3613,9 @@ class pyxtal:
         # If the number of wp is less then 6, assign -1
         rep = -np.ones(N_cell + N_site) # 7 + 6 + 18 = 31
         rep[0] = self.group.number
-        rep[1:7] = self.lattice.get_para()
+        lattice = self.lattice.copy()
+        if perturb: lattice = lattice.mutate(degree=eps)
+        rep[1:7] = lattice.get_para()
 
         if normalize:
             rep[0] /= 230
@@ -3585,10 +3625,11 @@ class pyxtal:
         count = N_cell
         for id, site in zip(ids, self.atom_sites):
             rep[count] = site.wp.index
-            if normalize:
-                rep[count] /= len(self.group)
+            if normalize: rep[count] /= len(self.group)
             xyz = site.coords[id] # position
             xyz -= np.floor(xyz)
+            free_xyzs = site.wp.get_free_xyzs(xyz, perturb=perturb, eps=0.05)
+            xyz = site.wp.get_position_from_free_xyzs(free_xyzs)
             rep[count+1:count+4] = xyz
             count += 4
         return rep

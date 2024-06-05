@@ -596,13 +596,16 @@ def new_struc(xtal, xtals):
                         return False
         return True
 
-def new_struc_wo_energy(xtal, xtals):
+def new_struc_wo_energy(xtal, xtals, ltol=0.2, stol=0.3, angle_tol=5.0, verbose=False):
     """
     check if this is a new structure
 
     Args:
         xtal: input structure
         xtals: list of reference structures
+        ltol (float): Fractional length tolerance. Default is 0.2.
+        stol (float): Site tolerance. ( V / Nsites ) ** (1/3). Default is 0.3.
+        angle_tol (float): Angle tolerance in degrees. Default is 5 degrees.
 
     Return:
         `None` or the id of matched structure
@@ -617,14 +620,16 @@ def new_struc_wo_energy(xtal, xtals):
         vol1 = pmg_s1.lattice.volume
 
         for xtal2 in xtals:
-            #print(rep); print(rep2)
-            pmg_s2 = xtal2.to_pymatgen()
-            vol2 = pmg_s2.lattice.volume
-            if abs(vol1-vol2)/vol1<5e-2:
-                pmg_s2.remove_species("H")
-                if sm.StructureMatcher().fit(pmg_s1, pmg_s2):
-                    #print(pmg_s2); import sys; sys.exit()
-                    return False
+            if xtal.group.number == xtal2.group.number:
+                #print(rep); print(rep2)
+                pmg_s2 = xtal2.to_pymatgen()
+                vol2 = pmg_s2.lattice.volume
+                if abs(vol1-vol2)/vol1<1e-2:
+                    pmg_s2.remove_species("H")
+                    if sm.StructureMatcher(ltol, stol, angle_tol).fit(pmg_s1, pmg_s2):
+                        if verbose:
+                            print(xtal, xtal2)#; import sys; sys.exit()
+                        return False
         return True
 
 def split_list_by_ratio(nums, ratio):

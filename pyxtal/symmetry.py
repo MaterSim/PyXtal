@@ -1952,13 +1952,23 @@ class Wyckoff_position:
 
         return op
 
-    def get_free_xyzs(self, pos):
+    def get_free_xyzs(self, pos, perturb=False, eps=0.1):
         """
         return the free xyz paramters from the given xyz position
+
+        Args:
+            pos (array): a 3-array to describe x, y, z
+            perturb (bool): whether or not apply perturbation
+            eps (float): the magnitude of perturbations
+
+        Returns:
+            free xyz array
         """
         #print(self.apply_ops(pos)[0])
         res = self.apply_ops(pos)[0]
         res = np.delete(res, self.get_frozen_axis())
+        if perturb: res += eps*np.random.sample(len(res))-0.5
+        res -= np.floor(res)
         return res
 
     def get_position_from_free_xyzs(self, xyz):

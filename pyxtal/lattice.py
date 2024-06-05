@@ -488,9 +488,9 @@ class Lattice:
             print(a, b, c, alpha, beta, gamma, ltype)
 
 
-    def mutate(self, degree=0.20, frozen=False):
+    def mutate(self, degree=0.10, frozen=False):
         """
-        mutate the lattice object
+        Mutate the lattice object
         """
         rand = 1 + degree*(np.random.sample(6)-0.5)
         a0, b0, c0, alpha0, beta0, gamma0 = self.get_para()
