@@ -819,6 +819,16 @@ class database_topology():
         self.db.delete(to_delete)
 
 
+    def get_max_id(self):
+        """
+        Get the maximum row id
+        """
+        max_id = None
+        for row in self.db.select():
+            if max_id is None or row.id > max_id:
+                max_id = row.id + 1
+        return max_id
+
     def select_xtals(self, ids, overwrite=False, attribute=None, use_relaxed=None):
         """
         Extract xtals based on attribute name.
@@ -832,8 +842,7 @@ class database_topology():
         """
         (min_id, max_id) = ids
         if min_id is None: min_id = 1
-        if max_id is None: max_id = self.db.count() + 10000
-
+        if max_id is None: max_id = self.get_max_id()
         ids, xtals = [], []
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
@@ -865,34 +874,37 @@ class database_topology():
         os.makedirs(calc_folder, exist_ok=True)
         ids, xtals = self.select_xtals(ids, overwrite, 'ff_energy')
 
-        gulp_results = []
+        if len(ids) > 0:
+            gulp_results = []
 
-        # Serial or Parallel computation
-        if ncpu == 1:
-            for id, xtal in zip(ids, xtals):
-                res = gulp_opt_single(id, xtal, ff, calc_folder, criteria)
-                (xtal, eng, status) = res
-                if status:
-                    gulp_results.append((id, xtal, eng))
-                if len(gulp_results) >= write_freq:
-                    self._update_db_gulp(gulp_results, ff)
-                    gulp_results = []
+            # Serial or Parallel computation
+            if ncpu == 1:
+                for id, xtal in zip(ids, xtals):
+                    res = gulp_opt_single(id, xtal, ff, calc_folder, criteria)
+                    (xtal, eng, status) = res
+                    if status:
+                        gulp_results.append((id, xtal, eng))
+                    if len(gulp_results) >= write_freq:
+                        self._update_db_gulp(gulp_results, ff)
+                        gulp_results = []
+            else:
+                if len(ids) < ncpu: ncpu = len(ids)
+                N_cycle = int(np.ceil(len(ids)/ncpu))
+                print("\n# Parallel GULP optimizations", ncpu, N_cycle, len(ids))
+                args_list = []
+
+                for i in range(ncpu):
+                    id1 = i * N_cycle
+                    id2 = min([id1 + N_cycle, len(ids)])
+                    args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
+
+                with ProcessPoolExecutor(max_workers=ncpu) as executor:
+                    results = [executor.submit(gulp_opt_par, *p) for p in args_list]
+                    for result in results:
+                        gulp_results.extend(result.result())
+            self._update_db_gulp(gulp_results, ff)
         else:
-            if len(ids) < ncpu: ncpu = len(ids)
-            N_cycle = int(np.ceil(len(ids)/ncpu))
-            print("\n# Parallel GULP optimizations", ncpu, N_cycle, len(ids))
-            args_list = []
-
-            for i in range(ncpu):
-                id1 = i * N_cycle
-                id2 = min([id1 + N_cycle, len(ids)])
-                args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
-
-            with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                results = [executor.submit(gulp_opt_par, *p) for p in args_list]
-                for result in results:
-                    gulp_results.extend(result.result())
-        self._update_db_gulp(gulp_results, ff)
+            print("All structures have the ff_energy already")
 
     def _update_db_gulp(self, gulp_results, ff):
         """
