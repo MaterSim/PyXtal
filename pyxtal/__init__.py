@@ -200,9 +200,11 @@ class pyxtal:
                 symbol = self.group.symbol
             else:
                 if self.molecular:
-                    symbol = self.mol_sites[0].wp.get_hm_symbol()
+                    if len(self.mol_sites) > 0:
+                        symbol = self.mol_sites[0].wp.get_hm_symbol()
                 else:
-                    symbol = self.atom_sites[0].wp.get_hm_symbol()
+                    if len(self.atom_sites) > 0:
+                        symbol = self.atom_sites[0].wp.get_hm_symbol()
             s += "\nGroup: {} ({})".format(symbol, self.group.number)
             s += "\n{}".format(self.lattice)
             s += "\nWyckoff sites:"
@@ -3635,7 +3637,8 @@ class pyxtal:
         return rep
 
 
-    def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180, normalize=True):
+    def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180,
+                                    normalize=True, verbose=False):
         """
         Reconstruc xtal from 1d tabular_representation
         Currently assuming the elemental composition like carbon
@@ -3644,13 +3647,13 @@ class pyxtal:
             rep: 1D array
             max_abc (float): maximum a, b, c length (used in normalization)
             max_angle (float): maximum angle in radian (used in normalization)
-
+            normalize (bool): whether normalize or not?
+            verbose (bool): output detailed error
         """
         if normalize:
             number = int(np.round(rep[0] * 230))
         else:
             number = int(rep[0])
-
         if 1 <= number <= 230:
             group = Group(number)
             [a, b, c, alpha, beta, gamma] = rep[1:7]
@@ -3666,6 +3669,8 @@ class pyxtal:
             numIons = 0
             for site_info in sites_info:
                 [id, x, y, z] = site_info
+                # exclude data containing negative values
+                if verbose: print("site_info", site_info)
                 if min(site_info) > -0.01:
                     if normalize:
                         wp_id = int(np.round(len(group)*id))
@@ -3679,11 +3684,23 @@ class pyxtal:
                         label = wp.get_label()
                         sites.append((label, xyz[0], xyz[1], xyz[2]))#; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
                         numIons += wp.multiplicity
-            try:
-                self.build(group, ['C'], [numIons], lattice, [sites])
-            except:
-                print("Invalid Build", number, lattice, numIons, sites)
+                    else:
+                        if verbose:
+                            print("Cannot find generator from the input", x, y, z)
+                            print(wp)
+            if len(sites) > 0:
+                try:
+                    self.build(group, ['C'], [numIons], lattice, [sites])
+                except:
+                    print("Invalid Build", number, lattice, numIons, sites)
+                    self.valid = False
+            else:
+                print("Empty sites in tabular_representation", rep)
+                print("parsed sites info", sites_info)
                 self.valid = False
+        else:
+            if verbose:
+                print('The input space group is invalid', rep[0])
 
     def get_Pearson_Symbol(self):
         """
