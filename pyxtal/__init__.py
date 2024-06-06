@@ -3489,7 +3489,7 @@ class pyxtal:
                     cn1 = s.coordination
                     cn2 = criteria['CN'][ele]
                     #print(ele, cn1, option)
-                    if cn1 != cn2:
+                    if cn1 not in cn2:
                         if verbose:
                             strs = "=====Invalid CN {:s} [{:d}=>{:d}]".format(ele, cn1, cn2)
                             strs += ", exclude ii: " + str(option)
