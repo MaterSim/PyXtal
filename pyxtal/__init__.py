@@ -3663,8 +3663,9 @@ class pyxtal:
                 alpha, beta, gamma = alpha*max_angle, beta*max_angle, gamma*max_angle
             else:
                 alpha, beta, gamma = np.degrees(alpha), np.degrees(beta), np.degrees(gamma)
-
-            lattice = np.array([a, b, c, alpha, beta, gamma])
+            lattice = Lattice.from_para(a, b, c, alpha, beta, gamma,
+                                        ltype=group.lattice_type,
+                                        force_symmetry=True)
             sites_info = np.reshape(rep[7:], (int((len(rep)-7)/4), 4))
             sites = []
             numIons = 0

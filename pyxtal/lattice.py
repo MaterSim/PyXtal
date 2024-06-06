@@ -765,6 +765,7 @@ class Lattice:
         radians=False,
         PBC=[1, 1, 1],
         factor=1.0,
+        force_symmetry=False,
         **kwargs
     ):
         """
@@ -818,18 +819,22 @@ class Lattice:
         except:
             msg = "Error: invalid cell parameters for lattice."
             raise ValueError(msg)
-        volume = np.linalg.det(cell_matrix)
-        # Initialize a Lattice instance
-        l = Lattice(ltype, volume, PBC=PBC, **kwargs)
-        l.a, l.b, l.c = factor*a, factor*b, factor*c
-        l.alpha, l.beta, l.gamma = alpha * rad, beta * rad, gamma * rad
-        l.matrix = cell_matrix
-        l.inv_matrix = np.linalg.inv(cell_matrix)
-        l.ltype = ltype
-        l.volume = volume
-        l.random = False
-        l.allow_volume_reset = False
-        return l
+
+        if force_symmetry:
+            return Lattice.from_matrix(cell_matrix, ltype=ltype)
+        else:
+            volume = np.linalg.det(cell_matrix)
+            # Initialize a Lattice instance
+            l = Lattice(ltype, volume, PBC=PBC, **kwargs)
+            l.a, l.b, l.c = factor*a, factor*b, factor*c
+            l.alpha, l.beta, l.gamma = alpha * rad, beta * rad, gamma * rad
+            l.matrix = cell_matrix
+            l.inv_matrix = np.linalg.inv(cell_matrix)
+            l.ltype = ltype
+            l.volume = volume
+            l.random = False
+            l.allow_volume_reset = False
+            return l
 
     @classmethod
     def from_matrix(self, matrix, reset=True, shape='upper', ltype="triclinic", PBC=[1, 1, 1], **kwargs):
