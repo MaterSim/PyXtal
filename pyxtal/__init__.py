@@ -3697,8 +3697,9 @@ class pyxtal:
                     print("Invalid Build", number, lattice, numIons, sites)
                     self.valid = False
             else:
-                print("Empty sites in tabular_representation", rep)
-                print("parsed sites info", sites_info)
+                if verbose:
+                    print("Empty sites in tabular_representation", rep)
+                    print("parsed sites info", sites_info)
                 self.valid = False
         else:
             if verbose:
