@@ -3638,7 +3638,7 @@ class pyxtal:
 
 
     def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180,
-                                    normalize=True, verbose=False):
+                                    normalize=True, tol=0.1, verbose=False):
         """
         Reconstruc xtal from 1d tabular_representation
         Currently assuming the elemental composition like carbon
@@ -3648,6 +3648,7 @@ class pyxtal:
             max_abc (float): maximum a, b, c length (used in normalization)
             max_angle (float): maximum angle in radian (used in normalization)
             normalize (bool): whether normalize or not?
+            tol (float): a tolerance value to assign the Wyckoff site
             verbose (bool): output detailed error
         """
         if normalize:
@@ -3678,7 +3679,7 @@ class pyxtal:
                         wp_id = int(id)
                     if wp_id >= len(group): wp_id = -1
                     wp = group[wp_id]
-                    xyz = wp.search_generator([x, y, z])#; print(wp.get_label(), xyz)
+                    xyz = wp.search_generator([x, y, z], tol=tol)#; print(wp.get_label(), xyz)
                     if xyz is not None:
                         xyz, wp, _ = wp.merge(xyz, np.eye(3), 1e-3)
                         label = wp.get_label()
