@@ -51,7 +51,7 @@ class XRD():
 
     def save(self, filename):
         """
-        savetxt file 
+        savetxt file
         """
         header = "wavelength/thetas {:12.6f} {:6.2f} {:6.2f}".format(\
                 self.wavelength, np.degrees(self.min2theta), np.degrees(self.max2theta))
@@ -70,14 +70,14 @@ class XRD():
 
         pxrd = np.loadtxt(filename)
         self.theta2 = pxrd[:, 0]
-        self.d_hkls = pxrd[:, 1] 
+        self.d_hkls = pxrd[:, 1]
         self.xrd_intensity = pxrd[:, -1]
         hkl_labels = []
         for i in range(len(pxrd)):
             h, k, l = int(pxrd[i, 2]), int(pxrd[i, 3]), int(pxrd[i, 4])
             hkl_labels.append([{"hkl": (h, k, l), "multiplicity": 1}])
         self.hkl_labels = hkl_labels
-        self.pxrd = pxrd       
+        self.pxrd = pxrd
         self.name = filename
 
     def __str__(self):
@@ -142,7 +142,7 @@ class XRD():
         h = np.arange(-h1, h1+1)
         k = np.arange(-k1, k1+1)
         l = np.arange(-l1, l1+1)
-        
+
         hkl = np.array((np.meshgrid(h,k,l))).transpose()
         hkl_list = np.reshape(hkl, [len(h)*len(k)*len(l),3])
         hkl_list = hkl_list[np.where(hkl_list.any(axis=1))[0]]
@@ -159,7 +159,7 @@ class XRD():
         self.hkl_list = np.array(hkl_list, dtype=int)
         self.d_hkl = d_hkl
 
-    def intensity(self, crystal, TWO_THETA_TOL=1e-5, SCALED_INTENSITY_TOL=1e-5): 
+    def intensity(self, crystal, TWO_THETA_TOL=1e-5, SCALED_INTENSITY_TOL=1e-5):
         """
         This function calculates all that is necessary to find the intensities.
         This scheme is similar to pymatgen
@@ -171,7 +171,7 @@ class XRD():
             TWO_THETA_TOL: tolerance to find repeating angles
             SCALED_INTENSITY_TOL: threshold for intensities
         """
-        # obtain scattering parameters, atomic numbers, and occus 
+        # obtain scattering parameters, atomic numbers, and occus
         #print("total number of hkl lists", len(self.hkl_list))
         #print("total number of coords:", len(crystal.get_scaled_positions()))
         #from time import time
@@ -214,20 +214,20 @@ class XRD():
                             p = mp.Process(target=get_all_intensity_par,
                                            args = (cpu,
                                                    queue,
-                                                   [mycycle], 
+                                                   [mycycle],
                                                    Start,
                                                    End,
                                                    hkl_per_proc,
-                                                   positions, 
-                                                   self.hkl_list[Start:End], 
-                                                   s2s[Start:End], 
-                                                   coeffs, 
+                                                   positions,
+                                                   self.hkl_list[Start:End],
+                                                   s2s[Start:End],
+                                                   coeffs,
                                                    zs))
                             p.start()
                             processes.append(p)
 
                     #print("collect results")
-                    unsorted_result = [queue.get() for p in processes] 
+                    unsorted_result = [queue.get() for p in processes]
                     for p in processes: p.join()
                     for t in unsorted_result: Is[t[1]:t[2]] += t[3]
                     #print('Done=================', cycle)
@@ -241,7 +241,7 @@ class XRD():
                         N2 = N_cycle
                         End = N_hkls
                     else:
-                        N2 = (cpu + 1) * cycle_per_cpu 
+                        N2 = (cpu + 1) * cycle_per_cpu
                         End = N2* hkl_per_proc
 
                     cycles = range(N1, N2)
@@ -249,26 +249,26 @@ class XRD():
                     p = mp.Process(target=get_all_intensity_par,
                                    args = (cpu,
                                            queue,
-                                           cycles, 
+                                           cycles,
                                            Start,
                                            End,
                                            hkl_per_proc,
-                                           positions, 
-                                           self.hkl_list[Start:End], 
-                                           s2s[Start:End], 
-                                           coeffs, 
+                                           positions,
+                                           self.hkl_list[Start:End],
+                                           s2s[Start:End],
+                                           coeffs,
                                            zs))
                     p.start()
                     processes.append(p)
 
-                unsorted_result = [queue.get() for p in processes] 
+                unsorted_result = [queue.get() for p in processes]
                 for p in processes: p.join()
-                
+
                 #collect results
                 Is = np.zeros([N_hkls])
                 for t in unsorted_result: Is[t[1]:t[2]] += t[3]
 
-        # Lorentz polarization factor 
+        # Lorentz polarization factor
         lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
 
         # Preferred orientation factor
@@ -416,8 +416,8 @@ class XRD():
 
         return hkl_str
 
-    def plot_pxrd(self, filename=None, profile=None, minimum_I=0.01, 
-                show_hkl=True, fontsize=None, figsize=(20,10), 
+    def plot_pxrd(self, filename=None, profile=None, minimum_I=0.01,
+                show_hkl=True, fontsize=None, figsize=(20,10),
                 res = 0.02, fwhm = 0.1,
                 ax=None, xlim=None, width=1.0, legend=None, show=False):
         """
@@ -865,14 +865,14 @@ def get_intensity(positions, hkl, s2, coeffs, z):
     fs = np.sum(sfs*exps, axis=0) #M
 
     # Final intensity values, M
-    return (fs * fs.conjugate()).real 
- 
+    return (fs * fs.conjugate()).real
+
 def get_all_intensity(N_cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs):
     Is = np.zeros(len(hkls))
     for i, cycle in enumerate(N_cycles):
         N1 = int(per_N*(cycle)/N_atom)
         if i+1 == len(N_cycles):
-            N2 = min([len(hkls), int(per_N*(cycle+1)/N_atom)]) 
+            N2 = min([len(hkls), int(per_N*(cycle+1)/N_atom)])
         else:
             N2 = int(per_N*(cycle+1)/N_atom)
         hkl, s2 = hkls[N1:N2].T, s2s[N1:N2]
@@ -889,8 +889,94 @@ def get_all_intensity_par(cpu, queue, cycles, Start, End, hkl_per_proc, position
         if i+1 == len(cycles):
             N2 = End - Start
         else:
-            N2 = N1 + hkl_per_proc 
+            N2 = N1 + hkl_per_proc
         hkl, s2 = hkls[N1:N2].T, s2s[N1:N2]
         Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
         #print('run', cpu, N1+Start, N2+Start, N1, N2)
     queue.put((cpu, Start, End, Is))
+
+def pxrd_refine(xtal, ref_pxrd, thetas, steps=20):
+    """
+    Improve the lattice w.r.t the reference PXRD
+
+    Args:
+        xtal:
+        ref_pxrd:
+        thetas:
+        steps (int):
+    """
+    from scipy.optimize import minimize
+
+    def fun(x0, rep, ref_pxrd, thetas):
+        rep.x[0][1:] = x0
+        s = rep.to_pyxtal()
+        xrd = s.get_XRD(thetas=thetas)
+        pxrd = xrd.get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+        sim = Similarity(ref_pxrd, pxrd, x_range=thetas).value
+        return -sim
+
+    rep = xtal.get_1D_representation()
+    x0 = rep.x[0][1:]
+    val0 = fun(x0, rep, ref_pxrd, thetas)
+    res = minimize(fun, x0, args=(rep, ref_pxrd, thetas),
+            method='Nelder-Mead', options={'maxiter': steps})
+    rep.x[0][1:] = res.x
+    xtal = rep.to_pyxtal()
+    return xtal, res.x, -res.fun
+
+if __name__ == "__main__":
+    from pymatgen.core import Structure
+    from optparse import OptionParser
+    from pyxtal.util import parse_cif
+    from pyxtal import pyxtal
+    from matplotlib import pyplot as plt
+
+    parser = OptionParser()
+    parser.add_option("-f", "--cif", dest="cif",
+                      help="cif file name")
+    parser.add_option("-s", "--step", dest="step", type=int, default=20,
+                      help="steps, optional")
+
+
+    (options, args) = parser.parse_args()
+    thetas = [5, 50]
+    data = np.loadtxt('ref.txt')
+    data[:,1]/=np.max(data[:,1]) #Normalize the intensity
+    ref_pxrd = (data[:, 0], data[:, 1])
+
+    with open(options.cif, 'r') as f:
+        lines = f.readlines()
+        for l in lines:
+            if l.find('smile') > 0:
+                break
+        smiles = []
+        tmp = l.split(':')[-1].split('.')
+        tmp[-1] = tmp[-1][:-1]
+        for t in tmp:
+            t = t.replace(' ', '')
+            smiles.append(t+'.smi')
+
+    cifs = parse_cif(options.cif)
+    fig, axs = plt.subplots(nrows=len(cifs), ncols=2,
+                            linewidth=1,
+                            figsize=(12, 3*len(cifs)),
+                           )
+    s = pyxtal(molecular=True)
+    for i, cif in enumerate(cifs):
+        pmg = Structure.from_str(cif, fmt='cif')
+        ax1, ax2 = axs[i, 0], axs[i, 1]
+        ax1.plot(ref_pxrd[0], ref_pxrd[1], label='ref')
+        ax2.plot(ref_pxrd[0], ref_pxrd[1], label='ref')
+        s.from_seed(pmg, molecules=smiles)
+        pxrd = s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+        (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=0)
+        ax1.plot(pxrd[0], pxrd[1], label='Init: {:6.3f}'.format(val1))
+
+        (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=options.step)
+        ax2.plot(pxrd[0], pxrd[1], label='Opt: {:6.3f}'.format(val1))
+        pxrd = s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+        ax2.legend()
+        ax1.legend()
+
+        print(i, s.lattice, val1)
+    fig.savefig("pxrd_match.png", dpi=150)

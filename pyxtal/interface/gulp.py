@@ -1,4 +1,4 @@
-import os
+import os, shutil
 import numpy as np
 import re
 from pyxtal import pyxtal
@@ -6,9 +6,96 @@ from pyxtal.lattice import Lattice
 from ase import Atoms
 from ase.units import eV, Ang
 
-class GULP():
+at_types = {
+        'C_c': 'C1', #  =  Sp2 C carbonyl group
+        'C_cs': 'C2', # =  Sp2 C in c=S
+        'C_c1': 'C3', #  Sp C
+        'C_c2': 'C4', # Sp2 C
+        'C_c3': 'C5', # =  Sp3 C
+        'C_ca': 'C6', # Sp2 C in pure aromatic systems
+        'C_cp': 'C7', # Head Sp2 C that connect two rings in biphenyl sys.
+        'C_cq': 'C8', # Head Sp2 C that connect two rings in biphenyl sys. identical to cp
+        'C_cc': 'C9', # Sp2 carbons in non-pure aromatic systems
+        'C_cd': 'C10', # Sp2 carbons in non-pure aromatic systems, identical to cc
+        'C_ce': 'C11', # Inner Sp2 carbons in conjugated systems
+        'C_cf': 'C12', # Inner Sp2 carbons in conjugated systems, identical to ce
+        'C_cg': 'C13', # Inner Sp carbons in conjugated systems
+        'C_ch': 'C14', # Inner Sp carbons in conjugated systems, identical to cg
+        'C_cx': 'C15', # Sp3 carbons in triangle systems
+        'C_cy': 'C14', # Sp3 carbons in square systems
+        'C_cu': 'C16', # Sp2 carbons in triangle systems
+        'C_cv': 'C17', # Sp2 carbons in square systems
+        'C_cz': 'C18', # Sp2 carbon in guanidine group
+        'H_h1': 'H1',  # H bonded to aliphatic carbon with 1 electrwd. group
+        'H_h2': 'H2', # H bonded to aliphatic carbon with 2 electrwd. group
+        'H_h3': 'H3', # H bonded to aliphatic carbon with 3 electrwd. group
+        'H_h4': 'H4', # H bonded to non-sp3 carbon with 1 electrwd. group
+        'H_h5': 'H5', # H bonded to non-sp3 carbon with 2 electrwd. group
+        'H_ha': 'H6', # H bonded to aromatic carbon
+        'H_hc': 'H7', # H bonded to aliphatic carbon without electrwd. group
+        'H_hn': 'H8', # H bonded to nitrogen atoms
+        'H_ho': 'H9', # Hydroxyl group
+        'H_hp': 'H10',  # H bonded to phosphate
+        'H_hs': 'H11',  # Hydrogen bonded to sulphur
+        'H_hw': 'H12',  # Hydrogen in water
+        'H_hx': 'H13',  # H bonded to C next to positively charged group
+        'F': 'F', # Fluorine
+        'Cl': 'Cl', # Chlorine
+        'Br': 'Br', # Bromine
+        'I': 'I', #  Iodine
+        'N_n': 'N1',  # Sp2 nitrogen in amide groups
+        'N_n1': 'N2', # Sp N
+        'N_n2': 'N3', # aliphatic Sp2 N with two connected atoms
+        'N_n3': 'N4', # Sp3 N with three connected atoms
+        'N_n4': 'N5', # Sp3 N with four connected atoms
+        'N_na': 'N6', # Sp2 N with three connected atoms
+        'N_nb': 'N7', # Sp2 N in pure aromatic systems
+        'N_nc': 'N8', # Sp2 N in non-pure aromatic systems
+        'N_nd': 'N9', # Sp2 N in non-pure aromatic systems, identical to nc
+        'N_ne': 'N10', # Inner Sp2 N in conjugated systems
+        'N_nf': 'N11', # Inner Sp2 N in conjugated systems, identical to ne
+        'N_nh': 'N12', # Amine N connected one or more aromatic rings
+        'N_no': 'N13', # Nitro N
+        'N_ns': 'N14', # amind N, with 1 attached hydrogen atom
+        'N_nt': 'N15', # amide N, with 2 attached hydrogen atoms
+        'N_nx': 'N16', # like n4, but only has one hydrogen atom
+        'N_ny': 'N17', # like n4, but only has two hydrogen atoms
+        'N_nz': 'N18', # like n4, but only has three three hydrogen atoms
+        'N_n+': 'N19', # NH4+
+        'N_nu': 'N20', # like nh, but only has one attached hydrogen atom
+        'N_nv': 'N21', # like nh, but only has two attached hydrogen atoms
+        'N_n7': 'N22', # like n3, but only has one attached hydrogen atom
+        'N_n8': 'N23', # like n3, but only has two attached hydrogen atoms
+        'N_n9': 'N24', # NH3
+        'O_o': 'O1', # Oxygen with one connected atom
+        'O_oh': 'O2', # Oxygen in hydroxyl group
+        'O_os': 'O3', # Ether and ester oxygen
+        'O_ow': 'O4', # Oxygen in water
+        'P_p2': 'P1', # Phosphate with two connected atoms
+        'P_p3': 'P2', # Phosphate with three connected atoms, such as PH3
+        'P_p4': 'P3', # Phosphate with three connected atoms, such as O=P(CH3)2
+        'P_p5': 'P4', # Phosphate with four connected atoms, such as O=P(OH)3
+        'P_pb': 'P5', # Sp2 P in pure aromatic systems
+        'P_pc': 'P6', # Sp2 P in non-pure aromatic systems
+        'P_pd': 'P7', # Sp2 P in non-pure aromatic systems, identical to pc
+        'P_pe': 'P8', # Inner Sp2 P in conjugated systems
+        'P_pf': 'P9', # Inner Sp2 P in conjugated systems, identical to pe
+        'P_px': 'P10', # Special p4 in conjugated systems
+        'P_py': 'P11', # Special p5 in conjugated systems
+        'S_s':  'S1', # S with one connected atom
+        'S_s2': 'S2', # S with two connected atom, involved at least one double bond
+        'S_s4': 'S3', # S with three connected atoms
+        'S_s6': 'S4', # S with four connected atoms
+        'S_sh': 'S5', # Sp3 S connected with hydrogen
+        'S_ss': 'S6', # Sp3 S in thio-ester and thio-ether
+        'S_sx': 'S7', # Special s4 in conjugated systems
+        'S_sy': 'S8', # Special s6 in conjugated systems
+        }
+
+
+class GULP_OC():
     """
-    This is a calculator to perform structure optimization in GULP
+    A calculator to perform structure optimization in GULP
     At the moment, only inorganic crystal is considered
 
     Args:
@@ -319,6 +406,246 @@ class GULP():
             self.error = True
             self.energy = None
             print("GULP calculation is wrong, reading------")
+
+class GULP_OC():
+    """
+    A calculator to perform oragnic crystal structure optimization in GULP
+
+    Args:
+        struc: structure object generated by Pyxtal
+        ff: path of forcefield lib, e.g., `gaff`
+        bond_type: specify the bond type or not (GULP can detect it automatically)
+        opt: e.g., `conv`, `conp`, `single`
+        steps: number of steps, int, e.g., `1000`
+        exe: int, the way to call gulp executable
+        atom_info: atomic labels/charges
+        input: gulp input file name
+        output: gulp output file name
+        dump: dumped gulp file name
+    """
+
+    def __init__(self, struc, label="_", ff='gaff2', bond_type=False, \
+                 opt='conp', steps=1000, stepmx=0.001, exe='gulp', \
+                 atom_info=None, input='gulp.in', output='gulp.log', \
+                 dump=None, folder='.'):
+
+        self.folder = folder
+        self.structure = struc
+        self.label = label
+        self.ff = ff
+        self.bond_type = bond_type
+        self.opt = opt
+        self.exe = exe
+        if 'OCSP_GULPEXE' in os.environ:
+            self.exe = os.environ['OCSP_GULPEXE']
+        self.steps = steps
+        self.stepmx = stepmx
+        self.opt = opt
+        self.input = self.label+input
+        self.output = self.label+output
+        self.dump = dump
+        self.iter = 0
+        self.stress = None
+        self.positions = None
+        self.forces = None
+        self.optimized = False
+        self.cell = None
+        self.group = self.structure.group
+        self.optlat = False
+        self.cputime = 0
+        self.atom_info = atom_info
+
+    def run(self, clean=True, pause=False):
+        if not os.path.exists(self.folder):
+            os.makedirs(self.folder)
+        cwd = os.getcwd()
+        os.chdir(self.folder)
+
+        self.write()
+        if not pause:
+            self.execute()
+            self.read()
+            if clean:
+                self.clean()
+
+        os.chdir(cwd)
+
+    def execute(self):
+        if self.exe=='gulp.exe':
+            key =   self.input.split(".")[0]
+            shutil.copy(self.input, key+'.gin')
+            cmd = self.exe + " "+key
+            os.system(cmd)
+            shutil.copy(key+'.gout',self.output)
+        else:
+            cmd = self.exe + '<' + self.input + '>' + self.output
+            os.system(cmd)
+
+    def clean(self):
+        os.remove(self.input)
+        os.remove(self.output)
+
+
+    def write(self):
+
+        lat= self.structure.lattice
+        a, b, c = lat.a, lat.b, lat.c
+        alpha, beta, gamma = np.degrees(lat.alpha), np.degrees(lat.beta), np.degrees(lat.gamma)
+        ltype = lat.ltype
+
+        with open(self.input, 'w') as f:
+            #f.write('opti stress {:s} conj molecule nomod qok\n'.format(self.opt))
+            if self.opt == 'conv':
+                #f.write('opti {:s} steepest molecule nomod qok\n'.format(self.opt))
+                f.write('opti {:s} conj molecule nomod qok\n'.format(self.opt))
+            else:
+                f.write('opti stress {:s} conj molecule nomod qok\n'.format(self.opt))
+            f.write('\ncell\n')
+            f.write('{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'.format(\
+                    a, b, c, alpha, beta, gamma))
+            f.write('\nfractional\n')
+
+
+            symbols = []
+
+
+            for i, site in enumerate(self.structure.mol_sites):
+                coords, species = site._get_coords_and_species(first=True)
+                if self.atom_info is None:
+                    labels = site.molecule.props['gmx_label']
+                    charges = site.molecule.props['charge']
+                else:
+                    labels = self.atom_info['label'][site.type]
+                    charges = self.atom_info['charge'][site.type]
+                for j, coord in enumerate(coords):
+                    #print(len(site.molecule.mol.sites), len(labels), len(coords), coord)
+                    symbol = site.molecule.mol.sites[j].species_string
+                    if symbol not in ['F', 'Cl', 'Br']:
+                        symbol += '_' + labels[j]
+                    symbols.append(symbol)
+                    try:
+                        f.write('{:4s} {:12.6f} {:12.6f} {:12.6f} core {:12.6f}\n'.format(\
+                        at_types[symbol], coord[0], coord[1], coord[2], charges[j]))
+                    except KeyError:
+                        msg = 'symbol {:s} is not supported in GULP-gaff2.lib'.format(symbol)
+                        raise KeyError(msg)
+
+            f.write('\nSpecies\n')
+            symbols = list(set(symbols))
+            for symbol in symbols:
+                f.write('{:4s} core {:4s}\n'.format(at_types[symbol], symbol))
+
+            # symmetry operations
+            f.write('\nsymmetry_cell {:s}\n'.format(ltype))
+            site0 = self.structure.mol_sites[0]
+            for op in site0.wp.ops[1:]:
+                f.write('symmetry_operator\n')
+                rot = op.rotation_matrix.T
+                trans = op.translation_vector
+                for i in range(3):
+                    f.write('{:6.3f} {:6.3f} {:6.3f} {:6.3f}\n'.format(*rot[i,:], trans[i]))
+
+            # bond type
+            if self.bond_type:
+                for bond in mol.molTopol.bonds:
+                    for i in range(len(site.wp)):
+                        count = i*len(coords)
+                        f.write('connect {:4d} {:4d}\n'.format(\
+                                bond.atoms[0].id+count, bond.atoms[1].id+count))
+            f.write('\nlibrary {:s}.lib\n'.format(self.ff))
+            #f.write('\nlibrary {:s}\n'.format(self.ff))
+            if 'OCSP_GULP_LIB' in os.environ:
+                shutil.copy(os.environ['OCSP_GULP_LIB']+'/'+self.ff+'.lib','.')
+            f.write('ewald 10.0\n')
+            #f.write('switch rfo gnorm 1.0\n')
+            #f.write('switch lbfgs cycle 300\n')
+            f.write('maxcycle {:d}\n'.format(self.steps))
+            f.write('stepmx '+str(self.stepmx)+'\n')
+            f.write('ftol 0.0001\n') #energy tol default: 1e-5
+            f.write('gtol 0.002\n') #force tol default: 1e-4
+            f.write('gmax 0.01\n') #force tol defult: 1e-3
+            if self.dump is not None:
+                f.write('output cif {:s}\n'.format(self.dump))
+            #https://gulp.curtin.edu.au/gulp/help/new_help_40_txt.html#gmax
+
+    def read(self):
+        with open(self.output, 'r') as f:
+            lines = f.readlines()
+
+        for i, line in enumerate(lines):
+            if i == 7:
+                self.version = line
+
+            if line.find("Total lattice energy") >= 0:
+                m = re.match(r'\s*Total lattice energy\s*=\s*(\S+)\s*eV', line)
+                if m:
+                    self.structure.energy = float(m.group(1))
+            else:
+                if line.find('Job Finished')!= -1:
+                    self.optimized = True
+
+                elif line.find('Total CPU time') != -1:
+                    self.cputime = float(line.split()[-1])
+
+                elif line.find('Final stress tensor components')!= -1:
+                    stress = np.zeros([6])
+                    for j in range(3):
+                        var=lines[i+j+3].split()[1]
+                        stress[j]=float(var)
+                        var=lines[i+j+3].split()[3]
+                        stress[j+3]=float(var)
+                    self.stress = stress
+
+                elif line.find(' Cycle: ') != -1:
+                    self.iter = int(line.split()[1])
+
+                elif line.find('Final asymmetric unit coord') != -1 or \
+                     line.find('Final fractional coordinates of atoms') != -1:
+                    s = i + 5
+                    positions = []
+                    species = []
+                    while True:
+                        s = s + 1
+                        if lines[s].find("------------") != -1:
+                            break
+                        #if lines[s].find(" s ") != -1:
+                        #    continue
+                        xyz = lines[s].split()[3:6]
+                        XYZ = [float(x) for x in xyz]
+                        positions.append(XYZ)
+                        species.append(lines[s].split()[1])
+                    self.positions = np.array(positions)
+                    self.species = species
+
+                elif line.find('Final Cartesian lattice vectors') != -1:
+                    lattice_vectors = np.zeros((3,3))
+                    s = i + 2
+                    for j in range(s, s+3):
+                        temp=lines[j].split()
+                        for k in range(3):
+                            lattice_vectors[j-s][k]=float(temp[k])
+                    self.cell = lattice_vectors
+        if self.cell is None:
+            self.cell = self.structure.lattice.matrix
+
+        self.lattice = Lattice.from_matrix(self.cell) #update the lattice
+        self.lattice.ltype = self.structure.group.lattice_type
+        self.structure.lattice = self.lattice
+
+        if self.optimized:
+            count = 0
+
+            try:
+                for site in self.structure.mol_sites:
+                    coords = self.positions[count:count+len(site.molecule.mol)]
+                    site.update(coords, self.lattice)
+                    count += len(site.molecule.mol)
+                self.structure.optimize_lattice()
+            except:
+                #print()
+                print("Structure is wrong after optimization")
+
+
 
 def single_optimize(struc, ff, steps=1000, pstress=None, opt="conp",
                     exe="gulp", path="tmp", label="_", clean=True,

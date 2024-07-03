@@ -2,6 +2,7 @@ from pyxtal import pyxtal
 from ase import Atoms
 from pyxtal.util import good_lattice
 from ase.calculators.vasp import Vasp
+from ase.io import read
 import os, time
 import numpy as np
 
@@ -250,6 +251,40 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None,
         if error or not good_lattice(struc):
             return None, None, 0, True
     return struc, eng, time_total, error
+
+def VASP_relax(struc, opt_cell=False, step=100, kspacing=0.25, pstress=0, folder='tmp'):
+
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    cwd = os.getcwd()
+    os.chdir(folder)
+
+
+    if opt_cell:
+        isif = 3
+    else:
+        isif = 2
+
+    calc = Vasp(xc = 'PBE',
+                prec = 'Accurate',
+                npar = 8,
+                kgamma = True,
+                lcharg = False,
+                lwave = False,
+                ibrion = 2,
+                pstress = pstress,
+                kspacing = kspacing,
+                nsw = step,
+                isif = isif,
+                potim = 0.05,
+                ediff = 1e-3,
+               )
+    struc.set_calculator(calc)
+    energy = struc.get_potential_energy()
+    struc = read('CONTCAR', format='vasp')
+    os.chdir(cwd)
+    return struc, energy
+
 
 if __name__ == "__main__":
 

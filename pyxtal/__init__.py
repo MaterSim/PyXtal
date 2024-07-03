@@ -3477,6 +3477,7 @@ class pyxtal:
             else:
                 options = [False]
 
+            coords = []
             for option in options:
                 try:
                     self.set_site_coordination(criteria['cutoff'], exclude_ii=option)
@@ -3484,6 +3485,7 @@ class pyxtal:
                 except:
                     if verbose: print("=====Invalid in CN calculation")
                     return False
+                coord = []
                 for s in self.atom_sites:
                     ele = s.specie
                     cn1 = s.coordination
@@ -3495,6 +3497,10 @@ class pyxtal:
                             strs += ", exclude ii: " + str(option)
                             print(strs)
                         return False
+                    coord.append(cn1)
+                coords.append(coord)
+            if len(coords) == 2 and coords[0] != coords[1]:
+                return False
 
         if 'Dimension' in criteria:
             try:
