@@ -49,6 +49,7 @@ setup(
         "networkx>=2.3",
         'ase>=3.18.0',  #covered by pymatgen
         'scipy>=1.7.3',
+        'numpy>=1.26', # prevent the use of numpy2
         'importlib_metadata>=1.4',
         'typing-extensions>=4.12',
         #'pyshtools>=4.10.3',

@@ -1,4 +1,5 @@
 spglib>=1.10.4
+numpy<=1.26
 pymatgen>=2024.3.1
 pandas>=2.0.2
 networkx>=2.3
