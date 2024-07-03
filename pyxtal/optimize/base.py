@@ -140,7 +140,7 @@ class GlobalOptimize():
                 else:
                     print("No FF parameter file exists, using the default setting", ff_style)
                     params0 = self.parameters.params_init.copy()
-                    self.parameters.export_parameters(self.ff_parameters, params0)
+                    self.parameters.export_parameters(self.wdir+'/'+self.ff_parameters, params0)
 
                 self.prepare_chm_info(params0)
 
@@ -152,7 +152,7 @@ class GlobalOptimize():
         self.tag = tag
         self.cif = cif
         if cif is not None:
-            with open(cif, 'w') as f: f.writelines(str(self))
+            with open(self.workdir+'/'+cif, 'w') as f: f.writelines(str(self))
         #print(self)
 
     def __str__(self):
@@ -433,7 +433,7 @@ class GlobalOptimize():
 
         return N_added
 
-    def prepare_chm_info(self, params0, params1=None, suffix='pyxtal0'):
+    def prepare_chm_info(self, params0, params1=None, suffix='calc/pyxtal0'):
         """
         TODO: A base classs for optimization
         prepar_chm_info with the updated params.

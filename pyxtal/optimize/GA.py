@@ -113,7 +113,7 @@ class GA(GlobalOptimize):
 
     def full_str(self):
         s = str(self)
-        s +=  "\n------Vanila Genetic Algorithm------"
+        s += "\nMethod    : Genetic Algorithm"
         s += "\nGeneration: {:4d}".format(self.N_gen)
         s += "\nPopulation: {:4d}".format(self.N_pop)
         s += "\nFraction  : {:4.2f} {:4.2f} {:4.2f}".format(*self.fracs)
@@ -191,7 +191,7 @@ class GA(GlobalOptimize):
                     self.block,
                     self.num_block,
                     self.atom_info,
-                    self.workdir,
+                    self.workdir + '/' + 'calc',
                     self.sg,
                     self.composition,
                     self.lattice,
@@ -253,7 +253,7 @@ class GA(GlobalOptimize):
                         if xtal.energy < 9999:
                             if self.verbose:
                                 print("Add qualified structure", id, xtal.energy)
-                            with open(self.cif, 'a+') as f:
+                            with open(self.workdir+'/'+self.cif, 'a+') as f:
                                 label = self.tag + '-g' + str(gen) + '-p' + str(id)
                                 f.writelines(xtal.to_file(header=label))
                         #else:
@@ -361,8 +361,9 @@ if __name__ == "__main__":
     ncpu = options.ncpu
     ffopt = options.ffopt
     db_name, name = 'pyxtal/database/test.db', 'ACSALA'
-    wdir = 'tmp'
+    wdir = name
     os.makedirs(wdir, exist_ok=True)
+    os.makedirs(wdir+'/calc', exist_ok=True)
 
     db = database(db_name)
     row = db.get_row(name)
@@ -373,8 +374,8 @@ if __name__ == "__main__":
         if 'charmm_info' in row.data.keys():
             # prepare charmm input
             chm_info = row.data['charmm_info']
-            prm = open(wdir+'/pyxtal.prm', 'w'); prm.write(chm_info['prm']); prm.close()
-            rtf = open(wdir+'/pyxtal.rtf', 'w'); rtf.write(chm_info['rtf']); rtf.close()
+            prm = open(wdir+'/calc/pyxtal.prm', 'w'); prm.write(chm_info['prm']); prm.close()
+            rtf = open(wdir+'/calc/pyxtal.rtf', 'w'); rtf.write(chm_info['rtf']); rtf.close()
         else:
             # Make sure we generate the initial guess from ambertools
             if os.path.exists('parameters.xml'): os.remove('parameters.xml')
