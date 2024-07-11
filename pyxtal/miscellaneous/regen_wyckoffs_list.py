@@ -44,4 +44,3 @@ for sg in range(1, 231):
         for e in ext:
             for point in short_wp:
                 new_wyckoffs_all[-1][-1].append((e * point).as_xyz_string())
-

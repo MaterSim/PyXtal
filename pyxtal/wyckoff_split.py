@@ -8,6 +8,7 @@ import numpy as np
 from pymatgen.core.operations import SymmOp
 import pyxtal.symmetry as sym
 
+
 class wyckoff_split:
     """
     Class for performing wyckoff split between two space groups.
@@ -23,7 +24,7 @@ class wyckoff_split:
         elements: corresponding chemical species for each wp
     """
 
-    def __init__(self, G=197, idx=None, wp1=[0, 1], group_type='t', elements=None):
+    def __init__(self, G=197, idx=None, wp1=[0, 1], group_type="t", elements=None):
         self.error = False
         self.elements = elements
         if type(G) in [int, np.int64]:
@@ -31,7 +32,7 @@ class wyckoff_split:
         else:
             self.G = G
         self.group_type = group_type
-        if group_type == 't':
+        if group_type == "t":
             self.wyc = self.G.get_max_t_subgroup()
         else:
             self.wyc = self.G.get_max_k_subgroup()
@@ -42,21 +43,21 @@ class wyckoff_split:
             else:
                 id_lists.append(sym.index_from_letter(wp[-1], self.G))
         self.wp1_indices = id_lists
-        self.wp1_lists = [self.G[id] for id in id_lists] # a WP object
+        self.wp1_lists = [self.G[id] for id in id_lists]  # a WP object
 
         # choose a random spliting option if idx is not specified
         if idx is None:
-            ids = [id for id in range(len(self.wyc['subgroup']))]
+            ids = [id for id in range(len(self.wyc["subgroup"]))]
             idx = choice(ids)
-        #print(G, idx, len(self.wyc['subgroup']))
-        H = self.wyc['subgroup'][idx]
+        # print(G, idx, len(self.wyc['subgroup']))
+        H = self.wyc["subgroup"][idx]
         self.H = sym.Group(H)  # Group object
 
-        #print(G, H)
+        # print(G, H)
         self.parse_wp2(idx)
 
         # check if it is a valid split
-        #if self.G.lattice_type == self.H.lattice_type:
+        # if self.G.lattice_type == self.H.lattice_type:
         #    self.valid_split = False
         #    for wps in self.wp2_lists:
         #        for wp in wps:
@@ -64,18 +65,18 @@ class wyckoff_split:
         #            if np.linalg.matrix_rank(rotation) > 0:
         #                self.valid_split = True
         #                break
-        #else:
+        # else:
         self.valid_split = True
 
-        #if self.valid_split:
+        # if self.valid_split:
         self.G1_orbits = []
         self.G2_orbits = []
         self.H_orbits = []
         for i, wp1 in enumerate(self.wp1_lists):
-            self.counter=0
-            self.current_wp1_size=len(wp1)
+            self.counter = 0
+            self.current_wp1_size = len(wp1)
             self.H_orbits.append([wp2.ops for wp2 in self.wp2_lists[i]])
-            if group_type == 't':
+            if group_type == "t":
                 G1_orbits, G2_orbits = self.split_t(wp1, self.wp2_lists[i])
             else:
                 G1_orbits, G2_orbits = self.split_k(wp1, self.wp2_lists[i])
@@ -94,26 +95,27 @@ class wyckoff_split:
         self.wp2_lists = [self.wp2_lists[id] for id in ids]
         self.G1_orbits = [self.G1_orbits[id] for id in ids]
         self.G2_orbits = [self.G2_orbits[id] for id in ids]
-        self.H_orbits  = [self.H_orbits[id] for id in ids]
+        self.H_orbits = [self.H_orbits[id] for id in ids]
         self.elements = [self.elements[id] for id in ids]
-
 
     def parse_wp2(self, idx):
         """
         query the wp2 and transformation matrix from the given {G, H, wp1}
         """
-        #print(self.wyc['transformation'])
-        #subgroup_relations.reverse()
-        trans = self.wyc['transformation'][idx]#; print("trans", trans)
-        subgroup_relations = self.wyc['relations'][idx] #; print('subgroup_relations', subgroup_relations)
+        # print(self.wyc['transformation'])
+        # subgroup_relations.reverse()
+        trans = self.wyc["transformation"][idx]  # ; print("trans", trans)
+        subgroup_relations = self.wyc["relations"][
+            idx
+        ]  # ; print('subgroup_relations', subgroup_relations)
         subgroup_relations = list(reversed(subgroup_relations))
 
         self.R = np.zeros([4, 4])
         self.R[:3, :3] += trans[:3, :3]
         self.R[3, 3] = 1
         self.inv_R = np.linalg.inv(self.R)
-        inv_t = np.dot(self.inv_R[:3, :3], trans[:,3].T)
-        self.inv_R[:3, 3] = -1*inv_t.T
+        inv_t = np.dot(self.inv_R[:3, :3], trans[:, 3].T)
+        self.inv_R[:3, 3] = -1 * inv_t.T
         self.R[:3, 3] = trans[:3, 3]
         self.multi = np.linalg.det(self.R[:3, :3])
 
@@ -121,14 +123,14 @@ class wyckoff_split:
         for wp1_index in self.wp1_indices:
             wp2_list = []
             for letter in subgroup_relations[wp1_index]:
-                #if letter == '4a': letter = '8c'
+                # if letter == '4a': letter = '8c'
                 id = sym.index_from_letter(letter[-1], self.H)
                 wp2_list.append(self.H[id])
             wp2_lists.append(wp2_list)
         self.wp2_lists = wp2_lists
-        self.index=self.wyc['index'][idx]
-        self.cosets=self.wyc['cosets'][idx]
-        #import sys; sys.exit()
+        self.index = self.wyc["index"][idx]
+        self.cosets = self.wyc["cosets"][idx]
+        # import sys; sys.exit()
 
     def split_t(self, wp1, wp2_lists, quadrant=None):
         """
@@ -136,27 +138,26 @@ class wyckoff_split:
         """
         if self.counter == 0:
             self.proper_wp1 = []
-            [self.proper_wp1.append(np.array(x.as_dict()['matrix'])) for x in wp1]
-            self.original_tau_list = [x[:3,3] for x in self.proper_wp1]
+            [self.proper_wp1.append(np.array(x.as_dict()["matrix"])) for x in wp1]
+            self.original_tau_list = [x[:3, 3] for x in self.proper_wp1]
             for k, x in enumerate(self.original_tau_list):
                 for j in range(3):
-                    self.original_tau_list[k][j] = self.original_tau_list[k][j]%1
+                    self.original_tau_list[k][j] = self.original_tau_list[k][j] % 1
                 self.original_tau_list[k] = self.original_tau_list[k].round(4)
-            for k ,x in enumerate(self.proper_wp1):
-                self.proper_wp1[k][:3,3] = self.original_tau_list[k]
+            for k, x in enumerate(self.proper_wp1):
+                self.proper_wp1[k][:3, 3] = self.original_tau_list[k]
                 self.proper_wp1[k] = SymmOp(self.proper_wp1[k])
 
         wp1_generators_visited = []
-        wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
-
+        wp1_generators = [np.array(wp.as_dict()["matrix"]) for wp in wp1]
 
         G1_orbits = []
         G2_orbits = []
         factor = max([1, np.linalg.det(self.R)])
 
         if quadrant is None:
-            quadrant = deepcopy(self.inv_R[:3,3])
-            quadrant[np.abs(quadrant)<1e-5] = 0
+            quadrant = deepcopy(self.inv_R[:3, 3])
+            quadrant[np.abs(quadrant) < 1e-5] = 0
             for i in range(3):
                 if quadrant[i] >= 0:
                     quadrant[i] = 1
@@ -164,13 +165,12 @@ class wyckoff_split:
                     quadrant[i] = -1
         for wp2 in wp2_lists:
             for gen in wp1_generators:
-
                 good_generator = False
                 trans_generator = np.matmul(self.inv_R, gen)
-                trans_generator[np.abs(trans_generator)<1e-5]=0
+                trans_generator[np.abs(trans_generator) < 1e-5] = 0
 
                 for i in range(3):
-                    trans_generator[i][3] = trans_generator[i][3]%quadrant[i]
+                    trans_generator[i][3] = trans_generator[i][3] % quadrant[i]
                     if trans_generator[i][3] == 0 and quadrant[i] == -1:
                         trans_generator[i][3] = -1
 
@@ -178,34 +178,32 @@ class wyckoff_split:
                 g2_orbits = []
 
                 for i, wp in enumerate(wp2):
-
-                    new_basis_orbit = np.matmul(wp.as_dict()['matrix'], trans_generator)
-                    new_basis_orbit[np.abs(new_basis_orbit)<1e-5] = 0
+                    new_basis_orbit = np.matmul(wp.as_dict()["matrix"], trans_generator)
+                    new_basis_orbit[np.abs(new_basis_orbit) < 1e-5] = 0
                     for j in range(3):
-                        new_basis_orbit[j,3] = new_basis_orbit[j,3]%quadrant[j]
-                        if new_basis_orbit[j,3] == 0 and quadrant[j] == -1:
-                            new_basis_orbit[j,3] = -1
-
+                        new_basis_orbit[j, 3] = new_basis_orbit[j, 3] % quadrant[j]
+                        if new_basis_orbit[j, 3] == 0 and quadrant[j] == -1:
+                            new_basis_orbit[j, 3] = -1
 
                     old_basis_orbit = np.matmul(self.R, new_basis_orbit)
-                    old_basis_orbit[np.abs(old_basis_orbit)<1e-5] = 0
-                    old_basis_orbit[np.abs(old_basis_orbit-1)<1e-5] = 1
-                    old_basis_orbit[np.abs(old_basis_orbit+1)<1e-5] = -1
+                    old_basis_orbit[np.abs(old_basis_orbit) < 1e-5] = 0
+                    old_basis_orbit[np.abs(old_basis_orbit - 1) < 1e-5] = 1
+                    old_basis_orbit[np.abs(old_basis_orbit + 1) < 1e-5] = -1
                     tmp = deepcopy(old_basis_orbit)
-                    tmp[3,:] = [0, 0, 0, 1]
+                    tmp[3, :] = [0, 0, 0, 1]
                     # print('tracking wp2 orbit',i,'newbasisorbit',SymmOp(new_basis_orbit).as_xyz_str(),'oldbasisorbit',SymmOp(old_basis_orbit).as_xyz_str(), 'chosenwyckoff',wp.as_xyz_str())
                     # print('transgenerator',SymmOp(trans_generator).as_xyz_str())
-                    if i==0:
+                    if i == 0:
                         truth = True
                         if self.counter != 0:
-                            tau = tmp[:3,3]
+                            tau = tmp[:3, 3]
                             for j in range(3):
-                                tau[j] = tau[j]%1
+                                tau[j] = tau[j] % 1
                             tau = tau.round(4)
                             temporary = deepcopy(tmp)
-                            temporary[:3,3] = tau
+                            temporary[:3, 3] = tau
                             temporary = SymmOp(temporary)
-                            truth = any([temporary==x for x in self.proper_wp1])
+                            truth = any([temporary == x for x in self.proper_wp1])
                         # print('current gen',SymmOp(gen).as_xyz_str())
                         # print('current new_basis_orbit',SymmOp(new_basis_orbit).as_xyz_str())
                         # print('current state wp2 orbit',wp.as_xyz_str())
@@ -213,7 +211,11 @@ class wyckoff_split:
                         # [print(SymmOp(x).as_xyz_str()) for x in wp1_generators_visited]
                         # print('not in wp1 visited',not in_lists(tmp, wp1_generators_visited))
                         # print('in wp1 generators',in_lists(tmp, wp1_generators))
-                        if not in_lists(tmp, wp1_generators_visited) and in_lists(tmp, wp1_generators) and truth:
+                        if (
+                            not in_lists(tmp, wp1_generators_visited)
+                            and in_lists(tmp, wp1_generators)
+                            and truth
+                        ):
                             good_generator = True
                         else:
                             break
@@ -221,18 +223,16 @@ class wyckoff_split:
                     # print(SymmOp(old_basis_orbit).as_xyz_str(),'   ',SymmOp(new_basis_orbit).as_xyz_str(),'    ',wp.as_xyz_str())
                     g1_orbits.append(old_basis_orbit)
                     if self.counter >= 1 and in_lists(new_basis_orbit, g2_orbits):
-                        good_generator=False
+                        good_generator = False
                         break
                     g2_orbits.append(new_basis_orbit)
 
                 if good_generator:
-
-                    temp=[]
+                    temp = []
                     for gen in g1_orbits:
                         if not in_lists(gen, temp, PBC=False):
                             temp.append(gen)
-                    if int(len(temp)*factor) >= len(wp2):
-
+                    if int(len(temp) * factor) >= len(wp2):
                         wp1_generators_visited.extend(temp)
                         g1_orbits = [SymmOp(orbit) for orbit in g1_orbits]
                         g2_orbits = [SymmOp(orbit) for orbit in g2_orbits]
@@ -247,46 +247,58 @@ class wyckoff_split:
             try:
                 self.check_orbits(g1_orbits, wp2, wp2_lists)
             except:
-                if self.counter!=0:
-                    quadrants = [[1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1]]
-                    quadrant = quadrants[self.counter-1]
-                wp1_generators = wp1_generators[:self.current_wp1_size]
+                if self.counter != 0:
+                    quadrants = [
+                        [1, 1, 1],
+                        [1, 1, -1],
+                        [1, -1, 1],
+                        [1, -1, -1],
+                        [-1, 1, 1],
+                        [-1, 1, -1],
+                        [-1, -1, 1],
+                        [-1, -1, -1],
+                    ]
+                    quadrant = quadrants[self.counter - 1]
+                wp1_generators = wp1_generators[: self.current_wp1_size]
                 wp2_translations = []
                 for wp2 in wp2_lists:
-                    wp=[np.array(x.as_dict()['matrix']) for x in wp2]
-                    rot=[x[:3,:3] for x in wp]
-                    tau=[x[:3,3] for x in wp]
-                    translations=[np.array(tau[i]) for i,x in enumerate(rot) if np.array_equal(x,rot[0])]
-                    translations=[x-translations[0] for x in translations]
+                    wp = [np.array(x.as_dict()["matrix"]) for x in wp2]
+                    rot = [x[:3, :3] for x in wp]
+                    tau = [x[:3, 3] for x in wp]
+                    translations = [
+                        np.array(tau[i])
+                        for i, x in enumerate(rot)
+                        if np.array_equal(x, rot[0])
+                    ]
+                    translations = [x - translations[0] for x in translations]
                     wp2_translations.append(translations)
-                new_wp1=[]
+                new_wp1 = []
                 for translation_set in wp2_translations:
                     for translation in translation_set:
                         for gen in wp1_generators:
                             orbit = np.matmul(self.inv_R, gen)
-                            orbit[np.abs(orbit)<1e-5] = 0
-                            orbit[np.abs(orbit-1)<1e-5] = 1
-                            orbit[np.abs(orbit+1)<1e-5] = -1
+                            orbit[np.abs(orbit) < 1e-5] = 0
+                            orbit[np.abs(orbit - 1) < 1e-5] = 1
+                            orbit[np.abs(orbit + 1) < 1e-5] = -1
 
                             for i in range(3):
                                 if quadrant[i] == 1:
-                                    orbit[i][3] += (translation[i])%1
-                                    orbit[i][3] = orbit[i][3]%1
+                                    orbit[i][3] += (translation[i]) % 1
+                                    orbit[i][3] = orbit[i][3] % 1
                                 else:
-
-                                    orbit[i][3] += (translation[i])%-1
-                                    orbit[np.abs(orbit)<1e-5]=0
-                                    orbit[np.abs(orbit-1)<1e-5]=1
-                                    orbit[np.abs(orbit+1)<1e-5]=-1
+                                    orbit[i][3] += (translation[i]) % -1
+                                    orbit[np.abs(orbit) < 1e-5] = 0
+                                    orbit[np.abs(orbit - 1) < 1e-5] = 1
+                                    orbit[np.abs(orbit + 1) < 1e-5] = -1
                                     if orbit[i][3] == 0:
                                         orbit[i][3] = -1
                                     elif orbit[i][3] != -1:
-                                        orbit[i][3] = orbit[i][3]%-1
-                            orbit = np.matmul(self.R,orbit)
-                            orbit[np.abs(orbit)<1e-5] = 0
-                            orbit[np.abs(orbit-1)<1e-5] = 1
-                            orbit[np.abs(orbit+1)<1e-5] = -1
-                            orbit=SymmOp(orbit)
+                                        orbit[i][3] = orbit[i][3] % -1
+                            orbit = np.matmul(self.R, orbit)
+                            orbit[np.abs(orbit) < 1e-5] = 0
+                            orbit[np.abs(orbit - 1) < 1e-5] = 1
+                            orbit[np.abs(orbit + 1) < 1e-5] = -1
+                            orbit = SymmOp(orbit)
 
                             if orbit not in new_wp1:
                                 new_wp1.append(orbit)
@@ -298,18 +310,19 @@ class wyckoff_split:
                 return self.split_t(new_wp1, wp2_lists, quadrant=quadrant)
         return G1_orbits, G2_orbits
 
-
     def split_k(self, wp1, wp2_lists, tol=1e-5):
         """
         split the generators in w1 to different w2s for k-subgroup
         """
 
-        wp1_generators = [np.array(wp.as_dict()['matrix']) for wp in wp1]
+        wp1_generators = [np.array(wp.as_dict()["matrix"]) for wp in wp1]
 
         G1_orbits = []
         G2_orbits = []
         quadrant = deepcopy(self.inv_R[:3, 3])
-        quadrant[np.abs(quadrant) < tol] = 0 #finds the orientation of the subgroup_basis
+        quadrant[np.abs(quadrant) < tol] = (
+            0  # finds the orientation of the subgroup_basis
+        )
 
         for i in range(3):
             if quadrant[i] >= 0:
@@ -323,27 +336,26 @@ class wyckoff_split:
         # the translation generator provides all the possible ways to translate
         # the starting positions, then they are shifted
         for translation in translations:
-            for gen in wp1_generators:#into the proper orientation
-                orbit = np.matmul(self.inv_R,gen)
+            for gen in wp1_generators:  # into the proper orientation
+                orbit = np.matmul(self.inv_R, gen)
                 orbit[np.abs(orbit) < tol] = 0
-                orbit[np.abs(orbit-1) < tol] = 1
-                orbit[np.abs(orbit+1) < tol] = -1
+                orbit[np.abs(orbit - 1) < tol] = 1
+                orbit[np.abs(orbit + 1) < tol] = -1
                 for i in range(3):
                     if quadrant[i] == 1:
                         orbit[i][3] += translation[i]
                         orbit[i][3] = orbit[i][3] % 1
-                        if np.abs(orbit[i][3]-1) < tol:
+                        if np.abs(orbit[i][3] - 1) < tol:
                             orbit[i][3] = 0
                     else:
-                        orbit[i][3] += (translation[i])%-1
+                        orbit[i][3] += (translation[i]) % -1
                         orbit[i][3] = orbit[i][3] % -1
                         if np.abs(orbit[i][3]) < tol:
                             orbit[i][3] = -1
                 all_g2_orbits.append(orbit)
 
         for wp2 in wp2_lists:
-
-            #final_G2=[]
+            # final_G2=[]
             temp = np.array(deepcopy(all_g2_orbits))
             temp[np.abs(temp) < tol] = 0
             temp = temp.tolist()
@@ -352,25 +364,30 @@ class wyckoff_split:
                 temp[j] = SymmOp(x)
 
             for orbit in temp:
-                try_match = np.array([np.matmul(x.as_dict()['matrix'], orbit.as_dict()['matrix']) for x in wp2])
+                try_match = np.array(
+                    [
+                        np.matmul(x.as_dict()["matrix"], orbit.as_dict()["matrix"])
+                        for x in wp2
+                    ]
+                )
                 try_match[np.abs(try_match) < tol] = 0
-                try_match[np.abs(try_match-1) < tol] = 1
-                try_match[np.abs(try_match+1) < tol] = -1
+                try_match[np.abs(try_match - 1) < tol] = 1
+                try_match[np.abs(try_match + 1) < tol] = -1
 
-                #print('\norbit\n', orbit)
-                #print('\ntry_match\n', try_match)
+                # print('\norbit\n', orbit)
+                # print('\ntry_match\n', try_match)
 
                 for j in range(len(try_match)):
                     for k in range(3):
-                        try_match[j][k][3] = try_match[j][k][3]%quadrant[k]
+                        try_match[j][k][3] = try_match[j][k][3] % quadrant[k]
                         if try_match[j][k][3] == 0 and quadrant[k] == -1:
-                            try_match[j][k][3]=-1
-                try_match=try_match.tolist()
+                            try_match[j][k][3] = -1
+                try_match = try_match.tolist()
 
                 for j, x in enumerate(try_match):
                     try_match[j] = SymmOp(x)
 
-                if np.any([try_match.count(x)>1 for x in try_match]):
+                if np.any([try_match.count(x) > 1 for x in try_match]):
                     continue
 
                 try:
@@ -386,14 +403,14 @@ class wyckoff_split:
         for position in G2_orbits:
             final_G1 = []
             for orbit in position:
-                final_G1.append(SymmOp(np.matmul(self.R,orbit.as_dict()['matrix'])))
+                final_G1.append(SymmOp(np.matmul(self.R, orbit.as_dict()["matrix"])))
             G1_orbits.append(final_G1)
 
         if len(G1_orbits) != len(wp2_lists):
-            print('wp2_lists', wp2_lists)
-            print('G1_orbits', G1_orbits)
-            print('G2_orbits', G2_orbits)
-            raise ValueError('inconsistent G1_orbits and wp2_lists')
+            print("wp2_lists", wp2_lists)
+            print("G1_orbits", G1_orbits)
+            print("G2_orbits", G2_orbits)
+            raise ValueError("inconsistent G1_orbits and wp2_lists")
         else:
             return G1_orbits, G2_orbits
 
@@ -401,55 +418,79 @@ class wyckoff_split:
         """
         a function to handle the translation during lattice transformation
         """
-        modulo = round(np.linalg.det(self.R[:3,:3]))
-        inv_rotation = np.array(self.inv_R[:3,:3])*modulo
-        subgroup_basis_vectors = (np.rint(inv_rotation.transpose()).astype(int)%modulo).tolist()
+        modulo = round(np.linalg.det(self.R[:3, :3]))
+        inv_rotation = np.array(self.inv_R[:3, :3]) * modulo
+        subgroup_basis_vectors = (
+            np.rint(inv_rotation.transpose()).astype(int) % modulo
+        ).tolist()
 
         # remove the [0,0,0] vectors
-        translations = [x for x in subgroup_basis_vectors if x!=[0,0,0]]
+        translations = [x for x in subgroup_basis_vectors if x != [0, 0, 0]]
 
-        #find the independent vectors
+        # find the independent vectors
         if len(translations) == 0:
-            independent_vectors = [[0,0,0]]
+            independent_vectors = [[0, 0, 0]]
         elif len(translations) == 1:
             independent_vectors = translations
         elif len(translations) == 2:
-            norm= round(np.linalg.norm(translations[0])*np.linalg.norm(translations[1]))
-            inner_product = np.inner(translations[0],translations[1])
-            difference=norm-inner_product
-            if difference == 0.:
+            norm = round(
+                np.linalg.norm(translations[0]) * np.linalg.norm(translations[1])
+            )
+            inner_product = np.inner(translations[0], translations[1])
+            difference = norm - inner_product
+            if difference == 0.0:
                 independent_vectors = [translations[0]]
             else:
                 independent_vectors = translations
         else:
-            norms=np.rint([np.linalg.norm(translations[i])*np.linalg.norm(translations[j]) for i in range(2) for j in range(i+1,3)])
-            inner_products = np.array([np.inner(translations[i],translations[j]) for i in range(2) for j in range(i+1,3)])
+            norms = np.rint(
+                [
+                    np.linalg.norm(translations[i]) * np.linalg.norm(translations[j])
+                    for i in range(2)
+                    for j in range(i + 1, 3)
+                ]
+            )
+            inner_products = np.array(
+                [
+                    np.inner(translations[i], translations[j])
+                    for i in range(2)
+                    for j in range(i + 1, 3)
+                ]
+            )
             differences = inner_products - norms
-            independent_vectors=[translations[0]]
-            if differences[0]!=0. and differences[1]==0.:
+            independent_vectors = [translations[0]]
+            if differences[0] != 0.0 and differences[1] == 0.0:
                 independent_vectors.append(translations[1])
-            elif differences[0]==0. and differences[1]!=0.:
+            elif differences[0] == 0.0 and differences[1] != 0.0:
                 independent_vectors.append(translations[2])
-            elif differences[0]!=0. and differences[1]!=0. and differences[2]!=0.:
+            elif (
+                differences[0] != 0.0
+                and differences[1] != 0.0
+                and differences[2] != 0.0
+            ):
                 independent_vectors.append(translations[1])
                 independent_vectors.append(translations[2])
-            elif differences[0]!=0. and differences[1]!=0. and differences[2]==0.:
+            elif (
+                differences[0] != 0.0
+                and differences[1] != 0.0
+                and differences[2] == 0.0
+            ):
                 independent_vectors.append(translations[1])
 
-        #generate all possible combinations of the independent vectors
+        # generate all possible combinations of the independent vectors
         l = len(independent_vectors)
         independent_vectors = np.array(independent_vectors)
         possible_combos = []
         final_translation_list = []
 
         for i in range(self.index**l):
-            possible_combos.append(np.base_repr(i,self.index,padding=l)[-l:])
+            possible_combos.append(np.base_repr(i, self.index, padding=l)[-l:])
         for combo in possible_combos:
             combo = np.array([int(x) for x in combo])
-            vector = np.array([0.,0.,0.])
-            for i,scalar in enumerate(combo):
+            vector = np.array([0.0, 0.0, 0.0])
+            for i, scalar in enumerate(combo):
                 vector += scalar * independent_vectors[i]
-            vector = (vector%modulo/modulo).tolist()
+            vector = (vector % modulo / modulo).tolist()
             if vector not in final_translation_list:
                 final_translation_list.append(vector)
 
@@ -460,7 +501,7 @@ class wyckoff_split:
             s2 = ""
             for wp2 in wp2_lists:
                 s2 += wp2.get_label()
-                s2 += ', '
+                s2 += ", "
             # g, h = self.G.number, self.H.number
             # print("Error between {:d}[{:s}] -> {:d}[{:s}]".format(g, s1, h, s2))
             # print(self.R)
@@ -494,21 +535,21 @@ def in_lists(mat1, mat2, eps=1e-2, PBC=True):
         return False
     else:
         for mat in mat2:
-            if np.array_equal(mat[:3,:3], mat1[:3,:3]):
-                diffs = np.abs(mat[:3,3] - mat1[:3,3])
+            if np.array_equal(mat[:3, :3], mat1[:3, :3]):
+                diffs = np.abs(mat[:3, 3] - mat1[:3, 3])
                 if PBC:
                     diffs -= np.rint(diffs)
-                #print("diffs", diffs)
+                # print("diffs", diffs)
                 if (diffs**2).sum() < eps:
                     return True
         return False
 
-if __name__ == "__main__":
 
-    #sp = wyckoff_split(G=14, idx=1, wp1=['2c', '4e'], group_type='t')
-    #print(sp)
+if __name__ == "__main__":
+    # sp = wyckoff_split(G=14, idx=1, wp1=['2c', '4e'], group_type='t')
+    # print(sp)
     for idx in range(4):
-        #sp = wyckoff_split(G=210, idx=idx, wp1=['8b'], group_type='k')
-        sp = wyckoff_split(G=224, idx=idx, wp1=['24j'], group_type='k')
-        #print(sp)
+        # sp = wyckoff_split(G=210, idx=idx, wp1=['8b'], group_type='k')
+        sp = wyckoff_split(G=224, idx=idx, wp1=["24j"], group_type="k")
+        # print(sp)
         print(sp.error)

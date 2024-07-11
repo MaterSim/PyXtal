@@ -24,9 +24,12 @@ def printx(text, priority=1):
         if priority <= pyxtal_verbosity:
             print(text)
 
+
 class Error(Exception):
     """Base class for exceptions in this module."""
+
     pass
+
 
 class ConformerError(Error):
     """Exception raised for errors in the Compabality.
@@ -38,6 +41,7 @@ class ConformerError(Error):
 
     def __init__(self, message):
         self.message = message
+
 
 class Symm_CompatibilityError(Error):
     """Exception raised for errors in the Compabality.
@@ -62,6 +66,7 @@ class Comp_CompatibilityError(Error):
     def __init__(self, message):
         self.message = message
 
+
 class ReadSeedError(Error):
     """Exception raised for errors in the Compabality.
 
@@ -72,6 +77,7 @@ class ReadSeedError(Error):
 
     def __init__(self, message):
         self.message = message
+
 
 class VolumeError(Error):
     """Exception raised for errors in the Compabality.
@@ -84,6 +90,7 @@ class VolumeError(Error):
     def __init__(self, message):
         self.message = message
 
+
 class CSDError(Error):
     """Exception raised for errors in the Compabality.
 
@@ -95,6 +102,7 @@ class CSDError(Error):
     def __init__(self, message):
         self.message = message
 
+
 class AtomTypeError(Error):
     """Exception raised for errors in the Compabality.
 
@@ -105,5 +113,3 @@ class AtomTypeError(Error):
 
     def __init__(self, message):
         self.message = message
-
-

@@ -1,14 +1,16 @@
 """
 Module for crystal packing descriptor from energy decomposition
 """
+
 import numpy as np
 from scipy.stats import qmc
 from scipy.spatial.transform import Rotation
 from scipy.optimize import minimize
 from scipy.special import sph_harm
 
+
 def _qlm(dists, l=4):
-    '''
+    """
     Calculates the vector associated with an atomic site and
     one of its neighbors
 
@@ -18,38 +20,39 @@ def _qlm(dists, l=4):
     Returns:
         q: numpy array(complex128), the complex vector qlm normalized
             by the number of nearest neighbors
-    '''
+    """
     # initiate variable as a complex number
-    q = np.zeros(2*l+1, dtype=np.complex128)
+    q = np.zeros(2 * l + 1, dtype=np.complex128)
     neighbors_count = len(dists)
 
-    for i, m in enumerate(range(-l, l+1)):
+    for i, m in enumerate(range(-l, l + 1)):
         for j, r_vec in enumerate(dists):
             # find the position vector of the site/neighbor pair
             r_mag = np.linalg.norm(r_vec)
             theta = np.arccos(r_vec[2] / r_mag)
-            if abs((r_vec[2] / r_mag) - 1.0) < 10.**(-8.):
+            if abs((r_vec[2] / r_mag) - 1.0) < 10.0 ** (-8.0):
                 theta = 0.0
-            elif abs((r_vec[2] / r_mag) + 1.0) < 10.**(-8.):
+            elif abs((r_vec[2] / r_mag) + 1.0) < 10.0 ** (-8.0):
                 theta = np.pi
 
             # phi
-            if r_vec[0] < 0.:
+            if r_vec[0] < 0.0:
                 phi = np.pi + np.arctan(r_vec[1] / r_vec[0])
-            elif 0. < r_vec[0] and r_vec[1] < 0.:
+            elif 0.0 < r_vec[0] and r_vec[1] < 0.0:
                 phi = 2 * np.pi + np.arctan(r_vec[1] / r_vec[0])
-            elif 0. < r_vec[0] and 0. <= r_vec[1]:
+            elif 0.0 < r_vec[0] and 0.0 <= r_vec[1]:
                 phi = np.arctan(r_vec[1] / r_vec[0])
-            elif r_vec[0] == 0. and 0. < r_vec[1]:
+            elif r_vec[0] == 0.0 and 0.0 < r_vec[1]:
                 phi = 0.5 * np.pi
-            elif r_vec[0] == 0. and r_vec[1] < 0.:
+            elif r_vec[0] == 0.0 and r_vec[1] < 0.0:
                 phi = 1.5 * np.pi
             else:
-                phi = 0.
+                phi = 0.0
 
             q[i] += sph_harm(m, l, phi, theta)
     # normalize by number of neighbors
     return q / neighbors_count
+
 
 def correlation(coef1, coef2, angle=None, s=0):
     """
@@ -66,9 +69,10 @@ def correlation(coef1, coef2, angle=None, s=0):
     """
     if angle is not None:
         coef2 = coef2.rotate(angle[0], angle[1], angle[2], degrees=True)
-    power = np.sqrt(coef1.spectrum()[s:].sum()*coef2.spectrum()[s:].sum())
+    power = np.sqrt(coef1.spectrum()[s:].sum() * coef2.spectrum()[s:].sum())
     cross = coef1.cross_spectrum(coef2)[s:]
-    return cross.sum()/power
+    return cross.sum() / power
+
 
 def correlation_opt(coef1, coef2, angle, s=0):
     """
@@ -83,13 +87,20 @@ def correlation_opt(coef1, coef2, angle, s=0):
     Return:
         distance scaled in [0, 1]
     """
+
     def fun(x0, coef1, coef2, s):
         coef = coef2.rotate(x0[0], x0[1], x0[2], degrees=True)
         return -correlation(coef1, coef, s=s)
 
-    res = minimize(fun, angle, args=(coef1, coef2, s),
-            method='Nelder-Mead', options={'maxiter': 20})
+    res = minimize(
+        fun,
+        angle,
+        args=(coef1, coef2, s),
+        method="Nelder-Mead",
+        options={"maxiter": 20},
+    )
     return -res.fun, res.x
+
 
 def correlation_go(coef1, coef2, M=6, s=0, d_cut=0.92):
     """
@@ -132,7 +143,7 @@ def fibonacci_sphere(N=1000):
         3D points array in Cartesian coordinates
     """
     points = []
-    phi = np.pi * (3. - np.sqrt(5.))  # golden angle in radians
+    phi = np.pi * (3.0 - np.sqrt(5.0))  # golden angle in radians
     for i in range(N):
         y = 1 - (i / float(N - 1)) * 2  # y goes from 1 to -1
         radius = np.sqrt(1 - y * y)  # radius at y
@@ -142,6 +153,7 @@ def fibonacci_sphere(N=1000):
         points.append((x, y, z))
 
     return np.array(points)
+
 
 def cart2sph(x, y, z):
     """
@@ -155,6 +167,7 @@ def cart2sph(x, y, z):
     phi = np.arctan2(y, x)
     return phi, theta, r
 
+
 def sph2cart(phi, theta, r):
     """
     convert spherical coordinates (phi, theta, r) to Cartesian (x, y, z)
@@ -164,6 +177,7 @@ def sph2cart(phi, theta, r):
     y = rcos_theta * np.sin(phi)
     z = r * np.sin(theta)
     return x, y, z
+
 
 def xyz2sph(xyzs, radian=True):
     """
@@ -176,32 +190,34 @@ def xyz2sph(xyzs, radian=True):
     pts = np.zeros([len(xyzs), 2])
     for i, r_vec in enumerate(xyzs):
         r_mag = np.linalg.norm(r_vec)
-        theta0 = np.arccos(r_vec[2]/r_mag)
-        if abs((r_vec[2] / r_mag) - 1.0) < 10.**(-8.):
+        theta0 = np.arccos(r_vec[2] / r_mag)
+        if abs((r_vec[2] / r_mag) - 1.0) < 10.0 ** (-8.0):
             theta0 = 0.0
-        elif abs((r_vec[2] / r_mag) + 1.0) < 10.**(-8.):
+        elif abs((r_vec[2] / r_mag) + 1.0) < 10.0 ** (-8.0):
             theta0 = np.pi
 
-        if r_vec[0] < 0.:
+        if r_vec[0] < 0.0:
             phi0 = np.pi + np.arctan(r_vec[1] / r_vec[0])
-        elif 0. < r_vec[0] and r_vec[1] < 0.:
+        elif 0.0 < r_vec[0] and r_vec[1] < 0.0:
             phi0 = 2 * np.pi + np.arctan(r_vec[1] / r_vec[0])
-        elif 0. < r_vec[0] and 0. <= r_vec[1]:
+        elif 0.0 < r_vec[0] and 0.0 <= r_vec[1]:
             phi0 = np.arctan(r_vec[1] / r_vec[0])
-        elif r_vec[0] == 0. and 0. < r_vec[1]:
+        elif r_vec[0] == 0.0 and 0.0 < r_vec[1]:
             phi0 = 0.5 * np.pi
-        elif r_vec[0] == 0. and r_vec[1] < 0.:
+        elif r_vec[0] == 0.0 and r_vec[1] < 0.0:
             phi0 = 1.5 * np.pi
         else:
-            phi0 = 0.
+            phi0 = 0.0
         pts[i, :] = [theta0, phi0]
     if not radian:
         pts = np.degree(pts)
 
     return pts
 
+
 def expand_sph(pts, l_max, norm=4, csphase=-1):
     from pyshtools.expand import SHExpandLSQ
+
     """
     Transform the grid points to spherical harmonics
 
@@ -229,18 +245,19 @@ def expand_sph(pts, l_max, norm=4, csphase=-1):
         chi2: float
             The residual sum of squares misfit for an overdetermined inversion.
     """
-    thetas, phis, vals = pts[:,0], pts[:,1], pts[:,2]
+    thetas, phis, vals = pts[:, 0], pts[:, 1], pts[:, 2]
     phis = np.degrees(phis)
     # shift from (0, 180) to (-90, 90)
     thetas = np.degrees(thetas)
     thetas -= 90
 
     # if thetas is within [0, 180]
-    #print('check thetas', thetas.min(), thetas.max())
-    #if abs(thetas.min()) < 1e-3: thetas -= 90
+    # print('check thetas', thetas.min(), thetas.max())
+    # if abs(thetas.min()) < 1e-3: thetas -= 90
     cilm, chi2 = SHExpandLSQ(vals, thetas, phis, l_max, norm=norm, csphase=csphase)
 
     return cilm, chi2
+
 
 def get_alignment(pts, degrees=True):
     """
@@ -253,13 +270,31 @@ def get_alignment(pts, degrees=True):
     Returns:
         angles: [alpha, beta, gamma]
     """
-    #get the three most importants ids
+    # get the three most importants ids
     tps = pts[:3]
 
-    xyz0 = np.array([np.sin(tps[0,0])*np.cos(tps[0,1]), np.sin(tps[0,1])*np.sin(tps[0,0]), np.cos(tps[0,0])])
-    xyz1 = np.array([np.sin(tps[1,0])*np.cos(tps[1,1]), np.sin(tps[1,1])*np.sin(tps[1,0]), np.cos(tps[1,0])])
-    xyz2 = np.array([np.sin(tps[2,0])*np.cos(tps[2,1]), np.sin(tps[2,1])*np.sin(tps[2,0]), np.cos(tps[2,0])])
-    line1, line2 = xyz1-xyz0, xyz2-xyz0
+    xyz0 = np.array(
+        [
+            np.sin(tps[0, 0]) * np.cos(tps[0, 1]),
+            np.sin(tps[0, 1]) * np.sin(tps[0, 0]),
+            np.cos(tps[0, 0]),
+        ]
+    )
+    xyz1 = np.array(
+        [
+            np.sin(tps[1, 0]) * np.cos(tps[1, 1]),
+            np.sin(tps[1, 1]) * np.sin(tps[1, 0]),
+            np.cos(tps[1, 0]),
+        ]
+    )
+    xyz2 = np.array(
+        [
+            np.sin(tps[2, 0]) * np.cos(tps[2, 1]),
+            np.sin(tps[2, 1]) * np.sin(tps[2, 0]),
+            np.cos(tps[2, 0]),
+        ]
+    )
+    line1, line2 = xyz1 - xyz0, xyz2 - xyz0
     ax1 = np.cross(line1, line2)
     ax1 /= np.linalg.norm(ax1)
     ax0 = np.array([0.0, 0.0, 1.0])
@@ -267,14 +302,15 @@ def get_alignment(pts, degrees=True):
     vec = np.cross(ax0, ax1)
     angle = np.arccos(np.dot(ax0, ax1))
     r = Rotation.from_rotvec(angle * vec)
-    angles = r.as_euler('zyz')
-    if degrees: angles = np.degrees(angles)
+    angles = r.as_euler("zyz")
+    if degrees:
+        angles = np.degrees(angles)
     return angles
 
 
-class spherical_image():
-
+class spherical_image:
     import pyshtools as pysh
+
     """
     A class to handle the crystal packing descriptor from spherical image
 
@@ -287,13 +323,13 @@ class spherical_image():
         N: number of grid points on the unit sphere
     """
 
-    def __init__(self, xtal, model='molecule', max_d=10,
-        factor=2.2, lmax=13, sigma=0.1, N=10000):
-
+    def __init__(
+        self, xtal, model="molecule", max_d=10, factor=2.2, lmax=13, sigma=0.1, N=10000
+    ):
         for i in range(len(xtal.mol_sites)):
             try:
                 numbers = xtal.mol_sites[i].molecule.mol.atomic_numbers
-                if numbers.count(7)>0 or numbers.count(8)>0:
+                if numbers.count(7) > 0 or numbers.count(8) > 0:
                     xtal.mol_sites[i].molecule.set_labels()
             except:
                 print("Warning! Needs the smiles information!")
@@ -308,7 +344,7 @@ class spherical_image():
         grids = np.zeros([N, 3])
         grids[:, :2] = xyz2sph(xyzs)
 
-        if model == 'molecule':
+        if model == "molecule":
             self.pts = self.get_molecules()
         else:
             self.pts = self.get_contacts()
@@ -326,51 +362,50 @@ class spherical_image():
         vals = np.zeros(len(xyzs))
         for _pt in pt:
             t0, p0, h = _pt
-            x0, y0, z0 = np.sin(t0)*np.cos(p0), np.sin(t0)*np.sin(p0), np.cos(t0)
+            x0, y0, z0 = np.sin(t0) * np.cos(p0), np.sin(t0) * np.sin(p0), np.cos(t0)
             dst = np.linalg.norm(xyzs - np.array([x0, y0, z0]), axis=1)
-            vals += h*np.exp(-(dst**2/(2.0*self.sigma**2)))
+            vals += h * np.exp(-(dst**2 / (2.0 * self.sigma**2)))
         return vals
 
     def get_molecules(self):
-        '''
+        """
         compute the spherical images from neighboring molecules
 
         Returns:
             pts: [N, 3] array, (theta, phi, eng)
-        '''
+        """
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
-            _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i,
-                                                    factor=self.factor,
-                                                    max_d=self.max_d,
-                                                    ignore_E=False)
+            _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(
+                i, factor=self.factor, max_d=self.max_d, ignore_E=False
+            )
             xyz, _ = site._get_coords_and_species(absolute=True, first=True)
             center = site.molecule.get_center(xyz)
             coords = np.zeros([len(neighs), 3])
             for _i, xyz in enumerate(neighs):
-                #coords[_i, :] = site.molecule.get_center(xyz) - center
+                # coords[_i, :] = site.molecule.get_center(xyz) - center
                 coords[_i, :] = self.xtal.molecules[comps[_i]].get_center(xyz) - center
             pt = np.zeros([len(coords), 3])
             pt[:, :2] = xyz2sph(coords)
-            pt[:, 2] = engs/np.sum(engs)
+            pt[:, 2] = engs / np.sum(engs)
             pts.append(pt)
         return pts
 
     def get_contacts(self):
-        '''
+        """
         Compute the spherical images from the neighboring distances
 
         Returns:
             pts: [N, 3] array, (theta, phi, eng)
-        '''
+        """
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
-            engs, pairs, dists = self.xtal.get_neighboring_dists(i,
-                                            factor=self.factor,
-                                            max_d=self.max_d)
+            engs, pairs, dists = self.xtal.get_neighboring_dists(
+                i, factor=self.factor, max_d=self.max_d
+            )
             pt = np.zeros([len(pairs), 3])
             pt[:, :2] = xyz2sph(pairs)
-            pt[:, 2] = engs/np.sum(engs)
+            pt[:, 2] = engs / np.sum(engs)
             pts.append(pt)
         return pts
 
@@ -385,6 +420,7 @@ class spherical_image():
         """
         import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
+
         if molecule:
             nrows = len(self.coefs) + 1
             shift = 1
@@ -392,23 +428,23 @@ class spherical_image():
             nrows = len(self.coefs)
             shift = 0
 
-        fig = plt.figure(figsize=(9, 4*nrows))
-        gs = gridspec.GridSpec(nrows=nrows, ncols=2,
-                               wspace=0.15, width_ratios=[0.7, 1])
+        fig = plt.figure(figsize=(9, 4 * nrows))
+        gs = gridspec.GridSpec(nrows=nrows, ncols=2, wspace=0.15, width_ratios=[0.7, 1])
         if molecule:
             from rdkit import Chem
             from rdkit.Chem import Draw
-            smi = ''
+
+            smi = ""
             for i, m in enumerate(self.xtal.molecules):
                 smi += m.smile
                 if i + 1 < len(self.xtal.molecules):
-                    smi += '.'
+                    smi += "."
 
             m = Chem.MolFromSmiles(smi)
             im = Draw.MolToImage(m)
             ax0 = fig.add_subplot(gs[0, :])
             imgplot = plt.imshow(im)
-            ax0.axis('off')
+            ax0.axis("off")
 
         if lmax is None:
             lmax = self.lmax
@@ -417,13 +453,18 @@ class spherical_image():
             lmax = self.lmax
 
         for i in range(len(self.coefs)):
-            ax1 = fig.add_subplot(gs[i+shift, 0])
-            ax2 = fig.add_subplot(gs[i+shift, 1])
+            ax1 = fig.add_subplot(gs[i + shift, 0])
+            ax2 = fig.add_subplot(gs[i + shift, 1])
             coef = self.coefs[i]
             grid = coef.expand(lmax=lmax)
             grid.plot3d(0, 0, title="{:6.3f}".format(self.ds[i]), show=False, ax=ax1)
-            grid.plot(show=False, ax=ax2, tick_interval=[120, 90],
-                    tick_labelsize=14, axes_labelsize=16)
+            grid.plot(
+                show=False,
+                ax=ax2,
+                tick_interval=[120, 90],
+                tick_labelsize=14,
+                axes_labelsize=16,
+            )
             ax2.set_xlim([1, 359])
 
         if figname is None:
@@ -435,11 +476,9 @@ class spherical_image():
         """
         Plot the real molecular contacts in the crystal
         """
-        return self.xtal.show_mol_cluster(id,
-                                          factor=self.factor,
-                                          max_d=self.max_d,
-                                          ignore_E=False,
-                                          plot=False)
+        return self.xtal.show_mol_cluster(
+            id, factor=self.factor, max_d=self.max_d, ignore_E=False, plot=False
+        )
 
     def align(self, M=6):
         """
@@ -489,8 +528,8 @@ class spherical_image():
                 S[i, j] = d
         return S
 
-class orientation_order():
 
+class orientation_order:
     """
     Computes the Steinhardt orientation order parameters
 
@@ -499,34 +538,35 @@ class orientation_order():
         max_d: maximum intermolecular distances
         lmax: maximum bandwidth for spherical harmonic expansion
     """
-    def __init__(self, xtal, max_CN=14):
 
+    def __init__(self, xtal, max_CN=14):
         self.xtal = xtal
         self.max_CN = max_CN
         self.dists = self.get_neighbors()
 
     def get_neighbors(self):
-        '''
+        """
         get neighboring molecules
 
         Returns:
             pts: [N, 3] array, (theta, phi, eng)
-        '''
+        """
         pts = []
         for i, site in enumerate(self.xtal.mol_sites):
             _, neighs, comps, _, engs = self.xtal.get_neighboring_molecules(i)
             xyz, _ = site._get_coords_and_species(absolute=True, first=True)
             center = site.molecule.get_center(xyz)
             coords = np.zeros([len(neighs), 3])
-            #print(len(neighs))
-            if len(neighs) > self.max_CN: neighs = neighs[:self.max_CN]
+            # print(len(neighs))
+            if len(neighs) > self.max_CN:
+                neighs = neighs[: self.max_CN]
             for _i, xyz in enumerate(neighs):
                 coords[_i, :] = self.xtal.molecules[comps[_i]].get_center(xyz) - center
             pts.append(coords)
         return pts
 
     def get_parameters(self, ls=[4, 6]):
-        '''
+        """
         Computes
         Args:
             center: center xyz coordinate
@@ -535,34 +575,33 @@ class orientation_order():
         Returns:
              q: numpy array(complex128), the complex vector qlm normalized
                 by the number of nearest neighbors
-        '''
+        """
         qs = []
         for dist in self.dists:
             for l in ls:
-                factor = (4 * np.pi) / (2*l + 1)
+                factor = (4 * np.pi) / (2 * l + 1)
                 qlms = _qlm(dist, l)
-                dot = float(np.sum(qlms*np.conjugate(qlms)))
-                qs.append(np.sqrt((4 * np.pi)/(2*l+1) * dot))
+                dot = float(np.sum(qlms * np.conjugate(qlms)))
+                qs.append(np.sqrt((4 * np.pi) / (2 * l + 1) * dot))
 
         return qs
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     from pkg_resources import resource_filename
     from pyxtal import pyxtal
 
     cif_path = resource_filename("pyxtal", "database/cifs/")
     c1 = pyxtal(molecular=True)
-    for name in ['benzene', 'resorcinol', 'aspirin', 'naphthalene']:
-        c1.from_seed(seed=cif_path+name+".cif", molecules=[name])
-        for model in ['contact', 'molecule']:
+    for name in ["benzene", "resorcinol", "aspirin", "naphthalene"]:
+        c1.from_seed(seed=cif_path + name + ".cif", molecules=[name])
+        for model in ["contact", "molecule"]:
             print(name, model)
             sph = spherical_image(c1, model=model, lmax=18)
             sph.align()
-            sph.plot_sph_images(figname=name+'-'+model+'.png')
+            sph.plot_sph_images(figname=name + "-" + model + ".png")
 
-    #for name in ['BENZEN', 'ACSALA', 'RESORA']:
+    # for name in ['BENZEN', 'ACSALA', 'RESORA']:
     #    c1.from_CSD(name)
     #    for model in ['contact', 'molecule']:
     #        sph = spherical_image(c1, model=model, lmax=18)

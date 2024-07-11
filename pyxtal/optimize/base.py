@@ -5,6 +5,7 @@ A base class for global optimization including
 - BasinHopping
 - QRS
 """
+
 from typing import List, Dict, Optional, Union
 
 import os
@@ -21,7 +22,8 @@ from pyxtal.optimize.common import randomizer, optimizer
 from ost.parameters import ForceFieldParameters, get_lmp_efs, compute_r2
 import pymatgen.analysis.structure_matcher as sm
 
-class GlobalOptimize():
+
+class GlobalOptimize:
     """
     Base-class for all global optimization methods
 
@@ -49,43 +51,46 @@ class GlobalOptimize():
         E_max (float): maximum energy defined as an invalid structure
     """
 
-    def __init__(self,
-                 smiles: str,
-                 workdir: str,
-                 sg: Union[int, List[int]],
-                 tag: str,
-                 info: Optional[Dict[any, any]] = None,
-                 ff_opt: bool = False,
-                 ff_style: str = 'openff',
-                 ff_parameters: str = 'parameters.xml',
-                 reference_file: str = 'references.xml',
-                 ref_criteria: Optional[Dict[any, any]] = None,
-                 N_cpu: int = 1,
-                 cif: Optional[str] = None,
-                 block: Optional[List[any]] = None,
-                 num_block: Optional[List[any]] = None,
-                 composition: Optional[List[any]] = None,
-                 lattice: Optional[Lattice] = None,
-                 torsions: Optional[List[any]] = None,
-                 molecules: Optional[List[pyxtal_molecule]] = None,
-                 sites: Optional[List[any]] = None,
-                 use_hall: bool = False,
-                 skip_ani: bool = True,
-                 factor: float = 1.1,
-                 eng_cutoff: float = 5.0,
-                 E_max: float = 1e+10):
-
+    def __init__(
+        self,
+        smiles: str,
+        workdir: str,
+        sg: Union[int, List[int]],
+        tag: str,
+        info: Optional[Dict[any, any]] = None,
+        ff_opt: bool = False,
+        ff_style: str = "openff",
+        ff_parameters: str = "parameters.xml",
+        reference_file: str = "references.xml",
+        ref_criteria: Optional[Dict[any, any]] = None,
+        N_cpu: int = 1,
+        cif: Optional[str] = None,
+        block: Optional[List[any]] = None,
+        num_block: Optional[List[any]] = None,
+        composition: Optional[List[any]] = None,
+        lattice: Optional[Lattice] = None,
+        torsions: Optional[List[any]] = None,
+        molecules: Optional[List[pyxtal_molecule]] = None,
+        sites: Optional[List[any]] = None,
+        use_hall: bool = False,
+        skip_ani: bool = True,
+        factor: float = 1.1,
+        eng_cutoff: float = 5.0,
+        E_max: float = 1e10,
+    ):
         # Molecular information
         self.smile = smiles
-        self.smiles = self.smile.split('.') #list
+        self.smiles = self.smile.split(".")  # list
         self.torsions = torsions
         self.molecules = molecules
         self.block = block
         self.num_block = num_block
-        self.composition = [1] * len(self.smiles) if composition is None else composition
+        self.composition = (
+            [1] * len(self.smiles) if composition is None else composition
+        )
         self.N_torsion = 0
         for smi, comp in zip(self.smiles, self.composition):
-            self.N_torsion += len(find_rotor_from_smile(smi))*int(max([comp,1]))
+            self.N_torsion += len(find_rotor_from_smile(smi)) * int(max([comp, 1]))
 
         # Crystal information
         self.sg = [sg] if type(sg) == int or type(sg) == np.int64 else sg
@@ -114,33 +119,38 @@ class GlobalOptimize():
             self.ff_style = ff_style
             self.ff_parameters = ff_parameters
             self.reference_file = reference_file
-            self.parameters = ForceFieldParameters(self.smiles,
-                                                   style = ff_style,
-                                                   f_coef = 1.0,
-                                                   s_coef = 1.0,
-                                                   ncpu = self.ncpu)
+            self.parameters = ForceFieldParameters(
+                self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu
+            )
 
             # Preload two set for FF parameters 1 for opt and 2 for refinement
             if type(self.ff_parameters) == list:
-                assert(len(self.ff_parameters) == 2)
+                assert len(self.ff_parameters) == 2
                 for para_file in self.ff_parameters:
                     if not os.path.exists(para_file):
                         raise RuntimeError("File not found", para_file)
                 params0, dic = self.parameters.load_parameters(self.ff_parameters[0])
-                if 'ff_style' in dic.keys(): assert(dic['ff_style'] == self.ff_style)
-                #print(params0)
+                if "ff_style" in dic.keys():
+                    assert dic["ff_style"] == self.ff_style
+                # print(params0)
                 params1, dic = self.parameters.load_parameters(self.ff_parameters[1])
-                if 'ff_style' in dic.keys(): assert(dic['ff_style'] == self.ff_style)
-                #print(params1)
+                if "ff_style" in dic.keys():
+                    assert dic["ff_style"] == self.ff_style
+                # print(params1)
                 self.prepare_chm_info(params0, params1)
             else:
                 if os.path.exists(self.ff_parameters):
                     print("Preload the existing FF parameters from", self.ff_parameters)
                     params0, _ = self.parameters.load_parameters(self.ff_parameters)
                 else:
-                    print("No FF parameter file exists, using the default setting", ff_style)
+                    print(
+                        "No FF parameter file exists, using the default setting",
+                        ff_style,
+                    )
                     params0 = self.parameters.params_init.copy()
-                    self.parameters.export_parameters(self.wdir+'/'+self.ff_parameters, params0)
+                    self.parameters.export_parameters(
+                        self.wdir + "/" + self.ff_parameters, params0
+                    )
 
                 self.prepare_chm_info(params0)
 
@@ -152,11 +162,12 @@ class GlobalOptimize():
         self.tag = tag
         self.cif = cif
         if cif is not None:
-            with open(self.workdir+'/'+cif, 'w') as f: f.writelines(str(self))
-        #print(self)
+            with open(self.workdir + "/" + cif, "w") as f:
+                f.writelines(str(self))
+        # print(self)
 
     def __str__(self):
-        s =  "\n-------Global Crystal Structure Prediction------"
+        s = "\n-------Global Crystal Structure Prediction------"
         s += "\nsmile     : {:s}".format(self.smile)
         s += "\nZprime    : {:s}".format(str(self.composition))
         s += "\nN_torsion : {:d}".format(self.N_torsion)
@@ -197,10 +208,10 @@ class GlobalOptimize():
         for id in ids:
             xtal = ref_xtals[id]
             if xtal.energy <= self.E_max and self.new_struc(xtal, xtals):
-                xtals.append(xtal) #.to_ase(resort=False))
+                xtals.append(xtal)  # .to_ase(resort=False))
             if len(xtals) == N_max:
                 break
-        #xtals = [xtal.to_ase(resort=False) for xtal in xtals]
+        # xtals = [xtal.to_ase(resort=False) for xtal in xtals]
         return xtals
 
     def ff_optimization(self, xtals, N_added, N_min=50, dE=2.5, FMSE=2.5):
@@ -226,35 +237,35 @@ class GlobalOptimize():
             ref_dics = self.parameters.load_references(self.reference_file)
             if self.ref_criteria is not None:
                 ref_dics = self.parameters.clean_ref_dics(ref_dics, self.ref_criteria)
-                ref_dics = self.parameters.cut_references_by_error(ref_dics,
-                                                                   params_opt,
-                                                                   dE = dE,
-                                                                   FMSE = FMSE)
-            #self.parameters.generate_report(ref_dics, params_opt)
+                ref_dics = self.parameters.cut_references_by_error(
+                    ref_dics, params_opt, dE=dE, FMSE=FMSE
+                )
+            # self.parameters.generate_report(ref_dics, params_opt)
         else:
             ref_dics = []
 
         # Add references
         print("Current number of reference structures", len(ref_dics))
         t0 = time()
-        if len(ref_dics) > 100: # no fit if ref_dics is large
+        if len(ref_dics) > 100:  # no fit if ref_dics is large
             # Here we find the lowest engs and select only low-E struc
-            ref_engs = [ref_dic['energy']/ref_dic['replicate'] for ref_dic in ref_dics]
+            ref_engs = [
+                ref_dic["energy"] / ref_dic["replicate"] for ref_dic in ref_dics
+            ]
             ref_e2 = np.array(ref_engs).min()
             print("Min Reference Energy", ref_e2)
 
             if len(err_dict) == 0:
                 # update the offset if necessary
                 _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
-                results = self.parameters.evaluate_multi_references(ref_dics,
-                                                                    params_opt,
-                                                                    1000,
-                                                                    1000)
+                results = self.parameters.evaluate_multi_references(
+                    ref_dics, params_opt, 1000, 1000
+                )
                 (ff_values, ref_values, rmse_values, r2_values) = results
-                err_dict = {'rmse_values': rmse_values}
+                err_dict = {"rmse_values": rmse_values}
 
             _ref_dics = []
-            rmse_values = err_dict['rmse_values']
+            rmse_values = err_dict["rmse_values"]
             ref_xtals = []
             lmp_in = self.parameters.ff.get_lammps_in()
             self.parameters.ase_templates = {}
@@ -264,13 +275,14 @@ class GlobalOptimize():
             for numMol, xtal in zip(numMols, xtals):
                 struc = reset_lammps_cell(xtal)
                 lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(
-                                                                struc,
-                                                                numMol,
-                                                                set_template=False)
-                replicate = len(lmp_struc.atoms)/self.parameters.natoms_per_unit
+                    struc, numMol, set_template=False
+                )
+                replicate = len(lmp_struc.atoms) / self.parameters.natoms_per_unit
 
                 try:
-                    e1, f1, s1 = get_lmp_efs(lmp_struc, lmp_in, lmp_dat) #; print('Debug KONTIQ', struc, e1)
+                    e1, f1, s1 = get_lmp_efs(
+                        lmp_struc, lmp_in, lmp_dat
+                    )  # ; print('Debug KONTIQ', struc, e1)
                 except:
                     e1 = self.E_max
 
@@ -285,12 +297,12 @@ class GlobalOptimize():
                         f2 = struc.get_forces()
                         s2 = struc.get_stress()
                         struc.set_calculator()
-                        e_err = abs(e1-e2 + params_opt[-1])
-                        f_err = np.sqrt(((f1.flatten()-f2.flatten())**2).mean())
-                        s_err = np.sqrt(((s1-s2)**2).mean())
-                        e_check = e_err < 0.5*rmse_values[0]
-                        f_check = f_err < 1.0*rmse_values[1]
-                        s_check = s_err < 1.0*rmse_values[2]
+                        e_err = abs(e1 - e2 + params_opt[-1])
+                        f_err = np.sqrt(((f1.flatten() - f2.flatten()) ** 2).mean())
+                        s_err = np.sqrt(((s1 - s2) ** 2).mean())
+                        e_check = e_err < 0.5 * rmse_values[0]
+                        f_check = f_err < 1.0 * rmse_values[1]
+                        s_check = s_err < 1.0 * rmse_values[2]
                         strs = "Errors of csp structure in gen{:3d} ".format(gen)
                         strs += "{:.4f} {:.4f} {:.4f} ".format(e_err, f_err, s_err)
                         strs += "{:8.4f} {:8.4f}".format(e1, e2)
@@ -298,48 +310,55 @@ class GlobalOptimize():
 
                         # avoid very unphysical structures
                         if e_err < 4.0 and f_err < 4.0:
-                            ff_engs.append(e1 + params_opt[-1]); rf_engs.append(e2)
-                            ff_fors.extend(f1.flatten()); rf_fors.extend(f2.flatten())
-                            ff_strs.extend(s1.flatten()); rf_strs.extend(s2.flatten())
+                            ff_engs.append(e1 + params_opt[-1])
+                            rf_engs.append(e2)
+                            ff_fors.extend(f1.flatten())
+                            rf_fors.extend(f2.flatten())
+                            ff_strs.extend(s1.flatten())
+                            rf_strs.extend(s2.flatten())
 
                             if False in [e_check, f_check, s_check]:
-                                _ref_dic = {'structure': struc,
-                                            'energy': e2*replicate,
-                                            'forces': f2,
-                                            'stress': s2,
-                                            'replicate': replicate,
-                                            'options': [True, not f_check, True],
-                                            'tag': 'CSP',
-                                            'numMols': numMol,
-                                            }
+                                _ref_dic = {
+                                    "structure": struc,
+                                    "energy": e2 * replicate,
+                                    "forces": f2,
+                                    "stress": s2,
+                                    "replicate": replicate,
+                                    "options": [True, not f_check, True],
+                                    "tag": "CSP",
+                                    "numMols": numMol,
+                                }
                                 _ref_dics.append(_ref_dic)
                     else:
-                        print('Ignore the structure due to high energy', e2)
+                        print("Ignore the structure due to high energy", e2)
 
             # QZ: Output FF performances MSE, R2 for the selected structures
             if len(_ref_dics) == 0:
                 print("There is a serious problem in depositing high energy")
-                raise ValueError('The program needs to stop here')
+                raise ValueError("The program needs to stop here")
 
             if self.ref_criteria is not None:
                 _ref_dics = self.parameters.clean_ref_dics(_ref_dics, self.ref_criteria)
 
-            #print("Added {:d} new reference structures into training".format(len(_ref_dics)))
+            # print("Added {:d} new reference structures into training".format(len(_ref_dics)))
             print("FF performances")
-            ff_engs = np.array(ff_engs); rf_engs = np.array(rf_engs)
-            ff_fors = np.array(ff_fors); rf_fors = np.array(rf_fors)
-            ff_strs = np.array(ff_strs); rf_strs = np.array(rf_strs)
+            ff_engs = np.array(ff_engs)
+            rf_engs = np.array(rf_engs)
+            ff_fors = np.array(ff_fors)
+            rf_fors = np.array(rf_fors)
+            ff_strs = np.array(ff_strs)
+            rf_strs = np.array(rf_strs)
             r2_engs = compute_r2(ff_engs, rf_engs)
             r2_fors = compute_r2(ff_fors, rf_fors)
             r2_strs = compute_r2(ff_strs, rf_strs)
-            mse_engs = np.sqrt(np.mean((ff_engs-rf_engs)**2))
-            mse_fors = np.sqrt(np.mean((ff_fors-rf_fors)**2))
-            mse_strs = np.sqrt(np.mean((ff_strs-rf_strs)**2))
+            mse_engs = np.sqrt(np.mean((ff_engs - rf_engs) ** 2))
+            mse_fors = np.sqrt(np.mean((ff_fors - rf_fors) ** 2))
+            mse_strs = np.sqrt(np.mean((ff_strs - rf_strs) ** 2))
 
             print("R2   {:8.4f} {:8.4f} {:8.4f}".format(r2_engs, r2_fors, r2_strs))
             print("RMSE {:8.4f} {:8.4f} {:8.4f}".format(mse_engs, mse_fors, mse_strs))
-            #self.parameters.generate_report(_ref_dics, params_opt)
-            #import sys; sys.exit()
+            # self.parameters.generate_report(_ref_dics, params_opt)
+            # import sys; sys.exit()
         else:
             # reduce the number of structures to save some time
             N_selected = min([N_min, self.ncpu])
@@ -349,19 +368,25 @@ class GlobalOptimize():
                 xtals = [xtals[id] for id in ids]
                 numMols = [numMols[id] for id in ids]
 
-            _ref_dics = self.parameters.add_multi_references(xtals,
-                                                             numMols,
-                                                             augment = True,
-                                                             steps = 20,#50,
-                                                             N_vibs = 1,
-                                                             logfile='ase.log')
+            _ref_dics = self.parameters.add_multi_references(
+                xtals,
+                numMols,
+                augment=True,
+                steps=20,  # 50,
+                N_vibs=1,
+                logfile="ase.log",
+            )
             if len(ref_dics) == 0:
                 _, params_opt = self.parameters.optimize_offset(_ref_dics, params_opt)
                 self.parameters.generate_report(ref_dics, params_opt)
-                #import sys; sys.exit()
+                # import sys; sys.exit()
 
         ref_dics.extend(_ref_dics)
-        print('Add {:d} references in {:.2f} min'.format(len(_ref_dics), (time()-t0)/60))
+        print(
+            "Add {:d} references in {:.2f} min".format(
+                len(_ref_dics), (time() - t0) / 60
+            )
+        )
         self.parameters.export_references(ref_dics, self.reference_file)
 
         # Optimize ff parameters if we get enough number of configurations
@@ -372,68 +397,62 @@ class GlobalOptimize():
             t0 = time()
             _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
 
-            for data in [(['bond', 'angle', 'proper'], 50),
-                         (['proper', 'vdW', 'charge'], 50),
-                         (['bond', 'angle', 'proper', 'vdW', 'charge'], 50),
-                        ]:
+            for data in [
+                (["bond", "angle", "proper"], 50),
+                (["proper", "vdW", "charge"], 50),
+                (["bond", "angle", "proper", "vdW", "charge"], 50),
+            ]:
                 (terms, steps) = data
 
                 # Actual optimization
                 opt_dict = self.parameters.get_opt_dict(terms, None, params_opt)
                 x, fun, values, it = self.parameters.optimize_global(
-                                        ref_dics,
-                                        opt_dict,
-                                        params_opt,
-                                        obj = 'R2',
-                                        t0 = 0.1,
-                                        steps = 25)
+                    ref_dics, opt_dict, params_opt, obj="R2", t0=0.1, steps=25
+                )
 
-                params_opt = self.parameters.set_sub_parameters(values, terms, params_opt)
+                params_opt = self.parameters.set_sub_parameters(
+                    values, terms, params_opt
+                )
                 opt_dict = self.parameters.get_opt_dict(terms, None, params_opt)
                 x, fun, values, it = self.parameters.optimize_local(
-                                        ref_dics,
-                                        opt_dict,
-                                        params_opt,
-                                        obj = 'R2',
-                                        steps = steps)
+                    ref_dics, opt_dict, params_opt, obj="R2", steps=steps
+                )
 
-                params_opt = self.parameters.set_sub_parameters(values, terms, params_opt)
+                params_opt = self.parameters.set_sub_parameters(
+                    values, terms, params_opt
+                )
                 _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
 
                 # To add Early termination
-            t = (time()-t0)/60
-            print('FF optimization {:.2f} min '.format(t), fun)
+            t = (time() - t0) / 60
+            print("FF optimization {:.2f} min ".format(t), fun)
             # Reset N_added to 0
             N_added = 0
 
-
         # Export FF performances
         if gen < 10:
-            gen_prefix = 'gen_00' + str(gen)
+            gen_prefix = "gen_00" + str(gen)
         elif gen < 100:
-            gen_prefix = 'gen_0' + str(gen)
+            gen_prefix = "gen_0" + str(gen)
         else:
-            gen_prefix = 'gen_' + str(gen)
+            gen_prefix = "gen_" + str(gen)
 
-        performance_fig = 'FF_performance_{:s}.png'.format(gen_prefix)
-        errs = self.parameters.plot_ff_results(performance_fig,
-                                               ref_dics,
-                                               [params_opt],
-                                               labels=gen_prefix)
+        performance_fig = "FF_performance_{:s}.png".format(gen_prefix)
+        errs = self.parameters.plot_ff_results(
+            performance_fig, ref_dics, [params_opt], labels=gen_prefix
+        )
 
-        param_fig = 'parameters_{:s}.png'.format(gen_prefix)
+        param_fig = "parameters_{:s}.png".format(gen_prefix)
         self.parameters.plot_ff_parameters(param_fig, [params_opt])
 
         # Save parameters
-        self.parameters.export_parameters(self.ff_parameters,
-                                          params_opt,
-                                          errs[0])
+        self.parameters.export_parameters(self.ff_parameters, params_opt, errs[0])
         self.prepare_chm_info(params_opt)
-        #self.parameters.generate_report(ref_dics, params_opt)
+        # self.parameters.generate_report(ref_dics, params_opt)
 
         return N_added
 
-    def prepare_chm_info(self, params0, params1=None, suffix='calc/pyxtal0'):
+    def prepare_chm_info(self, params0, params1=None, suffix="calc/pyxtal0"):
         """
         TODO: A base classs for optimization
         prepar_chm_info with the updated params.
@@ -450,8 +469,10 @@ class GlobalOptimize():
         os.chdir(self.workdir)
 
         # To remove the old pyxtal1 files
-        if os.path.exists(suffix+'.rtf'): os.remove(suffix+'.rtf')
-        if os.path.exists(suffix+'.prm'): os.remove(suffix+'.prm')
+        if os.path.exists(suffix + ".rtf"):
+            os.remove(suffix + ".rtf")
+        if os.path.exists(suffix + ".prm"):
+            os.remove(suffix + ".prm")
 
         ase_with_ff = self.parameters.get_ase_charmm(params0)
         ase_with_ff.write_charmmfiles(base=suffix)
@@ -480,10 +501,10 @@ class GlobalOptimize():
 
             if match_id is not None:
                 all_engs = np.sort(np.array(self.engs))
-                rank = len(all_engs[all_engs<(e-0.001)]) + 1
+                rank = len(all_engs[all_engs < (e - 0.001)]) + 1
                 tag = tags[match_id][0]
                 done = False
-                if rank/self.N_struc < 0.5:
+                if rank / self.N_struc < 0.5:
                     done = True
                 else:
                     if ref_eng is not None:
@@ -492,12 +513,13 @@ class GlobalOptimize():
                     else:
                         done = True
                 if done:
-                    match_dict = {'energy': e,
-                                  'tag': tag,
-                                  'l_rms': d1,
-                                  'a_rms': d2,
-                                  'rank': rank
-                                 }
+                    match_dict = {
+                        "energy": e,
+                        "tag": tag,
+                        "l_rms": d1,
+                        "a_rms": d2,
+                        "rank": rank,
+                    }
 
                     return match_dict
         else:
@@ -524,8 +546,8 @@ class GlobalOptimize():
 
         rep0 = xtal.get_1D_representation()
         pmg_s1 = xtal.to_pymatgen()
-        pmg_s1.remove_species('H')
-        strs = rep0.to_string(eng=xtal.energy/sum(xtal.numMols))
+        pmg_s1.remove_species("H")
+        strs = rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
         rmsd = self.matcher.get_rms_dist(ref_pmg, pmg_s1)
         if rmsd is not None:
             strs += "{:6.3f}{:6.3f} Match Ref".format(rmsd[0], rmsd[1])
@@ -541,7 +563,7 @@ class GlobalOptimize():
         """
         from copy import deepcopy
 
-        #check torsion
+        # check torsion
         N_id = 8
         engs_gau = deepcopy(engs)
         for i, rep in enumerate(reps):
@@ -551,37 +573,39 @@ class GlobalOptimize():
                 tor1 = np.zeros(self.N_torsion)
                 count = 0
                 for j in range(1, len(rep)):
-                    if len(rep[j]) > N_id: #for Cl-
-                        tor1[count:count+len(rep[j])-N_id-1] = rep[j][N_id:-1]
+                    if len(rep[j]) > N_id:  # for Cl-
+                        tor1[count : count + len(rep[j]) - N_id - 1] = rep[j][N_id:-1]
                         count += len(rep[j]) - N_id
 
                 for ref in self.best_reps:
                     sg2, abc2 = ref[0][0], np.array(ref[0][1:])
-                    #Cell
+                    # Cell
                     g1 = 0
-                    if sg1==sg2:
-                        diff1 = np.sum((abc1-abc2)**2)/w1**2
-                        g1 = h1*np.exp(-0.5*diff1) #cell
-                    #Torsion
+                    if sg1 == sg2:
+                        diff1 = np.sum((abc1 - abc2) ** 2) / w1**2
+                        g1 = h1 * np.exp(-0.5 * diff1)  # cell
+                    # Torsion
                     g2 = 0
                     if len(tor1) > 0:
                         tor2 = np.zeros(self.N_torsion)
                         count = 0
                         for j in range(1, len(rep)):
-                            if len(rep[j]) > N_id: #for Cl-
-                                tor2[count:count+len(ref[j])-N_id-1] = ref[j][N_id:-1]
+                            if len(rep[j]) > N_id:  # for Cl-
+                                tor2[count : count + len(ref[j]) - N_id - 1] = ref[j][
+                                    N_id:-1
+                                ]
                                 count += len(ref[j]) - N_id
 
-                        diff2 = np.sum((tor1-tor2)**2)/w2**2
-                        g2 = h2*np.exp(-0.5*diff2) #torsion
-                    gau += (g1+g2)
-                #if gau > 1e-2: print(sg1, diag1, abc1, tor1)
-            #print("Gaussian", i, "eng", engs[i], "gau", gau)
-            #import sys; sys.exit()
+                        diff2 = np.sum((tor1 - tor2) ** 2) / w2**2
+                        g2 = h2 * np.exp(-0.5 * diff2)  # torsion
+                    gau += g1 + g2
+                # if gau > 1e-2: print(sg1, diag1, abc1, tor1)
+            # print("Gaussian", i, "eng", engs[i], "gau", gau)
+            # import sys; sys.exit()
             engs_gau[i] += gau
         return np.array(engs_gau)
 
-    def check_ref(self, reps=None, reference=None, filename='pyxtal.cif'):
+    def check_ref(self, reps=None, reference=None, filename="pyxtal.cif"):
         """
         check if ground state structure is found
 
@@ -590,7 +614,8 @@ class GlobalOptimize():
             refernce: [pmg, eng]
             filename: filename
         """
-        if os.path.exists(filename): os.remove(filename)
+        if os.path.exists(filename):
+            os.remove(filename)
 
         if reference is not None:
             [pmg0, eng] = reference
@@ -601,10 +626,10 @@ class GlobalOptimize():
                 reps = np.array(self.reps)
 
             if eng is None:
-                eng = np.min(reps[:,-1]) + 0.25
+                eng = np.min(reps[:, -1]) + 0.25
 
-            reps = reps[reps[:,-1] < (eng+0.1)]
-            ids = np.argsort(reps[:,-1])
+            reps = reps[reps[:, -1] < (eng + 0.1)]
+            ids = np.argsort(reps[:, -1])
             reps = reps[ids]
             new_reps = []
             for rep in reps:
@@ -612,19 +637,23 @@ class GlobalOptimize():
                 rep0 = representation(rep[:-1], self.smiles)
                 xtal = rep0.to_pyxtal()
                 pmg_s1 = xtal.to_pymatgen()
-                pmg_s1.remove_species('H')
+                pmg_s1.remove_species("H")
                 new = True
                 for ref in new_reps:
                     eng2 = ref[-1]
-                    pmg_s2 = representation(rep[:-1], self.smiles).to_pyxtal().to_pymatgen()
-                    pmg_s2.remove_species('H')
-                    if abs(eng1-eng2)<1e-2 and sm.StructureMatcher().fit(pmg_s1, pmg_s2):
+                    pmg_s2 = (
+                        representation(rep[:-1], self.smiles).to_pyxtal().to_pymatgen()
+                    )
+                    pmg_s2.remove_species("H")
+                    if abs(eng1 - eng2) < 1e-2 and sm.StructureMatcher().fit(
+                        pmg_s1, pmg_s2
+                    ):
                         new = False
                         break
                 if new:
                     new_reps.append(rep)
                     header = "{:d}: {:12.4f}".format(len(new_reps), eng1)
-                    xtal.to_file(filename, header=header, permission='a+')
+                    xtal.to_file(filename, header=header, permission="a+")
                     strs = rep0.to_string(eng=eng1)
                     rmsd = self.matcher.get_rms_dist(pmg0, pmg_s1)
                     if rmsd is not None:
@@ -635,5 +664,6 @@ class GlobalOptimize():
                         print(strs)
         return False
 
+
 if __name__ == "__main__":
-    print('test')
+    print("test")

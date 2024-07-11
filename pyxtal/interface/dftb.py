@@ -4,19 +4,30 @@ from ase.optimize.fire import FIRE
 from ase.constraints import ExpCellFilter
 from ase.spacegroup.symmetrize import FixSymmetry
 from pyxtal.util import Kgrid
-from ase.calculators.calculator import (FileIOCalculator, kpts2ndarray,
-                                        kpts2sizeandoffsets)
+from ase.calculators.calculator import (
+    FileIOCalculator,
+    kpts2ndarray,
+    kpts2sizeandoffsets,
+)
 from ase.units import Hartree, Bohr
 import numpy as np
 
 
-def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06,
-                     scc_iter=500, write_band=False, use_omp=False):
+def make_Hamiltonian(
+    skf_dir,
+    atom_types,
+    disp,
+    kpts,
+    scc_error=1e-06,
+    scc_iter=500,
+    write_band=False,
+    use_omp=False,
+):
     """
     Generate the DFTB Hamiltonian for DFTB+
     """
-    if disp == 'D3': #from dftb manual
-        dispersion = '''DftD3{
+    if disp == "D3":  # from dftb manual
+        dispersion = """DftD3{
                       Damping = BeckeJohnson{
                       a1 = 0.5719
                       a2 = 3.6017
@@ -24,10 +35,10 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06,
                       s6 = 1.0
                       s8 = 0.5883
                       }
-                      '''
+                      """
 
-    elif disp == 'D30': #zero dampling
-        dispersion = '''DftD3{
+    elif disp == "D30":  # zero dampling
+        dispersion = """DftD3{
                       Damping = ZeroDamping{
                       sr6 = 0.746
                       alpah6 = 4.191
@@ -35,132 +46,145 @@ def make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=1e-06,
                       s6 = 1.0
                       s8 = 3.209
                       }
-                     '''
+                     """
 
-    elif disp == 'D4':
-        dispersion = '''DftD4{
+    elif disp == "D4":
+        dispersion = """DftD4{
                       s6 = 1
                       s8 = 0.6635015
                       s9 = 1
                       a1 = 0.5523240
                       a2 = 4.3537076
                         }
-                     '''
+                     """
 
-    elif disp == 'MBD': #1.0 from J. Phys. Chem. Lett. 2018, 9, 399−405
-        dispersion = 'MBD{\n\tKGrid = ' + str(kpts)[1:-1] + '\n\tBeta = 1.0}\n'
+    elif disp == "MBD":  # 1.0 from J. Phys. Chem. Lett. 2018, 9, 399−405
+        dispersion = "MBD{\n\tKGrid = " + str(kpts)[1:-1] + "\n\tBeta = 1.0}\n"
 
-    elif disp == 'TS': #1.05 from J. Phys. Chem. Lett. 2018, 9, 399−405
-        dispersion = '''TS{
+    elif disp == "TS":  # 1.05 from J. Phys. Chem. Lett. 2018, 9, 399−405
+        dispersion = """TS{
                       Damping = 20.0
                       RangeSeparation = 1.0
                       }
-                     '''
+                     """
 
-    elif disp == 'LJ':
-        dispersion = 'LennardJones{Parameters = UFFParameters{}}'
+    elif disp == "LJ":
+        dispersion = "LennardJones{Parameters = UFFParameters{}}"
     else:
         dispersion = None
 
-
-    kwargs = {'Hamiltonian_SCC': 'yes',
-              'Hamiltonian_SCCTolerance': scc_error, #1e-06,
-              'Hamiltonian_MaxSCCIterations': scc_iter, #1000,
-              #'Hamiltonian_Mixer': 'DIIS{}', #Default is Broyden
-              #'Hamiltonian_Dispersion': dispersion,
-              'slako_dir': skf_dir,
-              'Analysis_': '',
-              'Analysis_WriteBandOut': 'No',
-              'Analysis_MullikenAnalysis': 'No',
-              'Analysis_CalculateForces': 'Yes',
-              'Analysis_PrintForces': 'Yes',
-             }
+    kwargs = {
+        "Hamiltonian_SCC": "yes",
+        "Hamiltonian_SCCTolerance": scc_error,  # 1e-06,
+        "Hamiltonian_MaxSCCIterations": scc_iter,  # 1000,
+        #'Hamiltonian_Mixer': 'DIIS{}', #Default is Broyden
+        #'Hamiltonian_Dispersion': dispersion,
+        "slako_dir": skf_dir,
+        "Analysis_": "",
+        "Analysis_WriteBandOut": "No",
+        "Analysis_MullikenAnalysis": "No",
+        "Analysis_CalculateForces": "Yes",
+        "Analysis_PrintForces": "Yes",
+    }
     if write_band:
-        kwargs['Analysis_WriteBandOut'] = 'Yes'
+        kwargs["Analysis_WriteBandOut"] = "Yes"
     if use_omp:
-        kwargs['Parallel_'] = ''
-        kwargs['Parallel_UseOmpThreads'] = 'Yes'
+        kwargs["Parallel_"] = ""
+        kwargs["Parallel_UseOmpThreads"] = "Yes"
     if dispersion is not None:
-        kwargs['Hamiltonian_Dispersion'] = dispersion
+        kwargs["Hamiltonian_Dispersion"] = dispersion
 
-    if skf_dir.find('3ob') > 0:
-        calc_type = '3ob'
-    elif skf_dir.find('mio') > 0:
-        calc_type = 'mio'
-    elif skf_dir.find('pbc') > 0:
-        calc_type = 'pbc'
-    elif skf_dir.find('matsci') > 0:
-        calc_type = 'matsci'
+    if skf_dir.find("3ob") > 0:
+        calc_type = "3ob"
+    elif skf_dir.find("mio") > 0:
+        calc_type = "mio"
+    elif skf_dir.find("pbc") > 0:
+        calc_type = "pbc"
+    elif skf_dir.find("matsci") > 0:
+        calc_type = "matsci"
 
-    #https://dftb.org/parameters/download/3ob/3ob-3-1-cc
-    if calc_type == '3ob':
-        kwargs['Hamiltonian_ThirdOrderFull'] = 'Yes'
-        kwargs['Hamiltonian_HCorrection'] = 'Damping {\n\tExponent = 4.00\n\t}'
-        HD = {"Br": -0.0573,
-              "C":  -0.1492,
-              "N":  -0.1535,
-              "Ca": -0.0340,
-              "Na": -0.0454,
-              "Cl": -0.0697,
-              "Zn": -0.03,
-              "O":  -0.1575,
-              "F":  -0.1623,
-              "P":  -0.14,
-              "H":  -0.1857,
-              "S":  -0.11,
-              "I":  -0.0433,
-              "K":  -0.0339,
-             }
-        strs = '{'
+    # https://dftb.org/parameters/download/3ob/3ob-3-1-cc
+    if calc_type == "3ob":
+        kwargs["Hamiltonian_ThirdOrderFull"] = "Yes"
+        kwargs["Hamiltonian_HCorrection"] = "Damping {\n\tExponent = 4.00\n\t}"
+        HD = {
+            "Br": -0.0573,
+            "C": -0.1492,
+            "N": -0.1535,
+            "Ca": -0.0340,
+            "Na": -0.0454,
+            "Cl": -0.0697,
+            "Zn": -0.03,
+            "O": -0.1575,
+            "F": -0.1623,
+            "P": -0.14,
+            "H": -0.1857,
+            "S": -0.11,
+            "I": -0.0433,
+            "K": -0.0339,
+        }
+        strs = "{"
         for ele in atom_types:
-            if ele == 'H':
-                kwargs['Hamiltonian_MaxAngularMomentum_H']='s'
-            elif ele in ['Mg', 'C', 'N', 'Ca', 'Na', 'O', 'F', 'K']:
-                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='p'
-            elif ele in ['Br', 'Cl', 'P', 'S', 'I', 'Zn']:
-                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='d'
+            if ele == "H":
+                kwargs["Hamiltonian_MaxAngularMomentum_H"] = "s"
+            elif ele in ["Mg", "C", "N", "Ca", "Na", "O", "F", "K"]:
+                kwargs["Hamiltonian_MaxAngularMomentum_" + ele] = "p"
+            elif ele in ["Br", "Cl", "P", "S", "I", "Zn"]:
+                kwargs["Hamiltonian_MaxAngularMomentum_" + ele] = "d"
             else:
                 raise RuntimeError("3-ob-1 doesnot support", ele)
-            strs +='\n\t'+ele+' = '+str(HD[ele])
-        strs += '\n\t}'
-        kwargs['Hamiltonian_HubbardDerivs'] = strs
-    elif calc_type == 'pbc':
-        #https://dftb.org/parameters/download/pbc/pbc-0-3-cc
+            strs += "\n\t" + ele + " = " + str(HD[ele])
+        strs += "\n\t}"
+        kwargs["Hamiltonian_HubbardDerivs"] = strs
+    elif calc_type == "pbc":
+        # https://dftb.org/parameters/download/pbc/pbc-0-3-cc
         for ele in atom_types:
-            if ele == 'H':
-                kwargs['Hamiltonian_MaxAngularMomentum_H']='s'
-            elif ele in ['C', 'O', 'N', 'F']:
-                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='p'
-            elif ele in ['Si', 'Fe']:
-                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='d'
+            if ele == "H":
+                kwargs["Hamiltonian_MaxAngularMomentum_H"] = "s"
+            elif ele in ["C", "O", "N", "F"]:
+                kwargs["Hamiltonian_MaxAngularMomentum_" + ele] = "p"
+            elif ele in ["Si", "Fe"]:
+                kwargs["Hamiltonian_MaxAngularMomentum_" + ele] = "d"
             else:
                 raise RuntimeError("pbc-0-3 doesnot support", ele)
-    elif calc_type in ['matsci', 'mio']:
-         #https://dftb.org/parameters/download/pbc/pbc-0-3-cc
+    elif calc_type in ["matsci", "mio"]:
+        # https://dftb.org/parameters/download/pbc/pbc-0-3-cc
         for ele in atom_types:
-            if ele == 'H':
-                kwargs['Hamiltonian_MaxAngularMomentum_H']='s'
-            elif ele in ['B', 'O', 'C', 'N']:
-                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='p'
-            elif ele in ['Si']:
-                kwargs['Hamiltonian_MaxAngularMomentum_'+ele]='d'
+            if ele == "H":
+                kwargs["Hamiltonian_MaxAngularMomentum_H"] = "s"
+            elif ele in ["B", "O", "C", "N"]:
+                kwargs["Hamiltonian_MaxAngularMomentum_" + ele] = "p"
+            elif ele in ["Si"]:
+                kwargs["Hamiltonian_MaxAngularMomentum_" + ele] = "d"
             else:
                 raise RuntimeError(calc_type, "doesnot support", ele)
 
-    #DFTB2
+    # DFTB2
 
-    #pbc-0-3
-    #matsci
-    #ob2
-    #pbc
-    #print(calc_type, kwargs)
+    # pbc-0-3
+    # matsci
+    # ob2
+    # pbc
+    # print(calc_type, kwargs)
     return kwargs
 
 
-def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
-               fmax=0.1, kresol=0.10, folder='tmp', disp='D3', \
-               mask=None, symmetrize=True, logfile=None, \
-               scc_error=1e-6, scc_iter=500, use_omp=False):
+def DFTB_relax(
+    struc,
+    skf_dir,
+    opt_cell=False,
+    step=500,
+    fmax=0.1,
+    kresol=0.10,
+    folder="tmp",
+    disp="D3",
+    mask=None,
+    symmetrize=True,
+    logfile=None,
+    scc_error=1e-6,
+    scc_iter=500,
+    use_omp=False,
+):
     """
     DFTB optimizer based on ASE
 
@@ -174,21 +198,24 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
         os.makedirs(folder)
     cwd = os.getcwd()
     os.chdir(folder)
-    if type(kresol) != list: kpts = Kgrid(struc, kresol)
+    if type(kresol) != list:
+        kpts = Kgrid(struc, kresol)
     atom_types = set(struc.get_chemical_symbols())
-    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts,
-                              scc_error=scc_error,
-                              use_omp=use_omp)
+    kwargs = make_Hamiltonian(
+        skf_dir, atom_types, disp, kpts, scc_error=scc_error, use_omp=use_omp
+    )
 
-    calc = Dftb(label='test',
-                atoms=struc,
-                kpts=kpts,
-                **kwargs,
-                )
+    calc = Dftb(
+        label="test",
+        atoms=struc,
+        kpts=kpts,
+        **kwargs,
+    )
     struc.set_calculator(calc)
 
     # impose symmetry
-    if symmetrize: struc.set_constraint(FixSymmetry(struc))
+    if symmetrize:
+        struc.set_constraint(FixSymmetry(struc))
 
     # impose cell constraints
     if opt_cell:
@@ -199,9 +226,9 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
 
     try:
         dyn.run(fmax=fmax, steps=step)
-        os.remove('dftb_pin.hsd')
-        os.remove('geo_end.gen')
-        os.remove('charges.bin')
+        os.remove("dftb_pin.hsd")
+        os.remove("geo_end.gen")
+        os.remove("charges.bin")
     except:
         print("Problem in DFTB calculation")
         struc = None
@@ -209,7 +236,8 @@ def DFTB_relax(struc, skf_dir, opt_cell=False, step=500, \
     os.chdir(cwd)
     return struc
 
-def DFTB_SCF(struc, skf_dir, kresol=0.10, folder='tmp', disp=None, filename=None):
+
+def DFTB_SCF(struc, skf_dir, kresol=0.10, folder="tmp", disp=None, filename=None):
     """
     DFTB SCF to get band structure
 
@@ -228,27 +256,28 @@ def DFTB_SCF(struc, skf_dir, kresol=0.10, folder='tmp', disp=None, filename=None
     atom_types = set(struc.get_chemical_symbols())
     kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts, write_band=True)
 
-    calc = Dftb(label='test',
-                atoms=struc,
-                kpts=kpts,
-                **kwargs,
-                )
+    calc = Dftb(
+        label="test",
+        atoms=struc,
+        kpts=kpts,
+        **kwargs,
+    )
 
     struc.set_calculator(calc)
     struc.get_potential_energy()
     eigvals = calc.read_eigenvalues()[0]
     ne = calc.read_electrons()
-    nband = int(ne/2)
-    vbm = eigvals[:, nband-1].max()
+    nband = int(ne / 2)
+    vbm = eigvals[:, nband - 1].max()
     cbm = eigvals[:, nband].min()
     gap = cbm - vbm
-    #if filename is not None:
+    # if filename is not None:
     #    # plot band structure
     os.chdir(cwd)
     return gap
 
 
-class DFTB():
+class DFTB:
     """
     Modified DFTB calculator
 
@@ -262,17 +291,19 @@ class DFTB():
         use_omp: True/False
     """
 
-    def __init__(self, struc, skf_dir,
-                 disp = 'D3',
-                 kresol = 0.10,
-                 folder = 'tmp',
-                 label = 'test',
-                 prefix = 'geo_final',
-                 use_omp = False,
-                 scc_error = 1e-6,
-                 scc_iter = 500,
-                ):
-
+    def __init__(
+        self,
+        struc,
+        skf_dir,
+        disp="D3",
+        kresol=0.10,
+        folder="tmp",
+        label="test",
+        prefix="geo_final",
+        use_omp=False,
+        scc_error=1e-6,
+        scc_iter=500,
+    ):
         self.struc = struc
         self.skf_dir = skf_dir
         self.folder = folder
@@ -285,9 +316,11 @@ class DFTB():
         self.scc_error = scc_error
         self.scc_iter = scc_iter
         if not os.path.exists(self.folder):
-           os.makedirs(self.folder)
+            os.makedirs(self.folder)
 
-    def get_calculator(self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params={}):
+    def get_calculator(
+        self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params={}
+    ):
         """
         get the ase style calculator
 
@@ -301,67 +334,73 @@ class DFTB():
         Returns:
             ase calculator
         """
-        if eVperA: ftol *= 0.194469064593167E-01
+        if eVperA:
+            ftol *= 0.194469064593167e-01
         atom_types = set(self.struc.get_chemical_symbols())
-        kwargs = make_Hamiltonian(self.skf_dir, atom_types, self.disp, self.kpts,
-                                  scc_error=self.scc_error,
-                                  scc_iter=self.scc_iter,
-                                  use_omp=self.use_omp)
+        kwargs = make_Hamiltonian(
+            self.skf_dir,
+            atom_types,
+            self.disp,
+            self.kpts,
+            scc_error=self.scc_error,
+            scc_iter=self.scc_iter,
+            use_omp=self.use_omp,
+        )
 
-        if mode in ['relax', 'vc-relax']:
-            #kwargs['Driver_'] = 'ConjugateGradient'
-            kwargs['Driver_'] = 'GeometryOptimization'
-            kwargs['Driver_Optimizer'] = 'FIRE {}'
-            #kwargs['Driver_MaxForceComponent'] = ftol
-            kwargs['Driver_MaxSteps'] = step
-            kwargs['Driver_OutputPrefix'] = self.prefix
-            kwargs['Driver_Convergence_'] = ''
-            kwargs['Driver_Convergence_GradElem'] = ftol
+        if mode in ["relax", "vc-relax"]:
+            # kwargs['Driver_'] = 'ConjugateGradient'
+            kwargs["Driver_"] = "GeometryOptimization"
+            kwargs["Driver_Optimizer"] = "FIRE {}"
+            # kwargs['Driver_MaxForceComponent'] = ftol
+            kwargs["Driver_MaxSteps"] = step
+            kwargs["Driver_OutputPrefix"] = self.prefix
+            kwargs["Driver_Convergence_"] = ""
+            kwargs["Driver_Convergence_GradElem"] = ftol
 
-            if mode == 'vc-relax':
-                kwargs['Driver_MovedAtoms'] = "1:-1"
-                kwargs['Driver_LatticeOpt'] = "Yes"
+            if mode == "vc-relax":
+                kwargs["Driver_MovedAtoms"] = "1:-1"
+                kwargs["Driver_LatticeOpt"] = "Yes"
                 if FixAngles:
-                    kwargs['Driver_FixAngles'] = "Yes"
+                    kwargs["Driver_FixAngles"] = "Yes"
 
-        elif mode in ['nve', 'nvt', 'npt']:
+        elif mode in ["nve", "nvt", "npt"]:
             # 1fs = 41.3 au
             # 1000K = 0.0031668 au
             dicts = {
-                     'temperature': 300,
-                     'pressure': 1e+5, #1atm
-                     'timestep': 1,
-                     'Thermostat': 'NoseHoover',
-                     'MDRestartFrequency': 1000,
-                     'band': 'No',
-                    }
+                "temperature": 300,
+                "pressure": 1e5,  # 1atm
+                "timestep": 1,
+                "Thermostat": "NoseHoover",
+                "MDRestartFrequency": 1000,
+                "band": "No",
+            }
             dicts.update(md_params)
 
-            kwargs['Analysis_WriteBandOut'] = dicts['band']
-            kwargs['Driver_'] = 'VelocityVerlet'
-            kwargs['Driver_Steps'] = step
-            kwargs['Driver_TimeStep [fs]'] = dicts['timestep']
-            kwargs['Driver_MDRestartFrequency'] = dicts['MDRestartFrequency']
-            kwargs['Driver_MovedAtoms'] = "1:-1"
-            kwargs['Driver_OutputPrefix'] = self.prefix
+            kwargs["Analysis_WriteBandOut"] = dicts["band"]
+            kwargs["Driver_"] = "VelocityVerlet"
+            kwargs["Driver_Steps"] = step
+            kwargs["Driver_TimeStep [fs]"] = dicts["timestep"]
+            kwargs["Driver_MDRestartFrequency"] = dicts["MDRestartFrequency"]
+            kwargs["Driver_MovedAtoms"] = "1:-1"
+            kwargs["Driver_OutputPrefix"] = self.prefix
 
-            if mode in ['nvt', 'npt']:
-                kwargs['Driver_Thermostat_'] = dicts['Thermostat']
-                kwargs['Driver_Thermostat_Temperature [Kelvin]'] = dicts['temperature']
-                kwargs['Driver_Thermostat_CouplingStrength [cm^-1]'] = 3200
+            if mode in ["nvt", "npt"]:
+                kwargs["Driver_Thermostat_"] = dicts["Thermostat"]
+                kwargs["Driver_Thermostat_Temperature [Kelvin]"] = dicts["temperature"]
+                kwargs["Driver_Thermostat_CouplingStrength [cm^-1]"] = 3200
 
-                if mode == 'npt':
-                    kwargs['Driver_Barostat_'] = ''
-                    kwargs['Driver_Barostat_Pressure [Pa]'] = dicts['pressure']
-                    kwargs['Driver_Barostat_Timescale [ps]'] = 0.1
+                if mode == "npt":
+                    kwargs["Driver_Barostat_"] = ""
+                    kwargs["Driver_Barostat_Pressure [Pa]"] = dicts["pressure"]
+                    kwargs["Driver_Barostat_Timescale [ps]"] = 0.1
 
-
-        calc = Dftb(label=self.label,
-                    #run_manyDftb_steps=True,
-                    atoms=self.struc,
-                    kpts=self.kpts,
-                    **kwargs,
-                    )
+        calc = Dftb(
+            label=self.label,
+            # run_manyDftb_steps=True,
+            atoms=self.struc,
+            kpts=self.kpts,
+            **kwargs,
+        )
         return calc
 
     def run(self, mode, step=500, ftol=1e-3, FixAngles=False, md_params={}):
@@ -369,32 +408,36 @@ class DFTB():
         execute the actual calculation
         """
         from time import time
+
         t0 = time()
         cwd = os.getcwd()
         os.chdir(self.folder)
 
-        self.calc = self.get_calculator(mode, step, ftol, FixAngles, md_params=md_params)
+        self.calc = self.get_calculator(
+            mode, step, ftol, FixAngles, md_params=md_params
+        )
         self.struc.set_calculator(self.calc)
         # self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
         self.calc.calculate(self.struc)
-        if mode in ['relax', 'vc-relax']:
-            final = read(self.prefix+'.gen')
+        if mode in ["relax", "vc-relax"]:
+            final = read(self.prefix + ".gen")
         else:
             final = self.struc
 
         # get the final energy
         energy = self.struc.get_potential_energy()
 
-        with open(self.label + '.out') as f:
+        with open(self.label + ".out") as f:
             l = f.readlines()
             self.version = l[2]
         os.chdir(cwd)
         self.time = time() - t0
         return final, energy
 
+
 class Dftb(FileIOCalculator):
-    """ This module defines a FileIOCalculator for DFTB+
+    """This module defines a FileIOCalculator for DFTB+
 
     http://www.dftbplus.org/
     http://www.dftb.org/
@@ -403,19 +446,24 @@ class Dftb(FileIOCalculator):
     Modified by QZ to avoid the I/O load
     """
 
-    if 'DFTB_COMMAND' in os.environ:
-        command = os.environ['DFTB_COMMAND'] + ' > PREFIX.out'
+    if "DFTB_COMMAND" in os.environ:
+        command = os.environ["DFTB_COMMAND"] + " > PREFIX.out"
     else:
-        command = 'dftb+ > PREFIX.out'
+        command = "dftb+ > PREFIX.out"
 
-    implemented_properties = ['energy', 'forces', 'stress']
+    implemented_properties = ["energy", "forces", "stress"]
     discard_results_on_any_change = True
 
-    def __init__(self, restart=None,
-                 ignore_bad_restart_file=FileIOCalculator._deprecated,
-                 label='dftb', atoms=None, kpts=None,
-                 slako_dir=None,
-                 **kwargs):
+    def __init__(
+        self,
+        restart=None,
+        ignore_bad_restart_file=FileIOCalculator._deprecated,
+        label="dftb",
+        atoms=None,
+        kpts=None,
+        slako_dir=None,
+        **kwargs,
+    ):
         """
         All keywords for the dftb_in.hsd input file (see the DFTB+ manual)
         can be set by ASE. Consider the following input file block:
@@ -470,73 +518,71 @@ class Dftb(FileIOCalculator):
         """
 
         if slako_dir is None:
-            slako_dir = os.environ.get('DFTB_PREFIX', './')
-            if not slako_dir.endswith('/'):
-                slako_dir += '/'
+            slako_dir = os.environ.get("DFTB_PREFIX", "./")
+            if not slako_dir.endswith("/"):
+                slako_dir += "/"
 
         self.slako_dir = slako_dir
 
         self.default_parameters = dict(
-            Hamiltonian_='DFTB',
-            Hamiltonian_SlaterKosterFiles_='Type2FileNames',
+            Hamiltonian_="DFTB",
+            Hamiltonian_SlaterKosterFiles_="Type2FileNames",
             Hamiltonian_SlaterKosterFiles_Prefix=self.slako_dir,
             Hamiltonian_SlaterKosterFiles_Separator='"-"',
             Hamiltonian_SlaterKosterFiles_Suffix='".skf"',
-            Hamiltonian_MaxAngularMomentum_='',
-            Options_='',
-            Options_WriteResultsTag='Yes',
-            Options_WriteDetailedOut='No',
-
-            )
+            Hamiltonian_MaxAngularMomentum_="",
+            Options_="",
+            Options_WriteResultsTag="Yes",
+            Options_WriteDetailedOut="No",
+        )
 
         self.lines = None
         self.atoms = None
         self.atoms_input = None
-        self.outfilename = 'dftb.out'
+        self.outfilename = "dftb.out"
 
-        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                  label, atoms,
-                                  **kwargs)
+        FileIOCalculator.__init__(
+            self, restart, ignore_bad_restart_file, label, atoms, **kwargs
+        )
 
         # kpoint stuff by ase
         self.kpts = kpts
         self.kpts_coord = None
 
         if self.kpts is not None:
-            initkey = 'Hamiltonian_KPointsAndWeights'
+            initkey = "Hamiltonian_KPointsAndWeights"
             mp_mesh = None
             offsets = None
 
             if isinstance(self.kpts, dict):
-                if 'path' in self.kpts:
+                if "path" in self.kpts:
                     # kpts is path in Brillouin zone
-                    self.parameters[initkey + '_'] = 'Klines '
+                    self.parameters[initkey + "_"] = "Klines "
                     self.kpts_coord = kpts2ndarray(self.kpts, atoms=atoms)
                 else:
                     # kpts is (implicit) definition of
                     # Monkhorst-Pack grid
-                    self.parameters[initkey + '_'] = 'SupercellFolding '
-                    mp_mesh, offsets = kpts2sizeandoffsets(atoms=atoms,
-                                                           **self.kpts)
+                    self.parameters[initkey + "_"] = "SupercellFolding "
+                    mp_mesh, offsets = kpts2sizeandoffsets(atoms=atoms, **self.kpts)
             elif np.array(self.kpts).ndim == 1:
                 # kpts is Monkhorst-Pack grid
-                self.parameters[initkey + '_'] = 'SupercellFolding '
+                self.parameters[initkey + "_"] = "SupercellFolding "
                 mp_mesh = self.kpts
-                offsets = [0.] * 3
+                offsets = [0.0] * 3
             elif np.array(self.kpts).ndim == 2:
                 # kpts is (N x 3) list/array of k-point coordinates
                 # each will be given equal weight
-                self.parameters[initkey + '_'] = ''
+                self.parameters[initkey + "_"] = ""
                 self.kpts_coord = np.array(self.kpts)
             else:
-                raise ValueError('Illegal kpts definition:' + str(self.kpts))
+                raise ValueError("Illegal kpts definition:" + str(self.kpts))
 
             if mp_mesh is not None:
                 eps = 1e-10
                 for i in range(3):
-                    key = initkey + '_empty%03d' % i
+                    key = initkey + "_empty%03d" % i
                     val = [mp_mesh[i] if j == i else 0 for j in range(3)]
-                    self.parameters[key] = ' '.join(map(str, val))
+                    self.parameters[key] = " ".join(map(str, val))
                     offsets[i] *= mp_mesh[i]
                     assert abs(offsets[i]) < eps or abs(offsets[i] - 0.5) < eps
                     # DFTB+ uses a different offset convention, where
@@ -544,107 +590,110 @@ class Dftb(FileIOCalculator):
                     # to the addition of any offsets
                     if mp_mesh[i] % 2 == 0:
                         offsets[i] += 0.5
-                key = initkey + '_empty%03d' % 3
-                self.parameters[key] = ' '.join(map(str, offsets))
+                key = initkey + "_empty%03d" % 3
+                self.parameters[key] = " ".join(map(str, offsets))
 
             elif self.kpts_coord is not None:
                 for i, c in enumerate(self.kpts_coord):
-                    key = initkey + '_empty%09d' % i
-                    c_str = ' '.join(map(str, c))
-                    if 'Klines' in self.parameters[initkey + '_']:
-                        c_str = '1 ' + c_str
+                    key = initkey + "_empty%09d" % i
+                    c_str = " ".join(map(str, c))
+                    if "Klines" in self.parameters[initkey + "_"]:
+                        c_str = "1 " + c_str
                     else:
-                        c_str += ' 1.0'
+                        c_str += " 1.0"
                     self.parameters[key] = c_str
 
     def write_dftb_in(self, outfile):
-        """ Write the innput file for the dftb+ calculation.
-            Geometry is taken always from the file 'geo_end.gen'.
+        """Write the innput file for the dftb+ calculation.
+        Geometry is taken always from the file 'geo_end.gen'.
         """
 
-        outfile.write('Geometry = GenFormat { \n')
+        outfile.write("Geometry = GenFormat { \n")
         outfile.write('    <<< "geo_end.gen" \n')
-        outfile.write('} \n')
-        outfile.write(' \n')
+        outfile.write("} \n")
+        outfile.write(" \n")
 
         params = self.parameters.copy()
 
-        s = 'Hamiltonian_MaxAngularMomentum_'
+        s = "Hamiltonian_MaxAngularMomentum_"
         for key in params:
             if key.startswith(s) and len(key) > len(s):
                 break
         # --------MAIN KEYWORDS-------
-        previous_key = 'dummy_'
-        myspace = ' '
+        previous_key = "dummy_"
+        myspace = " "
         for key, value in sorted(params.items()):
-            current_depth = key.rstrip('_').count('_')
-            previous_depth = previous_key.rstrip('_').count('_')
-            for my_backsclash in reversed(
-                    range(previous_depth - current_depth)):
-                outfile.write(3 * (1 + my_backsclash) * myspace + '} \n')
+            current_depth = key.rstrip("_").count("_")
+            previous_depth = previous_key.rstrip("_").count("_")
+            for my_backsclash in reversed(range(previous_depth - current_depth)):
+                outfile.write(3 * (1 + my_backsclash) * myspace + "} \n")
             outfile.write(3 * current_depth * myspace)
-            if key.endswith('_') and len(value) > 0:
-                outfile.write(key.rstrip('_').rsplit('_')[-1] +
-                              ' = ' + str(value) + '{ \n')
-            elif (key.endswith('_') and (len(value) == 0)
-                  and current_depth == 0):  # E.g. 'Options {'
-                outfile.write(key.rstrip('_').rsplit('_')[-1] +
-                              ' ' + str(value) + '{ \n')
-            elif (key.endswith('_') and (len(value) == 0)
-                  and current_depth > 0):  # E.g. 'Hamiltonian_Max... = {'
-                outfile.write(key.rstrip('_').rsplit('_')[-1] +
-                              ' = ' + str(value) + '{ \n')
-            elif key.count('_empty') == 1:
-                outfile.write(str(value) + ' \n')
+            if key.endswith("_") and len(value) > 0:
+                outfile.write(
+                    key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n"
+                )
+            elif (
+                key.endswith("_") and (len(value) == 0) and current_depth == 0
+            ):  # E.g. 'Options {'
+                outfile.write(
+                    key.rstrip("_").rsplit("_")[-1] + " " + str(value) + "{ \n"
+                )
+            elif (
+                key.endswith("_") and (len(value) == 0) and current_depth > 0
+            ):  # E.g. 'Hamiltonian_Max... = {'
+                outfile.write(
+                    key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n"
+                )
+            elif key.count("_empty") == 1:
+                outfile.write(str(value) + " \n")
             else:
-                outfile.write(key.rsplit('_')[-1] + ' = ' + str(value) + ' \n')
+                outfile.write(key.rsplit("_")[-1] + " = " + str(value) + " \n")
             previous_key = key
-        current_depth = key.rstrip('_').count('_')
+        current_depth = key.rstrip("_").count("_")
         for my_backsclash in reversed(range(current_depth)):
-            outfile.write(3 * my_backsclash * myspace + '} \n')
-        outfile.write('ParserOptions { \n')
-        outfile.write('   IgnoreUnprocessedNodes = Yes  \n')
-        outfile.write('} \n')
+            outfile.write(3 * my_backsclash * myspace + "} \n")
+        outfile.write("ParserOptions { \n")
+        outfile.write("   IgnoreUnprocessedNodes = Yes  \n")
+        outfile.write("} \n")
 
     def check_state(self, atoms):
         system_changes = FileIOCalculator.check_state(self, atoms)
         # Ignore unit cell for molecules:
-        if not atoms.pbc.any() and 'cell' in system_changes:
-            system_changes.remove('cell')
+        if not atoms.pbc.any() and "cell" in system_changes:
+            system_changes.remove("cell")
         return system_changes
 
     def write_input(self, atoms, properties=None, system_changes=None):
         from ase.io import write
-        FileIOCalculator.write_input(
-            self, atoms, properties, system_changes)
-        with open(os.path.join(self.directory, 'dftb_in.hsd'), 'w') as fd:
+
+        FileIOCalculator.write_input(self, atoms, properties, system_changes)
+        with open(os.path.join(self.directory, "dftb_in.hsd"), "w") as fd:
             self.write_dftb_in(fd)
-        write(os.path.join(self.directory, 'geo_end.gen'), atoms,
-              parallel=False)
+        write(os.path.join(self.directory, "geo_end.gen"), atoms, parallel=False)
         # self.atoms is none until results are read out,
         # then it is set to the ones at writing input
         self.atoms_input = atoms
         self.atoms = None
 
     def read_results(self):
-        """ all results are read from results.tag file
-            It will be destroyed after it is read to avoid
-            reading it once again after some runtime error """
-        with open(os.path.join(self.directory, 'results.tag'), 'r') as fd:
+        """all results are read from results.tag file
+        It will be destroyed after it is read to avoid
+        reading it once again after some runtime error"""
+        with open(os.path.join(self.directory, "results.tag"), "r") as fd:
             self.lines = fd.readlines()
         if len(self.lines) == 0:
-            #print("READ RESULTS from test.out")
-            self.results['energy'] = self.read_energy()
-            self.results['forces'] = None
-            self.results['stress'] = None
+            # print("READ RESULTS from test.out")
+            self.results["energy"] = self.read_energy()
+            self.results["forces"] = None
+            self.results["stress"] = None
         else:
             self.atoms = self.atoms_input
-            self.results['energy'] = float(self.lines[1])*Hartree
+            self.results["energy"] = float(self.lines[1]) * Hartree
             forces = self.read_forces()
-            self.results['forces'] = forces
+            self.results["forces"] = forces
 
             # stress stuff begins
-            sstring = 'stress'
+            sstring = "stress"
             have_stress = False
             stress = list()
             for iline, line in enumerate(self.lines):
@@ -657,22 +706,22 @@ class Dftb(FileIOCalculator):
                         stress.append(cell)
             if have_stress:
                 stress = -np.array(stress) * Hartree / Bohr**3
-                self.results['stress'] = stress.flat[[0, 4, 8, 5, 2, 1]]
+                self.results["stress"] = stress.flat[[0, 4, 8, 5, 2, 1]]
             # stress stuff ends
 
             # calculation was carried out with atoms written in write_input
-            os.remove(os.path.join(self.directory, 'results.tag'))
+            os.remove(os.path.join(self.directory, "results.tag"))
 
     def read_energy(self):
         """
         If SCC is not converged, read the last step energy from test.out
         """
-        outfile = self.label + '.out'
+        outfile = self.label + ".out"
         energies = []
-        with open(os.path.join(self.directory, outfile), 'r') as fd:
+        with open(os.path.join(self.directory, outfile), "r") as fd:
             lines = fd.readlines()
         for line in lines:
-            m = re.match(r'Total Energy:\s+[-\d.]+ H\s+([-.\d]+) eV', line)
+            m = re.match(r"Total Energy:\s+[-\d.]+ H\s+([-.\d]+) eV", line)
             if m:
                 energies.append(float(m.group(1)))
         if len(energies) > 0:
@@ -680,13 +729,13 @@ class Dftb(FileIOCalculator):
         else:
             try:
                 #   100   -0.38553421E+03    0.29798304E-03    0.12389437E-01
-                #ERROR!
-                #-> SCC is NOT converged, maximal SCC iterations exceeded
+                # ERROR!
+                # -> SCC is NOT converged, maximal SCC iterations exceeded
                 print("Cannot read energy from this file", os.getcwd())
-                eng = float(lines[-3].split()[1]) * 27.2114 # hatree to eV
+                eng = float(lines[-3].split()[1]) * 27.2114  # hatree to eV
                 return eng
             except:
-                return 1.0e+5
+                return 1.0e5
 
     def read_forces(self):
         """Read Forces from dftb output file (results.tag)."""
@@ -697,59 +746,61 @@ class Dftb(FileIOCalculator):
         index_force_end = -1
 
         # Force line indexes
-        fstring = 'forces   '
+        fstring = "forces   "
         for iline, line in enumerate(self.lines):
             if line.find(fstring) >= 0:
                 index_force_begin = iline + 1
-                line1 = line.replace(':', ',')
-                index_force_end = iline + 1 + \
-                    int(line1.split(',')[-1])
+                line1 = line.replace(":", ",")
+                index_force_end = iline + 1 + int(line1.split(",")[-1])
                 break
         gradients = []
         for j in range(index_force_begin, index_force_end):
             word = self.lines[j].split()
             gradients.append([float(word[k]) for k in range(0, 3)])
-        gradients = np.array(gradients)* Hartree / Bohr
+        gradients = np.array(gradients) * Hartree / Bohr
 
         return gradients
 
     def read_eigenvalues(self):
-        """ Read Eigenvalues from dftb output file (results.tag).
-            Unfortunately, the order seems to be scrambled. """
+        """Read Eigenvalues from dftb output file (results.tag).
+        Unfortunately, the order seems to be scrambled."""
         # Eigenvalue line indexes
         index_eig_begin = None
         for iline, line in enumerate(self.lines):
-            fstring = 'eigenvalues   '
+            fstring = "eigenvalues   "
             if line.find(fstring) >= 0:
                 index_eig_begin = iline + 1
-                line1 = line.replace(':', ',')
-                ncol, nband, nkpt, nspin = map(int, line1.split(',')[-4:])
+                line1 = line.replace(":", ",")
+                ncol, nband, nkpt, nspin = map(int, line1.split(",")[-4:])
                 break
         else:
             return None
 
         # Take into account that the last row may lack
         # columns if nkpt * nspin * nband % ncol != 0
-        nrow = int(np.ceil(nkpt * nspin * nband * 1. / ncol))
+        nrow = int(np.ceil(nkpt * nspin * nband * 1.0 / ncol))
         index_eig_end = index_eig_begin + nrow
         ncol_last = len(self.lines[index_eig_end - 1].split())
         if ncol - ncol_last > 0:
-            self.lines[index_eig_end - 1] = self.lines[index_eig_end - 1].replace('\n', '')
-            self.lines[index_eig_end - 1] += ' 0.0 ' * (ncol - ncol_last)
-            self.lines[index_eig_end - 1] += '\n'
+            self.lines[index_eig_end - 1] = self.lines[index_eig_end - 1].replace(
+                "\n", ""
+            )
+            self.lines[index_eig_end - 1] += " 0.0 " * (ncol - ncol_last)
+            self.lines[index_eig_end - 1] += "\n"
         eig = np.loadtxt(self.lines[index_eig_begin:index_eig_end]).flatten()
         eig *= Hartree
         N = nkpt * nband
-        eigenvalues = [eig[i * N:(i + 1) * N].reshape((nkpt, nband))
-                       for i in range(nspin)]
+        eigenvalues = [
+            eig[i * N : (i + 1) * N].reshape((nkpt, nband)) for i in range(nspin)
+        ]
 
         return eigenvalues
 
     def read_fermi_levels(self):
-        """ Read Fermi level(s) from dftb output file (results.tag). """
+        """Read Fermi level(s) from dftb output file (results.tag)."""
         # Fermi level line indexes
         for iline, line in enumerate(self.lines):
-            fstring = 'fermi_level   '
+            fstring = "fermi_level   "
             if line.find(fstring) >= 0:
                 index_fermi = iline + 1
                 break
@@ -758,7 +809,7 @@ class Dftb(FileIOCalculator):
 
         fermi_levels = []
         words = self.lines[index_fermi].split()
-        assert len(words) in [1, 2], 'Expected either 1 or 2 Fermi levels'
+        assert len(words) in [1, 2], "Expected either 1 or 2 Fermi levels"
 
         for word in words:
             e = float(word)
@@ -773,28 +824,29 @@ class Dftb(FileIOCalculator):
     def read_electrons(self):
         """read number o electrons"""
         for iline, line in enumerate(self.lines):
-            fstring = 'number_of_electrons'
+            fstring = "number_of_electrons"
             if line.find(fstring) >= 0:
                 index_ele = iline + 1
                 break
-        return float(self.lines[index_ele].split('\n')[0])
+        return float(self.lines[index_ele].split("\n")[0])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     from ase.build import bulk
 
-    skf_dir = os.environ['DFTB_PREFIX'] + 'pbc-0-3/'
-    #skf_dir = os.environ['DFTB_PREFIX'] + '3ob-3-1/'
+    skf_dir = os.environ["DFTB_PREFIX"] + "pbc-0-3/"
+    # skf_dir = os.environ['DFTB_PREFIX'] + '3ob-3-1/'
 
-    struc = bulk('Si', 'diamond', cubic=True)
-    struc.set_cell(1.1*struc.cell)
-    for mode in ['single', 'relax', 'vc-relax', 'npt']:
+    struc = bulk("Si", "diamond", cubic=True)
+    struc.set_cell(1.1 * struc.cell)
+    for mode in ["single", "relax", "vc-relax", "npt"]:
         my = DFTB(struc, skf_dir)
         struc, energy = my.run(mode)
         res = "{:8s} ".format(mode)
-        res += "{:8.4f} ".format(struc.cell[0,0])
-        res += "{:8.4f} ".format(struc.cell[1,1])
-        res += "{:8.4f} ".format(struc.cell[2,2])
+        res += "{:8.4f} ".format(struc.cell[0, 0])
+        res += "{:8.4f} ".format(struc.cell[1, 1])
+        res += "{:8.4f} ".format(struc.cell[2, 2])
         res += "{:12.4f}".format(energy)
         print(res)
-    #gap = DFTB_SCF(struc, skf_dir)
-    #print(gap)
+    # gap = DFTB_SCF(struc, skf_dir)
+    # print(gap)

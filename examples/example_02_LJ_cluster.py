@@ -29,7 +29,7 @@ This is a script to
 def single_optimize(pos, dim=3, kt=0.5, mu=0.1, beta=1.001, shift=False, method="mycg"):
     """
     perform optimization for a given cluster
-    Args: 
+    Args:
     pos: N*dim0 array representing the atomic positions
     dim: dimension of the hyper/normal space
     kt: perturbation factors
@@ -93,7 +93,6 @@ class LJ_prediction:
         return cluster._get_coords_and_species(absolute=True)[0]
 
     def predict(self, maxN=100, ncpu=2, pgs=range(2, 33)):
-
         cycle = range(maxN)
         if ncpu > 1:
             from multiprocessing import Pool
@@ -112,7 +111,6 @@ class LJ_prediction:
         return res
 
     def relaxation(self, pgs, ind):
-
         pos = self.generate_cluster(pgs)
         res = []
         for method in ["mycg", "mybfgs", "mytpgd"]:
@@ -229,4 +227,3 @@ if __name__ == "__main__":
     ax4.legend()
     plt.tight_layout()
     plt.savefig("LJ" + str(N) + "-" + str(maxN) + ".png")
-

@@ -19,12 +19,12 @@ H          2.05000        5.01200       -0.9300
 H          1.96000        7.20500       -1.3860
 H          1.59400        6.99200       -0.0710
 """
-with open('Ag.xyz', "w") as f:
+with open("Ag.xyz", "w") as f:
     f.write(Ag_xyz)
-with open('C2N2H7.xyz', "w") as f:
+with open("C2N2H7.xyz", "w") as f:
     f.write(C2N2H7_xyz)
 
-#for xyz in ['Ag.xyz', 'C2N2H7.xyz']:
+# for xyz in ['Ag.xyz', 'C2N2H7.xyz']:
 #    with open(xyz, 'r') as f:
 #        print('filename', xyz, '\n')
 #        lines = f.readlines()
@@ -32,12 +32,14 @@ with open('C2N2H7.xyz', "w") as f:
 count = 0
 for i in range(100):
     c = pyxtal(molecular=True)
-    c.from_random(3, 9, ['Ag.xyz', 'C2N2H7.xyz'], [12, 12])
+    c.from_random(3, 9, ["Ag.xyz", "C2N2H7.xyz"], [12, 12])
     short_bonds = c.check_short_distances(r=1.2)
     if len(short_bonds) > 0:
         print(c)
         print(i, len(short_bonds), short_bonds[0])
-        c.to_file('bug-'+str(i)+'.cif')
-        c.to_ase().write('bug-'+str(i)+'.vasp', format='vasp', vasp5=True, direct=True)
+        c.to_file("bug-" + str(i) + ".cif")
+        c.to_ase().write(
+            "bug-" + str(i) + ".vasp", format="vasp", vasp5=True, direct=True
+        )
         count += 1
 print("\nTotal failures: ", count)

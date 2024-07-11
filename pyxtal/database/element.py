@@ -2,9 +2,10 @@
 Module for handling atomic elements.
 """
 
+
 class Element:
     """
-    Class for storing and accessing atomic elements. 
+    Class for storing and accessing atomic elements.
 
     Args:
         input_value: The atomic number, symbol, or name of the element
@@ -285,10 +286,10 @@ class Element:
     def get_all(self, pos):
         """
         Return all [pos] elements in the full element list
-        
+
         Args:
             pos: the index of the elements to retrieve
-        
+
         Returns:
             a list containing only the [pos] elements of self.elements_list
         """
@@ -300,7 +301,7 @@ class Element:
     def get_sf(self, pos):
         """
         Get the scattering factor for an element.
-        
+
         Args:
             pos: the atomic number of the element
 

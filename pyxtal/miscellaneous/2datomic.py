@@ -103,7 +103,6 @@ if __name__ == "__main__":
             end = time()
             timespent = np.around((end - start), decimals=2)
             if rand_crystal.valid:
-
                 # spglib style structure called cell
                 ans = get_symmetry_dataset(rand_crystal.spg_struct, symprec=1e-1)
                 sg = Layergroup(num).sgnumber

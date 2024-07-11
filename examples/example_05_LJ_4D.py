@@ -73,7 +73,7 @@ def LJ_force(pos, dim, mu=0.1):
 def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
     """
     perform optimization for a given cluster
-    Args: 
+    Args:
     pos: N*dim0 array representing the atomic positions
     dim: dimension of the hyper/normal space
     kt: perturbation factors
@@ -138,7 +138,6 @@ class LJ_prediction:
         return cluster._get_coords_and_species(absolute=True)[0]
 
     def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33)):
-
         print("\nPerforming random search at {0:d}D space\n".format(dim))
         cycle = range(maxN)
         if ncpu > 1:

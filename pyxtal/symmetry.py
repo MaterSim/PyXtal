@@ -4,10 +4,11 @@ Module for storing & accessing symmetry group information, including
     - Wyckoff_Position class.
     - Hall class
 """
+
 # Imports ------------------------------
 # Standard Libraries
 import numpy as np
-#from pkg_resources import resource_filename as rf
+# from pkg_resources import resource_filename as rf
 
 from copy import deepcopy
 import random
@@ -36,9 +37,12 @@ from pyxtal.constants import letters, hex_cell, all_sym_directions
 import importlib.util
 import os
 
+
 def rf(package_name, resource_path):
     package_path = importlib.util.find_spec(package_name).submodule_search_locations[0]
     return os.path.join(package_path, resource_path)
+
+
 # ------------------------------ Constants ---------------------------------------
 
 wyckoff_df = read_csv(rf("pyxtal", "database/wyckoff_list.csv"))
@@ -54,47 +58,476 @@ point_df = read_csv(rf("pyxtal", "database/point.csv"))
 point_symmetry_df = read_csv(rf("pyxtal", "database/point_symmetry.csv"))
 point_generators_df = read_csv(rf("pyxtal", "database/point_generators.csv"))
 symbols = loadfn(rf("pyxtal", "database/symbols.json"))
-t_subgroup = loadfn(rf("pyxtal",'database/t_subgroup.json'))
-k_subgroup = loadfn(rf("pyxtal",'database/k_subgroup.json'))
-wyc_sets = loadfn(rf("pyxtal",'database/wyckoff_sets.json'))
-hall_table = read_csv(rf("pyxtal", "database/HM_Full.csv"), sep=',')
-#The map between spglib default space group and hall numbers
+t_subgroup = loadfn(rf("pyxtal", "database/t_subgroup.json"))
+k_subgroup = loadfn(rf("pyxtal", "database/k_subgroup.json"))
+wyc_sets = loadfn(rf("pyxtal", "database/wyckoff_sets.json"))
+hall_table = read_csv(rf("pyxtal", "database/HM_Full.csv"), sep=",")
+# The map between spglib default space group and hall numbers
 spglib_hall_numbers = [
-1,   2,   3,   6,   9,   18,  21,  30,  39,  57,  60,  63,  72,  81,  90,
-108, 109, 112, 115, 116, 119, 122, 123, 124, 125, 128, 134, 137, 143, 149,
-155, 161, 164, 170, 173, 176, 182, 185, 191, 197, 203, 209, 212, 215, 218,
-221, 227, 228, 230, 233, 239, 245, 251, 257, 263, 266, 269, 275, 278, 284,
-290, 292, 298, 304, 310, 313, 316, 322, 334, 335, 337, 338, 341, 343, 349,
-350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 361, 363, 364, 366, 367,
-368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382,
-383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397,
-398, 399, 400, 401, 402, 404, 406, 407, 408, 410, 412, 413, 414, 416, 418,
-419, 420, 422, 424, 425, 426, 428, 430, 431, 432, 433, 435, 436, 438, 439,
-440, 441, 442, 443, 444, 446, 447, 448, 449, 450, 452, 454, 455, 456, 457,
-458, 460, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474,
-475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489,
-490, 491, 492, 493, 494, 495, 497, 498, 500, 501, 502, 503, 504, 505, 506,
-507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 520, 521, 523,
-524, 525, 527, 529, 530]
+    1,
+    2,
+    3,
+    6,
+    9,
+    18,
+    21,
+    30,
+    39,
+    57,
+    60,
+    63,
+    72,
+    81,
+    90,
+    108,
+    109,
+    112,
+    115,
+    116,
+    119,
+    122,
+    123,
+    124,
+    125,
+    128,
+    134,
+    137,
+    143,
+    149,
+    155,
+    161,
+    164,
+    170,
+    173,
+    176,
+    182,
+    185,
+    191,
+    197,
+    203,
+    209,
+    212,
+    215,
+    218,
+    221,
+    227,
+    228,
+    230,
+    233,
+    239,
+    245,
+    251,
+    257,
+    263,
+    266,
+    269,
+    275,
+    278,
+    284,
+    290,
+    292,
+    298,
+    304,
+    310,
+    313,
+    316,
+    322,
+    334,
+    335,
+    337,
+    338,
+    341,
+    343,
+    349,
+    350,
+    351,
+    352,
+    353,
+    354,
+    355,
+    356,
+    357,
+    358,
+    359,
+    361,
+    363,
+    364,
+    366,
+    367,
+    368,
+    369,
+    370,
+    371,
+    372,
+    373,
+    374,
+    375,
+    376,
+    377,
+    378,
+    379,
+    380,
+    381,
+    382,
+    383,
+    384,
+    385,
+    386,
+    387,
+    388,
+    389,
+    390,
+    391,
+    392,
+    393,
+    394,
+    395,
+    396,
+    397,
+    398,
+    399,
+    400,
+    401,
+    402,
+    404,
+    406,
+    407,
+    408,
+    410,
+    412,
+    413,
+    414,
+    416,
+    418,
+    419,
+    420,
+    422,
+    424,
+    425,
+    426,
+    428,
+    430,
+    431,
+    432,
+    433,
+    435,
+    436,
+    438,
+    439,
+    440,
+    441,
+    442,
+    443,
+    444,
+    446,
+    447,
+    448,
+    449,
+    450,
+    452,
+    454,
+    455,
+    456,
+    457,
+    458,
+    460,
+    462,
+    463,
+    464,
+    465,
+    466,
+    467,
+    468,
+    469,
+    470,
+    471,
+    472,
+    473,
+    474,
+    475,
+    476,
+    477,
+    478,
+    479,
+    480,
+    481,
+    482,
+    483,
+    484,
+    485,
+    486,
+    487,
+    488,
+    489,
+    490,
+    491,
+    492,
+    493,
+    494,
+    495,
+    497,
+    498,
+    500,
+    501,
+    502,
+    503,
+    504,
+    505,
+    506,
+    507,
+    508,
+    509,
+    510,
+    511,
+    512,
+    513,
+    514,
+    515,
+    516,
+    517,
+    518,
+    520,
+    521,
+    523,
+    524,
+    525,
+    527,
+    529,
+    530,
+]
 
-#The map between standard space group and hall numbers
+# The map between standard space group and hall numbers
 pyxtal_hall_numbers = [
-1,   2,   3,   6,   9,   18,  21,  30,  39,  57,  60,  63,  72,  81,  90,
-108, 109, 112, 115, 116, 119, 122, 123, 124, 125, 128, 134, 137, 143, 149,
-155, 161, 164, 170, 173, 176, 182, 185, 191, 197, 203, 209, 212, 215, 218,
-221, 227, 229, 230, 234, 239, 245, 251, 257, 263, 266, 269, 275, 279, 284,
-290, 292, 298, 304, 310, 313, 316, 323, 334, 336, 337, 338, 341, 343, 349,
-350, 351, 352, 353, 354, 355, 356, 357, 358, 360, 362, 363, 365, 366, 367,
-368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382,
-383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397,
-398, 399, 400, 401, 403, 405, 406, 407, 409, 411, 412, 413, 415, 417, 418,
-419, 421, 423, 424, 425, 427, 429, 430, 431, 432, 433, 435, 436, 438, 439,
-440, 441, 442, 443, 444, 446, 447, 448, 449, 450, 452, 454, 455, 456, 457,
-458, 460, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474,
-475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489,
-490, 491, 492, 493, 494, 496, 497, 499, 500, 501, 502, 503, 504, 505, 506,
-507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 519, 520, 522, 523,
-524, 526, 528, 529, 530,
+    1,
+    2,
+    3,
+    6,
+    9,
+    18,
+    21,
+    30,
+    39,
+    57,
+    60,
+    63,
+    72,
+    81,
+    90,
+    108,
+    109,
+    112,
+    115,
+    116,
+    119,
+    122,
+    123,
+    124,
+    125,
+    128,
+    134,
+    137,
+    143,
+    149,
+    155,
+    161,
+    164,
+    170,
+    173,
+    176,
+    182,
+    185,
+    191,
+    197,
+    203,
+    209,
+    212,
+    215,
+    218,
+    221,
+    227,
+    229,
+    230,
+    234,
+    239,
+    245,
+    251,
+    257,
+    263,
+    266,
+    269,
+    275,
+    279,
+    284,
+    290,
+    292,
+    298,
+    304,
+    310,
+    313,
+    316,
+    323,
+    334,
+    336,
+    337,
+    338,
+    341,
+    343,
+    349,
+    350,
+    351,
+    352,
+    353,
+    354,
+    355,
+    356,
+    357,
+    358,
+    360,
+    362,
+    363,
+    365,
+    366,
+    367,
+    368,
+    369,
+    370,
+    371,
+    372,
+    373,
+    374,
+    375,
+    376,
+    377,
+    378,
+    379,
+    380,
+    381,
+    382,
+    383,
+    384,
+    385,
+    386,
+    387,
+    388,
+    389,
+    390,
+    391,
+    392,
+    393,
+    394,
+    395,
+    396,
+    397,
+    398,
+    399,
+    400,
+    401,
+    403,
+    405,
+    406,
+    407,
+    409,
+    411,
+    412,
+    413,
+    415,
+    417,
+    418,
+    419,
+    421,
+    423,
+    424,
+    425,
+    427,
+    429,
+    430,
+    431,
+    432,
+    433,
+    435,
+    436,
+    438,
+    439,
+    440,
+    441,
+    442,
+    443,
+    444,
+    446,
+    447,
+    448,
+    449,
+    450,
+    452,
+    454,
+    455,
+    456,
+    457,
+    458,
+    460,
+    462,
+    463,
+    464,
+    465,
+    466,
+    467,
+    468,
+    469,
+    470,
+    471,
+    472,
+    473,
+    474,
+    475,
+    476,
+    477,
+    478,
+    479,
+    480,
+    481,
+    482,
+    483,
+    484,
+    485,
+    486,
+    487,
+    488,
+    489,
+    490,
+    491,
+    492,
+    493,
+    494,
+    496,
+    497,
+    499,
+    500,
+    501,
+    502,
+    503,
+    504,
+    505,
+    506,
+    507,
+    508,
+    509,
+    510,
+    511,
+    512,
+    513,
+    514,
+    515,
+    516,
+    517,
+    519,
+    520,
+    522,
+    523,
+    524,
+    526,
+    528,
+    529,
+    530,
 ]
 
 
@@ -110,35 +543,36 @@ class Hall:
         permutation: allow permutation or not
     """
 
-    def __init__(self, spgnum, style='pyxtal', permutation=False):
+    def __init__(self, spgnum, style="pyxtal", permutation=False):
         self.spg = spgnum
-        if style == 'pyxtal':
-            self.hall_default = pyxtal_hall_numbers[spgnum-1]
+        if style == "pyxtal":
+            self.hall_default = pyxtal_hall_numbers[spgnum - 1]
         else:
-            self.hall_default = spglib_hall_numbers[spgnum-1]
+            self.hall_default = spglib_hall_numbers[spgnum - 1]
         self.hall_numbers = []
         self.hall_symbols = []
-        self.Ps = [] #convertion from standard
-        self.P1s = [] #inverse convertion to standard
-        for id in range(len(hall_table['Hall'])):
-            if hall_table['Spg_num'][id] == spgnum:
+        self.Ps = []  # convertion from standard
+        self.P1s = []  # inverse convertion to standard
+        for id in range(len(hall_table["Hall"])):
+            if hall_table["Spg_num"][id] == spgnum:
                 if permutation:
                     include = True
                 else:
-                    if hall_table['Permutation'][id]==0:
+                    if hall_table["Permutation"][id] == 0:
                         include = True
                     else:
                         include = False
                 if include:
-                    self.hall_numbers.append(hall_table['Hall'][id])
-                    self.hall_symbols.append(hall_table['Symbol'][id])
-                    self.Ps.append(abc2matrix(hall_table['P'][id]))
-                    self.P1s.append(abc2matrix(hall_table['P^-1'][id]))
-            elif hall_table['Spg_num'][id] > spgnum:
+                    self.hall_numbers.append(hall_table["Hall"][id])
+                    self.hall_symbols.append(hall_table["Symbol"][id])
+                    self.Ps.append(abc2matrix(hall_table["P"][id]))
+                    self.P1s.append(abc2matrix(hall_table["P^-1"][id]))
+            elif hall_table["Spg_num"][id] > spgnum:
                 break
         if len(self.hall_numbers) == 0:
             msg = "hall numbers cannot be found, check input " + spgnum
             raise RuntimeError(msg)
+
 
 # --------------------------- Group class -----------------------------
 class Group:
@@ -231,17 +665,16 @@ class Group:
         quick (defaut: False): whether or not ignore the wyckoff information
     """
 
-    def __init__(self, group, dim=3, use_hall=False, style='pyxtal', quick=False):
-
+    def __init__(self, group, dim=3, use_hall=False, style="pyxtal", quick=False):
         self.string = None
         self.dim = dim
-        names = ['Point', 'Rod', 'Layer', 'Space']
-        self.header = "-- " + names[dim] + 'group --'
+        names = ["Point", "Rod", "Layer", "Space"]
+        self.header = "-- " + names[dim] + "group --"
         if not use_hall:
             self.symbol, self.number = get_symbol_and_number(group, dim)
         else:
-            self.symbol = hall_table['Symbol'][group-1]
-            self.number = hall_table['Spg_num'][group-1]
+            self.symbol = hall_table["Symbol"][group - 1]
+            self.number = hall_table["Spg_num"][group - 1]
 
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
 
@@ -256,14 +689,14 @@ class Group:
         if not quick:
             if dim == 3:
                 if not use_hall:
-                    if style == 'pyxtal':
-                        self.hall_number = pyxtal_hall_numbers[self.number-1]
+                    if style == "pyxtal":
+                        self.hall_number = pyxtal_hall_numbers[self.number - 1]
                     else:
-                        self.hall_number = spglib_hall_numbers[self.number-1]
+                        self.hall_number = spglib_hall_numbers[self.number - 1]
                 else:
                     self.hall_number = group
-                self.P = abc2matrix(hall_table['P'][self.hall_number-1])
-                self.P1 = abc2matrix(hall_table['P^-1'][self.hall_number-1])
+                self.P = abc2matrix(hall_table["P"][self.hall_number - 1])
+                self.P1 = abc2matrix(hall_table["P^-1"][self.hall_number - 1])
             else:
                 self.hall_number = None
                 self.P = None
@@ -302,7 +735,6 @@ class Group:
             # A 2D list of WP objects, grouped and sorted by multiplicity
             self.wyckoffs_organized = organized_wyckoffs(self)
 
-
     def __str__(self):
         if self.string is not None:
             return self.string
@@ -312,7 +744,8 @@ class Group:
 
             for wp in self.Wyckoff_positions:
                 s += "\n" + wp.get_label()
-                if not hasattr(wp, "site_symm"): wp.get_site_symmetry()
+                if not hasattr(wp, "site_symm"):
+                    wp.get_site_symmetry()
                 s += "\tsite symm: " + wp.site_symm
             self.string = s
 
@@ -351,7 +784,7 @@ class Group:
                 site = site[-1]
             id = len(self) - letters.index(site) - 1
             string = self[id].ops[0].as_xyz_str()
-            dof[i] = len(set(re.sub('[^a-z]+', '', string)))
+            dof[i] = len(set(re.sub("[^a-z]+", "", string)))
 
         return dof
 
@@ -363,15 +796,14 @@ class Group:
             dof = 6
         elif self.lattice_type in ["monoclinic"]:
             dof = 4
-        elif self.lattice_type in ['orthorhombic']:
+        elif self.lattice_type in ["orthorhombic"]:
             dof = 3
-        elif self.lattice_type in ['tetragonal', 'hexagonal', 'trigonal']:
+        elif self.lattice_type in ["tetragonal", "hexagonal", "trigonal"]:
             dof = 2
         else:
             dof = 1
 
         return dof
-
 
     def is_valid_combination(self, sites):
         """
@@ -391,13 +823,15 @@ class Group:
 
         for wp in self:
             letter = wp.letter
-            if sites.count(letter)>1:
+            if sites.count(letter) > 1:
                 freedom = np.trace(wp.ops[0].rotation_matrix) > 0
                 if not freedom:
                     return False
         return True
 
-    def list_wyckoff_combinations(self, numIons, quick=False, numWp=(None, None), Nmax=10000000):
+    def list_wyckoff_combinations(
+        self, numIons, quick=False, numWp=(None, None), Nmax=10000000
+    ):
         """
         List all possible wyckoff combinations for the given formula. Note this
         is really designed for a light weight calculation. If the solution space
@@ -420,13 +854,13 @@ class Group:
         # Must be greater than the number of smallest wp multiplicity
         if numIons.min() < self[-1].multiplicity:
             return [], [], []
-        elif max_wp is not None and sum(numIons) > self[0].multiplicity*max_wp:
+        elif max_wp is not None and sum(numIons) > self[0].multiplicity * max_wp:
             return [], [], []
 
-        basis = [] # [8, 4, 4]
-        letters = [] # ['c', 'b', 'a']
-        freedoms = [] # [False, False, False]
-        ids = [] # [2, 3, 4]
+        basis = []  # [8, 4, 4]
+        letters = []  # ['c', 'b', 'a']
+        freedoms = []  # [False, False, False]
+        ids = []  # [2, 3, 4]
         # obtain the basis
         for i, wp in enumerate(self):
             mul = wp.multiplicity
@@ -436,7 +870,7 @@ class Group:
                 if quick:
                     if mul in basis and freedom:
                         pass
-                    #elif mul in basis and basis.count(mul) >= 3:
+                    # elif mul in basis and basis.count(mul) >= 3:
                     #    pass
                     else:
                         basis.append(mul)
@@ -452,21 +886,21 @@ class Group:
 
         # quickly exit
         if np.min(numIons) < np.min(basis):
-            #print(numIons, basis)
+            # print(numIons, basis)
             return [], []
         # odd and even
-        elif np.mod(numIons, 2).sum()>0 and np.mod(basis, 2).sum()==0:
-            #print("odd-even", numIons, basis)
-            #return None, False
+        elif np.mod(numIons, 2).sum() > 0 and np.mod(basis, 2).sum() == 0:
+            # print("odd-even", numIons, basis)
+            # return None, False
             return [], [], []
 
-        #print("basis", basis)
-        #print("numIons", numIons)
+        # print("basis", basis)
+        # print("numIons", numIons)
         # obtain the maximum numbers for each basis
         # reset the maximum to 1 if there is no freedom
         # find the integer solutions
         # reset solutions according to max_wp
-        max_solutions = np.floor(numIons[:, None]/basis)
+        max_solutions = np.floor(numIons[:, None] / basis)
         for i in range(len(freedoms)):
             if not freedoms[i]:
                 max_solutions[:, i] = 1
@@ -480,7 +914,7 @@ class Group:
             lists = []
             prod = 1
             for a in max_solutions[i]:
-                if prod <= Nmax: #10000000:
+                if prod <= Nmax:  # 10000000:
                     d = int(a) + 1
                     lists.append(list(range(d)))
                     prod *= d
@@ -489,14 +923,14 @@ class Group:
                     lists.append([0])
                     # Terminate the list
                     # break
-            #print(len(lists), prod)
+            # print(len(lists), prod)
 
             sub_solutions = np.array(list(itertools.product(*lists)))
             N = sub_solutions.dot(basis)
             sub_solutions = sub_solutions[N == numIon]
             list_solutions.append(sub_solutions.tolist())
-            #print(i)
-            #print(sub_solutions)#; import sys; sys.exit()
+            # print(i)
+            # print(sub_solutions)#; import sys; sys.exit()
             if len(sub_solutions) == 0:
                 return [], [], []
 
@@ -569,15 +1003,15 @@ class Group:
             else:
                 ops = wp.ops
 
-            if bravis in ['A', 'B', 'C', 'I']:
-                ops = ops[:int(len(ops)/2)]
-            elif bravis == 'R':
-                ops = ops[:int(len(ops)/3)]
-            elif bravis == 'F':
-                ops = ops[:int(len(ops)/4)]
+            if bravis in ["A", "B", "C", "I"]:
+                ops = ops[: int(len(ops) / 2)]
+            elif bravis == "R":
+                ops = ops[: int(len(ops) / 3)]
+            elif bravis == "F":
+                ops = ops[: int(len(ops) / 4)]
 
             return site_symmetry(ops, l_type, bravis, True)
-            #ss.to_beautiful_matrix_representation()
+            # ss.to_beautiful_matrix_representation()
         else:
             raise ValueError("Only supports space group symmetry")
 
@@ -622,7 +1056,6 @@ class Group:
         print("Cannot find the suitable wp for the given input")
         return None
 
-
     def get_alternatives(self):
         """
         Get the alternative settings as a dictionary
@@ -659,10 +1092,10 @@ class Group:
         QZ: the function name is not instructive, need to revise later
         """
         if self.point_group == Group(H, quick=True).point_group:
-            g_type = 'k'
+            g_type = "k"
             dicts = self.get_max_k_subgroup()
         else:
-            g_type = 't'
+            g_type = "t"
             dicts = self.get_max_t_subgroup()
         return dicts, g_type
 
@@ -670,12 +1103,13 @@ class Group:
         """
         Get the reversed list of wps
         """
-        #wp_list = [(str(x.multiplicity)+x.letter) for x in self.Wyckoff_positions]
+        # wp_list = [(str(x.multiplicity)+x.letter) for x in self.Wyckoff_positions]
         wp_list = [(x.get_label()) for x in self.Wyckoff_positions]
-        if reverse: wp_list.reverse()
+        if reverse:
+            wp_list.reverse()
         return wp_list
 
-    def get_splitters_from_structure(self, struc, group_type='t'):
+    def get_splitters_from_structure(self, struc, group_type="t"):
         """
         Get the valid symmetry relations for a structure to its supergroup
         e.g.,
@@ -687,18 +1121,18 @@ class Group:
             list of valid transitions [(id, (['4a'], ['4b'], [['4a'], ['4c']])]
         """
 
-        if group_type=='t':
+        if group_type == "t":
             dicts = self.get_max_t_subgroup()
         else:
             dicts = self.get_max_k_subgroup()
 
         # search for the compatible solutions
         solutions = []
-        for i, sub in enumerate(dicts['subgroup']):
+        for i, sub in enumerate(dicts["subgroup"]):
             if sub == struc.group.number:
                 # extract the relation
-                relation = dicts['relations'][i]
-                trans = np.linalg.inv(dicts['transformation'][i][:,:3])
+                relation = dicts["relations"][i]
+                trans = np.linalg.inv(dicts["transformation"][i][:, :3])
                 if struc.lattice.check_mismatch(trans, self.lattice_type):
                     results = self.get_splitters_from_relation(struc, relation)
                     if results is not None:
@@ -722,7 +1156,7 @@ class Group:
         elements, sites = struc._get_elements_and_sites()
         wp_list = self.get_wp_list(reverse=True)
 
-        good_splittings_list=[]
+        good_splittings_list = []
 
         # search for all valid compatible relations
         # each element is solved one at a time
@@ -735,7 +1169,7 @@ class Group:
             # the sum of all positions should be fixed.
             total_units = 0
             for j, x in enumerate(_site):
-                total_units += int(x[:-1])*_site_counts[j]
+                total_units += int(x[:-1]) * _site_counts[j]
 
             # collect all possible supergroup transitions
             for j, split in enumerate(relation):
@@ -743,8 +1177,13 @@ class Group:
                     wp_indices.append(j)
 
             wps = [wp_list[x] for x in wp_indices]
-            blocks = [np.array([relation[j].count(s) for s in _site]) for j in wp_indices]
-            block_units = [sum([int(x[:-1])*block[j] for j, x in enumerate(_site)]) for block in blocks]
+            blocks = [
+                np.array([relation[j].count(s) for s in _site]) for j in wp_indices
+            ]
+            block_units = [
+                sum([int(x[:-1]) * block[j] for j, x in enumerate(_site)])
+                for block in blocks
+            ]
 
             # below is a brute force search for the valid combinations
             combo_storage = [np.zeros(len(block_units))]
@@ -753,7 +1192,7 @@ class Group:
                 holder = []
                 for j, x in enumerate(combo_storage):
                     for k in range(len(block_units)):
-                        trial = np.array(deepcopy(x)) # trial solution
+                        trial = np.array(deepcopy(x))  # trial solution
                         trial[k] += 1
                         if trial.tolist() in holder:
                             continue
@@ -765,7 +1204,7 @@ class Group:
                         else:
                             tester = np.zeros(len(_site_counts))
                             for l, z in enumerate(trial):
-                                tester += z*blocks[l]
+                                tester += z * blocks[l]
                             if np.all(tester == _site_counts):
                                 G_sites = []
                                 for l, number in enumerate(trial):
@@ -778,7 +1217,7 @@ class Group:
                                             G_sites.append(wps[l])
                                 if G_sites not in good_list:
                                     good_list.append(G_sites)
-                combo_storage=holder
+                combo_storage = holder
 
             if len(good_list) == 0:
                 return None
@@ -786,25 +1225,25 @@ class Group:
                 good_splittings_list.append(good_list)
         return good_splittings_list
 
-
-    def get_min_supergroup(self, group_type='t', G=None):
+    def get_min_supergroup(self, group_type="t", G=None):
         """
         Returns the minimal supergroups as a dictionary
         """
         if self.dim == 3:
-            dicts = {'supergroup': [],
-                     'transformation': [],
-                     'relations': [],
-                     'idx': [],
-                    }
+            dicts = {
+                "supergroup": [],
+                "transformation": [],
+                "relations": [],
+                "idx": [],
+            }
             if G is None:
-                sgs = range(1,231)
+                sgs = range(1, 231)
             else:
                 sgs = G
 
             for sg in sgs:
                 subgroups = None
-                if group_type == 't':
+                if group_type == "t":
                     if sg > self.number:
                         subgroups = Group(sg, quick=True).get_max_t_subgroup()
                 else:
@@ -812,14 +1251,14 @@ class Group:
                     if g1.point_group == self.point_group:
                         subgroups = Group(sg, quick=True).get_max_k_subgroup()
                 if subgroups is not None:
-                    for i, sub in enumerate(subgroups['subgroup']):
+                    for i, sub in enumerate(subgroups["subgroup"]):
                         if sub == self.number:
-                            trans = subgroups['transformation'][i]
-                            relation = subgroups['relations'][i]
-                            dicts['supergroup'].append(sg)
-                            dicts['transformation'].append(trans)
-                            dicts['relations'].append(relation)
-                            dicts['idx'].append(i)
+                            trans = subgroups["transformation"][i]
+                            relation = subgroups["relations"][i]
+                            dicts["supergroup"].append(sg)
+                            dicts["transformation"].append(trans)
+                            dicts["relations"].append(relation)
+                            dicts["idx"].append(i)
             return dicts
         else:
             msg = "Only supports the supergroups for space group"
@@ -833,13 +1272,13 @@ class Group:
         if self.dim == 3:
             sub_k = k_subgroup[str(self.number)]
             sub_t = t_subgroup[str(self.number)]
-            k = sub_k['subgroup']
-            t = sub_t['subgroup']
+            k = sub_k["subgroup"]
+            t = sub_t["subgroup"]
             for i, n in enumerate(t):
-                if np.linalg.det(sub_t['transformation'][i][:3,:3])<=max_cell:
+                if np.linalg.det(sub_t["transformation"][i][:3, :3]) <= max_cell:
                     groups.append(n)
             for i, n in enumerate(k):
-                if np.linalg.det(sub_k['transformation'][i][:3,:3])<=max_cell:
+                if np.linalg.det(sub_k["transformation"][i][:3, :3]) <= max_cell:
                     groups.append(n)
             return groups
         else:
@@ -862,12 +1301,14 @@ class Group:
             indices0.append(i_wp)
             l_mult0.append(len(wp))
             l_maxn0.append(numIon // len(wp))
-            #check the freedom
+            # check the freedom
             if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
                 l_free0.append(False)
             else:
                 l_free0.append(True)
-        return self.clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices)
+        return self.clean_lists(
+            numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices
+        )
 
     def get_lists_mol(self, numIon, used_indices, orientations):
         """
@@ -889,12 +1330,14 @@ class Group:
                 indices0.append(i_wp)
                 l_mult0.append(len(wp))
                 l_maxn0.append(numIon // len(wp))
-                #check the freedom
+                # check the freedom
                 if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
                     l_free0.append(False)
                 else:
                     l_free0.append(True)
-        return self.clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices)
+        return self.clean_lists(
+            numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices
+        )
 
     @staticmethod
     def clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices):
@@ -934,8 +1377,8 @@ class Group:
             Compatible: True/False
             has_freedom: True/False
         """
-        has_freedom = False #whether or not one degree of freedom exists
-        used_indices = [] #wp's already used that don't have any freedom
+        has_freedom = False  # whether or not one degree of freedom exists
+        used_indices = []  # wp's already used that don't have any freedom
 
         # Loop over species
         # Sort the specie from low to high so that the solution can be found ealier
@@ -946,8 +1389,10 @@ class Group:
                 l_mult, l_maxn, l_free, indices = self.get_lists(numIon, used_indices)
             else:
                 vo = valid_orientations[id]
-                l_mult, l_maxn, l_free, indices = self.get_lists_mol(numIon, used_indices, vo)
-            #print(numIon, l_mult, indices, l_maxn, l_free)
+                l_mult, l_maxn, l_free, indices = self.get_lists_mol(
+                    numIon, used_indices, vo
+                )
+            # print(numIon, l_mult, indices, l_maxn, l_free)
 
             # Loop over possible combinations
             p = 0  # Create pointer variable to move through lists
@@ -963,7 +1408,7 @@ class Group:
             if n == n0:
                 return False, False
 
-            #print(numIon, n, n0, p)
+            # print(numIon, n, n0, p)
             while True:
                 num = np.dot(n, l_mult)
                 dobackwards = False
@@ -979,7 +1424,7 @@ class Group:
                     break
                 # All combinations failed: return False
                 if n == n0 and p >= len(l_mult) - 1:
-                    #print('All combinations failed', numIon, n, n0)
+                    # print('All combinations failed', numIon, n, n0)
                     return False, False
                 # Too few atoms
                 if num < numIon:
@@ -1003,7 +1448,7 @@ class Group:
                             if n[p] == 0 and p == p2:
                                 p2 = p + 1
                             break
-            #print('used_indices', used_indices)
+            # print('used_indices', used_indices)
         if has_freedom:
             # All species passed: return True
             return True, True
@@ -1027,37 +1472,40 @@ class Group:
         """
 
         layers = {}
-        layers[0] = {'groups': [H],
-                     'subgroups': [],
-                   }
+        layers[0] = {
+            "groups": [H],
+            "subgroups": [],
+        }
         final = []
         traversed = []
 
         # Searches for every subgroup of the the groups from the previous layer.
         # stores the possible groups of each layer and their subgroups
         # in a dictinoary to avoid redundant calculations.
-        for l in range(1, max_layer+1):
-            previous_layer_groups=layers[l-1]['groups']
+        for l in range(1, max_layer + 1):
+            previous_layer_groups = layers[l - 1]["groups"]
             groups = []
             subgroups = []
             for g in previous_layer_groups:
-                subgroup_numbers=np.unique(Group(g, quick=True).get_max_subgroup_numbers())
+                subgroup_numbers = np.unique(
+                    Group(g, quick=True).get_max_subgroup_numbers()
+                )
 
                 # If a subgroup list has been found with H
                 # trace a path through the dictionary to build the path
                 if self.number in subgroup_numbers:
-                    paths=[[g]]
-                    for j in reversed(range(l-1)):
-                        holder=[]
+                    paths = [[g]]
+                    for j in reversed(range(l - 1)):
+                        holder = []
                         for path in paths:
-                            tail_number=path[-1]
-                            indices=[]
-                            for idx, numbers in enumerate(layers[j]['subgroups']):
+                            tail_number = path[-1]
+                            indices = []
+                            for idx, numbers in enumerate(layers[j]["subgroups"]):
                                 if tail_number in numbers:
                                     indices.append(idx)
                             for idx in indices:
-                                holder.append(path+[layers[j]['groups'][idx]])
-                        paths=deepcopy(holder)
+                                holder.append(path + [layers[j]["groups"][idx]])
+                        paths = deepcopy(holder)
                     final.extend(paths)
                     subgroups.append([])
 
@@ -1069,9 +1517,8 @@ class Group:
                             groups.append(x)
 
             traversed.extend(groups)
-            layers[l] = {'groups': deepcopy(groups),
-                         'subgroups':[]}
-            layers[l-1]['subgroups'] = deepcopy(subgroups)
+            layers[l] = {"groups": deepcopy(groups), "subgroups": []}
+            layers[l - 1]["subgroups"] = deepcopy(subgroups)
         return final
 
     def path_to_subgroup(self, H):
@@ -1087,19 +1534,18 @@ class Group:
             for p in path[1:]:
                 g1 = Group(p, quick=True)
                 if g0.point_group == g1.point_group:
-                    g_type = 'k'
-                    spgs = g0.get_max_k_subgroup()['subgroup']
+                    g_type = "k"
+                    spgs = g0.get_max_k_subgroup()["subgroup"]
                 else:
-                    g_type = 't'
-                    spgs = g0.get_max_t_subgroup()['subgroup']
+                    g_type = "t"
+                    spgs = g0.get_max_t_subgroup()["subgroup"]
                 for id, spg in enumerate(spgs):
                     if spg == p:
                         break
-                #print(id, spgs, spgs[id])
+                # print(id, spgs, spgs[id])
                 path_list.append((g_type, id, p))
                 g0 = g1
         return path_list
-
 
     def search_subgroup_paths(self, G, max_layer=5):
         """
@@ -1136,24 +1582,26 @@ class Group:
         """
 
         if n != 1:
-            print('only 1 extra k type supported at this time')
+            print("only 1 extra k type supported at this time")
             return None
 
-        solutions=[]
+        solutions = []
         for i in range(len(path[:-1])):
             g = path[i]
-            h = path[i+1]
-            options = set(k_subgroup[str(g)]['subgroup'] + t_subgroup[str(g)]['subgroup'])
-            #print(g, h, options)
+            h = path[i + 1]
+            options = set(
+                k_subgroup[str(g)]["subgroup"] + t_subgroup[str(g)]["subgroup"]
+            )
+            # print(g, h, options)
             for _g in options:
-                ls = k_subgroup[str(_g)]['subgroup'] + t_subgroup[str(_g)]['subgroup']
+                ls = k_subgroup[str(_g)]["subgroup"] + t_subgroup[str(_g)]["subgroup"]
                 if h in ls:
                     sol = deepcopy(path)
-                    sol.insert(i+1, _g)
+                    sol.insert(i + 1, _g)
                     solutions.append(sol)
-        #https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
+        # https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
         solutions.sort()
-        solutions = list(k for k,_ in itertools.groupby(solutions))
+        solutions = list(k for k, _ in itertools.groupby(solutions))
 
         return solutions
 
@@ -1169,31 +1617,57 @@ class Group:
         Return:
             a list of (g_types, subgroup_id, spg_number, wp_list (optional))
         """
-        #label = [str(self[index].multiplicity) + self[index].letter]
+        # label = [str(self[index].multiplicity) + self[index].letter]
         label = [self[index].get_label()]
-        potential=[[(None, None, self.number, label)]]
-        solutions=[]
+        potential = [[(None, None, self.number, label)]]
+        solutions = []
 
         for step in range(max_steps):
             _potential = []
             for p in potential:
                 tail = p[-1]
-                tdict = t_subgroup[str(tail[2])]; len_t = len(tdict['subgroup'])
-                kdict = k_subgroup[str(tail[2])]; len_k = len(kdict['subgroup'])
-                _indexs=[ord(x[-1])-97 for x in tail[3]]
-                next_steps=[[("t", i, tdict['subgroup'][i], sum([tdict['relations'][i][_index] \
-                            for _index in _indexs],[]))] \
-                            for i in range(len_t)] + \
-                           [[("k", i, kdict['subgroup'][i], sum([kdict['relations'][i][_index] \
-                            for _index in _indexs],[]))] \
-                            for i in range(len_k) if kdict['subgroup'][i]!=tail[2]]
+                tdict = t_subgroup[str(tail[2])]
+                len_t = len(tdict["subgroup"])
+                kdict = k_subgroup[str(tail[2])]
+                len_k = len(kdict["subgroup"])
+                _indexs = [ord(x[-1]) - 97 for x in tail[3]]
+                next_steps = [
+                    [
+                        (
+                            "t",
+                            i,
+                            tdict["subgroup"][i],
+                            sum(
+                                [tdict["relations"][i][_index] for _index in _indexs],
+                                [],
+                            ),
+                        )
+                    ]
+                    for i in range(len_t)
+                ] + [
+                    [
+                        (
+                            "k",
+                            i,
+                            kdict["subgroup"][i],
+                            sum(
+                                [kdict["relations"][i][_index] for _index in _indexs],
+                                [],
+                            ),
+                        )
+                    ]
+                    for i in range(len_k)
+                    if kdict["subgroup"][i] != tail[2]
+                ]
                 for n in next_steps:
-                    _potential.append(deepcopy(p)+n)
-            potential=deepcopy(_potential)
+                    _potential.append(deepcopy(p) + n)
+            potential = deepcopy(_potential)
 
             for p in deepcopy(potential):
-                #Check there's only one wp.  #Check that the 1 wp is the general position
-                if (len(set(p[-1][3]))==1) and (p[-1][3][0][-1]==Group(p[-1][2])[0].letter):
+                # Check there's only one wp.  #Check that the 1 wp is the general position
+                if (len(set(p[-1][3])) == 1) and (
+                    p[-1][3][0][-1] == Group(p[-1][2])[0].letter
+                ):
                     solutions.append(deepcopy(p)[1:])
                     potential.remove(p)
 
@@ -1253,12 +1727,12 @@ class Group:
                 return 1
         else:
             # space groups
-            if self.symbol[0] == 'P':
-                return 1 # P
-            elif self.symbol[0] == 'R':
-                return 3 # R
-            elif self.symbol[0] == 'F':
-                return 4 # F
+            if self.symbol[0] == "P":
+                return 1  # P
+            elif self.symbol[0] == "R":
+                return 3  # R
+            elif self.symbol[0] == "F":
+                return 4  # F
             else:
                 return 2  # A, C, I
 
@@ -1273,41 +1747,41 @@ class Group:
         elif number == 2:
             return []
         elif 3 <= number <= 5:
-            return [1] # '2'
+            return [1]  # '2'
         elif 6 <= number <= 9:
-            return [0, 2] # 'm'
+            return [0, 2]  # 'm'
         elif 10 <= number <= 24:
-            return [] # '2/m', '222'
+            return []  # '2/m', '222'
         elif 25 <= number <= 46:
-            return [2] # 'mm2'
+            return [2]  # 'mm2'
         elif 47 <= number <= 74:
             return []  # 'mmm'
         elif 75 <= number <= 80:
-            return [2] # '4'
+            return [2]  # '4'
         elif 81 <= number <= 98:
-            return [] # '-4', '4/m', '422'
+            return []  # '-4', '4/m', '422'
         elif 99 <= number <= 110:
-            return [2] # '4mm'
+            return [2]  # '4mm'
         elif 111 <= number <= 142:
             return []  # '-42m', '4/mmm'
         elif 143 <= number <= 146:
-            return [2] # '3'
+            return [2]  # '3'
         elif 147 <= number <= 155:
             return []  #'-3', '32'
         elif 156 <= number <= 161:
-            return [2] #'3m'
+            return [2]  #'3m'
         elif 162 <= number <= 167:
-            return [] #'-3m'
+            return []  #'-3m'
         elif 168 <= number <= 173:
-            return [2] #'6'
+            return [2]  #'6'
         elif 174 <= number <= 182:
-            return [] # '-6', '6/m', '622'
+            return []  # '-6', '6/m', '622'
         elif 183 <= number <= 186:
-            return [2] #'6mm'
+            return [2]  #'6mm'
         elif 187 <= number <= 194:
-            return [] #'-62m', '6/mmm'
+            return []  #'-62m', '6/mmm'
         elif 195 <= number <= 230:
-            return [] #'23', 'm-3', '432', '-43m', 'm-3m',
+            return []  #'23', 'm-3', '432', '-43m', 'm-3m',
 
     @classmethod
     def list_groups(cls, dim=3):
@@ -1333,13 +1807,13 @@ class Group:
         pd.set_option("display.max_rows", len(df))
         print(df)
 
-
     def get_index_by_letter(self, letter):
         """
         get the wp object by the letter
         """
-        if len(letter) > 1: letter = letter[-1]
-        #print(letter); print(letters.index(letter))
+        if len(letter) > 1:
+            letter = letter[-1]
+        # print(letter); print(letters.index(letter))
         return len(self) - letters.index(letter) - 1
 
     def get_wp_by_letter(self, letter):
@@ -1354,14 +1828,16 @@ class Group:
         Vol. A, Chapter 2.1, pp. 142–174.
         including Primary, secondary and Tertiary
         """
-        #if self.dim == 3:
+        # if self.dim == 3:
         return get_symmetry_directions(self.lattice_type, self.symbol[0])
-        #else:
+        # else:
         #    print("Cannot handle dimension other than 3")
         #    pass
 
+
 #
 # ----------------------- Wyckoff Position class  ------------------------
+
 
 class Wyckoff_position:
     """
@@ -1379,7 +1855,7 @@ class Wyckoff_position:
 
     """
 
-    #=============================Initialization===========================
+    # =============================Initialization===========================
     @classmethod
     def from_dict(cls, dictionary):
         """
@@ -1388,7 +1864,7 @@ class Wyckoff_position:
         wp = cls()
         for key in dictionary:
             setattr(wp, key, dictionary[key])
-        #wp.get_site_symmetry()
+        # wp.get_site_symmetry()
         wp.set_euclidean()
         # For nonstandard setting only
         if wp.P1 is not None and not identity_ops(wp.P1):
@@ -1397,7 +1873,7 @@ class Wyckoff_position:
         return wp
 
     @classmethod
-    def from_group_and_letter(cls, group, letter, dim=3, style='pyxtal', hn=None):
+    def from_group_and_letter(cls, group, letter, dim=3, style="pyxtal", hn=None):
         """
         Creates a Wyckoff_position using the space group number and index
 
@@ -1416,13 +1892,19 @@ class Wyckoff_position:
         ops_all = get_wyckoffs(group, dim=dim)
         index = index_from_letter(letter, ops_all, dim=dim)
         if hn is not None:
-            wp = cls.from_group_and_index(hn, index, dim, use_hall=True, wyckoffs=ops_all)
+            wp = cls.from_group_and_index(
+                hn, index, dim, use_hall=True, wyckoffs=ops_all
+            )
         else:
-            wp = cls.from_group_and_index(group, index, dim, style=style, wyckoffs=ops_all)
+            wp = cls.from_group_and_index(
+                group, index, dim, style=style, wyckoffs=ops_all
+            )
         return wp
 
     @classmethod
-    def from_group_and_index(cls, group, index, dim=3, use_hall=False, style='pyxtal', wyckoffs=None):
+    def from_group_and_index(
+        cls, group, index, dim=3, use_hall=False, style="pyxtal", wyckoffs=None
+    ):
         """
         Creates a Wyckoff_position using the space group number and index
 
@@ -1437,23 +1919,23 @@ class Wyckoff_position:
         if not use_hall:
             symbol, number = get_symbol_and_number(group, dim)
         else:
-            symbol = hall_table['Symbol'][group-1]
-            number = hall_table['Spg_num'][group-1]
+            symbol = hall_table["Symbol"][group - 1]
+            number = hall_table["Spg_num"][group - 1]
         pbc, lattice_type = get_pbc_and_lattice(number, dim)
 
         if dim == 3:
             PBC = [1, 1, 1]
             if not use_hall:
-                if style == 'pyxtal':
-                    hall_number = pyxtal_hall_numbers[number-1]
+                if style == "pyxtal":
+                    hall_number = pyxtal_hall_numbers[number - 1]
                 else:
-                    hall_number = spglib_hall_numbers[number-1]
-                    P = abc2matrix(hall_table['P'][hall_number-1])
-                    P1 = abc2matrix(hall_table['P^-1'][hall_number-1])
+                    hall_number = spglib_hall_numbers[number - 1]
+                    P = abc2matrix(hall_table["P"][hall_number - 1])
+                    P1 = abc2matrix(hall_table["P^-1"][hall_number - 1])
             else:
                 hall_number = group
-                P = abc2matrix(hall_table['P'][hall_number-1])
-                P1 = abc2matrix(hall_table['P^-1'][hall_number-1])
+                P = abc2matrix(hall_table["P"][hall_number - 1])
+                P1 = abc2matrix(hall_table["P^-1"][hall_number - 1])
             directions = get_symmetry_directions(lattice_type, symbol[0])
 
         elif dim == 2:
@@ -1467,22 +1949,22 @@ class Wyckoff_position:
             wyckoffs = get_wyckoffs(number, dim=dim)
 
         wpdict = {
-                  "index": index,
-                  "letter": letter_from_index(index, wyckoffs, dim=dim),
-                  "ops": wyckoffs[index],
-                  "multiplicity": len(wyckoffs[index]),
-                  "symmetry":  get_wyckoff_symmetry(number, dim=dim)[index],
-                  #"generators": get_generators(number, dim=dim)[index],
-                  "PBC": PBC,
-                  "dim": dim,
-                  "number": number,
-                  "P": P,
-                  "P1": P1,
-                  "hall_number": hall_number,
-                  "symbol": symbol,
-                  "directions": directions,
-                  "lattice_type": lattice_type,
-                 }
+            "index": index,
+            "letter": letter_from_index(index, wyckoffs, dim=dim),
+            "ops": wyckoffs[index],
+            "multiplicity": len(wyckoffs[index]),
+            "symmetry": get_wyckoff_symmetry(number, dim=dim)[index],
+            # "generators": get_generators(number, dim=dim)[index],
+            "PBC": PBC,
+            "dim": dim,
+            "number": number,
+            "P": P,
+            "P1": P1,
+            "hall_number": hall_number,
+            "symbol": symbol,
+            "directions": directions,
+            "lattice_type": lattice_type,
+        }
 
         return cls.from_dict(wpdict)
 
@@ -1505,11 +1987,11 @@ class Wyckoff_position:
             ops = [SymmOp.from_xyz_str(op) for op in ops]
         wp.ops = ops
         match_spg, match_hm = wp.update()
-        #print("match_spg", match_spg, "match_hall", match_hm)
+        # print("match_spg", match_spg, "match_hall", match_hm)
         return wp
 
     @classmethod
-    def from_symops(cls,ops, G):
+    def from_symops(cls, ops, G):
         """
         search Wyckoff Position by symmetry operations
 
@@ -1552,25 +2034,25 @@ class Wyckoff_position:
             P = self.P
             P1 = self.P1
         wpdict = {
-                  "index": index,
-                  "letter": letter_from_index(index, wyckoffs, dim=self.dim),
-                  "ops": wyckoffs[index],
-                  "multiplicity": len(wyckoffs[index]),
-                  "PBC": self.PBC,
-                  "dim": self.dim,
-                  "number": self.number,
-                  "P": P,
-                  "P1": P1,
-                  "hall_number": self.hall_number,
-                 }
+            "index": index,
+            "letter": letter_from_index(index, wyckoffs, dim=self.dim),
+            "ops": wyckoffs[index],
+            "multiplicity": len(wyckoffs[index]),
+            "PBC": self.PBC,
+            "dim": self.dim,
+            "number": self.number,
+            "P": P,
+            "P1": P1,
+            "hall_number": self.hall_number,
+        }
         return Wyckoff_position.from_dict(wpdict)
 
-
-    #=============================Fundamentals===========================
+    # =============================Fundamentals===========================
     def __str__(self, supress=False):
         if self.dim not in [0, 1, 2, 3]:
             return "invalid crystal dimension. Must be between 0 and 3."
-        if not hasattr(self, "site_symm"): self.get_site_symmetry()
+        if not hasattr(self, "site_symm"):
+            self.get_site_symmetry()
         s = "Wyckoff position " + self.get_label() + " in "
         if self.dim == 3:
             s += "space "
@@ -1611,22 +2093,22 @@ class Wyckoff_position:
 
     def save_dict(self):
         dict0 = {
-         "group": self.number,
-         "index": self.index,
-         "dim": self.dim,
-         #"transformation": self.get_transformation(),
+            "group": self.number,
+            "index": self.index,
+            "dim": self.dim,
+            # "transformation": self.get_transformation(),
         }
         return dict0
 
     @classmethod
     def load_dict(cls, dicts):
-        g = dicts['group']
-        index = dicts['index']
-        dim = dicts['dim']
-        trans = None #dicts['transformation']
-        return Wyckoff_position.from_group_and_index(g, index, dim)#, trans=trans)
+        g = dicts["group"]
+        index = dicts["index"]
+        dim = dicts["dim"]
+        trans = None  # dicts['transformation']
+        return Wyckoff_position.from_group_and_index(g, index, dim)  # , trans=trans)
 
-    #=============================Updates===========================
+    # =============================Updates===========================
     def set_ops(self):
         self.ops = self.get_ops_from_transformation()
 
@@ -1647,7 +2129,7 @@ class Wyckoff_position:
                     rot = rot_Q.dot(op.rotation_matrix).dot(rot_P)
                     op0 = SymmOp.from_rotation_and_translation(rot, tran)
                     ops1.append(op0)
-                    #print(op0.as_xyz_str())
+                    # print(op0.as_xyz_str())
                 ops1 = trim_ops(ops1)
             else:
                 op0 = self.ops[0]
@@ -1678,15 +2160,15 @@ class Wyckoff_position:
         Args:
             hall_numbers: a list of numbers for consideration
         """
-        #print("test", self)
+        # print("test", self)
         if hall_numbers is None:
             hall_numbers = Hall(self.number).hall_numbers
 
         candidates = self.process_ops()
         success = False
         for hall_number in hall_numbers:
-            P = abc2matrix(hall_table['P'][hall_number-1])
-            P1 = abc2matrix(hall_table['P^-1'][hall_number-1])
+            P = abc2matrix(hall_table["P"][hall_number - 1])
+            P1 = abc2matrix(hall_table["P^-1"][hall_number - 1])
             wyckoffs = get_wyckoffs(self.number, dim=self.dim)
 
             # Fist check the original index
@@ -1694,7 +2176,7 @@ class Wyckoff_position:
             for ops in candidates:
                 if wp2.has_equivalent_ops(ops):
                     success = True
-                    #print("same letter") #; import sys; sys.exit()
+                    # print("same letter") #; import sys; sys.exit()
                     break
 
             # Check other sites
@@ -1707,7 +2189,7 @@ class Wyckoff_position:
                                 success = True
                                 self.index = i
                                 self.letter = wp2.letter
-                                #print("new letter")
+                                # print("new letter")
                                 break
                     if success:
                         break
@@ -1735,11 +2217,10 @@ class Wyckoff_position:
                     if self.has_equivalent_ops(wp2):
                         self.index = i
                         self.letter = wp2.letter
-                        #adjust to normal
+                        # adjust to normal
                         self.ops = wp2.ops
                         return True
         return False
-
 
     def transform_from_matrices(self, trans):
         """
@@ -1757,9 +2238,9 @@ class Wyckoff_position:
 
         if trans is None:
             if self.number in [7, 9, 13, 14, 15]:
-                trans = np.array([[1,0,0],[0,1,0],[1,0,1]])
+                trans = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 1]])
             elif self.number in [5, 8, 9, 12]:
-                trans = np.array([[1,0,1],[0,1,0],[1,0,1]])
+                trans = np.array([[1, 0, 1], [0, 1, 0], [1, 0, 1]])
 
         if 2 < self.number < 16:
             if reset:
@@ -1785,17 +2266,16 @@ class Wyckoff_position:
         opss = [self.ops]
         if self.number in [5, 12] and self.index > 0:
             # replace y with y+1/2
-            op2 = SymmOp.from_xyz_str('x, y+1/2, z')
-            ops = [op2*op for op in self.ops]
+            op2 = SymmOp.from_xyz_str("x, y+1/2, z")
+            ops = [op2 * op for op in self.ops]
             opss.append(ops)
 
         if self.number in [13] and self.index > 0:
-            op2 = SymmOp.from_xyz_str('x, -y, z')
-            ops = [op2*op for op in self.ops]
+            op2 = SymmOp.from_xyz_str("x, -y, z")
+            ops = [op2 * op for op in self.ops]
             opss.append(ops)
 
-
-            #for op in ops: print('AAAA', op.as_xyz_str())
+            # for op in ops: print('AAAA', op.as_xyz_str())
         return opss
 
     def equivalent_set(self, index):
@@ -1811,14 +2291,13 @@ class Wyckoff_position:
             if len(G[index]) != len(G[self.index]):
                 msg = "Spg {:d}, Invalid switch in Wyckoff Pos\n".format(self.number)
                 msg += str(self)
-                msg += "\n"+str(G[index])
+                msg += "\n" + str(G[index])
                 raise ValueError(msg)
             else:
                 return G[index]
         return self
 
-
-    #=============================Get functions===========================
+    # =============================Get functions===========================
     def get_site_symm_wo_translation(self):
         ops = []
         for op in self.symmetry[0]:
@@ -1832,7 +2311,7 @@ class Wyckoff_position:
 
     def get_site_symmetry(self, idx=0):
         ss = self.get_site_symmetry_object(idx)
-        self.site_symm = ss.name #ss_string_from_ops(ops, self.number, dim=self.dim)
+        self.site_symm = ss.name  # ss_string_from_ops(ops, self.number, dim=self.dim)
 
     def get_site_symm_ops(self, idx=0):
         if self.euclidean:
@@ -1852,7 +2331,7 @@ class Wyckoff_position:
         """
         get Hermann-Mauguin symbol
         """
-        return hall_table['Symbol'][self.hall_number-1]
+        return hall_table["Symbol"][self.hall_number - 1]
 
     def get_dof(self):
         """
@@ -1872,10 +2351,10 @@ class Wyckoff_position:
         elif self.get_dof() == 0:
             return [0, 1, 2]
         else:
-            if self.number >=75:
-                #if self.ops[0].rotation_matrix[2,2] == 1:
+            if self.number >= 75:
+                # if self.ops[0].rotation_matrix[2,2] == 1:
                 #    return [0, 1]
-                #else:
+                # else:
                 #    return [0, 1, 2]
                 axs = []
                 for ax in range(3):
@@ -1884,18 +2363,18 @@ class Wyckoff_position:
                 return axs
             else:
                 if self.get_dof() == 1:
-                    if self.ops[0].rotation_matrix[2,2] == 1:
+                    if self.ops[0].rotation_matrix[2, 2] == 1:
                         return [0, 1]
-                    elif self.ops[0].rotation_matrix[1,1] == 1:
+                    elif self.ops[0].rotation_matrix[1, 1] == 1:
                         return [0, 2]
-                    elif self.ops[0].rotation_matrix[0,0] == 1:
+                    elif self.ops[0].rotation_matrix[0, 0] == 1:
                         return [1, 2]
                 else:
-                    if self.ops[0].rotation_matrix[2,2] != 1:
+                    if self.ops[0].rotation_matrix[2, 2] != 1:
                         return [2]
-                    elif self.ops[0].rotation_matrix[1,1] != 1:
+                    elif self.ops[0].rotation_matrix[1, 1] != 1:
                         return [1]
-                    elif self.ops[0].rotation_matrix[0,0] != 1:
+                    elif self.ops[0].rotation_matrix[0, 0] != 1:
                         return [0]
 
     def get_euclidean_symmetries(self, idx=0):
@@ -1906,7 +2385,9 @@ class Wyckoff_position:
             list of pymatgen SymmOp object
         """
         if idx >= len(self.symmetry):
-            raise ValueError("Cannot pick {:d} in {:d} operations".format(idx, len(self.symmetry)))
+            raise ValueError(
+                "Cannot pick {:d} in {:d} operations".format(idx, len(self.symmetry))
+            )
         ops = []
         for op in self.symmetry[idx]:
             hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
@@ -1924,12 +2405,12 @@ class Wyckoff_position:
         for i, op in enumerate(self.ops):
             hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
             op_tmp = hat * op * hat.inverse
-            ops[i] = op_tmp.from_rotation_and_translation(op_tmp.rotation_matrix,
-                                                          op.translation_vector)
-            #ops[i].translation_vector = op.translation_vector
+            ops[i] = op_tmp.from_rotation_and_translation(
+                op_tmp.rotation_matrix, op.translation_vector
+            )
+            # ops[i].translation_vector = op.translation_vector
 
         return ops
-
 
     def get_euclidean_generator(self, cell, idx=0):
         """
@@ -1964,10 +2445,11 @@ class Wyckoff_position:
         Returns:
             free xyz array
         """
-        #print(self.apply_ops(pos)[0])
+        # print(self.apply_ops(pos)[0])
         res = self.apply_ops(pos)[0]
         res = np.delete(res, self.get_frozen_axis())
-        if perturb: res += eps*np.random.sample(len(res))-0.5
+        if perturb:
+            res += eps * np.random.sample(len(res)) - 0.5
         res -= np.floor(res)
         return res
 
@@ -2014,7 +2496,7 @@ class Wyckoff_position:
         else:
             return None
 
-    #=============================Evaluations===========================
+    # =============================Evaluations===========================
     def is_standard_setting(self):
         """
         Check if the symmetry operation follows the standard setting
@@ -2063,11 +2545,11 @@ class Wyckoff_position:
         """
         op = self.generators[id]
         diff = op.rotation_matrix - np.eye(3)
-        if np.sum(diff.flatten()**2) < 1e-4:
+        if np.sum(diff.flatten() ** 2) < 1e-4:
             return True
         else:
             ops = self.get_site_symm_wo_translation()
-            return (op in ops)
+            return op in ops
 
     def swap_axis(self, swap_id):
         """
@@ -2078,17 +2560,17 @@ class Wyckoff_position:
             _ops = [self.ops[0]]
             trans = [np.zeros(3)]
             if self.symbol[0] == "F":
-                trans.append(np.array([0,0.5,0.5]))
-                trans.append(np.array([0.5,0,0.5]))
-                trans.append(np.array([0.5,0.5,0]))
+                trans.append(np.array([0, 0.5, 0.5]))
+                trans.append(np.array([0.5, 0, 0.5]))
+                trans.append(np.array([0.5, 0.5, 0]))
             elif self.symbol[0] == "I":
-                trans.append(np.array([0.5,0.5,0.5]))
+                trans.append(np.array([0.5, 0.5, 0.5]))
             elif self.symbol[0] == "A":
-                trans.append(np.array([0,0.5,0.5]))
+                trans.append(np.array([0, 0.5, 0.5]))
             elif self.symbol[0] == "B":
-                trans.append(np.array([0.5,0,0.5]))
+                trans.append(np.array([0.5, 0, 0.5]))
             elif self.symbol[0] == "C":
-                trans.append(np.array([0.5,0.5,0]))
+                trans.append(np.array([0.5, 0.5, 0]))
 
             op_perm = swap_xyz_ops(_ops, swap_id)[0]
             for id, ops in enumerate(Group(self.number)):
@@ -2099,14 +2581,13 @@ class Wyckoff_position:
                             op = op_translation(op_perm, tran)
                         else:
                             op = op_perm
-                        #print(id, op.as_xyz_str(),tran)
+                        # print(id, op.as_xyz_str(),tran)
                         if are_equivalent_ops(op, ops[0]):
                             perm_id = id
                             return Group(self.number)[id], tran
             if perm_id is None:
                 raise ValueError("cannot swap", swap_id, self)
         return self, np.zeros(3)
-
 
     def print_ops(self, ops=None):
         if ops is None:
@@ -2129,15 +2610,18 @@ class Wyckoff_position:
         if pt1 is None or pt2 is None:
             return False
         else:
-            pt1 = np.array(pt1); pt1 -= np.floor(pt1)
-            pt2 = np.array(pt2); pt2 -= np.floor(pt2)
-            pts = self.apply_ops(pt1); pts -= np.floor(pts)
+            pt1 = np.array(pt1)
+            pt1 -= np.floor(pt1)
+            pt2 = np.array(pt2)
+            pt2 -= np.floor(pt2)
+            pts = self.apply_ops(pt1)
+            pts -= np.floor(pts)
             diffs = pt2 - pts
             diffs -= np.rint(diffs)
             diffs = np.dot(diffs, cell)
             dists = np.linalg.norm(diffs, axis=1)
-            #print(dists)
-            if len(dists[dists<tol]) > 0:
+            # print(dists)
+            if len(dists[dists < tol]) > 0:
                 return True
             else:
                 return False
@@ -2177,11 +2661,11 @@ class Wyckoff_position:
         """
         pt = self.project(pt, lattice, self.PBC)
         coor = self.apply_ops(pt)
-        #coor -= np.round(coor)
+        # coor -= np.round(coor)
         coor -= np.floor(coor)
         dm = distance_matrix([coor[0]], coor, lattice, PBC=self.PBC)[0][1:]
-        #if len(dm[dm<tol]==0): print('+++++', pt, dm.shape, tol, dm[dm<tol], len(dm[dm<tol]))
-        return dm[dm<tol]
+        # if len(dm[dm<tol]==0): print('+++++', pt, dm.shape, tol, dm[dm<tol], len(dm[dm<tol]))
+        return dm[dm < tol]
 
     def merge(self, pt, lattice, tol, orientations=None, group=None):
         """
@@ -2203,7 +2687,8 @@ class Wyckoff_position:
         """
         wp = self.copy()
         PBC = wp.PBC
-        if group is None: group = Group(wp.number, wp.dim)
+        if group is None:
+            group = Group(wp.number, wp.dim)
         pt = self.project(pt, lattice, PBC)
         coor = apply_ops(pt, wp)
         if orientations is None:
@@ -2223,7 +2708,7 @@ class Wyckoff_position:
                 if y[0] == 0 and y[1] == 0:
                     pass
                 else:
-                    #print(dm); print(y)
+                    # print(dm); print(y)
                     passed_distance_check = False
                     break
 
@@ -2259,7 +2744,7 @@ class Wyckoff_position:
                 distances = []
                 pts = []
                 for i in possible:
-                    #wp = group[i]
+                    # wp = group[i]
                     p, d = group[i].search_generator_dist(pt.copy(), lattice, group)
                     distances.append(d)
                     pts.append(p)
@@ -2280,10 +2765,10 @@ class Wyckoff_position:
         """
         self.generators = get_generators(self.number, dim=self.dim)[self.index]
         if self.P is not None and not identity_ops(self.P):
-            #self.print_ops(self.generators)
+            # self.print_ops(self.generators)
             ops = transform_ops(self.generators, self.P, self.P1)
             self.generators = ops
-            #self.print_ops(ops)
+            # self.print_ops(ops)
 
     def set_euclidean(self):
         """
@@ -2315,17 +2800,17 @@ class Wyckoff_position:
             diff: numerical difference
 
         """
-        if self.index == 0: #general sites
+        if self.index == 0:  # general sites
             return pt, 0
 
         else:
             d = []
-            if self.get_dof == 0: #fixed site like [0, 0, 0]
+            if self.get_dof == 0:  # fixed site like [0, 0, 0]
                 pts = self.apply_ops(pt)
                 for p0 in pts:
                     d.append(distance(p0, lattice, PBC=self.PBC))
 
-            else: # sites like (x, 0, 0)
+            else:  # sites like (x, 0, 0)
                 if group is not None:
                     ops = group[0].ops
                 else:
@@ -2337,7 +2822,7 @@ class Wyckoff_position:
                     coord = pt1 - pt0
                     d.append(distance(coord, lattice, PBC=self.PBC))
                     pts.append(pt0)
-            #print(d)
+            # print(d)
             d = np.array(d)
             return pts[np.argmin(d)], np.min(d)
 
@@ -2359,12 +2844,12 @@ class Wyckoff_position:
 
         match = False
         for op in ops:
-            pos1 = op.operate(pos) #
+            pos1 = op.operate(pos)  #
             pos0 = self.ops[0].operate(pos1)
             diff = pos1 - pos0
             diff -= np.rint(diff)
             diff = np.abs(diff)
-            #print(self.letter, "{:24s}".format(op.as_xyz_str()), pos, pos0, pos1, diff)
+            # print(self.letter, "{:24s}".format(op.as_xyz_str()), pos, pos0, pos1, diff)
             if diff.sum() < tol:
                 pos1 -= np.floor(pos1)
                 match = True
@@ -2373,7 +2858,7 @@ class Wyckoff_position:
         if match:
             return pos1
         else:
-            #print(pos, wp0, wp)
+            # print(pos, wp0, wp)
             return None
 
     def search_all_generators(self, pos, ops=None, tol=1e-2):
@@ -2398,19 +2883,17 @@ class Wyckoff_position:
             diff = pos1 - pos0
             diff -= np.rint(diff)
             diff = np.abs(diff)
-            #print(wp.letter, pos1, pos0, diff)
+            # print(wp.letter, pos1, pos0, diff)
             if diff.sum() < tol:
                 pos1 -= np.floor(pos1)
                 coords.append(pos1)
         return coords
-
 
     def apply_ops(self, pt):
         """
         apply symmetry operation
         """
         return apply_ops(pt, self.ops)
-
 
     def project(self, point, cell=np.eye(3), PBC=[1, 1, 1], id=0):
         """
@@ -2448,9 +2931,9 @@ class Wyckoff_position:
             for basis_vector in rot.T:
                 # b = np.linalg.norm(basis_vector)
                 b = np.sqrt(basis_vector.dot(basis_vector))  # a faster version?
-                #if not np.isclose(b, 0):
+                # if not np.isclose(b, 0):
                 if b > 1e-3:
-                    new_vector += basis_vector * (np.dot(point, basis_vector) / (b ** 2))
+                    new_vector += basis_vector * (np.dot(point, basis_vector) / (b**2))
             new_vector += trans
             return new_vector
 
@@ -2462,14 +2945,16 @@ class Wyckoff_position:
             new_vectors = []
             distances = []
             for v in m:
-                new_vector = project_single(pt, rot, trans+v)
+                new_vector = project_single(pt, rot, trans + v)
                 new_vectors.append(new_vector)
-                tmp = (new_vector-point).dot(cell)
+                tmp = (new_vector - point).dot(cell)
                 distances.append(np.linalg.norm(tmp))
             i = np.argmin(distances)
             return filtered_coords(new_vectors[i], PBC=PBC)
 
+
 # ----------------- Wyckoff Position selection  --------------------------
+
 
 def choose_wyckoff(G, number=None, site=None, dim=3):
     """
@@ -2514,6 +2999,7 @@ def choose_wyckoff(G, number=None, site=None, dim=3):
                 return random.choice(good_wyckoff)
             else:
                 return False
+
 
 def choose_wyckoff_mol(G, number, site, orientations, gen_site=True, dim=3):
     """
@@ -2567,6 +3053,7 @@ def choose_wyckoff_mol(G, number, site, orientations, gen_site=True, dim=3):
         else:
             return False
 
+
 # -------------------- quick utilities for symmetry conversion ----------------
 def swap_xyz_string(xyzs, permutation):
     """
@@ -2579,33 +3066,34 @@ def swap_xyz_string(xyzs, permutation):
     Returns:
         the new xyz string after transformation
     """
-    if permutation == [0,1,2]:
+    if permutation == [0, 1, 2]:
         return xyzs
     else:
         new = []
         for xyz in xyzs:
-            tmp = xyz.replace(" ","").split(',')
+            tmp = xyz.replace(" ", "").split(",")
             tmp = [tmp[it] for it in permutation]
-            if permutation == [1,0,2]: #a,b
-                tmp[0] = tmp[0].replace('y','x')
-                tmp[1] = tmp[1].replace('x','y')
-            elif permutation == [2,1,0]: #a,c
-                tmp[0] = tmp[0].replace('z','x')
-                tmp[2] = tmp[2].replace('x','z')
-            elif permutation == [0,2,1]: #b,c
-                tmp[1] = tmp[1].replace('z','y')
-                tmp[2] = tmp[2].replace('y','z')
-            elif permutation == [1,2,0]: #b,c
-                tmp[0] = tmp[0].replace('y','x')
-                tmp[1] = tmp[1].replace('z','y')
-                tmp[2] = tmp[2].replace('x','z')
-            elif permutation == [2,0,1]: #b,c
-                tmp[0] = tmp[0].replace('z','x')
-                tmp[1] = tmp[1].replace('x','y')
-                tmp[2] = tmp[2].replace('y','z')
+            if permutation == [1, 0, 2]:  # a,b
+                tmp[0] = tmp[0].replace("y", "x")
+                tmp[1] = tmp[1].replace("x", "y")
+            elif permutation == [2, 1, 0]:  # a,c
+                tmp[0] = tmp[0].replace("z", "x")
+                tmp[2] = tmp[2].replace("x", "z")
+            elif permutation == [0, 2, 1]:  # b,c
+                tmp[1] = tmp[1].replace("z", "y")
+                tmp[2] = tmp[2].replace("y", "z")
+            elif permutation == [1, 2, 0]:  # b,c
+                tmp[0] = tmp[0].replace("y", "x")
+                tmp[1] = tmp[1].replace("z", "y")
+                tmp[2] = tmp[2].replace("x", "z")
+            elif permutation == [2, 0, 1]:  # b,c
+                tmp[0] = tmp[0].replace("z", "x")
+                tmp[1] = tmp[1].replace("x", "y")
+                tmp[2] = tmp[2].replace("y", "z")
             new.append(tmp[0] + ", " + tmp[1] + ", " + tmp[2])
 
         return new
+
 
 def swap_xyz_ops(ops, permutation):
     """
@@ -2624,14 +3112,15 @@ def swap_xyz_ops(ops, permutation):
         new = []
         for op in ops:
             m = op.affine_matrix.copy()
-            m[:3,:] = m[permutation, :]
+            m[:3, :] = m[permutation, :]
             for row in range(3):
                 # [0, y+1/2, 1/2] -> (0, y, 1/2)
-                if np.abs(m[row,:3]).sum()>0:
+                if np.abs(m[row, :3]).sum() > 0:
                     m[row, 3] = 0
-            m[:3,:3] = m[:3, permutation]
+            m[:3, :3] = m[:3, permutation]
             new.append(SymmOp(m))
         return new
+
 
 def op_transform(ops, affine_matrix):
     """
@@ -2648,21 +3137,23 @@ def op_transform(ops, affine_matrix):
     matrix2 = affine_matrix.dot(ops.affine_matrix)
     return SymmOp(matrix2)
 
+
 def op_translation(op, tran):
     m = op.affine_matrix.copy()
-    m[:3,3] += tran
+    m[:3, 3] += tran
     for row in range(3):
         # [0, y+1/2, 1/2] -> (0, y, 1/2)
-        if np.abs(m[row,:3]).sum()>0:
+        if np.abs(m[row, :3]).sum() > 0:
             m[row, 3] = 0
     return SymmOp(m)
+
 
 def are_equivalent_ops(op1, op2, tol=1e-2):
     """
     check if two ops are equivalent, assuming the same ordering
     """
     diff = op1.affine_matrix - op2.affine_matrix
-    diff[:,3] -= np.rint(diff[:,3])
+    diff[:, 3] -= np.rint(diff[:, 3])
     diff = np.abs(diff.flatten())
     if np.sum(diff) < tol:
         return True
@@ -2771,10 +3262,10 @@ class site_symmetry:
     Returns:
         a string representing the site symmetry (e.g., `2mm`)
     """
-    def __init__(self, ops, lattice_type, Bravis='P', parse_trans=False):
 
-        #self.G = G
-        if lattice_type in ['hexagonal', 'trigonal']:
+    def __init__(self, ops, lattice_type, Bravis="P", parse_trans=False):
+        # self.G = G
+        if lattice_type in ["hexagonal", "trigonal"]:
             hexagonal = True
         else:
             hexagonal = False
@@ -2785,11 +3276,36 @@ class site_symmetry:
         self.directions = get_symmetry_directions(lattice_type, Bravis)
 
         if not parse_trans:
-            self.symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
+            self.symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
         else:
-            self.symbols = ['1', '-1', '2', '2_1', 'm', 'a', 'b', 'c', 'n', 'd',
-                   '3', '3_1', '3_2', '4', '-4', '4_1', '4_2', '4_3',
-                   '-3', '6', '6_1', '6_2', '6_3', '6_4', '6_5', '-6']
+            self.symbols = [
+                "1",
+                "-1",
+                "2",
+                "2_1",
+                "m",
+                "a",
+                "b",
+                "c",
+                "n",
+                "d",
+                "3",
+                "3_1",
+                "3_2",
+                "4",
+                "-4",
+                "4_1",
+                "4_2",
+                "4_3",
+                "-3",
+                "6",
+                "6_1",
+                "6_2",
+                "6_3",
+                "6_4",
+                "6_5",
+                "-6",
+            ]
         self.set_table()
 
         if not parse_trans:
@@ -2816,33 +3332,39 @@ class site_symmetry:
         self.inversion = False
 
         for opa in self.opas:
-            if opa.type == 'inversion':
+            if opa.type == "inversion":
                 self.inversion = True
 
-            elif opa.type != 'identity':
-                _ax0 = opa.axis /np.linalg.norm(opa.axis)
+            elif opa.type != "identity":
+                _ax0 = opa.axis / np.linalg.norm(opa.axis)
 
                 store = False
                 for i, ax in enumerate(all_sym_directions):
-                    ax0 = ax / np.linalg.norm(ax)#; print(opa.axis, ax, np.dot(_ax0, ax0))
+                    ax0 = ax / np.linalg.norm(
+                        ax
+                    )  # ; print(opa.axis, ax, np.dot(_ax0, ax0))
                     if np.isclose(abs(np.dot(_ax0, ax0)), 1):
                         store = True
                         break
 
                 if store:
                     # Pure rotation
-                    #print('add symmetry', i, ax, opa.type, opa.order)
+                    # print('add symmetry', i, ax, opa.type, opa.order)
                     if opa.symbol in self.symbols:
                         matrix[i, self.symbols.index(opa.symbol)] = 1
                     else:
-                        print("To debug", opa.symbol, opa); import sys; sys.exit()
+                        print("To debug", opa.symbol, opa)
+                        import sys
+
+                        sys.exit()
                 else:
-                    raise ValueError("Cannot parse the axis", opa.axis, all_sym_directions)
+                    raise ValueError(
+                        "Cannot parse the axis", opa.axis, all_sym_directions
+                    )
 
             if self.inversion:
-                matrix[:, 1] = 1 # if inversion is present
+                matrix[:, 1] = 1  # if inversion is present
         return matrix
-
 
     def to_matrix_representation(self):
         """
@@ -2851,29 +3373,31 @@ class site_symmetry:
         #[1, -1, 2, m, 3, 2/m, 4, -3, 6, 4/m, -6, 6/m]
         [1, -1, 2, m, 3, 4, -3, 6, -6]
         """
-        symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
+        symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
         matrix = np.zeros([len(all_sym_directions), len(symbols)], dtype=int)
         # every direction must has identity symmetry
         matrix[:, 0] = 1
         self.inversion = False
 
         for opa in self.opas:
-            if opa.type == 'inversion':
+            if opa.type == "inversion":
                 self.inversion = True
 
-            elif opa.type != 'identity':
-                _ax0 = opa.axis /np.linalg.norm(opa.axis)
+            elif opa.type != "identity":
+                _ax0 = opa.axis / np.linalg.norm(opa.axis)
 
                 for i, ax in enumerate(all_sym_directions):
                     store = False
-                    ax0 = ax / np.linalg.norm(ax) #; print(opa.axis, ax, np.dot(opa.axis, ax0))
+                    ax0 = ax / np.linalg.norm(
+                        ax
+                    )  # ; print(opa.axis, ax, np.dot(opa.axis, ax0))
                     if np.isclose(abs(np.dot(_ax0, ax0)), 1):
                         store = True
                         break
                 if store:
                     # Pure rotation
-                    #print('add symmetry', i, ax, opa.type, opa.order)
-                    if opa.type == 'rotation':
+                    # print('add symmetry', i, ax, opa.type, opa.order)
+                    if opa.type == "rotation":
                         if opa.order == 2:
                             matrix[i, 2] = 1
                         elif opa.order == 3:
@@ -2884,22 +3408,26 @@ class site_symmetry:
                             matrix[i, 8] = 1
                         else:
                             raise RuntimeError("Unexpected rotation order", opa.order)
-                    elif opa.type == 'rotoinversion':
+                    elif opa.type == "rotoinversion":
                         if opa.rotation_order == 2:
-                            matrix[i, 3] = 1 # -2 is m
+                            matrix[i, 3] = 1  # -2 is m
                         elif opa.rotation_order == 3:
-                            matrix[i, 7] = 1 # -3
+                            matrix[i, 7] = 1  # -3
                         elif opa.rotation_order == 4:
-                            matrix[i, 6] = 1 # -4
+                            matrix[i, 6] = 1  # -4
                         elif opa.rotation_order == 6:
                             matrix[i, 9] = 1
                         else:
-                            raise RuntimeError("Unexpected rotinversion order", opa.order)
+                            raise RuntimeError(
+                                "Unexpected rotinversion order", opa.order
+                            )
                 else:
-                    raise ValueError("Cannot parse the axis", opa.axis, all_sym_directions)
+                    raise ValueError(
+                        "Cannot parse the axis", opa.axis, all_sym_directions
+                    )
 
             if self.inversion:
-                matrix[:, 1] = 1 # if inversion is present
+                matrix[:, 1] = 1  # if inversion is present
         return matrix
 
     def set_table(self, skip=False):
@@ -2914,7 +3442,8 @@ class site_symmetry:
         """
         # Complete list of symmetry for one given axis
         # symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
-        if self.lattice_type == 'triclinic': skip = False
+        if self.lattice_type == "triclinic":
+            skip = False
 
         if self.parse_trans:
             matrix = self.to_matrix_representation_spg()
@@ -2930,17 +3459,17 @@ class site_symmetry:
                 else:
                     num_symmetries = matrix[i].sum()
                 if num_symmetries > 0:
-                    strs = '{:4d} ({:2d} {:2d} {:2d}): '.format(direction_id, *axis)
+                    strs = "{:4d} ({:2d} {:2d} {:2d}): ".format(direction_id, *axis)
                     for sym in matrix[i]:
-                        strs +="{:4d} ".format(sym)
-                    #strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
+                        strs += "{:4d} ".format(sym)
+                    # strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
                     if not self.parse_trans:
                         symbol, _ = self.get_highest_symmetry(matrix[i])
                         strs += "{:>6s}".format(symbol)
                         tables.append((strs, symbol, direction_id))
                     else:
                         tables.append((strs, direction_id))
-            #else:
+            # else:
             #    raise ValueError('Wrong input axis', axis, 'lattice_type', self.lattice_type)
         self.table = sorted(tables, key=lambda x: x[-1])
 
@@ -2955,23 +3484,23 @@ class site_symmetry:
             a list of symmetry elements on {primary, secondary, tertiery} directions
         """
         hm_symbols = [[] for _ in range(len(self.directions))]
-        #for row in tables: print(row)
+        # for row in tables: print(row)
         for row in tables:
             (_, symbol, direction_id) = row
-            if symbol not in ['1', '-1']:
+            if symbol not in ["1", "-1"]:
                 hm_symbols[direction_id].append(symbol)
-            #print(hm_symbols, direction_id)
+            # print(hm_symbols, direction_id)
 
         for i, hm_symbol in enumerate(hm_symbols):
             if len(hm_symbol) == 0:
-                hm_symbols[i] = ['.']
-            #elif hm_symbol == ['1']:
+                hm_symbols[i] = ["."]
+            # elif hm_symbol == ['1']:
             #    hm_symbols[i] = ['.']
-        self.hm_symbols  = hm_symbols
+        self.hm_symbols = hm_symbols
 
     def unique_symmetry(self, symbols, symmetry):
         for symbol in symbols:
-            if symbol not in ['.', symmetry]:
+            if symbol not in [".", symmetry]:
                 return False
         return True
 
@@ -2981,124 +3510,122 @@ class site_symmetry:
                 return True
         return False
 
-
     def set_short_symbols(self):
         """
         Set short symbols from the Full symbols
         """
-        #if hasattr(self, 'hm_symbols'):
+        # if hasattr(self, 'hm_symbols'):
         #    self.set_full_hm_symbols()
 
         self.symbols = []
-        #print(self.hm_symbols)
+        # print(self.hm_symbols)
         for hm_symbol in self.hm_symbols:
             if len(hm_symbol) == 1:
-                #print('single', hm_symbol)
+                # print('single', hm_symbol)
                 self.symbols.append(hm_symbol[0])
             else:
-                symbol = ''
+                symbol = ""
                 for hm in hm_symbol:
                     symbol += hm
                 self.symbols.append(symbol)
-                #print('multi', hm_symbol)
+                # print('multi', hm_symbol)
 
         # Some simplifications
-        if self.lattice_type == 'orthorhombic':
-            if self.symbols == ['2/m', '2/m', '2/m']:
-                self.symbols = ['m', 'm', 'm']
+        if self.lattice_type == "orthorhombic":
+            if self.symbols == ["2/m", "2/m", "2/m"]:
+                self.symbols = ["m", "m", "m"]
 
-        elif self.lattice_type == 'tetragonal':
+        elif self.lattice_type == "tetragonal":
             for i, symbol in enumerate(self.symbols):
-                if symbol == '2/m2/m':
-                    self.symbols[i] = 'mm'
-                elif symbol == '2/m':
-                    if not self.unique_symmetry(self.symbols, '2/m'):
-                        self.symbols[i] = 'm'
-                elif symbol == 'm2':
-                    self.symbols[i] = '2m'
-            if self.symbols == ['4', '22', '22']:
-                self.symbols = ['4', '2', '2']
-            elif self.symbols == ['4', 'mm', 'mm']:
-                self.symbols = ['4', 'm', 'm']
-            elif self.symbols == ['-4', '22', 'mm']:
-                self.symbols = ['-4', '2', 'm']
-            elif self.symbols == ['-4', 'mm', '22']:
-                self.symbols = ['-4', 'm', '2']
-            elif self.symbols == ['2/m', '2/m', '2/m']:
-                self.symbols = ['m', 'm', 'm']
-            elif self.symbols == ['4/m', 'mm', 'mm']:
-                self.symbols = ['4/m', 'm', 'm']
+                if symbol == "2/m2/m":
+                    self.symbols[i] = "mm"
+                elif symbol == "2/m":
+                    if not self.unique_symmetry(self.symbols, "2/m"):
+                        self.symbols[i] = "m"
+                elif symbol == "m2":
+                    self.symbols[i] = "2m"
+            if self.symbols == ["4", "22", "22"]:
+                self.symbols = ["4", "2", "2"]
+            elif self.symbols == ["4", "mm", "mm"]:
+                self.symbols = ["4", "m", "m"]
+            elif self.symbols == ["-4", "22", "mm"]:
+                self.symbols = ["-4", "2", "m"]
+            elif self.symbols == ["-4", "mm", "22"]:
+                self.symbols = ["-4", "m", "2"]
+            elif self.symbols == ["2/m", "2/m", "2/m"]:
+                self.symbols = ["m", "m", "m"]
+            elif self.symbols == ["4/m", "mm", "mm"]:
+                self.symbols = ["4/m", "m", "m"]
 
-        elif self.lattice_type in ['trigonal', 'hexagonal']:
+        elif self.lattice_type in ["trigonal", "hexagonal"]:
             for i, symbol in enumerate(self.symbols):
-                if symbol in ['2/m2/m', '2/m2/m2/m', 'mm', 'mmm']:
+                if symbol in ["2/m2/m", "2/m2/m2/m", "mm", "mmm"]:
                     if not self.unique_symmetry(self.symbols, symbol):
-                        self.symbols[i] = 'm'
-                elif symbol in ['22', '222']:
+                        self.symbols[i] = "m"
+                elif symbol in ["22", "222"]:
                     if not self.unique_symmetry(self.symbols, symbol):
-                        self.symbols[i] = '2'
-            if self.symbols == ['2/m', '2/m', '2/m']:
-                self.symbols = ['m', 'm', 'm']
+                        self.symbols[i] = "2"
+            if self.symbols == ["2/m", "2/m", "2/m"]:
+                self.symbols = ["m", "m", "m"]
 
-        elif self.lattice_type == 'cubic':
+        elif self.lattice_type == "cubic":
             for i, symbol in enumerate(self.symbols):
-                if symbol in ['2/m2/m2/m']:
+                if symbol in ["2/m2/m2/m"]:
                     if not self.unique_symmetry(self.symbols, symbol):
-                        self.symbols[i] = 'm'
+                        self.symbols[i] = "m"
                     else:
-                        self.symbols[i] = 'mmm'
-                elif symbol == 'mmm':
+                        self.symbols[i] = "mmm"
+                elif symbol == "mmm":
                     if not self.unique_symmetry(self.symbols, symbol):
-                        self.symbols[i] = 'm'
-                elif symbol == '222':
-                    #print(symbol, self.unique_symmetry(self.symbols, symbol))
+                        self.symbols[i] = "m"
+                elif symbol == "222":
+                    # print(symbol, self.unique_symmetry(self.symbols, symbol))
                     if not self.unique_symmetry(self.symbols, symbol):
-                        self.symbols[i] = '2'
-                elif symbol in ['2222', '222222']:
-                    self.symbols[i] = '2'
-                elif symbol in ['333', '3333']:
-                    self.symbols[i] = '3'
-                elif symbol in ['-3-3-3-3']:
-                    self.symbols[i] = '-3'
-                elif symbol == '444':
-                    self.symbols[i] = '4'
-                elif symbol == '-4-4-4':
-                    self.symbols[i] = '-4'
-                elif symbol == '422':
-                    self.symbols[i] = '42'
-                elif symbol == '-422':
-                    self.symbols[i] = '-42'
-                elif symbol == '2mm':
-                    self.symbols[i] = 'mm2'
-                elif symbol in ['mmmm', 'mmmmmm']:
-                    self.symbols[i] = 'm'
-                elif symbol in ['2m']:
-                    self.symbols[i] = 'm2'
-                elif symbol in ['4mm']:
-                    self.symbols[i] = '4m'
-                elif symbol in ['-4mm']:
-                    self.symbols[i] = '-4m'
-                elif symbol == '4/m2/m2/m':
-                    self.symbols[i] = '4/mm'
-                elif symbol in ['4/m4/m4/m', '2/m2/m2/m2/m2/m2/m']:
-                    self.symbols[i] = 'm'
-                elif symbol == '2/m2/m':
-                    if self.ref_symmetry(self.symbols, ['4/mm']):
-                        self.symbols[i] = 'm'
+                        self.symbols[i] = "2"
+                elif symbol in ["2222", "222222"]:
+                    self.symbols[i] = "2"
+                elif symbol in ["333", "3333"]:
+                    self.symbols[i] = "3"
+                elif symbol in ["-3-3-3-3"]:
+                    self.symbols[i] = "-3"
+                elif symbol == "444":
+                    self.symbols[i] = "4"
+                elif symbol == "-4-4-4":
+                    self.symbols[i] = "-4"
+                elif symbol == "422":
+                    self.symbols[i] = "42"
+                elif symbol == "-422":
+                    self.symbols[i] = "-42"
+                elif symbol == "2mm":
+                    self.symbols[i] = "mm2"
+                elif symbol in ["mmmm", "mmmmmm"]:
+                    self.symbols[i] = "m"
+                elif symbol in ["2m"]:
+                    self.symbols[i] = "m2"
+                elif symbol in ["4mm"]:
+                    self.symbols[i] = "4m"
+                elif symbol in ["-4mm"]:
+                    self.symbols[i] = "-4m"
+                elif symbol == "4/m2/m2/m":
+                    self.symbols[i] = "4/mm"
+                elif symbol in ["4/m4/m4/m", "2/m2/m2/m2/m2/m2/m"]:
+                    self.symbols[i] = "m"
+                elif symbol == "2/m2/m":
+                    if self.ref_symmetry(self.symbols, ["4/mm"]):
+                        self.symbols[i] = "m"
                     else:
-                        self.symbols[i] = 'mm'
-                elif symbol == '2/m':
+                        self.symbols[i] = "mm"
+                elif symbol == "2/m":
                     if not self.unique_symmetry(self.symbols, symbol):
-                        self.symbols[i] = 'm'
+                        self.symbols[i] = "m"
 
             for i, symbol in enumerate(self.symbols):
-                if symbol == 'mm':
-                    if self.ref_symmetry(self.symbols, ['-42', '4m']):
-                        self.symbols[i] = 'm'
-                if symbol == '22':
-                    if self.ref_symmetry(self.symbols, ['42', '-4m']):
-                        self.symbols[i] = '2'
-
+                if symbol == "mm":
+                    if self.ref_symmetry(self.symbols, ["-42", "4m"]):
+                        self.symbols[i] = "m"
+                if symbol == "22":
+                    if self.ref_symmetry(self.symbols, ["42", "-4m"]):
+                        self.symbols[i] = "2"
 
         #    #if self.symbols in [['4', '-3', '2'], ['-4', '-3', 'm']]:
         #    #    self.symbols = ['m', '-3', 'm']
@@ -3111,15 +3638,15 @@ class site_symmetry:
         self.get_name()
 
     def get_name(self):
-        if self.symbols in [['.', '.', '.'], ['.', '.'], ['.']]:
+        if self.symbols in [[".", ".", "."], [".", "."], ["."]]:
             if self.inversion:
-                self.name = '-1'
+                self.name = "-1"
             else:
-                self.name = '1'
+                self.name = "1"
         else:
-            self.name = ''
+            self.name = ""
             for symbol in self.symbols:
-                #self.name += ' '
+                # self.name += ' '
                 for s in symbol:
                     self.name += s
 
@@ -3130,55 +3657,82 @@ class site_symmetry:
         Args:
             skip (bool): whether or not skip 1 or -1 symmetry
         """
-        strs = 'Order    Axis       '
+        strs = "Order    Axis       "
         if self.parse_trans:
-            symbols = ['1', '-1', '2', '2_1', 'm', 'a', 'b', 'c', 'n', 'd',
-                   '3', '3_1', '3_2', '4', '-4', '4_1', '4_2', '4_3',
-                   '-3', '6', '6_1', '6_2', '6_3', '6_4', '6_5', '-6']
+            symbols = [
+                "1",
+                "-1",
+                "2",
+                "2_1",
+                "m",
+                "a",
+                "b",
+                "c",
+                "n",
+                "d",
+                "3",
+                "3_1",
+                "3_2",
+                "4",
+                "-4",
+                "4_1",
+                "4_2",
+                "4_3",
+                "-3",
+                "6",
+                "6_1",
+                "6_2",
+                "6_3",
+                "6_4",
+                "6_5",
+                "-6",
+            ]
         else:
-            symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
+            symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
 
         for symbol in symbols:
-            strs += '{:<4s} '.format(symbol)
+            strs += "{:<4s} ".format(symbol)
         print(strs)
-        if not hasattr(self, 'table'): self.set_table(skip)
+        if not hasattr(self, "table"):
+            self.set_table(skip)
         for row in self.table:
             print(row[0])
 
     def get_highest_symmetry(self, row):
-        #['1']
-        #['1', '-1']
-        #['1', '2']
-        #['1', 'm']
-        #['1', '3']
-        #['1', '2', 'm', '2/m']
-        #['1', '2', '4']
-        #['1', '2', '-4']
-        #['1', '-1', '3', '-3']
-        #['1', '2', '3', '6']
-        #['1', 'm', '3', '-6']
-        #['1', '-1', '2', 'm', '4', '-4', '4/m']
-        #['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
+        # ['1']
+        # ['1', '-1']
+        # ['1', '2']
+        # ['1', 'm']
+        # ['1', '3']
+        # ['1', '2', 'm', '2/m']
+        # ['1', '2', '4']
+        # ['1', '2', '-4']
+        # ['1', '-1', '3', '-3']
+        # ['1', '2', '3', '6']
+        # ['1', 'm', '3', '-6']
+        # ['1', '-1', '2', 'm', '4', '-4', '4/m']
+        # ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
         ref_arrays = [
-            (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), '1'),
-            (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), '-1'),
-            (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), '2'),
-            (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), 'm'),
-            (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), '3'),
-            (np.array([1, 1, 1, 1, 0, 0, 0, 0, 0, 0], dtype=int), '2/m'),
-            (np.array([1, 0, 1, 0, 0, 1, 0, 0, 0, 0], dtype=int), '4'),
-            (np.array([1, 0, 1, 0, 0, 0, 1, 0, 0, 0], dtype=int), '-4'),
-            (np.array([1, 1, 0, 0, 1, 0, 0, 1, 0, 0], dtype=int), '-3'),
-            (np.array([1, 0, 1, 0, 1, 0, 0, 0, 1, 0], dtype=int), '6'),
-            (np.array([1, 0, 0, 1, 1, 0, 0, 0, 0, 1], dtype=int), '-6'),
-            (np.array([1, 1, 1, 1, 0, 1, 1, 0, 0, 0], dtype=int), '4/m'),
-            (np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 1], dtype=int), '6/m')]
+            (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "1"),
+            (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-1"),
+            (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2"),
+            (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), "m"),
+            (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), "3"),
+            (np.array([1, 1, 1, 1, 0, 0, 0, 0, 0, 0], dtype=int), "2/m"),
+            (np.array([1, 0, 1, 0, 0, 1, 0, 0, 0, 0], dtype=int), "4"),
+            (np.array([1, 0, 1, 0, 0, 0, 1, 0, 0, 0], dtype=int), "-4"),
+            (np.array([1, 1, 0, 0, 1, 0, 0, 1, 0, 0], dtype=int), "-3"),
+            (np.array([1, 0, 1, 0, 1, 0, 0, 0, 1, 0], dtype=int), "6"),
+            (np.array([1, 0, 0, 1, 1, 0, 0, 0, 0, 1], dtype=int), "-6"),
+            (np.array([1, 1, 1, 1, 0, 1, 1, 0, 0, 0], dtype=int), "4/m"),
+            (np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 1], dtype=int), "6/m"),
+        ]
 
         for i, ref_array in enumerate(ref_arrays):
             if np.array_equal(row, ref_array[0]):
                 return ref_array[1], i
         else:
-            symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
+            symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
             strs = [symbols[i] for i, x in enumerate(row) if x == 1]
             raise ValueError("Incompatible symmetry list", strs)
 
@@ -3451,6 +4005,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
             symmetry.append(el)
     return symmetry
 
+
 def check_wyckoff_position(points, group, tol=1e-3):
     """
     Given a list of points, returns a single index of a matching Wyckoff
@@ -3476,7 +4031,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
     PBC = group.PBC
     # new method
     # Store the squared distance tolerance
-    t = tol ** 2
+    t = tol**2
     # Loop over Wyckoff positions
     for i, wp in enumerate(wyckoffs):
         # Check that length of points and wp are equal
@@ -3525,6 +4080,7 @@ def check_wyckoff_position(points, group, tol=1e-3):
             return i, p
     return False, None
 
+
 def get_symbol_and_number(input_group, dim=3):
     """
     Function for quick conversion between symbols and numbers.
@@ -3535,11 +4091,11 @@ def get_symbol_and_number(input_group, dim=3):
     """
 
     keys = {
-            3: "space_group",
-            2: "layer_group",
-            1: "rod_group",
-            0: "point_group",
-           }
+        3: "space_group",
+        2: "layer_group",
+        1: "rod_group",
+        0: "point_group",
+    }
 
     found = False
     lists = symbols[keys[dim]]
@@ -3565,6 +4121,7 @@ def get_symbol_and_number(input_group, dim=3):
             symbol = lists[number - 1]
             return symbol, number
 
+
 def check_symmetry_and_dim(number, dim=3):
     """
     check if it is a valid number for the given symmetry
@@ -3574,7 +4131,7 @@ def check_symmetry_and_dim(number, dim=3):
         dim: 0, 1, 2, 3
     """
     valid = True
-    msg = 'This is a valid group number'
+    msg = "This is a valid group number"
 
     numbers = [56, 75, 80, 230]
     if dim not in [0, 1, 2, 3]:
@@ -3582,11 +4139,12 @@ def check_symmetry_and_dim(number, dim=3):
         valid = False
     else:
         max_num = numbers[dim]
-        if number not in range(1, max_num+1):
+        if number not in range(1, max_num + 1):
             valid = False
             msg = "invalid symmetry group {:d}".format(number)
             msg += " in dimension {:d}".format(dim)
     return valid, msg
+
 
 def get_pbc_and_lattice(number, dim):
     if dim == 3:
@@ -3655,7 +4213,7 @@ def search_cloest_wp(G, wp, op, pos):
     Return:
         pos1: the position that matchs symmetry operation
     """
-    #G = Group(wp.number)
+    # G = Group(wp.number)
     if np.linalg.matrix_rank(op.rotation_matrix) == 0:
         # fixed point (e.g, 1/2, 1/2, 1/2)
         return op.translation_vector
@@ -3666,7 +4224,7 @@ def search_cloest_wp(G, wp, op, pos):
         # check if this is already matched
         wp0 = G[0]
         coords = wp.search_all_generators(pos, wp0)
-        if len(coords)>0:
+        if len(coords) > 0:
             diffs = []
             for coord in coords:
                 tmp = op.operate(coord)
@@ -3691,9 +4249,9 @@ def search_cloest_wp(G, wp, op, pos):
             for id in ids:
                 d = all_xyz[id] - pos
                 d -= np.rint(d)
-                res = pos + d/2
+                res = pos + d / 2
                 if wp.search_generator(res, wp0) is not None:
-                    #print(ds[id], pos, res)
+                    # print(ds[id], pos, res)
                     return res
             return op.operate(pos)
 
@@ -3718,69 +4276,70 @@ def get_point_group(number):
     """
 
     if number == 1:
-        return '1', 1, True, False, True
+        return "1", 1, True, False, True
     elif number == 2:
-        return '-1', 2, False, True, False
+        return "-1", 2, False, True, False
     elif 3 <= number <= 5:
-        return '2', 3, True, False, True
+        return "2", 3, True, False, True
     elif 6 <= number <= 9:
-        return 'm', 4, True, False, False
+        return "m", 4, True, False, False
     elif 10 <= number <= 15:
-        return '2/m', 5, False, True, False
+        return "2/m", 5, False, True, False
     elif 16 <= number <= 24:
-        return '222', 6, False, False, True
+        return "222", 6, False, False, True
     elif 25 <= number <= 46:
-        return 'mm2', 7, True, False, False
+        return "mm2", 7, True, False, False
     elif 47 <= number <= 74:
-        return 'mmm', 8, False, True, False
+        return "mmm", 8, False, True, False
     elif 75 <= number <= 80:
-        return '4', 9, True, False, True
+        return "4", 9, True, False, True
     elif 81 <= number <= 82:
-        return '-4', 10, False, False, False
+        return "-4", 10, False, False, False
     elif 83 <= number <= 88:
-        return '4/m', 11, False, True, False
+        return "4/m", 11, False, True, False
     elif 89 <= number <= 98:
-        return '422', 12, False, False, True
+        return "422", 12, False, False, True
     elif 99 <= number <= 110:
-        return '4mm', 13, True, False, False
+        return "4mm", 13, True, False, False
     elif 111 <= number <= 122:
-        return '-42m', 14, False, False, False
+        return "-42m", 14, False, False, False
     elif 123 <= number <= 142:
-        return '4/mmm', 15, False, True, False
+        return "4/mmm", 15, False, True, False
     elif 143 <= number <= 146:
-        return '3', 16, True, False, True
+        return "3", 16, True, False, True
     elif 147 <= number <= 148:
-        return '-3', 17, False, True, False
+        return "-3", 17, False, True, False
     elif 149 <= number <= 155:
-        return '32', 18, False, False, True
+        return "32", 18, False, False, True
     elif 156 <= number <= 161:
-        return '3m', 19, True, False, False
+        return "3m", 19, True, False, False
     elif 162 <= number <= 167:
-        return '-3m', 20, False, True, False
+        return "-3m", 20, False, True, False
     elif 168 <= number <= 173:
-        return '6', 21, True, False, True
+        return "6", 21, True, False, True
     elif number == 174:
-        return '-6', 22, False, False, False
+        return "-6", 22, False, False, False
     elif 175 <= number <= 176:
-        return '6/m', 23, False, True, False
+        return "6/m", 23, False, True, False
     elif 177 <= number <= 182:
-        return '622', 24, False, False, True
+        return "622", 24, False, False, True
     elif 183 <= number <= 186:
-        return '6mm', 25, True, False, False
+        return "6mm", 25, True, False, False
     elif 187 <= number <= 190:
-        return '-62m', 26, False, False, False
+        return "-62m", 26, False, False, False
     elif 191 <= number <= 194:
-        return '6/mmm', 27, False, True, False
+        return "6/mmm", 27, False, True, False
     elif 195 <= number <= 199:
-        return '23', 28, False, False, True
+        return "23", 28, False, False, True
     elif 200 <= number <= 206:
-        return 'm-3', 29, False, True, False
+        return "m-3", 29, False, True, False
     elif 207 <= number <= 214:
-        return '432', 30, False, False, True
+        return "432", 30, False, False, True
     elif 215 <= number <= 220:
-        return '-43m', 31, False, False, False
+        return "-43m", 31, False, False, False
     elif 221 <= number <= 230:
-        return 'm-3m', 32, False, True, False
+        return "m-3m", 32, False, True, False
+
 
 def get_close_packed_groups(pg):
     """
@@ -3794,22 +4353,23 @@ def get_close_packed_groups(pg):
         list of space group numbers
     """
 
-    if pg == '1':
+    if pg == "1":
         return [1, 2, 4, 14, 19, 29, 33, 51, 54, 61, 62]
-    elif pg == '2':
+    elif pg == "2":
         return [1, 15, 18, 60]
-    elif pg == 'm':
+    elif pg == "m":
         return [1, 26, 36, 63, 64]
-    elif pg == 'I':
+    elif pg == "I":
         return [1, 2, 14, 15, 61]
-    elif pg == 'mm':
+    elif pg == "mm":
         return [42, 51, 59]
-    elif pg == '2/m':
+    elif pg == "2/m":
         return [12, 54, 64]
-    elif pg == '222':
+    elif pg == "222":
         return [21, 22, 23, 68]
-    elif pg == 'mmm':
+    elif pg == "mmm":
         return [65, 69, 71]
+
 
 def para2ferro(pg):
     """
@@ -3823,91 +4383,93 @@ def para2ferro(pg):
     Returns:
         list of ferroelectric point groups
     """
-    #Triclinic: 1
-    if pg == '-1': #2
-        return ['1']
-    #Monoclinic: 5
-    elif pg in ['2', 'm']: #2
-        return '1'
-    elif pg == '2/m': #3
-        return ['1', 'm', '2']
-    #Orthorhombic: #7
-    elif pg == '222': #2
-        return ['1', '2']
-    elif pg == 'mm2': #2
-        return ['1', 'm']
-    elif pg == 'mmm': #3
-        return ['1', 'm', 'mm2']
-    #Tetragonal: 20
-    elif pg == '4': #1
-        return ['1']
-    elif pg == '-4': #2
-        return ['1', '2']
-    elif pg == '4/m': #3
-        return ['1', '2', '4']
-    elif pg == '422': #3
-        #return ['1', '2(s)', '4']
-        return ['1', '2', '4']
-    elif pg == '4mm': #2
-        return ['1', 'm']
-    elif pg == '-42m': #4
-        #return ['1', '2(s)', 'm', 'mm2']
-        return ['1', '2', 'm', 'mm2']
-    elif pg == '4/mmm': #5
-        #return ['1', 'm(s)', 'm(p)', 'mm2(s)', '4mm']
-        return ['1', 'm', 'mm2', '4mm']
-    #Trigonal: 12
-    elif pg == '3': #1
-        return ['1']
-    elif pg == '-3': #2
-        return ['1', '3']
-    elif pg == '32': #3
-        return ['1', '2', '3']
-    elif pg == '3m': #2
-        return ['1', 'm']
-    elif pg == '-3m': #4
-        return ['1', '2', 'm', '3m']
-    #Hexagonal: 22
-    elif pg == '6': #1
-        return ['1']
-    elif pg == '-6': #3
-        return ['1', 'm', '3']
-    elif pg == '6/m': #3
-        return ['1', 'm', '6']
-    elif pg == '622': #3
-        #return ['1', '2(s)', '6']
-        return ['1', '2', '6']
-    elif pg == '6mm': #2
-        return ['1', '2']
-    elif pg in ['-62m', '-6m2']: #5
-        #return ['1', 'm(s)', 'm(p)', 'mm2', '3m']
-        return ['1', 'm', 'mm2', '3m']
-    elif pg == '6/mmm': #5
-        #return ['1', 'm(s)', 'm(p)', 'mm2(s)', '6mm']
-        return ['1', 'm', 'mm2', '6mm']
-    #Cubic: 21
-    elif pg == '23': #3
-        return ['1', '2', '3']
-    elif pg == 'm-3': #4
-        return ['1', 'm', 'mm2', '3']
-    elif pg == '432': #4
-        #return ['1', '2(s)', '4', '3']
-        return ['1', '2', '4', '3']
-    elif pg == '-43m': #4
-        return ['1', 'm', 'mm2', '3m']
-    elif pg == 'm-3m': #6
-        #return ['1', 'm(s)', 'm(p)', 'mm2', '4mm', '3m']
-        return ['1', 'm', 'mm2', '4mm', '3m']
+    # Triclinic: 1
+    if pg == "-1":  # 2
+        return ["1"]
+    # Monoclinic: 5
+    elif pg in ["2", "m"]:  # 2
+        return "1"
+    elif pg == "2/m":  # 3
+        return ["1", "m", "2"]
+    # Orthorhombic: #7
+    elif pg == "222":  # 2
+        return ["1", "2"]
+    elif pg == "mm2":  # 2
+        return ["1", "m"]
+    elif pg == "mmm":  # 3
+        return ["1", "m", "mm2"]
+    # Tetragonal: 20
+    elif pg == "4":  # 1
+        return ["1"]
+    elif pg == "-4":  # 2
+        return ["1", "2"]
+    elif pg == "4/m":  # 3
+        return ["1", "2", "4"]
+    elif pg == "422":  # 3
+        # return ['1', '2(s)', '4']
+        return ["1", "2", "4"]
+    elif pg == "4mm":  # 2
+        return ["1", "m"]
+    elif pg == "-42m":  # 4
+        # return ['1', '2(s)', 'm', 'mm2']
+        return ["1", "2", "m", "mm2"]
+    elif pg == "4/mmm":  # 5
+        # return ['1', 'm(s)', 'm(p)', 'mm2(s)', '4mm']
+        return ["1", "m", "mm2", "4mm"]
+    # Trigonal: 12
+    elif pg == "3":  # 1
+        return ["1"]
+    elif pg == "-3":  # 2
+        return ["1", "3"]
+    elif pg == "32":  # 3
+        return ["1", "2", "3"]
+    elif pg == "3m":  # 2
+        return ["1", "m"]
+    elif pg == "-3m":  # 4
+        return ["1", "2", "m", "3m"]
+    # Hexagonal: 22
+    elif pg == "6":  # 1
+        return ["1"]
+    elif pg == "-6":  # 3
+        return ["1", "m", "3"]
+    elif pg == "6/m":  # 3
+        return ["1", "m", "6"]
+    elif pg == "622":  # 3
+        # return ['1', '2(s)', '6']
+        return ["1", "2", "6"]
+    elif pg == "6mm":  # 2
+        return ["1", "2"]
+    elif pg in ["-62m", "-6m2"]:  # 5
+        # return ['1', 'm(s)', 'm(p)', 'mm2', '3m']
+        return ["1", "m", "mm2", "3m"]
+    elif pg == "6/mmm":  # 5
+        # return ['1', 'm(s)', 'm(p)', 'mm2(s)', '6mm']
+        return ["1", "m", "mm2", "6mm"]
+    # Cubic: 21
+    elif pg == "23":  # 3
+        return ["1", "2", "3"]
+    elif pg == "m-3":  # 4
+        return ["1", "m", "mm2", "3"]
+    elif pg == "432":  # 4
+        # return ['1', '2(s)', '4', '3']
+        return ["1", "2", "4", "3"]
+    elif pg == "-43m":  # 4
+        return ["1", "m", "mm2", "3m"]
+    elif pg == "m-3m":  # 6
+        # return ['1', 'm(s)', 'm(p)', 'mm2', '4mm', '3m']
+        return ["1", "m", "mm2", "4mm", "3m"]
+
 
 def get_all_polar_space_groups():
     ps, nps = [], []
-    for i in range(1,231):
+    for i in range(1, 231):
         g = Group(i, quick=True)
         if g.polar:
             ps.append(i)
         else:
             nps.append(i)
     return ps, nps
+
 
 def abc2matrix(abc):
     """
@@ -3936,7 +4498,10 @@ def abc2matrix(abc):
             try:
                 rot_matrix[i, j] = factor
             except:
-                print(abc); import sys; sys.exit()
+                print(abc)
+                import sys
+
+                sys.exit()
 
         # build the translation vector
         for m in re_trans.finditer(tok):
@@ -3947,6 +4512,7 @@ def abc2matrix(abc):
                 num = float(m.group(2))
             trans[i] = num * factor
     return (rot_matrix, trans)
+
 
 def get_symmetry_from_ops(ops, tol=1e-5):
     """
@@ -3963,18 +4529,20 @@ def get_symmetry_from_ops(ops, tol=1e-5):
     rot = [op.rotation_matrix for op in ops]
     tran = [op.translation_vector for op in ops]
     hall_number = get_hall_number_from_symmetry(rot, tran, tol)
-    spg_number = hall_table['Spg_num'][hall_number-1]
+    spg_number = hall_table["Spg_num"][hall_number - 1]
     return hall_number, spg_number
+
 
 def identity_ops(op):
     """
     check if the operation is the identity.
     """
     (rot, trans) = op
-    if np.allclose(rot, np.eye(3)) and np.sum(np.abs(trans))<1e-3:
+    if np.allclose(rot, np.eye(3)) and np.sum(np.abs(trans)) < 1e-3:
         return True
     else:
         return False
+
 
 def transform_ops(ops, P, P1):
     """
@@ -3985,7 +4553,7 @@ def transform_ops(ops, P, P1):
         P: transformation
         P1: inverse transformation
     """
-    #print("}++++++++++++++++++++++", len(ops))
+    # print("}++++++++++++++++++++++", len(ops))
     rot_P = P[0].T
     rot_Q = P1[0].T
     tran_P = P[1]
@@ -3995,7 +4563,7 @@ def transform_ops(ops, P, P1):
         rot = rot_Q.dot(op1.rotation_matrix).dot(rot_P)
         op2 = SymmOp.from_rotation_and_translation(rot, tran)
         ops[i] = op2
-        #print("{:25s} ==> {:25s} ==> {:24s}".format(s1, s2, s3))
+        # print("{:25s} ==> {:25s} ==> {:24s}".format(s1, s2, s3))
 
     # in case of (x+1/2, y, z) as the first
     if np.linalg.norm(tran_P) > 1e-3:
@@ -4009,6 +4577,7 @@ def transform_ops(ops, P, P1):
 
     return ops
 
+
 def trim_ops(ops):
     """
     Convert the operation to the simplest form. e.g.,
@@ -4018,9 +4587,10 @@ def trim_ops(ops):
     Args:
         ops: a list of symmetry opertions.
     """
+
     def in_base(op, base):
         for b in base:
-            if abs(op-b[:3]).sum()<1e-2 or abs(op+b[:3]).sum()<1e-2:
+            if abs(op - b[:3]).sum() < 1e-2 or abs(op + b[:3]).sum() < 1e-2:
                 return b
         return None
 
@@ -4029,7 +4599,7 @@ def trim_ops(ops):
         rot = op.rotation_matrix
         tran = op.translation_vector
         if i == 0:
-            base = [] # e.g., [1, 0, 0, 1/2] means (x+1/2)
+            base = []  # e.g., [1, 0, 0, 1/2] means (x+1/2)
             for i in range(3):
                 tmp = rot[i, :]
                 if np.linalg.norm(tmp) > 1e-3:
@@ -4043,23 +4613,23 @@ def trim_ops(ops):
                     else:
                         for j in range(3):
                             if abs(b[j]) > 0:
-                                coef = tmp[j]/b[j]
+                                coef = tmp[j] / b[j]
                                 break
-                        tran[i] -= coef*b[3]
+                        tran[i] -= coef * b[3]
         else:
-
             for i in range(3):
                 tmp = rot[i, :]
                 if np.linalg.norm(tmp) > 1e-3:
                     b = in_base(tmp, base)
                     for j in range(3):
                         if abs(b[j]) > 0:
-                            coef = tmp[j]/b[j]
+                            coef = tmp[j] / b[j]
                             break
-                    tran[i] -= coef*b[3]
+                    tran[i] -= coef * b[3]
         ops1.append(SymmOp.from_rotation_and_translation(rot, tran))
 
     return ops
+
 
 def find_axis_order(axis, directions):
     for i, axes in enumerate(directions):
@@ -4068,40 +4638,38 @@ def find_axis_order(axis, directions):
                 return i
 
 
-def get_symmetry_directions(lattice_type, symbol='P', unique_axis='b'):
+def get_symmetry_directions(lattice_type, symbol="P", unique_axis="b"):
     """
     Get the symmetry directions
     """
-    if lattice_type == 'monoclinic':
-        if unique_axis == 'b':
+    if lattice_type == "monoclinic":
+        if unique_axis == "b":
             return [[(0, 1, 0)]]
-        elif unique_axis == 'c':
+        elif unique_axis == "c":
             return [[(0, 0, 1)]]
         else:
             return [[(1, 0, 0)]]
-    elif lattice_type == 'orthorhombic':
-        return [[(1, 0, 0)],
-                [(0, 1, 0)],
-                [(0, 0, 1)]]
-    elif lattice_type == 'tetragonal':
-        return [[(0, 0, 1)],
-                [(1, 0, 0), (0, 1, 0)],
-                [(1, -1, 0), (1, 1, 0)]]
-    elif lattice_type == 'hexagonal' or (lattice_type == 'trigonal' and symbol=='P'):
-        return [[(0, 0, 1)],
-                [(1, 0, 0), (0, 1, 0), (1, 1, 0)],
-                [(1, -1, 0), (1, 2, 0), (2, 1, 0)]]
-    elif lattice_type == 'trigonal' and symbol=='R':
-        return [[(0, 0, 1)],
-                [(1, 0, 0), (0, 1, 0), (1, 1, 0)]]
-    #elif lattice_type == 'rhombohedral':
+    elif lattice_type == "orthorhombic":
+        return [[(1, 0, 0)], [(0, 1, 0)], [(0, 0, 1)]]
+    elif lattice_type == "tetragonal":
+        return [[(0, 0, 1)], [(1, 0, 0), (0, 1, 0)], [(1, -1, 0), (1, 1, 0)]]
+    elif lattice_type == "hexagonal" or (lattice_type == "trigonal" and symbol == "P"):
+        return [
+            [(0, 0, 1)],
+            [(1, 0, 0), (0, 1, 0), (1, 1, 0)],
+            [(1, -1, 0), (1, 2, 0), (2, 1, 0)],
+        ]
+    elif lattice_type == "trigonal" and symbol == "R":
+        return [[(0, 0, 1)], [(1, 0, 0), (0, 1, 0), (1, 1, 0)]]
+    # elif lattice_type == 'rhombohedral':
     #    return [[(0, 0, 1)],
     #            [(1, 0, 0), (0, 1, 0), (-1, -1, 0)]]
-    elif lattice_type == 'cubic':
-        return [[(1, 0, 0), (0, 1, 0), (0, 0, 1)],
-                [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)],
-                [(1, -1, 0), (1, 1, 0), (0, 1, -1),
-                 (0, 1, 1), (-1, 0, 1), (1, 0, 1)]]
+    elif lattice_type == "cubic":
+        return [
+            [(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+            [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)],
+            [(1, -1, 0), (1, 1, 0), (0, 1, -1), (0, 1, 1), (-1, 0, 1), (1, 0, 1)],
+        ]
     else:
         return [[(0, 1, 0)]]
 
@@ -4120,19 +4688,24 @@ if __name__ == "__main__":
         g = Group(i)
         for wp in g:
             if wp.index > 0:
-                for idx in range(1): #wp.multiplicity):
+                for idx in range(1):  # wp.multiplicity):
                     ss = wp.get_site_symmetry_object(idx)
-                    print('\n{:4d} {:10s} {:10s}'.format(wp.number, wp.get_label(), ss.name), ss.hm_symbols)
-                    #ss.to_beautiful_matrix_representation(skip=True)
-                    #print(ss.to_matrix_representation())
-                    #print(ss.to_one_hot())
+                    print(
+                        "\n{:4d} {:10s} {:10s}".format(
+                            wp.number, wp.get_label(), ss.name
+                        ),
+                        ss.hm_symbols,
+                    )
+                    # ss.to_beautiful_matrix_representation(skip=True)
+                    # print(ss.to_matrix_representation())
+                    # print(ss.to_one_hot())
 
     print("Test pyxtal.wp.site space group")
     for i in spg_list:
         g = Group(i)
-        print('\n', g.number, g.symbol)
+        print("\n", g.number, g.symbol)
         ss = g.get_spg_symmetry_object()
         ss.to_beautiful_matrix_representation()
-        #matrix = ss.to_matrix_representation_spg()
-        #print(matrix)
-        #print(sum(sum(matrix)))
+        # matrix = ss.to_matrix_representation_spg()
+        # print(matrix)
+        # print(sum(sum(matrix)))

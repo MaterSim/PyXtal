@@ -9,7 +9,9 @@ import numpy as np
 """
 A script to perform multistages vasp calculation
 """
-class VASP():
+
+
+class VASP:
     """
     This is a calculator to perform structure optimization in GULP
     At the moment, only inorganic crystal is considered
@@ -21,8 +23,7 @@ class VASP():
     opt: `conv`, `conp`, `single`
     """
 
-    def __init__(self, struc, path='tmp', cmd='mpirun -np 16 vasp_std'):
-
+    def __init__(self, struc, path="tmp", cmd="mpirun -np 16 vasp_std"):
         if isinstance(struc, pyxtal):
             struc = struc.to_ase()
 
@@ -45,87 +46,96 @@ class VASP():
 
     def set_vasp(self, level=0, pstress=0.0000, setup=None):
         self.pstress = pstress
-        default0 = {'xc': 'pbe',
-                'npar': 8,
-                'kgamma': True,
-                'lcharg': False,
-                'lwave': False,
-                'ibrion': 2,
-                'pstress': pstress*10,
-                'setups': setup,
-                }
-        if level==0:
-            default1 = {'prec': 'low',
-                    'algo': 'normal',
-                    'kspacing': 0.4,
-                    'isif': 4,
-                    'ediff': 1e-2,
-                    'nsw': 10,
-                    'potim': 0.02,
-                    }
-        elif level==1:
-            default1 = {'prec': 'normal',
-                    'algo': 'normal',
-                    'kspacing': 0.3,
-                    'isif': 3,
-                    'ediff': 1e-3,
-                    'nsw': 25,
-                    'potim': 0.05,
-                    }
-        elif level==2:
-            default1 = {'prec': 'accurate',
-                    'kspacing': 0.2,
-                    'isif': 3,
-                    'ediff': 1e-3,
-                    'nsw': 50,
-                    'potim': 0.1,
-                    }
-        elif level==3:
-            default1 = {'prec': 'accurate',
-                    'encut': 600,
-                    'kspacing': 0.15,
-                    'isif': 3,
-                    'ediff': 1e-4,
-                    'nsw': 50,
-                    }
-        elif level==4:
-            default1 = {'prec': 'accurate',
-                    'encut': 600,
-                    'kspacing': 0.15,
-                    'isif': 3,
-                    'ediff': 1e-4,
-                    'nsw': 0,
-                    }
+        default0 = {
+            "xc": "pbe",
+            "npar": 8,
+            "kgamma": True,
+            "lcharg": False,
+            "lwave": False,
+            "ibrion": 2,
+            "pstress": pstress * 10,
+            "setups": setup,
+        }
+        if level == 0:
+            default1 = {
+                "prec": "low",
+                "algo": "normal",
+                "kspacing": 0.4,
+                "isif": 4,
+                "ediff": 1e-2,
+                "nsw": 10,
+                "potim": 0.02,
+            }
+        elif level == 1:
+            default1 = {
+                "prec": "normal",
+                "algo": "normal",
+                "kspacing": 0.3,
+                "isif": 3,
+                "ediff": 1e-3,
+                "nsw": 25,
+                "potim": 0.05,
+            }
+        elif level == 2:
+            default1 = {
+                "prec": "accurate",
+                "kspacing": 0.2,
+                "isif": 3,
+                "ediff": 1e-3,
+                "nsw": 50,
+                "potim": 0.1,
+            }
+        elif level == 3:
+            default1 = {
+                "prec": "accurate",
+                "encut": 600,
+                "kspacing": 0.15,
+                "isif": 3,
+                "ediff": 1e-4,
+                "nsw": 50,
+            }
+        elif level == 4:
+            default1 = {
+                "prec": "accurate",
+                "encut": 600,
+                "kspacing": 0.15,
+                "isif": 3,
+                "ediff": 1e-4,
+                "nsw": 0,
+            }
 
         dict_vasp = dict(default0, **default1)
         return Vasp(**dict_vasp)
 
-    def read_OUTCAR(self, path='OUTCAR'):
+    def read_OUTCAR(self, path="OUTCAR"):
         """read time and ncores info from OUTCAR"""
         time = 0
         ncore = 0
-        for line in open(path, 'r'):
-            if line.rfind('running on  ') > -1:
+        for line in open(path, "r"):
+            if line.rfind("running on  ") > -1:
                 ncore = int(line.split()[2])
-            elif line.rfind('Elapsed time ') > -1:
-                time = float(line.split(':')[-1])
+            elif line.rfind("Elapsed time ") > -1:
+                time = float(line.split(":")[-1])
         self.cputime = time
         self.ncore = ncore
 
-    def read_OSZICAR(self, path='OSZICAR'):
+    def read_OSZICAR(self, path="OSZICAR"):
         """read the enthalpy from OSZICAR"""
         energy = 100000
-        for line in open(path, 'r'):
-            if line.rfind(' F= ') > -1:
+        for line in open(path, "r"):
+            if line.rfind(" F= ") > -1:
                 energy = float(line.split()[2])
-        self.energy = energy # this is actually enthalpy
+        self.energy = energy  # this is actually enthalpy
 
-    def read_bandgap(self, path='vasprun.xml'):
+    def read_bandgap(self, path="vasprun.xml"):
         from pyxtal.interface.vasprun import vasprun
-        myrun = vasprun(path)
-        self.gap = myrun.values['gap']
 
-    def run(self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None):
+        myrun = vasprun(path)
+        self.gap = myrun.values["gap"]
+
+    def run(
+        self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None
+    ):
         if walltime is not None:
             os.environ["VASP_COMMAND"] = "timeout " + max_time + " " + self.cmd
         else:
@@ -151,8 +161,8 @@ class VASP():
             try:
                 self.forces = self.structure.get_forces()
             except:
-                self.forces = np.zeros([len(self.structure),3])
-            self.energy_per_atom = self.energy/len(self.structure)
+                self.forces = np.zeros([len(self.structure), 3])
+            self.energy_per_atom = self.energy / len(self.structure)
             self.read_OUTCAR()
             if read_gap:
                 self.read_bandgap()
@@ -171,6 +181,7 @@ class VASP():
 
     def to_pymatgen(self):
         from pymatgen.core.structure import Structure
+
         return Structure(self.lattice.matrix, self.sites, self.frac_coords)
 
     def to_pyxtal(self):
@@ -178,8 +189,17 @@ class VASP():
         struc.from_seed(self.structure)
         return struc
 
-def single_optimize(struc, level, pstress, setup, path, clean,
-        cmd='mpirun -np 16 vasp_std', walltime="30m"):
+
+def single_optimize(
+    struc,
+    level,
+    pstress,
+    setup,
+    path,
+    clean,
+    cmd="mpirun -np 16 vasp_std",
+    walltime="30m",
+):
     """
     single optmization
 
@@ -205,8 +225,8 @@ def single_optimize(struc, level, pstress, setup, path, clean,
         except:
             return None, None, 0, True
 
-def single_point(struc, setup=None, path=None, clean=True):
 
+def single_point(struc, setup=None, path=None, clean=True):
     """
     single optmization
 
@@ -224,9 +244,17 @@ def single_point(struc, setup=None, path=None, clean=True):
     calc.run(setup, level=4, clean=clean)
     return calc.energy, calc.forces, calc.error
 
-def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None,
-        clean=True, cmd='mpirun -np 16 vasp_std', walltime="30m"):
 
+def optimize(
+    struc,
+    path,
+    levels=[0, 2, 3],
+    pstress=0,
+    setup=None,
+    clean=True,
+    cmd="mpirun -np 16 vasp_std",
+    walltime="30m",
+):
     """
     multi optimization
 
@@ -243,51 +271,51 @@ def optimize(struc, path, levels=[0,2,3], pstress=0, setup=None,
 
     time_total = 0
     for i, level in enumerate(levels):
-        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path,
-                clean, cmd, walltime)
+        struc, eng, time, error = single_optimize(
+            struc, level, pstress, setup, path, clean, cmd, walltime
+        )
 
         time_total += time
-        #print(eng, time, time_total, '++++++++++++++++++++++++++++++')
+        # print(eng, time, time_total, '++++++++++++++++++++++++++++++')
         if error or not good_lattice(struc):
             return None, None, 0, True
     return struc, eng, time_total, error
 
-def VASP_relax(struc, opt_cell=False, step=100, kspacing=0.25, pstress=0, folder='tmp'):
 
+def VASP_relax(struc, opt_cell=False, step=100, kspacing=0.25, pstress=0, folder="tmp"):
     if not os.path.exists(folder):
         os.makedirs(folder)
     cwd = os.getcwd()
     os.chdir(folder)
-
 
     if opt_cell:
         isif = 3
     else:
         isif = 2
 
-    calc = Vasp(xc = 'PBE',
-                prec = 'Accurate',
-                npar = 8,
-                kgamma = True,
-                lcharg = False,
-                lwave = False,
-                ibrion = 2,
-                pstress = pstress,
-                kspacing = kspacing,
-                nsw = step,
-                isif = isif,
-                potim = 0.05,
-                ediff = 1e-3,
-               )
+    calc = Vasp(
+        xc="PBE",
+        prec="Accurate",
+        npar=8,
+        kgamma=True,
+        lcharg=False,
+        lwave=False,
+        ibrion=2,
+        pstress=pstress,
+        kspacing=kspacing,
+        nsw=step,
+        isif=isif,
+        potim=0.05,
+        ediff=1e-3,
+    )
     struc.set_calculator(calc)
     energy = struc.get_potential_energy()
-    struc = read('CONTCAR', format='vasp')
+    struc = read("CONTCAR", format="vasp")
     os.chdir(cwd)
     return struc, energy
 
 
 if __name__ == "__main__":
-
     while True:
         struc = pyxtal()
         struc.from_random(3, 19, ["C"], [4])
@@ -296,19 +324,21 @@ if __name__ == "__main__":
 
     # set up the commands
     os.system("source /share/intel/mkl/bin/mklvars.sh intel64")
-    cmd='mpirun -n 4 /share/apps/bin/vasp544-2019u2/vasp_std'
+    cmd = "mpirun -n 4 /share/apps/bin/vasp544-2019u2/vasp_std"
 
-    calc = VASP(struc, path='tmp', cmd=cmd)
+    calc = VASP(struc, path="tmp", cmd=cmd)
     calc.run()
     print("Energy:", calc.energy)
     print("Forces", calc.forces)
 
-    struc, eng, time, _ = optimize(struc, path='tmp', levels=[0,1,2], cmd=cmd, walltime='30s')
+    struc, eng, time, _ = optimize(
+        struc, path="tmp", levels=[0, 1, 2], cmd=cmd, walltime="30s"
+    )
     print(struc)
     print("Energy:", eng)
     print("Time:", time)
 
-    calc = VASP(struc, path='tmp', cmd=cmd)
+    calc = VASP(struc, path="tmp", cmd=cmd)
     calc.run(level=4, read_gap=True)
     print("Energy:", calc.energy)
     print("Gap:", calc.gap)

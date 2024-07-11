@@ -19,4 +19,3 @@ for sg in range(1, 231):
         letter = letters[length - i - 1]
         ops = symmetry[i][0]
         print(letter + ": " + ss_string_from_ops(ops, sg))
-

@@ -15,25 +15,61 @@ pyxtal_verbosity = 1  # constant for printx function
 max_fast_mol_size = 30
 letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ltype_keywords = [
-                  "triclinic", "Triclinic",
-                  "monoclinic", "Monoclinic",
-                  "orthorhombic", "Orthorhombic",
-                  "tetragonal", "Tetragonal",
-                  "trigonal", "Trigonal",
-                  "hexagonal", "Hexagonal",
-                  "cubic", "Cubic",
-                  "spherical", "Spherical",
-                  "ellipsoidal", "Ellipsoidal",
-                 ]
+    "triclinic",
+    "Triclinic",
+    "monoclinic",
+    "Monoclinic",
+    "orthorhombic",
+    "Orthorhombic",
+    "tetragonal",
+    "Tetragonal",
+    "trigonal",
+    "Trigonal",
+    "hexagonal",
+    "Hexagonal",
+    "cubic",
+    "Cubic",
+    "spherical",
+    "Spherical",
+    "ellipsoidal",
+    "Ellipsoidal",
+]
 single_smiles = [
-                 "Cl-", "F-", "Br-", "I-", "Li+", "Na+", "Cs+", "Rb+",
-                 "[Cl-]", "[F-]", "[Br-]", "[I-]", "[Li+]", "[Na+]", "[Cs+]", "Rb+",
-                ]
+    "Cl-",
+    "F-",
+    "Br-",
+    "I-",
+    "Li+",
+    "Na+",
+    "Cs+",
+    "Rb+",
+    "[Cl-]",
+    "[F-]",
+    "[Br-]",
+    "[I-]",
+    "[Li+]",
+    "[Na+]",
+    "[Cs+]",
+    "Rb+",
+]
 hex_cell = np.array([[1, -0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]])
-all_sym_directions = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1),
-                      (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (1, -1, 0),
-                      (1, 1, 0), (0, 1, -1), (0, 1, 1), (-1, 0, 1),
-                      (1, 0, 1), (1, -2, 0), (2, -1, 0)]
+all_sym_directions = [
+    (1, 0, 0),
+    (0, 1, 0),
+    (0, 0, 1),
+    (1, 1, 1),
+    (1, -1, -1),
+    (-1, 1, -1),
+    (-1, -1, 1),
+    (1, -1, 0),
+    (1, 1, 0),
+    (0, 1, -1),
+    (0, 1, 1),
+    (-1, 0, 1),
+    (1, 0, 1),
+    (1, -2, 0),
+    (2, -1, 0),
+]
 
 logo = """#############################################################
 #             ______       _    _          _                #
