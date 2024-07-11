@@ -589,7 +589,80 @@ Subgroup/supergroup manipulation
 --------------------------------
 Symmetry relation has been playing an important role in crystallography. PyXtal provides several utilities to allow one to conveniently explore the subgroup or supergroup symmetries. (To add)
 
+Generating subgroup and supergroup xtals
+----------------------------------------
+.. code-block:: Python
 
+    from pyxtal import pyxtal
+
+    # load a graphite crystal
+    xtal=pyxtal()
+    xtal.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])
+
+    print("Derive subgroup graphite structures")
+    sub_t_xtals = xtal.subgroup(eps=0.01, group_type='t')
+    print("t_subgroup xtals", len(sub_t_xtals))
+    sub_k_xtals = xtal.subgroup(eps=0.01, group_type='k', max_cell=9)
+    print("k_subgroup xtals", len(sub_k_xtals))
+
+Executing this above scripts will lead to the following output:
+
+.. code-block:: Python
+
+    Derive subgroup graphite structures
+    t_subgroup xtals 10
+    k_subgroup xtals 22
+
+
+This way, you can easily find derivative crystals in the suboptimal representations. 
+
+Conversely, it is also possible to identify the likely supergroup xtal. The following snippet codes can be used to design illustrate pyxtal functionalities.
+
+.. code-block:: Python
+    from pyxtal import pyxtal
+
+    # load a graphite crystal and make the subgroup representation
+    xtal=pyxtal()
+    xtal.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])
+    xtal_sub = xtal.subgroup_once(H=164)
+
+    # recheck the symmetry by varying the tolerance values
+    for tol in [2e-1, 1e-1, 1e-2]:
+        print("Refind the symmetry with tol", tol, xtal_sub.resymmetrize(tol).group.number)
+
+    # make the supergroup symmetry
+    xtals, solutions = xtal_sub.supergroup(G=194)
+    print(xtals[0])
+    print(solutions)
+
+
+    # Output 
+    Refind the symmetry with tol 0.2 194
+    Refind the symmetry with tol 0.1 164
+    Refind the symmetry with tol 0.01 164
+    
+    Recovered xtal with the supergroup symmetry
+    
+    ------Crystal from supergroup  0.014------
+    Dimension: 3
+    Composition: C4
+    Group: P 63/m m c (194)
+      2.4622,   2.4622,   6.7643,  90.0000,  90.0000, 120.0000, hexagonal
+    Wyckoff sites:
+    	 C @ [ 0.0000  0.0000  0.2500], WP [2b] Site [-622m2]
+    	 C @ [ 0.3333  0.6667  0.2500], WP [2c] Site [-622m2]
+    
+    The mapping relation between sub/super group symmetries
+    [(Wycokff split from 194 to 164
+    
+    2b -> 2c
+    0, 0, 1/4                      -> 0, 0, 1/4                      -> 0, 0, z                       
+    0, 0, 3/4                      -> 0, 0, 3/4                      -> 0, 0, -z                      
+    
+    2c -> 2d
+    1/3, -1/3, 1/4                 -> 1/3, 2/3, 1/4                  -> 1/3, 2/3, z                   
+    2/3, 1/3, 3/4                  -> 2/3, 1/3, 3/4                  -> 2/3, 1/3, -z                  
+    , [1, 0], array([0.        , 0.        , 0.00206797]), 0, 0.014137159092037652)]
 
 Chemical Substitution
 ----------------------
