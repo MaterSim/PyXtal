@@ -11,7 +11,8 @@ from pyxtal.interface.dftb import DFTB_relax, DFTB
 from pyxtal.interface.gulp import GULP_OC as GULP_relax
 from pyxtal.interface.charmm import CHARMM
 
-class benchmark():
+
+class benchmark:
     """
     Automated benchmark for experimental crystals with
         - VASP
@@ -21,7 +22,7 @@ class benchmark():
         - CHARMM
     """
 
-    def __init__(self, struc, smiles, clean=True, work_dir='tmp', **kwargs):
+    def __init__(self, struc, smiles, clean=True, work_dir="tmp", **kwargs):
         """
         Args:
             struc: pymatgen structure or filename
@@ -36,11 +37,12 @@ class benchmark():
         self.clean = clean
         self.valid = True
         self.work_dir = work_dir
-        if not os.path.exists(work_dir): os.makedirs(work_dir)
+        if not os.path.exists(work_dir):
+            os.makedirs(work_dir)
 
         for i in range(len(smiles)):
             if not smiles[i].endswith(".smi"):
-                smiles[i] = smiles[i] + '.smi'
+                smiles[i] = smiles[i] + ".smi"
         self.smiles = smiles
 
         xtal = pyxtal(molecular=True)
@@ -53,7 +55,7 @@ class benchmark():
             # Check if it needs to transform to subgroup representation
             if xtal.has_special_site():
                 xtal = xtal.to_subgroup()
-            #initialize dicts
+            # initialize dicts
             self.xtal = {}
             self.rep = {}
             self.time = {}
@@ -62,31 +64,30 @@ class benchmark():
             self.ase = {}
             self.diff = {}
             self.Z = sum(xtal.numMols)
-            self.xtal['reference'] = xtal
-            self.rep['reference'] = representation.from_pyxtal(xtal).x
-            self.ase['reference'] = xtal.to_ase(resort=True)
-            self.pmg['reference'] = xtal.to_pymatgen()
-            self.pmg['reference'].remove_species('H') #remove hydrogen
+            self.xtal["reference"] = xtal
+            self.rep["reference"] = representation.from_pyxtal(xtal).x
+            self.ase["reference"] = xtal.to_ase(resort=True)
+            self.pmg["reference"] = xtal.to_pymatgen()
+            self.pmg["reference"].remove_species("H")  # remove hydrogen
         except ReadSeedError:
             print("Fail to read crystal")
             self.valid = False
 
-        #set up the optional parameters
-        if 'skf_dir' in kwargs:
-            self.skf_dir = kwargs.pop('skf_dir')
+        # set up the optional parameters
+        if "skf_dir" in kwargs:
+            self.skf_dir = kwargs.pop("skf_dir")
 
-        if 'charmm_info' in kwargs:
-            self.charmm_info = kwargs.pop('charmm_info')
+        if "charmm_info" in kwargs:
+            self.charmm_info = kwargs.pop("charmm_info")
 
-        if 'charmm_prm' in kwargs:
-            self.charmm_prm = kwargs.pop('charmm_prm')
+        if "charmm_prm" in kwargs:
+            self.charmm_prm = kwargs.pop("charmm_prm")
 
-        if 'charmm_rtf' in kwargs:
-            self.charmm_rtf = kwargs.pop('charmm_rtf')
+        if "charmm_rtf" in kwargs:
+            self.charmm_rtf = kwargs.pop("charmm_rtf")
 
-        if 'gulp_info' in kwargs:
-            self.gulp_info = kwargs.pop('gulp_info')
-
+        if "gulp_info" in kwargs:
+            self.gulp_info = kwargs.pop("gulp_info")
 
     def calc(self, calculator, show=True):
         """
@@ -95,50 +96,54 @@ class benchmark():
 
         cwd = os.getcwd()
         os.chdir(self.work_dir)
-        if calculator.find('dftb')>-1:
-            tmp = calculator.split('_')
+        if calculator.find("dftb") > -1:
+            tmp = calculator.split("_")
             if len(tmp) > 1:
                 disp = tmp[-1]
             else:
-                disp = 'D3'
+                disp = "D3"
             self.dftb(disp, show)
-        elif calculator == 'vasp':
+        elif calculator == "vasp":
             self.vasp(show)
-        elif calculator == 'ani':
+        elif calculator == "ani":
             self.ani(show)
-        elif calculator == 'charmm':
+        elif calculator == "charmm":
             self.charmm(show)
-        elif calculator == 'gulp':
+        elif calculator == "gulp":
             self.gulp(show)
         else:
-            raise KeyError('unknow calculator', calculator)
+            raise KeyError("unknow calculator", calculator)
 
         os.chdir(cwd)
 
-    def dftb(self, disp, show=True, logfile='ase.log'):
+    def dftb(self, disp, show=True, logfile="ase.log"):
         """
         DFTB calculation
         """
-        if not hasattr(self, 'skf_dir'):
-            raise KeyError('skf_dir is not defined for DFTB calculation')
+        if not hasattr(self, "skf_dir"):
+            raise KeyError("skf_dir is not defined for DFTB calculation")
         t0 = time()
         ase = self.ase["reference"].copy()
-        #ase = dftb_relax(ase, self.skf_dir, kresol=0.08, logfile=logfile)
-        ase, _ = DFTB(ase, self.skf_dir, mode='relax', kresol=0.08, disp=disp)
-        ase, _ = DFTB(ase, self.skf_dir, mode='vc-relax', step=300, kresol=0.06, disp=disp)
-        ase = DFTB_relax(ase, self.skf_dir, opt_cell=True, kresol=0.06, disp=disp, logfile=logfile)
+        # ase = dftb_relax(ase, self.skf_dir, kresol=0.08, logfile=logfile)
+        ase, _ = DFTB(ase, self.skf_dir, mode="relax", kresol=0.08, disp=disp)
+        ase, _ = DFTB(
+            ase, self.skf_dir, mode="vc-relax", step=300, kresol=0.06, disp=disp
+        )
+        ase = DFTB_relax(
+            ase, self.skf_dir, opt_cell=True, kresol=0.06, disp=disp, logfile=logfile
+        )
         xtal = pyxtal(molecular=True)
         pmg = ase2pymatgen(ase)
         xtal.from_seed(pmg, molecules=self.smiles)
 
-        pmg.remove_species('H')
-        calc = 'dftb_'+disp
+        pmg.remove_species("H")
+        calc = "dftb_" + disp
 
         self.xtal[calc] = xtal
         self.pmg[calc] = pmg
         self.energy[calc] = ase.get_potential_energy()
         self.rep[calc] = representation.from_pyxtal(xtal).x
-        self.time[calc] = time()-t0
+        self.time[calc] = time() - t0
         if show:
             self.summary(calc)
 
@@ -155,98 +160,111 @@ class benchmark():
         pmg = ase2pymatgen(ase)
         xtal.from_seed(pmg, molecules=self.smiles)
 
-        pmg.remove_species('H')
-        self.xtal['vasp'] = xtal
-        self.pmg['vasp'] = pmg
-        self.rep['vasp'] = representation.from_pyxtal(xtal).x
-        self.energy['vasp'] = energy
-        self.time['vasp'] = time()-t0
+        pmg.remove_species("H")
+        self.xtal["vasp"] = xtal
+        self.pmg["vasp"] = pmg
+        self.rep["vasp"] = representation.from_pyxtal(xtal).x
+        self.energy["vasp"] = energy
+        self.time["vasp"] = time() - t0
         if show:
-            self.summary('vasp')
+            self.summary("vasp")
 
-
-    def ani(self, show=True, logfile='ase-ani.log'):
+    def ani(self, show=True, logfile="ase-ani.log"):
         """
         Torch ANI calculation
         """
         from pyxtal.interface.ani import ANI_relax
 
         t0 = time()
-        #self.ase.write('ani.cif', format='cif')
+        # self.ase.write('ani.cif', format='cif')
         ase = self.ase["reference"].copy()
         ase = ani_relax(ase, logfile=logfile)
         ase = ani_relax(ase, opt_cell=True, logfile=logfile, max_time=10.0)
         ase = ani_relax(ase, opt_cell=True, logfile=logfile, max_time=10.0)
 
-        #ase.write('ani_final.cif', format='cif'); import sys; sys.exit()
+        # ase.write('ani_final.cif', format='cif'); import sys; sys.exit()
         xtal = pyxtal(molecular=True)
-        self.ase['ani'] = ase
+        self.ase["ani"] = ase
         pmg = ase2pymatgen(ase)
         try:
             xtal.from_seed(pmg, molecules=self.smiles)
-            pmg.remove_species('H')
-            self.xtal['ani'] = xtal
-            self.pmg['ani'] = pmg
-            self.rep['ani'] = representation.from_pyxtal(xtal).x
-            self.energy['ani'] = ase.get_potential_energy()
-            self.time['ani'] = time() - t0
+            pmg.remove_species("H")
+            self.xtal["ani"] = xtal
+            self.pmg["ani"] = pmg
+            self.rep["ani"] = representation.from_pyxtal(xtal).x
+            self.energy["ani"] = ase.get_potential_energy()
+            self.time["ani"] = time() - t0
             if show:
-                self.summary('ani')
-            #print(xtal); xtal.to_file("test.cif"); import sys; sys.exit()
+                self.summary("ani")
+            # print(xtal); xtal.to_file("test.cif"); import sys; sys.exit()
         except ReadSeedError:
             print("Molecular form is broken after relaxation")
-
 
     def charmm(self, show=True, steps=[2000, 3000]):
         """
         CHARMM-GAFF
         """
-        struc = self.xtal['reference'].copy()
+        struc = self.xtal["reference"].copy()
 
         t0 = time()
-        calc = CHARMM(struc, 'ben', steps=steps, atom_info=self.charmm_info, debug=True)
-        calc.run(clean=self.clean) #clean=False); import sys; sys.exit()
+        calc = CHARMM(struc, "ben", steps=steps, atom_info=self.charmm_info, debug=True)
+        calc.run(clean=self.clean)  # clean=False); import sys; sys.exit()
         struc = calc.structure
 
         pmg = struc.to_pymatgen()
-        pmg.remove_species('H')
-        self.xtal['charmm'] = struc
-        self.pmg['charmm'] = pmg
-        self.rep['charmm'] = representation.from_pyxtal(struc).x
-        self.energy['charmm'] = calc.structure.energy
-        self.time['charmm'] = time() - t0
+        pmg.remove_species("H")
+        self.xtal["charmm"] = struc
+        self.pmg["charmm"] = pmg
+        self.rep["charmm"] = representation.from_pyxtal(struc).x
+        self.energy["charmm"] = calc.structure.energy
+        self.time["charmm"] = time() - t0
         if show:
-            self.summary('charmm')
+            self.summary("charmm")
 
     def gulp(self, show=True, step=[400, 400, 1000], stepmx=[0.001, 0.005, 0.02]):
         """
         GULP-GAFF
         """
-        struc = self.xtal['reference'].copy()
+        struc = self.xtal["reference"].copy()
         g_info = self.gulp_info
         t0 = time()
-        calc = GULP_relax(struc, 'ben', opt='conv', steps=step[0], stepmx=stepmx[0], atom_info=g_info)
-        calc.run(clean=self.clean) #; print(os.getcwd()); import sys; sys.exit()
-        if not calc.optimized: raise RuntimeError("GULP calculation is wrong")
+        calc = GULP_relax(
+            struc, "ben", opt="conv", steps=step[0], stepmx=stepmx[0], atom_info=g_info
+        )
+        calc.run(clean=self.clean)  # ; print(os.getcwd()); import sys; sys.exit()
+        if not calc.optimized:
+            raise RuntimeError("GULP calculation is wrong")
         struc = calc.structure
-        calc = GULP_relax(struc, 'ben', opt='conp', steps=step[1], stepmx=stepmx[1], atom_info=g_info, dump='1.cif')
+        calc = GULP_relax(
+            struc,
+            "ben",
+            opt="conp",
+            steps=step[1],
+            stepmx=stepmx[1],
+            atom_info=g_info,
+            dump="1.cif",
+        )
         calc.run(clean=self.clean)
-        if not calc.optimized: raise RuntimeError("GULP calculation is wrong")
+        if not calc.optimized:
+            raise RuntimeError("GULP calculation is wrong")
         struc = calc.structure
-        calc = GULP_relax(struc, 'ben', opt='conp', steps=step[2], stepmx=stepmx[2], atom_info=g_info)
-        #print(struc)
-        calc.run(clean=self.clean) #, pause=True); import sys; sys.exit()
+        calc = GULP_relax(
+            struc, "ben", opt="conp", steps=step[2], stepmx=stepmx[2], atom_info=g_info
+        )
+        # print(struc)
+        calc.run(clean=self.clean)  # , pause=True); import sys; sys.exit()
         struc = calc.structure
-        if not calc.optimized: raise RuntimeError("GULP calculation is wrong")
+        if not calc.optimized:
+            raise RuntimeError("GULP calculation is wrong")
         pmg = struc.to_pymatgen()
-        pmg.remove_species('H')
-        self.xtal['gulp'] = struc
-        self.pmg['gulp'] = pmg
-        self.rep['gulp'] = representation.from_pyxtal(struc).x
-        self.energy['gulp'] = calc.structure.energy
-        self.time['gulp'] = time()-t0
+        pmg.remove_species("H")
+        self.xtal["gulp"] = struc
+        self.pmg["gulp"] = pmg
+        self.rep["gulp"] = representation.from_pyxtal(struc).x
+        self.energy["gulp"] = calc.structure.energy
+        self.time["gulp"] = time() - t0
         if show:
-            self.summary('gulp')
+            self.summary("gulp")
 
     def charmm_md(self):
         raise NotImplementedError
@@ -257,14 +275,14 @@ class benchmark():
         else:
             calcs = [calc]
 
-        pmg0 = self.pmg['reference']
+        pmg0 = self.pmg["reference"]
         v0 = pmg0.volume
         matcher = sm.StructureMatcher(ltol=0.3, stol=0.3, angle_tol=10)
         for calc in calcs:
-            time = self.time[calc]/60
+            time = self.time[calc] / 60
             rep = representation(self.rep[calc], self.smiles)
-            dv = (self.pmg[calc].volume-v0)/v0
-            strs = "{:s} ".format(rep.to_string(eng=self.energy[calc]/self.Z))
+            dv = (self.pmg[calc].volume - v0) / v0
+            strs = "{:s} ".format(rep.to_string(eng=self.energy[calc] / self.Z))
             strs += "{:8s} {:6.2f} {:6.3f}".format(calc, time, dv)
             rmsd = matcher.get_rms_dist(pmg0, self.pmg[calc])
             if rmsd is not None:
@@ -278,41 +296,52 @@ class benchmark():
 if __name__ == "__main__":
     from pyxtal.db import database
     import warnings
+
     warnings.filterwarnings("ignore")
 
     work_dir = "tmp"
     if not os.path.exists(work_dir):
         os.makedirs(work_dir)
 
-    #if 'DFTB_PREFIX' in os.environ.keys():
+    # if 'DFTB_PREFIX' in os.environ.keys():
     #    skf_dir = os.environ['DFTB_PREFIX'] + '3ob-3-1/'
-    #else:
+    # else:
     #    raise RuntimeError("Cannot find DFTB_PREFIX in the environment")
     skf_dir = None
 
-    db = database('pyxtal/database/test.db')
-    code = 'ACSALA' #'BENZEN'
+    db = database("pyxtal/database/test.db")
+    code = "ACSALA"  #'BENZEN'
     row = db.get_row(code)
     xtal = db.get_pyxtal(code)
 
-    c_info = row.data['charmm_info']
-    prm = open(work_dir+'/pyxtal.prm', 'w'); prm.write(c_info['prm']); prm.close()
-    rtf = open(work_dir+'/pyxtal.rtf', 'w'); rtf.write(c_info['rtf']); rtf.close()
-    g_info = row.data['gulp_info']
+    c_info = row.data["charmm_info"]
+    prm = open(work_dir + "/pyxtal.prm", "w")
+    prm.write(c_info["prm"])
+    prm.close()
+    rtf = open(work_dir + "/pyxtal.rtf", "w")
+    rtf.write(c_info["rtf"])
+    rtf.close()
+    g_info = row.data["gulp_info"]
 
     pmg = xtal.to_pymatgen()
-    smi = row.mol_smi.split('.')
-    ben = benchmark(pmg, smi, charmm_info=c_info, gulp_info=g_info,
-                    work_dir=work_dir, skf_dir=skf_dir,
-                    clean=False)
+    smi = row.mol_smi.split(".")
+    ben = benchmark(
+        pmg,
+        smi,
+        charmm_info=c_info,
+        gulp_info=g_info,
+        work_dir=work_dir,
+        skf_dir=skf_dir,
+        clean=False,
+    )
 
-    rep = representation(ben.rep['reference'], smi)
-    print(rep.to_string() + ' reference')
+    rep = representation(ben.rep["reference"], smi)
+    print(rep.to_string() + " reference")
 
-    #for calc in ['charmm', 'ani', 'gulp']: #, 'dftb_TS']:
-    #for calc in ['dftb_TS']:
-    #for calc in ['ani', 'ani', 'ani', 'ani']:
-    for calc in ['charmm', 'gulp']: #, 'dftb_TS']:
+    # for calc in ['charmm', 'ani', 'gulp']: #, 'dftb_TS']:
+    # for calc in ['dftb_TS']:
+    # for calc in ['ani', 'ani', 'ani', 'ani']:
+    for calc in ["charmm", "gulp"]:  # , 'dftb_TS']:
         ben.calc(calc, show=True)
     print("=========================================")
 """

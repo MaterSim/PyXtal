@@ -31,7 +31,7 @@ setup(
     package_data={
         "pyxtal.database": ["*.csv", "*.json", "*.db"],
         "pyxtal.database.cifs": ["*.cif", "*.vasp"],
-        'pyxtal.potentials': ['*'],
+        "pyxtal.potentials": ["*"],
     },
     scripts=[
         "scripts/pyxtal_main.py",
@@ -47,18 +47,18 @@ setup(
         "pymatgen>=2024.3.1",
         "pandas>=2.0.2",
         "networkx>=2.3",
-        'ase>=3.18.0',  #covered by pymatgen
-        'scipy>=1.7.3',
-        'numpy>=1.26', # prevent the use of numpy2
-        'importlib_metadata>=1.4',
-        'typing-extensions>=4.12',
+        "ase>=3.18.0",  # covered by pymatgen
+        "scipy>=1.7.3",
+        "numpy>=1.26",  # prevent the use of numpy2
+        "importlib_metadata>=1.4",
+        "typing-extensions>=4.12",
         #'pyshtools>=4.10.3',
-        #"openbabel>=3.0.0",
+        # "openbabel>=3.0.0",
     ],
     extra_require={
-        'visualization': ["py3Dmol>=0.8.0"],
-        'descriptor': ["pyshtools>=4.10.3"],
-        },
+        "visualization": ["py3Dmol>=0.8.0"],
+        "descriptor": ["pyshtools>=4.10.3"],
+    },
     python_requires=">=3.7",
     license="MIT",
 )

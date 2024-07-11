@@ -6,6 +6,7 @@ identify conjugate operations. The orientation class can be used to identify
 degrees of freedom for molecules in Wyckoff positions with certain symmetry
 constraints.
 """
+
 # Imports
 # ------------------------------
 # Standard libraries
@@ -21,6 +22,7 @@ from pymatgen.core.operations import SymmOp
 from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.constants import rad, deg, hex_cell, all_sym_directions
+
 
 # ------------------------------
 # Define functions
@@ -100,7 +102,9 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]):
                 specie2 = species[j]
                 diff = np.array(c2) - np.array(c1)
                 d_min = distance(diff, lattice, PBC=PBC)
-                radius = Element(specie1).covalent_radius + Element(specie2).covalent_radius
+                radius = (
+                    Element(specie1).covalent_radius + Element(specie2).covalent_radius
+                )
                 tol = factor * 0.5 * radius
                 if d_min < tol:
                     return False
@@ -192,7 +196,9 @@ def distance(xyz, lattice, PBC=[1, 1, 1]):
     return np.min(np.linalg.norm(matrix, axis=1))
 
 
-def distance_matrix(pts1, pts2, lattice, PBC=[1, 1, 1], single=False, metric="euclidean"):
+def distance_matrix(
+    pts1, pts2, lattice, PBC=[1, 1, 1], single=False, metric="euclidean"
+):
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account the lattice metric and periodic boundary conditions.
@@ -220,18 +226,19 @@ def distance_matrix(pts1, pts2, lattice, PBC=[1, 1, 1], single=False, metric="eu
         matrix = np.dot(matrix, lattice)
         all_distances = np.zeros([len(matrix), len(l1), len(l2)])
         for i, v in enumerate(matrix):
-            all_distances[i] += cdist(l1+v, l2, metric)
-        #m1 = np.array([(l1 + v) for v in matrix])
-        #m1 = np.vstack([l1 + v for v in matrix])
-        #all_distances = np.array([cdist(l, l2, metric) for l in m1])
+            all_distances[i] += cdist(l1 + v, l2, metric)
+        # m1 = np.array([(l1 + v) for v in matrix])
+        # m1 = np.vstack([l1 + v for v in matrix])
+        # all_distances = np.array([cdist(l, l2, metric) for l in m1])
         if single:
             return np.min(all_distances)
         else:
-            #return np.apply_along_axis(np.min, 0, all_distances)
+            # return np.apply_along_axis(np.min, 0, all_distances)
             return np.min(all_distances, axis=0)
 
     else:
         return distance_matrix_no_PBC(pts1, pts2, lattice, single, metric)
+
 
 def distance_matrix_no_PBC(pts1, pts2, lattice, single=False, metric="euclidean"):
     """
@@ -279,7 +286,7 @@ def create_matrix(PBC=[1, 1, 1], omit=False):
         for j in j_list:
             for k in k_list:
                 if omit:
-                    if [i, j, k] != [0,0,0]:
+                    if [i, j, k] != [0, 0, 0]:
                         matrix.append([i, j, k])
                 else:
                     matrix.append([i, j, k])
@@ -305,8 +312,8 @@ def filtered_coords(coords, PBC=[1, 1, 1]):
         coords = np.array(coords)
     for i in range(3):
         if PBC[i] > 0:
-            if len(coords.shape)>1:
-                coords[:,i] -= np.floor(coords[:,i])
+            if len(coords.shape) > 1:
+                coords[:, i] -= np.floor(coords[:, i])
             else:
                 coords[i] -= np.floor(coords[i])
     return coords
@@ -338,6 +345,7 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
 
     return np.apply_along_axis(filter_vector_euclidean, -1, coords)
 
+
 def get_inverse(op):
     """
     Given a SymmOp object, returns its inverse.
@@ -354,39 +362,45 @@ def get_inverse(op):
     if np.linalg.matrix_rank(matrix) < 4:
         for row in range(3):
             # fixed value
-            if np.sum(matrix[row,:3]**2) < 1e-3:
+            if np.sum(matrix[row, :3] ** 2) < 1e-3:
                 matrix[row, row] = 1
                 matrix[row, 3] = 0
 
         if np.linalg.matrix_rank(matrix) == 3:
             # [-3x/2, -x/2, 1/4]
             # [0, x, 1/4]
-            for rows in [[0,1,2],[1,2,0],[0,2,1]]:
-                #m = (matrix[rows,:])[:,rows]
-                #print(rows, m)
-                if np.linalg.matrix_rank(matrix[rows[:2],:3]) != 2:
+            for rows in [[0, 1, 2], [1, 2, 0], [0, 2, 1]]:
+                # m = (matrix[rows,:])[:,rows]
+                # print(rows, m)
+                if np.linalg.matrix_rank(matrix[rows[:2], :3]) != 2:
                     break
             id0, id1, id2 = rows[0], rows[1], rows[2]
             if matrix[id0, id1] == 0:
                 matrix[id0, id1], matrix[id0, id0] = matrix[id0, id0], matrix[id0, id1]
                 if np.linalg.matrix_rank(matrix) == 3:
-                    matrix[id0, id1], matrix[id0, id2] = matrix[id0, id2], matrix[id0, id1]
+                    matrix[id0, id1], matrix[id0, id2] = (
+                        matrix[id0, id2],
+                        matrix[id0, id1],
+                    )
             else:
                 matrix[id1, id0], matrix[id1, id1] = matrix[id1, id1], matrix[id1, id0]
                 if np.linalg.matrix_rank(matrix) == 3:
-                    matrix[id1, id0], matrix[id1, id2] = matrix[id1, id2], matrix[id1, id0]
+                    matrix[id1, id0], matrix[id1, id2] = (
+                        matrix[id1, id2],
+                        matrix[id1, id0],
+                    )
 
         elif np.linalg.matrix_rank(matrix) == 2:
             # -3x/2, -x/2, -x+1/4
-            if np.sum(matrix[:, 0]**2) > 1e-3:
-                matrix[1,0], matrix[1,1] = matrix[1,1], matrix[1,0]
-                matrix[2,0], matrix[2,2] = matrix[2,2], matrix[2,0]
-            elif np.sum(matrix[:, 1]**2) > 1e-3:
-                matrix[0,1], matrix[0,0] = matrix[0,0], matrix[0,1]
-                matrix[2,1], matrix[2,2] = matrix[2,2], matrix[2,1]
+            if np.sum(matrix[:, 0] ** 2) > 1e-3:
+                matrix[1, 0], matrix[1, 1] = matrix[1, 1], matrix[1, 0]
+                matrix[2, 0], matrix[2, 2] = matrix[2, 2], matrix[2, 0]
+            elif np.sum(matrix[:, 1] ** 2) > 1e-3:
+                matrix[0, 1], matrix[0, 0] = matrix[0, 0], matrix[0, 1]
+                matrix[2, 1], matrix[2, 2] = matrix[2, 2], matrix[2, 1]
             else:
-                matrix[0,2], matrix[0,0] = matrix[0,0], matrix[0,2]
-                matrix[1,2], matrix[1,1] = matrix[1,1], matrix[1,2]
+                matrix[0, 2], matrix[0, 0] = matrix[0, 0], matrix[0, 2]
+                matrix[1, 2], matrix[1, 1] = matrix[1, 1], matrix[1, 2]
     return SymmOp(np.linalg.inv(matrix))
 
 
@@ -458,11 +472,11 @@ def angle(v1, v2, radians=True):
     """
     v1 = np.real(v1)
     v2 = np.real(v2)
-    dot = np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2))
-    #if np.isclose(dot, 1.0):
-    if np.abs(dot-1)<1e-3:
+    dot = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+    # if np.isclose(dot, 1.0):
+    if np.abs(dot - 1) < 1e-3:
         a = 0
-    elif np.abs(dot+1)<1e-3:
+    elif np.abs(dot + 1) < 1e-3:
         a = np.pi
     else:
         a = np.arccos(dot)
@@ -562,18 +576,18 @@ def rotate_vector(v1, v2, rtol=1e-4):
     v2 = v2 / np.linalg.norm(v2)
     dot = np.dot(v1, v2)
     # Handle collinear vectors
-    if np.abs(dot-1) < rtol:
+    if np.abs(dot - 1) < rtol:
         return np.identity(3)
-    elif np.abs(dot+1)< rtol:
+    elif np.abs(dot + 1) < rtol:
         r = [np.random.random(), np.random.random(), np.random.random()]
         v3 = np.cross(v1, r)
         v3 /= np.linalg.norm(v3)
-        #return aa2matrix(v3, np.pi)
+        # return aa2matrix(v3, np.pi)
         return Rotation.from_rotvec(np.pi * v3).as_matrix()
     theta = angle(v1, v2)
     v3 = np.cross(v1, v2)
     v3 /= np.linalg.norm(v3)
-    #return aa2matrix(v3, theta)
+    # return aa2matrix(v3, theta)
     return Rotation.from_rotvec(theta * v3).as_matrix()
 
 
@@ -661,7 +675,6 @@ class OperationAnalyzer(SymmOp):
             return "irrational"
 
     def __init__(self, op, parse_trans=False, hexagonal=False):
-
         if type(op) == deepcopy(SymmOp):
             # The numerical tolerance associated with op
             # The 4x4 affine matrix of the op
@@ -683,7 +696,7 @@ class OperationAnalyzer(SymmOp):
             raise ValueError("Error: OperationAnalyzer requires a SymmOp or 3x3 array.")
 
         self.symbol = None
-        self.parse_trans = parse_trans # only for space group
+        self.parse_trans = parse_trans  # only for space group
 
         # If rotation matrix is not orthogonal
         if not is_orthogonal(self.m):
@@ -707,13 +720,13 @@ class OperationAnalyzer(SymmOp):
                     self.angle = np.linalg.norm(rotvec)
                     self.axis = rotvec / self.angle
                     if self.hexagonal:
-                        #print('convert hex', self.axis, np.dot(self.axis, hex_cell))
+                        # print('convert hex', self.axis, np.dot(self.axis, hex_cell))
                         self.axis = np.dot(self.axis, hex_cell)
-                    #parse symmetry direction
+                    # parse symmetry direction
                     if self.parse_trans and not self.parse_axis():
                         self.axis *= -1
-                        self.angle = 2*np.pi - self.angle
-                        #print('switch angle', self.angle)
+                        self.angle = 2 * np.pi - self.angle
+                        # print('switch angle', self.angle)
 
                 if np.isclose(self.angle, 0):
                     # Types: 'identity', 'inversion', 'rotation', or 'rotoinversion'.
@@ -722,7 +735,7 @@ class OperationAnalyzer(SymmOp):
                     self.type = "identity"
                     self.order = int(1)
                     self.rotation_order = int(1)
-                    self.symbol = '1'
+                    self.symbol = "1"
                 else:
                     self.type = "rotation"
                     self.order = OperationAnalyzer.get_order(self.angle)
@@ -741,16 +754,16 @@ class OperationAnalyzer(SymmOp):
                     self.angle = np.linalg.norm(rotvec)
                     self.axis = rotvec / self.angle
                     if self.hexagonal:
-                        #print('convert hex', self.axis, np.dot(self.axis, hex_cell))
+                        # print('convert hex', self.axis, np.dot(self.axis, hex_cell))
                         self.axis = np.dot(self.axis, hex_cell)
                 if np.isclose(self.angle, 0):
-                    self.symbol = '-1'
+                    self.symbol = "-1"
                     self.type = "inversion"
                     self.order = int(2)
                     self.rotation_order = int(1)
                 else:
-                    #parse symmetry direction
-                    #if self.parse_trans and not self.parse_axis():
+                    # parse symmetry direction
+                    # if self.parse_trans and not self.parse_axis():
                     #    self.axis *= -1
                     #    self.angle = 2*np.pi - self.angle
                     #    print('switch angle', self.angle)
@@ -792,47 +805,58 @@ class OperationAnalyzer(SymmOp):
         # No screw symmetry for other directios for tetragonal????
 
         if np.linalg.norm(vec) < tol:
-            return str(self.order) # 2, 3, 4, 6
+            return str(self.order)  # 2, 3, 4, 6
         else:
             trans = np.sum(vec)
             if self.order == 2:
-                return '2_1'
+                return "2_1"
             elif self.order == 3:
-                if abs(self.angle/trans - 2*np.pi) < tol:
-                    return '3_1'
+                if abs(self.angle / trans - 2 * np.pi) < tol:
+                    return "3_1"
                 else:
-                    return '3_2'
+                    return "3_2"
             elif self.order == 4:
-                if abs(trans) < tol: #
-                    return '4_2'
-                elif abs(self.angle/trans - 2*np.pi) < tol:
-                    return '4_1'
-                elif abs(self.angle/trans - np.pi) < tol or \
-                    abs(self.angle/trans - 3*np.pi) < tol:
-                    return '4_2'
-                elif abs(self.angle/trans - 2/3*np.pi) < tol or \
-                    abs(self.angle/trans - 6*np.pi) < tol:
-                    return '4_3'
+                if abs(trans) < tol:  #
+                    return "4_2"
+                elif abs(self.angle / trans - 2 * np.pi) < tol:
+                    return "4_1"
+                elif (
+                    abs(self.angle / trans - np.pi) < tol
+                    or abs(self.angle / trans - 3 * np.pi) < tol
+                ):
+                    return "4_2"
+                elif (
+                    abs(self.angle / trans - 2 / 3 * np.pi) < tol
+                    or abs(self.angle / trans - 6 * np.pi) < tol
+                ):
+                    return "4_3"
             elif self.order == 6:
-                if abs(trans) < tol: #
-                    return '6_3'
-                elif abs(self.angle/trans - 2*np.pi) < tol:
-                    return '6_1'
-                elif abs(self.angle/trans - np.pi) < tol or\
-                    abs(self.angle/trans - 5/2*np.pi) < tol:
-                    return '6_2'
-                elif abs(self.angle/trans - 2/3*np.pi) < tol or\
-                    abs(self.angle/trans - 10/3*np.pi) < tol:
-                    return '6_3'
-                elif abs(self.angle/trans - 1/2*np.pi) < tol or\
-                    abs(self.angle/trans - 5*np.pi) < tol:
-                    return '6_4'
-                elif abs(self.angle/trans - 2/5*np.pi) < tol or\
-                    abs(self.angle/trans - 10*np.pi) < tol:
-                    return '6_5'
+                if abs(trans) < tol:  #
+                    return "6_3"
+                elif abs(self.angle / trans - 2 * np.pi) < tol:
+                    return "6_1"
+                elif (
+                    abs(self.angle / trans - np.pi) < tol
+                    or abs(self.angle / trans - 5 / 2 * np.pi) < tol
+                ):
+                    return "6_2"
+                elif (
+                    abs(self.angle / trans - 2 / 3 * np.pi) < tol
+                    or abs(self.angle / trans - 10 / 3 * np.pi) < tol
+                ):
+                    return "6_3"
+                elif (
+                    abs(self.angle / trans - 1 / 2 * np.pi) < tol
+                    or abs(self.angle / trans - 5 * np.pi) < tol
+                ):
+                    return "6_4"
+                elif (
+                    abs(self.angle / trans - 2 / 5 * np.pi) < tol
+                    or abs(self.angle / trans - 10 * np.pi) < tol
+                ):
+                    return "6_5"
 
         print("Cannot assign symbol", self.angle, trans)
-
 
     def parse_glide_symmetry(self, tol=1e-2):
         """
@@ -841,9 +865,9 @@ class OperationAnalyzer(SymmOp):
             m, a, b, c, n, d
         """
         if self.rotation_order > 2:
-            return '-'+str(self.rotation_order)
+            return "-" + str(self.rotation_order)
         elif abs(self.angle - np.pi) > tol:
-            return 'm' # just indicate
+            return "m"  # just indicate
         else:
             vec = self.translation_vector.copy()
             if np.isclose(abs(np.dot(self.axis, np.array([1, 0, 0]))), 1):
@@ -854,27 +878,31 @@ class OperationAnalyzer(SymmOp):
                 vec[2] = 0
 
             if np.linalg.norm(vec) < tol:
-                return 'm'
+                return "m"
             else:
-                if np.linalg.norm(vec - np.array([1/2, 0, 0])) < tol:
-                    return 'a'
-                elif np.linalg.norm(vec - np.array([0, 1/2, 0])) < tol:
-                    return 'b'
-                elif np.linalg.norm(vec - np.array([0, 0, 1/2])) < tol:
-                    return 'c'
-                elif np.linalg.norm(vec - np.array([0, 1/2, 1/2])) < tol or\
-                    np.linalg.norm(vec - np.array([1/2, 0, 1/2])) < tol or\
-                    np.linalg.norm(vec - np.array([1/2, 1/2, 0])) < tol:
-                    return 'n'
-                elif np.linalg.norm(vec - np.array([1/2, 1/2, 1/2])) < tol:
-                    if np.isclose(abs(np.dot(self.axis, np.array([0, -0.7071, 0.7071]))), 1) or\
-                       np.isclose(abs(np.dot(self.axis, np.array([-0.7071, 0, 0.7071]))), 1):
-                        return 'n'
+                if np.linalg.norm(vec - np.array([1 / 2, 0, 0])) < tol:
+                    return "a"
+                elif np.linalg.norm(vec - np.array([0, 1 / 2, 0])) < tol:
+                    return "b"
+                elif np.linalg.norm(vec - np.array([0, 0, 1 / 2])) < tol:
+                    return "c"
+                elif (
+                    np.linalg.norm(vec - np.array([0, 1 / 2, 1 / 2])) < tol
+                    or np.linalg.norm(vec - np.array([1 / 2, 0, 1 / 2])) < tol
+                    or np.linalg.norm(vec - np.array([1 / 2, 1 / 2, 0])) < tol
+                ):
+                    return "n"
+                elif np.linalg.norm(vec - np.array([1 / 2, 1 / 2, 1 / 2])) < tol:
+                    if np.isclose(
+                        abs(np.dot(self.axis, np.array([0, -0.7071, 0.7071]))), 1
+                    ) or np.isclose(
+                        abs(np.dot(self.axis, np.array([-0.7071, 0, 0.7071]))), 1
+                    ):
+                        return "n"
                     else:
-                        return 'c'
+                        return "c"
                 else:
-                    return 'd'
-
+                    return "d"
 
     def parse_axis(self):
         """
@@ -884,7 +912,7 @@ class OperationAnalyzer(SymmOp):
         ax /= np.linalg.norm(ax)
         for direction in all_sym_directions:
             direction /= np.linalg.norm(direction)
-            #print(direction, np.dot(direction, ax))
+            # print(direction, np.dot(direction, ax))
             if np.isclose(np.dot(direction, ax), 1):
                 return True
             elif np.isclose(np.dot(direction, ax), -1):
@@ -971,18 +999,17 @@ class OperationAnalyzer(SymmOp):
         return opa1.is_conjugate(op2)
 
 
-
 def find_ids(coords, ref, tol=1e-3):
     """
     find the refernce ids that can match
     """
     ids = []
-    #print('ref', ref)
+    # print('ref', ref)
     for coord in coords:
         diffs = ref - coord
         diffs -= np.rint(diffs)
         norms = np.linalg.norm(diffs, axis=1)
-        #print(norms, diffs)
+        # print(norms, diffs)
         for i, norm in enumerate(norms):
             if norm < tol and i not in ids:
                 ids.append(i)
@@ -1009,7 +1036,6 @@ def get_best_match(positions, ref, cell):
     dists = np.linalg.norm(diffs, axis=1)
     id = np.argmin(dists)
     return positions[id], dists[id]
-
 
 
 # Test Functionality

@@ -1,6 +1,7 @@
 """
 Module to search for the supergroup symmetry
 """
+
 from copy import deepcopy
 from random import sample
 import itertools
@@ -17,7 +18,19 @@ from pyxtal.wyckoff_site import atom_site
 from pyxtal.operations import apply_ops, get_best_match
 from pyxtal.wyckoff_split import wyckoff_split
 
-ALL_SHIFTS = np.array([[0,0,0], [0,1,0], [1,0,0], [0,0,1], [0,1,1], [1,1,0], [1,0,1], [1,1,1]])
+ALL_SHIFTS = np.array(
+    [
+        [0, 0, 0],
+        [0, 1, 0],
+        [1, 0, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [1, 1, 0],
+        [1, 0, 1],
+        [1, 1, 1],
+    ]
+)
+
 
 def write_poscars(H_struc, G_struc, mappings, splitters, wyc_sets, N_images=3):
     """
@@ -53,14 +66,16 @@ def new_structure(struc, refs):
                 return False
     return True
 
+
 def new_path(path, paths):
     """
     check if it is a new path
     """
     for ref in paths:
-        if path[:len(ref)] == ref:
+        if path[: len(ref)] == ref:
             return False
     return True
+
 
 def find_mapping_per_element(sites1, sites2, max_num=720):
     """
@@ -75,33 +90,38 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
         unique solutions: e.g. 3 layers: [[[0], [1,2]]]
     """
 
-    unique_letters=list(set(sites1))
-    site1_letter_indices=[]
+    unique_letters = list(set(sites1))
+    site1_letter_indices = []
     for letter in unique_letters:
-        site1_letter_indices.append([i for i, x in enumerate(sites1) if x==letter])
-    site2_letter_bins=[]
+        site1_letter_indices.append([i for i, x in enumerate(sites1) if x == letter])
+    site2_letter_bins = []
     for lbin in sites2:
         site2_letter_bins.append([unique_letters.index(x) for x in lbin])
 
-    combo_list=[]
+    combo_list = []
     for s in site2_letter_bins:
-        ls=list(set(s))
-        rs=[s.count(r) for r in ls]
-        p=[]
+        ls = list(set(s))
+        rs = [s.count(r) for r in ls]
+        p = []
         for i, l in enumerate(ls):
-            combo=itertools.combinations(site1_letter_indices[l],rs[i])
-            combo=[list(x) for x in combo]
+            combo = itertools.combinations(site1_letter_indices[l], rs[i])
+            combo = [list(x) for x in combo]
             p.append(deepcopy(combo))
-        pr=p[0]
-        for i in range(1,len(p)):
-            pr=itertools.product(pr,p[i])
-            pr=[sum(list(x),[]) for x in pr]
+        pr = p[0]
+        for i in range(1, len(p)):
+            pr = itertools.product(pr, p[i])
+            pr = [sum(list(x), []) for x in pr]
         combo_list.append(pr)
-    unique_solutions=[[x] for x in combo_list[0]]
-    for i in range(1,len(combo_list)):
-        unique_solutions=[x+[y] for x in unique_solutions \
-                for y in combo_list[i] if len(set(sum(x,[])).intersection(y))==0]
+    unique_solutions = [[x] for x in combo_list[0]]
+    for i in range(1, len(combo_list)):
+        unique_solutions = [
+            x + [y]
+            for x in unique_solutions
+            for y in combo_list[i]
+            if len(set(sum(x, [])).intersection(y)) == 0
+        ]
     return unique_solutions
+
 
 def find_mapping(atom_sites, splitter, max_num=720):
     """
@@ -123,10 +143,10 @@ def find_mapping(atom_sites, splitter, max_num=720):
 
     for ele in eles:
         # ids of atom sites
-        site_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
+        site_ids = [id for id, site in enumerate(atom_sites) if site.specie == ele]
 
         # ids to be assigned
-        wp2_ids = [id for id, e in enumerate(splitter.elements) if e==ele]
+        wp2_ids = [id for id, e in enumerate(splitter.elements) if e == ele]
 
         letters1 = [atom_sites[id].wp.letter for id in site_ids]
         letters2 = []
@@ -134,7 +154,7 @@ def find_mapping(atom_sites, splitter, max_num=720):
         for id in wp2_ids:
             wp2 = splitter.wp2_lists[id]
             letters2.append([wp.letter for wp in wp2])
-        #print(ele, letters1, letters2)
+        # print(ele, letters1, letters2)
 
         res = find_mapping_per_element(letters1, letters2, max_num=720)
         lists.append(res)
@@ -144,20 +164,21 @@ def find_mapping(atom_sites, splitter, max_num=720):
     ordered_mappings = []
 
     for mapping in mappings:
-        ordered_mapping = [None]*len(splitter.wp2_lists)
+        ordered_mapping = [None] * len(splitter.wp2_lists)
 
         for i, ele in enumerate(eles):
-            site_ids = [id for id, site in enumerate(atom_sites) if site.specie==ele]
+            site_ids = [id for id, site in enumerate(atom_sites) if site.specie == ele]
             count = 0
 
             for j, wp2 in enumerate(splitter.wp2_lists):
                 if splitter.elements[j] == ele:
                     ordered_mapping[j] = [site_ids[m] for m in mapping[i][count]]
                     count += 1
-        #print("res", ordered_mapping)
+        # print("res", ordered_mapping)
         ordered_mappings.append(ordered_mapping)
 
     return ordered_mappings
+
 
 def search_G1(G, rot, tran, pos, wp1, op):
     """
@@ -178,7 +199,7 @@ def search_G1(G, rot, tran, pos, wp1, op):
     if np.linalg.det(rot) < 1:
         shifts = ALL_SHIFTS
     else:
-        shifts = np.array([[0,0,0]])
+        shifts = np.array([[0, 0, 0]])
 
     diffs = []
     coords = []
@@ -234,7 +255,6 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
     shift = shifts[np.argmin(dists)]
     pos = np.dot(rot, pos1 + shift + tran.T)
 
-
     diff = pos - pos2
     diff -= np.rint(diff)
 
@@ -245,7 +265,8 @@ def search_G2(rot, tran, pos1, pos2, cell=None):
 
     return pos, dist
 
-def find_xyz(G2_op, coord, quadrant=[0,0,0]):
+
+def find_xyz(G2_op, coord, quadrant=[0, 0, 0]):
     """
     Finds the x,y,z free parameter values for positions in the G_2 basis.
 
@@ -258,50 +279,50 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
     Returns:
         G2_holder: x,y,z parameters written in the G2 basis
     """
-    if np.all(quadrant == [0,0,0]):
+    if np.all(quadrant == [0, 0, 0]):
         for i, n in enumerate(coord):
-            if n>=0.:
+            if n >= 0.0:
                 quadrant[i] = 1
             else:
                 quadrant[i] = -1
 
     # prepare the rotation matrix and translation vector seperately
-    G2_holder = [1,1,1]
-    G2_op = np.array(G2_op.as_dict()['matrix'])
-    rot_G2 = G2_op[:3,:3].T
-    tau_G2 = G2_op[:3,3]
+    G2_holder = [1, 1, 1]
+    G2_op = np.array(G2_op.as_dict()["matrix"])
+    rot_G2 = G2_op[:3, :3].T
+    tau_G2 = G2_op[:3, 3]
     b = coord - tau_G2
     for k in range(3):
-        b[k] = b[k]%quadrant[k]
+        b[k] = b[k] % quadrant[k]
 
     # eliminate any unused free parameters in G2
     # The goal is to reduce the symmetry operations to be a full rank matrix
     # any free parameter that is not used has its spot deleted from the rot+trans
-    for i,x in reversed(list(enumerate(rot_G2))):
-        if set(x)=={0.}:
+    for i, x in reversed(list(enumerate(rot_G2))):
+        if set(x) == {0.0}:
             G2_holder[i] = 0
-            rot_G2 = np.delete(rot_G2,i,0)
-            quadrant = np.delete(quadrant,i)
+            rot_G2 = np.delete(rot_G2, i, 0)
+            quadrant = np.delete(quadrant, i)
 
     # eliminate any leftover empty rows to have fulll rank matrix
-    rot_G2=rot_G2.T
+    rot_G2 = rot_G2.T
     for i, x in reversed(list(enumerate(rot_G2))):
-        if set(x) == {0.}:
-            rot_G2=np.delete(rot_G2,i,0)
-            b=np.delete(b,i)
+        if set(x) == {0.0}:
+            rot_G2 = np.delete(rot_G2, i, 0)
+            b = np.delete(b, i)
     while len(rot_G2) != 0 and len(rot_G2) != len(rot_G2[0]):
-        rot_G2 = np.delete(rot_G2,len(rot_G2)-1,0)
-        b = np.delete(b,len(b)-1)
+        rot_G2 = np.delete(rot_G2, len(rot_G2) - 1, 0)
+        b = np.delete(b, len(b) - 1)
 
     # Later must add Schwarz Inequality check to elininate any dependent vectors
     # solves a linear system to find the free parameters
-    if set(G2_holder) == {0.}:
+    if set(G2_holder) == {0.0}:
         return np.array(G2_holder)
     else:
         try:
-            G2_basis_xyz = np.linalg.solve(rot_G2,b)
+            G2_basis_xyz = np.linalg.solve(rot_G2, b)
             for i in range(len(quadrant)):
-                G2_basis_xyz[i] = G2_basis_xyz[i]%quadrant[i]
+                G2_basis_xyz[i] = G2_basis_xyz[i] % quadrant[i]
             # print("!ST G2 HOLDER")
             for i in range(G2_holder.count(1)):
                 G2_holder[G2_holder.index(1)] = G2_basis_xyz[i]
@@ -309,9 +330,10 @@ def find_xyz(G2_op, coord, quadrant=[0,0,0]):
             return np.array(G2_holder)
 
         except:
-            raise RuntimeError('unable to find free parameters in the operation')
+            raise RuntimeError("unable to find free parameters in the operation")
 
-class supergroup():
+
+class supergroup:
     """
     Class to find the structure with supergroup symmetry
 
@@ -319,15 +341,16 @@ class supergroup():
         struc: pyxtal structure
         G: target supergroup number
     """
+
     def __init__(self, struc, G):
         # initilize the necesary parameters
         self.solutions = []
         self.error = True
         self.G = sym.Group(G)
         if self.G.point_group == struc.group.point_group:
-            group_type = 'k'
+            group_type = "k"
         else:
-            group_type = 't'
+            group_type = "t"
         self.group_type = group_type
 
         # list of all alternative wycsets
@@ -362,19 +385,24 @@ class supergroup():
             for sols in self.solutions:
                 (id, sols) = sols
                 if len(sols) > max_per_G:
-                    print("Warning: ignore some solutions: ", len(sols)-max_per_G)
+                    print("Warning: ignore some solutions: ", len(sols) - max_per_G)
                     sols = sample(sols, max_per_G)
-                    #sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
+                    # sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
                 for i, sol in enumerate(sols):
-                    max_disp, trans, mapping, sp = self.calc_disps(id, sol, d_tol*1.1)
-                    #print(i, sp.H.number, sp.G.number, sol, max_disp, mapping)
+                    max_disp, trans, mapping, sp = self.calc_disps(id, sol, d_tol * 1.1)
+                    # print(i, sp.H.number, sp.G.number, sol, max_disp, mapping)
                     if max_disp < d_tol:
-                        solutions.append((sp, mapping, trans, self.wyc_set_id, max_disp))
-                        if max_solutions is not None and len(solutions) >= max_solutions:
+                        solutions.append(
+                            (sp, mapping, trans, self.wyc_set_id, max_disp)
+                        )
+                        if (
+                            max_solutions is not None
+                            and len(solutions) >= max_solutions
+                        ):
                             done = True
                             break
 
-                if done or len(solutions)>0:
+                if done or len(solutions) > 0:
                     break
         solutions = self.sort_solutions(solutions)
         return solutions
@@ -400,12 +428,13 @@ class supergroup():
             if new_structure(G_struc, G_strucs):
                 if show_detail:
                     self.print_detail(solution, coords_H1, coords_G2, elements)
-                G_struc.source = 'supergroup {:6.3f}'.format(max_disp)
+                G_struc.source = "supergroup {:6.3f}".format(max_disp)
                 G_struc.disp = max_disp
                 G_strucs.append(G_struc)
-                new_sols.append((sp, ordered_mapping, translation, wyc_set_id, max_disp))
+                new_sols.append(
+                    (sp, ordered_mapping, translation, wyc_set_id, max_disp)
+                )
         return G_strucs, new_sols
-
 
     def calc_disps(self, split_id, solution, d_tol):
         """
@@ -425,7 +454,7 @@ class supergroup():
         muls = []
         for i, e in enumerate(self.elements):
             sites_G.extend(solution[i])
-            elements.extend([e]*len(solution[i]))
+            elements.extend([e] * len(solution[i]))
             muls.extend([int(sol[:-1]) for sol in solution[i]])
 
         # resort the sites_G by multiplicity, needed by the mask calculation
@@ -442,7 +471,9 @@ class supergroup():
         if len(mappings) > 0:
             mask = self.get_initial_mask(splitter)
             for mapping in mappings:
-                dist, trans, mask = self.symmetrize_dist(splitter, mapping, mask, None, d_tol)
+                dist, trans, mask = self.symmetrize_dist(
+                    splitter, mapping, mask, None, d_tol
+                )
                 dists.append(dist)
                 translations.append(trans)
                 masks.append(mask)
@@ -454,19 +485,27 @@ class supergroup():
             mask = masks[id]
             if 0.2 < max_disp < d_tol:
                 # optimize disp further
-                if mask is None or len(mask)<3:
-                    def fun(translation, mapping, splitter, mask):
-                        return self.symmetrize_dist(splitter, mapping, mask, translation)[0]
+                if mask is None or len(mask) < 3:
 
-                    res = minimize(fun, translations[id], args=(mappings[id], splitter, mask),
-                            method='Nelder-Mead', options={'maxiter': 10})
+                    def fun(translation, mapping, splitter, mask):
+                        return self.symmetrize_dist(
+                            splitter, mapping, mask, translation
+                        )[0]
+
+                    res = minimize(
+                        fun,
+                        translations[id],
+                        args=(mappings[id], splitter, mask),
+                        method="Nelder-Mead",
+                        options={"maxiter": 10},
+                    )
                     if res.fun < max_disp:
                         max_disp = res.fun
                         translation = res.x
             return max_disp, translation, mappings[id], splitter
         else:
             print("bug in findding the mappings", solution)
-            print(splitter.G.number, '->', splitter.H.number)
+            print(splitter.G.number, "->", splitter.H.number)
             return 1000, None, None, None
 
     def get_initial_mask(self, splitter):
@@ -495,7 +534,7 @@ class supergroup():
                 letters[index] = 0
 
             ordered_mapping = [mapping[id][x] for x in seq]
-            #print(letters, mapping[id], '->', letters_wp, ordered_mapping)
+            # print(letters, mapping[id], '->', letters_wp, ordered_mapping)
         else:
             ordered_mapping = mapping[id]
         coord_H = [atom_sites_H[ordered_mapping[x]].position.copy() for x in range(n)]
@@ -525,7 +564,6 @@ class supergroup():
                 translation[mask] = 0
 
         for i in range(len(splitter.wp1_lists)):
-
             n = len(splitter.wp2_lists[i])
             coord_H, _ = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
@@ -536,15 +574,20 @@ class supergroup():
                     translation = _tran
                     mask = _mask
             elif n == 2:
-                if splitter.group_type == 'k':
-                    dist = self.symmetrize_site_double_k(splitter, i, coord_H, translation)
+                if splitter.group_type == "k":
+                    dist = self.symmetrize_site_double_k(
+                        splitter, i, coord_H, translation
+                    )
                 else:
-                    dist = self.symmetrize_site_double_t(splitter, i, coord_H, translation)
+                    dist = self.symmetrize_site_double_t(
+                        splitter, i, coord_H, translation
+                    )
             else:
                 dist = self.symmetrize_site_multi(splitter, i, coord_H, translation)
 
-            #strs = self.print_wp(splitter, i); print(strs, dist)
-            if i == 0 and translation is None: translation = np.zeros(3)
+            # strs = self.print_wp(splitter, i); print(strs, dist)
+            if i == 0 and translation is None:
+                translation = np.zeros(3)
 
             if dist < d_tol:
                 max_disps.append(dist)
@@ -568,24 +611,29 @@ class supergroup():
             coords_H1: coordinates in H
             elements: list of elements
         """
-        coords_G1 = [] # position in G
-        coords_G2 = [] # position in G on the subgroup bais
+        coords_G1 = []  # position in G
+        coords_G2 = []  # position in G on the subgroup bais
         coords_H = []  # position in H
         elements = []
         ordered_mapping = []
 
         for i, wp1 in enumerate(splitter.wp1_lists):
-
             n = len(splitter.wp2_lists[i])
             coord_H, seq = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
-                res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)
-            elif n==2:
-                if splitter.group_type == 'k':
-                    res = self.symmetrize_site_double_k(splitter, i, coord_H, translation, 0)
+                res = self.symmetrize_site_single(
+                    splitter, i, coord_H[0], translation, 0
+                )
+            elif n == 2:
+                if splitter.group_type == "k":
+                    res = self.symmetrize_site_double_k(
+                        splitter, i, coord_H, translation, 0
+                    )
                 else:
-                    res = self.symmetrize_site_double_t(splitter, i, coord_H, translation, 0)
+                    res = self.symmetrize_site_double_t(
+                        splitter, i, coord_H, translation, 0
+                    )
             else:
                 res = self.symmetrize_site_multi(splitter, i, coord_H, translation, 0)
 
@@ -593,9 +641,9 @@ class supergroup():
             coords_G1.append(coord_G1)
             coords_G2.extend(coord_G2)
             coords_H.extend(coord_H)
-            elements.extend([splitter.elements[i]]*n)
+            elements.extend([splitter.elements[i]] * n)
             ordered_mapping.extend(seq)
-            #self.print_wp(splitter, i); print(coord_G1); print(coord_G2)
+            # self.print_wp(splitter, i); print(coord_G1); print(coord_G2)
 
         coords_G1 = np.array(coords_G1)
         coords_G2 = np.array(coords_G2)
@@ -608,10 +656,10 @@ class supergroup():
         A short cut to print the wp information (for debug purpose)
         """
         wp1 = sp.wp1_lists[id]
-        l = wp1.get_label() + '->'
+        l = wp1.get_label() + "->"
         for wp in sp.wp2_lists[id]:
-            l += wp.get_label() + ','
-        strs = '{:2s}{:s} ID-{:d} {:s}'.format(sp.elements[id], sp.group_type, id, l)
+            l += wp.get_label() + ","
+        strs = "{:2s}{:s} ID-{:d} {:s}".format(sp.elements[id], sp.group_type, id, l)
         return strs
 
     def symmetrize_site_single(self, splitter, id, base, translation, run_type=1):
@@ -630,8 +678,8 @@ class supergroup():
         op_G1 = splitter.G1_orbits[id][0][0]
         ops_H = splitter.H_orbits[id][0]
         wp1 = splitter.wp1_lists[id]
-        rot = splitter.R[:3,:3]
-        tran = splitter.R[:3,3]
+        rot = splitter.R[:3, :3]
+        tran = splitter.R[:3, 3]
         inv_rot = np.linalg.inv(rot)
 
         # choose the best coord1_H
@@ -664,17 +712,21 @@ class supergroup():
                 diff -= np.rint(diff)
                 translation = diff.copy()
                 for m in range(3):
-                    if abs(diff[m])<1e-4:
+                    if abs(diff[m]) < 1e-4:
                         mask.append(m)
                 dist = 0
             else:
-                coord_G2, dist = search_G2(inv_rot, -tran, tmp, coord_H+translation, self.cell)
+                coord_G2, dist = search_G2(
+                    inv_rot, -tran, tmp, coord_H + translation, self.cell
+                )
 
             return dist, translation, mask
         else:
-            tmp, _ = search_G1(splitter.G, rot, tran, coord_H+translation, wp1, op_G1)
-            coord_G2, _ = search_G2(inv_rot, -tran, tmp, coord_H+translation, self.cell)
-            #print('XXXXXXXXX', coord_H+translation, tmp, coord_G2, dist)
+            tmp, _ = search_G1(splitter.G, rot, tran, coord_H + translation, wp1, op_G1)
+            coord_G2, _ = search_G2(
+                inv_rot, -tran, tmp, coord_H + translation, self.cell
+            )
+            # print('XXXXXXXXX', coord_H+translation, tmp, coord_G2, dist)
             return tmp, [coord_G2], [coord_H]
 
     def symmetrize_site_double_k(self, splitter, id, coord_H, translation, run_type=1):
@@ -692,18 +744,19 @@ class supergroup():
         # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
         # then find the best_match between coord1 and coord2,
 
-        if translation is None: translation = np.zeros(3)
-        rot = splitter.R[:3,:3]
-        tran = splitter.R[:3,3]
+        if translation is None:
+            translation = np.zeros(3)
+        rot = splitter.R[:3, :3]
+        tran = splitter.R[:3, 3]
         inv_rot = np.linalg.inv(rot)
 
-        wp1 = splitter.wp1_lists[id]          # wp_G
-        ops_H1 = splitter.H_orbits[id][0]     # operations of wp_h1
-        op_G21 = splitter.G2_orbits[id][0][0] # operation 1 of wp_h1 in subgroup
-        ops_G22 = splitter.G2_orbits[id][1]   # operations of wp_h2 in subgroup
+        wp1 = splitter.wp1_lists[id]  # wp_G
+        ops_H1 = splitter.H_orbits[id][0]  # operations of wp_h1
+        op_G21 = splitter.G2_orbits[id][0][0]  # operation 1 of wp_h1 in subgroup
+        ops_G22 = splitter.G2_orbits[id][1]  # operations of wp_h2 in subgroup
 
         coord1_H, coord2_H = coord_H[0], coord_H[1]
-        coord1_G2, coord2_G2  = coord1_H + translation, coord2_H + translation
+        coord1_G2, coord2_G2 = coord1_H + translation, coord2_H + translation
 
         # since rotation does not change, search for the closest match on rotation
         # then we can get the translation vector
@@ -719,13 +772,13 @@ class supergroup():
 
         # needed displacement
         if run_type == 1:
-            return dist/2 #np.linalg.norm(np.dot(d/2, self.cell))
+            return dist / 2  # np.linalg.norm(np.dot(d/2, self.cell))
         else:
             d = coord2_G2 - tmp
             d -= np.rint(d)
             op_G11 = splitter.G1_orbits[id][0][0]
-            coord2_G2 -= d/2
-            coord1_G2 += d/2
+            coord2_G2 -= d / 2
+            coord1_G2 += d / 2
             coord1_G1, _ = search_G1(splitter.G, rot, tran, tmp, wp1, op_G11)
             return coord1_G1, [coord1_G2, coord2_G2], coord_H
 
@@ -741,18 +794,19 @@ class supergroup():
             run_type: return distance or coordinates
         """
 
-        if translation is None: translation = np.zeros(3)
-        rot = splitter.R[:3,:3]
-        tran = splitter.R[:3,3]
+        if translation is None:
+            translation = np.zeros(3)
+        rot = splitter.R[:3, :3]
+        tran = splitter.R[:3, 3]
         inv_rot = np.linalg.inv(rot)
-        cell_G = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.cell)
-        wp1 = splitter.wp1_lists[id]          # wp_G
-        ops_G11 = splitter.G1_orbits[id][0]   # operations of wp_h1 in subgroup
-        ops_G12 = splitter.G1_orbits[id][1]   # operations of wp_h2 in subgroup
-        ops_G1 = splitter.G[0]                # general operations of G
+        cell_G = np.dot(np.linalg.inv(splitter.R[:3, :3]).T, self.cell)
+        wp1 = splitter.wp1_lists[id]  # wp_G
+        ops_G11 = splitter.G1_orbits[id][0]  # operations of wp_h1 in subgroup
+        ops_G12 = splitter.G1_orbits[id][1]  # operations of wp_h2 in subgroup
+        ops_G1 = splitter.G[0]  # general operations of G
 
-        coord1_H, coord2_H = coord_H[0], coord_H[1] #coordinates in H
-        coord1_G2, coord2_G2  = coord1_H+translation, coord2_H+translation # in G
+        coord1_H, coord2_H = coord_H[0], coord_H[1]  # coordinates in H
+        coord1_G2, coord2_G2 = coord1_H + translation, coord2_H + translation  # in G
 
         # forward search for the best generator for wp_h1 and wp_h2 in subgroup
         coord1_G1, _ = search_G1(splitter.G, rot, tran, coord1_G2, wp1, ops_G11[0])
@@ -763,23 +817,23 @@ class supergroup():
         coords11 = apply_ops(coord1_G1, ops_G1)
         tmp, dist = get_best_match(coords11, coord2_G1, cell_G)
 
-        #self.print_wp(splitter, id)
+        # self.print_wp(splitter, id)
         if run_type == 1:
-            return dist/2
+            return dist / 2
         else:
             # G1->G2->H
             d = coord2_G1 - tmp
             d -= np.rint(d)
-            coord2_G1 -= d/2
+            coord2_G1 -= d / 2
 
             coords22 = apply_ops(coord2_G1, ops_G1)
             coord1_G1, dist = get_best_match(coords22, coord1_G1, cell_G)
-            #print("in G", l1, coord1_G1, l2, coord2_G1)
+            # print("in G", l1, coord1_G1, l2, coord2_G1)
 
             # backward search (G->H)
             coord1_G2, dist = search_G2(inv_rot, -tran, coord1_G1, coord1_G2, self.cell)
             coord2_G2, dist = search_G2(inv_rot, -tran, coord2_G1, coord2_G2, self.cell)
-            #print("in G1", l1, coord1_G2, l2, coord2_G2, dist)
+            # print("in G1", l1, coord1_G2, l2, coord2_G2, dist)
 
             return coord2_G1, np.array([coord1_G2, coord2_G2]), coord_H
 
@@ -795,20 +849,21 @@ class supergroup():
             run_type: return distance or coordinates
         """
 
-        if translation is None: translation = np.zeros(3)
+        if translation is None:
+            translation = np.zeros(3)
 
         n = len(splitter.wp2_lists[id])
-        rot = splitter.R[:3,:3]
-        tran = splitter.R[:3,3]
+        rot = splitter.R[:3, :3]
+        tran = splitter.R[:3, 3]
         inv_rot = np.linalg.inv(rot)
-        cell_G = np.dot(np.linalg.inv(splitter.R[:3,:3]).T, self.cell)
+        cell_G = np.dot(np.linalg.inv(splitter.R[:3, :3]).T, self.cell)
         wp1 = splitter.wp1_lists[id]
 
         # Finds the correct quadrant to easily generate all possible_wycs
         # add translations when trying to match
-        quadrant = np.array(splitter.G2_orbits[id][0][0].as_dict()['matrix'])[:3,3]
+        quadrant = np.array(splitter.G2_orbits[id][0][0].as_dict()["matrix"])[:3, 3]
         for k in range(3):
-            if quadrant[k] >= 0.:
+            if quadrant[k] >= 0.0:
                 quadrant[k] = 1
             else:
                 quadrant[k] = -1
@@ -821,7 +876,7 @@ class supergroup():
         dist_list = []
         coord_list = []
         index = []
-        G2_xyz = np.zeros([n,3])
+        G2_xyz = np.zeros([n, 3])
         corresponding_ops = []
 
         for op in splitter.G1_orbits[id][0]:
@@ -840,11 +895,15 @@ class supergroup():
         # Also finds the corresponding G2 free parameters xyz for each coordinate
         for j in range(1, n):
             possible_coords = [x.operate(G2_xyz[0]) for x in splitter.G2_orbits[id][j]]
-            corresponding_coord, _ = get_best_match(possible_coords, coord_G2[j], cell_G)
-            index.append([np.all(x==corresponding_coord) for x in possible_coords].index(True))
+            corresponding_coord, _ = get_best_match(
+                possible_coords, coord_G2[j], cell_G
+            )
+            index.append(
+                [np.all(x == corresponding_coord) for x in possible_coords].index(True)
+            )
             corresponding_ops.append(splitter.G2_orbits[id][j][index[j]])
             G2_xyz[j] += find_xyz(corresponding_ops[j], coord_G2[j], quadrant)
-        #print(G2_xyz)
+        # print(G2_xyz)
 
         # Finds the average free parameters between all the coordinates as the best set
         # of free parameters that all coordinates must match
@@ -857,15 +916,17 @@ class supergroup():
                 dist_list.append(np.linalg.norm(d))
             return max(dist_list)
         else:
-            coords_G1 = np.zeros([n, 3]) #xyz in G1
-            coords_G2 = np.zeros([n, 3]) #xyz in G2
-            #dist_list = []
+            coords_G1 = np.zeros([n, 3])  # xyz in G1
+            coords_G2 = np.zeros([n, 3])  # xyz in G2
+            # dist_list = []
             for j in range(n):
                 coords_G1[j] = splitter.G1_orbits[id][j][index[j]].operate(final_xyz)
                 tmp = coord_H[j] + translation
-                coords_G2[j], _ = search_G2(inv_rot, -tran, coords_G1[j], tmp, self.cell)
-                #dist_list.append(dist)
-            #print("dist", dist)
+                coords_G2[j], _ = search_G2(
+                    inv_rot, -tran, coords_G1[j], tmp, self.cell
+                )
+                # dist_list.append(dist)
+            # print("dist", dist)
             return coords_G1[0], coords_G2, coord_H
 
     def print_detail(self, solution, coords_H, coords_G, elements):
@@ -873,18 +934,18 @@ class supergroup():
         Print out the details of tranformation
         """
         (sp, mapping, translation, _, max_disp) = solution
-        print("\nTransition: ", sp.H.number, '->', sp.G.number)
-        print('Maximum displacement: {:6.3f}'.format(max_disp))
-        print('Mapping:', mapping)
+        print("\nTransition: ", sp.H.number, "->", sp.G.number)
+        print("Maximum displacement: {:6.3f}".format(max_disp))
+        print("Mapping:", mapping)
 
         count = 0
         disps = []
         for i, wp2 in enumerate(sp.wp2_lists):
             wp1 = sp.wp1_lists[i]
-            strs = ''
+            strs = ""
             for wp in wp2:
                 x, y, ele = coords_H[count], coords_G[count], elements[count]
-                label = wp.get_label() + '->' + wp1.get_label()
+                label = wp.get_label() + "->" + wp1.get_label()
                 dis = y - x - translation
                 dis -= np.rint(dis)
                 dis_abs = np.linalg.norm(dis.dot(self.cell))
@@ -918,7 +979,7 @@ class supergroup():
         (sp, mapping, translation, wyc_set_id, max_disp) = solution
         details = self.symmetrize(sp, mapping, translation)
         _, coords_G2, coords_H1, elements, _ = details
-        #self.print_detail(solution, coords_H1, coords_G2, elements)
+        # self.print_detail(solution, coords_H1, coords_G2, elements)
 
         # Get the list of atomic displacements
         disps = []
@@ -934,12 +995,12 @@ class supergroup():
         # Create the PyXtals
         strucs = []
         disps = np.array(disps)
-        disps /= (N_images-1)
+        disps /= N_images - 1
         max_disp = np.max(np.linalg.norm(disps.dot(self.cell), axis=1))
         for i in range(N_images):
-            coords = coords_H1 + i*disps + translation
+            coords = coords_H1 + i * disps + translation
             struc = self._make_pyxtal(sp, coords, elements, 1, False)
-            struc.source = 'supergroup {:d} {:6.3f}'.format(i, max_disp*i)
+            struc.source = "supergroup {:d} {:6.3f}".format(i, max_disp * i)
             strucs.append(struc)
         return strucs
 
@@ -957,7 +1018,7 @@ class supergroup():
         details = self.symmetrize(sp, mapping, translation)
         coords_G1, coords_G2, coords_H1, elements, _ = details
         struc = self._make_pyxtal(sp, coords_G1)
-        struc.source = 'supergroup {:6.3f}'.format(max_disp)
+        struc.source = "supergroup {:6.3f}".format(max_disp)
         struc.disp = max_disp
         return struc
 
@@ -975,7 +1036,7 @@ class supergroup():
         """
         # Create the pyxtal
         struc = self.struc.copy()
-        cell_G = np.dot(np.linalg.inv(sp.R[:3,:3]).T, self.cell)
+        cell_G = np.dot(np.linalg.inv(sp.R[:3, :3]).T, self.cell)
         lattice_G = Lattice.from_matrix(cell_G, ltype=sp.G.lattice_type)
 
         # Collect the atom_sites
@@ -985,7 +1046,7 @@ class supergroup():
                 pos = coords[i]
                 pos -= np.floor(pos)
                 if check:
-                    #pos1 = wp.search_matched_position(sp.G[0], pos)
+                    # pos1 = wp.search_matched_position(sp.G[0], pos)
                     pos1 = wp.search_generator(pos, sp.G[0])
                     if pos1 is not None:
                         site = atom_site(wp, pos1, sp.elements[i])
@@ -1006,7 +1067,7 @@ class supergroup():
                 for wp in wp2:
                     pos = coords[count]
                     pos -= np.floor(pos)
-                    #pos1 = wp.search_matched_position(sp.H[0], pos)
+                    # pos1 = wp.search_matched_position(sp.H[0], pos)
                     pos1 = wp.search_generator(pos, sp.H[0])
                     if pos1 is not None:
                         site = atom_site(wp, pos1, elements[count])
@@ -1025,7 +1086,7 @@ class supergroup():
         return struc
 
 
-#class symmetry_mapper():
+# class symmetry_mapper():
 #    """
 #    Class to map the symmetry relation between two structures
 #    QZ: not needed now
@@ -1044,7 +1105,7 @@ class supergroup():
 #            struc_G.subgroup_by_path(gts, sols)
 
 
-class supergroups():
+class supergroups:
     """
     Class to search for the feasible transition to a given super group
 
@@ -1056,9 +1117,16 @@ class supergroups():
         show (bool): whether or not show the detailed process
     """
 
-    def __init__(self, struc, G=None, path=None, d_tol=1.0, max_per_G=100,\
-            max_layer=5, show=False):
-
+    def __init__(
+        self,
+        struc,
+        G=None,
+        path=None,
+        d_tol=1.0,
+        max_per_G=100,
+        max_layer=5,
+        show=False,
+    ):
         self.struc_H = struc
         self.show = show
         self.d_tol = d_tol
@@ -1067,7 +1135,7 @@ class supergroups():
 
         if path is None:
             if G is None:
-                raise ValueError('G and path cannot be None at the same time')
+                raise ValueError("G and path cannot be None at the same time")
             else:
                 paths = struc.group.search_supergroup_paths(G, max_layer=max_layer)
         else:
@@ -1103,8 +1171,8 @@ class supergroups():
         else:
             s += "{:d}".format(self.path[0])
             for i, p in enumerate(self.path[1:]):
-                s += " -> {:d} [{:4.3f}]".format(p, self.strucs[i+1].disp)
-            s += '\n'
+                s += " -> {:d} [{:4.3f}]".format(p, self.strucs[i + 1].disp)
+            s += "\n"
             for struc in self.strucs:
                 s += str(struc)
         return s
@@ -1115,11 +1183,11 @@ class supergroups():
     def print_solutions(self):
         for i, solution in enumerate(self.solutions):
             (sp, mapping, trans, wyc_set_id, max_disp) = solution
-            print("\nTransition: ", sp.H.number, '->', sp.G.number)
+            print("\nTransition: ", sp.H.number, "->", sp.G.number)
             output = "Cell: {:7.3f}{:7.3f}{:7.3f}".format(*trans)
             output += ", Disp (A): {:6.3f}".format(max_disp)
             print(output)
-            #print('mapping', mapping)
+            # print('mapping', mapping)
             for i, wp2 in enumerate(sp.wp2_lists):
                 wp1 = sp.wp1_lists[i]
                 ele = sp.elements[i]
@@ -1143,18 +1211,20 @@ class supergroups():
         # self.print_solutions()
         # derive the backward subgroup representation
         struc0 = self.strucs[-1]
-        for i in range(1, len(self.solutions)+1):
+        for i in range(1, len(self.solutions) + 1):
             (sp, mapping, trans, wyc_set_id, max_disp) = self.solutions[-i]
             struc0 = struc0._subgroup_by_splitter(sp, eps=0)
             seq = list(map(lambda x: mapping.index(x), list(range(len(mapping)))))
             struc0.atom_sites = [struc0.atom_sites[i] for i in seq]
             if wyc_set_id > 0:
                 struc0 = struc0._get_alternative_back(wyc_set_id)
-            #print(struc0)
-            #print(i, sp.G.number, sp.H.number, wyc_set_id, match, trans)
-        #print(self.struc_H)
-        #print(struc0)
-        disps, _, _, _ = self.struc_H.get_disps_sets(struc0, d_tol=1.0, keep_lattice=True)
+            # print(struc0)
+            # print(i, sp.G.number, sp.H.number, wyc_set_id, match, trans)
+        # print(self.struc_H)
+        # print(struc0)
+        disps, _, _, _ = self.struc_H.get_disps_sets(
+            struc0, d_tol=1.0, keep_lattice=True
+        )
         if disps is not None:
             cell = struc0.lattice.matrix
             return self.struc_H.make_transitions(disps, lattice=cell, N_images=N_images)
@@ -1213,45 +1283,45 @@ class supergroups():
         Dump the cif files in sequence
         """
         for i, struc in enumerate(self.strucs):
-            struc.to_file(str(i)+'-G'+str(struc.group.number)+'.cif')
+            struc.to_file(str(i) + "-G" + str(struc.group.number) + ".cif")
 
 
 if __name__ == "__main__":
-
     from pyxtal import pyxtal
     from time import time
+
     data = {
-            #"PVO": [12, 166],
-            #"PPO": [12],
-            "BTO": [123, 221],
-            "lt_cristobalite": [98, 210, 227],
-            "BTO-Amm2": [65, 123, 221],
-            "NaSb3F10": [186, 194],
-            "NaSb3F10": [176, 194],
-            "MPWO": [59, 71, 139, 225],
-            #"NbO2": 141,
-            #"GeF2": 62,
-            #"lt_quartz": 180,
-            #"NiS-Cm": 160,
-            #"BTO-Amm2": 221,
-            #"BTO": 221,
-            #"lt_cristobalite": 227,
-            #"NaSb3F10": 194,
-            #"MPWO": 225,
-           }
+        # "PVO": [12, 166],
+        # "PPO": [12],
+        "BTO": [123, 221],
+        "lt_cristobalite": [98, 210, 227],
+        "BTO-Amm2": [65, 123, 221],
+        "NaSb3F10": [186, 194],
+        "NaSb3F10": [176, 194],
+        "MPWO": [59, 71, 139, 225],
+        # "NbO2": 141,
+        # "GeF2": 62,
+        # "lt_quartz": 180,
+        # "NiS-Cm": 160,
+        # "BTO-Amm2": 221,
+        # "BTO": 221,
+        # "lt_cristobalite": 227,
+        # "NaSb3F10": 194,
+        # "MPWO": 225,
+    }
     cif_path = "pyxtal/database/cifs/"
 
     for cif in data.keys():
         t0 = time()
         print("===============", cif, "===============")
         s = pyxtal()
-        s.from_seed(cif_path+cif+'.cif')
+        s.from_seed(cif_path + cif + ".cif")
         if isinstance(data[cif], list):
             sup = supergroups(s, path=data[cif], show=False, max_per_G=2500)
         else:
             sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
         if len(sup.strucs) > 0:
-            #print(sup.strucs[-1])
+            # print(sup.strucs[-1])
             strucs = sup.get_transformation()
             pmg_0, pmg_1 = s.to_pymatgen(), sup.strucs[-1].to_pymatgen()
             pmg_2, pmg_3 = strucs[0].to_pymatgen(), strucs[1].to_pymatgen()
@@ -1259,7 +1329,7 @@ if __name__ == "__main__":
             dist1 = sm.StructureMatcher().get_rms_dist(pmg_0, pmg_2)[0]
             dist2 = sm.StructureMatcher().get_rms_dist(pmg_1, pmg_3)[0]
             strs = "====================================================="
-            strs += "==============={:12.3f} seconds".format(time()-t0)
+            strs += "==============={:12.3f} seconds".format(time() - t0)
             print(strs)
             if dist1 > 1e-3 or dist2 > 1e-3:
                 print("+++++++++++++++++++++++++++++++Problem in ", cif)

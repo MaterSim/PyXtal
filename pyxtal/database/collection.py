@@ -6,7 +6,7 @@ import os.path as op
 class Collection:
     """Collection of molecular data.
     Used for obtaining pymatgen objects from a small database file.
-    
+
     Example of use:
 
     >>> from pyxtal.database.collection import Collection

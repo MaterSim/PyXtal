@@ -70,7 +70,7 @@ class Tol_matrix:
                     # If no radius is found for either atom, set tolerance to None
                     m[-1].append(None)
         self.matrix = np.array(m)  # A symmetric matrix between specie pairs
-        self.custom_values = ([])  # A list of tuples storing customized pair tolerances
+        self.custom_values = []  # A list of tuples storing customized pair tolerances
 
         try:
             for tup in tuples:
@@ -284,11 +284,10 @@ class Tol_matrix:
 
 
 if __name__ == "__main__":
-
     from pyxtal.molecule import pyxtal_molecule
 
-    for p in ['atomic', 'molecular', 'vdW', 'metallic']:
+    for p in ["atomic", "molecular", "vdW", "metallic"]:
         tm = Tol_matrix(prototype=p)
-        print(p, tm.get_tol('C', 'H'))
-        m = pyxtal_molecule('aspirin', tm=tm)
+        print(p, tm.get_tol("C", "H"))
+        m = pyxtal_molecule("aspirin", tm=tm)
         print(m.tols_matrix)

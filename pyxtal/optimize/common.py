@@ -1,6 +1,7 @@
 """
 Common utlities for global search
 """
+
 import os
 import numpy as np
 from time import time
@@ -17,6 +18,7 @@ from pyxtal.interface.ani import ANI_relax
 from pyxtal.optimize.benchmark import benchmark
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -30,14 +32,14 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125):
     if opt_lat:
         if ref_pxrd is None:
             sg = x[0][0]
-            disp_cell = np.random.uniform(-1., 1., len(x[0])-1)
-            if sg <= 2: # no change in angles to prevent some bad angles
+            disp_cell = np.random.uniform(-1.0, 1.0, len(x[0]) - 1)
+            if sg <= 2:  # no change in angles to prevent some bad angles
                 disp_cell[3:] = 0
-            x[0][1:] *= (1+dr*disp_cell)
+            x[0][1:] *= 1 + dr * disp_cell
 
-            #flip the inclination angle
+            # flip the inclination angle
             if 3 <= sg <= 15 and np.random.random() > 0.7:
-                if abs(90-x[0][-1]) < 15:
+                if abs(90 - x[0][-1]) < 15:
                     x[0][-1] = 180 - x[0][-1]
         else:
             thetas = [ref_pxrd[0][0], min([35, ref_pxrd[0][-1]])]
@@ -45,10 +47,10 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125):
 
     # perturb molecules
     for i in range(1, len(x)):
-        disp_mol = np.random.uniform(-1., 1., len(x[i])-1)
-        x[i][:-1] *= (1+dr*disp_mol)
+        disp_mol = np.random.uniform(-1.0, 1.0, len(x[i]) - 1)
+        x[i][:-1] *= 1 + dr * disp_mol
         # change the orientation and torsions
-        for j in range(3, len(x[i])-1):
+        for j in range(3, len(x[i]) - 1):
             rad_num = np.random.random()
             if rad_num < 0.25:
                 x[i][j] += choice([45.0, 90.0])
@@ -58,20 +60,30 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125):
         struc = representation(x, smiles).to_pyxtal(composition=comp)
     except:
         print(xtal)
-        print('x', x)
-        print('smiles', smiles)
-        print('comp', comp)
-        xtal.to_file('bug.cif')
-        print('is_valid_matrix\n', xtal.lattice.get_matrix())
-        print('cell_para', xtal.lattice.get_para(degree=True))
+        print("x", x)
+        print("smiles", smiles)
+        print("comp", comp)
+        xtal.to_file("bug.cif")
+        print("is_valid_matrix\n", xtal.lattice.get_matrix())
+        print("cell_para", xtal.lattice.get_para(degree=True))
         print(x[0])
         raise RuntimeError("Problem occurs in mutation_lattice")
     return struc
 
 
-def randomizer(smiles, sgs, comp, lattice=None, block=None,
-               num_block=None, torsions=None, molecules=None,
-               sites=None, use_hall=False, factor=1.1):
+def randomizer(
+    smiles,
+    sgs,
+    comp,
+    lattice=None,
+    block=None,
+    num_block=None,
+    torsions=None,
+    molecules=None,
+    sites=None,
+    use_hall=False,
+    factor=1.1,
+):
     """
     A random structure generation engine
 
@@ -91,7 +103,7 @@ def randomizer(smiles, sgs, comp, lattice=None, block=None,
 
     np.random.seed()
     if molecules is None:
-        mols = [smi+'.smi' for smi in smiles]
+        mols = [smi + ".smi" for smi in smiles]
     else:
         mols = [choice(m) for m in molecules]
     sg = choice(sgs)
@@ -100,14 +112,14 @@ def randomizer(smiles, sgs, comp, lattice=None, block=None,
     else:
         wp = Group(sg)[0]
     mult = len(wp)
-    numIons = [int(c*mult) for c in comp]
+    numIons = [int(c * mult) for c in comp]
 
-    #speed up generation for general positions
+    # speed up generation for general positions
     if sites is None and comp[0] >= 1:
         letter = wp.letter
         sites = []
         for c in comp:
-            sites.append([str(mult)+letter]*int(c))
+            sites.append([str(mult) + letter] * int(c))
 
     while True:
         xtal = pyxtal(molecular=True)
@@ -118,24 +130,25 @@ def randomizer(smiles, sgs, comp, lattice=None, block=None,
                 perm = True
             else:
                 perm = False
-            #For specical setting, we only do standard_setting
+            # For specical setting, we only do standard_setting
             if min(comp) < 1:
                 hn = Hall(sg).hall_default
             else:
                 hn = choice(Hall(sg, permutation=perm).hall_numbers)
-        xtal.from_random(3,
-                         hn,
-                         mols,
-                         numIons,
-                         factor=factor,
-                         block=block,
-                         num_block=num_block,
-                         lattice=lattice,
-                         force_pass=True,
-                         torsions=torsions,
-                         sites=sites,
-                         use_hall = True,
-                        )
+        xtal.from_random(
+            3,
+            hn,
+            mols,
+            numIons,
+            factor=factor,
+            block=block,
+            num_block=num_block,
+            lattice=lattice,
+            force_pass=True,
+            torsions=torsions,
+            sites=sites,
+            use_hall=True,
+        )
         if xtal.valid:
             break
 
@@ -145,12 +158,20 @@ def randomizer(smiles, sgs, comp, lattice=None, block=None,
         except:
             print(xtal)
             print(xtal.to_file())
-            raise ValueError('Error in making subgroup')
+            raise ValueError("Error in making subgroup")
     return xtal
 
-def optimizer(struc, atom_info, workdir, tag='job_0', \
-    opt_lat=True, calculators=['CHARMM'], max_time=180,
-    skip_ani=False):
+
+def optimizer(
+    struc,
+    atom_info,
+    workdir,
+    tag="job_0",
+    opt_lat=True,
+    calculators=["CHARMM"],
+    max_time=180,
+    skip_ani=False,
+):
     """
     Structural relaxation for each individual pyxtal structure.
 
@@ -173,37 +194,41 @@ def optimizer(struc, atom_info, workdir, tag='job_0', \
     results = None
 
     for i, calculator in enumerate(calculators):
-        if calculator == 'CHARMM':
+        if calculator == "CHARMM":
             if i == 0:
                 calc = CHARMM(struc, tag, steps=[1000], atom_info=atom_info)
-                calc.run() #clean=False); import sys; sys.exit()
-                #in case CHARMM over-relax the structure
-                #print("CCCCCC", calc.optimized); import sys; sys.exit()
-                if not calc.optimized: #
+                calc.run()  # clean=False); import sys; sys.exit()
+                # in case CHARMM over-relax the structure
+                # print("CCCCCC", calc.optimized); import sys; sys.exit()
+                if not calc.optimized:  #
                     calc = CHARMM(struc, tag, steps=[500], atom_info=atom_info)
                     calc.run()
-            #print(calc.structure)
+            # print(calc.structure)
             if opt_lat:
                 steps = [1000, 1000]
             else:
                 steps = [2000]
             calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
-            calc.run() #print("Debug", calc.optimized); import sys; sys.exit()
-
+            calc.run()  # print("Debug", calc.optimized); import sys; sys.exit()
 
             # only count good struc
             if calc.structure.energy < 9999:
                 calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
                 calc.run()
 
-                if calc.optlat: #lattice with bad inclination angles
+                if calc.optlat:  # lattice with bad inclination angles
                     calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
                     calc.run()
 
                 # Check if there exists a 2nd FF model for better energy ranking
-                if os.path.exists('pyxtal1.prm'):
-                    calc = CHARMM(calc.structure, tag, prefix='pyxtal1',
-                        steps = [2000], atom_info = atom_info)
+                if os.path.exists("pyxtal1.prm"):
+                    calc = CHARMM(
+                        calc.structure,
+                        tag,
+                        prefix="pyxtal1",
+                        steps=[2000],
+                        atom_info=atom_info,
+                    )
                     calc.run()
 
         struc = calc.structure
@@ -211,15 +236,19 @@ def optimizer(struc, atom_info, workdir, tag='job_0', \
     os.chdir(cwd)
     # density should not be too small
     if not skip_ani:
-        if struc.energy < 9999 and struc.lattice.is_valid_matrix() and \
-        struc.check_distance() and 0.5 < struc.get_density() < 3.0:
+        if (
+            struc.energy < 9999
+            and struc.lattice.is_valid_matrix()
+            and struc.check_distance()
+            and 0.5 < struc.get_density() < 3.0
+        ):
             s = struc.to_ase()
-            s = ANI_relax(s, step=50, fmax=0.1, logfile='ase.log')
+            s = ANI_relax(s, step=50, fmax=0.1, logfile="ase.log")
             eng = s.get_potential_energy()
-            stress = max(abs(s.get_stress()))/units.GPa #print(id, eng, stress)
+            stress = max(abs(s.get_stress())) / units.GPa  # print(id, eng, stress)
 
-            t = time()-t0
-            if t > max_time: #struc.to_pymatgen().density < 0.9:
+            t = time() - t0
+            if t > max_time:  # struc.to_pymatgen().density < 0.9:
                 try:
                     print("!!!!! Long time in ani calculation", t)
                     print(struc.get_1D_representation().to_string())
@@ -228,23 +257,23 @@ def optimizer(struc, atom_info, workdir, tag='job_0', \
                     print("Trouble in optLat")
             elif stress < stress_tol:
                 results = {}
-                results['xtal'] = struc
+                results["xtal"] = struc
                 if eng is not None:
-                    results['energy'] = eng #/sum(struc.numMols)
+                    results["energy"] = eng  # /sum(struc.numMols)
                 else:
-                    results['energy'] = 10000
-                results['time'] = time()-t0
+                    results["energy"] = 10000
+                results["time"] = time() - t0
             else:
                 print("stress is wrong {:6.2f}".format(stress))
-                #print(struc)
-                #print(struc.to_file())
-                #import sys; sys.exit()
+                # print(struc)
+                # print(struc.to_file())
+                # import sys; sys.exit()
     else:
         results = {}
-        results['xtal'] = struc
-        results['energy'] = calc.structure.energy
-        results['time'] = time()-t0
-    #else:
+        results["xtal"] = struc
+        results["energy"] = calc.structure.energy
+        results["time"] = time() - t0
+    # else:
     #    print("energy:", struc.energy)
     #    print("distance is wrong", struc.to_pymatgen().density)
     #    print(struc.to_file())
@@ -253,11 +282,30 @@ def optimizer(struc, atom_info, workdir, tag='job_0', \
     return results
 
 
-def optimizer_par(xtals, ids, mutates, job_tags, randomizer,
-    optimizer, smiles, block, num_block, atom_info, workdir,
-    sgs, comp, lattice, torsions, molecules, sites, ref_pmg,
-    matcher, ref_pxrd, use_hall, skip_ani):
-
+def optimizer_par(
+    xtals,
+    ids,
+    mutates,
+    job_tags,
+    randomizer,
+    optimizer,
+    smiles,
+    block,
+    num_block,
+    atom_info,
+    workdir,
+    sgs,
+    comp,
+    lattice,
+    torsions,
+    molecules,
+    sites,
+    ref_pmg,
+    matcher,
+    ref_pxrd,
+    use_hall,
+    skip_ani,
+):
     """
     A routine used for parallel structure optimization
 
@@ -271,18 +319,58 @@ def optimizer_par(xtals, ids, mutates, job_tags, randomizer,
         id = ids[i]
         mutate = mutates[i]
         job_tag = job_tags[i]
-        xtal, match = optimizer_single(xtal, id, mutate, job_tag,
-        randomizer, optimizer, smiles, block, num_block, atom_info,
-        workdir, sgs, comp, lattice, torsions, molecules, sites,
-        ref_pmg, matcher, ref_pxrd, use_hall, skip_ani)
+        xtal, match = optimizer_single(
+            xtal,
+            id,
+            mutate,
+            job_tag,
+            randomizer,
+            optimizer,
+            smiles,
+            block,
+            num_block,
+            atom_info,
+            workdir,
+            sgs,
+            comp,
+            lattice,
+            torsions,
+            molecules,
+            sites,
+            ref_pmg,
+            matcher,
+            ref_pxrd,
+            use_hall,
+            skip_ani,
+        )
         results.append((id, xtal, match))
     return results
 
-def optimizer_single(xtal, id, mutate, job_tag, randomizer,
-    optimizer, smiles, block, num_block, atom_info, workdir,
-    sgs, comp, lattice, torsions, molecules, sites, ref_pmg,
-    matcher, ref_pxrd, use_hall, skip_ani):
 
+def optimizer_single(
+    xtal,
+    id,
+    mutate,
+    job_tag,
+    randomizer,
+    optimizer,
+    smiles,
+    block,
+    num_block,
+    atom_info,
+    workdir,
+    sgs,
+    comp,
+    lattice,
+    torsions,
+    molecules,
+    sites,
+    ref_pmg,
+    matcher,
+    ref_pxrd,
+    use_hall,
+    skip_ani,
+):
     """
     A routine used for individual structure optimization
 
@@ -296,39 +384,49 @@ def optimizer_single(xtal, id, mutate, job_tag, randomizer,
     # 1. Obtain the structure model
     opt_lat = True if lattice is None else False
     if xtal is None:
-        xtal = randomizer(smiles, sgs, comp, lattice, block,
-                          num_block, torsions, molecules,
-                          sites, use_hall)
-        tag = 'Random'
+        xtal = randomizer(
+            smiles,
+            sgs,
+            comp,
+            lattice,
+            block,
+            num_block,
+            torsions,
+            molecules,
+            sites,
+            use_hall,
+        )
+        tag = "Random"
     else:
-        tag = 'Mutation'
+        tag = "Mutation"
         if mutate:
             xtal = mutator(xtal, smiles, opt_lat, ref_pxrd)
 
     # 2. Optimization
-    res = optimizer(xtal, atom_info, workdir, job_tag,
-                    opt_lat, skip_ani=skip_ani)
+    res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani)
 
     # 3. Check match w.r.t the reference
     match = False
     if res is not None:
-        xtal, eng = res['xtal'], res['energy']
+        xtal, eng = res["xtal"], res["energy"]
         rep = xtal.get_1D_representation()
         N = sum(xtal.numMols)
-        strs = rep.to_string(None, eng/N, tag) #print(strs)
+        strs = rep.to_string(None, eng / N, tag)  # print(strs)
 
         if ref_pmg is not None:
             pmg_s1 = xtal.to_pymatgen()
-            pmg_s1.remove_species('H')
+            pmg_s1.remove_species("H")
 
             rmsd = matcher.get_rms_dist(ref_pmg, pmg_s1)
             if rmsd is not None:
                 # Further refine the structure
                 match = True
-                str1 = "Match {:6.2f} {:6.2f} {:12.3f} ".format(rmsd[0], rmsd[1], eng/N)
+                str1 = "Match {:6.2f} {:6.2f} {:12.3f} ".format(
+                    rmsd[0], rmsd[1], eng / N
+                )
                 if not skip_ani:
                     xtal, eng1 = refine_struc(xtal, smiles, ANI_relax)
-                    str1 += "Full Relax -> {:12.3f}".format(eng1/N)
+                    str1 += "Full Relax -> {:12.3f}".format(eng1 / N)
                     eng = eng1
                 print(str1)
 
@@ -340,10 +438,11 @@ def optimizer_single(xtal, id, mutate, job_tag, randomizer,
             strs += " {:.3f}".format(match)
 
         xtal.energy = eng
-        print("{:3d} ".format(id)+strs)
+        print("{:3d} ".format(id) + strs)
         return xtal, match
     else:
         return None, match
+
 
 def refine_struc(xtal, smiles, calculator):
     """
@@ -354,14 +453,14 @@ def refine_struc(xtal, smiles, calculator):
         - calculator: ANI_relax or MACE_relax
     """
     s = xtal.to_ase()
-    s = calculator(s, step=50, fmax=0.1, logfile='ase.log')
-    s = calculator(s, step=250, opt_cell=True, logfile='ase.log')
-    s = calculator(s, step=50, fmax=0.1, logfile='ase.log')
-    eng1 = s.get_potential_energy() #/sum(xtal.numMols)
+    s = calculator(s, step=50, fmax=0.1, logfile="ase.log")
+    s = calculator(s, step=250, opt_cell=True, logfile="ase.log")
+    s = calculator(s, step=50, fmax=0.1, logfile="ase.log")
+    eng1 = s.get_potential_energy()  # /sum(xtal.numMols)
 
     xtal = pyxtal(molecular=True)
     pmg = ase2pymatgen(s)
-    mols = [smi+'.smi' for smi in smiles]
+    mols = [smi + ".smi" for smi in smiles]
     xtal.from_seed(pmg, mols)
     return xtal, eng1
 
@@ -375,6 +474,7 @@ def compute_par(row, pmg, work_dir, skf_dir, queue, compute):
     data = compute(row, pmg, work_dir, skf_dir)
     queue.put((row.id, row.csd_code, data))
 
+
 def compute(row, pmg, work_dir, skf_dir, info=None):
     """
     perform the benchmark for a ase db row object
@@ -382,87 +482,104 @@ def compute(row, pmg, work_dir, skf_dir, info=None):
     Arg:
         row: ase db
     """
-    data = {'charmm_info': {},
-            'gulp_info': {},
-            'ani_info': {},
-            'dftb_D3_info': {},
-            'dftb_TS_info': {},
-           }
+    data = {
+        "charmm_info": {},
+        "gulp_info": {},
+        "ani_info": {},
+        "dftb_D3_info": {},
+        "dftb_TS_info": {},
+    }
 
     if info is None:
-        c_info = row.data['charmm_info']
-        g_info = row.data['gulp_info']
+        c_info = row.data["charmm_info"]
+        g_info = row.data["gulp_info"]
     else:
-        c_info = info['c_info']
-        g_info = info['g_info']
-    data['charmm_info'] = c_info
-    data['gulp_info'] = g_info
+        c_info = info["c_info"]
+        g_info = info["g_info"]
+    data["charmm_info"] = c_info
+    data["gulp_info"] = g_info
 
-    w_dir = work_dir + '/' + row.csd_code
-    smiles = row.mol_smi.split('.')
+    w_dir = work_dir + "/" + row.csd_code
+    smiles = row.mol_smi.split(".")
 
     # Invoke benchmark
-    ben = benchmark(pmg, smiles, work_dir=w_dir, skf_dir=skf_dir,\
-                    charmm_info=c_info, gulp_info=g_info)
-    file1, file2 = '/pyxtal.prm', '/pyxtal.rtf'
-    prm = open(w_dir+file1, 'w'); prm.write(c_info['prm']); prm.close()
-    rtf = open(w_dir+file2, 'w'); rtf.write(c_info['rtf']); rtf.close()
+    ben = benchmark(
+        pmg,
+        smiles,
+        work_dir=w_dir,
+        skf_dir=skf_dir,
+        charmm_info=c_info,
+        gulp_info=g_info,
+    )
+    file1, file2 = "/pyxtal.prm", "/pyxtal.rtf"
+    prm = open(w_dir + file1, "w")
+    prm.write(c_info["prm"])
+    prm.close()
+    rtf = open(w_dir + file2, "w")
+    rtf.write(c_info["rtf"])
+    rtf.close()
 
     # reference
-    print('\n', row.csd_code, row.mol_smi, pmg.volume)
-    rep = representation(ben.rep['reference'], smiles)
-    print(rep.to_string() + ' reference')
+    print("\n", row.csd_code, row.mol_smi, pmg.volume)
+    rep = representation(ben.rep["reference"], smiles)
+    print(rep.to_string() + " reference")
 
-    for calc in ['charmm', 'gulp', 'ani', 'dftb_D3', 'dftb_TS']:
+    for calc in ["charmm", "gulp", "ani", "dftb_D3", "dftb_TS"]:
         try:
             ben.calc(calc, show=True)
-            key = calc+"_info"
-            data[key]['rep'] = ben.rep[calc]
-            data[key]['time'] = ben.time[calc]
-            data[key]['diff'] = ben.diff[calc]
-            data[key]['cif'] = ben.xtal[calc].to_file()
-            data[key]['energy'] = ben.energy[calc]/sum(ben.xtal[calc].numMols)
+            key = calc + "_info"
+            data[key]["rep"] = ben.rep[calc]
+            data[key]["time"] = ben.time[calc]
+            data[key]["diff"] = ben.diff[calc]
+            data[key]["cif"] = ben.xtal[calc].to_file()
+            data[key]["energy"] = ben.energy[calc] / sum(ben.xtal[calc].numMols)
         except:
             print("=====Calculation is wrong ", calc, row.csd_code)
-            data[key]['energy'] = 100000
+            data[key]["energy"] = 100000
 
     return data
 
 
 if __name__ == "__main__":
-
     from pyxtal.db import database
     import pymatgen.analysis.structure_matcher as sm
 
     w_dir = "tmp"
-    if not os.path.exists(w_dir): os.makedirs(w_dir)
+    if not os.path.exists(w_dir):
+        os.makedirs(w_dir)
 
-    db = database('pyxtal/database/test.db')
-    row = db.get_row('ACSALA')
-    xtal1 = db.get_pyxtal('ACSALA')
+    db = database("pyxtal/database/test.db")
+    row = db.get_row("ACSALA")
+    xtal1 = db.get_pyxtal("ACSALA")
     smile = row.mol_smi
 
     # Prepare prm
-    c_info = row.data['charmm_info']
-    prm = open(w_dir+'/pyxtal.prm', 'w'); prm.write(c_info['prm']); prm.close()
-    rtf = open(w_dir+'/pyxtal.rtf', 'w'); rtf.write(c_info['rtf']); rtf.close()
+    c_info = row.data["charmm_info"]
+    prm = open(w_dir + "/pyxtal.prm", "w")
+    prm.write(c_info["prm"])
+    prm.close()
+    rtf = open(w_dir + "/pyxtal.rtf", "w")
+    rtf.write(c_info["rtf"])
+    rtf.close()
 
     # Relax expt. xtal
     res = optimizer(xtal1, c_info, w_dir)
-    xtal1, eng = res['xtal'], res['energy']
-    rep0 = xtal1.get_1D_representation(); print(rep0.to_string(eng))
+    xtal1, eng = res["xtal"], res["energy"]
+    rep0 = xtal1.get_1D_representation()
+    print(rep0.to_string(eng))
 
     # Redo it from the 1D. Rep.
     rep2 = representation.from_string(rep0.to_string(), [smile])
     xtal2 = rep2.to_pyxtal()
     res = optimizer(xtal2, c_info, w_dir)
-    xtal2, eng = res['xtal'], res['energy']
-    rep0 = xtal2.get_1D_representation(); print(rep0.to_string(eng))
+    xtal2, eng = res["xtal"], res["energy"]
+    rep0 = xtal2.get_1D_representation()
+    print(rep0.to_string(eng))
 
     pmg1 = xtal1.to_pymatgen()
     pmg2 = xtal2.to_pymatgen()
-    pmg1.remove_species('H')
-    pmg2.remove_species('H')
+    pmg1.remove_species("H")
+    pmg2.remove_species("H")
     print(sm.StructureMatcher().fit(pmg1, pmg2))
 
 """

@@ -15,6 +15,7 @@ from pyxtal.symmetry import Group
 from pyxtal.symmetry import choose_wyckoff_mol as wyc_mol
 from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError, VolumeError
 
+
 # Define functions
 # ------------------------------
 class molecular_crystal:
@@ -52,20 +53,19 @@ class molecular_crystal:
         group,
         molecules,
         numMols,
-        factor = 1.1,
-        thickness = None,
-        area = None,
-        lattice = None,
-        torsions = None,
-        tm = Tol_matrix(prototype="molecular"),
-        sites = None,
-        conventional = True,
-        seed = None,
-        use_hall = False,
+        factor=1.1,
+        thickness=None,
+        area=None,
+        lattice=None,
+        torsions=None,
+        tm=Tol_matrix(prototype="molecular"),
+        sites=None,
+        conventional=True,
+        seed=None,
+        use_hall=False,
     ):
-
         # Initialize
-        self.source = 'Random'
+        self.source = "Random"
         self.valid = False
         self.factor = factor
         self.seed = seed
@@ -73,9 +73,9 @@ class molecular_crystal:
         # Dimesion
         self.dim = dim
         self.area = area  # Cross-section area for 1D
-        self.thickness = thickness # Thickness of 2D slab
+        self.thickness = thickness  # Thickness of 2D slab
 
-        #The periodic boundary condition
+        # The periodic boundary condition
         if dim == 3:
             self.PBC = [1, 1, 1]
         elif dim == 2:
@@ -120,8 +120,9 @@ class molecular_crystal:
             if no_check_compability:
                 compat, self.degrees = True, True
             else:
-                compat, self.degrees = self.group.check_compatible(self.numMols, \
-                        self.valid_orientations)
+                compat, self.degrees = self.group.check_compatible(
+                    self.numMols, self.valid_orientations
+                )
             if not compat:
                 msg = "Compoisition " + str(self.numMols)
                 msg += " not compatible with symmetry "
@@ -141,7 +142,7 @@ class molecular_crystal:
     def __str__(self):
         s = "------Random Molecular Crystal------"
         s += "\nDimension: " + str(self.dim)
-        #s += "\nGroup: " + self.symbol
+        # s += "\nGroup: " + self.symbol
         s += "\nVolume factor: " + str(self.factor)
         s += "\n" + str(self.lattice)
         if self.valid:
@@ -185,7 +186,7 @@ class molecular_crystal:
             torsions: list of torsions
         """
         if torsions is None:
-            torsions = [None]*len(molecules)
+            torsions = [None] * len(molecules)
 
         self.molecules = []
         for i, mol in enumerate(molecules):
@@ -193,8 +194,9 @@ class molecular_crystal:
             if isinstance(mol, pyxtal_molecule):
                 p_mol = mol
             else:
-                p_mol = pyxtal_molecule(mol, seed=self.seed, \
-                        torsions=torsions[i], tm=self.tol_matrix)
+                p_mol = pyxtal_molecule(
+                    mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix
+                )
             self.molecules.append(p_mol)
 
     def set_orientations(self):
@@ -217,7 +219,7 @@ class molecular_crystal:
             for x in self.group.wyckoffs_organized:
                 self.valid_orientations[-1].append([])
                 for j, wp in enumerate(x):
-                    #Don't check the wp with high multiplicity
+                    # Don't check the wp with high multiplicity
                     if len(wp) > self.numMols[i]:
                         allowed = []
                     else:
@@ -274,7 +276,7 @@ class molecular_crystal:
                         unique_axis=unique_axis,
                         thickness=self.thickness,
                         area=self.area,
-                        )
+                    )
                     good_lattice = True
                     break
                 except VolumeError:
@@ -366,25 +368,25 @@ class molecular_crystal:
         mol_sites_tmp = []
 
         # Now we start to add the specie to the wyckoff position
-        sites_list = deepcopy(self.sites[id]) # the list of Wyckoff site
+        sites_list = deepcopy(self.sites[id])  # the list of Wyckoff site
         if sites_list is not None:
-            self.wyckoff_attempts = max(len(sites_list)*2, 10)
+            self.wyckoff_attempts = max(len(sites_list) * 2, 10)
         else:
             # the minimum numattempts is to put all atoms to the general WPs
-            min_wyckoffs = int(numMol/len(self.group.wyckoffs_organized[0][0]))
-            self.wyckoff_attempts = max(2*min_wyckoffs, 10)
+            min_wyckoffs = int(numMol / len(self.group.wyckoffs_organized[0][0]))
+            self.wyckoff_attempts = max(2 * min_wyckoffs, 10)
 
         for cycle in range(self.wyckoff_attempts):
             # Choose a random WP for given multiplicity: 2a, 2b, 2c
-            if sites_list is not None and len(sites_list)>0:
+            if sites_list is not None and len(sites_list) > 0:
                 site = sites_list[0]
-            else: # Selecting the merging
+            else:  # Selecting the merging
                 site = None
 
             # NOTE: The molecular version return wyckoff indices, not ops
             diff = numMol - numMol_added
 
-            if type(site) is dict: #site with coordinates
+            if type(site) is dict:  # site with coordinates
                 key = list(site.keys())[0]
                 wp = wyc_mol(self.group, diff, key, valid_ori, True, self.dim)
             else:
@@ -392,7 +394,7 @@ class molecular_crystal:
 
             if wp is not False:
                 # Generate a list of coords from the wyckoff position
-                mult = wp.multiplicity # remember the original multiplicity
+                mult = wp.multiplicity  # remember the original multiplicity
 
                 if type(site) is dict:
                     pt = site[key]
@@ -400,24 +402,29 @@ class molecular_crystal:
                     pt = self.lattice.generate_point()
                     # merge coordinates if the atoms are close
                 mtol = pyxtal_mol.radius * 0.5
-                pt, wp, oris = wp.merge(pt, self.lattice.matrix, mtol, valid_ori, self.group)
+                pt, wp, oris = wp.merge(
+                    pt, self.lattice.matrix, mtol, valid_ori, self.group
+                )
 
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:
                         continue
-                    if self.dim == 2 and self.thickness is not None and \
-                    self.thickness < 0.1:
+                    if (
+                        self.dim == 2
+                        and self.thickness is not None
+                        and self.thickness < 0.1
+                    ):
                         pt[-1] = 0.5
 
                     ms0 = self._set_orientation(pyxtal_mol, pt, oris, wp)
                     if ms0 is not None:
                         # Check current WP against existing WP's
                         passed_wp_check = True
-                        #print("Checking", ms0)
+                        # print("Checking", ms0)
                         for ms1 in mol_wyks + mol_sites_tmp:
                             if not ms0.short_dist_with_wp2(ms1, tm=self.tol_matrix):
                                 passed_wp_check = False
-                            #else:
+                            # else:
                             #    print("passing", ms1)
 
                         if passed_wp_check:
@@ -432,7 +439,6 @@ class molecular_crystal:
                             if numMol_added == numMol:
                                 return mol_sites_tmp
         return None
-
 
     def _set_orientation(self, pyxtal_mol, pt, oris, wp):
         """
@@ -475,7 +481,7 @@ class molecular_crystal:
                         return ms0
                     angle = (angle_lo + angle_hi) / 2
                     fun = fun_dist(angle, ori, pyxtal_mol, pt)
-                    #print('Bisection: ', it, fun)
+                    # print('Bisection: ', it, fun)
                     if fun_lo > fun_hi:
                         angle_hi, fun_hi = angle, fun
                     else:

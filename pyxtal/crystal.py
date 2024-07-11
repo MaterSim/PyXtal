@@ -15,6 +15,7 @@ from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice
 from pyxtal.database.element import Element
 
+
 # Define functions
 # ------------------------------
 class random_crystal:
@@ -40,21 +41,21 @@ class random_crystal:
 
     def __init__(
         self,
-        dim = 3,
-        group = 227,
-        species = ['C'],
-        numIons = 8,
-        factor = 1.1,
-        thickness = None,
-        area = None,
-        lattice = None,
-        sites = None,
-        conventional = True,
-        tm = Tol_matrix(prototype="atomic"),
-        use_hall = False):
-
+        dim=3,
+        group=227,
+        species=["C"],
+        numIons=8,
+        factor=1.1,
+        thickness=None,
+        area=None,
+        lattice=None,
+        sites=None,
+        conventional=True,
+        tm=Tol_matrix(prototype="atomic"),
+        use_hall=False,
+    ):
         # Initialize
-        self.source = 'Random'
+        self.source = "Random"
         self.valid = False
         self.factor = factor
         self.min_density = 0.75
@@ -62,10 +63,10 @@ class random_crystal:
         # Dimesion
         self.dim = dim
         self.area = area  # Cross-section area for 1D
-        self.thickness = thickness # Thickness of 2D slab
+        self.thickness = thickness  # Thickness of 2D slab
         self.lattice0 = lattice
 
-        #The periodic boundary condition
+        # The periodic boundary condition
         if dim == 3:
             self.PBC = [1, 1, 1]
         elif dim == 2:
@@ -109,8 +110,8 @@ class random_crystal:
             msg += str(self.group.number)
             raise Comp_CompatibilityError(msg)
         else:
-            #self.set_volume()
-            #self.set_lattice(self.lattice0)
+            # self.set_volume()
+            # self.set_lattice(self.lattice0)
             self.set_elemental_volumes()
             self.set_crystal()
 
@@ -141,7 +142,7 @@ class random_crystal:
         # Symmetry sites
         self.sites = {}
         for i, specie in enumerate(self.species):
-            if sites is not None and sites[i] is not None and len(sites[i])>0:
+            if sites is not None and sites[i] is not None and len(sites[i]) > 0:
                 self.sites[specie] = []
                 self._check_consistency(sites[i], self.numIons[i])
 
@@ -150,7 +151,7 @@ class random_crystal:
                         # keep the record of wp index
                         id = self.group.get_index_by_letter(item[0])
                         self.sites[specie].append((id, item[1]))
-                elif type(sites[i]) is list: #tuple
+                elif type(sites[i]) is list:  # tuple
                     for site in sites[i]:
                         if type(site) is tuple:
                             (letter, x, y, z) = site
@@ -169,8 +170,8 @@ class random_crystal:
         self.elemental_volumes = []
         for specie in self.species:
             sp = Element(specie)
-            vol1, vol2 = sp.covalent_radius ** 3, sp.vdw_radius ** 3
-            self.elemental_volumes.append([4/3*np.pi*vol1, 4/3*np.pi*vol2])
+            vol1, vol2 = sp.covalent_radius**3, sp.vdw_radius**3
+            self.elemental_volumes.append([4 / 3 * np.pi * vol1, 4 / 3 * np.pi * vol2])
 
     def set_volume(self):
         """
@@ -190,8 +191,8 @@ class random_crystal:
             volume += numIon * random.uniform(vmin, vmax)
         self.volume = self.factor * volume
 
-        #make sure the volume is not too small
-        if self.volume/sum(self.numIons) < self.min_density:
+        # make sure the volume is not too small
+        if self.volume / sum(self.numIons) < self.min_density:
             self.volume = sum(self.numIons) * self.min_density
 
     def set_lattice(self, lattice):
@@ -231,7 +232,7 @@ class random_crystal:
                         unique_axis=unique_axis,
                         thickness=self.thickness,
                         area=self.area,
-                        )
+                    )
                     good_lattice = True
                     break
                 except VolumeError:
@@ -250,7 +251,7 @@ class random_crystal:
         """
         The main code to generate a random atomic crystal.
         If successful, `self.valid` is True
-       """
+        """
         self.numattempts = 0
         if not self.degrees:
             self.lattice_attempts = 5
@@ -259,14 +260,14 @@ class random_crystal:
             self.lattice_attempts = 40
             self.coord_attempts = 10
 
-        #QZ: Maybe we no longer need this tag
-        #if not self.lattice.allow_volume_reset:
+        # QZ: Maybe we no longer need this tag
+        # if not self.lattice.allow_volume_reset:
         #    self.lattice_attempts = 1
 
         for cycle1 in range(self.lattice_attempts):
             self.set_volume()
             self.set_lattice(self.lattice0)
-            #print("VOLUME", cycle1, self.volume)
+            # print("VOLUME", cycle1, self.volume)
             self.cycle1 = cycle1
             for cycle2 in range(self.coord_attempts):
                 self.cycle2 = cycle2
@@ -324,25 +325,25 @@ class random_crystal:
         wyckoff_sites_tmp = []
 
         # Now we start to add the specie to the wyckoff position
-        sites_list = deepcopy(self.sites[specie]) # the list of Wyckoff site
+        sites_list = deepcopy(self.sites[specie])  # the list of Wyckoff site
         if sites_list is not None:
-            wyckoff_attempts = max(len(sites_list)*2, 10)
+            wyckoff_attempts = max(len(sites_list) * 2, 10)
         else:
             # the minimum numattempts is to put all atoms to the general WPs
-            min_wyckoffs = int(numIon/len(self.group.wyckoffs_organized[0][0]))
-            wyckoff_attempts = max(2*min_wyckoffs, 10)
+            min_wyckoffs = int(numIon / len(self.group.wyckoffs_organized[0][0]))
+            wyckoff_attempts = max(2 * min_wyckoffs, 10)
 
         cycle = 0
         while cycle < wyckoff_attempts:
             # Choose a random WP for given multiplicity: 2a, 2b
-            if sites_list is not None and len(sites_list)>0:
+            if sites_list is not None and len(sites_list) > 0:
                 site = sites_list[0]
-            else: # Selecting the merging
+            else:  # Selecting the merging
                 site = None
 
             new_site = None
-            if type(site) is tuple: #site with coordinates
-                #print(site)
+            if type(site) is tuple:  # site with coordinates
+                # print(site)
                 (index, xyz) = site
                 wp = self.group[index]
                 new_site = atom_site(wp, xyz, specie)
@@ -352,33 +353,38 @@ class random_crystal:
                     pt = self.lattice.generate_point()
                     # avoid using the merge function
                     if len(wp.short_distances(pt, cell, tol)) > 0:
-                        #print('bad pt', pt, wp.short_distances(pt, cell, tol))
+                        # print('bad pt', pt, wp.short_distances(pt, cell, tol))
                         cycle += 1
                         continue
                     else:
                         # update pt
                         pt = wp.project(pt, cell, self.PBC)
-                        #print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
+                        # print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
                 else:
                     # generate wp
-                    wp = choose_wyckoff(self.group, numIon-numIon_added, site, self.dim)
+                    wp = choose_wyckoff(
+                        self.group, numIon - numIon_added, site, self.dim
+                    )
                     if wp is not False:
-                        #print(wp.letter)
+                        # print(wp.letter)
                         passed_wp_check = True
                         # Generate a list of coords from ops
                         pt = self.lattice.generate_point()
                         pt, wp, _ = wp.merge(pt, cell, tol, group=self.group)
-                #print('good pt', pt)
+                # print('good pt', pt)
                 if wp is not False:
                     # For pure planar structure
-                    if self.dim == 2 and self.thickness is not None and \
-                        self.thickness < 0.1:
+                    if (
+                        self.dim == 2
+                        and self.thickness is not None
+                        and self.thickness < 0.1
+                    ):
                         pt[-1] = 0.5
                     new_site = atom_site(wp, pt, specie)
 
             # Check current WP against existing WP's
             if self.check_wp(wyckoff_sites_tmp, wyks, cell, new_site):
-                if sites_list is not None and len(sites_list)>0:
+                if sites_list is not None and len(sites_list) > 0:
                     sites_list.pop(0)
                 wyckoff_sites_tmp.append(new_site)
                 numIon_added += new_site.multiplicity
@@ -402,7 +408,6 @@ class random_crystal:
                 return False
         return True
 
-
     def _check_consistency(self, site, numIon):
         num = 0
         for s in site:
@@ -416,7 +421,7 @@ class random_crystal:
         else:
             diff = numIon - num
             if diff > 0:
-                #check if compatible
+                # check if compatible
                 compat, self.degrees = self.group.check_compatible([diff])
                 if compat:
                     return True

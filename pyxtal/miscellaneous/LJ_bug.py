@@ -78,7 +78,7 @@ def LJ_force(pos, dim, method=1, mu=0.1):
 def single_optimize(pos, dim=3, method=1, mu=0.1):
     """
     perform optimization for a given cluster
-    Args: 
+    Args:
     pos: N*dim0 array representing the atomic positions
     dim: dimension of the hyper/normal space
     kt: perturbation factors
@@ -106,7 +106,7 @@ def single_optimize(pos, dim=3, method=1, mu=0.1):
 
 def hyper_optimize(pos, dim, method=1, mu=0.1):
     """
-    hyperspatial optimization 
+    hyperspatial optimization
     """
     [energy1, pos1] = single_optimize(pos, dim)
 
@@ -168,7 +168,6 @@ class LJ_prediction:
         return cluster.cart_coords
 
     def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33), method=1):
-
         print("\nPerforming random search at {0:d}D space\n".format(dim))
         cycle = range(maxN)
         if ncpu > 1:
@@ -317,4 +316,3 @@ if __name__ == "__main__":
     for i in range(len(engs[0])):
         eng_tmp = engs[:, i]
         grounds.append(len(eng_tmp[eng_tmp < (eng_min + 1e-3)]))
-

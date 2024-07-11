@@ -1,15 +1,15 @@
 from pyxtal.db import database
 
-db = database('pyxtal/database/mech.db')
+db = database("pyxtal/database/mech.db")
 
-c = db.get_pyxtal('DAHMUX')
+c = db.get_pyxtal("DAHMUX")
 rep = c.get_1D_representation()
 a = c.to_atomic_xtal()
 
 dicts = c.mol_sites[0].to_1D_dicts()
-b = a.to_molecular_xtal([c.mol_sites[0].molecule],
-                        reflects = [dicts['reflect']],
-                        oris = [dicts['orientation']])
+b = a.to_molecular_xtal(
+    [c.mol_sites[0].molecule], reflects=[dicts["reflect"]], oris=[dicts["orientation"]]
+)
 d = rep.to_pyxtal()
 
 

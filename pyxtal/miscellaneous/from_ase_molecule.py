@@ -121,4 +121,3 @@ if __name__ == "__main__":
                 mo.apply_operation(op)
                 filename = "xyz/" + name + "-" + str(i) + ".xyz"
                 mo.to(fmt="xyz", filename=filename)
-

@@ -241,4 +241,3 @@ for i in range(1000):
         optimize(struc, dir1)
     except:
         print("something is wrong")
-
