@@ -3961,3 +3961,19 @@ class pyxtal:
             b = self.group.symbol[0]
 
         return l + b + str(sum(self.numIons))
+
+    def resymmetrize(self, tol=1e-3):
+        """
+        Recheck the symmetry with a given tolerance value
+        Useful to identify a higher space group symmetry
+
+        Args:
+
+            tol (float): the tolerance value for symmetry finder
+        """
+
+        xtal0 = pyxtal()
+        xtal0.from_seed(self.to_pymatgen(), tol=tol)
+
+        return xtal0
+
