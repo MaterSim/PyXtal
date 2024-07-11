@@ -302,7 +302,18 @@ class GA(GlobalOptimize):
 
             self.min_energy = np.min(np.array(self.engs))
             self.N_struc = len(self.engs)
-            if False: #match is not None:
+
+            # Update the FF parameters if necessary
+            #import sys; sys.exit()
+            if self.ff_opt:
+                N_max = min([int(self.N_pop * 0.6), 50])
+                ids = np.argsort(engs)
+                xtals = self.select_xtals(current_xtals, ids, N_max)
+                print("Select Good structures for FF optimization", len(xtals))
+                N_added = self.ff_optimization(xtals, N_added)
+
+
+            elif match is not None:
                 match = self.early_termination(current_xtals,
                                                current_matches,
                                                current_engs,
@@ -310,18 +321,9 @@ class GA(GlobalOptimize):
                                                ref_pmg,
                                                ref_eng)
                 print("Early termination")
-                #return
-            else:
-                # Update the FF parameters if necessary
-                #import sys; sys.exit()
-                if self.ff_opt:
-                    N_max = min([int(self.N_pop * 0.6), 50])
-                    ids = np.argsort(engs)
-                    xtals = self.select_xtals(current_xtals, ids, N_max)
-                    print("Select Good structures for FF optimization", len(xtals))
-                    N_added = self.ff_optimization(xtals, N_added)
+                return
 
-        return None
+        return
 
     def _selTournament(self, fitness, factor=0.35):
         """

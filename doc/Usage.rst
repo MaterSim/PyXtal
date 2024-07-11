@@ -590,7 +590,7 @@ Subgroup/supergroup manipulation
 Symmetry relation has been playing an important role in crystallography. PyXtal provides several utilities to allow one to conveniently explore the subgroup or supergroup symmetries. (To add)
 
 Generating subgroup and supergroup xtals
-----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: Python
 
     from pyxtal import pyxtal
@@ -614,9 +614,7 @@ Executing this above scripts will lead to the following output:
     k_subgroup xtals 22
 
 
-This way, you can easily find derivative crystals in the suboptimal representations. 
-
-Conversely, it is also possible to identify the likely supergroup xtal. The following snippet codes can be used to design illustrate pyxtal functionalities.
+This way, you can easily find derivative crystals in the suboptimal representations. Conversely, it is also possible to identify the likely supergroup xtal. The following snippet codes can be used to design illustrate pyxtal functionalities.
 
 .. code-block:: Python
     from pyxtal import pyxtal
@@ -664,8 +662,10 @@ Conversely, it is also possible to identify the likely supergroup xtal. The foll
     2/3, 1/3, 3/4                  -> 2/3, 1/3, 3/4                  -> 2/3, 1/3, -z                  
     , [1, 0], array([0.        , 0.        , 0.00206797]), 0, 0.014137159092037652)]
 
+
+
 Chemical Substitution
-----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 In many cases, the crystal structures of mutlicompnent systems are strongly related to the structure of simple systems. For instance, the 1: 1 ratio boron nitrides, as an isoelectronic analogue to carbon, exihibit very similar structural behaviors as compared to elemental carbon allotropes. Similarly, many of the known AlPO4 polymorphs are related to SiO2. 
 
@@ -976,7 +976,7 @@ Alternatively, one can read the structure from the 1D representation and smile s
 
 
 Database
---------------------------------
+--------
 
 For molecular crystals, PyXtal provides a
 `db <pyxtal.db.html>`_ class to handle store the database with additional information related to the Cambridge Crystallographic Database. **This function requires the access of `CSD Python-api <https://downloads.ccdc.cam.ac.uk/documentation/API/index.html>`_.**
