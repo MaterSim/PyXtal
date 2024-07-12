@@ -3,27 +3,28 @@ Module for handling Wyckoff sites for both atom and molecule
 """
 
 # Standard Libraries
-import numpy as np
-from scipy.spatial.transform import Rotation as R
-from scipy.spatial.distance import cdist
 from copy import deepcopy
+
+import numpy as np
 
 # External Libraries
 from pymatgen.core import Molecule
+from scipy.spatial.distance import cdist
+from scipy.spatial.transform import Rotation as R
+
+from pyxtal.constants import rad
+from pyxtal.database.element import Element
+from pyxtal.lattice import Lattice
+from pyxtal.operations import (
+    SymmOp,
+    create_matrix,
+    distance_matrix,
+    filtered_coords,
+)
+from pyxtal.symmetry import Group, Wyckoff_position
 
 # PyXtal imports
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.operations import (
-    check_images,
-    distance_matrix,
-    filtered_coords,
-    create_matrix,
-    SymmOp,
-)
-from pyxtal.symmetry import Group, Wyckoff_position
-from pyxtal.database.element import Element
-from pyxtal.constants import rad, deg
-from pyxtal.lattice import Lattice
 
 
 class atom_site:
@@ -56,9 +57,9 @@ class atom_site:
         if not hasattr(self.wp, "site_symm"):
             self.wp.get_site_symmetry()
         s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
-        s += "WP [{:}] ".format(self.wp.get_label())
+        s += f"WP [{self.wp.get_label()}] "
         if self.coordination is not None:
-            s += " CN [{:2d}] ".format(self.coordination)
+            s += f" CN [{self.coordination:2d}] "
         s += "Site [{:}]".format(self.wp.site_symm.replace(" ", ""))
 
         return s
@@ -74,12 +75,11 @@ class atom_site:
         return deepcopy(self)
 
     def save_dict(self):
-        dict0 = {
+        return {
             "position": self.position,
             "specie": self.specie,
             "wp": self.wp.save_dict(),
         }
-        return dict0
 
     def _get_dof(self):
         """
@@ -151,7 +151,7 @@ class atom_site:
         xyz = self.wp.get_free_xyzs(self.position)
         # print(self.wp.ops[0].rotation_matrix, self.wp.get_frozen_axis(), self.wp.get_dof())
         # print([self.specie, self.wp.index] + list(xyz))
-        return [self.specie, self.wp.index] + list(xyz)
+        return [self.specie, self.wp.index, *list(xyz)]
 
     def swap_axis(self, swap_id, shift=np.zeros(3)):
         """
@@ -188,9 +188,7 @@ class atom_site:
         self.position = SymmOp(tran).operate(self.position)
         self.position -= np.floor(self.position)
         self.wp = self.wp.equivalent_set(indices[self.wp.index])  # update the wp index
-        self.site_symm = site_symm(
-            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
-        )
+        self.site_symm = site_symm(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
         self.update()
 
     def update(self, pos=None, reset_wp=False):
@@ -221,9 +219,7 @@ class atom_site:
         diffs = diffs0.copy()
         diffs -= np.rint(diffs)
         diffs[:, axis] = 0
-        translations = diffs0 - diffs
-
-        return translations
+        return diffs0 - diffs
 
     def get_disp(self, pos, lattice, translation):
         """
@@ -278,18 +274,12 @@ class atom_site:
             # Calculate distances
             dm = distance_matrix(coords1, coords2, lattice, PBC=self.PBC)
             # Check if any distances are less than the tolerance
-            if (dm < tol).any():
-                return False
-            else:
-                return True
+            return not (dm < tol).any()
         # No symmetry method: check all atomic pairs
         else:
             dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
             # Check if any distances are less than the tolerance
-            if (dm < tol).any():
-                return False
-            else:
-                return True
+            return not (dm < tol).any()
 
     def substitute_with_single(self, ele):
         """
@@ -324,12 +314,14 @@ class atom_site:
         site2.update(site2.position - shift)
         return site1, site2
 
-    def to_mol_site(self, lattice, molecule, ori=[0, 0, 0], reflect=False, type_id=0):
+    def to_mol_site(self, lattice, molecule, ori=None, reflect=False, type_id=0):
         """
         Transform it to the mol_sites, i.e., to build a molecule on
         the current WP
         """
 
+        if ori is None:
+            ori = [0, 0, 0]
         dicts = {}
         dicts["smile"] = molecule.smile
         dicts["type"] = type_id
@@ -405,7 +397,7 @@ class mol_site:
         self.angles = self.orientation.r.as_euler("zxy", degrees=True)
         formula = self.molecule.mol.formula.replace(" ", "")
         s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
-        s += "WP [{:s}] ".format(self.wp.get_label())
+        s += f"WP [{self.wp.get_label():s}] "
         s += "Site [{:}]".format(self.wp.site_symm.replace(" ", ""))
         if len(self.molecule.mol) > 1:
             s += " Euler [{:6.1f} {:6.1f} {:6.1f}]".format(*self.angles)
@@ -420,7 +412,7 @@ class mol_site:
         get the number of dof for the given structures:
         """
         freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
-        self.dof = len(freedom[freedom == True])
+        self.dof = len(freedom[freedom is True])
 
     def save_dict(self):
         dict0 = {
@@ -443,7 +435,7 @@ class mol_site:
         """
         load the sites from a dictionary
         """
-        from pyxtal.molecule import pyxtal_molecule, Orientation
+        from pyxtal.molecule import Orientation, pyxtal_molecule
 
         mol = pyxtal_molecule.load_str(dicts["molecule"])
         position = dicts["position"]
@@ -463,9 +455,9 @@ class mol_site:
             # if len(xyz)==3: print("encode: \n", self.molecule.mol.cart_coords)
             rotor = self.molecule.get_torsion_angles(xyz)
             ori, _, reflect = self.molecule.get_orientation(xyz)
-            return [self.wp.index] + list(self.position) + list(ori) + rotor + [reflect]
+            return [self.wp.index, *list(self.position), *list(ori), *rotor, reflect]
         else:
-            return [self.wp.index] + list(self.position) + [0]
+            return [self.wp.index, *list(self.position), 0]
 
     def to_1D_dicts(self):
         """
@@ -474,19 +466,15 @@ class mol_site:
         xyz, _ = self._get_coords_and_species(absolute=True, first=True)
         dict0 = {"smile": self.molecule.smile}
         dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
-        dict0["orientation"], dict0["rmsd"], dict0["reflect"] = (
-            self.molecule.get_orientation(xyz)
-        )
-        angs = dict0["rotor"]
+        dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(xyz)
+        dict0["rotor"]
         # rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
         # conf0 = rdkit_mol.GetConformer(0)
         # print(self.molecule.set_torsion_angles(conf0, angs))
         # print("save matrix"); print(self.orientation.r.as_matrix())
         # print("save angle"); print(self.orientation.r.as_euler('zxy', degrees=True))
         # print("angle"); print(dict0["orientation"])
-        dict0["center"] = self.position - np.floor(
-            self.position
-        )  # self.molecule.get_center(xyz)
+        dict0["center"] = self.position - np.floor(self.position)  # self.molecule.get_center(xyz)
         dict0["number"] = self.wp.number
         dict0["index"] = self.wp.index
         dict0["PBC"] = self.wp.PBC
@@ -498,7 +486,7 @@ class mol_site:
 
     @classmethod
     def from_1D_dicts(cls, dicts):
-        from pyxtal.molecule import pyxtal_molecule, Orientation
+        from pyxtal.molecule import Orientation, pyxtal_molecule
 
         mol = pyxtal_molecule(mol=dicts["smile"] + ".smi", fix=True)
         if len(mol.mol) > 1:
@@ -541,9 +529,7 @@ class mol_site:
 
         return display_molecular_site(self, id, **kwargs)
 
-    def _get_coords_and_species(
-        self, absolute=False, PBC=False, first=False, unitcell=False
-    ):
+    def _get_coords_and_species(self, absolute=False, PBC=False, first=False, unitcell=False):
         """
         Used to generate coords and species for get_coords_and_species
 
@@ -584,10 +570,7 @@ class mol_site:
             # Add absolute center to molecule
             tmp += center_absolute
             tmp = tmp.dot(self.lattice.inv_matrix)
-            if wp_atomic_coords is None:
-                wp_atomic_coords = tmp
-            else:
-                wp_atomic_coords = np.append(wp_atomic_coords, tmp, axis=0)
+            wp_atomic_coords = tmp if wp_atomic_coords is None else np.append(wp_atomic_coords, tmp, axis=0)
             wp_atomic_sites.extend(self.symbols)
             if first:
                 break
@@ -748,12 +731,13 @@ class mol_site:
         If the list does not change, we return the new coordinates
         otherwise, terminate the calculation.
         """
-        from pyxtal.molecule import compare_mol_connectivity, Orientation
+        from pyxtal.molecule import Orientation, compare_mol_connectivity
 
         try:
-            from openbabel import pybel, openbabel
+            from openbabel import openbabel, pybel
         except:
-            import pybel, openbabel
+            import openbabel
+            import pybel
         if lattice is not None:
             self.lattice = lattice
         if not absolute:
@@ -830,10 +814,7 @@ class mol_site:
                 else:
                     ijk_lists.append([0])
 
-        if center:
-            matrix = [[0, 0, 0]]
-        else:
-            matrix = []
+        matrix = [[0, 0, 0]] if center else []
         for i in ijk_lists[0]:
             for j in ijk_lists[1]:
                 for k in ijk_lists[2]:
@@ -885,7 +866,7 @@ class mol_site:
             a distance matrix (M, N, N)
             list of molecular xyz (M, N, 3)
         """
-        m_length = len(self.numbers)
+        len(self.numbers)
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
 
         return self.get_distances(coord1, coord1, center=False, ignore=ignore)
@@ -904,9 +885,7 @@ class mol_site:
         if id is None:
             coord2 = coords[m_length:]  # rest molecular coords
         else:
-            coord2 = coords[
-                m_length * (id) : m_length * (id + 1)
-            ]  # rest molecular coords
+            coord2 = coords[m_length * (id) : m_length * (id + 1)]  # rest molecular coords
 
         return self.get_distances(coord1, coord2, ignore=ignore)
 
@@ -939,7 +918,7 @@ class mol_site:
         Returns:
             True or False
         """
-        m_length = len(self.numbers)
+        len(self.numbers)
         tols_matrix = self.tols_matrix
         # Check periodic images
         d, _ = self.get_dists_auto()
@@ -988,9 +967,7 @@ class mol_site:
             m2 = m_length1
 
         # compute the distance matrix
-        d, _ = self.get_distances(
-            coord1 - np.floor(coord1), coord2 - np.floor(coord2), m2
-        )
+        d, _ = self.get_distances(coord1 - np.floor(coord1), coord2 - np.floor(coord2), m2)
         # print("short dist", len(c1), len(c2), d.min())
 
         if np.min(d) < np.max(tols_matrix):
@@ -999,9 +976,7 @@ class mol_site:
                 return False
         return True
 
-    def get_neighbors_auto(
-        self, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2
-    ):
+    def get_neighbors_auto(self, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2):
         """
         Find the neigboring molecules
 
@@ -1015,13 +990,11 @@ class mol_site:
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
         """
-        mol_center = np.dot(
-            self.position - np.floor(self.position), self.lattice.matrix
-        )
+        mol_center = np.dot(self.position - np.floor(self.position), self.lattice.matrix)
         numbers = self.molecule.mol.atomic_numbers
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
         tm = Tol_matrix(prototype="vdW", factor=factor)
-        m_length = len(self.numbers)
+        len(self.numbers)
         tols_matrix = self.molecule.get_tols_matrix(tm=tm)
         coef_matrix = None
         if not ignore_E:
@@ -1080,17 +1053,14 @@ class mol_site:
                 tmp = d[i] / tols_matrix
                 _d = tmp[tmp < 1.0]
                 id = np.argmin(tmp.flatten())
-                d_min = d[i].flatten()[id]
+                d[i].flatten()[id]
                 min_ds.append(min(_d) * factor)
                 neighs.append(coord2[i])
                 Ps.append(0)
 
         if self.wp.multiplicity > 1:
             for idx in range(1, self.wp.multiplicity):
-                if self.wp.is_pure_translation(idx):
-                    P = 0
-                else:
-                    P = 1
+                P = 0 if self.wp.is_pure_translation(idx) else 1
                 d, coord2 = self.get_dists_WP(ignore=True, id=idx)
                 for i in range(d.shape[0]):
                     if np.min(d[i]) < max_d and (d[i] < tols_matrix).any():
@@ -1134,7 +1104,7 @@ class mol_site:
                         tmp = d[i] / tols_matrix
                         _d = tmp[tmp < 1]
                         id = np.argmin(tmp.flatten())
-                        d_min = d[i].flatten()[id]
+                        d[i].flatten()[id]
                         min_ds.append(min(_d) * factor)
                         neighs.append(coord2[i])
                         Ps.append(P)
@@ -1143,9 +1113,7 @@ class mol_site:
         else:
             return min_ds, neighs, Ps, engs
 
-    def get_neighbors_wp2(
-        self, wp2, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2
-    ):
+    def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2):
         """
         Find the neigboring molecules from a 2nd wp site
 
@@ -1200,7 +1168,7 @@ class mol_site:
                 tmp = d[i] / tols_matrix
                 _d = tmp[tmp < 1]
                 id = np.argmin(tmp.flatten())
-                d_min = d[i].flatten()[id]
+                d[i].flatten()[id]
                 min_ds.append(min(_d) * factor)
                 neighs.append(coord2[i])
 

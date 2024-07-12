@@ -1,12 +1,13 @@
-from pyxtal.molecular_crystal import molecular_crystal
 import numpy as np
+import pymatgen.analysis.structure_matcher as sm
+from pkg_resources import resource_filename
 from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from rdkit import Chem
 from rdkit.Chem import AllChem
+
+from pyxtal.molecular_crystal import molecular_crystal
 from pyxtal.symmetry import Group
-import pymatgen.analysis.structure_matcher as sm
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pkg_resources import resource_filename
 
 lists = [
     ("s1c2ccc3scc4ccc(c1)c2c34", "HAHCOI.cif"),  # P21 -> P21

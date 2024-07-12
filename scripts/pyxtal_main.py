@@ -1,12 +1,12 @@
 #!/usr/bin/env  python
-# encoding: utf-8
 
 import os
-from pyxtal import print_logo, pyxtal
-from pyxtal.symmetry import get_symbol_and_number
+from argparse import ArgumentParser
+
 import numpy as np
 
-from argparse import ArgumentParser
+from pyxtal import print_logo, pyxtal
+from pyxtal.symmetry import get_symbol_and_number
 
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     factor = options.factor
     if factor < 0:
-        raise ValueError("Volume factor {:.2f} must be greater than 0.".format(factor))
+        raise ValueError(f"Volume factor {factor:.2f} must be greater than 0.")
 
     attempts = options.attempts
     outdir = options.outdir
@@ -137,24 +137,15 @@ if __name__ == "__main__":
         numIons0 = np.array(numIons)
         rand_crystal = pyxtal(molecular=molecular)
         if dimension == 3:
-            rand_crystal.from_random(
-                3, sg, system, numIons0, factor, conventional=conventional
-            )
+            rand_crystal.from_random(3, sg, system, numIons0, factor, conventional=conventional)
         elif dimension == 2:
-            rand_crystal.from_random(
-                2, sg, system, numIons0, factor, thickness, conventional=conventional
-            )
+            rand_crystal.from_random(2, sg, system, numIons0, factor, thickness, conventional=conventional)
         elif dimension == 1:
-            rand_crystal.from_random(
-                1, sg, system, numIons0, factor, thickness, conventional=conventional
-            )
+            rand_crystal.from_random(1, sg, system, numIons0, factor, thickness, conventional=conventional)
         if dimension == 0:
             rand_crystal.from_random(0, sg, system, numIons0, factor)
         # Output a cif or xyz file
-        if dimension > 0:
-            outpath = options.outdir + "/" + str(i) + ".cif"
-        else:
-            outpath = options.outdir + "/" + str(i) + ".xyz"
+        outpath = options.outdir + "/" + str(i) + ".cif" if dimension > 0 else options.outdir + "/" + str(i) + ".xyz"
         rand_crystal.to_file(filename=outpath)
 
         print(rand_crystal)

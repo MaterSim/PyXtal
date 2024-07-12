@@ -1,6 +1,7 @@
+import contextlib
 import os
-import re
 import shutil
+
 import numpy as np
 
 
@@ -29,13 +30,15 @@ class CHARMM:
         atom_info=None,
         folder=".",
         opt="conp",
-        steps=[2000, 1000],
+        steps=None,
         exe="charmm",
         input="charmm.in",
         output="charmm.log",
         dump="result.pdb",
         debug=False,
     ):
+        if steps is None:
+            steps = [2000, 1000]
         self.debug = debug
 
         # check charmm Executable
@@ -133,27 +136,24 @@ class CHARMM:
             f.write("! Automated Charmm calculation\n\n")
             f.write("bomlev -1\n")
             f.write("! top and par\n")
-            f.write("read rtf card name {:s}\n".format(self.rtf))
-            f.write("read para card name {:s}\n".format(self.prm))
+            f.write(f"read rtf card name {self.rtf:s}\n")
+            f.write(f"read para card name {self.prm:s}\n")
             f.write("Read sequence card\n")
-            f.write("{:5d}\n".format(len(self.structure.mol_sites)))
+            f.write(f"{len(self.structure.mol_sites):5d}\n")
             atom_count = []
             for site in self.structure.mol_sites:
                 atom_count.append(len(site.molecule.mol))
                 if self.atom_info is None:
-                    f.write("U0{:d} ".format(site.type))
+                    f.write(f"U0{site.type:d} ")
                 else:
                     f.write("{:s} ".format(self.atom_info["resName"][site.type]))
 
             f.write("\ngenerate main first none last none setup warn\n")
             f.write("Read coor card free\n")
             f.write("* Residues coordinate\n*\n")
-            f.write("{:5d}\n".format(sum(atom_count)))
+            f.write(f"{sum(atom_count):5d}\n")
             for i, site in enumerate(self.structure.mol_sites):
-                if self.atom_info is None:
-                    res_name = "U0{:d}".format(site.type)
-                else:
-                    res_name = self.atom_info["resName"][site.type]
+                res_name = f"U0{site.type:d}" if self.atom_info is None else self.atom_info["resName"][site.type]
 
                 # reset lattice if needed (to move out later)
                 site.lattice = lat
@@ -169,7 +169,7 @@ class CHARMM:
 
                 for j, coord in enumerate(coords):
                     if self.atom_info is None:
-                        label = "{:s}{:d}".format(species[j], j + 1)
+                        label = f"{species[j]:s}{j + 1:d}"
                     else:
                         label = self.atom_info["label"][site.type][j]
                     f.write(
@@ -178,32 +178,28 @@ class CHARMM:
                         )
                     )
 
-            f.write("write psf card name {:s}\n".format(self.psf))
-            f.write("write coor crd card name {:s}\n".format(self.crd))
-            f.write("read psf card name {:s}\n".format(self.psf))
-            f.write("read coor card name {:s}\n".format(self.crd))
+            f.write(f"write psf card name {self.psf:s}\n")
+            f.write(f"write coor crd card name {self.crd:s}\n")
+            f.write(f"read psf card name {self.psf:s}\n")
+            f.write(f"read coor card name {self.crd:s}\n")
 
             # Structure info
             f.write("\n! crystal parameters\n")
-            f.write("set shape {:s}\n".format(ltype))
-            f.write("set a     {:12.6f}\n".format(a))
-            f.write("set b     {:12.6f}\n".format(b))
-            f.write("set c     {:12.6f}\n".format(c))
-            f.write("set alpha {:12.6f}\n".format(alpha))
-            f.write("set beta  {:12.6f}\n".format(beta))
-            f.write("set gamma {:12.6f}\n".format(gamma))
+            f.write(f"set shape {ltype:s}\n")
+            f.write(f"set a     {a:12.6f}\n")
+            f.write(f"set b     {b:12.6f}\n")
+            f.write(f"set c     {c:12.6f}\n")
+            f.write(f"set alpha {alpha:12.6f}\n")
+            f.write(f"set beta  {beta:12.6f}\n")
+            f.write(f"set gamma {gamma:12.6f}\n")
             f.write("coor conv FRAC SYMM @a @b @c @alpha @beta @gamma\n")
             f.write("coor stat select all end\n")
             f.write("Crystal Define @shape @a @b @c @alpha @beta @gamma\n")
             site0 = self.structure.mol_sites[0]
-            f.write(
-                "Crystal Build cutoff 14.0 noperations {:d}\n".format(
-                    len(site0.wp.ops) - 1
-                )
-            )
+            f.write(f"Crystal Build cutoff 14.0 noperations {len(site0.wp.ops) - 1:d}\n")
             for i, op in enumerate(site0.wp.ops):
                 if i > 0:
-                    f.write("({:s})\n".format(op.as_xyz_str()))
+                    f.write(f"({op.as_xyz_str():s})\n")
 
             f.write("image byres xcen ?xave ycen ?yave zcen ?zave sele resn LIG end\n")
             f.write("set 7 fswitch\n")
@@ -213,20 +209,16 @@ class CHARMM:
             f.write("ewald pmewald lrc fftx {:d} ffty {:d} fftz {:d} -\n".format(*fft))
             f.write("kappa 0.34 order 6 CTOFNB 12.0 CUTNB 14.0 QCOR 1.0 -\n")
             f.write("@7 @8 @9 vfswitch !\n")
-            f.write("mini {:s} nstep {:d}\n".format(self.algo, self.steps[0]))
+            f.write(f"mini {self.algo:s} nstep {self.steps[0]:d}\n")
             if len(self.steps) > 1:
-                f.write(
-                    "mini {:s} lattice nstep {:d} \n".format(self.algo, self.steps[1])
-                )
+                f.write(f"mini {self.algo:s} lattice nstep {self.steps[1]:d} \n")
             if len(self.steps) > 2:
-                f.write("mini {:s} nstep {:d}\n".format(self.algo, self.steps[2]))
+                f.write(f"mini {self.algo:s} nstep {self.steps[2]:d}\n")
 
-            f.write(
-                "coor conv SYMM FRAC ?xtla ?xtlb ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n"
-            )  #
-            f.write("\nwrite coor pdb name {:s}\n".format(self.dump))  #
+            f.write("coor conv SYMM FRAC ?xtla ?xtlb ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n")  #
+            f.write(f"\nwrite coor pdb name {self.dump:s}\n")  #
             f.write("*CELL :  ?xtla  ?xtlb  ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n")  #
-            f.write("*Z = {:d}\n".format(len(site0.wp)))
+            f.write(f"*Z = {len(site0.wp):d}\n")
             f.write("*Energy(kcal): ?ener\n")
             f.write("stop\n")
         # print("STOP")
@@ -234,7 +226,7 @@ class CHARMM:
         # sys.exit()
 
     def read(self):
-        with open(self.output, "r") as f:
+        with open(self.output) as f:
             lines = f.readlines()
             self.version = lines[2]
             if lines[-1].find("CPU TIME") != -1:
@@ -242,17 +234,15 @@ class CHARMM:
                 self.cputime = float(lines[-2].split()[-2])
                 for line in lines:
                     if line.find("MINI> ") != -1:
-                        try:
+                        with contextlib.suppress(Exception):
                             self.structure.iter = int(line.split()[1])
-                        except:
-                            pass
                             # raise RuntimeError("Something is wrong in the charmm output")
                     elif line.find("ABNORMAL TERMINATION") != -1:
                         self.optimized = False
                         break
 
         if self.optimized:
-            with open(self.dump, "r") as f:
+            with open(self.dump) as f:
                 lines = f.readlines()
                 positions = []
                 for line in lines:
@@ -280,7 +270,7 @@ class CHARMM:
 
             # if True:
             try:
-                for i, site in enumerate(self.structure.mol_sites):
+                for _i, site in enumerate(self.structure.mol_sites):
                     coords = positions[count : count + len(site.molecule.mol)]
                     site.update(coords, self.structure.lattice)
                     count += len(site.molecule.mol)
@@ -384,16 +374,14 @@ def check_prm(path):
     Todo: move it to charmm interface
     Sometimes there are something wrong with prm file (RUBGIH),
     """
-    with open(path, "r") as f:
+    with open(path) as f:
         lines = f.readlines()
         pairs = []
         triplets = []
-        quads = []
         imphis = []
         ids = []
         do_angle = False
         do_bond = False
-        do_dihedral = False
         do_imphi = False
         for i, l in enumerate(lines):
             tmp = l.split()
@@ -402,7 +390,7 @@ def check_prm(path):
             elif l.find("BOND") == 0:
                 do_bond = True
             elif l.find("DIHEDRAL") == 0:
-                do_dihedral = True
+                pass
             elif l.find("IMPHI") == 0:
                 do_imphi = True
             elif do_bond:
@@ -479,7 +467,7 @@ class RTF:
         ]
         if type(input) == str:
             print("Converting RTF from the file", input)
-            f = open(input, "r")
+            f = open(input)
             rtf = f.read().split("\n")
             f.close()
         else:
@@ -537,26 +525,26 @@ class RTF:
         strs = "* Topology File.\n"
         strs += "*\n   99   1\n"
         for l, m in zip(self.labels, self.mass):
-            strs += "MASS   -1 {:4s} {:12.6f}\n".format(l, m)
+            strs += f"MASS   -1 {l:4s} {m:12.6f}\n"
 
         for res in self.residues:
             # print(res)
             strs += "\nRESI {:3s} {:5.3f}\n".format(res["NAME"], res["CHARGE"])
             strs += "GROUP\n"
             for a in res["ATOM"]:
-                strs += "{:s}\n".format(a)
+                strs += f"{a:s}\n"
             strs += "\n"
             for b in res["BOND"]:
-                strs += "{:s}\n".format(b)
+                strs += f"{b:s}\n"
             strs += "\n"
             for a in res["ANGL"]:
-                strs += "{:s}\n".format(a)
+                strs += f"{a:s}\n"
             strs += "\n"
             for d in res["DIHE"]:
-                strs += "{:s}\n".format(d)
+                strs += f"{d:s}\n"
             strs += "\n"
             for i in res["IMPH"]:
-                strs += "{:s}\n".format(i)
+                strs += f"{i:s}\n"
 
         return strs
 
@@ -602,23 +590,23 @@ class RTF:
                 for a in res["ATOM"]:
                     tmp = a.split()
                     a1 = str(i) + tmp[1]
-                    a = "ATOM {:6s} {:2s}{:12.6f}".format(a1, tmp[2], float(tmp[3]))
+                    a = f"ATOM {a1:6s} {tmp[2]:2s}{float(tmp[3]):12.6f}"
                     residue["ATOM"].append(a)
                 for a in res["BOND"]:
                     tmp = a.split("!")
                     tmp1 = tmp[0].split()
                     a1, a2 = str(i) + tmp1[1], str(i) + tmp1[2]
-                    a = "BOND {:6s} {:6s}".format(a1, a2)
+                    a = f"BOND {a1:6s} {a2:6s}"
                     if len(tmp) > 1:
-                        a += "!{:12s}".format(tmp[-1])
+                        a += f"!{tmp[-1]:12s}"
                     residue["BOND"].append(a)
                 for a in res["ANGL"]:
                     tmp = a.split("!")
                     tmp1 = tmp[0].split()
                     a1, a2, a3 = str(i) + tmp1[1], str(i) + tmp1[2], str(i) + tmp1[3]
-                    a = "ANGL {:6s} {:6s} {:6s} ".format(a1, a2, a3)
+                    a = f"ANGL {a1:6s} {a2:6s} {a3:6s} "
                     if len(tmp) > 1:
-                        a += "!{:12s}".format(tmp[-1])
+                        a += f"!{tmp[-1]:12s}"
                     residue["ANGL"].append(a)
                 for a in res["DIHE"]:
                     tmp = a.split("!")
@@ -629,9 +617,9 @@ class RTF:
                         str(i) + tmp1[3],
                         str(i) + tmp1[4],
                     )
-                    a = "DIHE {:6s} {:6s} {:6s} {:6s} ".format(a1, a2, a3, a4)
+                    a = f"DIHE {a1:6s} {a2:6s} {a3:6s} {a4:6s} "
                     if len(tmp) > 1:
-                        a += "!{:12s}".format(tmp[-1])
+                        a += f"!{tmp[-1]:12s}"
                     residue["DIHE"].append(a)
                 for a in res["IMPH"]:
                     tmp = a.split("!")
@@ -642,9 +630,9 @@ class RTF:
                         str(i) + tmp1[3],
                         str(i) + tmp1[4],
                     )
-                    a = "IMPH {:6s} {:6s} {:6s} {:6s}".format(a1, a2, a3, a4)
+                    a = f"IMPH {a1:6s} {a2:6s} {a3:6s} {a4:6s}"
                     if len(tmp) > 1:
-                        a += "!{:12s}".format(tmp[-1])
+                        a += f"!{tmp[-1]:12s}"
                     residue["IMPH"].append(a)
                 self.residues[i] = residue
 
@@ -657,11 +645,7 @@ class RTF:
                 {
                     "NAME": single["name"],
                     "CHARGE": single["charge"],
-                    "ATOM": [
-                        "ATOM {:6s} {:2s}{:12.6f}".format(
-                            count + l, l, float(single["charge"])
-                        )
-                    ],
+                    "ATOM": ["ATOM {:6s} {:2s}{:12.6f}".format(count + l, l, float(single["charge"]))],
                     "BOND": [],
                     "ANGL": [],
                     "DIHE": [],
@@ -679,7 +663,7 @@ class PRM:
         self.keywords = ["BOND", "ANGLE", "DIHEDRAL", "IMPHI", "NONBOND"]
         if type(input) == str:
             print("Converting PRM from the file", input)
-            f = open(input, "r")
+            f = open(input)
             prm = f.read().split("\n")
             f.close()
         else:
@@ -761,9 +745,9 @@ class PRM:
                 strs += "!                Emin     Rmin/2              Emin/2     Rmin  (for 1-4's)\n"
                 strs += "!             (kcal/mol)    (A)\n"
             else:
-                strs += "\n\n{:s}\n".format(key)
+                strs += f"\n\n{key:s}\n"
             for l in self.dict[key]:
-                strs += "{:s}\n".format(l)
+                strs += f"{l:s}\n"
 
         return strs
 

@@ -1,10 +1,13 @@
-import os, shutil
-import numpy as np
+import os
 import re
+import shutil
+
+import numpy as np
+from ase import Atoms
+from ase.units import Ang, eV
+
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
-from ase import Atoms
-from ase.units import eV, Ang
 
 at_types = {
     "C_c": "C1",  #  =  Sp2 C carbonyl group
@@ -171,7 +174,6 @@ class GULP_OC:
         O_OH oxygen in hydroxyl group
         H_OH hydrogen in hydroxyl group
         """
-        pass
 
     def run(self, clean=True):
         self.write()
@@ -195,9 +197,7 @@ class GULP_OC:
             os.remove(self.dump)
 
     def to_ase(self):
-        return Atoms(
-            self.sites, scaled_positions=self.frac_coords, cell=self.lattice.matrix
-        )
+        return Atoms(self.sites, scaled_positions=self.frac_coords, cell=self.lattice.matrix)
 
     def to_pymatgen(self):
         from pymatgen.core.structure import Structure
@@ -222,91 +222,70 @@ class GULP_OC:
 
         with open(self.input, "w") as f:
             if self.opt == "conv":
-                f.write("opti stress {:s} conjugate ".format(self.opt))
+                f.write(f"opti stress {self.opt:s} conjugate ")
             elif self.opt == "single":
                 f.write("grad conp stress ")
             else:
-                f.write("opti stress {:s} conjugate ".format(self.opt))
+                f.write(f"opti stress {self.opt:s} conjugate ")
 
             if not self.symmetry:
                 f.write("nosymmetry\n")
 
             f.write("\ncell\n")
-            f.write(
-                "{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n".format(
-                    a, b, c, alpha, beta, gamma
-                )
-            )
+            f.write(f"{a:12.6f}{b:12.6f}{c:12.6f}{alpha:12.6f}{beta:12.6f}{gamma:12.6f}\n")
             f.write("\nfractional\n")
 
-            symbols = []
             if self.symmetry and self.pyxtal is not None:
                 # Use pyxtal here
                 for site in self.pyxtal.atom_sites:
                     symbol, coord = site.specie, site.position
-                    f.write(
-                        "{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(
-                            symbol, *coord
-                        )
-                    )
+                    f.write("{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(symbol, *coord))
                     if self.ff == "catlow" and symbol == "O":
-                        f.write(
-                            "{:4s} {:12.6f} {:12.6f} {:12.6f} shell \n".format(
-                                symbol, *coord
-                            )
-                        )
+                        f.write("{:4s} {:12.6f} {:12.6f} {:12.6f} shell \n".format(symbol, *coord))
 
                 # Tested for all space groups
-                f.write("\nspace\n{:d}\n".format(self.pyxtal.group.number))
+                f.write(f"\nspace\n{self.pyxtal.group.number:d}\n")
                 f.write("\norigin\n0 0 0\n")
             else:
                 # All coordinates
                 for coord, site in zip(self.frac_coords, self.sites):
-                    f.write(
-                        "{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(site, *coord)
-                    )
-            if self.species is not None:
-                species = self.structure.species
-            else:
-                species = list(set(self.sites))
+                    f.write("{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(site, *coord))
+            species = self.structure.species if self.species is not None else list(set(self.sites))
 
             f.write("\nSpecies\n")
             if self.labels is not None:
                 for specie in species:
-                    if specie in self.labels.keys():
+                    if specie in self.labels:
                         sp = self.labels[specie]
-                        f.write("{:4s} core {:s}\n".format(specie, sp))
+                        f.write(f"{specie:4s} core {sp:s}\n")
                     else:
-                        f.write("{:4s} core {:4s}\n".format(specie, specie))
+                        f.write(f"{specie:4s} core {specie:4s}\n")
             else:
                 for specie in species:
                     if self.ff == "catlow" and specie == "O":
                         f.write("O    core O_O2- core\n")
                         f.write("O    shell O_O2- shell\n")
                     else:
-                        f.write("{:4s} core {:4s}\n".format(specie, specie))
+                        f.write(f"{specie:4s} core {specie:4s}\n")
 
-            f.write("\nlibrary {:s}\n".format(self.ff))
+            f.write(f"\nlibrary {self.ff:s}\n")
             f.write("ewald 10.0\n")
             # f.write('switch rfo gnorm 1.0\n')
             # f.write('switch rfo cycle 0.03\n')
             if self.opt != "single":
-                f.write("maxcycle {:d}\n".format(self.steps))
+                f.write(f"maxcycle {self.steps:d}\n")
             if self.pstress is not None:
-                f.write("pressure {:6.3f}\n".format(self.pstress))
+                f.write(f"pressure {self.pstress:6.3f}\n")
             if self.dump is not None:
-                f.write("output cif {:s}\n".format(self.dump))
+                f.write(f"output cif {self.dump:s}\n")
 
     def read(self):
         # for symmetry case
         lattice_para = None
         lattice_vector = None
-        if self.pyxtal is not None:
-            ltype = self.pyxtal.lattice.ltype
-        else:
-            ltype = "triclinic"
+        ltype = self.pyxtal.lattice.ltype if self.pyxtal is not None else "triclinic"
 
-        with open(self.output, "r") as f:
+        with open(self.output) as f:
             lines = f.readlines()
         try:
             for i, line in enumerate(lines):
@@ -346,12 +325,10 @@ class GULP_OC:
                             break
                         g = lines[s].split()[3:6]
 
-                        for t in range(3 - len(g)):
+                        for _t in range(3 - len(g)):
                             g.append(" ")
                         for j in range(2):
-                            min_index = [
-                                i + 1 for i, e in enumerate(g[j][1:]) if e == "-"
-                            ]
+                            min_index = [i + 1 for i, e in enumerate(g[j][1:]) if e == "-"]
                             if j == 0 and len(min_index) != 0:
                                 if len(min_index) == 1:
                                     g[2] = g[1]
@@ -538,15 +515,11 @@ class GULP_OC:
             # f.write('opti stress {:s} conj molecule nomod qok\n'.format(self.opt))
             if self.opt == "conv":
                 # f.write('opti {:s} steepest molecule nomod qok\n'.format(self.opt))
-                f.write("opti {:s} conj molecule nomod qok\n".format(self.opt))
+                f.write(f"opti {self.opt:s} conj molecule nomod qok\n")
             else:
-                f.write("opti stress {:s} conj molecule nomod qok\n".format(self.opt))
+                f.write(f"opti stress {self.opt:s} conj molecule nomod qok\n")
             f.write("\ncell\n")
-            f.write(
-                "{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n".format(
-                    a, b, c, alpha, beta, gamma
-                )
-            )
+            f.write(f"{a:12.6f}{b:12.6f}{c:12.6f}{alpha:12.6f}{beta:12.6f}{gamma:12.6f}\n")
             f.write("\nfractional\n")
 
             symbols = []
@@ -567,65 +540,51 @@ class GULP_OC:
                     symbols.append(symbol)
                     try:
                         f.write(
-                            "{:4s} {:12.6f} {:12.6f} {:12.6f} core {:12.6f}\n".format(
-                                at_types[symbol],
-                                coord[0],
-                                coord[1],
-                                coord[2],
-                                charges[j],
-                            )
+                            f"{at_types[symbol]:4s} {coord[0]:12.6f} {coord[1]:12.6f} {coord[2]:12.6f} core {charges[j]:12.6f}\n"
                         )
                     except KeyError:
-                        msg = "symbol {:s} is not supported in GULP-gaff2.lib".format(
-                            symbol
-                        )
+                        msg = f"symbol {symbol:s} is not supported in GULP-gaff2.lib"
                         raise KeyError(msg)
 
             f.write("\nSpecies\n")
             symbols = list(set(symbols))
             for symbol in symbols:
-                f.write("{:4s} core {:4s}\n".format(at_types[symbol], symbol))
+                f.write(f"{at_types[symbol]:4s} core {symbol:4s}\n")
 
             # symmetry operations
-            f.write("\nsymmetry_cell {:s}\n".format(ltype))
+            f.write(f"\nsymmetry_cell {ltype:s}\n")
             site0 = self.structure.mol_sites[0]
             for op in site0.wp.ops[1:]:
                 f.write("symmetry_operator\n")
                 rot = op.rotation_matrix.T
                 trans = op.translation_vector
                 for i in range(3):
-                    f.write(
-                        "{:6.3f} {:6.3f} {:6.3f} {:6.3f}\n".format(*rot[i, :], trans[i])
-                    )
+                    f.write("{:6.3f} {:6.3f} {:6.3f} {:6.3f}\n".format(*rot[i, :], trans[i]))
 
             # bond type
             if self.bond_type:
                 for bond in mol.molTopol.bonds:
                     for i in range(len(site.wp)):
                         count = i * len(coords)
-                        f.write(
-                            "connect {:4d} {:4d}\n".format(
-                                bond.atoms[0].id + count, bond.atoms[1].id + count
-                            )
-                        )
-            f.write("\nlibrary {:s}.lib\n".format(self.ff))
+                        f.write(f"connect {bond.atoms[0].id + count:4d} {bond.atoms[1].id + count:4d}\n")
+            f.write(f"\nlibrary {self.ff:s}.lib\n")
             # f.write('\nlibrary {:s}\n'.format(self.ff))
             if "OCSP_GULP_LIB" in os.environ:
                 shutil.copy(os.environ["OCSP_GULP_LIB"] + "/" + self.ff + ".lib", ".")
             f.write("ewald 10.0\n")
             # f.write('switch rfo gnorm 1.0\n')
             # f.write('switch lbfgs cycle 300\n')
-            f.write("maxcycle {:d}\n".format(self.steps))
+            f.write(f"maxcycle {self.steps:d}\n")
             f.write("stepmx " + str(self.stepmx) + "\n")
             f.write("ftol 0.0001\n")  # energy tol default: 1e-5
             f.write("gtol 0.002\n")  # force tol default: 1e-4
             f.write("gmax 0.01\n")  # force tol defult: 1e-3
             if self.dump is not None:
-                f.write("output cif {:s}\n".format(self.dump))
+                f.write(f"output cif {self.dump:s}\n")
             # https://gulp.curtin.edu.au/gulp/help/new_help_40_txt.html#gmax
 
     def read(self):
-        with open(self.output, "r") as f:
+        with open(self.output) as f:
             lines = f.readlines()
 
         for i, line in enumerate(lines):
@@ -735,10 +694,7 @@ def single_optimize(
         print("GULP error in single optimize")
         return None, None, 0, True
     else:
-        if calc.pyxtal is None:
-            struc = calc.to_pyxtal()
-        else:
-            struc = calc.pyxtal
+        struc = calc.to_pyxtal() if calc.pyxtal is None else calc.pyxtal
         # if sum(struc.numIons) == 42: print("SSSSS"); import sys; sys.exit()
         return struc, calc.energy_per_atom, calc.cputime, calc.error
 
@@ -746,7 +702,7 @@ def single_optimize(
 def optimize(
     struc,
     ff,
-    optimizations=["conp", "conp"],
+    optimizations=None,
     exe="gulp",
     pstress=None,
     path="tmp",
@@ -758,6 +714,8 @@ def optimize(
     Multiple calls
 
     """
+    if optimizations is None:
+        optimizations = ["conp", "conp"]
     time_total = 0
     for opt in optimizations:
         struc, energy, time, error = single_optimize(

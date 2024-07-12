@@ -1,5 +1,5 @@
-from structure import *
 from pymatgen.core.operations import SymmOp
+from structure import *
 
 print("---Site Symmetry for a point in a space group---")
 sg = input("Space group Number (1-230): ")

@@ -1,7 +1,9 @@
-from pyxtal import pyxtal
-from pkg_resources import resource_filename
-from pyxtal.supergroup import supergroups
 from time import time
+
+from pkg_resources import resource_filename
+
+from pyxtal import pyxtal
+from pyxtal.supergroup import supergroups
 
 data = {
     "GeF2": 62,
@@ -17,7 +19,7 @@ data = {
 
 cif_path = resource_filename("pyxtal", "database/cifs/")
 
-for cif in data.keys():
+for cif in data:
     t0 = time()
     print("===============", cif, "===============")
     for tol in [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]:
@@ -32,4 +34,4 @@ for cif in data.keys():
     else:
         sup = supergroups(s, G=data[cif], show=False, max_per_G=2500)
     print(sup)
-    print("{:6.3f} seconds".format(time() - t0))
+    print(f"{time() - t0:6.3f} seconds")

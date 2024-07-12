@@ -3,6 +3,7 @@ Module to store the constants
 """
 
 import numpy as np
+
 from pyxtal.version import __version__
 
 # Constants
@@ -71,7 +72,7 @@ all_sym_directions = [
     (2, -1, 0),
 ]
 
-logo = """#############################################################
+logo = rf"""#############################################################
 #             ______       _    _          _                #
 #            (_____ \     \ \  / /        | |               #
 #             _____) )   _ \ \/ / |_  ____| |               #
@@ -79,9 +80,9 @@ logo = """#############################################################
 #            | |    | |_| |/ /\ \ |_( (_| | |___            #
 #            |_|     \__  /_/  \_\___)__|_|_____)           #
 #                   (____/                                  #
-#---------------------(version {:>8s})--------------------#
+#---------------------(version {__version__:>8s})--------------------#
 #       A Python package for random crystal generation      #
 #       url: https://github.com/qzhu2017/pyxtal             #
 #       @Zhu's group at University of Nevada Las Vegas      #
 #############################################################
-""".format(__version__)
+"""

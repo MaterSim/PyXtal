@@ -1,10 +1,12 @@
-import pubchempy as pcp
-import numpy as np
 import json
-from pyxtal.database.element import Element
+
+import numpy as np
+import pubchempy as pcp
+import pymatgen as mg
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import pymatgen as mg
+
+from pyxtal.database.element import Element
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -24,14 +26,13 @@ def read_molecule(mol, name):
     elements = [Element(i).short_name for i in numbers]
     volume = mol.volume_3d
     pubchemid = mol.cid
-    molecule = {
+    return {
         "name": name,
         "elements": elements,
         "xyz": xyz,
         "volume": volume,
         "pubchem id": pubchemid,
     }
-    return molecule
 
 
 names = [
@@ -726,7 +727,7 @@ molecules.append(molecule)
 data = {}
 data["YICMOP"] = "s1cccc1c1c(F)c(OC)c(c2sccc2)c(F)c1OC"
 data["MERQIM"] = "s1c2c(c3c1SCCC3)cc1sc3SCCCc3c1c2"
-for name in data.keys():
+for name in data:
     smi = data[name]
     m = Chem.MolFromSmiles(smi)
     m2 = Chem.AddHs(m)
@@ -760,7 +761,7 @@ dicts = {
     "PAHYON01": 10006,
     "AXOSOW01": 7847,
 }
-for key in dicts.keys():
+for key in dicts:
     mol = pcp.get_compounds(dicts[key], "cid", record_type="3d")[0]
     molecule = read_molecule(mol, key)
     molecules.append(molecule)

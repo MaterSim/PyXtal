@@ -1,16 +1,17 @@
-import numpy as np
-from pyxtal.XRD import XRD
 import warnings
+
+import numpy as np
+
+from pyxtal.XRD import XRD
 
 warnings.filterwarnings("ignore")
 
-from ase.build import bulk
-from ase.io import read, lammpsrun
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from optparse import OptionParser
 from time import time
 
-from optparse import OptionParser
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+from ase.build import bulk
 
 parser = OptionParser()
 parser.add_option(
@@ -45,7 +46,7 @@ for _i, i in enumerate(cells):
         res=0.01,
         fwhm=0.2,
         profile="gaussian",
-        legend="N={:d} {:.1f}s".format(len(a0), time() - t0),
+        legend=f"N={len(a0):d} {time() - t0:.1f}s",
     )
     ax0.set_xlim(thetas)
     ax0.set_ylim([0, 0.99])

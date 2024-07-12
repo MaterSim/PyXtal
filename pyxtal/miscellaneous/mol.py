@@ -1,7 +1,8 @@
+from glob import glob
+
+import pymatgen as mg
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import pymatgen as mg
-from glob import glob
 
 data = {}
 data["HAHCOI"] = "s1c2ccc3scc4ccc(c1)c2c34"
@@ -21,7 +22,7 @@ data["LUFHAW"] = "CC1=CC2=C(S1)C3=CC4=C(C=C3C=C2)C5=C(C=C4)C=C(S5)C"
 
 for file in glob("*.cif"):
     name = file[:-4]
-    if name in data.keys():
+    if name in data:
         smi = data[name]
         m = Chem.MolFromSmiles(smi)
         m2 = Chem.AddHs(m)

@@ -15,7 +15,7 @@ for sg in range(1, 231):
     print("=====" + str(sg) + "=====")
     symmetry = get_wyckoff_symmetry(sg, molecular=True)
     length = len(symmetry)
-    for i, wp in enumerate(symmetry):
+    for i, _wp in enumerate(symmetry):
         letter = letters[length - i - 1]
         ops = symmetry[i][0]
         print(letter + ": " + ss_string_from_ops(ops, sg))

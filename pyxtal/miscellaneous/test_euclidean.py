@@ -1,6 +1,7 @@
-from pyxtal.symmetry import Group
 import numpy as np
+
 from pyxtal.lattice import Lattice
+from pyxtal.symmetry import Group
 
 
 def test(spg, pt, cell):
@@ -23,8 +24,8 @@ def test(spg, pt, cell):
             diff = p1 - p2
             diff -= np.round(diff)
             if np.linalg.norm(diff) > 0.02:
-                res = "{:2d} {:28s}".format(i, op0.as_xyz_string())
-                res += " {:28s}".format(op1.as_xyz_string())
+                res = f"{i:2d} {op0.as_xyz_string():28s}"
+                res += f" {op1.as_xyz_string():28s}"
                 res += "{:6.3f} {:6.3f} {:6.3f} -> ".format(*p1)
                 res += "{:6.3f} {:6.3f} {:6.3f} -> ".format(*p2)
                 res += "{:6.3f} {:6.3f} {:6.3f}".format(*diff)

@@ -1,5 +1,6 @@
-from pyxtal.symmetry import Hall, Group
 import numpy as np
+
+from pyxtal.symmetry import Group, Hall
 
 for n in range(1, 231):
     h = Hall(n)  # , permutation=True)
@@ -10,7 +11,7 @@ for n in range(1, 231):
             print(wp.letter)
             # print("=======")
             wp.set_generators()
-            for i, op in enumerate(wp.generators):
+            for _i, op in enumerate(wp.generators):
                 rot = op.rotation_matrix
                 tran = op.translation_vector
                 if abs(abs(np.linalg.det(rot)) - 1) > 1e-2:

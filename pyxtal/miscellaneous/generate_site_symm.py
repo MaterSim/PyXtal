@@ -1,5 +1,5 @@
-from pymatgen.core.operations import SymmOp
 import pandas as pd
+
 from pyxtal.crystal import *
 
 """

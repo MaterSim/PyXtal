@@ -1,9 +1,9 @@
-import os
 import numpy as np
-from pyxtal.symmetry import Group
+
 from pyxtal.lattice import Lattice
-from pyxtal.wyckoff_site import mol_site, atom_site
 from pyxtal.molecule import find_rotor_from_smile
+from pyxtal.symmetry import Group
+from pyxtal.wyckoff_site import atom_site, mol_site
 
 
 class representation_atom:
@@ -35,7 +35,6 @@ class representation_atom:
         symmetry = [struc.atom_sites[0].wp.hall_number]
         lat = struc.lattice.encode()
         vector = [symmetry + lat]
-        smiles = []
         for site in struc.atom_sites:
             vector.append(site.encode())
         x = vector
@@ -58,7 +57,7 @@ class representation_atom:
         # symmetry
         v = self.x[0]
         struc = pyxtal()
-        struc.group, number = Group(v[0], use_hall=True), v[0]
+        struc.group, _number = Group(v[0], use_hall=True), v[0]
 
         # lattice
         ltype = struc.group.lattice_type
@@ -134,7 +133,7 @@ class representation_atom:
             tag: string
         """
         x = self.x
-        strs = "{:3d} ".format(int(x[0][0]))
+        strs = f"{int(x[0][0]):3d} "
 
         # data for cell
         if x[0][0] <= 348:
@@ -145,26 +144,26 @@ class representation_atom:
             num = 2
 
         for c in x[0][1:num]:
-            strs += "{:5.2f} ".format(c)
+            strs += f"{c:5.2f} "
         for c in x[0][num:]:
-            strs += "{:5.1f} ".format(c)
+            strs += f"{c:5.1f} "
 
         # data for atoms
-        strs += "{:d} ".format(len(x) - 1)  # Number of sites
+        strs += f"{len(x) - 1:d} "  # Number of sites
         for i in range(1, len(x)):
-            strs += "{:s} ".format(x[i][0])
-            strs += "{:d} ".format(x[i][1])
+            strs += f"{x[i][0]:s} "
+            strs += f"{x[i][1]:d} "
             for v in x[i][2:]:
-                strs += "{:6.4f} ".format(v)
+                strs += f"{v:6.4f} "
 
         if time is not None:
-            strs += "{:5.2f}".format(time)
+            strs += f"{time:5.2f}"
 
         if eng is not None:
-            strs += "{:11.3f}".format(eng)
+            strs += f"{eng:11.3f}"
 
         if tag is not None:
-            strs += " {:s}".format(tag)
+            strs += f" {tag:s}"
 
         return strs
 
@@ -182,7 +181,7 @@ class representation:
     def __init__(self, x, smiles=None):
         if smiles is not None:
             self.smiles = []
-            for i, smile in enumerate(smiles):
+            for _i, smile in enumerate(smiles):
                 if smile.endswith(".smi"):
                     smile = smile[:-4]
                 self.smiles.append(smile)
@@ -245,9 +244,7 @@ class representation:
         x = [cell]
         n_site = int(inputs[n_cell - 1])
         if n_site != sum(composition):
-            msg = "Composition is inconsistent: {:d}/{:d}\n".format(
-                sum(composition), n_site
-            )
+            msg = f"Composition is inconsistent: {sum(composition):d}/{n_site:d}\n"
             msg += str(inputs)
             raise ValueError(msg)
         # n_cell += 1
@@ -255,14 +252,12 @@ class representation:
         for i, smile in enumerate(smiles):
             if smile.endswith(".smi"):
                 smile = smile[:-4]
-            for c in range(composition[i]):
+            for _c in range(composition[i]):
                 if smile in ["Cl-"]:
                     n_mol = 4
                 else:
                     n_torsion = len(find_rotor_from_smile(smile))
-                    n_mol = (
-                        8 + n_torsion
-                    )  # (wp_id, x, y, z, ori_x, ori_y, ori_z, inv) + torsion
+                    n_mol = 8 + n_torsion  # (wp_id, x, y, z, ori_x, ori_y, ori_z, inv) + torsion
                 # inversion
                 # print(n_mol, n_cell, len(inputs))
                 inputs[n_cell] = int(inputs[n_cell])
@@ -303,7 +298,7 @@ class representation:
         # symmetry
         v = self.x[0]
         struc = pyxtal(molecular=True)
-        struc.group, number = Group(v[0], use_hall=True), v[0]
+        struc.group, _number = Group(v[0], use_hall=True), v[0]
 
         # lattice
         ltype = struc.group.lattice_type
@@ -335,7 +330,7 @@ class representation:
             smile = smiles[i]
             if smile.endswith(".smi"):
                 smile = smile[:-4]
-            for j in range(comp):
+            for _j in range(comp):
                 v = self.x[count]
                 dicts = {}
                 dicts["smile"] = smile
@@ -388,7 +383,7 @@ class representation:
             tag: string
         """
         x = self.x
-        strs = "{:3d} ".format(int(x[0][0]))
+        strs = f"{int(x[0][0]):3d} "
 
         # data for cell
         if x[0][0] <= 348:
@@ -399,37 +394,34 @@ class representation:
             num = 2
 
         for c in x[0][1:num]:
-            strs += "{:5.2f} ".format(c)
+            strs += f"{c:5.2f} "
         for c in x[0][num:]:
-            strs += "{:5.1f} ".format(c)
+            strs += f"{c:5.1f} "
 
         # data for molecule
-        strs += "{:d} ".format(len(x) - 1)  # ; print(x[1])
+        strs += f"{len(x) - 1:d} "  # ; print(x[1])
         for i in range(1, len(x)):
-            strs += "{:d} ".format(x[i][0])
+            strs += f"{x[i][0]:d} "
             for v in x[i][1:4]:
-                strs += "{:4.2f} ".format(v)
+                strs += f"{v:4.2f} "
             for v in x[i][4:-1]:
-                strs += "{:6.1f} ".format(v)
-            strs += "{:d} ".format(int(x[i][-1]))
+                strs += f"{v:6.1f} "
+            strs += f"{int(x[i][-1]):d} "
 
         if time is not None:
-            strs += "{:5.2f}".format(time)
+            strs += f"{time:5.2f}"
 
         if eng is not None:
-            strs += "{:11.3f}".format(eng)
+            strs += f"{eng:11.3f}"
 
         if tag is not None:
-            strs += " {:s}".format(tag)
+            strs += f" {tag:s}"
 
         return strs
 
     def same_smiles(self, smiles):
         if len(self.smiles) == smiles:
-            for s1, s2 in zip(self.smiles, smiles):
-                if s2 != s2:
-                    return False
-            return True
+            return all(s2 == s2 for s1, s2 in zip(self.smiles, smiles))
         else:
             return False
 
@@ -456,7 +448,7 @@ class representation:
             diffs = []
             wp = WP.from_group_and_index(self.x[0][0], 0, use_hall=True)
             for i in range(len(self.x)):
-                diff = np.zeros(len(self.x[i]))
+                np.zeros(len(self.x[i]))
                 tmp1 = np.array(self.x[i])
                 tmp2 = np.array(rep.x[i])
                 # cell difference

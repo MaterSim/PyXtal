@@ -348,25 +348,25 @@ class Element:
             else:
                 print(specie)
                 print("Error: Atomic number must be between 1 and 105.")
-                return
+                return None
         elif type(specie) == str:
             try:
                 el = Element(specie)
                 index = el.z
             except:
                 print("Error: Invalid atomic symbol, name, or number.")
-                return
+                return None
         elif type(specie) == Element:
             try:
                 index = specie.z
             except:
                 print("Error: Element object has no atomic number 'z'.")
-                return
+                return None
         else:
             try:
                 el = Element(specie.number)
                 index = el.z
             except:
                 print("Error: Invalid atomic symbol, name, or number.")
-                return
+                return None
         return index

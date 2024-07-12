@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.spatial.distance import pdist, cdist
+from scipy.spatial.distance import cdist, pdist
 
 """
 LJ energy and force functions
@@ -26,10 +26,7 @@ def LJ(pos, dim, mu=0.1, shift=False):
     if dim > 3:
         norm = 0
         for i in range(3, dim):
-            if shift:
-                diff = pos[:, i] - np.mean(pos[:, i])
-            else:
-                diff = pos[:, i]
+            diff = pos[:, i] - np.mean(pos[:, i]) if shift else pos[:, i]
             norm += np.sum(np.power(diff, 2))
         Eng += 0.5 * mu * norm
     return Eng

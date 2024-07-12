@@ -5,15 +5,17 @@ Module for generating atomic crystals
 # Standard Libraries
 import random
 from copy import deepcopy
+
 import numpy as np
+
+from pyxtal.database.element import Element
+from pyxtal.lattice import Lattice
+from pyxtal.msg import Comp_CompatibilityError, VolumeError
 
 # PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff
-from pyxtal.wyckoff_site import atom_site
-from pyxtal.msg import Comp_CompatibilityError, VolumeError
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.lattice import Lattice
-from pyxtal.database.element import Element
+from pyxtal.wyckoff_site import atom_site
 
 
 # Define functions
@@ -43,7 +45,7 @@ class random_crystal:
         self,
         dim=3,
         group=227,
-        species=["C"],
+        species=None,
         numIons=8,
         factor=1.1,
         thickness=None,
@@ -55,6 +57,8 @@ class random_crystal:
         use_hall=False,
     ):
         # Initialize
+        if species is None:
+            species = ["C"]
         self.source = "Random"
         self.valid = False
         self.factor = factor
@@ -86,10 +90,7 @@ class random_crystal:
 
         # Composition
         numIons = np.array(numIons)
-        if not conventional:
-            mul = self.group.cellsize()
-        else:
-            mul = 1
+        mul = self.group.cellsize() if not conventional else 1
         self.numIons = numIons * mul
         self.species = species
 
@@ -117,13 +118,13 @@ class random_crystal:
 
     def __str__(self):
         if self.valid:
-            s = "------Crystal from {:s}------".format(self.source)
-            s += "\nDimension: {}".format(self.dim)
-            s += "\nGroup: {} ({})".format(self.symbol, self.number)
-            s += "\n{}".format(self.lattice)
+            s = f"------Crystal from {self.source:s}------"
+            s += f"\nDimension: {self.dim}"
+            s += f"\nGroup: {self.symbol} ({self.number})"
+            s += f"\n{self.lattice}"
             s += "\nWyckoff sites:"
             for wyc in self.atom_sites:
-                s += "\n\t{}".format(wyc)
+                s += f"\n\t{wyc}"
         else:
             s = "\nStructure not available."
         return s
@@ -209,21 +210,15 @@ class random_crystal:
         else:
             # Determine the unique axis
             if self.dim == 2:
-                if self.number in range(3, 8):
-                    unique_axis = "c"
-                else:
-                    unique_axis = "a"
+                unique_axis = "c" if self.number in range(3, 8) else "a"
             elif self.dim == 1:
-                if self.number in range(3, 8):
-                    unique_axis = "a"
-                else:
-                    unique_axis = "c"
+                unique_axis = "a" if self.number in range(3, 8) else "c"
             else:
                 unique_axis = "c"
 
             # Generate a Lattice instance
             good_lattice = False
-            for cycle in range(10):
+            for _cycle in range(10):
                 try:
                     self.lattice = Lattice(
                         self.group.lattice_type,
@@ -238,11 +233,11 @@ class random_crystal:
                 except VolumeError:
                     self.volume *= 1.1
                     msg = "Warning: increase the volume by 1.1 times: "
-                    msg += "{:.2f}".format(self.volume)
+                    msg += f"{self.volume:.2f}"
                     print(msg)
 
             if not good_lattice:
-                msg = "Volume estimation {:.2f} is very bad".format(self.volume)
+                msg = f"Volume estimation {self.volume:.2f} is very bad"
                 msg += " with the given composition "
                 msg += str(self.numIons)
                 raise RuntimeError(msg)
@@ -362,23 +357,16 @@ class random_crystal:
                         # print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
                 else:
                     # generate wp
-                    wp = choose_wyckoff(
-                        self.group, numIon - numIon_added, site, self.dim
-                    )
+                    wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
                     if wp is not False:
                         # print(wp.letter)
-                        passed_wp_check = True
                         # Generate a list of coords from ops
                         pt = self.lattice.generate_point()
                         pt, wp, _ = wp.merge(pt, cell, tol, group=self.group)
                 # print('good pt', pt)
                 if wp is not False:
                     # For pure planar structure
-                    if (
-                        self.dim == 2
-                        and self.thickness is not None
-                        and self.thickness < 0.1
-                    ):
+                    if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
                         pt[-1] = 0.5
                     new_site = atom_site(wp, pt, specie)
 
@@ -403,16 +391,13 @@ class random_crystal:
         if new_site is None:
             return False
 
-        for ws in wyckoff_sites_tmp + wyks:
-            if not new_site.check_with_ws2(ws, cell, self.tol_matrix):
-                return False
-        return True
+        return all(new_site.check_with_ws2(ws, cell, self.tol_matrix) for ws in wyckoff_sites_tmp + wyks)
 
     def _check_consistency(self, site, numIon):
         num = 0
         for s in site:
             if type(s) is dict:
-                for key in s.keys():
+                for key in s:
                     num += int(key[:-1])
             else:
                 num += int(s[:-1])
@@ -426,14 +411,14 @@ class random_crystal:
                 if compat:
                     return True
                 else:
-                    msg = "\nfrom numIons: {:d}".format(numIon)
-                    msg += "\nfrom Wyckoff list: {:d}".format(num)
+                    msg = f"\nfrom numIons: {numIon:d}"
+                    msg += f"\nfrom Wyckoff list: {num:d}"
                     msg += "\nThe number is incompatible with composition: "
                     mse += str(site)
                 raise ValueError(msg)
             else:
-                msg = "\nfrom numIons: {:d}".format(numIon)
-                msg += "\nfrom Wyckoff list: {:d}".format(num)
+                msg = f"\nfrom numIons: {numIon:d}"
+                msg += f"\nfrom Wyckoff list: {num:d}"
                 msg += "\nThe requested number is greater than composition: "
                 msg += str(site)
                 raise ValueError(msg)

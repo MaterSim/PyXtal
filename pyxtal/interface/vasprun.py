@@ -1,10 +1,11 @@
-from lxml import etree
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
-
-import matplotlib as mpl
+from lxml import etree
 
 mpl.use("Agg")
+import contextlib
+
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
@@ -58,9 +59,7 @@ class vasprun:
             self.parse_vaspxml(doc)
             self.get_band_gap()
             N_atom = len(self.values["finalpos"]["positions"])
-            self.values["calculation"]["energy_per_atom"] = (
-                self.values["calculation"]["energy"] / N_atom
-            )
+            self.values["calculation"]["energy_per_atom"] = self.values["calculation"]["energy"] / N_atom
         except etree.XMLSyntaxError:
             self.error = True
             self.errormsg = "corrupted file found"
@@ -102,23 +101,13 @@ class vasprun:
                 ) = self.get_potcar(child)
             elif child.tag == "calculation":
                 self.values["calculation"], scf_count = self.parse_calculation(child)
-                if (
-                    self.values["parameters"]["electronic"]["electronic convergence"][
-                        "NELM"
-                    ]
-                    == scf_count
-                ):
+                if self.values["parameters"]["electronic"]["electronic convergence"]["NELM"] == scf_count:
                     self.error = True
                     self.errormsg = "SCF is not converged"
 
                 if (
-                    self.values["parameters"]["electronic"]["electronic spin"][
-                        "LSORBIT"
-                    ]
-                    or self.values["parameters"]["electronic"]["electronic spin"][
-                        "ISPIN"
-                    ]
-                    == 2
+                    self.values["parameters"]["electronic"]["electronic spin"]["LSORBIT"]
+                    or self.values["parameters"]["electronic"]["electronic spin"]["ISPIN"] == 2
                 ):
                     self.spin = True
                 else:
@@ -145,19 +134,15 @@ class vasprun:
         Delete the keys that is {} and None
         Loops recursively over nested dictionaries.
         """
-        dict_foo = (
-            dict_del.copy()
-        )  # Used as iterator to avoid the 'DictionaryHasChanged' error
-        for key in dict_foo.keys():
+        dict_foo = dict_del.copy()  # Used as iterator to avoid the 'DictionaryHasChanged' error
+        for key in dict_foo:
             if isinstance(dict_foo[key], dict):
                 vasprun.dict_clean(dict_del[key])
 
             # if len(dict_foo[key])==0:
             if dict_foo[key] == {} or dict_foo[key] is None:
-                try:
+                with contextlib.suppress(KeyError):
                     del dict_del[key]
-                except KeyError:
-                    pass
 
         return dict_del
 
@@ -181,14 +166,7 @@ class vasprun:
         factor = np.sqrt(units.ev2j / 1e-20 / units.am2kg)
         for v in dynmat.findall("v"):
             for i in v.text.split():
-                eigenvalues.append(
-                    np.sqrt(abs(float(i)))
-                    * factor
-                    * units.plank
-                    / units.ev2j
-                    / 2
-                    / units.pi
-                )
+                eigenvalues.append(np.sqrt(abs(float(i))) * factor * units.plank / units.ev2j / 2 / units.pi)
                 # eigenvalues.append(np.sqrt(abs(float(i))))
         return hessian, eigenvalues, eigenvectors
 
@@ -227,7 +205,7 @@ class vasprun:
                 raise e
 
         if elem.get("type", None) == "logical":
-            m = [[True if i == "T" else False for i in v.text.split()] for v in elem]
+            m = [[i == "T" for i in v.text.split()] for v in elem]
         else:
             m = [[_vasprun_float(i) for i in v.text.split()] for v in elem]
 
@@ -236,15 +214,10 @@ class vasprun:
     @staticmethod
     def parse_varray(varray):
         if varray.get("type") == "int":
-            m = [
-                [int(number) for number in v.text.split()] for v in varray.findall("v")
-            ]
+            m = [[int(number) for number in v.text.split()] for v in varray.findall("v")]
         else:
             try:
-                m = [
-                    [float(number) for number in v.text.split()]
-                    for v in varray.findall("v")
-                ]
+                m = [[float(number) for number in v.text.split()] for v in varray.findall("v")]
             except ValueError:
                 m = [[0 for number in v.text.split()] for v in varray.findall("v")]
         return m
@@ -280,26 +253,14 @@ class vasprun:
             elif content in ("F", "False", "false"):
                 return False
             else:
-                Warning(
-                    "logical text "
-                    + content
-                    + " not T, True, true, F, False, false, set to False"
-                )
+                Warning("logical text " + content + " not T, True, true, F, False, false, set to False")
             return False
         elif type == "int":
-            return (
-                int(content)
-                if len(content.split()) == 1
-                else [int(number) for number in content.split()]
-            )
+            return int(content) if len(content.split()) == 1 else [int(number) for number in content.split()]
         elif type == "string":
             return content
         elif type is None:
-            return (
-                float(content)
-                if len(content.split()) == 1
-                else [float(number) for number in content.split()]
-            )
+            return float(content) if len(content.split()) == 1 else [float(number) for number in content.split()]
         else:
             Warning("New type: " + type + ", set to string")
         return content
@@ -330,9 +291,7 @@ class vasprun:
     def get_formula(atom_names_dictionary):
         formula = ""
         for atom_name in atom_names_dictionary:
-            formula += atom_name.replace(" ", "") + str(
-                atom_names_dictionary[atom_name]
-            )
+            formula += atom_name.replace(" ", "") + str(atom_names_dictionary[atom_name])
         return formula
 
     def get_potcar(self, child):
@@ -412,14 +371,13 @@ class vasprun:
         for s in dos.find("total").find("array").findall("set"):
             for ss in s.findall("set"):
                 t_dos.append(self.parse_varray_pymatgen(ss))
-        if dos.find("partial") is not None:
-            if len(dos.find("partial")) > 0:
-                for s in dos.find("partial").find("array").findall("set"):
-                    for i, ss in enumerate(s.findall("set")):
-                        p = []
-                        for sss in ss.findall("set"):
-                            p.append(self.parse_varray_pymatgen(sss))
-                        p_dos.append(p)
+        if dos.find("partial") is not None and len(dos.find("partial")) > 0:
+            for s in dos.find("partial").find("array").findall("set"):
+                for _i, ss in enumerate(s.findall("set")):
+                    p = []
+                    for sss in ss.findall("set"):
+                        p.append(self.parse_varray_pymatgen(sss))
+                    p_dos.append(p)
 
         return t_dos, p_dos
 
@@ -448,7 +406,6 @@ class vasprun:
         dyn_eigenvalues = []
         dyn_eigenvectors = []
         epsilon_ion = []
-        epsilon_ = []
         proj = []
         for i in calculation.iterchildren():
             if i.attrib.get("name") == "stress":
@@ -480,9 +437,7 @@ class vasprun:
                         except ValueError:
                             energy = 100000000
                     else:
-                        Warning(
-                            "No e_fr_energy found in <calculation><energy> tag, energy set to 0.0"
-                        )
+                        Warning("No e_fr_energy found in <calculation><energy> tag, energy set to 0.0")
             elif i.tag == "array" and i.attrib.get("name") == "born_charges":
                 born_chgs = self.parse_born_chg(i)
             elif i.tag == "varray" and i.attrib.get("name") == "epsilon_ion":
@@ -515,9 +470,7 @@ class vasprun:
                 kpoints_dict["mesh_scheme"] = i.attrib.get("param")
                 for j in i.iterchildren():
                     if j.attrib.get("name") == "divisions":
-                        kpoints_dict["divisions"] = [
-                            int(number) for number in j.text.split()
-                        ]
+                        kpoints_dict["divisions"] = [int(number) for number in j.text.split()]
                         break
 
         for va in kpoints.findall("varray"):
@@ -540,8 +493,8 @@ class vasprun:
             bands: an integer number
             occupy: bool number
         """
-        valence = self.values["valence"]
-        composition = self.values["composition"]
+        self.values["valence"]
+        self.values["composition"]
         total = int(self.values["parameters"]["electronic"]["NELECT"])
 
         # if self.spin:
@@ -606,7 +559,9 @@ class vasprun:
         eigens = np.array(self.values["calculation"]["eband_eigenvalues"])
         return eigens[:, band, 0] - efermi
 
-    def show_eigenvalues_by_band(self, bands=[0]):
+    def show_eigenvalues_by_band(self, bands=None):
+        if bands is None:
+            bands = [0]
         kpts = self.values["kpoints"]["list"]
         col_name = {"K-points": kpts}
         for band in bands:
@@ -626,7 +581,7 @@ class vasprun:
     def export_incar(self, filename=None, print_incar=True):
         """export incar"""
         contents = []
-        for key in self.values["incar"].keys():
+        for key in self.values["incar"]:
             content = key + " = " + str(self.values["incar"][key])
             content += "\n"
             contents.append(str(content))
@@ -642,12 +597,8 @@ class vasprun:
         contents = ["KPOINTS\n"]
         contents += str(len(self.values["kpoints"]["list"])) + "\n"
         contents += ["Cartesian\n"]
-        for kpt, wt in zip(
-            self.values["kpoints"]["list"], self.values["kpoints"]["weights"]
-        ):
-            content = "{:10.4f} {:10.4f} {:10.4f} {:10.4f}".format(
-                kpt[0], kpt[1], kpt[2], wt[0]
-            )
+        for kpt, wt in zip(self.values["kpoints"]["list"], self.values["kpoints"]["weights"]):
+            content = f"{kpt[0]:10.4f} {kpt[1]:10.4f} {kpt[2]:10.4f} {wt[0]:10.4f}"
             if filename is None:
                 print(content)
             else:
@@ -668,44 +619,30 @@ class vasprun:
         """
 
         comp = self.values["composition"]
-        atomNames = self.values["name_array"]
+        self.values["name_array"]
         latt = self.values["finalpos"]["basis"]
         pos = self.values["finalpos"]["positions"]
 
         with open(filename, "w") as f:
             string = ""
-            for key in comp.keys():
+            for key in comp:
                 string += key
                 string += str(comp[key])
             string += "\n"
             f.write(string)
             f.write("1.0\n")
-            f.write(
-                "{:12.6f} {:12.6f} {:12.6f}\n".format(
-                    latt[0][0], latt[0][1], latt[0][2]
-                )
-            )
-            f.write(
-                "{:12.6f} {:12.6f} {:12.6f}\n".format(
-                    latt[1][0], latt[1][1], latt[1][2]
-                )
-            )
-            f.write(
-                "{:12.6f} {:12.6f} {:12.6f}\n".format(
-                    latt[2][0], latt[2][1], latt[2][2]
-                )
-            )
-            for key in comp.keys():
-                f.write("{:4s}".format(key))
+            f.write(f"{latt[0][0]:12.6f} {latt[0][1]:12.6f} {latt[0][2]:12.6f}\n")
+            f.write(f"{latt[1][0]:12.6f} {latt[1][1]:12.6f} {latt[1][2]:12.6f}\n")
+            f.write(f"{latt[2][0]:12.6f} {latt[2][1]:12.6f} {latt[2][2]:12.6f}\n")
+            for key in comp:
+                f.write(f"{key:4s}")
             f.write("\n")
-            for key in comp.keys():
-                f.write("{:4d}".format(comp[key]))
+            for key in comp:
+                f.write(f"{comp[key]:4d}")
             f.write("\n")
             f.write("Direct\n")
             for coor in pos:
-                f.write(
-                    "{:12.6f} {:12.6f} {:12.6f}\n".format(coor[0], coor[1], coor[2])
-                )
+                f.write(f"{coor[0]:12.6f} {coor[1]:12.6f} {coor[2]:12.6f}\n")
 
     def parse_bandpath(self):
         kpts = self.values["kpoints"]["list"]
@@ -747,10 +684,7 @@ class vasprun:
             path = np.array(path)
             dist = np.linalg.norm(np.dot(path[0, :] - path[-1, :], rec_basis))
             x = np.linspace(pointer, pointer + dist, len(path[:, 0]))
-            if i == 0:
-                band_paths = x
-            else:
-                band_paths = np.hstack((band_paths, x))
+            band_paths = x if i == 0 else np.hstack((band_paths, x))
             pointer += dist
             band_points.append(pointer)
 
@@ -761,8 +695,8 @@ class vasprun:
         self,
         filename=None,
         styles="normal",
-        ylim=[-20, 3],
-        plim=[0.0, 0.5],
+        ylim=None,
+        plim=None,
         saveBands=False,
         dpi=300,
     ):
@@ -778,14 +712,16 @@ class vasprun:
         Returns:
             A figure with band structure
         """
+        if plim is None:
+            plim = [0.0, 0.5]
+        if ylim is None:
+            ylim = [-20, 3]
         self.parse_bandpath()
         efermi = self.values["calculation"]["efermi"]
         eigens = np.array(self.values["calculation"]["eband_eigenvalues"])
         paths = self.values["band_paths"]
         band_pts = self.values["band_points"]
-        proj = np.array(
-            self.values["calculation"]["projected"]
-        )  # [N_kpts, N_band, Ions, 9]
+        proj = np.array(self.values["calculation"]["projected"])  # [N_kpts, N_band, Ions, 9]
         cm = plt.cm.get_cmap("RdYlBu")
         nkpt, nband, nocc = np.shape(eigens)
         for i in range(nband):
@@ -854,13 +790,7 @@ class vasprun:
                 elif style == "p":
                     mydos.append(spd[rows, 2] + spd[rows, 3] + spd[rows, 4])
                 else:
-                    mydos.append(
-                        spd[rows, 5]
-                        + spd[rows, 6]
-                        + spd[rows, 7]
-                        + spd[rows, 8]
-                        + spd[rows, 9]
-                    )
+                    mydos.append(spd[rows, 5] + spd[rows, 6] + spd[rows, 7] + spd[rows, 8] + spd[rows, 9])
                 labels.append(style)
 
         elif style[0] == "a":
@@ -897,7 +827,7 @@ class vasprun:
             mydos[1] *= -1
         return mydos, labels
 
-    def plot_dos(self, filename=None, smear=None, styles="t", xlim=[-3, 3], dpi=300):
+    def plot_dos(self, filename=None, smear=None, styles="t", xlim=None, dpi=300):
         """
         plot the DOS
 
@@ -910,6 +840,8 @@ class vasprun:
         Returns:
             A figure with band structure
         """
+        if xlim is None:
+            xlim = [-3, 3]
         efermi = self.values["calculation"]["efermi"]
         tdos = np.array(self.values["calculation"]["tdos"][0])
         tdos[:, 0] -= efermi
@@ -918,10 +850,7 @@ class vasprun:
         e = e[rows]
         plt_obj = {}
         for option in styles.split("+"):
-            if option == "spd":
-                option = ["s", "p", "d"]
-            else:
-                option = [option]
+            option = ["s", "p", "d"] if option == "spd" else [option]
             for style in option:
                 mydos, labels = self.get_dos(rows, style)
                 for data, label in zip(mydos, labels):
@@ -932,7 +861,7 @@ class vasprun:
         lines2 = []
         labels1 = []
         labels2 = []
-        for label in plt_obj.keys():
+        for label in plt_obj:
             e = np.reshape(e, [len(e), 1])
             data = np.reshape(plt_obj[label], [len(e), 1])
             if smear is not None:
@@ -945,9 +874,7 @@ class vasprun:
             else:
                 lines1 += ax.plot(e, data)
                 labels1.append(label)
-        leg1 = ax.legend(
-            lines1, [label for label in labels1], fancybox=True, loc="upper right"
-        )
+        leg1 = ax.legend(lines1, list(labels1), fancybox=True, loc="upper right")
         leg1.get_frame().set_alpha(0.5)
         if len(lines2) > 0:
             from matplotlib.legend import Legend
@@ -955,7 +882,7 @@ class vasprun:
             leg2 = Legend(
                 ax,
                 lines2,
-                [label for label in labels2],
+                list(labels2),
                 fancybox=True,
                 loc="lower right",
             )

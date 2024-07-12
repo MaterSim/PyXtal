@@ -3,6 +3,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from ase.db import connect
+
 from pyxtal import pyxtal
 from pyxtal.util import search_csd_entries_by_code
 
@@ -66,7 +67,7 @@ for csd in [  #'GLYCIN01',  'HUSVUM', 'HIHDUZ', 'DOPSIK', 'TABQOG03', 'DUPXOD',
     "HETVUY",
     "HIRYOY",
     "HIYLOQ01",
-    "HONWIQ" "TROXAN",
+    "HONWIQTROXAN",
     "PYRZIN",
     "ACETAC",
     "ADAMAN01",

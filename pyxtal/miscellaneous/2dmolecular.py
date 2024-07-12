@@ -9,9 +9,8 @@ of the general position.
 
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------
-    from os import mkdir
-    from pyxtal.molecular_crystal import *
     from pyxtal.database.layergroup import Layergroup
+    from pyxtal.molecular_crystal import *
 
     parser = OptionParser()
     parser.add_option(
@@ -129,12 +128,10 @@ if __name__ == "__main__":
 
     for num in numrange:
         print("---------------Layergroup " + str(num) + "---------------")
-        for i in range(attempts):
+        for _i in range(attempts):
             start = time()
             sg = Layergroup(num).sgnumber
-            multiplicity = len(
-                get_wyckoffs(sg)[0]
-            )  # multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0])  # multiplicity of the general position
             numMols0 = np.array(numMols)
             rand_crystal = molecular_crystal_2D(
                 num,
@@ -172,11 +169,7 @@ if __name__ == "__main__":
                         rand_crystal.volume,
                     )
                 else:
-                    print(
-                        "Space group requested: "
-                        + str(sg)
-                        + " Could not calculate generated.***********"
-                    )
+                    print("Space group requested: " + str(sg) + " Could not calculate generated.***********")
                 """if written is True:
                     print("    Output to "+cifpath)
                 else:

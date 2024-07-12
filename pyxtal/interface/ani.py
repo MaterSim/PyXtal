@@ -1,10 +1,10 @@
 import os
 from time import time
+
 import numpy as np
 import torchani
-
-from ase.optimize.fire import FIRE
 from ase.constraints import ExpCellFilter
+from ase.optimize.fire import FIRE
 from ase.spacegroup.symmetrize import FixSymmetry
 
 
@@ -21,15 +21,9 @@ def ANI_relax(struc, opt_cell=False, step=500, fmax=0.1, logfile=None, max_time=
     struc.set_constraint(FixSymmetry(struc))
     if opt_cell:
         ecf = ExpCellFilter(struc)
-        if logfile is not None:
-            dyn = FIRE(ecf, a=0.1, logfile=logfile)
-        else:
-            dyn = FIRE(ecf, a=0.1)
+        dyn = FIRE(ecf, a=0.1, logfile=logfile) if logfile is not None else FIRE(ecf, a=0.1)
     else:
-        if logfile is not None:
-            dyn = FIRE(struc, a=0.1, logfile=logfile)
-        else:
-            dyn = FIRE(struc, a=0.1)
+        dyn = FIRE(struc, a=0.1, logfile=logfile) if logfile is not None else FIRE(struc, a=0.1)
 
     # Run relaxation
     if step < 50:
@@ -83,7 +77,7 @@ class ANI:
         try:
             # s.write('../1.cif', format='cif')
             count = 0
-            for i, site in enumerate(self.structure.mol_sites):
+            for _i, site in enumerate(self.structure.mol_sites):
                 coords0, _ = site._get_coords_and_species(first=True)
                 coords1 = positions[count : count + len(site.molecule.mol)]
                 for j, coor in enumerate(coords1):
@@ -114,8 +108,9 @@ class ANI:
 
 
 if __name__ == "__main__":
-    from pyxtal.db import database
     import warnings
+
+    from pyxtal.db import database
 
     warnings.filterwarnings("ignore")
 

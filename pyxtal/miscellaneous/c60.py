@@ -2,9 +2,10 @@
 Generates n C60 structures and outputs to cif files
 """
 
-from pyxtal.crystal import *
 from os import mkdir
 from os.path import exists
+
+from pyxtal.crystal import *
 
 # input variables
 g = Group("Ih", dim=0)

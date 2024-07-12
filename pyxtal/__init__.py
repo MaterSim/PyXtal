@@ -3,31 +3,30 @@ main pyxtal module to create the pyxtal class
 """
 
 # Standard Libraries
+import itertools
+import json
 from copy import deepcopy
 from random import choice, sample
-import itertools
-import numpy as np
-import json
 
+import numpy as np
 from ase import Atoms
-from pymatgen.core.structure import Structure, Molecule
+from pymatgen.core.structure import Molecule, Structure
+
+from pyxtal.block_crystal import block_crystal
+from pyxtal.crystal import random_crystal
+from pyxtal.io import read_cif, structure_from_ext, write_cif
+from pyxtal.lattice import Lattice
+from pyxtal.molecule import pyxtal_molecule
+from pyxtal.operations import SymmOp, apply_ops, get_inverse
+from pyxtal.representation import representation, representation_atom
+from pyxtal.symmetry import Group, Wyckoff_position
+from pyxtal.tolerance import Tol_matrix
 
 # PyXtal imports #avoid *
 from pyxtal.version import __version__
-from pyxtal.block_crystal import block_crystal
-from pyxtal.crystal import random_crystal
-from pyxtal.symmetry import Group, Wyckoff_position
-from pyxtal.operations import apply_ops, SymmOp, get_inverse
+from pyxtal.viz import display_atomic, display_cluster, display_molecular
 from pyxtal.wyckoff_site import atom_site, mol_site
 from pyxtal.wyckoff_split import wyckoff_split
-from pyxtal.molecule import pyxtal_molecule
-from pyxtal.lattice import Lattice
-from pyxtal.tolerance import Tol_matrix
-from pyxtal.representation import representation, representation_atom
-from pyxtal.io import read_cif, write_cif, structure_from_ext
-from pyxtal.constants import letters
-from pyxtal.viz import display_molecular, display_atomic, display_cluster
-from pyxtal.constants import letters
 
 # name = "pyxtal"
 
@@ -38,7 +37,7 @@ def print_logo():
     """
 
     print(
-        """
+        r"""
              ______       _    _          _
             (_____ \     \ \  / /        | |
              _____) )   _ \ \/ / |_  ____| |
@@ -194,9 +193,9 @@ class pyxtal:
 
     def __str__(self):
         if self.valid:
-            s = "\n------Crystal from {:s}------".format(self.source)
-            s += "\nDimension: {}".format(self.dim)
-            s += "\nComposition: {}".format(self.formula)
+            s = f"\n------Crystal from {self.source:s}------"
+            s += f"\nDimension: {self.dim}"
+            s += f"\nComposition: {self.formula}"
             # if not self.standard_setting:
             if self.dim < 3:
                 symbol = self.group.symbol
@@ -207,15 +206,15 @@ class pyxtal:
                 else:
                     if len(self.atom_sites) > 0:
                         symbol = self.atom_sites[0].wp.get_hm_symbol()
-            s += "\nGroup: {} ({})".format(symbol, self.group.number)
-            s += "\n{}".format(self.lattice)
+            s += f"\nGroup: {symbol} ({self.group.number})"
+            s += f"\n{self.lattice}"
             s += "\nWyckoff sites:"
             if self.molecular:
                 for wyc in self.mol_sites:
-                    s += "\n\t{}".format(wyc)
+                    s += f"\n\t{wyc}"
             else:
                 for wyc in self.atom_sites:
-                    s += "\n\t{}".format(wyc)
+                    s += f"\n\t{wyc}"
         else:
             s = "\nStructure not available."
         return s
@@ -227,10 +226,7 @@ class pyxtal:
         """
         Get the number of dof for the given structures:
         """
-        if self.molecular:
-            sites = self.mol_sites
-        else:
-            sites = self.atom_sites
+        sites = self.mol_sites if self.molecular else self.atom_sites
         dof = 0
         for site in sites:
             dof += site.dof
@@ -251,7 +247,7 @@ class pyxtal:
         dicts = {}
         for name, site in zip(names, sites):
             label = site.wp.get_label()
-            if name not in dicts.keys():
+            if name not in dicts:
                 dicts[name] = [label]
             else:
                 dicts[name].append(label)
@@ -302,10 +298,7 @@ class pyxtal:
                 to define the distances
 
         """
-        if self.molecular:
-            prototype = "molecular"
-        else:
-            prototype = "atomic"
+        prototype = "molecular" if self.molecular else "atomic"
 
         if tm is None:
             tm = Tol_matrix(prototype=prototype, factor=t_factor)
@@ -349,10 +342,7 @@ class pyxtal:
                     tm,
                     use_hall=use_hall,
                 )
-            if force_pass:
-                quit = True
-                break
-            elif struc.valid:
+            if force_pass or struc.valid:
                 quit = True
                 break
 
@@ -417,9 +407,7 @@ class pyxtal:
                 else:
                     pmols.append(pyxtal_molecule(mol, fix=True))
             # QZ: the default will not work for molecular H2, which is rare!
-            struc = structure_from_ext(
-                seed, pmols, ignore_HH=ignore_HH, add_H=add_H, hn=hn
-            )
+            struc = structure_from_ext(seed, pmols, ignore_HH=ignore_HH, add_H=add_H, hn=hn)
             self.mol_sites = struc.make_mol_sites()
             self.group = Group(struc.wyc.number)
             self.lattice = struc.lattice
@@ -485,7 +473,7 @@ class pyxtal:
 
         if self.valid:
             d = sym_struc.composition.as_dict()
-            species = [key for key in d.keys()]
+            species = list(d.keys())
             numIons = []
             for ele in species:
                 numIons.append(int(d[ele]))
@@ -503,9 +491,7 @@ class pyxtal:
                 pos = site[0].frac_coords
                 letter = sym_struc.wyckoff_symbols[i]
                 # print(letter)
-                wp = Wyckoff_position.from_group_and_letter(
-                    number, letter, style=style, hn=hn
-                )
+                wp = Wyckoff_position.from_group_and_letter(number, letter, style=style, hn=hn)
                 specie = site[0].specie.number
                 # if wp.index>0: print(wp)
                 pos1 = wp.search_generator(pos, self.group[0], tol=tol)
@@ -518,9 +504,7 @@ class pyxtal:
                         print("Problem in ", site)
                         print(wp.symbol, wp.number, wp.letter, wp)
                         print("sym_struc_sites", sym_struc)
-                        raise RuntimeError(
-                            "Cannot extract the right mapping from spglib"
-                        )
+                        raise RuntimeError("Cannot extract the right mapping from spglib")
                         # break
 
             # if len(atom_sites) != len(sym_struc.equivalent_sites):
@@ -558,7 +542,6 @@ class pyxtal:
             True or False
         """
         if self.dim > 0:
-            pairs = []
             pmg_struc = self.to_pymatgen()
             res = pmg_struc.get_all_neighbors(r)
             for i, neighs in enumerate(res):
@@ -606,7 +589,7 @@ class pyxtal:
         """
         if self.dim > 0:
             N_pairs = 0
-            r_cut = max([dicts[key] for key in dicts.keys()])
+            r_cut = max([dicts[key] for key in dicts])
             pmg_struc = self.to_pymatgen()
             res = pmg_struc.get_all_neighbors(r_cut)
             for i, neighs in enumerate(res):
@@ -615,12 +598,10 @@ class pyxtal:
                     ele2 = n.specie.value
                     key1 = ele1 + "-" + ele2
                     key2 = ele2 + "-" + ele1
-                    if key1 in dicts.keys() and n.nn_distance < dicts[key1]:
-                        N_pairs += 1
-                    elif (
-                        key1 != key2
-                        and key2 in dicts.keys()
-                        and n.nn_distance < dicts[key2]
+                    if (
+                        key1 in dicts
+                        and n.nn_distance < dicts[key1]
+                        or (key1 != key2 and key2 in dicts and n.nn_distance < dicts[key2])
                     ):
                         N_pairs += 1
         else:
@@ -652,16 +633,11 @@ class pyxtal:
         """
         if self.valid:
             if fmt is None:
-                if self.dim == 0:
-                    fmt = "xyz"
-                else:
-                    fmt = "cif"
+                fmt = "xyz" if self.dim == 0 else "cif"
 
             if fmt == "cif":
                 if self.dim == 3:
-                    return write_cif(
-                        self, filename, header, permission, sym_num=sym_num
-                    )
+                    return write_cif(self, filename, header, permission, sym_num=sym_num)
                 else:
                     pmg_struc = self.to_pymatgen()
                     if self.molecular:
@@ -737,9 +713,7 @@ class pyxtal:
             a list of pyxtal structures with lower symmetries
         """
 
-        idx, sites, t_types, k_types = self._get_subgroup_ids(
-            H, group_type, idx, max_cell, min_cell
-        )
+        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell, min_cell)
         # randomly choose a subgroup from the available list
         if N_groups is not None and len(idx) >= N_groups:
             idx = sample(idx, N_groups)
@@ -785,9 +759,7 @@ class pyxtal:
             for splitter in bad_splitters:
                 trail_struc = self._subgroup_by_splitter(splitter, eps=eps)
                 if trail_struc is not None:
-                    new_strucs.extend(
-                        trail_struc.subgroup(perms, group_type=group_type)
-                    )
+                    new_strucs.extend(trail_struc.subgroup(perms, group_type=group_type))
             return new_strucs
         else:
             # print(len(valid_splitters), "valid_splitters are present")
@@ -820,10 +792,7 @@ class pyxtal:
         splitters = []
         G = self.group
         for g_type, id in zip(gtypes, ids):
-            if self.molecular:
-                _sites = struc.mol_sites
-            else:
-                _sites = struc.atom_sites
+            _sites = struc.mol_sites if self.molecular else struc.atom_sites
             sites = [site.wp.index for site in _sites]
             # print(G.number, id, g_type, sites)
             splitter = wyckoff_split(G, wp1=sites, idx=id, group_type=g_type)
@@ -858,9 +827,7 @@ class pyxtal:
         Returns:
             a pyxtal structure with lower symmetries
         """
-        idx, sites, t_types, k_types = self._get_subgroup_ids(
-            H, group_type, None, max_cell, min_cell
-        )
+        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell, min_cell)
         # print("Test subgroup_once", self.group.number, idx, sites)
 
         if idx is None or len(idx) == 0:
@@ -876,9 +843,7 @@ class pyxtal:
             if gtype == "k":
                 id -= len(t_types)
             # print(self.group.number, sites, id, gtype, idx)
-            splitter = wyckoff_split(
-                G=self.group.number, wp1=sites, idx=id, group_type=gtype
-            )
+            splitter = wyckoff_split(G=self.group.number, wp1=sites, idx=id, group_type=gtype)
             if not splitter.error:
                 if perms is not None:
                     if len(splitter.H_orbits) == 1:
@@ -886,15 +851,11 @@ class pyxtal:
                             return self._apply_substitution(splitter, perms)
                         else:
                             # print("try to find the next subgroup")
-                            trail_struc = self._subgroup_by_splitter(
-                                splitter, eps=eps, mut_lat=mut_lat
-                            )
+                            trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                             if trail_struc is not None:
                                 multiple = sum(trail_struc.numIons) / sum(self.numIons)
                                 max_cell = max([1, max_cell / multiple])
-                                ans = trail_struc.subgroup_once(
-                                    eps, H, perms, group_type, max_cell
-                                )
+                                ans = trail_struc.subgroup_once(eps, H, perms, group_type, max_cell)
                                 if ans.group.number > 1:
                                     return ans
                     else:
@@ -910,25 +871,17 @@ class pyxtal:
                                         special = True
                                         break
                         if ignore_special:
-                            return self._subgroup_by_splitter(
-                                splitter, eps=eps, mut_lat=mut_lat
-                            )
+                            return self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                         else:
                             if not special:
-                                return self._subgroup_by_splitter(
-                                    splitter, eps=eps, mut_lat=mut_lat
-                                )
+                                return self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                     else:
                         # print("try to find the next subgroup")
-                        trail_struc = self._subgroup_by_splitter(
-                            splitter, eps=eps, mut_lat=mut_lat
-                        )
+                        trail_struc = self._subgroup_by_splitter(splitter, eps=eps, mut_lat=mut_lat)
                         if trail_struc is not None:
                             multiple = sum(trail_struc.numIons) / sum(self.numIons)
                             max_cell = max([1, max_cell / multiple])
-                            ans = trail_struc.subgroup_once(
-                                eps, H, None, group_type, max_cell
-                            )
+                            ans = trail_struc.subgroup_once(eps, H, None, group_type, max_cell)
                             if ans.group.number > 1:
                                 return ans
             count += 1
@@ -950,12 +903,9 @@ class pyxtal:
 
         site_ids = []
         for site_id, site in enumerate(new_struc.atom_sites):
-            if site.specie in perms.keys():
+            if site.specie in perms:
                 site_ids.append(site_id)
-        if len(site_ids) > 1:
-            N = choice(range(1, len(site_ids)))
-        else:
-            N = 1
+        N = choice(range(1, len(site_ids))) if len(site_ids) > 1 else 1
         sub_ids = sample(site_ids, N)
         for sub_id in sub_ids:
             key = new_struc.atom_sites[sub_id].specie
@@ -973,10 +923,7 @@ class pyxtal:
             self.optimize_lattice(standard=True)
 
         if H is not None:
-            if Group(H, quick=True).point_group == self.group.point_group:
-                group_type = "k"
-            else:
-                group_type = "t"
+            group_type = "k" if Group(H, quick=True).point_group == self.group.point_group else "t"
         t_types = []
         k_types = []
         if group_type == "t":
@@ -990,7 +937,7 @@ class pyxtal:
             dict2 = self.group.get_max_k_subgroup()
             t_types = ["t"] * len(dicts["subgroup"])
             k_types = ["k"] * len(dict2["subgroup"])
-            for key in dicts.keys():
+            for key in dicts:
                 dicts[key].extend(dict2[key])
 
         Hs = dicts["subgroup"]
@@ -1008,10 +955,7 @@ class pyxtal:
                     tran = np.abs(tran[:3, :3])
                     good = True
                     # only accepts trans like [a, b, c] [b, c, a]
-                    if (
-                        self.group.number != 5
-                        and abs(abs(np.linalg.det(tran)) - 1) > 1e-3
-                    ):
+                    if self.group.number != 5 and abs(abs(np.linalg.det(tran)) - 1) > 1e-3:
                         # print(self.group.number, np.linalg.det(tran))
                         good = False
                     if good:
@@ -1028,10 +972,7 @@ class pyxtal:
         # if len(idx) == 0:
         #    raise RuntimeError("Cannot find the splitter")
 
-        if self.molecular:
-            struc_sites = self.mol_sites
-        else:
-            struc_sites = self.atom_sites
+        struc_sites = self.mol_sites if self.molecular else self.atom_sites
 
         sites = [site.wp.get_label() for site in struc_sites]
 
@@ -1092,9 +1033,7 @@ class pyxtal:
                 wp1 = site.wp
                 ori.reset_matrix(np.eye(3))
                 id = 0
-                for g1s, ops1, ops2 in zip(
-                    splitter.G1_orbits[i], splitter.G2_orbits[i], splitter.H_orbits[i]
-                ):
+                for g1s, ops1, ops2 in zip(splitter.G1_orbits[i], splitter.G2_orbits[i], splitter.H_orbits[i]):
                     if site.wp.multiplicity == len(self.group[0]):
                         # general wyc
                         rot = g1s[0].affine_matrix[:3, :3].T
@@ -1126,9 +1065,7 @@ class pyxtal:
                     split_sites.append(_site)
                     id += wp.multiplicity
             new_struc.mol_sites = split_sites
-            new_struc.numMols = [
-                int(round(multiples * numMol)) for numMol in self.numMols
-            ]
+            new_struc.numMols = [int(round(multiples * numMol)) for numMol in self.numMols]
 
         else:
             for i, site in enumerate(self.atom_sites):
@@ -1138,16 +1075,12 @@ class pyxtal:
                     pos0 -= np.floor(pos0)
                     dis = (np.random.sample(3) - 0.5).dot(self.lattice.matrix)
                     dis /= np.linalg.norm(dis)
-                    pos0 += np.dot(
-                        eps * dis * (np.random.random() - 0.5), self.lattice.inv_matrix
-                    )
+                    pos0 += np.dot(eps * dis * (np.random.random() - 0.5), self.lattice.inv_matrix)
                     wp = Wyckoff_position.from_symops(ops2, h)
                     split_sites.append(atom_site(wp, pos0, site.specie))
 
             new_struc.atom_sites = split_sites
-            new_struc.numIons = [
-                int(round(multiples * numIon)) for numIon in self.numIons
-            ]
+            new_struc.numIons = [int(round(multiples * numIon)) for numIon in self.numIons]
         new_struc.lattice = lattice
         new_struc.source = "subgroup"
 
@@ -1193,21 +1126,13 @@ class pyxtal:
         total_coords = None
         if self.molecular:
             for site in self.mol_sites:
-                coords, site_species = site.get_coords_and_species(
-                    absolute, unitcell=unitcell
-                )
+                coords, site_species = site.get_coords_and_species(absolute, unitcell=unitcell)
                 species.extend(site_species)
-                if total_coords is None:
-                    total_coords = coords
-                else:
-                    total_coords = np.append(total_coords, coords, axis=0)
+                total_coords = coords if total_coords is None else np.append(total_coords, coords, axis=0)
         else:
             for site in self.atom_sites:
                 species.extend([site.specie] * site.multiplicity)
-                if total_coords is None:
-                    total_coords = site.coords
-                else:
-                    total_coords = np.append(total_coords, site.coords, axis=0)
+                total_coords = site.coords if total_coords is None else np.append(total_coords, site.coords, axis=0)
 
             if absolute:
                 total_coords = total_coords.dot(self.lattice.matrix)
@@ -1242,7 +1167,7 @@ class pyxtal:
         for i, s in zip(numspecies, species):
             if type(s) == int:
                 s = Element(s).short_name
-            formula += "{:s}{:d}".format(s, int(i))
+            formula += f"{s:s}{int(i):d}"
         self.formula = formula
 
     def get_zprime(self, integer=False):
@@ -1298,9 +1223,7 @@ class pyxtal:
                     else:
                         coords, species = self._get_coords_and_species(True)
                     if add_vaccum:
-                        latt, coords = lattice.add_vacuum(
-                            coords, frac=False, PBC=self.PBC
-                        )
+                        latt, coords = lattice.add_vacuum(coords, frac=False, PBC=self.PBC)
                     else:
                         latt = lattice.matrix
                     atoms = Atoms(species, positions=coords, cell=latt, pbc=self.PBC)
@@ -1311,9 +1234,7 @@ class pyxtal:
                         latt, coords = lattice.add_vacuum(coords, PBC=self.PBC)
                     else:
                         latt = lattice.matrix
-                    atoms = Atoms(
-                        species, scaled_positions=coords, cell=latt, pbc=self.PBC
-                    )
+                    atoms = Atoms(species, scaled_positions=coords, cell=latt, pbc=self.PBC)
                 if resort:
                     permutation = np.argsort(atoms.numbers)
                     atoms = atoms[permutation]
@@ -1407,7 +1328,7 @@ class pyxtal:
             force: whether or not do the early termination
             standard: True or False
         """
-        for i in range(iterations):
+        for _i in range(iterations):
             lattice, trans, opt = self.lattice.optimize_once()
             # print(i, opt, self.lattice, "->", lattice)
             if force or opt:
@@ -1416,47 +1337,42 @@ class pyxtal:
                 break
 
         # QZ: to check spglib
-        if standard and 3 <= self.group.number <= 15:
-            if not self.standard_setting:
-                trans1 = self.lattice.get_permutation_matrices()
-                trans2 = self.lattice.get_transformation_matrices()
-                good_trans = None
-                beta_diff = 90
+        if standard and 3 <= self.group.number <= 15 and not self.standard_setting:
+            trans1 = self.lattice.get_permutation_matrices()
+            trans2 = self.lattice.get_transformation_matrices()
+            good_trans = None
+            beta_diff = 90
+            wp = self.mol_sites[0].wp if self.molecular else self.atom_sites[0].wp
+
+            for tran1 in trans1:
+                for tran2 in trans2:
+                    _trans = [tran1, tran2]
+                    wp0 = wp.copy()
+                    lat0 = self.lattice.transform_multi(_trans)
+                    wp0.transform_from_matrices(_trans)
+                    beta_diff0 = abs(lat0.beta * 180 / np.pi - 90)
+                    # print(wp0, wp0.is_standard_setting())
+                    if wp0.is_standard_setting() and beta_diff0 < beta_diff:
+                        good_trans = _trans
+                        beta_diff = beta_diff0
+
+            if good_trans is not None:
+                for tran in good_trans:
+                    self.transform(tran)
+            else:
+                print(self.lattice)
                 if self.molecular:
-                    wp = self.mol_sites[0].wp
+                    print(self.mol_sites[0].wp)
                 else:
-                    wp = self.atom_sites[0].wp
-
-                for tran1 in trans1:
-                    for tran2 in trans2:
-                        _trans = [tran1, tran2]
-                        wp0 = wp.copy()
-                        lat0 = self.lattice.transform_multi(_trans)
-                        wp0.transform_from_matrices(_trans)
-                        beta_diff0 = abs(lat0.beta * 180 / np.pi - 90)
-                        # print(wp0, wp0.is_standard_setting())
-                        if wp0.is_standard_setting() and beta_diff0 < beta_diff:
-                            good_trans = _trans
-                            beta_diff = beta_diff0
-
-                if good_trans is not None:
-                    for tran in good_trans:
-                        self.transform(tran)
-                else:
-                    print(self.lattice)
-                    if self.molecular:
-                        print(self.mol_sites[0].wp)
-                    else:
-                        print(self.atom_sites[0].wp)
-                    msg = "Cannot find the standard setting"
-                    raise RuntimeError(msg)
+                    print(self.atom_sites[0].wp)
+                msg = "Cannot find the standard setting"
+                raise RuntimeError(msg)
 
     def get_std_representation(self, trans):
         """
         Perform cell transformation so that the symmetry operations
         follow standard space group notation
         """
-        pass
 
     def get_1D_representation(self, standard=False):
         """
@@ -1485,10 +1401,7 @@ class pyxtal:
         lattice0 = lattice.copy()
         lattice0.reset_matrix()
 
-        if self.molecular:
-            sites = self.mol_sites
-        else:
-            sites = self.atom_sites
+        sites = self.mol_sites if self.molecular else self.atom_sites
 
         for j, site in enumerate(sites):
             pos_abs = np.dot(site.position, self.lattice.matrix)
@@ -1561,7 +1474,7 @@ class pyxtal:
             for site in self.atom_sites:
                 sites.append(site.save_dict())
 
-        dict0 = {
+        return {
             "lattice": self.lattice.matrix,
             "sites": sites,
             "group": self.group.number,
@@ -1576,16 +1489,12 @@ class pyxtal:
             "valid": self.valid,
         }
 
-        return dict0
-
     def load_dict(self, dict0):
         """
         Load the structure from a dictionary
         """
         self.group = Group(dict0["group"], dict0["dim"])
-        self.lattice = Lattice.from_matrix(
-            dict0["lattice"], ltype=self.group.lattice_type
-        )
+        self.lattice = Lattice.from_matrix(dict0["lattice"], ltype=self.group.lattice_type)
         self.molecular = dict0["molecular"]
         self.factor = dict0["factor"]
         self.source = dict0["source"]
@@ -1609,9 +1518,7 @@ class pyxtal:
                 sites.append(atom_site.load_dict(site))
             self.atom_sites = sites
 
-    def build(
-        self, group, species, numIons, lattice, sites, tol=1e-2, dim=3, use_hall=False
-    ):
+    def build(self, group, species, numIons, lattice, sites, tol=1e-2, dim=3, use_hall=False):
         """
         Build a atomic crystal based on the necessary input
 
@@ -1643,9 +1550,7 @@ class pyxtal:
                     lattice = Lattice.from_matrix(lattice, ltype=ltype)
                 elif len(lattice) == 6:  # cell para
                     [a, b, c, alpha, beta, gamma] = lattice
-                    lattice = Lattice.from_para(
-                        a, b, c, alpha, beta, gamma, ltype=ltype
-                    )
+                    lattice = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
                 else:
                     msg = "Cannot convert the input array to pyxtal.lattice.Lattice"
                     raise ValueError(msg, lattice)
@@ -1663,7 +1568,7 @@ class pyxtal:
         self.PBC = self.group.PBC
         self.numIons = numIons
         self.species = species
-        numIons_added = np.zeros(len(numIons), dtype=int)
+        np.zeros(len(numIons), dtype=int)
         _sites = []
 
         if len(sites) != len(species):
@@ -1693,10 +1598,7 @@ class pyxtal:
                             pt = [0.0, 0.0, 0.0]
                         else:
                             ans = _wp.get_all_positions([x, y, z])
-                            if ans is not None:
-                                pt = ans[0]
-                            else:
-                                pt = None
+                            pt = ans[0] if ans is not None else None
                         if pt is not None:
                             _sites.append(atom_site(_wp, pt, sp))
                     else:
@@ -1711,9 +1613,7 @@ class pyxtal:
         self.source = "Build"
         self._get_formula()
 
-    def get_alternatives(
-        self, include_self=True, same_letters=False, ref_lat=None, d_tol=2.0, f_tol=0.15
-    ):
+    def get_alternatives(self, include_self=True, same_letters=False, ref_lat=None, d_tol=2.0, f_tol=0.15):
         """
         Get alternative structure representations
 
@@ -1738,17 +1638,9 @@ class pyxtal:
         if No > 1:
             # skip the first setting since it is identity
             for no in range(1, No):
-                if same_letters:
-                    if wyc_sets["Transformed WP"][no] == letters:
-                        add = True
-                    else:
-                        add = False
-                else:
-                    add = True
+                add = (wyc_sets["Transformed WP"][no] == letters) if same_letters else True
                 if add:
-                    new_struc = self._get_alternative(
-                        wyc_sets, no, ref_lat, d_tol, f_tol
-                    )
+                    new_struc = self._get_alternative(wyc_sets, no, ref_lat, d_tol, f_tol)
                     if new_struc is not None:
                         new_strucs.append(new_struc)
         # print("Numbers===============", len(new_strucs)); import sys; sys.exit()
@@ -1833,9 +1725,7 @@ class pyxtal:
                 # print('bad setting', new_lat); print(ref_lat)
                 return None
 
-        new_struc.lattice = (
-            new_lat  # Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
-        )
+        new_struc.lattice = new_lat  # Lattice.from_matrix(matrix, ltype=self.group.lattice_type)
 
         for i, site in enumerate(new_struc.atom_sites):
             id = len(self.group) - site.wp.index - 1
@@ -1851,7 +1741,7 @@ class pyxtal:
                 # print(wp)
                 # raise RuntimeError("Cannot find the right pos")
 
-        new_struc.source = "Alt. Wyckoff Set [{:d}]: {:s}".format(index, xyz_string)
+        new_struc.source = f"Alt. Wyckoff Set [{index:d}]: {xyz_string:s}"
         new_struc.wyc_set_id = index
 
         return new_struc
@@ -1891,7 +1781,7 @@ class pyxtal:
                 print(wp)
                 raise RuntimeError("Cannot find the right pos")
 
-        new_struc.source = "Alt. Wyckoff Set [{:d}]: {:s}".format(index, xyz_string)
+        new_struc.source = f"Alt. Wyckoff Set [{index:d}]: {xyz_string:s}"
         new_struc.wyc_set_id = index
 
         # transform lattice
@@ -1906,10 +1796,8 @@ class pyxtal:
         Check intermolecular distance for molecular crystal
         """
         if self.molecular:
-            for ms in self.mol_sites:
-                if not ms.short_dist():
-                    return False
-            return True
+            return all(ms.short_dist() for ms in self.mol_sites)
+        return None
 
     def get_density(self):
         """
@@ -1925,10 +1813,7 @@ class pyxtal:
         if species is None:
             species = self.species
 
-        if self.molecular:
-            sites = self.mol_sites
-        else:
-            sites = self.atom_sites
+        sites = self.mol_sites if self.molecular else self.atom_sites
 
         for msite in sites:
             if self.molecular:
@@ -1963,9 +1848,7 @@ class pyxtal:
                 max_index = max([site.wp.index for site in sites])
             else:
                 sites = self.atom_sites
-                max_index = max(
-                    [site.wp.index for site in sites if site.specie in species]
-                )
+                max_index = max([site.wp.index for site in sites if site.specie in species])
             # print([site.wp.index for site in sites])
             if self.molecular:
                 path = self.group.short_path_to_general_wp(max_index, t_only)
@@ -1984,9 +1867,8 @@ class pyxtal:
         else:
             sub = self.copy()
 
-        if iterate:
-            if sub.has_special_site():
-                sub = sub.to_subgroup()
+        if iterate and sub.has_special_site():
+            sub = sub.to_subgroup()
 
         return sub
 
@@ -2240,19 +2122,14 @@ class pyxtal:
             d_tol1, f_tol1, a_tol1, switch = ref_struc.lattice.get_diff(lat0)
             # print(d_tol1, f_tol1, a_tol1, switch); import sys; sys.exit()
             if (d_tol1 + a_tol1) < 1e-3 and not switch:
-                if self.group.number > 15:
-                    tran = np.zeros([3])
-                else:
-                    tran = ref_struc.atom_sites[0].position - pos0
+                tran = np.zeros([3]) if self.group.number > 15 else ref_struc.atom_sites[0].position - pos0
                 disp, d, valid = self.get_disps_single(ref_struc, -tran, d_tol=0.1)
                 # print(self); print(ref_struc), print("=====", d); import sys; sys.exit()
                 if d < 1e-3:
                     return True
         return False
 
-    def get_disps_sets(
-        self, ref_struc, d_tol, d_tol2=0.3, ld_tol=2.0, fd_tol=0.15, keep_lattice=False
-    ):
+    def get_disps_sets(self, ref_struc, d_tol, d_tol2=0.3, ld_tol=2.0, fd_tol=0.15, keep_lattice=False):
         """
         Compute the displacement w.r.t. a reference structure (considering all wycsets)
 
@@ -2274,19 +2151,14 @@ class pyxtal:
         if keep_lattice:
             ref_strucs_matched = [ref_struc]
         else:
-            ref_strucs_matched = self.find_matched_lattice(
-                ref_struc, d_tol=ld_tol, f_tol=fd_tol
-            )
+            ref_strucs_matched = self.find_matched_lattice(ref_struc, d_tol=ld_tol, f_tol=fd_tol)
 
-        for i, ref_struc_matched in enumerate(ref_strucs_matched):
-            ref_strucs_alt = ref_struc_matched.get_alternatives(
-                ref_lat=self.lattice, d_tol=ld_tol, f_tol=fd_tol
-            )
-            for j, ref_struc_alt in enumerate(ref_strucs_alt):
+        for _i, ref_struc_matched in enumerate(ref_strucs_matched):
+            ref_strucs_alt = ref_struc_matched.get_alternatives(ref_lat=self.lattice, d_tol=ld_tol, f_tol=fd_tol)
+            for _j, ref_struc_alt in enumerate(ref_strucs_alt):
                 # initial setup
                 d_min = 10.0
                 disp_min = None
-                tran_min = None
                 trans = []
 
                 # print('========================', ref_struc_alt)
@@ -2296,13 +2168,10 @@ class pyxtal:
                     # if not ref_struc_alt.is_duplicate(good_ref_strucs+bad_ref_strucs):
                     trans = self.get_init_translations(ref_struc_alt)
 
-                for k, tran in enumerate(trans):
+                for _k, tran in enumerate(trans):
                     disp, d, valid = self.get_disps_single(ref_struc_alt, tran, d_tol)
-                    if valid:
-                        if d > 0.3 and len(self.axis) > 0:
-                            disp, d, tran = self.get_disps_optim(
-                                ref_struc_alt, tran, d_tol
-                            )
+                    if valid and d > 0.3 and len(self.axis) > 0:
+                        disp, d, tran = self.get_disps_optim(ref_struc_alt, tran, d_tol)
                     # update
                     if d < d_min:
                         d_min = d
@@ -2375,9 +2244,7 @@ class pyxtal:
                     sites.append(site)
         self.atom_sites = sites
 
-    def get_transition(
-        self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2, max_path=30, both=False
-    ):
+    def get_transition(self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2, max_path=30, both=False):
         """
         Get the splitted wyckoff information along a given path:
 
@@ -2415,17 +2282,13 @@ class pyxtal:
             good_splitters = []
 
             for p in paths:
-                r = self.get_transition_by_path(
-                    ref_struc, p, d_tol, d_tol2, N_images, both
-                )
+                r = self.get_transition_by_path(ref_struc, p, d_tol, d_tol2, N_images, both)
                 (strucs, disp, tran, count, sps) = r
                 if count == 0:
                     # prepare more paths to increase diversity
                     add_paths = self.group.add_k_transitions(p)
                     for p0 in add_paths:
-                        r = self.get_transition_by_path(
-                            ref_struc, p0, d_tol, d_tol2, N_images, both
-                        )
+                        r = self.get_transition_by_path(ref_struc, p0, d_tol, d_tol2, N_images, both)
                         (strucs, disp, tran, count, sps) = r
                         if strucs is not None:
                             if strucs[-1].disp < d_tol2:  # stop
@@ -2468,9 +2331,7 @@ class pyxtal:
 
             return None, None, None, p, None
 
-    def get_transition_by_path(
-        self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2, both=False
-    ):
+    def get_transition_by_path(self, ref_struc, path, d_tol, d_tol2=0.5, N_images=2, both=False):
         """
         Get the splitted wyckoff information along a given path:
 
@@ -2495,7 +2356,7 @@ class pyxtal:
         elements0, sites_G = self._get_elements_and_sites()
         elements1, sites_H = ref_struc._get_elements_and_sites()
         # resort sites_H based on elements0
-        seq = list(map(lambda x: elements1.index(x), elements0))
+        seq = [elements1.index(x) for x in elements0]
         sites_H = [sites_H[i] for i in seq]
         numIons_H = []
         for site in sites_H:
@@ -2577,9 +2438,7 @@ class pyxtal:
                         # early termination
                         if max_disp < d_tol2:
                             cell = s.lattice.matrix
-                            strucs = ref_struc.make_transitions(
-                                disp, cell, tran, N_images, both
-                            )
+                            strucs = ref_struc.make_transitions(disp, cell, tran, N_images, both)
                             return strucs, disp, tran, count_match, sps
                         else:
                             disps.append(disp)
@@ -2612,9 +2471,7 @@ class pyxtal:
         for site in self.atom_sites:
             site.update(site.position + trans, reset_wp=reset_wp)
 
-    def make_transitions(
-        self, disps, lattice=None, translation=None, N_images=3, both=False
-    ):
+    def make_transitions(self, disps, lattice=None, translation=None, N_images=3, both=False):
         """
         make the pyxtals by following the atomic displacements
 
@@ -2632,25 +2489,19 @@ class pyxtal:
         disps = np.array(disps)
         disps /= N_images - 1
         max_disp = np.max(np.linalg.norm(disps.dot(cell), axis=1))
-        if lattice is None:
-            l_disps = np.zeros([3, 3])
-        else:
-            l_disps = (lattice - cell) / (N_images - 1)
+        l_disps = np.zeros([3, 3]) if lattice is None else (lattice - cell) / (N_images - 1)
 
         if translation is None:
             translation = np.zeros([3])
 
-        if both:
-            i_list = range(0, 2 * N_images - 1)
-        else:
-            i_list = range(N_images)
+        i_list = range(2 * N_images - 1) if both else range(N_images)
 
         for i in i_list:
             struc = self.copy()
             for j, site in enumerate(struc.atom_sites):
                 coord = site.position + i * disps[j] + translation
                 struc.atom_sites[j].update(coord)
-            struc.source = "Transition {:d} {:6.3f}".format(i, max_disp * i)
+            struc.source = f"Transition {i:d} {max_disp * i:6.3f}"
             struc.disp = max_disp * i
             if i >= N_images:
                 struc.lattice.set_matrix(cell - (i - 2 * (N_images - 1)) * l_disps)
@@ -2669,15 +2520,11 @@ class pyxtal:
         """
         eng = 0
         for i in range(len(self.mol_sites)):
-            res = self.get_neighboring_molecules(
-                i, factor=factor, max_d=max_d, ignore_E=False
-            )
+            res = self.get_neighboring_molecules(i, factor=factor, max_d=max_d, ignore_E=False)
             eng += np.array(res[-1]).sum()
         return eng
 
-    def get_neighboring_molecules(
-        self, site_id=0, factor=1.5, max_d=5.0, ignore_E=True
-    ):
+    def get_neighboring_molecules(self, site_id=0, factor=1.5, max_d=5.0, ignore_E=True):
         """
         For molecular crystals, get the neighboring molecules for a given WP
 
@@ -2703,13 +2550,9 @@ class pyxtal:
         site0.get_ijk_lists()
         for id0, site1 in enumerate(self.mol_sites):
             if id0 == site_id:
-                min_d0, neigh0, P, eng = site0.get_neighbors_auto(
-                    factor, max_d, ignore_E
-                )
+                min_d0, neigh0, P, eng = site0.get_neighbors_auto(factor, max_d, ignore_E)
             else:
-                min_d0, neigh0, eng = site0.get_neighbors_wp2(
-                    site1, factor, max_d, ignore_E
-                )
+                min_d0, neigh0, eng = site0.get_neighbors_wp2(site1, factor, max_d, ignore_E)
                 P = [1] * len(neigh0)
             comp = [site1.type] * len(min_d0)
             neighs.extend(neigh0)
@@ -2742,8 +2585,7 @@ class pyxtal:
         """
         from pyxtal.descriptor import spherical_image
 
-        sph = spherical_image(self, **kwargs)
-        return sph
+        return spherical_image(self, **kwargs)
 
     def get_neighboring_dists(self, site_id=0, factor=1.5, max_d=5.0):
         """
@@ -2766,13 +2608,9 @@ class pyxtal:
         site0.get_ijk_lists()
         for id0, site1 in enumerate(self.mol_sites):
             if id0 == site_id:
-                _eng, _pair, _dist = site0.get_neighbors_auto(
-                    factor, max_d, False, detail=True
-                )
+                _eng, _pair, _dist = site0.get_neighbors_auto(factor, max_d, False, detail=True)
             else:
-                _eng, _pair, _dist = site0.get_neighbors_wp2(
-                    site1, factor, max_d, False, detail=True
-                )
+                _eng, _pair, _dist = site0.get_neighbors_wp2(site1, factor, max_d, False, detail=True)
             pairs.extend([p[1] for p in _pair])
             engs.extend(_eng)
             dists.extend(_dist)
@@ -2792,9 +2630,7 @@ class pyxtal:
         display the local packing environment for a selected molecule
         """
         np.set_printoptions(precision=3)
-        min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(
-            id, factor, max_d, ignore_E
-        )
+        min_ds, neighs, comps, Ps, engs = self.get_neighboring_molecules(id, factor, max_d, ignore_E)
         print("Number of neighboring molecules", len(engs))
         print(np.array(engs))
 
@@ -2815,16 +2651,14 @@ class pyxtal:
                 else:
                     y[j, 1] += 1
             # y[:, 1] = gaussian_filter1d(y[:, 0], 0.2)
-            plt.plot(x, y[:, 0], c="g", label="Self({:d})".format(int(sum(y[:, 0]))))
+            plt.plot(x, y[:, 0], c="g", label=f"Self({int(sum(y[:, 0])):d})")
             if np.sum(y[:, 1]) > 1e-1:
-                plt.plot(
-                    x, y[:, 1], c="c", label="Other({:d})".format(int(sum(y[:, 1])))
-                )
+                plt.plot(x, y[:, 1], c="c", label=f"Other({int(sum(y[:, 1])):d})")
 
             cut = min_ds[-1]
             CN = len(min_ds)
 
-            plt.axvline(x=cut, c="r", ls=":", label="Cutoff_{:d}".format(CN))
+            plt.axvline(x=cut, c="r", ls=":", label=f"Cutoff_{CN:d}")
             plt.legend()
             plt.xlim([x_min, x_max])
             plt.xlabel("R")
@@ -2844,7 +2678,7 @@ class pyxtal:
     def substitute_1_2(
         self,
         dicts,
-        ratio=[1, 1],
+        ratio=None,
         group_type="t+k",
         max_cell=4,
         min_cell=0,
@@ -2875,10 +2709,10 @@ class pyxtal:
         """
         from pyxtal.util import new_struc_wo_energy
 
+        if ratio is None:
+            ratio = [1, 1]
         xtals = self._substitute_1_2(dicts, ratio)
-        xtals = [
-            xtal for xtal in xtals if criteria is None or xtal.check_validity(criteria)
-        ]
+        xtals = [xtal for xtal in xtals if criteria is None or xtal.check_validity(criteria)]
 
         if len(xtals) == 0:
             # print("\nCannot split, look for subgroup representation")
@@ -2899,9 +2733,7 @@ class pyxtal:
                         if new_struc_wo_energy(_xtal, xtals):
                             add = True
 
-                            if criteria is not None and not _xtal.check_validity(
-                                criteria
-                            ):
+                            if criteria is not None and not _xtal.check_validity(criteria):
                                 add = False
 
                             if add:
@@ -2911,15 +2743,11 @@ class pyxtal:
                                     break
                     # print('Add {:d} substitutions in subgroup {:d}'.format(len(_xtals), sub.group.number))
         else:
-            print(
-                "Good representation ({:d})".format(len(xtals)), self.get_xtal_string()
-            )
-        print("Found {:d} substitutions in total".format(len(xtals)))
+            print(f"Good representation ({len(xtals):d})", self.get_xtal_string())
+        print(f"Found {len(xtals):d} substitutions in total")
         return xtals
 
-    def _substitute_1_2(
-        self, dicts, ratio=[1, 1]
-    ):  # , group_type='t', max_cell=4, min_cell=0):
+    def _substitute_1_2(self, dicts, ratio=None):  # , group_type='t', max_cell=4, min_cell=0):
         """
         Derive the BC compounds from A via subgroup relation
         For example, from C to BN or from SiO2 to AlPO3.
@@ -2937,6 +2765,8 @@ class pyxtal:
         """
         from pyxtal.util import split_list_by_ratio
 
+        if ratio is None:
+            ratio = [1, 1]
         if len(dicts) > 1:
             raise ValueError("Only one item allowed in the input dicts", dicts)
 
@@ -2950,7 +2780,7 @@ class pyxtal:
 
         # Output all possible substitutions
         xtals = []
-        for group1, group2 in solutions:
+        for group1, _group2 in solutions:
             xtal0 = self.copy()
             count = 0
             for site in xtal0.atom_sites:
@@ -3010,10 +2840,8 @@ class pyxtal:
         pmg = self.to_pymatgen()
         pmg.replace_species(dicts)
         if self.molecular:
-            for e1e in dicts.keys():
-                smi = [
-                    m.smile.replace(ele, dicts[ele]) + ".smi" for m in self.molecules
-                ]
+            for _e1e in dicts:
+                smi = [m.smile.replace(ele, dicts[ele]) + ".smi" for m in self.molecules]
             self.from_seed(pmg, smi)
         else:
             self.from_seed(pmg)
@@ -3071,7 +2899,7 @@ class pyxtal:
         count = 0
         for site in self.atom_sites:
             sp = site.specie
-            if sp in dicts.keys():
+            if sp in dicts:
                 if len(dicts[sp]) == 1:
                     e = dicts[sp][0]
                     sites.append(site.substitute_with_single(e))
@@ -3084,9 +2912,7 @@ class pyxtal:
                 else:
                     eles = dicts[sp]
                     ids = id2[id1 == count]  # index of ids
-                    neighbors = atoms.positions[ids] + shifts[id1 == count].dot(
-                        atoms.cell
-                    )
+                    neighbors = atoms.positions[ids] + shifts[id1 == count].dot(atoms.cell)
                     direction = neighbors[1] - neighbors[0]
                     direction /= np.linalg.norm(direction)
                     s1, s2 = site.substitute_with_linear(eles, direction, matrix)
@@ -3215,10 +3041,11 @@ class pyxtal:
             csd_code: e.g., ``ACSALA01``
 
         """
-        from pyxtal.util import process_csd_cif, get_struc_from__parser
-        from pyxtal.msg import ReadSeedError, CSDError
         from pymatgen.core.periodic_table import Element
         from pymatgen.io.cif import CifParser
+
+        from pyxtal.msg import CSDError, ReadSeedError
+        from pyxtal.util import get_struc_from__parser, process_csd_cif
 
         try:
             from ccdc import io
@@ -3242,10 +3069,10 @@ class pyxtal:
             if smi is None:
                 raise CSDError("No smile from CSD")
             elif len(smi) > 350:
-                raise CSDError("long smile {:s}".format(smi))
+                raise CSDError(f"long smile {smi:s}")
             else:
                 if Chem.MolFromSmiles(smi) is None:
-                    raise CSDError("problematic smiles: {:s}".format(smi))
+                    raise CSDError(f"problematic smiles: {smi:s}")
 
             cif = entry.to_string(format="cif")
             smiles = [s + ".smi" for s in smi.split(".")]
@@ -3266,7 +3093,6 @@ class pyxtal:
             }
 
             cif = process_csd_cif(cif)  # , remove_H=True)
-            remove_H = False
             # print(cif)
             try:
                 parser = CifParser.from_str(cif, occupancy_tolerance=2.0)
@@ -3310,16 +3136,11 @@ class pyxtal:
                     try:
                         # print("Add_H=============================================")
                         self.from_seed(pmg, smiles, add_H=True)
-                        remove_H = True
                     except:
-                        msg = "unknown problems in Reading CSD {:s} {:s}".format(
-                            csd_code, smi
-                        )
+                        msg = f"unknown problems in Reading CSD {csd_code:s} {smi:s}"
                         raise CSDError(msg)
                 except:
-                    msg = "unknown problems in Reading CSD {:s} {:s}".format(
-                        csd_code, smi
-                    )
+                    msg = f"unknown problems in Reading CSD {csd_code:s} {smi:s}"
                     raise CSDError(msg)
             self.source = "CSD: " + csd_code
         else:
@@ -3329,7 +3150,7 @@ class pyxtal:
         # check if the dumped cif is correct
         cif0 = self.to_file()
         try:
-            pmg_c = Structure.from_str(cif0, fmt="cif")
+            Structure.from_str(cif0, fmt="cif")
         except:
             print(cif0)
             raise CSDError("Cif Error")
@@ -3386,19 +3207,9 @@ class pyxtal:
             # updates mol_sites
             sites = []
             for i, site in enumerate(self.atom_sites):
-                if oris is None:
-                    ori = [0, 0, 0]
-                else:
-                    ori = oris[i]
-                if reflects is None:
-                    reflect = False
-                else:
-                    reflect = reflects[i]
-                sites.append(
-                    site.to_mol_site(
-                        self.lattice, molecules[i], ori=ori, reflect=reflect
-                    )
-                )
+                ori = [0, 0, 0] if oris is None else oris[i]
+                reflect = False if reflects is None else reflects[i]
+                sites.append(site.to_mol_site(self.lattice, molecules[i], ori=ori, reflect=reflect))
             xtal.lattice = self.lattice
             xtal.group = self.group
             xtal.mol_sites = sites
@@ -3429,9 +3240,7 @@ class pyxtal:
         else:
             raise RuntimeError("The input must be molecular xtal")
 
-    def get_forcefield(
-        self, ff_style="openff", code="lammps", chargemethod="am1bcc", parameters=None
-    ):
+    def get_forcefield(self, ff_style="openff", code="lammps", chargemethod="am1bcc", parameters=None):
         """
         An interface to create forcefield for molecular simulation with
         - Charmm
@@ -3448,10 +3257,10 @@ class pyxtal:
         Returns:
             An ase_atoms_objects with force field information
         """
-        from ost.forcefield import forcefield
-        from ost.lmp import LAMMPSStructure
         from ost.charmm import CHARMMStructure
+        from ost.forcefield import forcefield
         from ost.interfaces.parmed import ParmEdStructure
+        from ost.lmp import LAMMPSStructure
 
         if self.molecular:
             smiles = [mol.smile for mol in self.molecules]
@@ -3474,9 +3283,7 @@ class pyxtal:
                 checked = []
                 for site in self.mol_sites:
                     if site.type not in checked:
-                        _coords, _species = site._get_coords_and_species(
-                            absolute=True, first=True
-                        )
+                        _coords, _species = site._get_coords_and_species(absolute=True, first=True)
                         coords.extend(_coords)
                         species.extend(_species)
                         checked.append(site.type)
@@ -3659,14 +3466,11 @@ class pyxtal:
             den2 = criteria["MIN_Density"]
             if den1 < den2:
                 if verbose:
-                    msg = "===Invalid in MIN_density {:.2f}=>{:.2f}".format(den1, den2)
+                    msg = f"===Invalid in MIN_density {den1:.2f}=>{den2:.2f}"
                     print(msg)
                 return False
         if "CN" in criteria:
-            if criteria["exclude_ii"]:
-                options = [True, False]
-            else:
-                options = [False]
+            options = [True, False] if criteria["exclude_ii"] else [False]
 
             coords = []
             for option in options:
@@ -3685,9 +3489,7 @@ class pyxtal:
                     # print(ele, cn1, option)
                     if cn1 not in cn2:
                         if verbose:
-                            strs = "=====Invalid CN {:s} [{:d}=>{:d}]".format(
-                                ele, cn1, cn2
-                            )
+                            strs = f"=====Invalid CN {ele:s} [{cn1:d}=>{cn2:d}]"
                             strs += ", exclude ii: " + str(option)
                             print(strs)
                         return False
@@ -3704,7 +3506,7 @@ class pyxtal:
             dim2 = criteria["Dimension"]
             if dim1 != dim2:
                 if verbose:
-                    print("=====Invalid in Dimension {:d}=>{:d}".format(dim1, dim2))
+                    print(f"=====Invalid in Dimension {dim1:d}=>{dim2:d}")
                 return False
 
         return True
@@ -3723,32 +3525,25 @@ class pyxtal:
         density = self.get_density()
         dof = self.get_dof()
         N_atoms = sum(self.numIons)
-        if header is not None:
-            strs = header
-        else:
-            strs = ""
-        strs += "*{:3d} {:3d} {:4d} {:10s} {:8.2f} ".format(
-            N_atoms, dof, spg_num, spg_symbol, density
-        )
+        strs = header if header is not None else ""
+        strs += f"*{N_atoms:3d} {dof:3d} {spg_num:4d} {spg_symbol:10s} {density:8.2f} "
 
         if dicts is not None:
             # Similarity, energy, status
             for key in dicts:
                 value = dicts[key]
                 if type(value) in [float, np.float64]:
-                    strs += " {:8.3f} ".format(value)
+                    strs += f" {value:8.3f} "
                 elif type(value) == str:
-                    strs += " {:24s} ".format(value)
+                    strs += f" {value:24s} "
                 elif type(value) == bool:
-                    strs += " {:5s} ".format(str(value))
+                    strs += f" {value!s:5s} "
 
         for s in self.atom_sites:
-            strs += "{:s} ".format(s.wp.get_label())
+            strs += f"{s.wp.get_label():s} "
         return strs
 
-    def get_tabular_representations(
-        self, N_max=30, N_wp=8, normalize=False, perturb=True, eps=0.05
-    ):
+    def get_tabular_representations(self, N_max=30, N_wp=8, normalize=False, perturb=True, eps=0.05):
         """
         Enumerate the equivalent representations for a give crystal.
         For the example of 8a in space group 227, there exist 8 equivalent positions
@@ -3765,22 +3560,15 @@ class pyxtal:
         """
         reps = []
         # To prevent the explosion of big multiplicity number
-        if len(self.atom_sites) <= 5:
-            min_wp = 20
-        else:
-            min_wp = int(np.power(1e6, 1 / len(self.atom_sites)))
-        sites_mul = [
-            range(min([min_wp, site.wp.multiplicity])) for site in self.atom_sites
-        ]
+        min_wp = 20 if len(self.atom_sites) <= 5 else int(np.power(1000000.0, 1 / len(self.atom_sites)))
+        sites_mul = [range(min([min_wp, site.wp.multiplicity])) for site in self.atom_sites]
         ids = list(itertools.product(*sites_mul))
         if len(ids) > N_max:
             ids = sample(ids, N_max)
 
-        print("Number of augments {:4d} from ".format(len(ids)), self.get_xtal_string())
+        print(f"Number of augments {len(ids):4d} from ", self.get_xtal_string())
         for sites_id in ids:
-            rep = self.get_tabular_representation(
-                sites_id, normalize, N_wp, perturb, eps=eps
-            )
+            rep = self.get_tabular_representation(sites_id, normalize, N_wp, perturb, eps=eps)
             reps.append(rep)
         return reps
 
@@ -3848,9 +3636,7 @@ class pyxtal:
             count += 4
         return rep
 
-    def from_tabular_representation(
-        self, rep, max_abc=50.0, max_angle=180, normalize=True, tol=0.1, verbose=False
-    ):
+    def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180, normalize=True, tol=0.1, verbose=False):
         """
         Reconstruc xtal from 1d tabular_representation
         Currently assuming the elemental composition like carbon
@@ -3863,10 +3649,7 @@ class pyxtal:
             tol (float): a tolerance value to assign the Wyckoff site
             verbose (bool): output detailed error
         """
-        if normalize:
-            number = int(np.round(rep[0] * 230))
-        else:
-            number = int(rep[0])
+        number = int(np.round(rep[0] * 230)) if normalize else int(rep[0])
         if 1 <= number <= 230:
             group = Group(number)
             [a, b, c, alpha, beta, gamma] = rep[1:7]
@@ -3902,22 +3685,15 @@ class pyxtal:
                 if verbose:
                     print("site_info", site_info)
                 if min(site_info) > -0.01:
-                    if normalize:
-                        wp_id = int(np.round(len(group) * id))
-                    else:
-                        wp_id = int(id)
+                    wp_id = int(np.round(len(group) * id)) if normalize else int(id)
                     if wp_id >= len(group):
                         wp_id = -1
                     wp = group[wp_id]
-                    xyz = wp.search_generator(
-                        [x, y, z], tol=tol
-                    )  # ; print(wp.get_label(), xyz)
+                    xyz = wp.search_generator([x, y, z], tol=tol)  # ; print(wp.get_label(), xyz)
                     if xyz is not None:
                         xyz, wp, _ = wp.merge(xyz, np.eye(3), 1e-3)
                         label = wp.get_label()
-                        sites.append(
-                            (label, xyz[0], xyz[1], xyz[2])
-                        )  # ; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
+                        sites.append((label, xyz[0], xyz[1], xyz[2]))  # ; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
                         numIons += wp.multiplicity
                     else:
                         if verbose:
@@ -3955,10 +3731,7 @@ class pyxtal:
         else:
             l = "c"
 
-        if self.group.symbol[0] in ["A", "B", "C"]:
-            b = "S"
-        else:
-            b = self.group.symbol[0]
+        b = "S" if self.group.symbol[0] in ["A", "B", "C"] else self.group.symbol[0]
 
         return l + b + str(sum(self.numIons))
 
@@ -3976,4 +3749,3 @@ class pyxtal:
         xtal0.from_seed(self.to_pymatgen(), tol=tol)
 
         return xtal0
-
