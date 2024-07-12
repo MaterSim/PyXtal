@@ -1,20 +1,22 @@
-from structure import random_crystal
+import os
+import time
+import warnings
+from random import randint
+
+from ase import Atoms
+from ase.calculators.vasp import Vasp
+from ase.io import read
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from spglib import get_symmetry_dataset
-from ase.io import read, write
-from ase import Atoms
-from ase.calculators.vasp import Vasp
-from random import randint
+from structure import random_crystal
 from vasprun import vasprun
-import os, sys, time
-import warnings
 
 warnings.filterwarnings("ignore")
 
 """
-This is a script to generate random crystals 
-and then perform multiple steps of optimization with ASE-VASP 
+This is a script to generate random crystals
+and then perform multiple steps of optimization with ASE-VASP
 todo: add timing function to estimate the time cost for each structure
 """
 # Test paramaters: [sg_min, sg_max], [species], [numIons]
@@ -49,10 +51,7 @@ def symmetrize_cell(struc, mode="C"):
     """
     P_struc = ase2pymatgen(struc)
     finder = SpacegroupAnalyzer(P_struc, symprec=0.06, angle_tolerance=5)
-    if mode == "C":
-        P_struc = finder.get_conventional_standard_structure()
-    else:
-        P_struc = finder.get_primitive_standard_structure()
+    P_struc = finder.get_conventional_standard_structure() if mode == "C" else finder.get_primitive_standard_structure()
 
     return pymatgen2ase(P_struc)
 
@@ -126,7 +125,7 @@ def read_OUTCAR(path="OUTCAR"):
     """read time and ncores info from OUTCAR"""
     time = 0
     ncore = 0
-    for line in open(path, "r"):
+    for line in open(path):
         if line.rfind("running on  ") > -1:
             ncore = int(line.split()[2])
         elif line.rfind("Elapsed time ") > -1:
@@ -137,14 +136,7 @@ def read_OUTCAR(path="OUTCAR"):
 
 def good_lattice(struc):
     para = struc.get_cell_lengths_and_angles()
-    if (
-        (max(para[:3]) < maxvec)
-        and (max(para[3:]) < maxangle)
-        and (min(para[3:]) > minangle)
-    ):
-        return True
-    else:
-        return False
+    return bool(max(para[:3]) < maxvec and max(para[3:]) < maxangle and min(para[3:]) > minangle)
 
 
 def optimize(struc, dir1):

@@ -1,16 +1,16 @@
 """ASE LAMMPS Calculator Library Version"""
 
-from __future__ import print_function
-import numpy as np
-import ase.units
-from ase.calculators.calculator import Calculator
-from lammps import lammps
 import os
-from pkg_resources import resource_filename
-from ase.optimize.fire import FIRE
-from ase.optimize import LBFGS
+
+import ase.units
+import numpy as np
+from ase.calculators.calculator import Calculator
 from ase.constraints import ExpCellFilter
-from ase.spacegroup.symmetrize import FixSymmetry, check_symmetry
+from ase.optimize import LBFGS
+from ase.optimize.fire import FIRE
+from ase.spacegroup.symmetrize import FixSymmetry
+from lammps import lammps
+from pkg_resources import resource_filename
 
 
 #
@@ -66,15 +66,9 @@ def opt_lammpslib(
     struc.set_constraint(FixSymmetry(struc))
     if opt_cell:
         ecf = ExpCellFilter(struc, mask)
-        if method == "FIRE":
-            dyn = FIRE(ecf, logfile=logfile, a=a)
-        else:
-            dyn = LBFGS(ecf, logfile=logfile)
+        dyn = FIRE(ecf, logfile=logfile, a=a) if method == "FIRE" else LBFGS(ecf, logfile=logfile)
     else:
-        if method == "FIRE":
-            dyn = FIRE(struc, logfile=logfile)
-        else:
-            dyn = LBFGS(struc, logfile=logfile)
+        dyn = FIRE(struc, logfile=logfile) if method == "FIRE" else LBFGS(struc, logfile=logfile)
     dyn.run(fmax=fmax, steps=steps)
     return struc
 
@@ -112,10 +106,7 @@ def run_lammpslib(
             path=path,
         )
     else:
-        parameter0 = parameters + [
-            "neighbor 1.0 bin",
-            "neigh_modify  every 1  delay 1  check yes",
-        ]
+        parameter0 = [*parameters, "neighbor 1.0 bin", "neigh_modify  every 1  delay 1  check yes"]
 
         if method == "md":
             parameter0 += [
@@ -161,9 +152,7 @@ def is_upper_triangular(arr, atol=1e-8):
     # must be (n x n) matrix
     assert len(arr.shape) == 2
     assert arr.shape[0] == arr.shape[1]
-    return np.allclose(np.tril(arr, k=-1), 0.0, atol=atol) and np.all(
-        np.diag(arr) >= 0.0
-    )
+    return np.allclose(np.tril(arr, k=-1), 0.0, atol=atol) and np.all(np.diag(arr) >= 0.0)
 
 
 def convert_cell(ase_cell):
@@ -267,7 +256,7 @@ class LAMMPSlib(Calculator):
             # print('gb_energy from lammps: ', self.gb_energy)
             # print('update lammps GB energy')
 
-        pos = np.array([x for x in self.lmp.gather_atoms("x", 1, 3)]).reshape(-1, 3)
+        pos = np.array(list(self.lmp.gather_atoms("x", 1, 3))).reshape(-1, 3)
 
         self.energy = self.lmp.extract_variable("pe", None, 0)
         # print('update lammps energy')
@@ -281,9 +270,7 @@ class LAMMPSlib(Calculator):
         xy = self.lmp.extract_global("xy", 1)
         yz = self.lmp.extract_global("yz", 1)
         xz = self.lmp.extract_global("xz", 1)
-        unitcell = np.array(
-            [[xhi - xlo, xy, xz], [0, yhi - ylo, yz], [0, 0, zhi - zlo]]
-        ).T
+        unitcell = np.array([[xhi - xlo, xy, xz], [0, yhi - ylo, yz], [0, 0, zhi - zlo]]).T
 
         stress = np.empty(6)
         stress_vars = ["pxx", "pyy", "pzz", "pyz", "pxz", "pxy"]
@@ -310,9 +297,7 @@ class LAMMPSlib(Calculator):
         stress[5] = stress_mat[0, 1]
 
         self.stress = -stress * 1e5 * ase.units.Pascal
-        f = np.array(self.lmp.gather_atoms("f", 1, 3)).reshape(-1, 3) * (
-            ase.units.eV / ase.units.Angstrom
-        )
+        f = np.array(self.lmp.gather_atoms("f", 1, 3)).reshape(-1, 3) * (ase.units.eV / ase.units.Angstrom)
         # print('update lammps force')
         self.forces = f.copy()
         atoms.positions = pos.copy()
@@ -339,13 +324,13 @@ class LAMMPSlib(Calculator):
                 if self.calc_type.find("GB") >= 0:
                     fh.write("boundary p p s\n")
                 else:
-                    fh.write("boundary {:s}\n".format(self.boundary))
+                    fh.write(f"boundary {self.boundary:s}\n")
                 fh.write("atom_modify sort 0 0.0\n")
                 if not self.molecule:
-                    fh.write("read_data {:s}\n".format(self.lammps_data))
+                    fh.write(f"read_data {self.lammps_data:s}\n")
                 fh.write("\n### interactions\n")
                 for para in self.paras:
-                    fh.write("{:s}\n".format(para))
+                    fh.write(f"{para:s}\n")
                 fh.write("neighbor 1.0 bin\n")
                 fh.write("neigh_modify  every 1  delay 1  check yes\n")
                 if self.calc_type.find("GB") >= 0:
@@ -365,9 +350,7 @@ class LAMMPSlib(Calculator):
                         fh.write(i)
 
                 if self.calc_type.find("GB") >= 0:
-                    fh.write(
-                        "thermo_style custom pe pxx pyy pzz pyz pxz pxy c_eatoms\n"
-                    )
+                    fh.write("thermo_style custom pe pxx pyy pzz pyz pxz pxy c_eatoms\n")
                 else:
                     fh.write("thermo_style custom pe pxx pyy pzz pyz pxz pxy\n")
                 fh.write("thermo_modify flush yes\n")
@@ -383,40 +366,32 @@ class LAMMPSlib(Calculator):
         with open(self.lammps_data, "w") as fh:
             comment = "lammpslib autogenerated data file"
             fh.write(comment.strip() + "\n\n")
-            fh.write("{:d} atoms\n".format(len(atoms)))
-            fh.write("{:d} atom types\n".format(len(np.unique(atom_types))))
+            fh.write(f"{len(atoms):d} atoms\n")
+            fh.write(f"{len(np.unique(atom_types)):d} atom types\n")
             cell, coord_transform = convert_cell(atoms.get_cell())
             # cell = atoms.get_cell()
             fh.write("\n")
-            fh.write("{0:16.8e} {1:16.8e} xlo xhi\n".format(0.0, cell[0, 0]))
-            fh.write("{0:16.8e} {1:16.8e} ylo yhi\n".format(0.0, cell[1, 1]))
-            fh.write("{0:16.8e} {1:16.8e} zlo zhi\n".format(0.0, cell[2, 2]))
-            fh.write(
-                "{0:16.8e} {1:16.8e} {2:16.8e} xy xz yz\n" "".format(
-                    cell[0, 1], cell[0, 2], cell[1, 2]
-                )
-            )
+            fh.write(f"{0.0:16.8e} {cell[0, 0]:16.8e} xlo xhi\n")
+            fh.write(f"{0.0:16.8e} {cell[1, 1]:16.8e} ylo yhi\n")
+            fh.write(f"{0.0:16.8e} {cell[2, 2]:16.8e} zlo zhi\n")
+            fh.write(f"{cell[0, 1]:16.8e} {cell[0, 2]:16.8e} {cell[1, 2]:16.8e} xy xz yz\n")
 
             fh.write("\n\nAtoms \n\n")
             for i, (typ, pos) in enumerate(zip(atom_types, atoms.get_positions())):
                 if coord_transform is not None:
                     pos = np.dot(coord_transform, pos.transpose())
-                fh.write(
-                    "{:4d} {:4d} {:16.8e} {:16.8e} {:16.8e}\n".format(
-                        i + 1, typ, pos[0], pos[1], pos[2]
-                    )
-                )
+                fh.write(f"{i + 1:4d} {typ:4d} {pos[0]:16.8e} {pos[1]:16.8e} {pos[2]:16.8e}\n")
 
     def write_lammps_data_water(self, atoms):
         """
         Lammps input only for water model
         """
-        atom_types = [1] * len(atoms)
+        [1] * len(atoms)
         N_atom = len(atoms)
         N_mol = int(len(atoms) / 3)
         N_bond = N_mol * 2
         N_angle = N_mol
-        n_types = np.unique(atoms.numbers)
+        np.unique(atoms.numbers)
         lmp_types = np.zeros(N_atom, dtype=int)
         lmp_types[atoms.numbers == 1] = 2
         lmp_types[atoms.numbers == 8] = 1
@@ -428,9 +403,9 @@ class LAMMPSlib(Calculator):
         with open(self.lammps_data, "w") as fh:
             comment = "lammpslib autogenerated data file"
             fh.write(comment.strip() + "\n\n")
-            fh.write("{0} atoms\n".format(N_atom))
-            fh.write("{0} bonds\n".format(N_bond))
-            fh.write("{0} angles\n".format(N_angle))
+            fh.write(f"{N_atom} atoms\n")
+            fh.write(f"{N_bond} bonds\n")
+            fh.write(f"{N_angle} angles\n")
 
             fh.write("\n2 atom types\n")
             fh.write("1 bond types\n")
@@ -440,14 +415,10 @@ class LAMMPSlib(Calculator):
             cell, coord_transform = convert_cell(atoms.get_cell())
             cell /= 0.529
             fh.write("\n")
-            fh.write("{0:16.8e} {1:16.8e} xlo xhi\n".format(0.0, cell[0, 0]))
-            fh.write("{0:16.8e} {1:16.8e} ylo yhi\n".format(0.0, cell[1, 1]))
-            fh.write("{0:16.8e} {1:16.8e} zlo zhi\n".format(0.0, cell[2, 2]))
-            fh.write(
-                "{0:16.8e} {1:16.8e} {2:16.8e} xy xz yz\n" "".format(
-                    cell[0, 1], cell[0, 2], cell[1, 2]
-                )
-            )
+            fh.write(f"{0.0:16.8e} {cell[0, 0]:16.8e} xlo xhi\n")
+            fh.write(f"{0.0:16.8e} {cell[1, 1]:16.8e} ylo yhi\n")
+            fh.write(f"{0.0:16.8e} {cell[2, 2]:16.8e} zlo zhi\n")
+            fh.write(f"{cell[0, 1]:16.8e} {cell[0, 2]:16.8e} {cell[1, 2]:16.8e} xy xz yz\n")
 
             fh.write("\n\nMasses \n\n")
             fh.write("  1 15.9994\n")
@@ -459,45 +430,23 @@ class LAMMPSlib(Calculator):
             fh.write("\n\nAngle Coeffs \n\n")
             fh.write("  1    0.0700  107.400000")
             fh.write("\n\nAtoms \n\n")
-            for i, (typ, mtyp, pos) in enumerate(
-                zip(lmp_types, mol_types, atoms.get_positions() / 0.529)
-            ):
+            for i, (typ, mtyp, pos) in enumerate(zip(lmp_types, mol_types, atoms.get_positions() / 0.529)):
                 if coord_transform is not None:
                     pos = np.dot(coord_transform, pos.transpose())
                 # print(i, mtyp, typ)
                 if typ == 2:
-                    fh.write(
-                        "{0:4d} {1:4d} {2:4d}   0.5564 {3:16.8f} {4:16.8f} {5:16.8f}\n".format(
-                            i + 1, mtyp, typ, pos[0], pos[1], pos[2]
-                        )
-                    )
+                    fh.write(f"{i + 1:4d} {mtyp:4d} {typ:4d}   0.5564 {pos[0]:16.8f} {pos[1]:16.8f} {pos[2]:16.8f}\n")
                 else:
-                    fh.write(
-                        "{0:4d} {1:4d} {2:4d}  -1.1128 {3:16.8f} {4:16.8f} {5:16.8f}\n".format(
-                            i + 1, mtyp, typ, pos[0], pos[1], pos[2]
-                        )
-                    )
+                    fh.write(f"{i + 1:4d} {mtyp:4d} {typ:4d}  -1.1128 {pos[0]:16.8f} {pos[1]:16.8f} {pos[2]:16.8f}\n")
 
             fh.write("\nBonds \n\n")
             for i in range(N_mol):
-                fh.write(
-                    "{:4d} {:4d} {:4d} {:4d}\n".format(
-                        i * 2 + 1, 1, i * 3 + 1, i * 3 + 2
-                    )
-                )
-                fh.write(
-                    "{:4d} {:4d} {:4d} {:4d}\n".format(
-                        i * 2 + 2, 1, i * 3 + 1, i * 3 + 3
-                    )
-                )
+                fh.write(f"{i * 2 + 1:4d} {1:4d} {i * 3 + 1:4d} {i * 3 + 2:4d}\n")
+                fh.write(f"{i * 2 + 2:4d} {1:4d} {i * 3 + 1:4d} {i * 3 + 3:4d}\n")
 
             fh.write("\nAngles \n\n")
             for i in range(N_angle):
-                fh.write(
-                    "{:4d} {:4d} {:4d} {:4d} {:4d}\n".format(
-                        i + 1, 1, i * 3 + 2, i * 3 + 1, i * 3 + 3
-                    )
-                )
+                fh.write(f"{i + 1:4d} {1:4d} {i * 3 + 2:4d} {i * 3 + 1:4d} {i * 3 + 3:4d}\n")
 
     def update(self, atoms):
         if not hasattr(self, "atoms") or self.atoms != atoms:
@@ -555,8 +504,8 @@ class LAMMPS_collections:
         self.dict["GB_md"] = [
             "# ---------- Run GB MD ---------\n",
             "thermo 100\n",
-            "velocity gbregion create {:d} {:d}\n".format(temp, temp),
-            "fix 1 gbregion nvt temp {:d} {:d} 0.05\n".format(temp, temp),
+            f"velocity gbregion create {temp:d} {temp:d}\n",
+            f"fix 1 gbregion nvt temp {temp:d} {temp:d} 0.05\n",
             "timestep 0.001\n",
             "run 5000\n",
             "unfix 1\n",
@@ -564,7 +513,6 @@ class LAMMPS_collections:
 
 
 if __name__ == "__main__":
-    from ase.io import read
     from ase.build import bulk
 
     lammps_name = ""

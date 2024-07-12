@@ -3,13 +3,15 @@ Database class
 """
 
 import os
-import numpy as np
 from concurrent.futures import ProcessPoolExecutor
-from ase.db import connect
-from pyxtal import pyxtal
+
+import numpy as np
 import pymatgen.analysis.structure_matcher as sm
-from pyxtal.util import ase2pymatgen
 from ase.calculators.calculator import CalculationFailed
+from ase.db import connect
+
+from pyxtal import pyxtal
+from pyxtal.util import ase2pymatgen
 
 
 def dftb_opt_par(ids, xtals, skf_dir, steps, folder, symmetrize, criteria):
@@ -44,7 +46,7 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
         steps (int): number of relaxation steps
         criteria (dicts): to check if the structure
     """
-    from pyxtal.interface.dftb import DFTB_relax, DFTB
+    from pyxtal.interface.dftb import DFTB, DFTB_relax
 
     cwd = os.getcwd()
     atoms = xtal.to_ase(resort=False)
@@ -84,9 +86,7 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
                 scc_iter=100,
             )
             s, eng = my.run(mode="vc-relax", step=int(steps / 2))
-            my = DFTB(
-                s, skf_dir, kresol=kresol, folder=".", scc_error=1e-4, scc_iter=100
-            )
+            my = DFTB(s, skf_dir, kresol=kresol, folder=".", scc_error=1e-4, scc_iter=100)
             s, eng = my.run(mode="vc-relax", step=int(steps / 2))
             s = my.struc
     except CalculationFailed:
@@ -109,12 +109,9 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
         else:
             eng /= len(s)
 
-        if criteria is not None:
-            status = xtal.check_validity(criteria)
-        else:
-            status = True
+        status = xtal.check_validity(criteria) if criteria is not None else True
 
-        header = "{:4d}".format(id)
+        header = f"{id:4d}"
         dicts = {"validity": status, "energy": eng}
         if stress is not None:
             dicts["stress"] = stress
@@ -165,12 +162,9 @@ def gulp_opt_single(id, xtal, ff, path, criteria):
     )
     status = False
     if not error:
-        if criteria is not None:
-            status = xtal.check_validity(criteria)
-        else:
-            status = True
+        status = xtal.check_validity(criteria) if criteria is not None else True
     if status:
-        header = "{:4d}".format(id)
+        header = f"{id:4d}"
         dicts = {"validity": status, "energy": eng}
         print(xtal.get_xtal_string(header=header, dicts=dicts))
     return xtal, eng, status
@@ -187,9 +181,9 @@ def make_entry_from_pyxtal(xtal):
     Returns:
         entry dictionary
     """
+    from rdkit import Chem
     from rdkit.Chem.Descriptors import ExactMolWt
     from rdkit.Chem.rdMolDescriptors import CalcMolFormula
-    from rdkit import Chem
 
     if xtal.valid:
         url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
@@ -210,8 +204,7 @@ def make_entry_from_pyxtal(xtal):
             "mol_name": xtal.tag["csd_code"],
             "l_type": xtal.lattice.ltype,
         }
-        entry = (xtal.to_ase(), kvp, None)
-        return entry
+        return (xtal.to_ase(), kvp, None)
     else:
         return None
 
@@ -227,7 +220,6 @@ def make_entry_from_CSD_web(code, number, smiles, name=None):
         name: name of the compound
     """
 
-    url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
     # xtal = pyxtal(molecular=True)
     #
     # return make_entry_from_pyxtal(xtal)
@@ -334,7 +326,7 @@ class database:
         if entry is not None:
             self.add(entry)
         else:
-            print("{:s} is not a valid entry".format(code))
+            print(f"{code:s} is not a valid entry")
 
     def process_kvp(self, kvp):
         kvp0 = {}
@@ -343,7 +335,7 @@ class database:
                 kvp0[key] = kvp[key]
             else:
                 print("Error, cannot find ", key, " from the input")
-                return
+                return None
         return kvp0
 
     def check_status(self, show=False):
@@ -384,10 +376,7 @@ class database:
         Args:
             row: row object
         """
-        from pyxtal import pyxtal
-        from pyxtal.util import ase2pymatgen
         from pyxtal.representation import representation
-        from pyxtal.msg import ReadSeedError
 
         (atom, kvp, data) = row_info
 
@@ -398,7 +387,7 @@ class database:
         print(rep.to_string() + " reference")
 
         # calcs
-        for key in data.keys():
+        for key in data:
             calc = key[:-5]
             time = data[key]["time"]
 
@@ -408,9 +397,9 @@ class database:
             rep = representation(rep, kvp["mol_smi"]).to_string()
 
             (dv, msd1, msd2) = data[key]["diff"]
-            strs = "{:s} {:8s} {:6.2f} {:6.3f}".format(rep, calc, time / 60, dv)
+            strs = f"{rep:s} {calc:8s} {time / 60:6.2f} {dv:6.3f}"
             if msd1 is not None:
-                strs += "{:6.3f}{:6.3f}".format(msd1, msd2)
+                strs += f"{msd1:6.3f}{msd2:6.3f}"
             print(strs)
 
     def get_row_info(self, id=None, code=None):
@@ -431,7 +420,7 @@ class database:
             data0 = {}
             for calc in self.calculators:
                 key = calc + "_info"
-                if key in row.data.keys():
+                if key in row.data:
                     data0[key] = row.data[key]
 
             atom = self.db.get_atoms(id=row.id)
@@ -448,8 +437,8 @@ class database:
 
     def get_pyxtal(self, code):
         from pyxtal import pyxtal
-        from pyxtal.util import ase2pymatgen
         from pyxtal.msg import ReadSeedError
+        from pyxtal.util import ase2pymatgen
 
         row = self.get_row(code)
         atom = self.db.get_atoms(id=row.id)
@@ -471,7 +460,7 @@ class database:
         if len(row.data.keys()) < len(self.calculators):
             # not label information, run antechamber
             atom = self.db.get_atoms(id=row.id)
-            if "gulp_info" not in row.data.keys():
+            if "gulp_info" not in row.data:
                 pmg, c_info, g_info = get_parameters(row, atom)
                 row.data = {"charmm_info": c_info, "gulp_info": g_info}
             else:
@@ -526,9 +515,10 @@ class database_topology:
             id (int): row id
             use_relaxed (str): 'ff_relaxed', 'vasp_relaxed'
         """
+        from pymatgen.core import Structure
+
         from pyxtal import pyxtal
         from pyxtal.util import ase2pymatgen
-        from pymatgen.core import Structure
 
         row = self.db.get(id)  # ; print(id, row.id)
         if use_relaxed is not None:
@@ -592,7 +582,7 @@ class database_topology:
             tol (float): tolerance in angstrom for symmetry detection
             freq (int): print frequency
         """
-        print("\nAdding new strucs from {:s}".format(db_file))
+        print(f"\nAdding new strucs from {db_file:s}")
 
         count = 0
         with connect(db_file) as db:
@@ -604,10 +594,7 @@ class database_topology:
                 except:
                     xtal = None
                 if xtal is not None and xtal.valid:
-                    if check:
-                        add = self.check_new_structure(xtal)
-                    else:
-                        add = True
+                    add = self.check_new_structure(xtal) if check else True
                     if add:
                         kvp = {}
                         for key in self.keys:
@@ -620,9 +607,7 @@ class database_topology:
                             elif key == "dof":
                                 kvp[key] = xtal.get_dof()
                             elif key == "wps":
-                                kvp[key] == str(
-                                    s.wp.get_label() for s in xtal.atom_sites
-                                )
+                                kvp[key] == str(s.wp.get_label() for s in xtal.atom_sites)
                             elif key == "pearson_symbol":
                                 kvp[key] = xtal.get_Pearson_Symbol()
 
@@ -630,7 +615,7 @@ class database_topology:
                         count += 1
 
                 if count % freq == 0:
-                    print("Adding {:4d} strucs from {:s}".format(count, db_file))
+                    print(f"Adding {count:4d} strucs from {db_file:s}")
 
     def check_new_structure(self, xtal, same_group=True):
         """
@@ -643,9 +628,8 @@ class database_topology:
 
         s_pmg = xtal.to_pymatgen()
         for row in self.db.select():
-            if same_group:
-                if row.space_group_number != xtal.group.number:
-                    continue
+            if same_group and row.space_group_number != xtal.group.number:
+                continue
             ref = self.db.get_atoms(id=row.id)
             ref_pmg = ase2pymatgen(ref)
             if self.matcher.fit(s_pmg, ref_pmg, symmetric=True):
@@ -677,19 +661,16 @@ class database_topology:
             else:
                 for prop in unique_rows:
                     (natoms, spg, wps, topology) = prop
-                    if (
-                        natoms == row.natoms
-                        and spg == row.space_group_number
-                        and wps == row.wps
+                    if (natoms == row.natoms and spg == row.space_group_number and wps == row.wps) and hasattr(
+                        row, "topology"
                     ):
-                        if hasattr(row, "topology"):
-                            if row.topology == "aaa":
-                                if row.topology_detail == topology:
-                                    unique = False
-                                    break
-                            elif row.topology == topology:
+                        if row.topology == "aaa":
+                            if row.topology_detail == topology:
                                 unique = False
                                 break
+                        elif row.topology == topology:
+                            unique = False
+                            break
             if unique:
                 if hasattr(row, "topology"):
                     unique_rows.append(
@@ -697,15 +678,11 @@ class database_topology:
                             row.natoms,
                             row.space_group_number,
                             row.wps,
-                            row.topology
-                            if row.topology != "aaa"
-                            else row.topology_detail,
+                            row.topology if row.topology != "aaa" else row.topology_detail,
                         )
                     )
                 else:
-                    unique_rows.append(
-                        (row.natoms, row.space_group_number, row.wps, None)
-                    )
+                    unique_rows.append((row.natoms, row.space_group_number, row.wps, None))
             else:
                 to_delete.append(row.id)
         print(len(to_delete), "structures were deleted", to_delete)
@@ -742,71 +719,61 @@ class database_topology:
                         row.wps,
                     )
 
-                if unique:
-                    if (
-                        "MAX_energy" in criteria
-                        and hasattr(row, "ff_energy")
-                        and row.ff_energy > criteria["MAX_energy"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied energy",
-                            row.id,
-                            row.ff_energy,
-                            row.space_group_number,
-                            row.wps,
-                        )
-                if unique:
-                    if (
-                        "MAX_similarity" in criteria
-                        and hasattr(row, "similarity")
-                        and row.similarity > criteria["MAX_similarity"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied similarity",
-                            row.id,
-                            row.similarity,
-                            row.space_group_number,
-                            row.wps,
-                        )
-                if unique:
-                    if (
-                        "BAD_topology" in criteria
-                        and hasattr(row, "topology")
-                        and row.topology[:3] in criteria["BAD_topology"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied topology",
-                            row.id,
-                            row.topology,
-                            row.space_group_number,
-                            row.wps,
-                        )
-                if unique:
-                    if (
-                        "BAD_dimension" in criteria
-                        and hasattr(row, "dimension")
-                        and row.dimension in criteria["BAD_dimension"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied dimension",
-                            row.id,
-                            row.topology,
-                            row.space_group_number,
-                            row.wps,
-                        )
+                if unique and (
+                    "MAX_energy" in criteria and hasattr(row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied energy",
+                        row.id,
+                        row.ff_energy,
+                        row.space_group_number,
+                        row.wps,
+                    )
+                if unique and (
+                    "MAX_similarity" in criteria
+                    and hasattr(row, "similarity")
+                    and row.similarity > criteria["MAX_similarity"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied similarity",
+                        row.id,
+                        row.similarity,
+                        row.space_group_number,
+                        row.wps,
+                    )
+                if unique and (
+                    "BAD_topology" in criteria
+                    and hasattr(row, "topology")
+                    and row.topology[:3] in criteria["BAD_topology"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied topology",
+                        row.id,
+                        row.topology,
+                        row.space_group_number,
+                        row.wps,
+                    )
+                if unique and (
+                    "BAD_dimension" in criteria
+                    and hasattr(row, "dimension")
+                    and row.dimension in criteria["BAD_dimension"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied dimension",
+                        row.id,
+                        row.topology,
+                        row.space_group_number,
+                        row.wps,
+                    )
 
             if unique:
                 for prop in unique_rows:
                     (natoms, spg, wps, den, ff_energy) = prop
-                    if (
-                        natoms == row.natoms
-                        and spg == row.space_group_number
-                        and wps == row.wps
-                    ):
+                    if natoms == row.natoms and spg == row.space_group_number and wps == row.wps:
                         if hasattr(row, "ff_energy") and ff_energy is not None:
                             if abs(row.ff_energy - ff_energy) < etol:
                                 unique = False
@@ -827,17 +794,13 @@ class database_topology:
                         )
                     )
                 else:
-                    unique_rows.append(
-                        (row.natoms, row.space_group_number, row.wps, row.density, None)
-                    )
+                    unique_rows.append((row.natoms, row.space_group_number, row.wps, row.density, None))
             else:
                 to_delete.append(row.id)
         print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
 
-    def clean_structures_pmg(
-        self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None
-    ):
+    def clean_structures_pmg(self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None):
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
@@ -880,62 +843,56 @@ class database_topology:
                         row.wps,
                     )
 
-                if unique:
-                    if (
-                        "MAX_energy" in criteria
-                        and hasattr(row, "ff_energy")
-                        and row.ff_energy > criteria["MAX_energy"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied energy",
-                            row.id,
-                            row.ff_energy,
-                            row.space_group_number,
-                            row.wps,
-                        )
-                if unique:
-                    if (
-                        "MAX_similarity" in criteria
-                        and hasattr(row, "similarity")
-                        and row.similarity > criteria["MAX_similarity"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied similarity",
-                            row.id,
-                            row.similarity,
-                            row.space_group_number,
-                            row.wps,
-                        )
-                if unique:
-                    if (
-                        "BAD_topology" in criteria
-                        and hasattr(row, "topology")
-                        and row.topology[:3] in criteria["BAD_topology"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied topology",
-                            row.id,
-                            row.topology,
-                            row.space_group_number,
-                            row.wps,
-                        )
-                if unique:
-                    if (
-                        "BAD_dimension" in criteria
-                        and hasattr(row, "dimension")
-                        and row.dimension in criteria["BAD_dimension"]
-                    ):
-                        unique = False
-                        print(
-                            "Unsatisfied dimension",
-                            row.id,
-                            row.topology,
-                            row.space_group_number,
-                            row.wps,
-                        )
+                if unique and (
+                    "MAX_energy" in criteria and hasattr(row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied energy",
+                        row.id,
+                        row.ff_energy,
+                        row.space_group_number,
+                        row.wps,
+                    )
+                if unique and (
+                    "MAX_similarity" in criteria
+                    and hasattr(row, "similarity")
+                    and row.similarity > criteria["MAX_similarity"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied similarity",
+                        row.id,
+                        row.similarity,
+                        row.space_group_number,
+                        row.wps,
+                    )
+                if unique and (
+                    "BAD_topology" in criteria
+                    and hasattr(row, "topology")
+                    and row.topology[:3] in criteria["BAD_topology"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied topology",
+                        row.id,
+                        row.topology,
+                        row.space_group_number,
+                        row.wps,
+                    )
+                if unique and (
+                    "BAD_dimension" in criteria
+                    and hasattr(row, "dimension")
+                    and row.dimension in criteria["BAD_dimension"]
+                ):
+                    unique = False
+                    print(
+                        "Unsatisfied dimension",
+                        row.id,
+                        row.topology,
+                        row.space_group_number,
+                        row.wps,
+                    )
 
             if unique and id > min_id:
                 for prop in unique_rows:
@@ -1044,9 +1001,7 @@ class database_topology:
                 for i in range(ncpu):
                     id1 = i * N_cycle
                     id2 = min([id1 + N_cycle, len(ids)])
-                    args_list.append(
-                        (ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria)
-                    )
+                    args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
 
                 with ProcessPoolExecutor(max_workers=ncpu) as executor:
                     results = [executor.submit(gulp_opt_par, *p) for p in args_list]
@@ -1097,10 +1052,7 @@ class database_topology:
         """
 
         os.makedirs(calc_folder, exist_ok=True)
-        if use_ff:
-            use_relaxed = "ff_relaxed"
-        else:
-            use_relaxed = None
+        use_relaxed = "ff_relaxed" if use_ff else None
 
         ids, xtals = self.select_xtals(ids, overwrite, "dftb_energy", use_relaxed)
 
@@ -1196,10 +1148,7 @@ class database_topology:
         else:
             option = jl.CrystalNets.Options(structure=jl.StructureType.Auto)
 
-        if prefix is not None:
-            cif_file = prefix + ".cif"
-        else:
-            cif_file = "tmp.cif"
+        cif_file = prefix + ".cif" if prefix is not None else "tmp.cif"
 
         for row in self.db.select():
             if overwrite or not hasattr(row, "topology"):
@@ -1209,10 +1158,7 @@ class database_topology:
                 # Call crystalnet.jl
                 result = jl.determine_topology(cif_file, option)
                 # print(result)
-                if len(result) > 1:
-                    results = [x for x in result]
-                else:
-                    results = [result[0]]
+                results = list(result) if len(result) > 1 else [result[0]]
                 try:
                     topo = []
                     for res in results:
@@ -1237,9 +1183,7 @@ class database_topology:
                     detail[:10],
                 )
                 # Unknown will be labeled as aaa
-                self.db.update(
-                    row.id, topology=name, dimension=dim, topology_detail=detail
-                )
+                self.db.update(row.id, topology=name, dimension=dim, topology_detail=detail)
             else:
                 print("Existing Topology", row.topology)
 
@@ -1318,11 +1262,7 @@ class database_topology:
             den = row.density
             dof = row.dof
             ps = row.pearson_symbol
-            sim = (
-                float(row.similarity)
-                if hasattr(row, "similarity") and row.similarity is not None
-                else None
-            )
+            sim = float(row.similarity) if hasattr(row, "similarity") and row.similarity is not None else None
             top = row.topology if hasattr(row, "topology") else None
             ff_eng = float(row.ff_energy) if hasattr(row, "ff_energy") else None
             vasp_eng = float(row.vasp_energy) if hasattr(row, "vasp_energy") else None
@@ -1339,7 +1279,7 @@ class database_topology:
             print("supported attributes", keys)
             raise ValueError("Cannot sort by", sort_by)
 
-        print("====Exporting {:} structures".format(len(properties)))
+        print(f"====Exporting {len(properties)} structures")
         properties = [prop for prop in properties if prop[col] is not None]
         sorted_properties = sorted(properties, key=lambda x: x[col])
 
@@ -1371,15 +1311,10 @@ class database_topology:
 
                 label = os.path.join(
                     folder,
-                    "{:d}-{:s}-{:d}-{:s}".format(
-                        id, xtal.get_Pearson_Symbol(), number, symbol
-                    ),
+                    f"{id:d}-{xtal.get_Pearson_Symbol():s}-{number:d}-{symbol:s}",
                 )
 
-                if criteria is not None:
-                    status = xtal.check_validity(criteria, True)
-                else:
-                    status = True
+                status = xtal.check_validity(criteria, True) if criteria is not None else True
             except:
                 status = False
 
@@ -1389,19 +1324,19 @@ class database_topology:
                     xtal.set_site_coordination()
                     for s in xtal.atom_sites:
                         _l, _sp, _cn = s.wp.get_label(), s.specie, s.coordination
-                        label += "-{:s}-{:s}{:d}".format(_l, _sp, _cn)
-                    label += "-S{:.3f}".format(sim)
+                        label += f"-{_l:s}-{_sp:s}{_cn:d}"
+                    label += f"-S{sim:.3f}"
                 except:
                     print("Problem in setting site coordination")
                 if len(label) > 40:
                     label = label[:40]
 
                 if den is not None:
-                    label += "-D{:.2f}".format(abs(den))
+                    label += f"-D{abs(den):.2f}"
                 if eng is not None:
-                    label += "-E{:.3f}".format(abs(eng))
+                    label += f"-E{abs(eng):.3f}"
                 if top is not None:
-                    label += "-T{:s}".format(top)
+                    label += f"-T{top:s}"
                 # if sim is not None: label += '-S{:.2f}'.format(sim)
 
                 print("====Exporting:", label)
@@ -1429,7 +1364,7 @@ class database_topology:
         with the following identical attributes:
         (topology, ff_energy)
         """
-        print("The {:s} has {:d} strucs".format(self.db_name, self.db.count()))
+        print(f"The {self.db_name:s} has {self.db.count():d} strucs")
         if db_name is None:
             db_name = self.db_name[:-3] + "_unique.db"
         if os.path.exists(db_name):
@@ -1446,11 +1381,7 @@ class database_topology:
                 for unique_prop in unique_props:
                     # (_id, _spg, _top, _top_detail, _ff_energy) = unique_prop
                     (_id, _dof, _top, _top_detail, _ff_energy) = unique_prop
-                    if (
-                        top == _top
-                        and top_detail == _top_detail
-                        and abs(ff_energy - _ff_energy) < etol
-                    ):
+                    if top == _top and top_detail == _top_detail and abs(ff_energy - _ff_energy) < etol:
                         if dof < _dof:
                             print("updating", row.id, top, ff_energy)
                             unique_prop = prop
@@ -1472,7 +1403,7 @@ class database_topology:
                     if hasattr(row, key):
                         kvp[key] = getattr(row, key)
                 db.write(row.toatoms(), key_value_pairs=kvp)
-        print("Created {:s} with {:d} strucs".format(db_name, db.count()))
+        print(f"Created {db_name:s} with {db.count():d} strucs")
 
     def check_overlap(self, reference_db, etol=2e-3, verbose=True):
         """
@@ -1485,8 +1416,8 @@ class database_topology:
         """
 
         db_ref = database_topology(reference_db)
-        print("\nCurrent   database {:s}: {:d}".format(self.db_name, self.db.count()))
-        print("Reference database {:s}: {:d}".format(db_ref.db_name, db_ref.db.count()))
+        print(f"\nCurrent   database {self.db_name:s}: {self.db.count():d}")
+        print(f"Reference database {db_ref.db_name:s}: {db_ref.db.count():d}")
 
         ref_data = []
         for row in db_ref.db.select():
@@ -1516,8 +1447,8 @@ class database_topology:
                             )
                         )
                         break
-        strs = "\nThe number of overlap is: {:d}".format(len(overlaps))
-        strs += "/{:d}/{:d}".format(self.db.count(), db_ref.db.count())
+        strs = f"\nThe number of overlap is: {len(overlaps):d}"
+        strs += f"/{self.db.count():d}/{db_ref.db.count():d}"
         print(strs)
         sorted_overlaps = sorted(overlaps, key=lambda x: x[-1])
         if verbose:
@@ -1526,7 +1457,7 @@ class database_topology:
 
         return overlaps
 
-    def print_info(self, excluded_ids=[], cutoff=100):
+    def print_info(self, excluded_ids=None, cutoff=100):
         """
         Print out the summary of the database based on the calculated energy
         Mostly used to quickly view the most interesting low-energy structures.
@@ -1536,28 +1467,27 @@ class database_topology:
             excluded_ids (list): list of unwanted row ids
             cutoff (int): the cutoff value for the print
         """
-        print("\nCurrent   database {:s}: {:d}".format(self.db_name, self.db.count()))
+        if excluded_ids is None:
+            excluded_ids = []
+        print(f"\nCurrent   database {self.db_name:s}: {self.db.count():d}")
         output = []
         for row in self.db.select():
-            if row.id not in excluded_ids:
-                if hasattr(row, "topology") and hasattr(row, "ff_energy"):
-                    output.append(
-                        (
-                            row.id,
-                            row.pearson_symbol,
-                            row.dof,
-                            row.topology,
-                            row.ff_energy,
-                        )
+            if row.id not in excluded_ids and hasattr(row, "topology") and hasattr(row, "ff_energy"):
+                output.append(
+                    (
+                        row.id,
+                        row.pearson_symbol,
+                        row.dof,
+                        row.topology,
+                        row.ff_energy,
                     )
+                )
 
         sorted_output = sorted(output, key=lambda x: x[-1])
         for entry in sorted_output[:cutoff]:
             print("{:4d} {:6s} {:4d} {:20s} {:10.3f}".format(*entry))
 
-        strs = "Showed structures: {:d}/{:d}".format(
-            len(sorted_output), self.db.count()
-        )
+        strs = f"Showed structures: {len(sorted_output):d}/{self.db.count():d}"
         print(strs)
 
 

@@ -1,6 +1,6 @@
-import numpy as np
-from pymatgen.core.operations import SymmOp
 from sys import exit
+
+import numpy as np
 
 data = np.load("wyckoff_symmetry.npy")
 identity = data[1][0][0]
@@ -8,9 +8,9 @@ identity = data[1][0][0]
 for x in range(1, 231):
     seen = []
     # loop Wyckoff positions
-    for i, y in enumerate(data[x]):
+    for _i, y in enumerate(data[x]):
         # loop points
-        for j, z in enumerate(y):
+        for _j, z in enumerate(y):
             if z not in seen:
                 seen.append(z)
             else:

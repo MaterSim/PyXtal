@@ -1,12 +1,13 @@
+import sys
+import time
+
+import pubchempy as pcp
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-import time
-import pubchempy as pcp
-import sys
 
 
 def get_similar_cids(base, MaxRecords):
-    """""" """
+    """
     Parameters:
     base: PubChem CID of Starting chemical
     MaxRecords: Number of Similar Compounds
@@ -15,22 +16,21 @@ def get_similar_cids(base, MaxRecords):
     List of the CIDs of PubChem compounds similar to the base compound.
 
     Accuracy decreases deeper into PubChem search algorithm
-    """ """"""
+    """
 
     base = str(base)
     cids = pcp.get_compounds(base, searchtype="similarity", MaxRecords=MaxRecords)
-    cids = [x.to_dict()["cid"] for x in cids]
-    return cids
+    return [x.to_dict()["cid"] for x in cids]
 
 
 def check_for_ccdc_structures(cids):
-    """""" """'
+    """'
     Parameters:
     cids: list of PubChem cids
 
     Returns:
     List of the the given CIDs that have CCDC crystal structure data
-    """ """"""
+    """
     good_list = []
 
     for cid in cids:
@@ -61,7 +61,7 @@ def check_for_ccdc_structures(cids):
 
 
 def ccdcid_scalper(cids):
-    """""" """'
+    """'
     Parameters:
     cids: list of PubChem cids
 
@@ -74,16 +74,14 @@ def ccdcid_scalper(cids):
 
     On CCDC website, bulk cif downloads can be done with using a comma separated list of CCDC numbers.
     Flatten the returned list of this function to get that.
-    """ """"""
+    """
     CCDC_numbers = []
 
     for cid in cids:
         cid = str(cid)
         start = "https://pubchem.ncbi.nlm.nih.gov/"
         driver_location = sys.argv[1]
-        driver = webdriver.chrome.webdriver.WebDriver(
-            executable_path=str(driver_location)
-        )
+        driver = webdriver.chrome.webdriver.WebDriver(executable_path=str(driver_location))
         driver.get(start)
         time.sleep(2)
         elem = driver.find_element_by_css_selector("input")

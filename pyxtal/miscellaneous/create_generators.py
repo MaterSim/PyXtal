@@ -1,5 +1,6 @@
-from pyxtal.crystal import *
 from pandas import DataFrame
+
+from pyxtal.crystal import *
 
 fpath = "point_generators_new.csv"
 PBC = [0, 0, 0]
@@ -11,15 +12,12 @@ def rounded(op):
     if PBC == [1, 1, 1]:
         return SymmOp.from_rotation_and_translation(op.rotation_matrix, v2)
     elif PBC == [1, 1, 0]:
-        return SymmOp.from_rotation_and_translation(
-            op.rotation_matrix, [v2[0], v2[1], v1[2]]
-        )
+        return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v2[0], v2[1], v1[2]])
     elif PBC == [0, 0, 1]:
-        return SymmOp.from_rotation_and_translation(
-            op.rotation_matrix, [v1[0], v1[1], v2[2]]
-        )
+        return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v1[0], v1[1], v2[2]])
     elif PBC == [0, 0, 0]:
         return op
+    return None
 
 
 print("-------------------Creating generators-------------------")
@@ -33,7 +31,7 @@ for sg in range(1, 33):
     if gen_pos == []:
         print(wyckoffs)
     # Loop over Wyckoff positions
-    for i, wp in enumerate(wyckoffs):
+    for _i, wp in enumerate(wyckoffs):
         wp_gen = [gen_pos[0].as_xyz_string()]
         first = wp[0]
         seen = [first]

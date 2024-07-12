@@ -1,9 +1,11 @@
+from time import time
+
+import numpy as np
 from pymatgen.analysis.diffraction.xrd import XRDCalculator
-from pyxtal.XRD import XRD
+
 from pyxtal import pyxtal
 from pyxtal.util import ase2pymatgen
-import numpy as np
-from time import time
+from pyxtal.XRD import XRD
 
 s = pyxtal()
 thetas = (5, 50)
@@ -33,7 +35,7 @@ for cif in cifs:
                 xrd0 = c.get_pattern(p_struc, two_theta_range=thetas)
                 xs.append(xrd0.x)
                 ys.append(xrd0.y)
-            print("{:6d} {:8s} {:6.1f}".format(len(a_struc), method, time() - t0))
+            print(f"{len(a_struc):6d} {method:8s} {time() - t0:6.1f}")
         if len(xs[0]) == len(xs[1]):
             xdiff = np.abs(xs[1] - xs[0]).max()
             ydiff = np.abs(ys[1] - ys[0]).max()

@@ -1,10 +1,13 @@
-from pyxtal import pyxtal
+import os
+import time
+
+import numpy as np
 from ase import Atoms
-from pyxtal.util import good_lattice
 from ase.calculators.vasp import Vasp
 from ase.io import read
-import os, time
-import numpy as np
+
+from pyxtal import pyxtal
+from pyxtal.util import good_lattice
 
 """
 A script to perform multistages vasp calculation
@@ -111,7 +114,7 @@ class VASP:
         """read time and ncores info from OUTCAR"""
         time = 0
         ncore = 0
-        for line in open(path, "r"):
+        for line in open(path):
             if line.rfind("running on  ") > -1:
                 ncore = int(line.split()[2])
             elif line.rfind("Elapsed time ") > -1:
@@ -122,7 +125,7 @@ class VASP:
     def read_OSZICAR(self, path="OSZICAR"):
         """read the enthalpy from OSZICAR"""
         energy = 100000
-        for line in open(path, "r"):
+        for line in open(path):
             if line.rfind(" F= ") > -1:
                 energy = float(line.split()[2])
         self.energy = energy  # this is actually enthalpy
@@ -133,9 +136,7 @@ class VASP:
         myrun = vasprun(path)
         self.gap = myrun.values["gap"]
 
-    def run(
-        self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None
-    ):
+    def run(self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None):
         if walltime is not None:
             os.environ["VASP_COMMAND"] = "timeout " + max_time + " " + self.cmd
         else:
@@ -248,7 +249,7 @@ def single_point(struc, setup=None, path=None, clean=True):
 def optimize(
     struc,
     path,
-    levels=[0, 2, 3],
+    levels=None,
     pstress=0,
     setup=None,
     clean=True,
@@ -269,11 +270,11 @@ def optimize(
         list of structures, energies and time costs
     """
 
+    if levels is None:
+        levels = [0, 2, 3]
     time_total = 0
-    for i, level in enumerate(levels):
-        struc, eng, time, error = single_optimize(
-            struc, level, pstress, setup, path, clean, cmd, walltime
-        )
+    for _i, level in enumerate(levels):
+        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path, clean, cmd, walltime)
 
         time_total += time
         # print(eng, time, time_total, '++++++++++++++++++++++++++++++')
@@ -288,10 +289,7 @@ def VASP_relax(struc, opt_cell=False, step=100, kspacing=0.25, pstress=0, folder
     cwd = os.getcwd()
     os.chdir(folder)
 
-    if opt_cell:
-        isif = 3
-    else:
-        isif = 2
+    isif = 3 if opt_cell else 2
 
     calc = Vasp(
         xc="PBE",
@@ -331,9 +329,7 @@ if __name__ == "__main__":
     print("Energy:", calc.energy)
     print("Forces", calc.forces)
 
-    struc, eng, time, _ = optimize(
-        struc, path="tmp", levels=[0, 1, 2], cmd=cmd, walltime="30s"
-    )
+    struc, eng, time, _ = optimize(struc, path="tmp", levels=[0, 1, 2], cmd=cmd, walltime="30s")
     print(struc)
     print("Energy:", eng)
     print("Time:", time)

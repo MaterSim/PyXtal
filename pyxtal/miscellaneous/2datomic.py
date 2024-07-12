@@ -10,7 +10,7 @@ crystal is equal to the multiplicity of the general position.
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------
     from time import time
-    from os import mkdir
+
     from pyxtal.crystal import *
     from pyxtal.database.layergroup import Layergroup
 
@@ -91,15 +91,11 @@ if __name__ == "__main__":
 
     for num in numrange:
         print("---------------Layergroup " + str(num) + "---------------")
-        for i in range(attempts):
+        for _i in range(attempts):
             start = time()
             sg = Layergroup(num).sgnumber
-            multiplicity = len(
-                get_wyckoffs(sg)[0]
-            )  # multiplicity of the general position
-            rand_crystal = random_crystal_2D(
-                num, system, [multiplicity], options.thickness, options.factor
-            )
+            multiplicity = len(get_wyckoffs(sg)[0])  # multiplicity of the general position
+            rand_crystal = random_crystal_2D(num, system, [multiplicity], options.thickness, options.factor)
             end = time()
             timespent = np.around((end - start), decimals=2)
             if rand_crystal.valid:
@@ -114,11 +110,7 @@ if __name__ == "__main__":
                         rand_crystal.volume,
                     )
                 else:
-                    print(
-                        "Space group requested: "
-                        + str(sg)
-                        + " Could not calculate generated"
-                    )
+                    print("Space group requested: " + str(sg) + " Could not calculate generated")
 
                 # Print additional information about the structure
                 if verbosity > 0:

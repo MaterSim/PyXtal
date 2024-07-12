@@ -1,5 +1,6 @@
-from pyxtal.constants import pyxtal_verbosity
 from warnings import warn
+
+from pyxtal.constants import pyxtal_verbosity
 
 
 def printx(text, priority=1):
@@ -27,8 +28,6 @@ def printx(text, priority=1):
 
 class Error(Exception):
     """Base class for exceptions in this module."""
-
-    pass
 
 
 class ConformerError(Error):

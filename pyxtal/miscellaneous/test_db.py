@@ -1,8 +1,8 @@
-from pymatgen.core.operations import SymmOp
-import pandas as pd
-import numpy as np
-from structure import *
 from ast import literal_eval as eval
+
+import pandas as pd
+from pymatgen.core.operations import SymmOp
+from structure import *
 
 """mylist = [None]
 print("Adding space group:")

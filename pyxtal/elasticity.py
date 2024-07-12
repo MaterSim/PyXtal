@@ -19,7 +19,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ======================================================================
 
-from __future__ import print_function
 
 import itertools
 import warnings
@@ -32,10 +31,12 @@ try:
 except:
     scipy_stats = None
 
+from time import time
+
 import ase.units as units
 from ase.atoms import Atoms
 from ase.io import read
-from time import time
+
 ###
 
 # The indices of the full stiffness matrix of (orthorhombic) interest
@@ -162,39 +163,25 @@ def full_3x3x3x3_to_Voigt_6x6(C):
             # Check symmetries
             assert (
                 abs(Voigt[i, j] - C[m, n, k, l]) < tol
-            ), "Voigt[{},{}] = {}, C[{},{},{},{}] = {}".format(
-                i, j, Voigt[i, j], m, n, k, l, C[m, n, k, l]
-            )
+            ), f"Voigt[{i},{j}] = {Voigt[i, j]}, C[{m},{n},{k},{l}] = {C[m, n, k, l]}"
             assert (
                 abs(Voigt[i, j] - C[l, k, m, n]) < tol
-            ), "Voigt[{},{}] = {}, C[{},{},{},{}] = {}".format(
-                i, j, Voigt[i, j], k, l, m, n, C[l, k, m, n]
-            )
+            ), f"Voigt[{i},{j}] = {Voigt[i, j]}, C[{k},{l},{m},{n}] = {C[l, k, m, n]}"
             assert (
                 abs(Voigt[i, j] - C[k, l, n, m]) < tol
-            ), "Voigt[{},{}] = {}, C[{},{},{},{}] = {}".format(
-                i, j, Voigt[i, j], k, l, n, m, C[k, l, n, m]
-            )
+            ), f"Voigt[{i},{j}] = {Voigt[i, j]}, C[{k},{l},{n},{m}] = {C[k, l, n, m]}"
             assert (
                 abs(Voigt[i, j] - C[m, n, l, k]) < tol
-            ), "Voigt[{},{}] = {}, C[{},{},{},{}] = {}".format(
-                i, j, Voigt[i, j], m, n, l, k, C[m, n, l, k]
-            )
+            ), f"Voigt[{i},{j}] = {Voigt[i, j]}, C[{m},{n},{l},{k}] = {C[m, n, l, k]}"
             assert (
                 abs(Voigt[i, j] - C[n, m, k, l]) < tol
-            ), "Voigt[{},{}] = {}, C[{},{},{},{}] = {}".format(
-                i, j, Voigt[i, j], n, m, k, l, C[n, m, k, l]
-            )
+            ), f"Voigt[{i},{j}] = {Voigt[i, j]}, C[{n},{m},{k},{l}] = {C[n, m, k, l]}"
             assert (
                 abs(Voigt[i, j] - C[l, k, n, m]) < tol
-            ), "Voigt[{},{}] = {}, C[{},{},{},{}] = {}".format(
-                i, j, Voigt[i, j], l, k, n, m, C[l, k, n, m]
-            )
+            ), f"Voigt[{i},{j}] = {Voigt[i, j]}, C[{l},{k},{n},{m}] = {C[l, k, n, m]}"
             assert (
                 abs(Voigt[i, j] - C[n, m, l, k]) < tol
-            ), "Voigt[{},{}] = {}, C[{},{},{},{}] = {}".format(
-                i, j, Voigt[i, j], n, m, l, k, C[n, m, l, k]
-            )
+            ), f"Voigt[{i},{j}] = {Voigt[i, j]}, C[{n},{m},{l},{k}] = {C[n, m, l, k]}"
 
     return Voigt
 
@@ -221,11 +208,7 @@ def Voigt_6x6_to_cubic(C):
     C12 = np.mean(C12s)
     C44 = np.mean(C44s)
 
-    if (
-        np.any(np.abs(C11 - C11s) > tol)
-        or np.any(np.abs(C12 - C12s) > tol)
-        or np.any(np.abs(C44 - C44s) > tol)
-    ):
+    if np.any(np.abs(C11 - C11s) > tol) or np.any(np.abs(C12 - C12s) > tol) or np.any(np.abs(C44 - C44s) > tol):
         raise ValueError('"C" does not have cubic symmetry.')
 
     return np.array([C11, C12, C44])
@@ -260,9 +243,7 @@ def _invariants(
         s = np.asarray(s)
         if s.shape == (6,):
             s = s.reshape(1, -1)
-        elif s.shape == (3, 3):
-            s = full_3x3_to_Voigt_6(s)
-        elif s.shape[-1] == 3 and s.shape[-2] == 3:
+        elif s.shape == (3, 3) or s.shape[-1] == 3 and s.shape[-2] == 3:
             s = full_3x3_to_Voigt_6(s)
     else:
         s = np.transpose(
@@ -345,10 +326,7 @@ def rotate_cubic_elastic_constants(C11, C12, C44, A, tol=1e-6):
     A = np.asarray(A)
 
     # Is this a rotation matrix?
-    if any(
-        np.abs(np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float))
-        > tol
-    ):
+    if any(np.abs(np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float)) > tol):
         raise RuntimeError("Matrix *A* does not describe a rotation.")
 
     # Invariant elastic constants
@@ -399,16 +377,11 @@ def rotate_elastic_constants(C, A, tol=1e-6):
     A = np.asarray(A)
 
     # Is this a rotation matrix?
-    if any(
-        np.abs(np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float))
-        > tol
-    ):
+    if any(np.abs(np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float)) > tol):
         raise RuntimeError("Matrix *A* does not describe a rotation.")
 
     # Rotate
-    return full_3x3x3x3_to_Voigt_6x6(
-        np.einsum("ia,jb,kc,ld,abcd->ijkl", A, A, A, A, Voigt_6x6_to_full_3x3x3x3(C))
-    )
+    return full_3x3x3x3_to_Voigt_6x6(np.einsum("ia,jb,kc,ld,abcd->ijkl", A, A, A, A, Voigt_6x6_to_full_3x3x3x3(C)))
 
 
 ###
@@ -422,10 +395,7 @@ class CubicElasticModuli:
         Initialize a cubic system with elastic constants C11, C12, C44
         """
 
-        warnings.warn(
-            "CubicElasticModuli is deprecated. Use "
-            "rotate_elastic_constants function instead."
-        )
+        warnings.warn("CubicElasticModuli is deprecated. Use rotate_elastic_constants function instead.")
 
         # la, mu, al are the three invariant elastic constants
         self.la = C12
@@ -445,12 +415,7 @@ class CubicElasticModuli:
         A = np.asarray(A)
 
         # Is this a rotation matrix?
-        if any(
-            np.abs(
-                np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float)
-            )
-            > self.tol
-        ):
+        if any(np.abs(np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float)) > self.tol):
             raise RuntimeError("Matrix *A* does not describe a rotation.")
 
         C = []
@@ -479,12 +444,7 @@ class CubicElasticModuli:
         A = np.asarray(A)
 
         # Is this a rotation matrix?
-        if any(
-            np.abs(
-                np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float)
-            )
-            > self.tol
-        ):
+        if any(np.abs(np.dot(np.array(A), np.transpose(np.array(A))) - np.eye(3, dtype=float)) > self.tol):
             raise RuntimeError("Matrix *A* does not describe a rotation.")
 
         C = np.zeros((3, 3, 3, 3), dtype=float)
@@ -529,9 +489,7 @@ class CubicElasticModuli:
 ###
 
 
-def measure_triclinic_elastic_constants(
-    a, delta=0.001, optimizer=None, logfile=None, **kwargs
-):
+def measure_triclinic_elastic_constants(a, delta=0.001, optimizer=None, logfile=None, **kwargs):
     """
     Brute-force measurement of elastic constants for a triclinic (general)
     unit cell.
@@ -764,9 +722,7 @@ Cij_symmetry["hexagonal"] = Cij_symmetry["trigonal_high"]
 Cij_symmetry[None] = Cij_symmetry["triclinic"]
 
 strain_patterns["hexagonal"] = strain_patterns["trigonal_high"]
-strain_patterns["tetragonal_high"] = strain_patterns["tetragonal_low"] = (
-    strain_patterns["tetragonal"]
-)
+strain_patterns["tetragonal_high"] = strain_patterns["tetragonal_low"] = strain_patterns["tetragonal"]
 strain_patterns[None] = strain_patterns["triclinic"]
 
 
@@ -796,17 +752,12 @@ def generate_strained_configs(at0, symmetry="triclinic", N_steps=5, delta=1e-2):
     full 6x6 C_ij matrix under the assumed symmetry.
     """
 
-    if not symmetry in strain_patterns:
-        raise ValueError(
-            "Unknown symmetry %s. Valid options are %s"
-            % (symmetry, strain_patterns.keys())
-        )
+    if symmetry not in strain_patterns:
+        raise ValueError(f"Unknown symmetry {symmetry}. Valid options are {strain_patterns.keys()}")
 
-    for pindex, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
+    for _pindex, (pattern, _fit_pairs) in enumerate(strain_patterns[symmetry]):
         for step in range(N_steps):
-            strain = np.where(
-                pattern == 1, delta * (step + 1 - (N_steps + 1) / 2.0), 0.0
-            )
+            strain = np.where(pattern == 1, delta * (step + 1 - (N_steps + 1) / 2.0), 0.0)
             at = at0.copy()
             if at0.get_calculator() is not None:
                 at.set_calculator(at0.get_calculator())
@@ -918,9 +869,7 @@ def fit_elastic_constants(
 
     if isinstance(a, Atoms):
         if a.constraints:
-            raise ValueError(
-                "Atoms passed to fit_elastic_constants() " "has constraints attached"
-            )
+            raise ValueError("Atoms passed to fit_elastic_constants() has constraints attached")
         # we've been passed a single Atoms object: use it to generate
         # set of strained configurations according to symmetry
         strained_configs = generate_strained_configs(a, symmetry, N_steps, delta)
@@ -934,16 +883,14 @@ def fit_elastic_constants(
     def do_fit(index1, index2, stress, strain, patt):
         if verbose:
             print("Fitting C_%d%d" % (index1 + 1, index2 + 1))
-            print("Strain %r" % strain[:, index2])
+            print(f"Strain {strain[:, index2]!r}")
             print("Stress %r GPa" % (stress[:, index1] / units.GPa))
 
         if scipy_stats is not None:
-            cijFitted, intercept, r, tt, stderr = scipy_stats.linregress(
-                strain[:, index2], stress[:, index1]
-            )
+            cijFitted, intercept, r, tt, stderr = scipy_stats.linregress(strain[:, index2], stress[:, index1])
         else:
             cijFitted, intercept = np.polyfit(strain[:, index2], stress[:, index1], 1)
-            r, tt, stderr = 0.0, None, 0.0
+            r, _tt, stderr = 0.0, None, 0.0
 
         if verbose:
             # print info about the fit
@@ -992,11 +939,8 @@ def fit_elastic_constants(
 
         return cijFitted, stderr
 
-    if not symmetry in strain_patterns:
-        raise ValueError(
-            "Unknown symmetry %s. Valid options are %s"
-            % (symmetry, strain_patterns.keys())
-        )
+    if symmetry not in strain_patterns:
+        raise ValueError(f"Unknown symmetry {symmetry}. Valid options are {strain_patterns.keys()}")
 
     # There are 21 independent elastic constants
     Cijs = {}
@@ -1015,7 +959,7 @@ def fit_elastic_constants(
     Cij_rev_map = dict(zip(Cij_map.values(), Cij_map.keys()))
 
     # Add the lower triangle to Cij_map, e.g. C21 = C12
-    for i1, i2 in Cij_map.copy().keys():
+    for i1, i2 in Cij_map.copy():
         Cij_map[(i2, i1)] = Cij_map[(i1, i2)]
         Cij_map_sym[(i2, i1)] = Cij_map_sym[(i1, i2)]
 
@@ -1028,9 +972,7 @@ def fit_elastic_constants(
     if graphics:
         fig = plt.figure(num=1, figsize=(9.5, 8), facecolor="white")
         fig.clear()
-        fig.subplots_adjust(
-            left=0.07, right=0.97, top=0.97, bottom=0.07, wspace=0.5, hspace=0.5
-        )
+        fig.subplots_adjust(left=0.07, right=0.97, top=0.97, bottom=0.07, wspace=0.5, hspace=0.5)
 
         for index1 in range(6):
             for index2 in range(6):
@@ -1041,7 +983,7 @@ def fit_elastic_constants(
 
     # Fill in strain and stress arrays from config Atoms list
     with open("Detail-" + tag + ".txt", "w") as f:
-        for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
+        for pattern_index, (_pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
             for step in range(N_steps):
                 at = next(configs)
                 t0 = time()
@@ -1055,29 +997,23 @@ def fit_elastic_constants(
                 E1 = at.get_potential_energy()
                 fmax = np.abs(at.get_forces()).max()
                 t1 = time() - t0
-                strs = "\n{:8s} {:2d}/{:2d}\n".format(tag, pattern_index, step)
-                strs += "Eng:  {:.4f} -> {:.4f}, ".format(E0, E1)
-                strs += "dE: {:.4f}\n".format(E1 - E0)
-                strs += "fmax: {:.5f}\n".format(fmax)
-                strs += "time: {:.1f}\n".format(t1)
+                strs = f"\n{tag:8s} {pattern_index:2d}/{step:2d}\n"
+                strs += f"Eng:  {E0:.4f} -> {E1:.4f}, "
+                strs += f"dE: {E1 - E0:.4f}\n"
+                strs += f"fmax: {fmax:.5f}\n"
+                strs += f"time: {t1:.1f}\n"
                 strain_info = full_3x3_to_Voigt_6_strain(at.info["strain"])
                 stress_info = at.get_stress()
                 strain[pattern_index, step, :] = strain_info
                 stress[pattern_index, step, :] = stress_info
                 # print("Cell\n", at.get_cell())
-                strs += "Strain {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n".format(
-                    *strain_info
-                )
-                strs += (
-                    "Stress (GPa) {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}\n".format(
-                        *(stress_info / units.GPa)
-                    )
-                )
+                strs += "Strain {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n".format(*strain_info)
+                strs += "Stress (GPa) {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}\n".format(*(stress_info / units.GPa))
                 f.write(strs)
                 print(strs)
 
     # Do the linear regression
-    for pattern_index, (pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
+    for pattern_index, (_pattern, fit_pairs) in enumerate(strain_patterns[symmetry]):
         for index1, index2 in fit_pairs:
             fitted, err = do_fit(
                 index1,
@@ -1089,20 +1025,14 @@ def fit_elastic_constants(
 
             index = abs(Cij_map_sym[(index1, index2)])
 
-            if not index in Cijs:
+            if index not in Cijs:
                 if verbose:
-                    print(
-                        "Setting C%d%d (%d) to %f +/- %f"
-                        % (index1 + 1, index2 + 1, index, fitted, err)
-                    )
+                    print("Setting C%d%d (%d) to %f +/- %f" % (index1 + 1, index2 + 1, index, fitted, err))
                 Cijs[index] = [fitted]
                 Cij_err[index] = [err]
             else:
                 if verbose:
-                    print(
-                        "Updating C%d%d (%d) with value %f +/- %f"
-                        % (index1 + 1, index2 + 1, index, fitted, err)
-                    )
+                    print("Updating C%d%d (%d) with value %f +/- %f" % (index1 + 1, index2 + 1, index, fitted, err))
                 Cijs[index].append(fitted)
                 Cij_err[index].append(err)
             if verbose:
@@ -1124,9 +1054,7 @@ def fit_elastic_constants(
     if symmetry.startswith("trigonal"):
         # Special case for trigonal lattice: C66 = (C11 - C12)/2
         Cijs[Cij_map[(5, 5)]] = 0.5 * (Cijs[Cij_map[(0, 0)]] - Cijs[Cij_map[(0, 1)]])
-        Cij_err[Cij_map[(5, 5)]] = np.sqrt(
-            Cij_err[Cij_map[(0, 0)]] ** 2 + Cij_err[Cij_map[(0, 1)]] ** 2
-        )
+        Cij_err[Cij_map[(5, 5)]] = np.sqrt(Cij_err[Cij_map[(0, 0)]] ** 2 + Cij_err[Cij_map[(0, 1)]] ** 2)
 
     # Generate the 6x6 matrix of elastic constants
     # - negative values signify a symmetry relation
@@ -1159,10 +1087,7 @@ def fit_elastic_constants(
                 index = Cij_symmetry[symmetry][i, j]
                 if index <= 0 or index in printed:
                     continue
-                print(
-                    "C_%d%d = %-4.2f +/- %-4.2f GPa"
-                    % (i + 1, j + 1, C[i, j] / units.GPa, C_err[i, j] / units.GPa)
-                )
+                print("C_%d%d = %-4.2f +/- %-4.2f GPa" % (i + 1, j + 1, C[i, j] / units.GPa, C_err[i, j] / units.GPa))
                 printed[index] = 1
 
     return C, C_err
@@ -1196,7 +1121,7 @@ def youngs_modulus(C, l):
 
     # Youngs modulus in direction l, ratio of stress sigma_l
     # to strain response epsilon_l
-    E = 1.0 / (
+    return 1.0 / (
         S[0, 0]
         - 2.0
         * (S[0, 0] - S[0, 1] - 0.5 * S[3, 3])
@@ -1206,7 +1131,6 @@ def youngs_modulus(C, l):
             + lhat[0] * lhat[0] * lhat[2] * lhat[2]
         )
     )
-    return E
 
 
 def poisson_ratio(C, l, m):
@@ -1228,7 +1152,7 @@ def poisson_ratio(C, l, m):
 
     # Poisson ratio v_lm: response in m direction to strain in
     # l direction, v_lm = - epsilon_m/epsilon_l
-    v = -(
+    return -(
         (
             S[0, 1]
             + (S[0, 0] - S[0, 1] - 0.5 * S[3, 3])
@@ -1249,7 +1173,6 @@ def poisson_ratio(C, l, m):
             )
         )
     )
-    return v
 
 
 def elastic_moduli(C, l=np.array([1, 0, 0]), R=None, tol=1e-6):
@@ -1311,12 +1234,7 @@ def elastic_moduli(C, l=np.array([1, 0, 0]), R=None, tol=1e-6):
         R = np.asarray(R)
 
         # Is this a rotation matrix?
-        if any(
-            np.abs(
-                np.dot(np.array(R), np.transpose(np.array(R))) - np.eye(3, dtype=float)
-            )
-            > tol
-        ):
+        if any(np.abs(np.dot(np.array(R), np.transpose(np.array(R))) - np.eye(3, dtype=float)) > tol):
             raise RuntimeError("Matrix *R* does not describe a rotation.")
     else:
         u_a = np.array([1, 0, 0])
@@ -1325,17 +1243,9 @@ def elastic_moduli(C, l=np.array([1, 0, 0]), R=None, tol=1e-6):
 
         if not np.allclose(l, u_a, rtol=tol, atol=tol):
             u_v = np.cross(u_a, u_b)
-            u_v_mat = np.array(
-                [[0, -u_v[2], u_v[1]], [u_v[2], 0, -u_v[0]], [-u_v[1], u_v[0], 0]]
-            )
+            u_v_mat = np.array([[0, -u_v[2], u_v[1]], [u_v[2], 0, -u_v[0]], [-u_v[1], u_v[0], 0]])
 
-            R = (
-                R
-                + u_v_mat
-                + np.dot(u_v_mat, u_v_mat)
-                * (1 - np.dot(u_a, u_b))
-                / np.linalg.norm(u_v) ** 2
-            )
+            R = R + u_v_mat + np.dot(u_v_mat, u_v_mat) * (1 - np.dot(u_a, u_b)) / np.linalg.norm(u_v) ** 2
 
     Cr = rotate_elastic_constants(C, R)
     S = np.linalg.inv(Cr)
@@ -1360,9 +1270,7 @@ def elastic_moduli(C, l=np.array([1, 0, 0]), R=None, tol=1e-6):
     G[0] = 1 / S[3, 3]  # Shear modulus yz
     G[1] = 1 / S[4, 4]  # Shear modulus zx
     G[2] = 1 / S[5, 5]  # Shear modulus xy
-    Gm = np.array(
-        [[E[0] / 4, G[2], G[1]], [G[2], E[1] / 4, G[0]], [G[1], G[0], E[2] / 4]]
-    )
+    Gm = np.array([[E[0] / 4, G[2], G[1]], [G[2], E[1] / 4, G[0]], [G[1], G[0], E[2] / 4]])
 
     # Bulk modulus
     B = 1 / np.sum(S[0:3, 0:3])
@@ -1379,21 +1287,13 @@ def elastic_properties(C):
     A quick summary of elastic properties from the 6*6 matrix
     """
     Kv = C[:3, :3].mean()
-    Gv = (
-        C[0, 0]
-        + C[1, 1]
-        + C[2, 2]
-        - (C[0, 1] + C[1, 2] + C[2, 0])
-        + 3 * (C[3, 3] + C[4, 4] + C[5, 5])
-    ) / 15
+    Gv = (C[0, 0] + C[1, 1] + C[2, 2] - (C[0, 1] + C[1, 2] + C[2, 0]) + 3 * (C[3, 3] + C[4, 4] + C[5, 5])) / 15
     Ev = 1 / ((1 / (3 * Gv)) + (1 / (9 * Kv)))
     vv = 0.5 * (1 - ((3 * Gv) / (3 * Kv + Gv)))
     S = np.linalg.inv(C)
     Kr = 1 / ((S[0, 0] + S[1, 1] + S[2, 2]) + 2 * (S[0, 1] + S[1, 2] + S[2, 0]))
     Gr = 15 / (
-        4 * (S[0, 0] + S[1, 1] + S[2, 2])
-        - 4 * (S[0, 1] + S[1, 2] + S[2, 0])
-        + 3 * (S[3, 3] + S[4, 4] + S[5, 5])
+        4 * (S[0, 0] + S[1, 1] + S[2, 2]) - 4 * (S[0, 1] + S[1, 2] + S[2, 0]) + 3 * (S[3, 3] + S[4, 4] + S[5, 5])
     )
     Er = 1 / ((1 / (3 * Gr)) + (1 / (9 * Kr)))
     vr = 0.5 * (1 - ((3 * Gr) / (3 * Kr + Gr)))

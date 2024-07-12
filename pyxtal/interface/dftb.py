@@ -1,16 +1,19 @@
-import os, re
-from ase.io import read
-from ase.optimize.fire import FIRE
-from ase.constraints import ExpCellFilter
-from ase.spacegroup.symmetrize import FixSymmetry
-from pyxtal.util import Kgrid
+import os
+import re
+
+import numpy as np
 from ase.calculators.calculator import (
     FileIOCalculator,
     kpts2ndarray,
     kpts2sizeandoffsets,
 )
-from ase.units import Hartree, Bohr
-import numpy as np
+from ase.constraints import ExpCellFilter
+from ase.io import read
+from ase.optimize.fire import FIRE
+from ase.spacegroup.symmetrize import FixSymmetry
+from ase.units import Bohr, Hartree
+
+from pyxtal.util import Kgrid
 
 
 def make_Hamiltonian(
@@ -201,9 +204,7 @@ def DFTB_relax(
     if type(kresol) != list:
         kpts = Kgrid(struc, kresol)
     atom_types = set(struc.get_chemical_symbols())
-    kwargs = make_Hamiltonian(
-        skf_dir, atom_types, disp, kpts, scc_error=scc_error, use_omp=use_omp
-    )
+    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=scc_error, use_omp=use_omp)
 
     calc = Dftb(
         label="test",
@@ -318,9 +319,7 @@ class DFTB:
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
 
-    def get_calculator(
-        self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params={}
-    ):
+    def get_calculator(self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params=None):
         """
         get the ase style calculator
 
@@ -334,6 +333,8 @@ class DFTB:
         Returns:
             ase calculator
         """
+        if md_params is None:
+            md_params = {}
         if eVperA:
             ftol *= 0.194469064593167e-01
         atom_types = set(self.struc.get_chemical_symbols())
@@ -394,36 +395,32 @@ class DFTB:
                     kwargs["Driver_Barostat_Pressure [Pa]"] = dicts["pressure"]
                     kwargs["Driver_Barostat_Timescale [ps]"] = 0.1
 
-        calc = Dftb(
+        return Dftb(
             label=self.label,
             # run_manyDftb_steps=True,
             atoms=self.struc,
             kpts=self.kpts,
             **kwargs,
         )
-        return calc
 
-    def run(self, mode, step=500, ftol=1e-3, FixAngles=False, md_params={}):
+    def run(self, mode, step=500, ftol=1e-3, FixAngles=False, md_params=None):
         """
         execute the actual calculation
         """
         from time import time
 
+        if md_params is None:
+            md_params = {}
         t0 = time()
         cwd = os.getcwd()
         os.chdir(self.folder)
 
-        self.calc = self.get_calculator(
-            mode, step, ftol, FixAngles, md_params=md_params
-        )
+        self.calc = self.get_calculator(mode, step, ftol, FixAngles, md_params=md_params)
         self.struc.set_calculator(self.calc)
         # self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
         self.calc.calculate(self.struc)
-        if mode in ["relax", "vc-relax"]:
-            final = read(self.prefix + ".gen")
-        else:
-            final = self.struc
+        final = read(self.prefix + ".gen") if mode in ["relax", "vc-relax"] else self.struc
 
         # get the final energy
         energy = self.struc.get_potential_energy()
@@ -446,10 +443,7 @@ class Dftb(FileIOCalculator):
     Modified by QZ to avoid the I/O load
     """
 
-    if "DFTB_COMMAND" in os.environ:
-        command = os.environ["DFTB_COMMAND"] + " > PREFIX.out"
-    else:
-        command = "dftb+ > PREFIX.out"
+    command = os.environ["DFTB_COMMAND"] + " > PREFIX.out" if "DFTB_COMMAND" in os.environ else "dftb+ > PREFIX.out"
 
     implemented_properties = ["energy", "forces", "stress"]
     discard_results_on_any_change = True
@@ -541,9 +535,7 @@ class Dftb(FileIOCalculator):
         self.atoms_input = None
         self.outfilename = "dftb.out"
 
-        FileIOCalculator.__init__(
-            self, restart, ignore_bad_restart_file, label, atoms, **kwargs
-        )
+        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file, label, atoms, **kwargs)
 
         # kpoint stuff by ase
         self.kpts = kpts
@@ -629,21 +621,11 @@ class Dftb(FileIOCalculator):
                 outfile.write(3 * (1 + my_backsclash) * myspace + "} \n")
             outfile.write(3 * current_depth * myspace)
             if key.endswith("_") and len(value) > 0:
-                outfile.write(
-                    key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n"
-                )
-            elif (
-                key.endswith("_") and (len(value) == 0) and current_depth == 0
-            ):  # E.g. 'Options {'
-                outfile.write(
-                    key.rstrip("_").rsplit("_")[-1] + " " + str(value) + "{ \n"
-                )
-            elif (
-                key.endswith("_") and (len(value) == 0) and current_depth > 0
-            ):  # E.g. 'Hamiltonian_Max... = {'
-                outfile.write(
-                    key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n"
-                )
+                outfile.write(key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n")
+            elif key.endswith("_") and (len(value) == 0) and current_depth == 0:  # E.g. 'Options {'
+                outfile.write(key.rstrip("_").rsplit("_")[-1] + " " + str(value) + "{ \n")
+            elif key.endswith("_") and (len(value) == 0) and current_depth > 0:  # E.g. 'Hamiltonian_Max... = {'
+                outfile.write(key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n")
             elif key.count("_empty") == 1:
                 outfile.write(str(value) + " \n")
             else:
@@ -679,7 +661,7 @@ class Dftb(FileIOCalculator):
         """all results are read from results.tag file
         It will be destroyed after it is read to avoid
         reading it once again after some runtime error"""
-        with open(os.path.join(self.directory, "results.tag"), "r") as fd:
+        with open(os.path.join(self.directory, "results.tag")) as fd:
             self.lines = fd.readlines()
         if len(self.lines) == 0:
             # print("READ RESULTS from test.out")
@@ -718,7 +700,7 @@ class Dftb(FileIOCalculator):
         """
         outfile = self.label + ".out"
         energies = []
-        with open(os.path.join(self.directory, outfile), "r") as fd:
+        with open(os.path.join(self.directory, outfile)) as fd:
             lines = fd.readlines()
         for line in lines:
             m = re.match(r"Total Energy:\s+[-\d.]+ H\s+([-.\d]+) eV", line)
@@ -732,8 +714,7 @@ class Dftb(FileIOCalculator):
                 # ERROR!
                 # -> SCC is NOT converged, maximal SCC iterations exceeded
                 print("Cannot read energy from this file", os.getcwd())
-                eng = float(lines[-3].split()[1]) * 27.2114  # hatree to eV
-                return eng
+                return float(lines[-3].split()[1]) * 27.2114  # hatree to eV
             except:
                 return 1.0e5
 
@@ -756,10 +737,8 @@ class Dftb(FileIOCalculator):
         gradients = []
         for j in range(index_force_begin, index_force_end):
             word = self.lines[j].split()
-            gradients.append([float(word[k]) for k in range(0, 3)])
-        gradients = np.array(gradients) * Hartree / Bohr
-
-        return gradients
+            gradients.append([float(word[k]) for k in range(3)])
+        return np.array(gradients) * Hartree / Bohr
 
     def read_eigenvalues(self):
         """Read Eigenvalues from dftb output file (results.tag).
@@ -782,19 +761,13 @@ class Dftb(FileIOCalculator):
         index_eig_end = index_eig_begin + nrow
         ncol_last = len(self.lines[index_eig_end - 1].split())
         if ncol - ncol_last > 0:
-            self.lines[index_eig_end - 1] = self.lines[index_eig_end - 1].replace(
-                "\n", ""
-            )
+            self.lines[index_eig_end - 1] = self.lines[index_eig_end - 1].replace("\n", "")
             self.lines[index_eig_end - 1] += " 0.0 " * (ncol - ncol_last)
             self.lines[index_eig_end - 1] += "\n"
         eig = np.loadtxt(self.lines[index_eig_begin:index_eig_end]).flatten()
         eig *= Hartree
         N = nkpt * nband
-        eigenvalues = [
-            eig[i * N : (i + 1) * N].reshape((nkpt, nband)) for i in range(nspin)
-        ]
-
-        return eigenvalues
+        return [eig[i * N : (i + 1) * N].reshape((nkpt, nband)) for i in range(nspin)]
 
     def read_fermi_levels(self):
         """Read Fermi level(s) from dftb output file (results.tag)."""
@@ -842,11 +815,11 @@ if __name__ == "__main__":
     for mode in ["single", "relax", "vc-relax", "npt"]:
         my = DFTB(struc, skf_dir)
         struc, energy = my.run(mode)
-        res = "{:8s} ".format(mode)
-        res += "{:8.4f} ".format(struc.cell[0, 0])
-        res += "{:8.4f} ".format(struc.cell[1, 1])
-        res += "{:8.4f} ".format(struc.cell[2, 2])
-        res += "{:12.4f}".format(energy)
+        res = f"{mode:8s} "
+        res += f"{struc.cell[0, 0]:8.4f} "
+        res += f"{struc.cell[1, 1]:8.4f} "
+        res += f"{struc.cell[2, 2]:8.4f} "
+        res += f"{energy:12.4f}"
         print(res)
     # gap = DFTB_SCF(struc, skf_dir)
     # print(gap)

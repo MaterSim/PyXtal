@@ -1,19 +1,18 @@
 from distutils.core import setup
-import setuptools  # noqa
 from os import path
+
+import setuptools  # noqa
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-exec(open("pyxtal/version.py").read())
-
-with open("README.md", "r") as fh:
+with open("README.md") as fh:
     long_description = fh.read()
 
 setup(
     name="pyxtal",
-    version=__version__,
+    version="0.6.8",
     author="Scott Fredericks, Qiang Zhu",
     author_email="qiang.zhu@unlv.edu",
     description="Python code for generation of crystal structures based on symmetry constraints.",
@@ -49,7 +48,7 @@ setup(
         "networkx>=2.3",
         "ase>=3.18.0",  # covered by pymatgen
         "scipy>=1.7.3",
-        "numpy>=1.26",  # prevent the use of numpy2
+        "numpy>=1.26,<2",  # prevent the use of numpy2
         "importlib_metadata>=1.4",
         "typing-extensions>=4.12",
         #'pyshtools>=4.10.3',
@@ -58,7 +57,8 @@ setup(
     extra_require={
         "visualization": ["py3Dmol>=0.8.0"],
         "descriptor": ["pyshtools>=4.10.3"],
+        "test": ["wheel", "pytest", "coverage", "pytest-cov", "monty>=2024.2.26"],
     },
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     license="MIT",
 )

@@ -1,13 +1,10 @@
-from structure import get_wyckoff_symmetry
-import numpy as np
-from numpy import allclose
-from numpy import isclose
-from pymatgen.core.operations import SymmOp
-from pymatgen.symmetry.analyzer import generate_full_symmops
-import pandas as pd
-from copy import deepcopy
-from matrix import *
 from math import sqrt
+
+import numpy as np
+import pandas as pd
+from matrix import *
+from pymatgen.core.operations import SymmOp
+from structure import get_wyckoff_symmetry
 
 """site_symmetry = [None]
 #site_symm is stored by space group number starting with 1 (site_symm[1] is P1))
@@ -86,9 +83,7 @@ for sg in range(1, 231):
             for op in symm_point:
                 site_symmetry[sg][-1][-1].append(op.as_xyz_string())"""
 
-P = SymmOp.from_rotation_and_translation(
-    [[1, -0.5, 0], [0, sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0]
-)
+P = SymmOp.from_rotation_and_translation([[1, -0.5, 0], [0, sqrt(3) / 2, 0], [0, 0, 1]], [0, 0, 0])
 
 site_symmetry = [None]
 # site_symm is stored by space group number starting with 1 (site_symm[1] is P1))
@@ -98,15 +93,13 @@ for sg in range(1, 231):
     site_symmetry.append([])
     symm_sg = get_wyckoff_symmetry(sg)
     # Get site symmetry for every point in each wp, and store
-    for i, symm_wp in enumerate(symm_sg):
+    for _i, symm_wp in enumerate(symm_sg):
         site_symmetry[sg].append([])
-        for j, symm_point in enumerate(symm_wp):
+        for _j, symm_point in enumerate(symm_wp):
             site_symmetry[sg][-1].append([])
             for op in symm_point:
                 new_op = P * op * P.inverse
-                new_op = new_op.from_rotation_and_translation(
-                    new_op.rotation_matrix, [0, 0, 0]
-                )
+                new_op = new_op.from_rotation_and_translation(new_op.rotation_matrix, [0, 0, 0])
                 site_symmetry[sg][-1][-1].append(new_op.as_xyz_string())
 
 

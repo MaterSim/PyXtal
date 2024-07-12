@@ -1,23 +1,24 @@
-from pyxtal.crystal import random_cluster
+import sys
+import warnings
 from copy import deepcopy
 from optparse import OptionParser
-from random import randint, choice
-from scipy.optimize import minimize
-from scipy.spatial.distance import pdist, cdist
-from pyxtal.molecule import PointGroupAnalyzer
-from pymatgen.core import Molecule
-from pyxtal.database.collection import Collection
 from time import time
-import numpy as np
+
 import matplotlib.pyplot as plt
-import warnings
-import sys
+import numpy as np
+from pymatgen.core import Molecule
+from scipy.optimize import minimize
+from scipy.spatial.distance import cdist, pdist
+
+from pyxtal.crystal import random_cluster
+from pyxtal.database.collection import Collection
+from pyxtal.molecule import PointGroupAnalyzer
 
 plt.style.use("bmh")
 warnings.filterwarnings("ignore")
 
 """
-This is a script to 
+This is a script to
 1, generate random clusters
 2, perform optimization
 """
@@ -43,10 +44,7 @@ def LJ(pos, dim, method=1, mu=0.1):
     if dim > 3:
         norm = 0
         for i in range(3, dim):
-            if method == 1:
-                diff = pos[:, i]
-            else:
-                diff = pos[:, i] - np.mean(pos[:, i])
+            diff = pos[:, i] if method == 1 else pos[:, i] - np.mean(pos[:, i])
             norm += np.sum(np.multiply(diff, diff))
         Eng += 0.5 * mu * norm
     return Eng
@@ -121,7 +119,6 @@ def hyper_optimize(pos, dim, method=1, mu=0.1):
 
         if energy3 - energy1 > 1e-4:
             pos = pos1
-            energy = energy1
             break
         else:
             pos1 = pos3
@@ -147,32 +144,29 @@ class LJ_prediction:
 
     """
 
-    def __init__(self, numIons):
+    def __init__(self, numIons, seed=None):
         self.numIons = numIons
         ref = Collection("clusters")[str(numIons)]
-        print(
-            "\nReference for LJ {0:3d} is {1:12.3f} eV, PG: {2:4s}".format(
-                numIons, ref["energy"], ref["pointgroup"]
-            )
-        )
+        print("\nReference for LJ {:3d} is {:12.3f} eV, PG: {:4s}".format(numIons, ref["energy"], ref["pointgroup"]))
         self.reference = ref
         self.time0 = time()
+        self.rng = np.random.default_rng(seed)
 
-    def generate_cluster(self, pgs=range(2, 33)):
+    def generate_cluster(self, pgs=(2, 33)):
         run = True
         while run:
-            pg = choice(pgs)
+            pg = self.rng.integers(*pgs)
             cluster = random_cluster(pg, ["Mo"], [self.numIons], 1.0)
             if cluster.valid:
                 run = False
         return cluster.cart_coords
 
-    def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33), method=1):
-        print("\nPerforming random search at {0:d}D space\n".format(dim))
+    def predict(self, dim=3, maxN=100, ncpu=2, pgs=(2, 33), method=1):
+        print(f"\nPerforming random search at {dim:d}D space\n")
         cycle = range(maxN)
         if ncpu > 1:
-            from multiprocessing import Pool
             from functools import partial
+            from multiprocessing import Pool
 
             with Pool(ncpu) as p:
                 func = partial(self.relaxation, dim, pgs, method)
@@ -188,11 +182,7 @@ class LJ_prediction:
         for dct in res:
             if dct["ground"]:
                 N_success += 1
-        print(
-            "\nHit the ground state {0:4d} times out of {1:4d} attempts\n".format(
-                N_success, maxN
-            )
-        )
+        print(f"\nHit the ground state {N_success:4d} times out of {maxN:4d} attempts\n")
         return res
 
     def relaxation(self, dim, pgs, method, ind):
@@ -235,15 +225,11 @@ class LJ_prediction:
 
         if ground:
             print(
-                "ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f} Time: {4:6.1f} ++++++".format(
-                    ind, pg1, pg2, energy[-1], (time() - self.time0) / 60
-                )
+                f"ID: {ind:4d} PG initial: {pg1:4s} relaxed: {pg2:4s} Energy: {energy[-1]:12.3f} Time: {(time() - self.time0) / 60:6.1f} ++++++"
             )
         elif ind % 2 == 0:
             print(
-                "ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f} Time: {4:6.1f} ".format(
-                    ind, pg1, pg2, energy[-1], (time() - self.time0) / 60
-                )
+                f"ID: {ind:4d} PG initial: {pg1:4s} relaxed: {pg2:4s} Energy: {energy[-1]:12.3f} Time: {(time() - self.time0) / 60:6.1f} "
             )
         return res
 
@@ -305,7 +291,7 @@ if __name__ == "__main__":
     eng_min = lj_run.reference["energy"]
     t0 = time()
     results1 = lj_run.predict(dim=4, maxN=maxN, ncpu=ncpu, pgs=[1])
-    print("time: {0:6.2f} seconds".format(time() - t0))
+    print(f"time: {time() - t0:6.2f} seconds")
     engs = []
     for dct in results1:
         engs.append(dct["energy"])

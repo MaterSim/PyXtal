@@ -1,11 +1,13 @@
 # Standard Libraries
-import numpy as np
 import random
+
+import numpy as np
+
+from pyxtal.constants import deg, ltype_keywords, rad
 
 # PyXtal imports
 from pyxtal.msg import VolumeError
 from pyxtal.operations import angle, create_matrix
-from pyxtal.constants import deg, rad, ltype_keywords
 
 
 class Lattice:
@@ -46,11 +48,13 @@ class Lattice:
                 should be reset during each crystal generation attempt
     """
 
-    def __init__(self, ltype, volume=None, matrix=None, PBC=[1, 1, 1], **kwargs):
+    def __init__(self, ltype, volume=None, matrix=None, PBC=None, **kwargs):
         # Set required parameters
+        if PBC is None:
+            PBC = [1, 1, 1]
         if ltype in ltype_keywords:
             self.ltype = ltype.lower()
-        elif ltype == None:
+        elif ltype is None:
             self.ltype = "triclinic"
         else:
             msg = "Invalid lattice type: " + ltype
@@ -75,9 +79,8 @@ class Lattice:
             ]:
                 setattr(self, key, value)
                 self.kwargs[key] = value
-                if key == "allow_volume_reset":
-                    if value == False:
-                        self.allow_volume_reset = False
+                if key == "allow_volume_reset" and value is False:
+                    self.allow_volume_reset = False
 
         if not hasattr(self, "unique_axis"):
             self.unique_axis = "c"
@@ -273,9 +276,9 @@ class Lattice:
         switchs = []
 
         count = 0
-        for i, tran1 in enumerate(trans1):
+        for _i, tran1 in enumerate(trans1):
             lat0 = self.transform(tran1)
-            for j, tran2 in enumerate(trans2):
+            for _j, tran2 in enumerate(trans2):
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
                     # print("Start", np.linalg.det(tmp))
@@ -293,9 +296,7 @@ class Lattice:
         trans_good = []
         tols_good = []
         for id in range(len(tols)):
-            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[
-                id, 2
-            ] < self.a_tol:
+            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
                 if switchs[id]:
                     trans[id].extend([[[1, 0, 0], [0, -1, 0], [0, 0, -1]]])
                 # print(tols[id], len(trans[id]))
@@ -332,9 +333,9 @@ class Lattice:
         trans.append([np.eye(3)])
 
         count = 0
-        for i, tran1 in enumerate(trans1):
+        for _i, tran1 in enumerate(trans1):
             lat0 = self.transform(tran1)
-            for j, tran2 in enumerate(trans2):
+            for _j, tran2 in enumerate(trans2):
                 count += 1
                 tmp = np.dot(tran2, lat0.matrix)
                 try:
@@ -354,14 +355,12 @@ class Lattice:
         id = ids[0]
         # print(tols, rms)
         # print(id, switchs[id])
-        if abs(rms[ids[0]] - rms[ids[1]]) < 1e-3:
-            if switchs[ids[0]] and not switchs[ids[1]]:
-                id = ids[1]
-                # print("change id 1", id)
-        if id != 0:
-            if abs(rms[0] - rms[id]) < 1.0:
-                # print("change id 2", id, rms[0], rms[id])
-                id = 0
+        if abs(rms[ids[0]] - rms[ids[1]]) < 1e-3 and switchs[ids[0]] and not switchs[ids[1]]:
+            id = ids[1]
+            # print("change id 1", id)
+        if id != 0 and abs(rms[0] - rms[id]) < 1.0:
+            # print("change id 2", id, rms[0], rms[id])
+            id = 0
 
         if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
             if switchs[id]:
@@ -416,7 +415,7 @@ class Lattice:
         """
         lattice = self
         trans_matrices = []
-        for i in range(iterations):
+        for _i in range(iterations):
             lattice, trans, opt = lattice.optimize_once(reset=True)
             if opt:
                 trans_matrices.append(trans)
@@ -496,8 +495,7 @@ class Lattice:
         else:
             a, b, c, alpha, beta, gamma = v[0], v[0], v[0], 90, 90, 90
         try:
-            l = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
-            return l
+            return Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
         except:
             print(a, b, c, alpha, beta, gamma, ltype)
 
@@ -537,7 +535,7 @@ class Lattice:
         elif ltype in ["triclinic"]:
             lat = Lattice.from_para(a, b, c, alpha, beta, gamma, ltype=ltype)
         else:
-            raise ValueError("ltype {:s} is not supported".format(ltype))
+            raise ValueError(f"ltype {ltype:s} is not supported")
         return lat
 
     def generate_para(self):
@@ -549,16 +547,18 @@ class Lattice:
             return generate_cellpara_1D(self.ltype, self.volume, **self.kwargs)
         elif self.dim == 0:
             return generate_cellpara_0D(self.ltype, self.volume, **self.kwargs)
+        return None
 
     def generate_matrix(self):
         """
         Generates a 3x3 matrix for a lattice based on the lattice type and volume
         """
         # Try multiple times in case of failure
-        for i in range(10):
+        for _i in range(10):
             para = self.generate_para()
             if para is not None:
                 return para2matrix(para)
+        return None
 
     def get_matrix(self, shape="upper"):
         """
@@ -611,7 +611,7 @@ class Lattice:
     def reset_matrix(self, shape="upper"):
         if self.random:
             success = False
-            for i in range(5):
+            for _i in range(5):
                 m = self.generate_matrix()
                 if m is not None:
                     self.matrix = m
@@ -729,7 +729,7 @@ class Lattice:
         else:
             return self
 
-    def add_vacuum(self, coor, frac=True, vacuum=15, PBC=[0, 0, 0]):
+    def add_vacuum(self, coor, frac=True, vacuum=15, PBC=None):
         """
         Adds space above and below a 2D or 1D crystal.
 
@@ -743,21 +743,17 @@ class Lattice:
         Returns:
             The transformed lattice and coordinates after the vacuum is added
         """
+        if PBC is None:
+            PBC = [0, 0, 0]
         matrix = self.matrix
-        if frac:
-            absolute_coords = np.dot(coor, matrix)
-        else:
-            absolute_coords = coor
+        absolute_coords = np.dot(coor, matrix) if frac else coor
 
         for i, a in enumerate(PBC):
             if not a:
                 ratio = 1 + vacuum / np.linalg.norm(matrix[i])
                 matrix[i] *= ratio
                 absolute_coords[:, i] += vacuum / 2
-        if frac:
-            coor = np.dot(absolute_coords, np.linalg.inv(matrix))
-        else:
-            coor = absolute_coords
+        coor = np.dot(absolute_coords, np.linalg.inv(matrix)) if frac else absolute_coords
         return matrix, coor
 
     def generate_point(self):
@@ -796,7 +792,7 @@ class Lattice:
         gamma,
         ltype="triclinic",
         radians=False,
-        PBC=[1, 1, 1],
+        PBC=None,
         factor=1.0,
         force_symmetry=False,
         **kwargs,
@@ -846,6 +842,8 @@ class Lattice:
         Returns:
             a Lattice object with the specified parameters
         """
+        if PBC is None:
+            PBC = [1, 1, 1]
         try:
             cell_matrix = para2matrix((a, b, c, alpha, beta, gamma), radians=radians)
             cell_matrix *= factor
@@ -876,7 +874,7 @@ class Lattice:
         reset=True,
         shape="upper",
         ltype="triclinic",
-        PBC=[1, 1, 1],
+        PBC=None,
         **kwargs,
     ):
         """
@@ -908,6 +906,8 @@ class Lattice:
         Returns:
             a Lattice object with the specified parameters
         """
+        if PBC is None:
+            PBC = [1, 1, 1]
         m = np.array(matrix)
         if np.shape(m) != (3, 3):
             print(matrix)
@@ -956,21 +956,20 @@ class Lattice:
 
         try:
             paras = [self.a, self.b, self.c, self.alpha, self.beta, self.gamma]
-            matrix = para2matrix(paras)
+            para2matrix(paras)
             return True
         except:
             return False
 
     def is_valid_lattice(self, tol=1e-3):
-        if self.ltype in ["cubic", "Cubic"]:
-            if (
-                (self.a - self.b) > tol
-                or (self.a - self.c) > tol
-                or (self.alpha - np.pi / 2) > tol
-                or (self.beta - np.pi / 2) > tol
-                or (self.gamma - np.pi / 2) > tol
-            ):
-                return False
+        if self.ltype in ["cubic", "Cubic"] and (
+            (self.a - self.b) > tol
+            or (self.a - self.c) > tol
+            or (self.alpha - np.pi / 2) > tol
+            or (self.beta - np.pi / 2) > tol
+            or (self.gamma - np.pi / 2) > tol
+        ):
+            return False
         if self.ltype in ["hexagonal", "trigonal", "Hexagonal", "Trigonal"]:
             if (
                 (self.a - self.b) > tol
@@ -988,11 +987,7 @@ class Lattice:
             ):
                 return False
         elif self.ltype in ["orthorhombic", "Orthorhombic"]:
-            if (
-                (self.alpha - np.pi / 2) > tol
-                or (self.beta - np.pi / 2) > tol
-                or (self.gamma - np.pi / 2) > tol
-            ):
+            if (self.alpha - np.pi / 2) > tol or (self.beta - np.pi / 2) > tol or (self.gamma - np.pi / 2) > tol:
                 return False
         elif self.ltype in ["monoclinic", "Monoclinic"]:
             if (self.alpha - np.pi / 2) > tol or (self.gamma - np.pi / 2) > tol:
@@ -1021,13 +1016,8 @@ class Lattice:
         (a1, b1, c1, alpha1, beta1, gamma1) = l1.get_para(degree=True)
         (a2, b2, c2, alpha2, beta2, gamma2) = l2.get_para(degree=True)
         abc_diff = np.abs(np.array([a2 - a1, b2 - b1, c2 - c1])).max()
-        ang_diff = np.abs(
-            np.array([alpha2 - alpha1, beta2 - beta1, gamma2 - gamma1])
-        ).max()
-        if abc_diff > tol or ang_diff > a_tol:
-            return False
-        else:
-            return True
+        ang_diff = np.abs(np.array([alpha2 - alpha1, beta2 - beta1, gamma2 - gamma1])).max()
+        return not (abc_diff > tol or ang_diff > a_tol)
 
     def get_diff(self, l_ref):
         """
@@ -1036,9 +1026,7 @@ class Lattice:
         (a1, b1, c1, alpha1, beta1, gamma1) = self.get_para(degree=True)
         (a2, b2, c2, alpha2, beta2, gamma2) = l_ref.get_para(degree=True)
         abc_diff = np.abs(np.array([a2 - a1, b2 - b1, c2 - c1])).max()
-        abc_f_diff = np.abs(
-            np.array([(a2 - a1) / a1, (b2 - b1) / b1, (c2 - c1) / c1])
-        ).max()
+        abc_f_diff = np.abs(np.array([(a2 - a1) / a1, (b2 - b1) / b1, (c2 - c1) / c1])).max()
         ang_diff1 = abs(alpha1 - alpha2) + abs(beta1 - beta2) + abs(gamma1 - gamma2)
         ang_diff2 = abs(alpha1 - alpha2)
         ang_diff2 += abs(abs(beta1 - 90) - abs(beta2 - 90))
@@ -1053,16 +1041,7 @@ class Lattice:
                 return abc_diff, abc_f_diff, ang_diff2, False
 
     def __str__(self):
-        s = "{:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:8.4f}, {:s}".format(
-            self.a,
-            self.b,
-            self.c,
-            self.alpha * deg,
-            self.beta * deg,
-            self.gamma * deg,
-            str(self.ltype),
-        )
-        return s
+        return f"{self.a:8.4f}, {self.b:8.4f}, {self.c:8.4f}, {self.alpha * deg:8.4f}, {self.beta * deg:8.4f}, {self.gamma * deg:8.4f}, {self.ltype!s:s}"
 
     def __repr__(self):
         return str(self)
@@ -1130,7 +1109,6 @@ class Lattice:
                         if abs(angle1) < abs(min_angle_c):
                             min_angle_c = angle1
                             c_hkl = hkl
-                            c_vector = vector
 
         # print(a_hkl, b_hkl, c_hkl)
         return np.vstack([a_hkl, b_hkl, c_hkl])
@@ -1140,8 +1118,7 @@ class Lattice:
         Optimize the lattice's inclination angles
         """
         cell_new = np.dot(trans, self.matrix)
-        lat_new = Lattice.from_matrix(cell_new)
-        return lat_new
+        return Lattice.from_matrix(cell_new)
 
 
 def generate_cellpara(
@@ -1177,7 +1154,7 @@ def generate_cellpara(
         generation fails, outputs a warning message and returns empty
     """
     maxangle = np.pi - minangle
-    for n in range(maxattempts):
+    for _n in range(maxattempts):
         # Triclinic
         # if sg <= 2:
         if ltype == "triclinic":
@@ -1245,18 +1222,9 @@ def generate_cellpara(
         maxvec = (a * b * c) / (minvec**2)
 
         # Define limits on cell dimensions
-        if "min_l" not in kwargs:
-            min_l = minvec
-        else:
-            min_l = kwargs["min_l"]
-        if "mid_l" not in kwargs:
-            mid_l = min_l
-        else:
-            mid_l = kwargs["mid_l"]
-        if "max_l" not in kwargs:
-            max_l = mid_l
-        else:
-            max_l = kwargs["max_l"]
+        min_l = kwargs.get("min_l", minvec)
+        mid_l = kwargs.get("mid_l", min_l)
+        max_l = kwargs.get("max_l", mid_l)
         l_min = min(a, b, c)
         l_max = max(a, b, c)
         for x in (a, b, c):
@@ -1296,8 +1264,8 @@ def generate_cellpara(
                 return np.array([a, b, c, alpha, beta, gamma])
 
     # If maxattempts tries have been made without success
-    msg = "lattice fails after {:d} cycles".format(maxattempts)
-    msg += "for volume {:.2f}".format(volume)
+    msg = f"lattice fails after {maxattempts:d} cycles"
+    msg += f"for volume {volume:.2f}"
     raise VolumeError(msg)
     # return
 
@@ -1342,17 +1310,14 @@ def generate_cellpara_2D(
         a 6-length representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
-    if "unique_axis" not in kwargs:
-        unique_axis = "c"
-    else:
-        unique_axis = kwargs["unique_axis"]
+    unique_axis = kwargs.get("unique_axis", "c")
     # Store the non-periodic axis
     NPA = 3
     # Set the unique axis for monoclinic cells
     # if num in range(3, 8): unique_axis = "c"
     # elif num in range(8, 19): unique_axis = "a"
     maxangle = np.pi - minangle
-    for n in range(maxattempts):
+    for _n in range(maxattempts):
         abc = np.ones([3])
         if thickness is None:
             v = random_vector()
@@ -1373,9 +1338,7 @@ def generate_cellpara_2D(
                 - np.cos(gamma) ** 2
                 + 2 * (np.cos(alpha) * np.cos(beta) * np.cos(gamma))
             )
-            abc[NPA - 1] = (
-                abc[NPA - 1] / x
-            )  # scale thickness by outer product of vectors
+            abc[NPA - 1] = abc[NPA - 1] / x  # scale thickness by outer product of vectors
             ab = volume / (abc[NPA - 1] * x)
             ratio = a / b
             if NPA == 3:
@@ -1462,18 +1425,9 @@ def generate_cellpara_2D(
         maxvec = (a * b * c) / (minvec**2)
 
         # Define limits on cell dimensions
-        if "min_l" not in kwargs:
-            min_l = minvec
-        else:
-            min_l = kwargs["min_l"]
-        if "mid_l" not in kwargs:
-            mid_l = min_l
-        else:
-            mid_l = kwargs["mid_l"]
-        if "max_l" not in kwargs:
-            max_l = mid_l
-        else:
-            max_l = kwargs["max_l"]
+        min_l = kwargs.get("min_l", minvec)
+        mid_l = kwargs.get("mid_l", min_l)
+        max_l = kwargs.get("max_l", mid_l)
         l_min = min(a, b, c)
         l_max = max(a, b, c)
         for x in (a, b, c):
@@ -1512,9 +1466,7 @@ def generate_cellpara_2D(
                 return para
 
     # If maxattempts tries have been made without success
-    msg = "Cannot get lattice after {:d} cycles for volume {:.2f}".format(
-        maxattempts, volume
-    )
+    msg = f"Cannot get lattice after {maxattempts:d} cycles for volume {volume:.2f}"
     raise VolumeError(msg)
 
 
@@ -1568,7 +1520,7 @@ def generate_cellpara_1D(
     # if num in range(3, 8): unique_axis = "a"
     # elif num in range(8, 13): unique_axis = "c"
     maxangle = np.pi - minangle
-    for n in range(maxattempts):
+    for _n in range(maxattempts):
         abc = np.ones([3])
         if area is None:
             v = random_vector()
@@ -1607,7 +1559,7 @@ def generate_cellpara_1D(
         elif ltype == "monoclinic":
             a, b, c = random_vector()
             if unique_axis == "a":
-                alhpa = gaussian(minangle, maxangle)
+                gaussian(minangle, maxangle)
                 x = np.sin(alpha)
             elif unique_axis == "b":
                 beta = gaussian(minangle, maxangle)
@@ -1676,18 +1628,9 @@ def generate_cellpara_1D(
         maxvec = (a * b * c) / (minvec**2)
 
         # Define limits on cell dimensions
-        if "min_l" not in kwargs:
-            min_l = minvec
-        else:
-            min_l = kwargs["min_l"]
-        if "mid_l" not in kwargs:
-            mid_l = min_l
-        else:
-            mid_l = kwargs["mid_l"]
-        if "max_l" not in kwargs:
-            max_l = mid_l
-        else:
-            max_l = kwargs["max_l"]
+        min_l = kwargs.get("min_l", minvec)
+        mid_l = kwargs.get("mid_l", min_l)
+        max_l = kwargs.get("max_l", mid_l)
         l_min = min(a, b, c)
         l_max = max(a, b, c)
         for x in (a, b, c):
@@ -1726,15 +1669,11 @@ def generate_cellpara_1D(
                 return para
 
     # If maxattempts tries have been made without success
-    msg = "Could not get lattice after {:d} cycles for volume {:.2f}".format(
-        maxattempts, volume
-    )
+    msg = f"Could not get lattice after {maxattempts:d} cycles for volume {volume:.2f}"
     raise VolumeError(msg)
 
 
-def generate_cellpara_0D(
-    ltype, volume, area=None, minvec=1.2, max_ratio=10.0, maxattempts=100, **kwargs
-):
+def generate_cellpara_0D(ltype, volume, area=None, minvec=1.2, max_ratio=10.0, maxattempts=100, **kwargs):
     """
     Generates a cell parameter (a, b, c, alpha, beta, gamma) according to the
     point group symmetry and number of atoms. If the generated lattice does
@@ -1769,7 +1708,7 @@ def generate_cellpara_0D(
         # Use a matrix with only on-diagonal elements, with a = b
         alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
         x = (4.0 / 3.0) * np.pi
-        for numattempts in range(maxattempts):
+        for _numattempts in range(maxattempts):
             vec = random_vector()
             c = vec[2] / (vec[0] * vec[1]) * np.cbrt(volume / x)
             a = b = np.sqrt((volume / x) / c)
@@ -1777,9 +1716,7 @@ def generate_cellpara_0D(
                 return np.array([a, b, c, alpha, beta, gamma])
 
     # If maxattempts tries have been made without success
-    msg = "Cannot get lattice after {:d} cycles for volume {:.2f}".format(
-        maxattempts, volume
-    )
+    msg = f"Cannot get lattice after {maxattempts:d} cycles for volume {volume:.2f}"
     raise VolumeError(msg)
 
 
@@ -1920,9 +1857,7 @@ def gaussian(min, max, sigma=3.0):
             return x
 
 
-def random_vector(
-    minvec=[0.0, 0.0, 0.0], maxvec=[1.0, 1.0, 1.0], width=0.35, unit=False
-):
+def random_vector(minvec=None, maxvec=None, width=0.35, unit=False):
     """
     Generate a random vector for lattice constant generation. The ratios between
     x, y, and z of the returned vector correspond to the ratios between a, b,
@@ -1938,6 +1873,10 @@ def random_vector(
     Returns:
         a 1x3 numpy array of floats
     """
+    if maxvec is None:
+        maxvec = [1.0, 1.0, 1.0]
+    if minvec is None:
+        minvec = [0.0, 0.0, 0.0]
     vec = np.array(
         [
             np.exp(np.random.normal(scale=width)),
@@ -1975,7 +1914,6 @@ def random_shear_matrix(width=1.0, unitary=False):
         mat = np.array([[1, a, b], [a, 1, c], [b, c, 1]])
         determinant = np.linalg.det(mat)
     if unitary:
-        new = mat / np.cbrt(np.linalg.det(mat))
-        return new
+        return mat / np.cbrt(np.linalg.det(mat))
     else:
         return mat

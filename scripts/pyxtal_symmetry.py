@@ -1,9 +1,9 @@
 #!/usr/bin/env  python
-# encoding: utf-8
+
+from argparse import ArgumentParser
 
 from pyxtal import print_logo
 from pyxtal.symmetry import Group
-from argparse import ArgumentParser
 
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------

@@ -1,8 +1,9 @@
-from pyxtal import pyxtal
-import pymatgen.analysis.structure_matcher as sm
-from pyxtal.representation import representation
-from pyxtal.db import database
 from warnings import simplefilter
+
+import pymatgen.analysis.structure_matcher as sm
+
+from pyxtal import pyxtal
+from pyxtal.representation import representation
 
 simplefilter(action="ignore", category=DeprecationWarning)
 

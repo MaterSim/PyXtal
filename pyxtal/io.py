@@ -3,18 +3,18 @@ This module handles reading and write crystal files.
 """
 
 import numpy as np
-from pymatgen.core.structure import Structure, Molecule
-from pymatgen.core.bonds import CovalentBond
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pyxtal.wyckoff_site import atom_site, mol_site
-from pyxtal.molecule import pyxtal_molecule, Orientation, compare_mol_connectivity
-from pyxtal.symmetry import Wyckoff_position, Group
-from pyxtal.lattice import Lattice
-from pyxtal.util import get_symmetrized_pmg
-from pyxtal.constants import deg, logo
-from pyxtal.msg import ReadSeedError
-from pkg_resources import resource_filename
 from monty.serialization import loadfn
+from pkg_resources import resource_filename
+from pymatgen.core.bonds import CovalentBond
+from pymatgen.core.structure import Molecule, Structure
+
+from pyxtal.constants import logo
+from pyxtal.lattice import Lattice
+from pyxtal.molecule import Orientation, compare_mol_connectivity, pyxtal_molecule
+from pyxtal.msg import ReadSeedError
+from pyxtal.symmetry import Group
+from pyxtal.util import get_symmetrized_pmg
+from pyxtal.wyckoff_site import atom_site, mol_site
 
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
 
@@ -32,9 +32,7 @@ def in_merged_coords(wp, pt, pts, cell):
     return False
 
 
-def write_cif(
-    struc, filename=None, header="", permission="w", sym_num=None, style="mp"
-):
+def write_cif(struc, filename=None, header="", permission="w", sym_num=None, style="mp"):
     """
     Export the structure in cif format
     The default setting for _atom_site follows the materials project cif
@@ -61,10 +59,7 @@ def write_cif(
         l_type = struc.group.lattice_type
         number = struc.group.number
         G1 = struc.group[0]
-        if G1.is_standard_setting():
-            symbol = struc.group.symbol
-        else:
-            symbol = sites[0].wp.get_hm_symbol()
+        symbol = struc.group.symbol if G1.is_standard_setting() else sites[0].wp.get_hm_symbol()
 
     else:  # P1 symmetry
         l_type = "triclinic"
@@ -75,24 +70,21 @@ def write_cif(
     lines = logo
     lines += "data_" + header + "\n"
     if hasattr(struc, "energy"):
-        if struc.molecular:
-            eng = struc.energy / sum(struc.numMols)
-        else:
-            eng = struc.energy / sum(struc.numIons)
-        lines += "#Energy: {:} eV/cell\n".format(eng)
+        eng = struc.energy / sum(struc.numMols) if struc.molecular else struc.energy / sum(struc.numIons)
+        lines += f"#Energy: {eng} eV/cell\n"
 
-    lines += "\n_symmetry_space_group_name_H-M '{:s}'\n".format(symbol)
-    lines += "_symmetry_Int_Tables_number      {:>15d}\n".format(number)
-    lines += "_symmetry_cell_setting           {:>15s}\n".format(l_type)
+    lines += f"\n_symmetry_space_group_name_H-M '{symbol:s}'\n"
+    lines += f"_symmetry_Int_Tables_number      {number:>15d}\n"
+    lines += f"_symmetry_cell_setting           {l_type:>15s}\n"
 
     a, b, c, alpha, beta, gamma = struc.lattice.get_para(degree=True)
-    lines += "_cell_length_a        {:12.6f}\n".format(a)
-    lines += "_cell_length_b        {:12.6f}\n".format(b)
-    lines += "_cell_length_c        {:12.6f}\n".format(c)
-    lines += "_cell_angle_alpha     {:12.6f}\n".format(alpha)
-    lines += "_cell_angle_beta      {:12.6f}\n".format(beta)
-    lines += "_cell_angle_gamma     {:12.6f}\n".format(gamma)
-    lines += "_cell_volume          {:12.6f}\n".format(struc.lattice.volume)
+    lines += f"_cell_length_a        {a:12.6f}\n"
+    lines += f"_cell_length_b        {b:12.6f}\n"
+    lines += f"_cell_length_c        {c:12.6f}\n"
+    lines += f"_cell_angle_alpha     {alpha:12.6f}\n"
+    lines += f"_cell_angle_beta      {beta:12.6f}\n"
+    lines += f"_cell_angle_gamma     {gamma:12.6f}\n"
+    lines += f"_cell_volume          {struc.lattice.volume:12.6f}\n"
     # if struc.molecular:
     #    lines += '_cell_formula_units_Z     {:d}\n'.format(sum(struc.numMols))
     # else:
@@ -103,7 +95,7 @@ def write_cif(
     lines += " _symmetry_equiv_pos_as_xyz\n"
 
     for i, op in enumerate(G1):
-        lines += "{:d} '{:s}'\n".format(i + 1, op.as_xyz_str())
+        lines += f"{i + 1:d} '{op.as_xyz_str():s}'\n"
 
     lines += "\nloop_\n"
     lines += " _atom_site_label\n"
@@ -132,9 +124,7 @@ def write_cif(
                     for coord, specie in zip(coord0s, specie0s):
                         _, wp, _ = G1.merge(coord, struc.lattice.matrix, 0.05)
                         if len(wp) > mul:
-                            if not in_merged_coords(
-                                G1, [coord, specie], merges, struc.lattice.matrix
-                            ):
+                            if not in_merged_coords(G1, [coord, specie], merges, struc.lattice.matrix):
                                 # print("General Position", specie, coord)
                                 coords.append(coord)
                                 species.append(specie)
@@ -155,10 +145,7 @@ def write_cif(
                 for id in range(sym_num):
                     mol = site.get_mol_object(id)
                     tmp = mol.cart_coords.dot(site.lattice.inv_matrix)
-                    if coords is None:
-                        coords = tmp
-                    else:
-                        coords = np.append(coords, tmp, axis=0)
+                    coords = tmp if coords is None else np.append(coords, tmp, axis=0)
                     species.extend([s.value for s in mol.species])
                 muls = [mul] * len(coords)
                 # coords, species = site._get_coords_and_species(ids=sym_num)
@@ -166,9 +153,9 @@ def write_cif(
             coords, species, muls = [site.position], [site.specie], [mul]
 
         for specie, coord, mul in zip(species, coords, muls):
-            lines += "{:6s} {:6s} {:3d} ".format(specie, specie, mul)
+            lines += f"{specie:6s} {specie:6s} {mul:3d} "
             if style != "mp":
-                lines += "{:s} ".format(letter)
+                lines += f"{letter:s} "
             lines += "{:12.6f}{:12.6f}{:12.6f} 1\n".format(*coord)
     lines += "#END\n\n"
 
@@ -177,7 +164,7 @@ def write_cif(
     else:
         with open(filename, permission) as f:
             f.write(lines)
-        return
+        return None
 
 
 def read_cif(filename):
@@ -193,7 +180,7 @@ def read_cif(filename):
     """
     species = []
     coords = []
-    with open(filename, "r") as f:
+    with open(filename) as f:
         lines = f.readlines()
         for i, line in enumerate(lines):
             if line.startswith("_symmetry_Int_Tables_number"):
@@ -209,10 +196,7 @@ def read_cif(filename):
                 lat_type = line.split()[-1]
             elif line.startswith("_symmetry_space_group_name_H-M "):
                 symbol = line.split()[-1]
-                if eval(symbol) in ["Pn", "P21/n", "C2/n"]:
-                    diag = True
-                else:
-                    diag = False
+                diag = eval(symbol) in ["Pn", "P21/n", "C2/n"]
 
             elif line.find("_atom_site") >= 0:
                 s = i
@@ -278,17 +262,12 @@ class structure_from_ext:
         self.add_H = add_H
 
         sym_struc, number = get_symmetrized_pmg(pmg_struc, hn=hn)
-        if hn is None:
-            group = Group(number)
-        else:
-            group = Group(hn, use_hall=True)
+        group = Group(number) if hn is None else Group(hn, use_hall=True)
 
         self.group = group
         self.wyc = group[0]
 
-        molecules = search_molecules_in_crystal(
-            sym_struc, self.tol, ignore_HH=ignore_HH
-        )
+        molecules = search_molecules_in_crystal(sym_struc, self.tol, ignore_HH=ignore_HH)
 
         self.pmg_struc = sym_struc
         matrix = sym_struc.lattice.matrix
@@ -302,7 +281,6 @@ class structure_from_ext:
         from pyxtal.operations import apply_ops, find_ids
 
         # filter out the molecular generators
-        lat = self.pmg_struc.lattice.matrix
         inv_lat = self.pmg_struc.lattice.inv_matrix
         new_lat = self.lattice.matrix
         positions = np.zeros([len(molecules), 3])
@@ -337,7 +315,7 @@ class structure_from_ext:
         # print("===============================================================", self.wps)
 
         # add position and molecule, print("ids", ids, mults)
-        N_sites = len(ids)
+        len(ids)
         self.numMols = [0] * len(self.ref_mols)
         self.positions = []
         self.wps = []
@@ -463,9 +441,10 @@ class structure_from_ext:
         compute the orientation wrt the reference molecule
         """
         try:
-            from openbabel import pybel, openbabel
+            from openbabel import openbabel, pybel
         except:
-            import pybel, openbabel
+            import openbabel
+            import pybel
 
         m1 = pybel.readstring("xyz", self.ref_mol.to("xyz"))
         m2 = pybel.readstring("xyz", self.molecule.to("xyz"))
@@ -531,7 +510,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
                         else:
                             d = site0.distance(site1)
                         val1, val2 = site1.specie.value, site0.specie.value
-                        key = "{:s}-{:s}".format(val1, val2)
+                        key = f"{val1:s}-{val2:s}"
 
                         # sometime the H-H short distance is not avoidable
                         if key == "H-H":
@@ -554,7 +533,7 @@ def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True):
                         d = site0.distance(site1)
 
                     val1, val2 = site1.specie.value, site0.specie.value
-                    key = "{:s}-{:s}".format(val1, val2)
+                    key = f"{val1:s}-{val2:s}"
                     if d < bonds[key]:
                         if pbc:
                             site1.frac_coords += image
