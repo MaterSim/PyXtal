@@ -1,1 +1,3 @@
-__version__ = "0.6.8"
+import importlib.metadata
+
+__version__ = importlib.metadata.version("pyxtal")
