@@ -1,66 +1,91 @@
+"""
+This script:
+1. Generates random crystal structures
+2. Performs multiple steps of optimization with ASE-VASP
+
+Requirements:
+- ASE must be installed
+- VASP must be callable from ASE
+"""
+
+import warnings
+from time import time
+from typing import TYPE_CHECKING
+
+import numpy as np
+from ase.db import connect
+
 from pyxtal import pyxtal
 from pyxtal.interface.vasp import optimize
-from ase.db import connect
-from random import randint
-from time import time
-import warnings
+
+if TYPE_CHECKING:
+    from ase.atoms import Atoms
 
 warnings.filterwarnings("ignore")
 
-"""
-This is a script to 
-1, generate random structures
-2, perform multiple steps of optmization with ASE-VASP
+N_STRUCTURES: int = 10
+ELEMENTS: dict[str, list[int]] = {"C": [2, 4]}
+OPTIMIZATION_LEVELS: list[int] = [0, 2]  # Add 3 if needed
+CALCULATION_DIR: str = "Calc"
+DB_FILENAME: str = "C-VASP.db"
 
-Requirement:
-You must have ASE installed and can call vasp from ASE
-"""
-N = 10
-elements = {"C": [2, 4]}
-levels = [0, 2]  # , 3]
-dir1 = "Calc"
-filename = "C-VASP.db"
+rng = np.random.default_rng()
 
-for i in range(N):
-    t0 = time()
+
+def generate_random_crystal() -> pyxtal:
+    """Generate a random crystal structure."""
     while True:
-        sg = randint(2, 230)
+        sg = rng.integers(2, 230)
         species = []
-        numIons = []
-        for ele in elements.keys():
+        num_ions = []
+        for ele, count in ELEMENTS.items():
             species.append(ele)
-            if len(elements[ele]) == 2:
-                num = randint(elements[ele][0], elements[ele][1])
-                numIons.append(num)
+            if len(count) == 2:
+                num = rng.integers(count[0], count[1])
+                num_ions.append(num)
             else:
-                numIons.append(elements[ele])
+                num_ions.append(count[0])
 
         crystal = pyxtal()
-        crystal.from_random(3, sg, species, numIons, force_pass=True)
+        try:
+            crystal.from_random(3, sg, species, num_ions, force_pass=True)
+        except pyxtal.msg.Comp_CompatibilityError:
+            continue
 
         if crystal.valid:
-            break
+            return crystal
 
-    # try:
-    # relax the structures with levels 0, 2, 3
-    struc, energy, cputime, error = optimize(crystal, path=dir1, levels=levels)
 
-    if not error:  # successful calculation
-        s = struc.to_ase()
-        with connect(filename) as db:
+def optimize_and_save(crystal: pyxtal, index: int) -> None:
+    """Optimize the crystal structure and save results to database."""
+    struc, energy, cputime, error = optimize(crystal, path=CALCULATION_DIR, levels=OPTIMIZATION_LEVELS)
+
+    if not error:
+        ase_atoms: Atoms = struc.to_ase()
+        energy_per_atom = energy / len(ase_atoms)
+        cputime_minutes = cputime / 60.0
+
+        with connect(DB_FILENAME) as db:
             kvp = {
                 "spg": struc.group.symbol,
-                "dft_energy": energy / len(s),
+                "dft_energy": energy_per_atom,
             }
-            db.write(s, key_value_pairs=kvp)
-        cputime /= 60.0
-        strs = "{:3d}".format(i)
-        strs += " {:12s} -> {:12s}".format(crystal.group.symbol, struc.group.symbol)
-        strs += " {:6.3f} eV/atom".format(energy / len(s))
-        strs += " {:6.2f} min".format(cputime)
-        print(strs)
+            db.write(ase_atoms, key_value_pairs=kvp)
 
-        # from pyxtal.interface.vasp import single_point
-        # print(single_point(struc, path=dir1))
-    # except:
-    #    print("vasp calculation is wrong")
+        print(
+            f"{index:3d} {crystal.group.symbol:12s} -> {struc.group.symbol:12s}"
+            f" {energy_per_atom:6.3f} eV/atom {cputime_minutes:6.2f} min"
+        )
+
+
+def main() -> None:
+    """Main function to generate and optimize crystal structures."""
+    for i in range(N_STRUCTURES):
+        t0 = time()
+        crystal = generate_random_crystal()
+        optimize_and_save(crystal, i)
+        print(f"Total time for structure {i}: {time() - t0:.2f} s")
+
+
+if __name__ == "__main__":
+    main()

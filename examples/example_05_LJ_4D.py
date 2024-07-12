@@ -1,35 +1,38 @@
-from pyxtal import pyxtal
+import warnings
 from copy import deepcopy
 from optparse import OptionParser
-from random import randint, choice
-from scipy.optimize import minimize
-from scipy.spatial.distance import pdist, cdist
-from pyxtal.molecule import PointGroupAnalyzer
-from pymatgen import Molecule
-from pyxtal.database.collection import Collection
 from time import time
-import numpy as np
+
 import matplotlib.pyplot as plt
-import warnings
+import numpy as np
+from pymatgen.core import Molecule
+from scipy.optimize import minimize
+from scipy.spatial.distance import cdist, pdist
+
+from pyxtal import pyxtal
+from pyxtal.database.collection import Collection
+from pyxtal.molecule import PointGroupAnalyzer
 
 plt.style.use("bmh")
 warnings.filterwarnings("ignore")
 
 """
-This is a script to 
+This is a script to
 1, generate random clusters
 2, perform optimization
 """
 
 
 def LJ(pos, dim, mu=0.1):
-    """
-    Calculate the total energy
+    """Calculate the total energy.
+
     Args:
-    pos: 1D array with N*dim numbers representing the atomic positions
-    dim: dimension of the hyper/normal space
+        pos: 1D array with N*dim numbers representing the atomic positions
+        dim: dimension of the hyper/normal space
+        mu: the weight for the punishing function
+
     output
-    E: the total energy with punishing function
+        E: the total energy with punishing function
     """
     N_atom = int(len(pos) / dim)
     pos = np.reshape(pos, (N_atom, dim))
@@ -50,6 +53,7 @@ def LJ(pos, dim, mu=0.1):
 
 
 def LJ_force(pos, dim, mu=0.1):
+    """Calculate LJ forces."""
     N_atom = int(len(pos) / dim)
     pos = np.reshape(pos, [N_atom, dim])
     force = np.zeros([N_atom, dim])
@@ -71,16 +75,17 @@ def LJ_force(pos, dim, mu=0.1):
 
 
 def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
-    """
-    perform optimization for a given cluster
+    """Perform optimization for a given cluster.
+
     Args:
-    pos: N*dim0 array representing the atomic positions
-    dim: dimension of the hyper/normal space
-    kt: perturbation factors
+        pos: N*dim0 array representing the atomic positions
+        dim: dimension of the hyper/normal space
+        kt: perturbation factors
+        mu: the weight for the punishing function
 
     output:
-    energy: optmized energy
-    pos: optimized positions
+        energy: optmized energy
+        pos: optimized positions
     """
     N_atom = len(pos)
     diff = dim - np.shape(pos)[1]
@@ -99,50 +104,45 @@ def single_optimize(pos, dim=3, kt=0.5, mu=0.1):
 
 
 def parse_symmetry(pos):
+    """Parse the symmetry of a cluster."""
     mol = Molecule(["C"] * len(pos), pos)
     try:
         symbol = PointGroupAnalyzer(mol, tolerance=0.1).sch_symbol
-    except:
+    except Exception:
         symbol = "N/A"
     return symbol
 
 
 class LJ_prediction:
-    """
-    A class to perform global optimization on LJ clusters
-    Args:
-
-    Attributes:
-
-    """
+    """A class to perform global optimization on LJ clusters."""
 
     def __init__(self, numIons):
+        """Initialize the class with the number of ions."""
         self.numIons = numIons
         ref = Collection("clusters")[str(numIons)]
-        print(
-            "\nReference for LJ {0:3d} is {1:12.3f} eV, PG: {2:4s}".format(
-                numIons, ref["energy"], ref["pointgroup"]
-            )
-        )
+        print("\nReference for LJ {:3d} is {:12.3f} eV, PG: {:4s}".format(numIons, ref["energy"], ref["pointgroup"]))
         self.reference = ref
         self.time0 = time()
 
-    def generate_cluster(self, pgs=range(2, 33)):
+    def generate_cluster(self, pgs, cluster_factor=0.6, seed=None):
+        """Generate a random cluster."""
+        rng = np.random.default_rng(seed)
         run = True
         while run:
-            pg = choice(pgs)
+            pg = rng.integers(pgs)
             cluster = pyxtal()
-            cluster.from_random(0, pg, ["H"], [self.numIons], 0.6)
+            cluster.from_random(0, pg, ["H"], [self.numIons], factor=cluster_factor)
             if cluster.valid:
                 run = False
         return cluster._get_coords_and_species(absolute=True)[0]
 
-    def predict(self, dim=3, maxN=100, ncpu=2, pgs=range(2, 33)):
-        print("\nPerforming random search at {0:d}D space\n".format(dim))
+    def predict(self, dim=3, maxN=100, ncpu=2, pgs=(2, 33)):
+        """Perform global optimization."""
+        print(f"\nPerforming random search at {dim:d}D space\n")
         cycle = range(maxN)
         if ncpu > 1:
-            from multiprocessing import Pool
             from functools import partial
+            from multiprocessing import Pool
 
             with Pool(ncpu) as p:
                 func = partial(self.relaxation, dim, pgs)
@@ -158,14 +158,11 @@ class LJ_prediction:
         for dct in res:
             if dct["ground"]:
                 N_success += 1
-        print(
-            "\nHit the ground state {0:4d} times out of {1:4d} attempts\n".format(
-                N_success, maxN
-            )
-        )
+        print(f"\nHit the ground state {N_success:4d} times out of {maxN:4d} attempts\n")
         return res
 
     def relaxation(self, dim, pgs, ind):
+        """Perform relaxation for a given cluster."""
         pos = self.generate_cluster(pgs)
         pg1 = parse_symmetry(pos)
         if dim == 3:
@@ -184,10 +181,8 @@ class LJ_prediction:
                     # print('stop')
                 else:
                     pos = pos3
-        if abs(energy - self.reference["energy"]) < 1e-3:
-            ground = True
-        else:
-            ground = False
+
+        ground = abs(energy - self.reference["energy"]) < 0.001
 
         pg2 = parse_symmetry(pos)
         res = {
@@ -200,15 +195,13 @@ class LJ_prediction:
         }
         if ground:
             print(
-                "ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f} Time: {4:6.1f} ++++++".format(
-                    ind, pg1, pg2, energy, (time() - self.time0) / 60
-                )
+                f"ID: {ind:4d} PG initial: {pg1:4s} relaxed: {pg2:4s} "
+                f"Energy: {energy:12.3f} Time: {(time() - self.time0) / 60:6.1f} ++++++"
             )
         elif ind % 10 == 0:
             print(
-                "ID: {0:4d} PG initial: {1:4s} relaxed: {2:4s} Energy: {3:12.3f} Time: {4:6.1f} ".format(
-                    ind, pg1, pg2, energy, (time() - self.time0) / 60
-                )
+                f"ID: {ind:4d} PG initial: {pg1:4s} relaxed: {pg2:4s} "
+                f"Energy: {energy:12.3f} Time: {(time() - self.time0) / 60:6.1f} "
             )
         return res
 
@@ -261,9 +254,9 @@ if __name__ == "__main__":
     eng_min = lj_run.reference["energy"]
     t0 = time()
     results1 = lj_run.predict(dim=dim, maxN=maxN, ncpu=ncpu, pgs=[1])
-    print("time: {0:6.2f} seconds".format(time() - t0))
+    print(f"time: {time() - t0:6.2f} seconds")
     results2 = lj_run.predict(dim=dim, maxN=maxN, ncpu=ncpu, pgs=range(2, 33))
-    print("time: {0:6.2f} seconds".format(time() - t0))
+    print(f"time: {time() - t0:6.2f} seconds")
     eng1 = []
     eng2 = []
     ground1 = 0
@@ -279,9 +272,7 @@ if __name__ == "__main__":
     eng1 = np.array(eng1)
     eng2 = np.array(eng2)
     bins = np.linspace(eng_min - 0.1, eng_min + 20, 100)
-    plt.hist(
-        eng1, bins, alpha=0.5, label="no-sym: " + str(ground1) + "/" + str(len(eng1))
-    )
+    plt.hist(eng1, bins, alpha=0.5, label="no-sym: " + str(ground1) + "/" + str(len(eng1)))
     plt.hist(eng2, bins, alpha=0.5, label="sym: " + str(ground2) + "/" + str(len(eng2)))
     plt.xlabel("Energy (eV)")
     plt.ylabel("Counts")
