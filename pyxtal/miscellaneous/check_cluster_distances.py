@@ -12,10 +12,9 @@ def check_cluster_distances(cluster, tol):
         )
     for i, x in enumerate(dm):
         for j, y in enumerate(x):
-            if i != j:
-                if y < tol:
-                    print("Found small distance: " + str(y))
-                    return False
+            if i != j and y < tol:
+                print("Found small distance: " + str(y))
+                return False
     return True
 
 

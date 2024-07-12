@@ -10,18 +10,19 @@ constraints.
 # Imports
 # ------------------------------
 # Standard libraries
-import numpy as np
 from copy import deepcopy
-from scipy.spatial.distance import cdist
-from scipy.spatial.transform import Rotation
+
+import numpy as np
 
 # External Libraries
 from pymatgen.core.operations import SymmOp
+from scipy.spatial.distance import cdist
+from scipy.spatial.transform import Rotation
+
+from pyxtal.constants import all_sym_directions, deg, hex_cell, rad
 
 # PyXtal imports
-from pyxtal.msg import printx
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.constants import rad, deg, hex_cell, all_sym_directions
 
 
 # ------------------------------
@@ -32,7 +33,7 @@ def check_distance(
     species1,
     species2,
     lattice,
-    PBC=[1, 1, 1],
+    PBC=None,
     tm=Tol_matrix(prototype="atomic"),
     d_factor=1.0,
 ):
@@ -60,6 +61,8 @@ def check_distance(
         a bool for whether or not the atoms are sufficiently far enough apart
     """
     # Check that there are points to compare
+    if PBC is None:
+        PBC = [1, 1, 1]
     if len(coord1) < 1 or len(coord2) < 1:
         return True
 
@@ -72,13 +75,10 @@ def check_distance(
     # Calculate the distance between each i, j pair
     d = distance_matrix(coord1, coord2, lattice, PBC=PBC)
 
-    if (np.array(d) < np.array(tols)).any():
-        return False
-    else:
-        return True
+    return not (np.array(d) < np.array(tols)).any()
 
 
-def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]):
+def verify_distances(coordinates, species, lattice, factor=1.0, PBC=None):
     """
     Checks the inter-atomic distance between all pairs of atoms in a crystal.
 
@@ -95,6 +95,8 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=[1, 1, 1]):
     Returns:
         True if no atoms are too close together, False if any pair is too close
     """
+    if PBC is None:
+        PBC = [1, 1, 1]
     for i, c1 in enumerate(coordinates):
         specie1 = species[i]
         for j, c2 in enumerate(coordinates):
@@ -115,7 +117,7 @@ def check_images(
     coords,
     species,
     lattice,
-    PBC=[1, 1, 1],
+    PBC=None,
     tm=Tol_matrix(prototype="atomic"),
     tol=None,
     d_factor=1.0,
@@ -138,13 +140,14 @@ def check_images(
         False if distances are too close. True if distances are not too close
     """
     # If no PBC, there are no images to check
-    if PBC == [0, 0, 0]:
+    if PBC is None:
+        PBC = [1, 1, 1]
+    if [0, 0, 0] == PBC:
         return True
     # Create image coords from given coords and PBC
     coords = np.array(coords)
     m = create_matrix(PBC=PBC, omit=True)
     new_coords = []
-    new_species = []
     for v in m:
         for v2 in coords + v:
             new_coords.append(v2)
@@ -160,19 +163,13 @@ def check_images(
                     tols[i][j] = tm.get_tol(s1, s2)
                     tols[j][i] = tm.get_tol(s1, s2)
         tols2 = np.tile(tols, int(len(new_coords) / len(coords)))
-        if (dm < tols2).any():
-            return False
-        else:
-            return True
+        return not (dm < tols2).any()
     elif tol is not None:
-        if (dm < tol).any():
-            return False
-        else:
-            return True
+        return not (dm < tol).any()
     return True
 
 
-def distance(xyz, lattice, PBC=[1, 1, 1]):
+def distance(xyz, lattice, PBC=None):
     """
     Returns the Euclidean distance from the origin for a fractional
     displacement vector. Takes into account the lattice metric and periodic
@@ -189,6 +186,8 @@ def distance(xyz, lattice, PBC=[1, 1, 1]):
     Returns:
         a scalar for the distance of the point from the origin
     """
+    if PBC is None:
+        PBC = [1, 1, 1]
     xyz = filtered_coords(xyz, PBC=PBC)
     matrix = create_matrix(PBC=PBC)
     matrix += xyz
@@ -197,7 +196,7 @@ def distance(xyz, lattice, PBC=[1, 1, 1]):
 
 
 def distance_matrix(
-    pts1, pts2, lattice, PBC=[1, 1, 1], single=False, metric="euclidean"
+    pts1, pts2, lattice, PBC=None, single=False, metric="euclidean"
 ):
     """
     Returns the distances between two sets of fractional coordinates.
@@ -217,7 +216,9 @@ def distance_matrix(
     Returns:
         a scalor or distance matrix
     """
-    if PBC != [0, 0, 0]:
+    if PBC is None:
+        PBC = [1, 1, 1]
+    if [0, 0, 0] != PBC:
         l1 = filtered_coords(pts1, PBC=PBC)
         l2 = filtered_coords(pts2, PBC=PBC)
         l1 = np.dot(l1, lattice)
@@ -266,7 +267,7 @@ def distance_matrix_no_PBC(pts1, pts2, lattice, single=False, metric="euclidean"
         return d
 
 
-def create_matrix(PBC=[1, 1, 1], omit=False):
+def create_matrix(PBC=None, omit=False):
     """
     Used for calculating distances in lattices with periodic boundary
     conditions. When multiplied with a set of points, generates additional
@@ -278,6 +279,8 @@ def create_matrix(PBC=[1, 1, 1], omit=False):
     Returns:
         A numpy array which can be multiplied by a set of coordinates
     """
+    if PBC is None:
+        PBC = [1, 1, 1]
     matrix = []
     i_list = [-1, 0, 1] if PBC[0] else [0]
     j_list = [-1, 0, 1] if PBC[1] else [0]
@@ -293,7 +296,7 @@ def create_matrix(PBC=[1, 1, 1], omit=False):
     return np.array(matrix, dtype=float)
 
 
-def filtered_coords(coords, PBC=[1, 1, 1]):
+def filtered_coords(coords, PBC=None):
     """
     Transform all coordinates to [0, 1] interval if PBC is allowed
     For example, [1.2, 1.6, -.4] becomes
@@ -308,6 +311,8 @@ def filtered_coords(coords, PBC=[1, 1, 1]):
         an array of filtered coords with the same shape as coords
     """
 
+    if PBC is None:
+        PBC = [1, 1, 1]
     if isinstance(coords, list):
         coords = np.array(coords)
     for i in range(3):
@@ -319,7 +324,7 @@ def filtered_coords(coords, PBC=[1, 1, 1]):
     return coords
 
 
-def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
+def filtered_coords_euclidean(coords, PBC=None):
     """
     Given an array of fractional 3-vectors, filters coordinates to between 0 and
     1. Then, values which are greater than 0.5 are converted to 1 minus their
@@ -334,6 +339,8 @@ def filtered_coords_euclidean(coords, PBC=[1, 1, 1]):
         an array of filtered coords with the same shape as coords
     """
 
+    if PBC is None:
+        PBC = [1, 1, 1]
     def filter_vector_euclidean(vector):
         for i, a in enumerate(PBC):
             if a:
@@ -501,12 +508,7 @@ def is_orthogonal(m, tol=0.001):
     """
     m1 = np.dot(m, np.transpose(m))
     m2 = np.dot(np.transpose(m), m)
-    if not np.allclose(m1, np.identity(3), rtol=tol) or not np.allclose(
-        m2, np.identity(3), rtol=tol
-    ):
-        return False
-    else:
-        return True
+    return not (not np.allclose(m1, np.identity(3), rtol=tol) or not np.allclose(m2, np.identity(3), rtol=tol))
 
 
 def aa2matrix(axis, angle, radians=True, random=False):
@@ -591,7 +593,7 @@ def rotate_vector(v1, v2, rtol=1e-4):
     return Rotation.from_rotvec(theta * v3).as_matrix()
 
 
-def are_equal(op1, op2, PBC=[1, 1, 1], rtol=1e-3, atol=1e-3):
+def are_equal(op1, op2, PBC=None, rtol=1e-3, atol=1e-3):
     """
     Check whether two SymmOp objects are equal up to some numerical tolerance.
     Allows for optional consideration of periodic boundary conditions. This
@@ -609,6 +611,8 @@ def are_equal(op1, op2, PBC=[1, 1, 1], rtol=1e-3, atol=1e-3):
     """
     # Check two SymmOps for equivalence
     # pbc=True means integer translations will be ignored
+    if PBC is None:
+        PBC = [1, 1, 1]
     m1 = op1.rotation_matrix
     m2 = op2.rotation_matrix
     # Check that rotations are equivalent
@@ -625,10 +629,7 @@ def are_equal(op1, op2, PBC=[1, 1, 1], rtol=1e-3, atol=1e-3):
 
     d = np.linalg.norm(difference)
 
-    if abs(d) < rtol:
-        return True
-    else:
-        return False
+    return abs(d) < rtol
 
 
 class OperationAnalyzer(SymmOp):
@@ -673,6 +674,7 @@ class OperationAnalyzer(SymmOp):
                 return int(n)
         if not found:
             return "irrational"
+        return None
 
     def __init__(self, op, parse_trans=False, hexagonal=False):
         if type(op) == deepcopy(SymmOp):
@@ -733,8 +735,8 @@ class OperationAnalyzer(SymmOp):
                     # order: the number of times to get to origin
                     # rotation_order: 2, 3, 4, 6
                     self.type = "identity"
-                    self.order = int(1)
-                    self.rotation_order = int(1)
+                    self.order = 1
+                    self.rotation_order = 1
                     self.symbol = "1"
                 else:
                     self.type = "rotation"
@@ -759,8 +761,8 @@ class OperationAnalyzer(SymmOp):
                 if np.isclose(self.angle, 0):
                     self.symbol = "-1"
                     self.type = "inversion"
-                    self.order = int(2)
-                    self.rotation_order = int(1)
+                    self.order = 2
+                    self.rotation_order = 1
                 else:
                     # parse symmetry direction
                     # if self.parse_trans and not self.parse_axis():
@@ -857,6 +859,7 @@ class OperationAnalyzer(SymmOp):
                     return "6_5"
 
         print("Cannot assign symbol", self.angle, trans)
+        return None
 
     def parse_glide_symmetry(self, tol=1e-2):
         """
@@ -926,11 +929,10 @@ class OperationAnalyzer(SymmOp):
         only prints the real part of the axis.
         """
         # Avoid printing '-0.' instead of '0.'
-        if self.axis is not None:
-            if len(self.axis) == 3:
-                for i, x in enumerate(self.axis):
-                    if np.isclose(x, 0):
-                        self.axis[i] = 0.0
+        if self.axis is not None and len(self.axis) == 3:
+            for i, x in enumerate(self.axis):
+                if np.isclose(x, 0):
+                    self.axis[i] = 0.0
         return (
             "~~ Operation: "
             + self.op.as_xyz_str()
@@ -965,8 +967,10 @@ class OperationAnalyzer(SymmOp):
                     ratio = self.angle / opa2.angle
                     if np.isclose(np.fabs(ratio), 1.0, atol=1e-2):
                         return True
+                    return None
                 elif self.type == "identity" or self.type == "inversion":
                     return True
+                return None
             else:
                 return False
         else:
@@ -975,8 +979,10 @@ class OperationAnalyzer(SymmOp):
                     ratio = self.angle / op2.angle
                     if np.isclose(ratio, 1.0, atol=1e-2):
                         return True
+                    return None
                 elif self.type == "identity" or self.type == "inversion":
                     return True
+                return None
             else:
                 return False
 

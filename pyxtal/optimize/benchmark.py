@@ -1,15 +1,15 @@
 import os
 from time import time
+
 import pymatgen.analysis.structure_matcher as sm
 
 from pyxtal import pyxtal
-from pyxtal.util import ase2pymatgen
-from pyxtal.representation import representation
-from pyxtal.msg import ReadSeedError
-
-from pyxtal.interface.dftb import DFTB_relax, DFTB
-from pyxtal.interface.gulp import GULP_OC as GULP_relax
 from pyxtal.interface.charmm import CHARMM
+from pyxtal.interface.dftb import DFTB, DFTB_relax
+from pyxtal.interface.gulp import GULP_OC as GULP_relax
+from pyxtal.msg import ReadSeedError
+from pyxtal.representation import representation
+from pyxtal.util import ase2pymatgen
 
 
 class benchmark:
@@ -98,10 +98,7 @@ class benchmark:
         os.chdir(self.work_dir)
         if calculator.find("dftb") > -1:
             tmp = calculator.split("_")
-            if len(tmp) > 1:
-                disp = tmp[-1]
-            else:
-                disp = "D3"
+            disp = tmp[-1] if len(tmp) > 1 else "D3"
             self.dftb(disp, show)
         elif calculator == "vasp":
             self.vasp(show)
@@ -151,7 +148,6 @@ class benchmark:
         """
         VASP calculation
         """
-        from pyxtal.interface.vasp import VASP_relax
 
         t0 = time()
         ase, energy = vasp_relax(self.ase["reference"].copy())
@@ -173,7 +169,6 @@ class benchmark:
         """
         Torch ANI calculation
         """
-        from pyxtal.interface.ani import ANI_relax
 
         t0 = time()
         # self.ase.write('ani.cif', format='cif')
@@ -200,10 +195,12 @@ class benchmark:
         except ReadSeedError:
             print("Molecular form is broken after relaxation")
 
-    def charmm(self, show=True, steps=[2000, 3000]):
+    def charmm(self, show=True, steps=None):
         """
         CHARMM-GAFF
         """
+        if steps is None:
+            steps = [2000, 3000]
         struc = self.xtal["reference"].copy()
 
         t0 = time()
@@ -221,10 +218,14 @@ class benchmark:
         if show:
             self.summary("charmm")
 
-    def gulp(self, show=True, step=[400, 400, 1000], stepmx=[0.001, 0.005, 0.02]):
+    def gulp(self, show=True, step=None, stepmx=None):
         """
         GULP-GAFF
         """
+        if stepmx is None:
+            stepmx = [0.001, 0.005, 0.02]
+        if step is None:
+            step = [400, 400, 1000]
         struc = self.xtal["reference"].copy()
         g_info = self.gulp_info
         t0 = time()
@@ -270,10 +271,7 @@ class benchmark:
         raise NotImplementedError
 
     def summary(self, calc=None):
-        if calc is None:
-            calcs = self.time.keys()
-        else:
-            calcs = [calc]
+        calcs = self.time.keys() if calc is None else [calc]
 
         pmg0 = self.pmg["reference"]
         v0 = pmg0.volume
@@ -282,11 +280,11 @@ class benchmark:
             time = self.time[calc] / 60
             rep = representation(self.rep[calc], self.smiles)
             dv = (self.pmg[calc].volume - v0) / v0
-            strs = "{:s} ".format(rep.to_string(eng=self.energy[calc] / self.Z))
-            strs += "{:8s} {:6.2f} {:6.3f}".format(calc, time, dv)
+            strs = f"{rep.to_string(eng=self.energy[calc] / self.Z):s} "
+            strs += f"{calc:8s} {time:6.2f} {dv:6.3f}"
             rmsd = matcher.get_rms_dist(pmg0, self.pmg[calc])
             if rmsd is not None:
-                strs += "{:6.3f}{:6.3f}".format(rmsd[0], rmsd[1])
+                strs += f"{rmsd[0]:6.3f}{rmsd[1]:6.3f}"
                 self.diff[calc] = [dv, rmsd[0], rmsd[1]]
             else:
                 self.diff[calc] = [dv, None, None]
@@ -294,8 +292,9 @@ class benchmark:
 
 
 if __name__ == "__main__":
-    from pyxtal.db import database
     import warnings
+
+    from pyxtal.db import database
 
     warnings.filterwarnings("ignore")
 

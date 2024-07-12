@@ -1,7 +1,7 @@
-from pyxtal.crystal import random_crystal
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
+from pyxtal.crystal import random_crystal
 
 # G, fac = 197, 2
 # sites = ['6b', '8c']

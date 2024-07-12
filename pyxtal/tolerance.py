@@ -1,5 +1,6 @@
-from pyxtal.database.element import Element
 import numpy as np
+
+from pyxtal.database.element import Element
 
 
 class Tol_matrix:
@@ -46,7 +47,7 @@ class Tol_matrix:
         m = [[0.0] * (len(H.elements_list) + 1)]
         for i, tup1 in enumerate(H.elements_list):
             m.append([0.0])
-            for j, tup2 in enumerate(H.elements_list):
+            for _j, tup2 in enumerate(H.elements_list):
                 # Get the appropriate atomic radii
                 if tup1[attrindex] is None:
                     if tup1[5] is None:
@@ -154,15 +155,14 @@ class Tol_matrix:
         Returns:
             a Tol_matrix object
         """
-        m = np.array(matrix)
+        np.array(matrix)
         tups = []
         for i, row in enumerate(matrix):
-            for j, value in enumerate(row):
+            for j, _value in enumerate(row):
                 if j > i:
                     continue
                 tups.append((i + 1 - begin_with, j + 1 - begin_with, matrix[i][j]))
-        tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
-        return tm
+        return Tol_matrix(prototype=prototype, factor=factor, *tups)
 
     @classmethod
     def from_radii(self, radius_list, prototype="atomic", factor=1.0, begin_with=0):
@@ -190,8 +190,7 @@ class Tol_matrix:
                 if j > i:
                     continue
                 tups.append((i + 1 - begin_with, j + 1 - begin_with, f * (r1 + r2)))
-        tm = Tol_matrix(prototype=prototype, factor=factor, *tups)
-        return tm
+        return Tol_matrix(prototype=prototype, factor=factor, *tups)
 
     @classmethod
     def from_single_value(self, value):
@@ -213,7 +212,7 @@ class Tol_matrix:
         return tm
 
     def __getitem__(self, index):
-        new_index = Element.number_from_specie(index)
+        Element.number_from_specie(index)
         return self.matrix[index]
 
     def __str__(self):
@@ -231,9 +230,7 @@ class Tol_matrix:
                 for tup in self.custom_values:
                     name1 = str(Element(tup[0]).short_name)
                     name2 = str(Element(tup[1]).short_name)
-                    s += "\n{:s}-{:s}: {:6.3f}".format(
-                        name1, name2, self.get_tol(tup[0], tup[1])
-                    )
+                    s += f"\n{name1:s}-{name2:s}: {self.get_tol(tup[0], tup[1]):6.3f}"
         return s
 
     def to_file(self, filename=None):
@@ -246,11 +243,7 @@ class Tol_matrix:
         Returns:
             Nothing. Creates a file at the specified path
         """
-        if filename == None:
-            given = False
-        else:
-            given = True
-        if filename == None:
+        if filename is None:
             filename = "custom_tol_matrix"
         # Check if filename already exists
         # If it does, add a new number to end of filename

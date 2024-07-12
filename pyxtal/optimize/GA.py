@@ -2,18 +2,18 @@
 Global Optimizer
 """
 
-from typing import List, Dict, Optional, Union
+from concurrent.futures import ProcessPoolExecutor
+from random import sample
+from time import time
+from typing import Optional, Union
 
 import numpy as np
-from time import time
-from random import sample
-from concurrent.futures import ProcessPoolExecutor
 
-from pyxtal.optimize.base import GlobalOptimize
-from pyxtal.representation import representation
-from pyxtal.molecule import pyxtal_molecule
 from pyxtal.lattice import Lattice
-from pyxtal.optimize.common import optimizer_single, optimizer_par
+from pyxtal.molecule import pyxtal_molecule
+from pyxtal.optimize.base import GlobalOptimize
+from pyxtal.optimize.common import optimizer_par, optimizer_single
+from pyxtal.representation import representation
 
 
 class GA(GlobalOptimize):
@@ -54,24 +54,24 @@ class GA(GlobalOptimize):
         workdir: str,
         sg: Union[int, list],
         tag: str,
-        info: Optional[Dict[any, any]] = None,
+        info: Optional[dict[any, any]] = None,
         ff_opt: bool = False,
         ff_style: str = "openff",
         ff_parameters: str = "parameters.xml",
         reference_file: str = "references.xml",
-        ref_criteria: Optional[Dict[any, any]] = None,
+        ref_criteria: Optional[dict[any, any]] = None,
         N_gen: int = 10,
         N_pop: int = 10,
-        fracs: list = [0.6, 0.4, 0.0],
+        fracs: Optional[list] = None,
         N_cpu: int = 1,
         cif: Optional[str] = None,
-        block: Optional[List[any]] = None,
-        num_block: Optional[List[any]] = None,
-        composition: Optional[List[any]] = None,
+        block: Optional[list[any]] = None,
+        num_block: Optional[list[any]] = None,
+        composition: Optional[list[any]] = None,
         lattice: Optional[Lattice] = None,
-        torsions: Optional[List[any]] = None,
-        molecules: Optional[List[pyxtal_molecule]] = None,
-        sites: Optional[List[any]] = None,
+        torsions: Optional[list[any]] = None,
+        molecules: Optional[list[pyxtal_molecule]] = None,
+        sites: Optional[list[any]] = None,
         use_hall: bool = False,
         skip_ani: bool = True,
         factor: float = 1.1,
@@ -80,6 +80,8 @@ class GA(GlobalOptimize):
         verbose: bool = False,
     ):
         # GA parameters:
+        if fracs is None:
+            fracs = [0.6, 0.4, 0.0]
         self.N_gen = N_gen
         self.N_pop = N_pop
         self.fracs = np.array(fracs)
@@ -119,8 +121,8 @@ class GA(GlobalOptimize):
     def full_str(self):
         s = str(self)
         s += "\nMethod    : Genetic Algorithm"
-        s += "\nGeneration: {:4d}".format(self.N_gen)
-        s += "\nPopulation: {:4d}".format(self.N_pop)
+        s += f"\nGeneration: {self.N_gen:4d}"
+        s += f"\nPopulation: {self.N_pop:4d}"
         s += "\nFraction  : {:4.2f} {:4.2f} {:4.2f}".format(*self.fracs)
         # The rest base information from now on
         return s
@@ -148,16 +150,13 @@ class GA(GlobalOptimize):
         N_added = 0
 
         for gen in range(self.N_gen):
-            print("\nGeneration {:d} starts".format(gen))
+            print(f"\nGeneration {gen:d} starts")
             self.generation = gen + 1
             t0 = time()
 
             # lists for structure information
             current_reps = [None] * self.N_pop
-            if ref_pxrd is None:
-                current_matches = [False] * self.N_pop
-            else:
-                current_matches = [0.0] * self.N_pop
+            current_matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
             current_engs = [self.E_max] * self.N_pop
             current_xtals = [None] * self.N_pop
             current_tags = ["Random"] * self.N_pop
@@ -167,7 +166,7 @@ class GA(GlobalOptimize):
                 N_pops = [int(self.N_pop * i) for i in self.fracs]
                 count = N_pops[0]
 
-                for sub_pop in range(N_pops[1]):
+                for _sub_pop in range(N_pops[1]):
                     id = self._selTournament(engs)
                     xtal = prev_xtals[id]
                     current_tags[count] = "Mutation"
@@ -182,7 +181,7 @@ class GA(GlobalOptimize):
                     count += 1
 
                 # Not Working
-                for sub_pop in range(N_pops[2]):
+                for _sub_pop in range(N_pops[2]):
                     xtal1 = prev_xtals[self.selTournament(engs)]
                     xtal2 = prev_xtals[self.selTournament(engs)]
                     current_tags[count] = "Crossover"
@@ -216,8 +215,8 @@ class GA(GlobalOptimize):
                 for pop in range(len(current_xtals)):
                     xtal = current_xtals[pop]
                     job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
-                    mutated = False if xtal is None else True
-                    my_args = [xtal, pop, mutated, job_tag] + args
+                    mutated = xtal is not None
+                    my_args = [xtal, pop, mutated, job_tag, *args]
                     gen_results[pop] = optimizer_single(*tuple(my_args))
 
             else:
@@ -233,8 +232,8 @@ class GA(GlobalOptimize):
                         self.tag + "-g" + str(gen) + "-p" + str(id) for id in ids
                     ]
                     xtals = current_xtals[id1:id2]
-                    mutates = [False if xtal is None else True for xtal in xtals]
-                    my_args = [xtals, ids, mutates, job_tags] + args
+                    mutates = [xtal is not None for xtal in xtals]
+                    my_args = [xtals, ids, mutates, job_tags, *args]
                     args_lists.append(tuple(my_args))
 
                 with ProcessPoolExecutor(max_workers=self.ncpu) as executor:
@@ -258,19 +257,18 @@ class GA(GlobalOptimize):
                     current_matches[id] = match
 
                     # Don't write bad structure
-                    if self.cif is not None:
-                        if xtal.energy < 9999:
-                            if self.verbose:
-                                print("Add qualified structure", id, xtal.energy)
-                            with open(self.workdir + "/" + self.cif, "a+") as f:
-                                label = self.tag + "-g" + str(gen) + "-p" + str(id)
-                                f.writelines(xtal.to_file(header=label))
+                    if self.cif is not None and xtal.energy < 9999:
+                        if self.verbose:
+                            print("Add qualified structure", id, xtal.energy)
+                        with open(self.workdir + "/" + self.cif, "a+") as f:
+                            label = self.tag + "-g" + str(gen) + "-p" + str(id)
+                            f.writelines(xtal.to_file(header=label))
                         # else:
                         #    print("Neglect bad structure", id, xtal.energy)
                     self.engs.append(xtal.energy / sum(xtal.numMols))
                     # print(output)
 
-            print("Generation {:d} finishes".format(gen))  # ; import sys; sys.exit()
+            print(f"Generation {gen:d} finishes")  # ; import sys; sys.exit()
             t1 = time()
 
             # Apply Gaussian
@@ -295,21 +293,20 @@ class GA(GlobalOptimize):
                     self.best_reps.append(rep)
                     d_rep = representation(rep, self.smiles)
                     strs = d_rep.to_string(None, eng, tag)
-                    out = "{:3d} {:s} Top".format(gen, strs)
+                    out = f"{gen:3d} {strs:s} Top"
                     if ref_pxrd is not None:
-                        out += " {:6.3f}".format(current_matches[id])
+                        out += f" {current_matches[id]:6.3f}"
                     print(out)
                     count += 1
                 if count == 3:
                     break
 
             t2 = time()
-            gen_out = "Gen{:3d} time usage: ".format(gen)
-            gen_out += "{:5.1f}[Calc] {:5.1f}[Proc]".format(t1 - t0, t2 - t1)
+            gen_out = f"Gen{gen:3d} time usage: "
+            gen_out += f"{t1 - t0:5.1f}[Calc] {t2 - t1:5.1f}[Proc]"
             print(gen_out)
 
             # Save the reps for next move
-            prev_xtals = current_xtals  # ; print(self.engs)
 
             self.min_energy = np.min(np.array(self.engs))
             self.N_struc = len(self.engs)
@@ -354,9 +351,10 @@ class GA(GlobalOptimize):
 
 
 if __name__ == "__main__":
-    from pyxtal.db import database
-    import os
     import argparse
+    import os
+
+    from pyxtal.db import database
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -396,7 +394,7 @@ if __name__ == "__main__":
     smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(" ", "")
     chm_info = None
     if not ffopt:
-        if "charmm_info" in row.data.keys():
+        if "charmm_info" in row.data:
             # prepare charmm input
             chm_info = row.data["charmm_info"]
             prm = open(wdir + "/calc/pyxtal.prm", "w")
@@ -438,11 +436,11 @@ if __name__ == "__main__":
         mytag += "{:5.2f}{:5.2f}".format(match["l_rms"], match["a_rms"])
     else:
         eng = ga.min_energy
-        tmp = "0/{:}".format(ga.N_struc)
-        mytag = "False   {:10s}".format(tmp)
+        tmp = f"0/{ga.N_struc}"
+        mytag = f"False   {tmp:10s}"
 
     t1 = int((time() - t0) / 60)
-    strs = "Final {:8s} {:8s} {:3d}m".format(name, spg, t1)
-    strs += " {:3d}[{:2d}] {:6.1f}".format(ga.generation, ga.N_torsion, wt)
-    strs += "{:12.3f} {:30s} {:s}".format(eng, mytag, smile)
+    strs = f"Final {name:8s} {spg:8s} {t1:3d}m"
+    strs += f" {ga.generation:3d}[{ga.N_torsion:2d}] {wt:6.1f}"
+    strs += f"{eng:12.3f} {mytag:30s} {smile:s}"
     print(strs)

@@ -2,20 +2,21 @@
 some utilities
 """
 
-import numpy as np
-from spglib import get_symmetry_dataset
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
-from pymatgen.core.structure import Structure
-from ase import Atoms
-from pyxtal.symmetry import Hall
 import re
+
+import numpy as np
+from ase import Atoms
+from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as sga
+from spglib import get_symmetry_dataset
+
+from pyxtal.symmetry import Hall
 
 
 def find_dir(dirs):
     """
     a short function to find the correct dir from a list
     """
-    skf_dir = None
     for d in dirs:
         if os.path.isdir(d):
             return d
@@ -60,10 +61,7 @@ def symmetrize_cell(struc, mode="C"):
     """
     P_struc = ase2pymatgen(struc)
     finder = sga(P_struc, symprec=0.06)
-    if mode == "C":
-        P_struc = finder.get_conventional_standard_structure()
-    else:
-        P_struc = finder.get_primitive_standard_structure()
+    P_struc = finder.get_conventional_standard_structure() if mode == "C" else finder.get_primitive_standard_structure()
 
     return pymatgen2ase(P_struc)
 
@@ -77,15 +75,7 @@ def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
     """
 
     para = struc.lattice.get_para(degree=True)
-    if (
-        (max(para[:3]) < maxvec)
-        and (min(para[:3]) > minvec)
-        and (max(para[3:]) < maxang)
-        and (min(para[3:]) > minang)
-    ):
-        return True
-    else:
-        return False
+    return bool(max(para[:3]) < maxvec and min(para[:3]) > minvec and max(para[3:]) < maxang and min(para[3:]) > minang)
 
 
 def symmetrize(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
@@ -153,9 +143,11 @@ def extract_ase_db(db_file, id):
     from the ase db file by row id
     """
 
-    from ase.db import connect
-    from pyxtal import pyxtal
     import os
+
+    from ase.db import connect
+
+    from pyxtal import pyxtal
 
     if not os.path.exists("output"):
         os.makedirs("output")
@@ -184,7 +176,7 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
     engs = []
     csds = []
     sims = []
-    with open(filename, "r") as f:
+    with open(filename) as f:
         lines = f.readlines()
         start = None
         end = None
@@ -306,8 +298,9 @@ def search_csd_code_by_pubchem(cid):
         CIDs that have CCDC crystal structure data
     """
 
-    import urllib
     import json
+    import urllib
+
     from monty.json import MontyDecoder
 
     url0 = "https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/"
@@ -328,7 +321,7 @@ def search_csd_code_by_pubchem(cid):
         contents = response.read()
         if contents.decode().find("CCDC") > 0:
             data = json.loads(contents, cls=MontyDecoder)
-            if "Section" in data["Record"]["Section"][0].keys():
+            if "Section" in data["Record"]["Section"][0]:
                 if len(data["Record"]["Section"][0]["Section"]) == 3:
                     infos = data["Record"]["Section"][0]["Section"][2]["Section"][0][
                         "Information"
@@ -350,8 +343,8 @@ def search_csd_entries_by_code(code):
         list of csd ids
     """
 
-    from ccdc.search import TextNumericSearch
     from ccdc.crystal import PackingSimilarity as PS
+    from ccdc.search import TextNumericSearch
 
     def new_cryst(cryst, crysts, n_max):
         spg1 = cryst.spacegroup_number_and_setting[0]
@@ -389,11 +382,12 @@ def get_struc_from__parser(p):
     Return:
         a single pymatgen structure
     """
-    from pymatgen.util.coord import find_in_coord_list_pbc
     from collections import OrderedDict
+
+    import numpy as np
     from pymatgen.core.periodic_table import get_el_sp
     from pymatgen.io.cif import str2float
-    import numpy as np
+    from pymatgen.util.coord import find_in_coord_list_pbc
 
     def get_matching_coord(coord, ops, atol=1e-4):
         keys = list(coord_to_species.keys())
@@ -438,8 +432,8 @@ def get_struc_from__parser(p):
         d.data["_atom_site_fract_y"] = d0["_atom_site_fract_y"]
         d.data["_atom_site_fract_z"] = d0["_atom_site_fract_z"]
 
-        s = p._get_structure(d, primitive=False, symmetrized=False)
-        return s
+        return p._get_structure(d, primitive=False, symmetrized=False)
+    return None
 
 
 def Kgrid(struc, Kresol=0.10, dimension=3):
@@ -571,7 +565,7 @@ def generate_wp_lib(
             letters, _, wp_ids = g.list_wyckoff_combinations(
                 composition * i, numWp=(min_wp, max_wp), Nmax=100000
             )
-            for j, wp in enumerate(wp_ids):
+            for _j, wp in enumerate(wp_ids):
                 wp_dofs = 0
                 num = 0
                 for wp0 in wp:
@@ -729,8 +723,5 @@ if __name__ == "__main__":
 
     options = parser.parse_args()
     ids = options.id
-    if ids.find(",") > 0:
-        ids = [int(id) for id in ids.split(",")]
-    else:
-        ids = [int(ids)]
+    ids = [int(id) for id in ids.split(",")] if ids.find(",") > 0 else [int(ids)]
     extract_ase_db(options.file, ids)

@@ -1,9 +1,10 @@
-import numpy as np
-import sys
-from time import time
-from pymatgen.core.lattice import Lattice
-from pyxtal.operations import *
 import logging
+from time import time
+
+import numpy as np
+from pymatgen.core.lattice import Lattice
+
+from pyxtal.operations import *
 
 logging.basicConfig(filename="test.log", level=logging.DEBUG)
 eV2GPa = 160.217
@@ -20,7 +21,7 @@ def get_neighbors(struc, i, rcut):
     """
     lat = struc.lattice_matrix
     center = struc.cart_coords[i]
-    c1 = struc.frac_coords[i]
+    struc.frac_coords[i]
     fcoords = struc.frac_coords
     r, dists, inds, images = Lattice(lat).get_points_in_sphere(
         fcoords, center=center, r=rcut, zip_results=False
@@ -61,7 +62,7 @@ class LJ:
         sigma12 = sigma6 * sigma6
 
         # calculating the energy/force, needs to update sigma/epsilons
-        for i, pos0 in enumerate(pos):
+        for i, _pos0 in enumerate(pos):
             [r2, r] = get_neighbors(struc, i, self.rcut)
             r6 = np.power(r2, 3)
             r12 = np.power(r6, 2)
@@ -143,9 +144,7 @@ class FIRE:
         self.fmax = np.max(np.abs(np.vstack((self.stress, self.force)).flatten()))
         if self.nsteps % freq == 0:
             logging.debug(
-                "Step {0:4d} Enthalpy: {1:12.4f} Fmax: {2:12.4f} Vol: {3:6.2f}".format(
-                    self.nsteps, self.enthalpy, self.fmax, self.volume
-                )
+                f"Step {self.nsteps:4d} Enthalpy: {self.enthalpy:12.4f} Fmax: {self.fmax:12.4f} Vol: {self.volume:6.2f}"
             )
 
     def step(self):
@@ -217,9 +216,7 @@ class FIRE:
             self.nsteps += 1
 
         logging.info(
-            "Finish at Step {0:4d} Enthalpy: {1:12.4f} Fmax: {2:12.4f} Time: {3:6.2f} seconds".format(
-                self.nsteps, self.enthalpy, self.fmax, time() - self.time0
-            )
+            f"Finish at Step {self.nsteps:4d} Enthalpy: {self.enthalpy:12.4f} Fmax: {self.fmax:12.4f} Time: {time() - self.time0:6.2f} seconds"
         )
 
     def check_convergence(self):
@@ -231,9 +228,8 @@ class FIRE:
         Will implement both options later.
         """
         converged = False
-        if self.fmax < self.f_tol:
-            if self.nsteps > 0:
-                converged = True
+        if self.fmax < self.f_tol and self.nsteps > 0:
+            converged = True
         return converged
 
     def symmetrized_coords(self, coords):
@@ -269,10 +265,7 @@ class FIRE:
             wp_coords = np.dot(wp_coords, self.struc.lattice_matrix)
             # Re-apply the cartesian translations
             wp_coords = wp_coords + cart_translations
-            if len(new_coords) == 0:
-                new_coords = wp_coords
-            else:
-                new_coords = np.vstack([new_coords, wp_coords])
+            new_coords = wp_coords if len(new_coords) == 0 else np.vstack([new_coords, wp_coords])
             start_index += ws.multiplicity
         return new_coords
 
@@ -281,7 +274,7 @@ class FIRE:
         new_coords = []
         for ws in self.struc.wyckoff_sites:
             # Get coordinates associated with WP
-            original_coords = coords[start_index : start_index + ws.multiplicity]
+            coords[start_index : start_index + ws.multiplicity]
             # Re-generate the points from the first generating point
             gen_coord = coords[start_index]
             wp_coords0 = apply_ops(gen_coord, ws.wp.generators_m)
@@ -300,10 +293,7 @@ class FIRE:
             wp_coords = np.dot(average_point, matrices)
             # Convert back to Cartesian coordintes
             wp_coords = np.dot(wp_coords, self.struc.lattice_matrix)
-            if len(new_coords) == 0:
-                new_coords = wp_coords
-            else:
-                new_coords = np.vstack([new_coords, wp_coords])
+            new_coords = wp_coords if len(new_coords) == 0 else np.vstack([new_coords, wp_coords])
             start_index += ws.multiplicity
         # if np.sum(np.abs(coords-new_coords))>1e-1:
         #    print(coords)
@@ -339,10 +329,11 @@ class FIRE:
         return m2
 
 
-from pyxtal.crystal import random_crystal
 from spglib import get_symmetry_dataset
 
-for i in range(10):
+from pyxtal.crystal import random_crystal
+
+for _i in range(10):
     crystal = random_crystal(11, ["C"], [4], 1.0)
     if crystal.valid:
         crystal1 = deepcopy(crystal)
@@ -351,9 +342,7 @@ for i in range(10):
         eng, enth, force, stress = test.calc(crystal1)
         sg = get_symmetry_dataset(struc)["number"]
         print(
-            "\nBefore relaxation Space group:            {:4d}   Energy: {:12.4}  Enthalpy: {:12.4}".format(
-                sg, eng, enth
-            )
+            f"\nBefore relaxation Space group:            {sg:4d}   Energy: {eng:12.4}  Enthalpy: {enth:12.4}"
         )
 
         dyn1 = FIRE(
@@ -364,9 +353,7 @@ for i in range(10):
         struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6] * 4)
         sg = get_symmetry_dataset(struc, symprec=0.1)["number"]
         print(
-            "After relaxation without symm Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}".format(
-                sg, eng, enth
-            )
+            f"After relaxation without symm Space group: {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}"
         )
 
         dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2, symmetrize=True)
@@ -377,9 +364,7 @@ for i in range(10):
         if sg is None:
             sg = 0
         print(
-            "After relaxation with symm Space group:    {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}".format(
-                sg, eng, enth
-            )
+            f"After relaxation with symm Space group:    {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}"
         )
         # dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
         # struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)

@@ -9,9 +9,8 @@ of the general position.
 
 if __name__ == "__main__":
     # -------------------------------- Options -------------------------
-    from os import mkdir
-    from pyxtal.molecular_crystal import *
     from pyxtal.database.layergroup import Layergroup
+    from pyxtal.molecular_crystal import *
 
     parser = OptionParser()
     parser.add_option(
@@ -129,7 +128,7 @@ if __name__ == "__main__":
 
     for num in numrange:
         print("---------------Layergroup " + str(num) + "---------------")
-        for i in range(attempts):
+        for _i in range(attempts):
             start = time()
             sg = Layergroup(num).sgnumber
             multiplicity = len(

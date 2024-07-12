@@ -6,21 +6,20 @@ A base class for global optimization including
 - QRS
 """
 
-from typing import List, Dict, Optional, Union
-
 import os
-import numpy as np
-from time import time
 from random import sample
+from time import time
+from typing import Optional, Union
 
-from pyxtal.representation import representation
+import numpy as np
+import pymatgen.analysis.structure_matcher as sm
+from ost.parameters import ForceFieldParameters, compute_r2, get_lmp_efs
+
 from pyxtal.lattice import Lattice
 from pyxtal.molecule import find_rotor_from_smile, pyxtal_molecule
+from pyxtal.optimize.common import optimizer, randomizer
+from pyxtal.representation import representation
 from pyxtal.util import new_struc
-from pyxtal.optimize.common import randomizer, optimizer
-
-from ost.parameters import ForceFieldParameters, get_lmp_efs, compute_r2
-import pymatgen.analysis.structure_matcher as sm
 
 
 class GlobalOptimize:
@@ -55,23 +54,23 @@ class GlobalOptimize:
         self,
         smiles: str,
         workdir: str,
-        sg: Union[int, List[int]],
+        sg: Union[int, list[int]],
         tag: str,
-        info: Optional[Dict[any, any]] = None,
+        info: Optional[dict[any, any]] = None,
         ff_opt: bool = False,
         ff_style: str = "openff",
         ff_parameters: str = "parameters.xml",
         reference_file: str = "references.xml",
-        ref_criteria: Optional[Dict[any, any]] = None,
+        ref_criteria: Optional[dict[any, any]] = None,
         N_cpu: int = 1,
         cif: Optional[str] = None,
-        block: Optional[List[any]] = None,
-        num_block: Optional[List[any]] = None,
-        composition: Optional[List[any]] = None,
+        block: Optional[list[any]] = None,
+        num_block: Optional[list[any]] = None,
+        composition: Optional[list[any]] = None,
         lattice: Optional[Lattice] = None,
-        torsions: Optional[List[any]] = None,
-        molecules: Optional[List[pyxtal_molecule]] = None,
-        sites: Optional[List[any]] = None,
+        torsions: Optional[list[any]] = None,
+        molecules: Optional[list[pyxtal_molecule]] = None,
+        sites: Optional[list[any]] = None,
         use_hall: bool = False,
         skip_ani: bool = True,
         factor: float = 1.1,
@@ -98,7 +97,7 @@ class GlobalOptimize:
         self.factor = factor
         self.sites = sites
         self.lattice = lattice
-        self.opt_lat = True if lattice is None else False
+        self.opt_lat = lattice is None
         self.ref_criteria = ref_criteria
         self.eng_cutoff = eng_cutoff
 
@@ -130,11 +129,11 @@ class GlobalOptimize:
                     if not os.path.exists(para_file):
                         raise RuntimeError("File not found", para_file)
                 params0, dic = self.parameters.load_parameters(self.ff_parameters[0])
-                if "ff_style" in dic.keys():
+                if "ff_style" in dic:
                     assert dic["ff_style"] == self.ff_style
                 # print(params0)
                 params1, dic = self.parameters.load_parameters(self.ff_parameters[1])
-                if "ff_style" in dic.keys():
+                if "ff_style" in dic:
                     assert dic["ff_style"] == self.ff_style
                 # print(params1)
                 self.prepare_chm_info(params0, params1)
@@ -168,28 +167,28 @@ class GlobalOptimize:
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"
-        s += "\nsmile     : {:s}".format(self.smile)
-        s += "\nZprime    : {:s}".format(str(self.composition))
-        s += "\nN_torsion : {:d}".format(self.N_torsion)
-        s += "\nsg        : {:s}".format(str(self.sg))
-        s += "\nncpu      : {:d}".format(self.ncpu)
-        s += "\ndiretory  : {:s}".format(self.workdir)
-        s += "\nopt_lat   : {:s}\n".format(str(self.opt_lat))
+        s += f"\nsmile     : {self.smile:s}"
+        s += f"\nZprime    : {self.composition!s:s}"
+        s += f"\nN_torsion : {self.N_torsion:d}"
+        s += f"\nsg        : {self.sg!s:s}"
+        s += f"\nncpu      : {self.ncpu:d}"
+        s += f"\ndiretory  : {self.workdir:s}"
+        s += f"\nopt_lat   : {self.opt_lat!s:s}\n"
         if self.cif is not None:
-            s += "cif       : {:s}\n".format(self.cif)
+            s += f"cif       : {self.cif:s}\n"
         if self.ff_opt:
             s += "forcefield: On-the-fly\n"
         else:
             s += "forcefield: Predefined\n"
 
         if self.parameters is not None:
-            s += "ff_style  : {:s}\n".format(self.ff_style)
+            s += f"ff_style  : {self.ff_style:s}\n"
             if type(self.ff_parameters) == list:
                 for para in self.ff_parameters:
-                    s += "ff_params : {:s}\n".format(para)
+                    s += f"ff_params : {para:s}\n"
             else:
-                s += "ff_params : {:s}\n".format(self.ff_parameters)
-            s += "references: {:s}\n".format(self.reference_file)
+                s += f"ff_params : {self.ff_parameters:s}\n"
+            s += f"references: {self.reference_file:s}\n"
             s += str(self.parameters)
 
         return s
@@ -266,7 +265,6 @@ class GlobalOptimize:
 
             _ref_dics = []
             rmse_values = err_dict["rmse_values"]
-            ref_xtals = []
             lmp_in = self.parameters.ff.get_lammps_in()
             self.parameters.ase_templates = {}
             self.lmp_dat = {}
@@ -303,9 +301,9 @@ class GlobalOptimize:
                         e_check = e_err < 0.5 * rmse_values[0]
                         f_check = f_err < 1.0 * rmse_values[1]
                         s_check = s_err < 1.0 * rmse_values[2]
-                        strs = "Errors of csp structure in gen{:3d} ".format(gen)
-                        strs += "{:.4f} {:.4f} {:.4f} ".format(e_err, f_err, s_err)
-                        strs += "{:8.4f} {:8.4f}".format(e1, e2)
+                        strs = f"Errors of csp structure in gen{gen:3d} "
+                        strs += f"{e_err:.4f} {f_err:.4f} {s_err:.4f} "
+                        strs += f"{e1:8.4f} {e2:8.4f}"
                         print(strs, e_check, f_check, s_check)
 
                         # avoid very unphysical structures
@@ -355,8 +353,8 @@ class GlobalOptimize:
             mse_fors = np.sqrt(np.mean((ff_fors - rf_fors) ** 2))
             mse_strs = np.sqrt(np.mean((ff_strs - rf_strs) ** 2))
 
-            print("R2   {:8.4f} {:8.4f} {:8.4f}".format(r2_engs, r2_fors, r2_strs))
-            print("RMSE {:8.4f} {:8.4f} {:8.4f}".format(mse_engs, mse_fors, mse_strs))
+            print(f"R2   {r2_engs:8.4f} {r2_fors:8.4f} {r2_strs:8.4f}")
+            print(f"RMSE {mse_engs:8.4f} {mse_fors:8.4f} {mse_strs:8.4f}")
             # self.parameters.generate_report(_ref_dics, params_opt)
             # import sys; sys.exit()
         else:
@@ -383,9 +381,7 @@ class GlobalOptimize:
 
         ref_dics.extend(_ref_dics)
         print(
-            "Add {:d} references in {:.2f} min".format(
-                len(_ref_dics), (time() - t0) / 60
-            )
+            f"Add {len(_ref_dics):d} references in {(time() - t0) / 60:.2f} min"
         )
         self.parameters.export_references(ref_dics, self.reference_file)
 
@@ -425,7 +421,7 @@ class GlobalOptimize:
 
                 # To add Early termination
             t = (time() - t0) / 60
-            print("FF optimization {:.2f} min ".format(t), fun)
+            print(f"FF optimization {t:.2f} min ", fun)
             # Reset N_added to 0
             N_added = 0
 
@@ -437,12 +433,12 @@ class GlobalOptimize:
         else:
             gen_prefix = "gen_" + str(gen)
 
-        performance_fig = "FF_performance_{:s}.png".format(gen_prefix)
+        performance_fig = f"FF_performance_{gen_prefix:s}.png"
         errs = self.parameters.plot_ff_results(
             performance_fig, ref_dics, [params_opt], labels=gen_prefix
         )
 
-        param_fig = "parameters_{:s}.png".format(gen_prefix)
+        param_fig = f"parameters_{gen_prefix:s}.png"
         self.parameters.plot_ff_parameters(param_fig, [params_opt])
 
         # Save parameters
@@ -513,15 +509,16 @@ class GlobalOptimize:
                     else:
                         done = True
                 if done:
-                    match_dict = {
+                    return {
                         "energy": e,
                         "tag": tag,
                         "l_rms": d1,
                         "a_rms": d2,
                         "rank": rank,
                     }
+                return None
+            return None
 
-                    return match_dict
         else:
             return None
 
@@ -550,7 +547,7 @@ class GlobalOptimize:
         strs = rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
         rmsd = self.matcher.get_rms_dist(ref_pmg, pmg_s1)
         if rmsd is not None:
-            strs += "{:6.3f}{:6.3f} Match Ref".format(rmsd[0], rmsd[1])
+            strs += f"{rmsd[0]:6.3f}{rmsd[1]:6.3f} Match Ref"
             print(strs)
             return rmsd[0], rmsd[1]
         else:
@@ -652,12 +649,12 @@ class GlobalOptimize:
                         break
                 if new:
                     new_reps.append(rep)
-                    header = "{:d}: {:12.4f}".format(len(new_reps), eng1)
+                    header = f"{len(new_reps):d}: {eng1:12.4f}"
                     xtal.to_file(filename, header=header, permission="a+")
                     strs = rep0.to_string(eng=eng1)
                     rmsd = self.matcher.get_rms_dist(pmg0, pmg_s1)
                     if rmsd is not None:
-                        strs += "{:6.3f}{:6.3f} True".format(rmsd[0], rmsd[1])
+                        strs += f"{rmsd[0]:6.3f}{rmsd[1]:6.3f} True"
                         print(strs)
                         return True
                     else:

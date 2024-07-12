@@ -1,6 +1,7 @@
 from distutils.core import setup
-import setuptools  # noqa
 from os import path
+
+import setuptools  # noqa
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
@@ -8,7 +9,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 exec(open("pyxtal/version.py").read())
 
-with open("README.md", "r") as fh:
+with open("README.md") as fh:
     long_description = fh.read()
 
 setup(

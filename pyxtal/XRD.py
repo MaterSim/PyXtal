@@ -2,12 +2,14 @@
 Module for XRD simulation (experimental stage)
 """
 
-import os
 import collections
+import os
+
 import numpy as np
-from scipy.interpolate import interp1d
 from monty.serialization import loadfn
 from pkg_resources import resource_filename
+from scipy.interpolate import interp1d
+
 from pyxtal.database.element import Element
 
 ATOMIC_SCATTERING_PARAMS = loadfn(
@@ -33,7 +35,7 @@ class XRD:
         self,
         crystal,
         wavelength=1.54184,
-        thetas=[0, 180],
+        thetas=None,
         res=0.01,
         per_N=30000,
         ncpu=1,
@@ -41,6 +43,8 @@ class XRD:
         preferred_orientation=False,
         march_parameter=None,
     ):
+        if thetas is None:
+            thetas = [0, 180]
         self.res = np.radians(res)
         if filename is None:
             self.wavelength = wavelength
@@ -61,16 +65,14 @@ class XRD:
         """
         savetxt file
         """
-        header = "wavelength/thetas {:12.6f} {:6.2f} {:6.2f}".format(
-            self.wavelength, np.degrees(self.min2theta), np.degrees(self.max2theta)
-        )
+        header = f"wavelength/thetas {self.wavelength:12.6f} {np.degrees(self.min2theta):6.2f} {np.degrees(self.max2theta):6.2f}"
         np.savetxt(filename, self.pxrd, header=header)
 
     def load(self, filename):
         """
         Load the pxrd from txt file
         """
-        fp = open(filename, "r")
+        fp = open(filename)
         tmp = fp.readline()
         res = tmp.split()[2:]
         self.wavelength = float(res[0])
@@ -113,11 +115,9 @@ class XRD:
         if seqs is not None:
             s += "  2theta     d_hkl     hkl       Intensity  Multi\n"
             for i in seqs:
-                s += "{:8.3f}  {:8.3f}   ".format(self.theta2[i], self.d_hkls[i])
+                s += f"{self.theta2[i]:8.3f}  {self.d_hkls[i]:8.3f}   "
                 s += "[{:2d} {:2d} {:2d}]".format(*self.hkl_labels[i][0]["hkl"])
-                s += " {:8.2f} ".format(
-                    100 * self.xrd_intensity[i] / max(self.xrd_intensity)
-                )
+                s += f" {100 * self.xrd_intensity[i] / max(self.xrd_intensity):8.2f} "
                 s += "{:8d}\n".format(self.hkl_labels[i][0]["multiplicity"])
         else:
             s += "This hkl is not in the given 2theta range"
@@ -154,7 +154,7 @@ class XRD:
         k = np.arange(-k1, k1 + 1)
         l = np.arange(-l1, l1 + 1)
 
-        hkl = np.array((np.meshgrid(h, k, l))).transpose()
+        hkl = np.array(np.meshgrid(h, k, l)).transpose()
         hkl_list = np.reshape(hkl, [len(h) * len(k) * len(l), 3])
         hkl_list = hkl_list[np.where(hkl_list.any(axis=1))[0]]
         # id = int((len(hkl_list)-1)/2)
@@ -302,7 +302,7 @@ class XRD:
         )
 
         # Preferred orientation factor
-        if self.preferred_orientation != False:
+        if self.preferred_orientation is not False:
             G = self.march_parameter
             pos = ((G * np.cos(self.theta)) ** 2 + 1 / G * np.sin(self.theta) ** 2) ** (
                 -3 / 2
@@ -427,12 +427,12 @@ class XRD:
         def is_perm(hkl1, hkl2):
             h1 = np.abs(hkl1)
             h2 = np.abs(hkl2)
-            return all([i == j for i, j in zip(sorted(h1), sorted(h2))])
+            return all(i == j for i, j in zip(sorted(h1), sorted(h2)))
 
         unique = collections.defaultdict(list)
         for hkl1 in hkls:
             found = False
-            for hkl2 in unique.keys():
+            for hkl2 in unique:
                 if is_perm(hkl1, hkl2):
                     found = True
                     unique[hkl2].append(hkl1)
@@ -441,7 +441,7 @@ class XRD:
                 unique[hkl1].append(hkl1)
 
         pretty_unique = {}
-        for k, v in unique.items():
+        for v in unique.values():
             pretty_unique[sorted(v)[-1]] = len(v)
 
         return pretty_unique
@@ -491,11 +491,11 @@ class XRD:
             figsize ((20, 10)): figsize
             xlim (None): the 2theta range [x_min, x_max]
         """
-        import matplotlib
+        import matplotlib as mpl
         import matplotlib.pyplot as plt
 
         if fontsize is not None:
-            matplotlib.rcParams.update({"font.size": fontsize})
+            mpl.rcParams.update({"font.size": fontsize})
 
         if xlim is None:
             x_min, x_max = 0, np.degrees(self.max2theta)
@@ -514,23 +514,19 @@ class XRD:
             dx = x_max - x_min
             for i in self.pxrd:
                 axes.bar(i[0], i[-1], color="b", width=width * dx / 180)
-                if i[-1] > minimum_I and x_min <= i[0] <= x_max:
-                    if show_hkl:
-                        label = self.draw_hkl(i[2:5])
-                        axes.text(i[0] - dx / 40, i[-1], label[0] + label[1] + label[2])
+                if i[-1] > minimum_I and x_min <= i[0] <= x_max and show_hkl:
+                    label = self.draw_hkl(i[2:5])
+                    axes.text(i[0] - dx / 40, i[-1], label[0] + label[1] + label[2])
         else:
             spectra = self.get_profile(
                 method=profile, res=res, user_kwargs={"FWHM": fwhm}
             )
-            if legend is None:
-                label = "Profile: " + profile
-            else:
-                label = legend
+            label = "Profile: " + profile if legend is None else legend
             axes.plot(spectra[0], spectra[1], label=label)
             axes.legend()
 
         axes.set_xlim([x_min, x_max])
-        axes.set_xlabel("2$\Theta$ ($\lambda$=" + str(self.wavelength) + " $\AA$)")
+        axes.set_xlabel(r"2$\Theta$ ($\lambda$=" + str(self.wavelength) + r" $\AA$)")
         axes.set_ylabel("Intensity")
 
         if ax is None:
@@ -542,6 +538,7 @@ class XRD:
                 fig.savefig(filename)
                 # fig.close()
             return fig, axes
+        return None
 
     def plotly_pxrd(
         self,
@@ -565,9 +562,9 @@ class XRD:
         for i in range(len(self.pxrd)):
             theta2, d, h, k, l, I = self.pxrd[i]
             h, k, l = int(h), int(k), int(l)
-            if I > minimum_I:
-                label = "<br>2&#952;: {:6.2f}<br>d: {:6.4f}<br>".format(theta2, d)
-                label += "I: {:6.4f}</br>hkl: ({:d}{:d}{:d})".format(I, h, k, l)
+            if minimum_I < I:
+                label = f"<br>2&#952;: {theta2:6.2f}<br>d: {d:6.4f}<br>"
+                label += f"I: {I:6.4f}</br>hkl: ({h:d}{k:d}{l:d})"
                 x.append(theta2)
                 y.append(-0.1)
                 labels.append(label)
@@ -591,7 +588,7 @@ class XRD:
 
         fig.update_layout(
             height=height,
-            xaxis_title="2&#952; ({:.4f} &#8491;)".format(self.wavelength),
+            xaxis_title=f"2&#952; ({self.wavelength:.4f} &#8491;)",
             yaxis_title="Intensity",
             title="PXRD of " + self.name,
         )
@@ -601,6 +598,7 @@ class XRD:
                 return fig.to_html()
             else:
                 fig.write_html(html)
+                return None
         else:
             print("This is running on Jupyter Notebook")
             return fig
@@ -671,7 +669,7 @@ class Profile:
         """
         N = int((max2theta - min2theta) / self.res)
         px = np.linspace(min2theta, max2theta, N)
-        py = np.zeros((N))
+        py = np.zeros(N)
         for two_theta, intensity in zip(two_thetas, intensities):
             # print(two_theta, intensity)
             if self.method == "gaussian":
@@ -791,8 +789,7 @@ class Similarity:
         self.value = similarity_calculate(self.r, w, d, Npts, self.fy, self.gy)
 
     def __str__(self):
-        s = "The similarity between two PXRDs is {:.4f}".format(self.value)
-        return s
+        return f"The similarity between two PXRDs is {self.value:.4f}"
 
     def __repr__(self):
         return str(self)
@@ -818,7 +815,7 @@ class Similarity:
 
         return w
 
-    def show(self, filename=None, fontsize=None, labels=["profile 1", "profile 2"]):
+    def show(self, filename=None, fontsize=None, labels=None):
         """
         show the comparison plot
 
@@ -826,11 +823,13 @@ class Similarity:
             filename (None): name of the xrd plot. If None, show the plot
             labels [A, B]: labels of each plot
         """
+        import matplotlib as mpl
         import matplotlib.pyplot as plt
-        import matplotlib
 
+        if labels is None:
+            labels = ["profile 1", "profile 2"]
         if fontsize is not None:
-            matplotlib.rcParams.update({"font.size": fontsize})
+            mpl.rcParams.update({"font.size": fontsize})
 
         fig1 = plt.figure(1, figsize=(15, 6))
         fig1.add_axes((0.1, 0.3, 0.8, 0.6))
@@ -843,7 +842,7 @@ class Similarity:
         residuals = self.gy - self.fy
         fig1.add_axes((0.1, 0.1, 0.8, 0.2))
         plt.plot(self.gx, residuals, ".r", markersize=0.5)
-        plt.title("{:6f}".format(self.value))
+        plt.title(f"{self.value:6f}")
 
         if filename is None:
             plt.show()
@@ -858,7 +857,7 @@ def mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N):
     - Izumi, F., & Ikeda, T. (2000).
     """
 
-    tmp = np.zeros((N))
+    tmp = np.zeros(N)
     for xi, dx in enumerate(x):
         if dx < 0:
             A = A
@@ -953,8 +952,7 @@ def create_index(imax=1, jmax=1, kmax=1):
                 hkl = np.array([i, j, k])
                 if sum(hkl * hkl) > 0:
                     hkl_index.append(hkl)
-    hkl_index = np.array(hkl_index).reshape([len(hkl_index), 3])
-    return hkl_index
+    return np.array(hkl_index).reshape([len(hkl_index), 3])
 
 
 def get_intensity(positions, hkl, s2, coeffs, z):
@@ -993,10 +991,7 @@ def get_all_intensity_par(
 
     for i, cycle in enumerate(cycles):
         N1 = cycle * hkl_per_proc - Start
-        if i + 1 == len(cycles):
-            N2 = End - Start
-        else:
-            N2 = N1 + hkl_per_proc
+        N2 = End - Start if i + 1 == len(cycles) else N1 + hkl_per_proc
         hkl, s2 = hkls[N1:N2].T, s2s[N1:N2]
         Is[N1:N2] = get_intensity(positions, hkl, s2, coeffs, zs)
         # print('run', cpu, N1+Start, N2+Start, N1, N2)
@@ -1025,7 +1020,7 @@ def pxrd_refine(xtal, ref_pxrd, thetas, steps=20):
 
     rep = xtal.get_1D_representation()
     x0 = rep.x[0][1:]
-    val0 = fun(x0, rep, ref_pxrd, thetas)
+    fun(x0, rep, ref_pxrd, thetas)
     res = minimize(
         fun,
         x0,
@@ -1039,11 +1034,13 @@ def pxrd_refine(xtal, ref_pxrd, thetas, steps=20):
 
 
 if __name__ == "__main__":
-    from pymatgen.core import Structure
     from optparse import OptionParser
-    from pyxtal.util import parse_cif
-    from pyxtal import pyxtal
+
     from matplotlib import pyplot as plt
+    from pymatgen.core import Structure
+
+    from pyxtal import pyxtal
+    from pyxtal.util import parse_cif
 
     parser = OptionParser()
     parser.add_option("-f", "--cif", dest="cif", help="cif file name")
@@ -1057,7 +1054,7 @@ if __name__ == "__main__":
     data[:, 1] /= np.max(data[:, 1])  # Normalize the intensity
     ref_pxrd = (data[:, 0], data[:, 1])
 
-    with open(options.cif, "r") as f:
+    with open(options.cif) as f:
         lines = f.readlines()
         for l in lines:
             if l.find("smile") > 0:
@@ -1087,10 +1084,10 @@ if __name__ == "__main__":
             res=0.15, user_kwargs={"FWHM": 0.25}
         )
         (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=0)
-        ax1.plot(pxrd[0], pxrd[1], label="Init: {:6.3f}".format(val1))
+        ax1.plot(pxrd[0], pxrd[1], label=f"Init: {val1:6.3f}")
 
         (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=options.step)
-        ax2.plot(pxrd[0], pxrd[1], label="Opt: {:6.3f}".format(val1))
+        ax2.plot(pxrd[0], pxrd[1], label=f"Opt: {val1:6.3f}")
         pxrd = s.get_XRD(thetas=thetas).get_profile(
             res=0.15, user_kwargs={"FWHM": 0.25}
         )

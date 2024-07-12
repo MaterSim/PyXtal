@@ -1,10 +1,12 @@
-import pubchempy as pcp
-import urllib, json
+import json
+import urllib
 from pprint import pprint
+
+import pubchempy as pcp
 
 
 def get_similar_cids(base, MaxRecords):
-    """""" """
+    """
     Parameters:
     base: PubChem CID of Starting chemical
     MaxRecords: Number of Similar Compounds
@@ -13,7 +15,7 @@ def get_similar_cids(base, MaxRecords):
     List of the CIDs of PubChem compounds similar to the base compound.
 
     Accuracy decreases deeper into PubChem search algorithm
-    """ """"""
+    """
     if type(base) == int:
         base = str(base)
     cids = pcp.get_compounds(base, searchtype="similarity", MaxRecords=MaxRecords)
@@ -35,14 +37,14 @@ def get_similar_cids(base, MaxRecords):
 
 
 def check_for_ccdc_structures(cid):
-    """""" """'
+    """'
     Parameters:
     cid: PubChem cid
 
     Returns:
     CIDs that have CCDC crystal structure data
 
-    """ """"""
+    """
     url0 = "https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/"
     cid = str(cid)
     url = url0 + cid + "/JSON"

@@ -1,10 +1,11 @@
-from lxml import etree
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
-
-import matplotlib as mpl
+from lxml import etree
 
 mpl.use("Agg")
+import contextlib
+
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
@@ -148,16 +149,14 @@ class vasprun:
         dict_foo = (
             dict_del.copy()
         )  # Used as iterator to avoid the 'DictionaryHasChanged' error
-        for key in dict_foo.keys():
+        for key in dict_foo:
             if isinstance(dict_foo[key], dict):
                 vasprun.dict_clean(dict_del[key])
 
             # if len(dict_foo[key])==0:
             if dict_foo[key] == {} or dict_foo[key] is None:
-                try:
+                with contextlib.suppress(KeyError):
                     del dict_del[key]
-                except KeyError:
-                    pass
 
         return dict_del
 
@@ -227,7 +226,7 @@ class vasprun:
                 raise e
 
         if elem.get("type", None) == "logical":
-            m = [[True if i == "T" else False for i in v.text.split()] for v in elem]
+            m = [[i == "T" for i in v.text.split()] for v in elem]
         else:
             m = [[_vasprun_float(i) for i in v.text.split()] for v in elem]
 
@@ -412,14 +411,13 @@ class vasprun:
         for s in dos.find("total").find("array").findall("set"):
             for ss in s.findall("set"):
                 t_dos.append(self.parse_varray_pymatgen(ss))
-        if dos.find("partial") is not None:
-            if len(dos.find("partial")) > 0:
-                for s in dos.find("partial").find("array").findall("set"):
-                    for i, ss in enumerate(s.findall("set")):
-                        p = []
-                        for sss in ss.findall("set"):
-                            p.append(self.parse_varray_pymatgen(sss))
-                        p_dos.append(p)
+        if dos.find("partial") is not None and len(dos.find("partial")) > 0:
+            for s in dos.find("partial").find("array").findall("set"):
+                for _i, ss in enumerate(s.findall("set")):
+                    p = []
+                    for sss in ss.findall("set"):
+                        p.append(self.parse_varray_pymatgen(sss))
+                    p_dos.append(p)
 
         return t_dos, p_dos
 
@@ -448,7 +446,6 @@ class vasprun:
         dyn_eigenvalues = []
         dyn_eigenvectors = []
         epsilon_ion = []
-        epsilon_ = []
         proj = []
         for i in calculation.iterchildren():
             if i.attrib.get("name") == "stress":
@@ -540,8 +537,8 @@ class vasprun:
             bands: an integer number
             occupy: bool number
         """
-        valence = self.values["valence"]
-        composition = self.values["composition"]
+        self.values["valence"]
+        self.values["composition"]
         total = int(self.values["parameters"]["electronic"]["NELECT"])
 
         # if self.spin:
@@ -606,7 +603,9 @@ class vasprun:
         eigens = np.array(self.values["calculation"]["eband_eigenvalues"])
         return eigens[:, band, 0] - efermi
 
-    def show_eigenvalues_by_band(self, bands=[0]):
+    def show_eigenvalues_by_band(self, bands=None):
+        if bands is None:
+            bands = [0]
         kpts = self.values["kpoints"]["list"]
         col_name = {"K-points": kpts}
         for band in bands:
@@ -626,7 +625,7 @@ class vasprun:
     def export_incar(self, filename=None, print_incar=True):
         """export incar"""
         contents = []
-        for key in self.values["incar"].keys():
+        for key in self.values["incar"]:
             content = key + " = " + str(self.values["incar"][key])
             content += "\n"
             contents.append(str(content))
@@ -645,9 +644,7 @@ class vasprun:
         for kpt, wt in zip(
             self.values["kpoints"]["list"], self.values["kpoints"]["weights"]
         ):
-            content = "{:10.4f} {:10.4f} {:10.4f} {:10.4f}".format(
-                kpt[0], kpt[1], kpt[2], wt[0]
-            )
+            content = f"{kpt[0]:10.4f} {kpt[1]:10.4f} {kpt[2]:10.4f} {wt[0]:10.4f}"
             if filename is None:
                 print(content)
             else:
@@ -668,43 +665,37 @@ class vasprun:
         """
 
         comp = self.values["composition"]
-        atomNames = self.values["name_array"]
+        self.values["name_array"]
         latt = self.values["finalpos"]["basis"]
         pos = self.values["finalpos"]["positions"]
 
         with open(filename, "w") as f:
             string = ""
-            for key in comp.keys():
+            for key in comp:
                 string += key
                 string += str(comp[key])
             string += "\n"
             f.write(string)
             f.write("1.0\n")
             f.write(
-                "{:12.6f} {:12.6f} {:12.6f}\n".format(
-                    latt[0][0], latt[0][1], latt[0][2]
-                )
+                f"{latt[0][0]:12.6f} {latt[0][1]:12.6f} {latt[0][2]:12.6f}\n"
             )
             f.write(
-                "{:12.6f} {:12.6f} {:12.6f}\n".format(
-                    latt[1][0], latt[1][1], latt[1][2]
-                )
+                f"{latt[1][0]:12.6f} {latt[1][1]:12.6f} {latt[1][2]:12.6f}\n"
             )
             f.write(
-                "{:12.6f} {:12.6f} {:12.6f}\n".format(
-                    latt[2][0], latt[2][1], latt[2][2]
-                )
+                f"{latt[2][0]:12.6f} {latt[2][1]:12.6f} {latt[2][2]:12.6f}\n"
             )
-            for key in comp.keys():
-                f.write("{:4s}".format(key))
+            for key in comp:
+                f.write(f"{key:4s}")
             f.write("\n")
-            for key in comp.keys():
-                f.write("{:4d}".format(comp[key]))
+            for key in comp:
+                f.write(f"{comp[key]:4d}")
             f.write("\n")
             f.write("Direct\n")
             for coor in pos:
                 f.write(
-                    "{:12.6f} {:12.6f} {:12.6f}\n".format(coor[0], coor[1], coor[2])
+                    f"{coor[0]:12.6f} {coor[1]:12.6f} {coor[2]:12.6f}\n"
                 )
 
     def parse_bandpath(self):
@@ -747,10 +738,7 @@ class vasprun:
             path = np.array(path)
             dist = np.linalg.norm(np.dot(path[0, :] - path[-1, :], rec_basis))
             x = np.linspace(pointer, pointer + dist, len(path[:, 0]))
-            if i == 0:
-                band_paths = x
-            else:
-                band_paths = np.hstack((band_paths, x))
+            band_paths = x if i == 0 else np.hstack((band_paths, x))
             pointer += dist
             band_points.append(pointer)
 
@@ -761,8 +749,8 @@ class vasprun:
         self,
         filename=None,
         styles="normal",
-        ylim=[-20, 3],
-        plim=[0.0, 0.5],
+        ylim=None,
+        plim=None,
         saveBands=False,
         dpi=300,
     ):
@@ -778,6 +766,10 @@ class vasprun:
         Returns:
             A figure with band structure
         """
+        if plim is None:
+            plim = [0.0, 0.5]
+        if ylim is None:
+            ylim = [-20, 3]
         self.parse_bandpath()
         efermi = self.values["calculation"]["efermi"]
         eigens = np.array(self.values["calculation"]["eband_eigenvalues"])
@@ -897,7 +889,7 @@ class vasprun:
             mydos[1] *= -1
         return mydos, labels
 
-    def plot_dos(self, filename=None, smear=None, styles="t", xlim=[-3, 3], dpi=300):
+    def plot_dos(self, filename=None, smear=None, styles="t", xlim=None, dpi=300):
         """
         plot the DOS
 
@@ -910,6 +902,8 @@ class vasprun:
         Returns:
             A figure with band structure
         """
+        if xlim is None:
+            xlim = [-3, 3]
         efermi = self.values["calculation"]["efermi"]
         tdos = np.array(self.values["calculation"]["tdos"][0])
         tdos[:, 0] -= efermi
@@ -918,10 +912,7 @@ class vasprun:
         e = e[rows]
         plt_obj = {}
         for option in styles.split("+"):
-            if option == "spd":
-                option = ["s", "p", "d"]
-            else:
-                option = [option]
+            option = ["s", "p", "d"] if option == "spd" else [option]
             for style in option:
                 mydos, labels = self.get_dos(rows, style)
                 for data, label in zip(mydos, labels):
@@ -932,7 +923,7 @@ class vasprun:
         lines2 = []
         labels1 = []
         labels2 = []
-        for label in plt_obj.keys():
+        for label in plt_obj:
             e = np.reshape(e, [len(e), 1])
             data = np.reshape(plt_obj[label], [len(e), 1])
             if smear is not None:
@@ -946,7 +937,7 @@ class vasprun:
                 lines1 += ax.plot(e, data)
                 labels1.append(label)
         leg1 = ax.legend(
-            lines1, [label for label in labels1], fancybox=True, loc="upper right"
+            lines1, list(labels1), fancybox=True, loc="upper right"
         )
         leg1.get_frame().set_alpha(0.5)
         if len(lines2) > 0:
@@ -955,7 +946,7 @@ class vasprun:
             leg2 = Legend(
                 ax,
                 lines2,
-                [label for label in labels2],
+                list(labels2),
                 fancybox=True,
                 loc="lower right",
             )

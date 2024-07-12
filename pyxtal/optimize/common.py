@@ -3,21 +3,21 @@ Common utlities for global search
 """
 
 import os
-import numpy as np
-from time import time
-from ase import units
+import warnings
 from random import choice
+from time import time
+
+import numpy as np
+from ase import units
 
 from pyxtal import pyxtal
+from pyxtal.interface.ani import ANI_relax
+from pyxtal.interface.charmm import CHARMM
+from pyxtal.optimize.benchmark import benchmark
+from pyxtal.representation import representation
 from pyxtal.symmetry import Group, Hall
 from pyxtal.util import ase2pymatgen
 from pyxtal.XRD import Similarity, pxrd_refine
-from pyxtal.representation import representation
-from pyxtal.interface.charmm import CHARMM
-from pyxtal.interface.ani import ANI_relax
-from pyxtal.optimize.benchmark import benchmark
-
-import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -38,9 +38,8 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125):
             x[0][1:] *= 1 + dr * disp_cell
 
             # flip the inclination angle
-            if 3 <= sg <= 15 and np.random.random() > 0.7:
-                if abs(90 - x[0][-1]) < 15:
-                    x[0][-1] = 180 - x[0][-1]
+            if 3 <= sg <= 15 and np.random.random() > 0.7 and abs(90 - x[0][-1]) < 15:
+                x[0][-1] = 180 - x[0][-1]
         else:
             thetas = [ref_pxrd[0][0], min([35, ref_pxrd[0][-1]])]
             _, x[0][1:], _ = pxrd_refine(xtal, ref_pxrd, thetas)
@@ -102,15 +101,9 @@ def randomizer(
     """
 
     np.random.seed()
-    if molecules is None:
-        mols = [smi + ".smi" for smi in smiles]
-    else:
-        mols = [choice(m) for m in molecules]
+    mols = [smi + ".smi" for smi in smiles] if molecules is None else [choice(m) for m in molecules]
     sg = choice(sgs)
-    if use_hall:
-        wp = Group(sg, use_hall=True)[0]
-    else:
-        wp = Group(sg)[0]
+    wp = Group(sg, use_hall=True)[0] if use_hall else Group(sg)[0]
     mult = len(wp)
     numIons = [int(c * mult) for c in comp]
 
@@ -126,15 +119,9 @@ def randomizer(
         if use_hall:
             hn = sg
         else:
-            if sg > 15:
-                perm = True
-            else:
-                perm = False
+            perm = sg > 15
             # For specical setting, we only do standard_setting
-            if min(comp) < 1:
-                hn = Hall(sg).hall_default
-            else:
-                hn = choice(Hall(sg, permutation=perm).hall_numbers)
+            hn = Hall(sg).hall_default if min(comp) < 1 else choice(Hall(sg, permutation=perm).hall_numbers)
         xtal.from_random(
             3,
             hn,
@@ -168,7 +155,7 @@ def optimizer(
     workdir,
     tag="job_0",
     opt_lat=True,
-    calculators=["CHARMM"],
+    calculators=None,
     max_time=180,
     skip_ani=False,
 ):
@@ -183,13 +170,12 @@ def optimizer(
     Returns:
         a dictionary with xtal, energy and time
     """
+    if calculators is None:
+        calculators = ["CHARMM"]
     cwd = os.getcwd()
     t0 = time()
     os.chdir(workdir)
-    if len(struc.mol_sites[0].molecule.mol) < 10:
-        stress_tol = 10.0
-    else:
-        stress_tol = 5.0
+    stress_tol = 10.0 if len(struc.mol_sites[0].molecule.mol) < 10 else 5.0
 
     results = None
 
@@ -204,10 +190,7 @@ def optimizer(
                     calc = CHARMM(struc, tag, steps=[500], atom_info=atom_info)
                     calc.run()
             # print(calc.structure)
-            if opt_lat:
-                steps = [1000, 1000]
-            else:
-                steps = [2000]
+            steps = [1000, 1000] if opt_lat else [2000]
             calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
             calc.run()  # print("Debug", calc.optimized); import sys; sys.exit()
 
@@ -264,7 +247,7 @@ def optimizer(
                     results["energy"] = 10000
                 results["time"] = time() - t0
             else:
-                print("stress is wrong {:6.2f}".format(stress))
+                print(f"stress is wrong {stress:6.2f}")
                 # print(struc)
                 # print(struc.to_file())
                 # import sys; sys.exit()
@@ -382,7 +365,7 @@ def optimizer_single(
     """
 
     # 1. Obtain the structure model
-    opt_lat = True if lattice is None else False
+    opt_lat = lattice is None
     if xtal is None:
         xtal = randomizer(
             smiles,
@@ -421,12 +404,10 @@ def optimizer_single(
             if rmsd is not None:
                 # Further refine the structure
                 match = True
-                str1 = "Match {:6.2f} {:6.2f} {:12.3f} ".format(
-                    rmsd[0], rmsd[1], eng / N
-                )
+                str1 = f"Match {rmsd[0]:6.2f} {rmsd[1]:6.2f} {eng / N:12.3f} "
                 if not skip_ani:
                     xtal, eng1 = refine_struc(xtal, smiles, ANI_relax)
-                    str1 += "Full Relax -> {:12.3f}".format(eng1 / N)
+                    str1 += f"Full Relax -> {eng1 / N:12.3f}"
                     eng = eng1
                 print(str1)
 
@@ -435,10 +416,10 @@ def optimizer_single(
             xrd = xtal.get_XRD(thetas=thetas)
             p1 = xrd.get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
             match = Similarity(p1, ref_pxrd, x_range=thetas).value
-            strs += " {:.3f}".format(match)
+            strs += f" {match:.3f}"
 
         xtal.energy = eng
-        print("{:3d} ".format(id) + strs)
+        print(f"{id:3d} " + strs)
         return xtal, match
     else:
         return None, match
@@ -541,8 +522,9 @@ def compute(row, pmg, work_dir, skf_dir, info=None):
 
 
 if __name__ == "__main__":
-    from pyxtal.db import database
     import pymatgen.analysis.structure_matcher as sm
+
+    from pyxtal.db import database
 
     w_dir = "tmp"
     if not os.path.exists(w_dir):

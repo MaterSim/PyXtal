@@ -1,7 +1,4 @@
 from pyxtal import pyxtal
-from ase.io import read
-from ase.spacegroup.symmetrize import prep_symmetry
-from spglib import get_symmetry_dataset
 
 # ans1 = get_symmetry_dataset(s, symprec=1e-2)
 # print(ans1)
@@ -20,7 +17,7 @@ print(s)
 #    struc = s.subgroup_once(0.01, None, permutation, max_cell=1)
 #    print(struc.group.number, struc.formula)
 
-for i in range(100):
+for _i in range(100):
     struc = s.subgroup_once(0.2, None, None, "t+k", max_cell=2)
     print(struc.group.number, struc.formula)
 # for i in range(1000):

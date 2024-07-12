@@ -7,7 +7,6 @@
 import logging
 import warnings
 from optparse import OptionParser
-
 import numpy as np
 
 from pyxtal import pyxtal

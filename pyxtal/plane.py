@@ -2,10 +2,10 @@
 crystal plane class
 """
 
-from pyxtal import pyxtal
-import numpy as np
-from math import gcd
 import itertools
+from math import gcd
+
+import numpy as np
 
 
 def has_reduction(hkl):
@@ -158,19 +158,10 @@ class planes:
             center, lower, upper = slab
             for group in groups:
                 # Center is within the group
-                if group[1] <= center <= group[2]:
+                if group[1] <= center <= group[2] or lower >= group[1] and upper <= group[2] or lower <= group[1] and upper >= group[2]:
                     new = False
                 # to include
-                elif lower >= group[1] and upper <= group[2]:
-                    new = False
-                # to include
-                elif lower <= group[1] and upper >= group[2]:
-                    new = False
-                # to include
-                elif lower - 1 <= group[1] and upper - 1 >= group[2]:
-                    center, lower, upper = center - 1, lower - 1, upper - 1
-                    new = False
-                elif lower - 1 >= group[1] and upper - 1 <= group[2]:
+                elif lower - 1 <= group[1] and upper - 1 >= group[2] or lower - 1 >= group[1] and upper - 1 <= group[2]:
                     center, lower, upper = center - 1, lower - 1, upper - 1
                     new = False
                 else:
@@ -232,14 +223,15 @@ class plane:
 
     def __str__(self):
         s = "({:2d} {:2d} {:2d})".format(*self.indices)
-        s += " Spacing: {:6.3f}".format(self.d_spacing)
-        s += " Separation: {:6.3f}".format(self.separation)
+        s += f" Spacing: {self.d_spacing:6.3f}"
+        s += f" Separation: {self.separation:6.3f}"
         return s
 
 
 if __name__ == "__main__":
-    from pyxtal.db import database
     import sys
+
+    from pyxtal.db import database
 
     try:
         from ccdc import io

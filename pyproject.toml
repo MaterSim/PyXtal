@@ -40,6 +40,8 @@ lint.ignore = [
   "PD901", # pandas-df-variable-name
   "PLR",   # pylint refactor
   "PT006", # pytest-parametrize-names-wrong-type
+  "E741",  # ambiguous variable name -- turn off due to miller indices h, k, l
+  "RET505" # Unnecessary else after return
 ]
 lint.pydocstyle.convention = "google"
 lint.isort.known-third-party = ["wandb"]

@@ -1,8 +1,8 @@
-from pyxtal import pyxtal
-from pyxtal.symmetry import Group
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-import numpy as np
+
+from pyxtal import pyxtal
+from pyxtal.symmetry import Group
 
 for G in range(143, 195):
     g = Group(G)

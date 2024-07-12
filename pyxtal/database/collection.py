@@ -1,6 +1,7 @@
-from pymatgen.core.structure import Molecule
 import json
 import os.path as op
+
+from pymatgen.core.structure import Molecule
 
 
 class Collection:
@@ -44,7 +45,7 @@ class Collection:
         self.name = name
         self._data = {}
         self.filename = op.join(op.dirname(__file__), name + ".json")
-        with open(self.filename, "r") as f:
+        with open(self.filename) as f:
             self.content = json.load(f)
 
     def __getitem__(self, name):

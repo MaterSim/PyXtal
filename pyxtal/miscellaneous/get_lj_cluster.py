@@ -1,10 +1,11 @@
-import numpy as np
-from scipy.spatial.distance import cdist
 import json
-from monty.serialization import MontyEncoder
+
+import numpy as np
 import requests
-from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+from monty.serialization import MontyEncoder
 from pymatgen.core import Molecule
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+from scipy.spatial.distance import cdist
 
 black_list = {
     "6": "Oh",  # takes long time
@@ -31,19 +32,15 @@ def get_lj_from_url(N, address="http://doye.chem.ox.ac.uk/jon/structures/LJ/poin
     pos = parse_url_text(data_str)
     energy = LJ(pos)
     pos = np.reshape(pos, (N, 3))
-    if str(N) in black_list.keys():
-        sym = black_list[str(N)]
-    else:
-        sym = parse_symmetry(pos)
+    sym = black_list[str(N)] if str(N) in black_list else parse_symmetry(pos)
 
-    cluster = {
+    return {
         "name": N,
         "position": pos,
         "energy": energy,
         "url": url_address,
         "pointgroup": sym,
     }
-    return cluster
 
 
 def parse_url_text(data_str):

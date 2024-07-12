@@ -2,28 +2,31 @@
 Module for handling molecules.
 """
 
-import os, re
-from pkg_resources import resource_filename
+import os
+import re
 from copy import deepcopy
 from operator import itemgetter
-from random import choice, random
-import numpy as np
-from scipy.spatial.transform import Rotation
+from random import choice
+
 import networkx as nx
+import numpy as np
+from monty.serialization import loadfn
+from pkg_resources import resource_filename
 
 # External Libraries
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
-from monty.serialization import loadfn
+from scipy.spatial.transform import Rotation
+
+from pyxtal.constants import single_smiles
+from pyxtal.database.collection import Collection
+from pyxtal.database.element import Element
+from pyxtal.msg import AtomTypeError, ConformerError
+from pyxtal.operations import OperationAnalyzer, SymmOp, angle, rotate_vector
 
 # PyXtal imports
 from pyxtal.symmetry import Group
 from pyxtal.tolerance import Tol_matrix
-from pyxtal.database.element import Element
-from pyxtal.operations import SymmOp, OperationAnalyzer, rotate_vector, angle
-from pyxtal.database.collection import Collection
-from pyxtal.msg import ConformerError, AtomTypeError
-from pyxtal.constants import single_smiles
 
 # Define functions
 bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
@@ -53,9 +56,7 @@ def find_rotor_from_smile(smile):
             # for i-j-k-l, we don't want i, l are the ending members
             # C-C-S=O is not a good choice since O is only 1-coordinated
             # C-C-NO2 is a good choice since O is only 1-coordinated
-            if neighbors[ix0] == 1 and neighbors[ix1] == 2:
-                for_remove.append(x)
-            elif neighbors[ix3] == 1 and neighbors[ix2] == 2:
+            if neighbors[ix0] == 1 and neighbors[ix1] == 2 or neighbors[ix3] == 1 and neighbors[ix2] == 2:
                 for_remove.append(x)
             else:
                 for y in reversed(range(x)):
@@ -125,10 +126,7 @@ def has_non_aromatic_ring(smiles):
     ring_info = mol.GetRingInfo()
 
     # Check each ring to see if it is aromatic; return True if a non-aromatic ring is found
-    for ring in ring_info.BondRings():
-        if not all(mol.GetBondWithIdx(idx).GetIsAromatic() for idx in ring):
-            return True  # Found a non-aromatic ring
-    return False  # No non-aromatic rings found
+    return any(not all(mol.GetBondWithIdx(idx).GetIsAromatic() for idx in ring) for ring in ring_info.BondRings())  # No non-aromatic rings found
 
 
 def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
@@ -183,10 +181,7 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
             m.get_symmetry(symmetrize=True)
             m.energy = res[id][1]
             _, valid = m.get_orientations_in_wps(wps)
-            if valid:
-                add = True
-            else:
-                add = False
+            add = bool(valid)
             if add:
                 match = False
                 for mol in mols:
@@ -261,7 +256,7 @@ class pyxtal_molecule:
                     if os.path.exists(mol):
                         mo = Molecule.from_file(mol)
                     else:
-                        raise NameError("{:s} is not a valid path".format(mol))
+                        raise NameError(f"{mol:s} is not a valid path")
                 elif tmp[-1] == "smi":
                     self.smile = tmp[0]
                     res = self.rdkit_mol_init(tmp[0], fix, torsions)
@@ -269,7 +264,7 @@ class pyxtal_molecule:
                     mo = Molecule(symbols, xyz)
                     symmetrize = False
                 else:
-                    raise NameError("{:s} is not a supported format".format(tmp[-1]))
+                    raise NameError(f"{tmp[-1]:s} is not a supported format")
             else:
                 # print('\nLoad the molecule {:s} from collections'.format(mol))
                 mo = molecule_collection[mol]
@@ -279,22 +274,21 @@ class pyxtal_molecule:
             mo = mol
 
         if mo is None:
-            msg = "Could not create molecules from given input: {:s}".format(mol)
+            msg = f"Could not create molecules from given input: {mol:s}"
             raise NameError(msg)
 
         # Molecule and symmetry analysis
         self.props = mo.site_properties
-        if len(mo) > 1:
-            if symmetrize:
-                try:
-                    pga = PointGroupAnalyzer(mo, symtol)
-                    mo = pga.symmetrize_molecule()["sym_mol"]
-                except:
-                    print(
-                        "Warning: Problem in parsing molecular symmetry with symtol=",
-                        symtol,
-                    )
-                    print("Proceed with no symmetrization")
+        if len(mo) > 1 and symmetrize:
+            try:
+                pga = PointGroupAnalyzer(mo, symtol)
+                mo = pga.symmetrize_molecule()["sym_mol"]
+            except:
+                print(
+                    "Warning: Problem in parsing molecular symmetry with symtol=",
+                    symtol,
+                )
+                print("Proceed with no symmetrization")
         self.mol = mo
         self.get_symmetry()
 
@@ -317,8 +311,7 @@ class pyxtal_molecule:
         """
         save the object as a dictionary
         """
-        d = self.mol.to(fmt="xyz")
-        return d
+        return self.mol.to(fmt="xyz")
 
     @classmethod
     def load_str(cls, string):
@@ -475,10 +468,7 @@ class pyxtal_molecule:
             tm = self.tm
 
         numbers1 = self.mol.atomic_numbers
-        if mol2 is None:
-            numbers2 = self.mol.atomic_numbers
-        else:
-            numbers2 = mol2.mol.atomic_numbers
+        numbers2 = self.mol.atomic_numbers if mol2 is None else mol2.mol.atomic_numbers
 
         tols = np.zeros((len(numbers1), len(numbers2)))
         for i1, number1 in enumerate(numbers1):
@@ -536,7 +526,7 @@ class pyxtal_molecule:
             amide2 = Chem.MolFromSmarts("[CH](=O)N")  # CONH
             alcohol = Chem.MolFromSmarts("[c,CX3][OH]")  # ROH
             # alcohol2 = Chem.MolFromSmarts('c[OH]')  #ROH
-            aromatic_carbon = Chem.MolFromSmarts("c")  # Aromatic
+            Chem.MolFromSmarts("c")  # Aromatic
             NH1 = Chem.MolFromSmarts("[NH1]")  # NH1
             NH2 = Chem.MolFromSmarts("[NH2]")  # NH2
 
@@ -580,10 +570,7 @@ class pyxtal_molecule:
                             count_O += 2
 
                         elif i in [2, 3]:  # CONH
-                            if i == 2:
-                                id = 3
-                            else:
-                                id = 2
+                            id = 3 if i == 2 else 2
                             labels[d[id - 1]] += "_amide"
                             count_O += 1
 
@@ -632,20 +619,14 @@ class pyxtal_molecule:
         Returns:
             a 3D matrix for computing the intermolecular energy
         """
-        if hasattr(self, "labels"):
-            labels1 = self.labels
-        else:
-            labels1 = self.symbols
+        labels1 = self.labels if hasattr(self, "labels") else self.symbols
         numbers1 = self.mol.atomic_numbers
         if mol2 is None:
             numbers2 = self.mol.atomic_numbers
             labels2 = labels1
         else:
             numbers2 = mol2.mol.atomic_numbers
-            if hasattr(mol2, "labels"):
-                labels2 = mol2.labels
-            else:
-                labels2 = mol2.symbols
+            labels2 = mol2.labels if hasattr(mol2, "labels") else mol2.symbols
 
         coefs = np.zeros([len(numbers1), len(numbers2), 3])
         for i1, n1 in enumerate(numbers1):
@@ -754,7 +735,7 @@ class pyxtal_molecule:
                     if ignore_error:
                         coefs[i1, i2, :] = [0.0, 0.0, 0.0]
                     else:
-                        msg = "atom type is not supported: {:d} {:d}".format(n1, n2)
+                        msg = f"atom type is not supported: {n1:d} {n2:d}"
                         raise AtomTypeError(msg)
                         # return None
         return coefs
@@ -771,7 +752,6 @@ class pyxtal_molecule:
         """
         show the molecule
         """
-        from pyxtal.viz import display_molecule
 
         return display_molecules(self.mol)
 
@@ -784,7 +764,7 @@ class pyxtal_molecule:
         mol = Chem.MolFromMolBlock(self.rdkit_mb, removeHs=False)
         if N_confs > 1:
             conf = mol.GetConformer(0)
-            for i in range(N_confs - 1):
+            for _i in range(N_confs - 1):
                 mol.AddConformer(conf, True)
         return mol
 
@@ -799,7 +779,6 @@ class pyxtal_molecule:
         """
         from rdkit import Chem
         from rdkit.Chem import AllChem
-        from rdkit.Chem import rdMolTransforms as rdmt
 
         if smile not in single_smiles:  # ["Cl-", "F-", "Br-", "I-", "Li+", "Na+"]:
             torsionlist = find_rotor_from_smile(smile)
@@ -936,8 +915,8 @@ class pyxtal_molecule:
                     return np.mean(xyz, axis=0)
                 else:
                     # from rdkit
-                    from rdkit.Geometry import Point3D
                     from rdkit.Chem import rdMolTransforms as rdmt
+                    from rdkit.Geometry import Point3D
 
                     conf = self.rdkit_mol().GetConformer(0)
                     for i in range(len(xyz)):
@@ -956,8 +935,8 @@ class pyxtal_molecule:
             _, matrix = np.linalg.eigh(Inertia)
             return matrix
         else:
-            from rdkit.Geometry import Point3D
             from rdkit.Chem import rdMolTransforms as rdmt
+            from rdkit.Geometry import Point3D
 
             conf1 = self.rdkit_mol().GetConformer(0)
             for i in range(len(self.mol)):
@@ -970,8 +949,8 @@ class pyxtal_molecule:
         """
         get the torsion angles
         """
-        from rdkit.Geometry import Point3D
         from rdkit.Chem import rdMolTransforms as rdmt
+        from rdkit.Geometry import Point3D
 
         if xyz is None:
             xyz = self.mol.cart_coords
@@ -1002,8 +981,7 @@ class pyxtal_molecule:
             (i, j, k, l) = torsion
             rdmt.SetDihedralDeg(conf, i, j, k, l, angles[id])
 
-        xyz = self.align(conf, reflect)
-        return xyz
+        return self.align(conf, reflect)
 
     def relax(self, xyz, align=False):
         """
@@ -1028,10 +1006,7 @@ class pyxtal_molecule:
             x, y, z = xyz[i]
             conf0.SetAtomPosition(i, Point3D(x, y, z))
         res = AllChem.MMFFOptimizeMoleculeConfs(mol)
-        if align:
-            xyz = self.align(conf0)
-        else:
-            xyz = mol.GetConformer(0).GetPositions()
+        xyz = self.align(conf0) if align else mol.GetConformer(0).GetPositions()
         return xyz, res[0][1]
 
     def get_rmsd2(self, xyz0, xyz1):
@@ -1046,9 +1021,8 @@ class pyxtal_molecule:
             transition matrix:
         """
 
-        from rdkit import Chem
+        from rdkit.Chem import RemoveHs, rdMolAlign
         from rdkit.Geometry import Point3D
-        from rdkit.Chem import rdMolAlign, RemoveHs
 
         mol = self.rdkit_mol(3)
         conf0 = mol.GetConformer(0)
@@ -1077,9 +1051,8 @@ class pyxtal_molecule:
             match: True or False
         """
 
-        from rdkit import Chem
+        from rdkit.Chem import RemoveHs, rdMolAlign
         from rdkit.Geometry import Point3D
-        from rdkit.Chem import rdMolAlign, RemoveHs
 
         mol = self.rdkit_mol(3)
         # 3 conformers for comparison
@@ -1137,7 +1110,7 @@ class pyxtal_molecule:
                 return r.as_euler("zxy", degrees=True), rmsd, reflect
             else:
                 msg = "Problem in conformer\n"
-                msg += "{:5.2f} {:5.2f}\n".format(rmsd1, rmsd2)
+                msg += f"{rmsd1:5.2f} {rmsd2:5.2f}\n"
                 if len(self.torsionlist) > 0:
                     msg += str(self.get_torsion_angles(xyz)) + "\n"
                     msg += str(self.get_torsion_angles(xyz0)) + "\n"
@@ -1155,7 +1128,7 @@ class pyxtal_molecule:
             Inertia = get_inertia_tensor(xyz)
             _, matrix = np.linalg.eigh(Inertia)
 
-            ref0 = np.dot(xyz, matrix)
+            np.dot(xyz, matrix)
             # identify the rotation matrix
             libs = np.array(
                 [
@@ -1206,7 +1179,6 @@ class pyxtal_molecule:
         """
         reset the coordinates
         """
-        from pymatgen.core.sites import Site
 
         xyz = self.mol.cart_coords
         center = self.get_center(xyz)
@@ -1224,10 +1196,7 @@ class pyxtal_molecule:
         Args:
             symmetrize: boolean, whether or not symmetrize the coordinates
         """
-        if xyz is None:
-            mol = deepcopy(self.mol)
-        else:
-            mol = Molecule(self.symbols, xyz)
+        mol = deepcopy(self.mol) if xyz is None else Molecule(self.symbols, xyz)
 
         if self.smile is not None:
             mol.remove_species("H")
@@ -1247,7 +1216,7 @@ class pyxtal_molecule:
         else:
             symbol = pga.sch_symbol
             pg = pga.get_pointgroup()
-            symm_m = [op for op in pg]
+            symm_m = list(pg)
 
             if "*" in symbol:  # linear molecules
                 symbol = symbol.replace("*", "6")
@@ -1326,7 +1295,6 @@ class pyxtal_molecule:
             return []
 
         symm_m = self.symops
-        wyckoffs = wp.ops
         opa_m = []
         for op_m in symm_m:
             opa = OperationAnalyzer(op_m)
@@ -1512,7 +1480,7 @@ class pyxtal_molecule:
         """
         Get packing energy between two neighboring molecules
         """
-        dists = cdist(xyz1 - xyz2)
+        cdist(xyz1 - xyz2)
 
 
 class Box:
@@ -1530,10 +1498,7 @@ class Box:
         self.volume = self.width * self.length * self.height
 
     def __str__(self):
-        strs = "l: {:6.2f}, w: {:6.2f}, d: {:6.2f}".format(
-            self.length, self.width, self.height
-        )
-        return strs
+        return f"l: {self.length:6.2f}, w: {self.width:6.2f}, d: {self.height:6.2f}"
 
     def operate(self, rot=np.eye(3), center=np.zeros(3)):
         """
@@ -1582,7 +1547,7 @@ class Orientation:
 
     def __str__(self):
         s = "-------PyXtal.molecule.Orientation class----\n"
-        s += "degree of freedom: {:d}\n".format(self.degrees)
+        s += f"degree of freedom: {self.degrees:d}\n"
         s += "Rotation matrix:\n"
         s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:, 0])
         s += "{:6.3f} {:6.3f} {:6.3f}\n".format(*self.matrix[:, 1])
@@ -1603,8 +1568,7 @@ class Orientation:
         return deepcopy(self)
 
     def save_dict(self):
-        dict0 = {"matrix": self.matrix, "degrees": self.degrees, "axis": self.axis}
-        return dict0
+        return {"matrix": self.matrix, "degrees": self.degrees, "axis": self.axis}
 
     @classmethod
     def load_dict(cls, dicts):
@@ -1640,12 +1604,11 @@ class Orientation:
             # update the matrix
             r1 = Rotation.from_rotvec(self.angle * self.axis)
 
-            if self.degrees == 2 and flip:
-                if np.random.random() > 0.5:
-                    ax = choice(["x", "y", "z"])
-                    angle0 = choice([90, 180, 270])
-                    r2 = Rotation.from_euler(ax, angle0, degrees=True)
-                    r1 = r2 * r1
+            if self.degrees == 2 and flip and np.random.random() > 0.5:
+                ax = choice(["x", "y", "z"])
+                angle0 = choice([90, 180, 270])
+                r2 = Rotation.from_euler(ax, angle0, degrees=True)
+                r1 = r2 * r1
             self.r = r1 * self.r
             self.matrix = self.r.as_matrix()
 
@@ -1696,14 +1659,12 @@ class Orientation:
             return Rotation.from_rotvec(angle * axis).as_matrix()
 
         elif self.degrees == 1:
-            if angle == "random":
-                angle = np.random.random() * np.pi * 2
-            else:
-                angle = self.angle
+            angle = np.random.random() * np.pi * 2 if angle == "random" else self.angle
             return Rotation.from_rotvec(angle * self.axis).as_matrix()
 
         elif self.degrees == 0:
             return self.matrix
+        return None
 
     def get_op(self):  # , angle=None):
         """
@@ -1802,11 +1763,7 @@ def is_compatible_symmetry(mol, wp):
     if len(mol) == 1 or wp.index == 0:
         return True
     pga = PointGroupAnalyzer(mol)
-    for op in wp.get_site_symm_wo_translation():  # symmetry without translation
-        # print("XXXX", pga.is_valid_op(op), op.as_xyz_str())
-        if not pga.is_valid_op(op):
-            return False
-    return True
+    return all(pga.is_valid_op(op) for op in wp.get_site_symm_wo_translation())
 
 
 def make_graph(mol, tol=0.2):
@@ -1825,7 +1782,7 @@ def make_graph(mol, tol=0.2):
         site1 = mol.sites[i]
         for j in range(i + 1, len(mol)):
             site2 = mol.sites[j]
-            key = "{:s}-{:s}".format(names[i], names[j])
+            key = f"{names[i]:s}-{names[j]:s}"
             if site1.distance(site2) < bonds[key]:
                 G.add_edge(i, j)
                 # print(key, site1.distance(site2))

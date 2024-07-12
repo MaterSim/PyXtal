@@ -2,9 +2,11 @@
 Extra test cases with rdkit
 """
 
-from pyxtal import pyxtal
-import pymatgen.analysis.structure_matcher as sm
 import warnings
+
+import pymatgen.analysis.structure_matcher as sm
+
+from pyxtal import pyxtal
 
 warnings.filterwarnings("ignore")
 

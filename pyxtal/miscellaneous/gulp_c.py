@@ -1,8 +1,10 @@
-from pyxtal.interface.gulp import GULP
-from pyxtal.crystal import random_crystal
-from ase import Atoms
 import os
+
+from ase import Atoms
 from spglib import get_symmetry_dataset
+
+from pyxtal.crystal import random_crystal
+from pyxtal.interface.gulp import GULP
 
 file = "C-POSCARs"
 if os.path.exists(file):

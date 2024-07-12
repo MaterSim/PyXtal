@@ -1,7 +1,9 @@
-from pyxtal.molecule import *
-from pyxtal.structure import *
 from ase.build import molecule
 from pymatgen.core import Molecule
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+from pyxtal.operations import OperationAnalyzer
+
+from pyxtal.structure import get_wyckoff_symmetry, ss_string_from_ops, orientation_in_wyckoff_position
 
 letters = "abcdefghijklmnopqrstuvwxyzA"
 
@@ -30,9 +32,7 @@ if __name__ == "__main__":
         pg = pga.get_pointgroup()
         for op in pg:
             opa = OperationAnalyzer(op)
-            if opa.order == "irrational":
-                print(opa)
-            elif opa.order > 10:
+            if opa.order == "irrational" or opa.order > 10:
                 print(opa)
 
         """symm = get_symmetry(mol)

@@ -7,9 +7,10 @@ A script to systematicly check
 """
 
 from glob import glob
-import numpy as np
+
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.core import Structure
+
 from pyxtal import pyxtal
 from pyxtal.supergroup import supergroups
 

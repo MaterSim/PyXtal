@@ -1,16 +1,18 @@
-import numpy as np
-from pyxtal.XRD import XRD
 import warnings
+
+import numpy as np
+
+from pyxtal.XRD import XRD
 
 warnings.filterwarnings("ignore")
 
-from ase.build import bulk
-from ase.io import read, lammpsrun
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from optparse import OptionParser
 from time import time
 
-from optparse import OptionParser
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+from ase.build import bulk
+from ase.io import read
 
 parser = OptionParser()
 parser.add_option(
@@ -40,10 +42,7 @@ for _i, id in enumerate(ids):
     a0.set_atomic_numbers([31] * N + [7] * N)
     ax0 = fig.add_subplot(gs[_i, 0])
     xrd = XRD(a0, thetas=thetas, ncpu=options.ncpu)
-    if _i == 0:
-        legend = "B4"
-    else:
-        legend = "META_" + str(id)
+    legend = "B4" if _i == 0 else "META_" + str(id)
 
     print(a0, time() - t0)
     xrd.plot_pxrd(ax=ax0, res=0.01, fwhm=0.25, profile="gaussian", legend=legend)

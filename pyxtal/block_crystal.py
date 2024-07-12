@@ -8,10 +8,11 @@ import numpy as np
 # External Libraries
 from pymatgen.core import Molecule
 
+from pyxtal.io import search_molecules_in_crystal
+
 # PyXtal imports
 from pyxtal.molecular_crystal import molecular_crystal as mol_xtal
-from pyxtal.molecule import pyxtal_molecule, compare_mol_connectivity, Orientation
-from pyxtal.io import search_molecules_in_crystal
+from pyxtal.molecule import Orientation, compare_mol_connectivity, pyxtal_molecule
 from pyxtal.wyckoff_site import mol_site
 
 
@@ -36,7 +37,7 @@ def block_crystal(
     # If block is None, directly generate mol. xtal.
     # Otherwise, generate crystal from building block
     if block is None:
-        struc = mol_xtal(
+        return mol_xtal(
             dim,
             group,
             molecules,
@@ -52,7 +53,6 @@ def block_crystal(
             seed=seed,
             use_hall=use_hall,
         )
-        return struc
 
     else:
         p_mol = pyxtal_molecule(block)
@@ -142,9 +142,10 @@ def block_crystal(
 
 
 if __name__ == "__main__":
+    import pymatgen.analysis.structure_matcher as sm
+
     from pyxtal import pyxtal
     from pyxtal.representation import representation
-    import pymatgen.analysis.structure_matcher as sm
 
     smiles = [
         "C1=C(C=C(C=C1[N+](=O)[O-])[N+](=O)[O-])C(=O)O.smi",

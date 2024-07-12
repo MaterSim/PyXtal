@@ -19,7 +19,7 @@ def addBox(view, vecs, viewer=None):
         (vecs[1, :] + vecs[2, :], vecs[0, :] + vecs[1, :] + vecs[2, :]),
     ]
 
-    for i, pt in enumerate(pts):
+    for _i, pt in enumerate(pts):
         pt1, pt2 = pt
 
         if viewer is None:
@@ -40,7 +40,7 @@ def addBox(view, vecs, viewer=None):
 
     # add unitcell labels
     labels = {"o": [0, 0, 0], "a": vecs[0, :], "b": vecs[1, :], "c": vecs[2, :]}
-    for key in labels.keys():
+    for key in labels:
         text, pos = key, labels[key]
         if viewer is None:
             view.addLabel(
@@ -109,10 +109,7 @@ def display_atomic(
 
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
-    if struc.dim == 0:
-        fmt = "xyz"
-    else:
-        fmt = "cif"
+    fmt = "xyz" if struc.dim == 0 else "cif"
 
     txt = struc.to_file(fmt=fmt)
     view.addModel(txt, fmt, {"doAssembly": True, "duplicateAssemblyAtoms": True})
@@ -212,10 +209,7 @@ def display_molecular_site(
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
 
-    if id is None:
-        ids = range(site.wp.multiplicity)
-    else:
-        ids = [id]
+    ids = range(site.wp.multiplicity) if id is None else [id]
 
     for i in ids:
         mol = site.get_mol_object(i)
@@ -340,7 +334,7 @@ def display_mol_crystals(
     (width, height) = size
     view = py3Dmol.view(height=height, width=width)
     if animation == "slider":
-        from ipywidgets import interact, IntSlider
+        from ipywidgets import IntSlider, interact
 
         def conf_viewer(idx):
             return strucs[idx].show(size=size, supercell=supercell, axis=axis)
@@ -348,6 +342,7 @@ def display_mol_crystals(
         interact(
             conf_viewer, idx=IntSlider(min=0, max=len(strucs) - 1, description="id:")
         )
+        return None
 
     elif animation == "movie":
         cifs = ""
@@ -376,14 +371,14 @@ def display_crystals(strucs, size=(600, 300), supercell=(1, 1, 1), labels=None):
         py3Dmol object
     """
     import py3Dmol
-    from ipywidgets import interact, IntSlider
+    from ipywidgets import IntSlider, interact
 
     (width, height) = size
-    view = py3Dmol.view(height=height, width=width)
+    py3Dmol.view(height=height, width=width)
     if labels is None:
-        l_min, l_max = 0, len(strucs) - 1
+        _l_min, _l_max = 0, len(strucs) - 1
     else:
-        l_min, l_max = labels[0], labels[-1]
+        _l_min, _l_max = labels[0], labels[-1]
 
     def conf_viewer(idx):
         return strucs[idx].show(size=size, supercell=supercell)
@@ -394,8 +389,8 @@ def display_crystals(strucs, size=(600, 300), supercell=(1, 1, 1), labels=None):
 def display_cluster(
     molecules, cell, Ps, cmap="YlGn", s_opacity=0.5, size=(400, 300), style="sphere"
 ):
-    import py3Dmol
     import numpy as np
+    import py3Dmol
     from matplotlib import cm, colors
 
     cmaps = getattr(cm, cmap)(Ps / np.mean(Ps))
@@ -409,10 +404,10 @@ def display_cluster(
     model.setStyle({}, {"sphere": {"colorscheme": "grayCarbon", "scale": 0.7}})
 
     center = molecules[0].center_of_mass
-    center_spec = {"x": center[0], "y": center[1], "z": center[2]}
-    w_spec = {"x": cell[0, 0], "y": cell[0, 1], "z": cell[0, 2]}
-    h_spec = {"x": cell[1, 0], "y": cell[1, 1], "z": cell[1, 2]}
-    d_spec = {"x": cell[2, 0], "y": cell[2, 1], "z": cell[2, 2]}
+    {"x": center[0], "y": center[1], "z": center[2]}
+    {"x": cell[0, 0], "y": cell[0, 1], "z": cell[0, 2]}
+    {"x": cell[1, 0], "y": cell[1, 1], "z": cell[1, 2]}
+    {"x": cell[2, 0], "y": cell[2, 1], "z": cell[2, 2]}
     # view.addBox({'center': center_spec,
     #             'dimensions': {'w': w_spec, 'h': h_spec, 'd': d_spec},
     #             'color':'magenta',

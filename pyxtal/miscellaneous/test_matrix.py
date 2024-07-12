@@ -1,12 +1,8 @@
-from math import fabs
-import numpy as np
-from random import uniform
-from numpy import arccos, cosh, sinh, cbrt, array, dot, pi, log
-from numpy.linalg import norm, det, inv
-from numpy.random import normal, random
 import matplotlib.pyplot as plt
-from timeit import timeit
-
+import numpy as np
+from numpy import array, cbrt, cosh, log, pi, sinh
+from numpy.linalg import det
+from numpy.random import normal
 from structure import *
 
 rad = 360.0 / (2 * pi)
@@ -60,8 +56,7 @@ def random_matrix(width=1.0, unitary=False):
         for y in range(3):
             mat[x][y] = normal(scale=width)
     if unitary:
-        new = mat / cbrt(det(mat))
-        return new
+        return mat / cbrt(det(mat))
     else:
         return mat
 

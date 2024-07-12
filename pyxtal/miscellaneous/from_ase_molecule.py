@@ -1,6 +1,13 @@
-from pyxtal.molecule import *
+from copy import deepcopy
+
 from ase.build import molecule
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer
+from pyxtal.operations import OperationAnalyzer
 from pymatgen.core import Molecule
+
+from pyxtal.molecule import (
+    orientation_in_wyckoff_position
+)
 
 
 def get_ase_mol(molname):
@@ -27,9 +34,7 @@ if __name__ == "__main__":
         pg = pga.get_pointgroup()
         for op in pg:
             opa = OperationAnalyzer(op)
-            if opa.order == "irrational":
-                print(opa)
-            elif opa.order > 10:
+            if opa.order == "irrational" or opa.order > 10:
                 print(opa)
 
         # orientation_in_wyckoff_position(mol, sg, WP's index in sg)

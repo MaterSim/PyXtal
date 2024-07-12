@@ -3,10 +3,10 @@ Module for crystal packing descriptor from energy decomposition
 """
 
 import numpy as np
-from scipy.stats import qmc
-from scipy.spatial.transform import Rotation
 from scipy.optimize import minimize
+from scipy.spatial.transform import Rotation
 from scipy.special import sph_harm
+from scipy.stats import qmc
 
 
 def _qlm(dists, l=4):
@@ -26,7 +26,7 @@ def _qlm(dists, l=4):
     neighbors_count = len(dists)
 
     for i, m in enumerate(range(-l, l + 1)):
-        for j, r_vec in enumerate(dists):
+        for _j, r_vec in enumerate(dists):
             # find the position vector of the site/neighbor pair
             r_mag = np.linalg.norm(r_vec)
             theta = np.arccos(r_vec[2] / r_mag)
@@ -38,11 +38,11 @@ def _qlm(dists, l=4):
             # phi
             if r_vec[0] < 0.0:
                 phi = np.pi + np.arctan(r_vec[1] / r_vec[0])
-            elif 0.0 < r_vec[0] and r_vec[1] < 0.0:
+            elif r_vec[0] > 0.0 and r_vec[1] < 0.0:
                 phi = 2 * np.pi + np.arctan(r_vec[1] / r_vec[0])
-            elif 0.0 < r_vec[0] and 0.0 <= r_vec[1]:
+            elif r_vec[0] > 0.0 and r_vec[1] >= 0.0:
                 phi = np.arctan(r_vec[1] / r_vec[0])
-            elif r_vec[0] == 0.0 and 0.0 < r_vec[1]:
+            elif r_vec[0] == 0.0 and r_vec[1] > 0.0:
                 phi = 0.5 * np.pi
             elif r_vec[0] == 0.0 and r_vec[1] < 0.0:
                 phi = 1.5 * np.pi
@@ -198,11 +198,11 @@ def xyz2sph(xyzs, radian=True):
 
         if r_vec[0] < 0.0:
             phi0 = np.pi + np.arctan(r_vec[1] / r_vec[0])
-        elif 0.0 < r_vec[0] and r_vec[1] < 0.0:
+        elif r_vec[0] > 0.0 and r_vec[1] < 0.0:
             phi0 = 2 * np.pi + np.arctan(r_vec[1] / r_vec[0])
-        elif 0.0 < r_vec[0] and 0.0 <= r_vec[1]:
+        elif r_vec[0] > 0.0 and r_vec[1] >= 0.0:
             phi0 = np.arctan(r_vec[1] / r_vec[0])
-        elif r_vec[0] == 0.0 and 0.0 < r_vec[1]:
+        elif r_vec[0] == 0.0 and r_vec[1] > 0.0:
             phi0 = 0.5 * np.pi
         elif r_vec[0] == 0.0 and r_vec[1] < 0.0:
             phi0 = 1.5 * np.pi
@@ -399,7 +399,7 @@ class spherical_image:
             pts: [N, 3] array, (theta, phi, eng)
         """
         pts = []
-        for i, site in enumerate(self.xtal.mol_sites):
+        for i, _site in enumerate(self.xtal.mol_sites):
             engs, pairs, dists = self.xtal.get_neighboring_dists(
                 i, factor=self.factor, max_d=self.max_d
             )
@@ -418,8 +418,8 @@ class spherical_image:
             figname: name of figure file
             molecule: draw 2D molecule diagram or not
         """
-        import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
+        import matplotlib.pyplot as plt
 
         if molecule:
             nrows = len(self.coefs) + 1
@@ -443,7 +443,7 @@ class spherical_image:
             m = Chem.MolFromSmiles(smi)
             im = Draw.MolToImage(m)
             ax0 = fig.add_subplot(gs[0, :])
-            imgplot = plt.imshow(im)
+            plt.imshow(im)
             ax0.axis("off")
 
         if lmax is None:
@@ -457,7 +457,7 @@ class spherical_image:
             ax2 = fig.add_subplot(gs[i + shift, 1])
             coef = self.coefs[i]
             grid = coef.expand(lmax=lmax)
-            grid.plot3d(0, 0, title="{:6.3f}".format(self.ds[i]), show=False, ax=ax1)
+            grid.plot3d(0, 0, title=f"{self.ds[i]:6.3f}", show=False, ax=ax1)
             grid.plot(
                 show=False,
                 ax=ax2,
@@ -488,7 +488,7 @@ class spherical_image:
         Args:
             M: number of power in quasi random sampling
         """
-        coef0 = self.coefs[0]
+        self.coefs[0]
         angles = get_alignment(self.pts[0])
         self.coefs[0] = self.coefs[0].rotate(angles[0], angles[1], angles[2])
 
@@ -565,7 +565,7 @@ class orientation_order:
             pts.append(coords)
         return pts
 
-    def get_parameters(self, ls=[4, 6]):
+    def get_parameters(self, ls=None):
         """
         Computes
         Args:
@@ -576,10 +576,12 @@ class orientation_order:
              q: numpy array(complex128), the complex vector qlm normalized
                 by the number of nearest neighbors
         """
+        if ls is None:
+            ls = [4, 6]
         qs = []
         for dist in self.dists:
             for l in ls:
-                factor = (4 * np.pi) / (2 * l + 1)
+                (4 * np.pi) / (2 * l + 1)
                 qlms = _qlm(dist, l)
                 dot = float(np.sum(qlms * np.conjugate(qlms)))
                 qs.append(np.sqrt((4 * np.pi) / (2 * l + 1) * dot))
@@ -589,6 +591,7 @@ class orientation_order:
 
 if __name__ == "__main__":
     from pkg_resources import resource_filename
+
     from pyxtal import pyxtal
 
     cif_path = resource_filename("pyxtal", "database/cifs/")

@@ -5,15 +5,16 @@ Module for generating molecular crystals
 # Standard Libraries
 import random
 from copy import deepcopy
+
 import numpy as np
 
-from pyxtal.tolerance import Tol_matrix
 from pyxtal.lattice import Lattice
-from pyxtal.wyckoff_site import mol_site
 from pyxtal.molecule import pyxtal_molecule
+from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError, VolumeError
 from pyxtal.symmetry import Group
 from pyxtal.symmetry import choose_wyckoff_mol as wyc_mol
-from pyxtal.msg import Comp_CompatibilityError, Symm_CompatibilityError, VolumeError
+from pyxtal.tolerance import Tol_matrix
+from pyxtal.wyckoff_site import mol_site
 
 
 # Define functions
@@ -98,10 +99,7 @@ class molecular_crystal:
         else:
             numMols = np.array(numMols)  # must convert it to np.array
             no_check_compability = False
-        if not conventional:
-            mul = self.group.cellsize()
-        else:
-            mul = 1
+        mul = self.group.cellsize() if not conventional else 1
         self.numMols = numMols * mul
 
         # Tolerance matrix
@@ -148,7 +146,7 @@ class molecular_crystal:
         if self.valid:
             s += "\nWyckoff sites:"
             for wyc in self.mol_sites:
-                s += "\n\t{}".format(wyc)
+                s += f"\n\t{wyc}"
         else:
             s += "\nStructure not generated."
         return s
@@ -165,7 +163,7 @@ class molecular_crystal:
         """
         # Symmetry sites
         self.sites = {}
-        for i, mol in enumerate(self.molecules):
+        for i, _mol in enumerate(self.molecules):
             if sites is not None and sites[i] is not None and len(sites[i]) > 0:
                 self._check_consistency(sites[i], self.numMols[i])
                 if type(sites[i]) is dict:
@@ -218,7 +216,7 @@ class molecular_crystal:
             self.valid_orientations.append([])
             for x in self.group.wyckoffs_organized:
                 self.valid_orientations[-1].append([])
-                for j, wp in enumerate(x):
+                for _j, wp in enumerate(x):
                     # Don't check the wp with high multiplicity
                     if len(wp) > self.numMols[i]:
                         allowed = []
@@ -253,21 +251,15 @@ class molecular_crystal:
         else:
             # Determine the unique axis
             if self.dim == 2:
-                if self.number in range(3, 8):
-                    unique_axis = "c"
-                else:
-                    unique_axis = "a"
+                unique_axis = "c" if self.number in range(3, 8) else "a"
             elif self.dim == 1:
-                if self.number in range(3, 8):
-                    unique_axis = "a"
-                else:
-                    unique_axis = "c"
+                unique_axis = "a" if self.number in range(3, 8) else "c"
             else:
                 unique_axis = "c"
 
             # Generate a Lattice instance
             good_lattice = False
-            for cycle in range(10):
+            for _cycle in range(10):
                 try:
                     self.lattice = Lattice(
                         self.group.lattice_type,
@@ -282,11 +274,11 @@ class molecular_crystal:
                 except VolumeError:
                     self.volume *= 1.1
                     msg = "Warning: increase the volume by 1.1 times: "
-                    msg += "{:.2f}".format(self.volume)
+                    msg += f"{self.volume:.2f}"
                     print(msg)
 
             if not good_lattice:
-                msg = "Volume estimation {:.2f} is very bad".format(self.volume)
+                msg = f"Volume estimation {self.volume:.2f} is very bad"
                 msg += " with the given composition "
                 msg += str(self.numMols)
                 raise RuntimeError(msg)
@@ -376,7 +368,7 @@ class molecular_crystal:
             min_wyckoffs = int(numMol / len(self.group.wyckoffs_organized[0][0]))
             self.wyckoff_attempts = max(2 * min_wyckoffs, 10)
 
-        for cycle in range(self.wyckoff_attempts):
+        for _cycle in range(self.wyckoff_attempts):
             # Choose a random WP for given multiplicity: 2a, 2b, 2c
             if sites_list is not None and len(sites_list) > 0:
                 site = sites_list[0]
@@ -387,7 +379,7 @@ class molecular_crystal:
             diff = numMol - numMol_added
 
             if type(site) is dict:  # site with coordinates
-                key = list(site.keys())[0]
+                key = next(iter(site.keys()))
                 wp = wyc_mol(self.group, diff, key, valid_ori, True, self.dim)
             else:
                 wp = wyc_mol(self.group, diff, site, valid_ori, True, self.dim)
@@ -396,10 +388,7 @@ class molecular_crystal:
                 # Generate a list of coords from the wyckoff position
                 mult = wp.multiplicity  # remember the original multiplicity
 
-                if type(site) is dict:
-                    pt = site[key]
-                else:
-                    pt = self.lattice.generate_point()
+                pt = site[key] if type(site) is dict else self.lattice.generate_point()
                     # merge coordinates if the atoms are close
                 mtol = pyxtal_mol.radius * 0.5
                 pt, wp, oris = wp.merge(
@@ -467,15 +456,14 @@ class molecular_crystal:
                         wp,
                         self.lattice,
                     )
-                    d = ms0.get_min_dist()
-                    return d
+                    return ms0.get_min_dist()
 
                 angle_lo = ori.angle
                 angle_hi = angle_lo + np.pi
                 fun_lo = fun_dist(angle_lo, ori, pyxtal_mol, pt)
                 fun_hi = fun_dist(angle_hi, ori, pyxtal_mol, pt)
                 fun = fun_hi
-                for it in range(self.ori_attempts):
+                for _it in range(self.ori_attempts):
                     self.numattempts += 1
                     if (fun > 0.8) & (ms0.short_dist()):
                         return ms0
@@ -501,6 +489,6 @@ class molecular_crystal:
         else:
             msg = "\nThe requested number of molecules is inconsistent: "
             msg += str(site)
-            msg += "\nfrom numMols: {:d}".format(numMol)
-            msg += "\nfrom Wyckoff list: {:d}".format(num)
+            msg += f"\nfrom numMols: {numMol:d}"
+            msg += f"\nfrom Wyckoff list: {num:d}"
             raise ValueError(msg)
