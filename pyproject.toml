@@ -6,7 +6,6 @@ target-version = "py39"
 line-length = 120
 include = ["**/pyproject.toml", "*.ipynb", "*.py", "*.pyi"]
 lint.select = [
-  "B",    # flake8-bugbear
   "C4",   # flake8-comprehensions
   "E",    # pycodestyle error
   "F",    # pyflakes
@@ -41,7 +40,9 @@ lint.ignore = [
   "PLR",   # pylint refactor
   "PT006", # pytest-parametrize-names-wrong-type
   "E741",  # ambiguous variable name -- turn off due to miller indices h, k, l
-  "RET505" # Unnecessary else after return
+  "E722",  # do not use bare 'except' -- should be fixed but too much tech debt to fix now
+  "RET505",  # Unnecessary else after return
+  "SIM300",  # Yoda conditions are not allowed
 ]
 lint.pydocstyle.convention = "google"
 lint.isort.known-third-party = ["wandb"]

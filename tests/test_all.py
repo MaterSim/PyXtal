@@ -119,8 +119,8 @@ class TestGroup(unittest.TestCase):
         for p in paras:
             (g, h, n_path) = p
             gr = Group(g, quick=True)
-            p = gr.search_subgroup_paths(h)[0]
-            solutions = gr.add_k_transitions(p)
+            path = gr.search_subgroup_paths(h)[0]
+            solutions = gr.add_k_transitions(path)
             assert len(solutions) == n_path
 
     def test_to_subgroup(self):
@@ -363,7 +363,7 @@ class TestOptLat(unittest.TestCase):
         pmg3 = c3.to_pymatgen()
         assert sm.StructureMatcher().fit(pmg1, pmg3)
 
-    def test_molecular(self):
+    def test_molecular_from_seed(self):
         c1 = pyxtal(molecular=True)
         c1.from_seed(seed=cif_path + "aspirin-c.cif", molecules=["aspirin"])
         c1.mol_sites[0].get_mol_object(0)
@@ -401,7 +401,7 @@ class TestOptLat(unittest.TestCase):
                 pmg3 = Structure.from_str(c1.to_file(), fmt="cif")
                 assert sm.StructureMatcher().fit(pmg1, pmg3)
 
-    def test_molecular(self):
+    def test_molecular_from_random(self):
         sgs = [5, 7, 8, 12, 13, 14]
         c1 = pyxtal(molecular=True)
         for _i in range(20):
@@ -1392,7 +1392,7 @@ class Test_operations(unittest.TestCase):
 
         def test_criteria(self):
             criteria = {"CN": {"B": 4, "N": 4}, "cutoff": 1.9, "exclude_ii": True}
-            xtals = xtal.substitute_1_2({"C": ["B", "N"]}, ratio=[1, 1], criteria=criteria)
+            xtals = pyxtal().substitute_1_2({"C": ["B", "N"]}, ratio=[1, 1], criteria=criteria)
             assert xtals[0].check_validity(criteria)
 
 
