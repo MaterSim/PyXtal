@@ -7,21 +7,15 @@ degrees of freedom for molecules in Wyckoff positions with certain symmetry
 constraints.
 """
 
-# Imports
-# ------------------------------
-# Standard libraries
 from copy import deepcopy
 
 import numpy as np
-
-# External Libraries
+from pymatgen.core import Element
 from pymatgen.core.operations import SymmOp
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
 from pyxtal.constants import all_sym_directions, deg, hex_cell, rad
-
-# PyXtal imports
 from pyxtal.tolerance import Tol_matrix
 
 
@@ -34,7 +28,7 @@ def check_distance(
     species2,
     lattice,
     PBC=None,
-    tm=Tol_matrix(prototype="atomic"),
+    tm: Tol_matrix = None,
     d_factor=1.0,
 ):
     """
@@ -60,6 +54,9 @@ def check_distance(
     Returns:
         a bool for whether or not the atoms are sufficiently far enough apart
     """
+    if tm is None:
+        tm = Tol_matrix(prototype="atomic")
+
     # Check that there are points to compare
     if PBC is None:
         PBC = [1, 1, 1]
@@ -116,7 +113,7 @@ def check_images(
     species,
     lattice,
     PBC=None,
-    tm=Tol_matrix(prototype="atomic"),
+    tm: Tol_matrix = None,
     tol=None,
     d_factor=1.0,
 ):
@@ -137,18 +134,25 @@ def check_images(
     Returns:
         False if distances are too close. True if distances are not too close
     """
+    if tm is None:
+        tm = Tol_matrix(prototype="atomic")
+
     # If no PBC, there are no images to check
     if PBC is None:
         PBC = [1, 1, 1]
+
     if PBC == [0, 0, 0]:
         return True
+
     # Create image coords from given coords and PBC
     coords = np.array(coords)
     m = create_matrix(PBC=PBC, omit=True)
+
     new_coords = []
     for v in m:
         for v2 in coords + v:
             new_coords.append(v2)
+
     new_coords = np.array(new_coords)
     # Create a distance matrix
     dm = distance_matrix(coords, new_coords, lattice, PBC=[0, 0, 0])
@@ -214,6 +218,7 @@ def distance_matrix(pts1, pts2, lattice, PBC=None, single=False, metric="euclide
     """
     if PBC is None:
         PBC = [1, 1, 1]
+
     if PBC != [0, 0, 0]:
         l1 = filtered_coords(pts1, PBC=PBC)
         l2 = filtered_coords(pts2, PBC=PBC)
@@ -887,11 +892,11 @@ class OperationAnalyzer(SymmOp):
         ax = self.axis
         ax /= np.linalg.norm(ax)
         for direction in all_sym_directions:
-            direction /= np.linalg.norm(direction)
+            normed = direction / np.linalg.norm(direction)
             # print(direction, np.dot(direction, ax))
-            if np.isclose(np.dot(direction, ax), 1):
+            if np.isclose(np.dot(normed, ax), 1):
                 return True
-            elif np.isclose(np.dot(direction, ax), -1):
+            elif np.isclose(np.dot(normed, ax), -1):
                 return False
         raise ValueError("Cannot find the symmetry direction", ax)
 
@@ -1023,7 +1028,7 @@ if __name__ == "__main__":
     from pymatgen.symmetry.analyzer import generate_full_symmops
 
     rot = Rotation.from_rotvec(np.pi / 6 * np.array([1, 0, 0]))
-    op = SymmOp.from_rotation_and_translation(rot.as_matrix(), vec0)
+    op = SymmOp.from_rotation_and_translation(rot.as_matrix(), np.array([1, 0, 0]))
     ops = [op]
 
     symm_m = generate_full_symmops(ops, 1e-3)

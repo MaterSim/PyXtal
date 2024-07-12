@@ -3,8 +3,11 @@ Module for generating atomic crystals
 """
 
 # Standard Libraries
-import random
+from __future__ import annotations
+
 from copy import deepcopy
+from typing import TYPE_CHECKING
+from warnings import warn
 
 import numpy as np
 
@@ -16,6 +19,9 @@ from pyxtal.msg import Comp_CompatibilityError, VolumeError
 from pyxtal.symmetry import Group, choose_wyckoff
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.wyckoff_site import atom_site
+
+if TYPE_CHECKING:
+    from numpy.random import Generator
 
 
 # Define functions
@@ -53,12 +59,15 @@ class random_crystal:
         lattice=None,
         sites=None,
         conventional=True,
-        tm=Tol_matrix(prototype="atomic"),
+        tm=None,
         use_hall=False,
+        random_state: int | None | Generator = None,
     ):
         # Initialize
+        self.rng = np.random.default_rng(random_state)
         if species is None:
             species = ["C"]
+
         self.source = "Random"
         self.valid = False
         self.factor = factor
@@ -81,7 +90,7 @@ class random_crystal:
             self.PBC = [0, 0, 0]
 
         # Symmetry group
-        if type(group) == Group:
+        if isinstance(group, Group):
             self.group = group
         else:
             self.group = Group(group, dim=self.dim, use_hall=use_hall)
@@ -95,10 +104,13 @@ class random_crystal:
         self.species = species
 
         # Tolerance matrix
-        if type(tm) == Tol_matrix:
+        if tm is None:
+            self.tol_matrix = Tol_matrix(prototype="atomic")
+        elif isinstance(tm, Tol_matrix):
             self.tol_matrix = tm
         else:
             self.tol_matrix = Tol_matrix(prototype=tm)
+
         # Wyckoff sites
         self.set_sites(sites)
 
@@ -110,11 +122,9 @@ class random_crystal:
             msg += " not compatible with symmetry "
             msg += str(self.group.number)
             raise Comp_CompatibilityError(msg)
-        else:
-            # self.set_volume()
-            # self.set_lattice(self.lattice0)
-            self.set_elemental_volumes()
-            self.set_crystal()
+
+        self.set_elemental_volumes()
+        self.set_crystal()
 
     def __str__(self):
         if self.valid:
@@ -147,12 +157,12 @@ class random_crystal:
                 self.sites[specie] = []
                 self._check_consistency(sites[i], self.numIons[i])
 
-                if type(sites[i]) is dict:
+                if isinstance(sites[i], dict):
                     for item in sites[i].items():
                         # keep the record of wp index
                         id = self.group.get_index_by_letter(item[0])
                         self.sites[specie].append((id, item[1]))
-                elif type(sites[i]) is list:  # tuple
+                elif isinstance(sites[i], list | tuple):
                     for site in sites[i]:
                         if type(site) is tuple:
                             (letter, x, y, z) = site
@@ -186,10 +196,12 @@ class random_crystal:
         Returns:
             a float value for the estimated volume
         """
-        volume = 0
-        for i, numIon in enumerate(self.numIons):
-            [vmin, vmax] = self.elemental_volumes[i]
-            volume += numIon * random.uniform(vmin, vmax)
+        vmin_array = np.array([v[0] for v in self.elemental_volumes])
+        vmax_array = np.array([v[1] for v in self.elemental_volumes])
+
+        random_volumes = self.rng.uniform(vmin_array, vmax_array, size=len(self.numIons))
+        volume = np.sum(np.array(self.numIons) * random_volumes)
+
         self.volume = self.factor * volume
 
         # make sure the volume is not too small
@@ -227,19 +239,16 @@ class random_crystal:
                         unique_axis=unique_axis,
                         thickness=self.thickness,
                         area=self.area,
+                        random_state=self.rng,
                     )
                     good_lattice = True
                     break
                 except VolumeError:
                     self.volume *= 1.1
-                    msg = "Warning: increase the volume by 1.1 times: "
-                    msg += f"{self.volume:.2f}"
-                    print(msg)
+                    warn(f"Warning: increase the volume by 1.1 times: {self.volume:.2f}")
 
             if not good_lattice:
-                msg = f"Volume estimation {self.volume:.2f} is very bad"
-                msg += " with the given composition "
-                msg += str(self.numIons)
+                msg = f"Volume estimation {self.volume:.2f} is very bad with the given composition {self.numIons}"
                 raise RuntimeError(msg)
 
     def set_crystal(self):
@@ -331,10 +340,7 @@ class random_crystal:
         cycle = 0
         while cycle < wyckoff_attempts:
             # Choose a random WP for given multiplicity: 2a, 2b
-            if sites_list is not None and len(sites_list) > 0:
-                site = sites_list[0]
-            else:  # Selecting the merging
-                site = None
+            site = sites_list[0] if sites_list is not None and len(sites_list) > 0 else None
 
             new_site = None
             if type(site) is tuple:  # site with coordinates
@@ -351,10 +357,9 @@ class random_crystal:
                         # print('bad pt', pt, wp.short_distances(pt, cell, tol))
                         cycle += 1
                         continue
-                    else:
-                        # update pt
-                        pt = wp.project(pt, cell, self.PBC)
-                        # print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
+                    # update pt
+                    pt = wp.project(pt, cell, self.PBC)
+                    # print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
                 else:
                     # generate wp
                     wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
@@ -396,7 +401,7 @@ class random_crystal:
     def _check_consistency(self, site, numIon):
         num = 0
         for s in site:
-            if type(s) is dict:
+            if isinstance(s, dict):
                 for key in s:
                     num += int(key[:-1])
             else:
@@ -411,14 +416,16 @@ class random_crystal:
                 if compat:
                     return True
                 else:
-                    msg = f"\nfrom numIons: {numIon:d}"
-                    msg += f"\nfrom Wyckoff list: {num:d}"
-                    msg += "\nThe number is incompatible with composition: "
-                    mse += str(site)
+                    msg = (
+                        f"\nfrom numIons: {numIon:d}"
+                        f"\nfrom Wyckoff list: {num:d}"
+                        f"\nThe number is incompatible with composition: {site}"
+                    )
                 raise ValueError(msg)
-            else:
-                msg = f"\nfrom numIons: {numIon:d}"
-                msg += f"\nfrom Wyckoff list: {num:d}"
-                msg += "\nThe requested number is greater than composition: "
-                msg += str(site)
-                raise ValueError(msg)
+
+            msg = (
+                f"\nfrom numIons: {numIon:d}"
+                f"\nfrom Wyckoff list: {num:d}"
+                f"\nThe requested number is greater than composition: {site}"
+            )
+            raise ValueError(msg)
