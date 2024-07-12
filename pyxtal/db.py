@@ -287,7 +287,7 @@ class database:
         #    raise ValueError(db_name, 'doesnot exist')
 
         self.db = connect(db_name)
-        self.get_all_codes()
+        self.codes = self.get_all_codes()
         self.keys = [
             "csd_code",
             "space_group",
@@ -312,15 +312,23 @@ class database:
     def vacuum(self):
         self.db.vacuum()
 
-    def get_all_codes(self):
+    def get_all_codes(self, group=None):
+        """
+        Get all codes
+        """
         codes = []
         for row in self.db.select():
             if row.csd_code not in codes:
-                codes.append(row.csd_code)
+                if group is None:
+                    codes.append(row.csd_code)
+                else:
+                    if row.group == group:
+                        codes.append(row.csd_code)
             else:
                 print("find duplicate! remove", row.id, row.csd_code)
                 self.db.delete([row.id])
-        self.codes = codes
+        return codes
+        #self.codes = codes
 
     def add(self, entry):
         (atom, kvp, data) = entry

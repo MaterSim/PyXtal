@@ -323,16 +323,16 @@ class GA(GlobalOptimize):
                 print("Select Good structures for FF optimization", len(xtals))
                 N_added = self.ff_optimization(xtals, N_added)
 
-
-            elif match is not None:
+            else:
                 match = self.early_termination(current_xtals,
                                                current_matches,
                                                current_engs,
                                                current_tags,
                                                ref_pmg,
                                                ref_eng)
-                print("Early termination")
-                return
+                if match is not None:
+                    print("Early termination")
+                    return match
 
         return
 
