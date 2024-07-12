@@ -57,6 +57,7 @@ setup(
     extra_require={
         "visualization": ["py3Dmol>=0.8.0"],
         "descriptor": ["pyshtools>=4.10.3"],
+        "test": ["wheel", "pytest", "coverage", "pytest-cov", "monty>=2024.2.26"],
     },
     python_requires=">=3.9",
     license="MIT",
