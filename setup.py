@@ -12,7 +12,7 @@ with open("README.md") as fh:
 
 setup(
     name="pyxtal",
-    version="0.6.8",
+    version="1.0.0",
     author="Scott Fredericks, Qiang Zhu",
     author_email="qiang.zhu@unlv.edu",
     description="Python code for generation of crystal structures based on symmetry constraints.",
