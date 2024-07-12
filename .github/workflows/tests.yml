@@ -25,15 +25,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install uv
-        run: pip install uv
+      #- name: Install uv
+      #  run: pip install . #uv
 
       - name: Install dependencies
-        run: |
-          uv pip install .[test] --system
+        run: pip install .[test] --no-deps --upgrade
+          #uv pip install .[test] --system
           #pip install nose
 
       - name: Run Tests
-        run: |
-          python -m pytest pyxtal/test_all.py
+        run: python -m pytest pyxtal/test_all.py
+          #pip install wheel pytest coverage pytest-cov
           #nosetests -s
