@@ -35,5 +35,5 @@ jobs:
 
       - name: Run Tests
         run: |
-          python -m pytest --cov pyxtal/test_all.py
+          python -m pytest pyxtal/test_all.py
           #nosetests -s
