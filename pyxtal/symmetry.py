@@ -2906,7 +2906,7 @@ def choose_wyckoff(G, number=None, site=None, dim=3, random_state: int | None | 
     else:
         wyckoffs_organized = G.wyckoffs_organized
 
-        if random_state.random > 0.5:
+        if random_state.random() > 0.5:
             for wyckoff in wyckoffs_organized:
                 if len(wyckoff[0]) <= number:
                     return random_state.choice(wyckoff)
@@ -4472,7 +4472,7 @@ def trim_ops(ops):
     base = []
     simplified_ops = []
 
-    for op in enumerate(ops):
+    for op in ops:
         rot = op.rotation_matrix
         tran = op.translation_vector
         tran = process_rotation(rot, tran, base)
