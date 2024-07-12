@@ -8,7 +8,6 @@ include = ["**/pyproject.toml", "*.ipynb", "*.py", "*.pyi"]
 lint.select = [
   "B",    # flake8-bugbear
   "C4",   # flake8-comprehensions
-  "D",    # pydocstyle
   "E",    # pycodestyle error
   "F",    # pyflakes
   "FA",   # flake8-future-annotations
@@ -37,10 +36,6 @@ lint.select = [
 ]
 lint.ignore = [
   "C408",  # Unnecessary dict call - rewrite as a literal
-  "D100",  # Missing docstring in public module
-  "D104",  # Missing docstring in public package
-  "D105",  # Missing docstring in magic method
-  "D205",  # 1 blank line required between summary line and description
   "E731",  # Do not assign a lambda expression, use a def
   "PD901", # pandas-df-variable-name
   "PLR",   # pylint refactor

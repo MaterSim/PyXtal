@@ -1,84 +1,85 @@
-"""This is a script to
-1, generate random clusters.
-2, perform optimization.
+"""This script:
+1. Generates random clusters
+2. Performs optimization using the Lennard-Jones potential
 """
 
 from time import time
 
 import numpy as np
 from scipy.optimize import minimize
-from scipy.spatial.distance import cdist, pdist
+from scipy.spatial.distance import pdist
 
 
-def LJ(pos, dim=3):
-    """Calculate the total energy.
+def lennard_jones_potential(pos, dim=3):
+    """Calculate the total Lennard-Jones potential energy.
 
     Args:
-        pos: 1D array with N*dim numbers representing the atomic positions
-        dim: dimension of the hyper/normal space
+        pos (np.ndarray): 1D array with N*dim numbers representing atomic positions
+        dim (int): Dimension of the space (default: 3)
 
-    output
-        E: the total energy with punishing function
+    Returns:
+        float: Total energy with punishing function
     """
-    N_atom = int(len(pos) / dim)
-    pos = np.reshape(pos, (N_atom, dim))
+    N_atom = len(pos) // dim
+    pos = pos.reshape(N_atom, dim)
 
     distance = pdist(pos)
-    r6 = np.power(distance, 6)
-    r12 = np.multiply(r6, r6)
+    r6 = distance**6
+    r12 = r6**2
     return np.sum(4 * (1 / r12 - 1 / r6))
 
 
-def LJ_force(pos, dim=3):
-    """Calculate the LF Forces.
+def lennard_jones_force(pos, dim=3):
+    """Calculate the Lennard-Jones forces.
 
     Args:
-        pos: 1D array with N*dim numbers representing the atomic positions
-        dim: dimension of the hyper/normal space
+        pos (np.ndarray): 1D array with N*dim numbers representing atomic positions
+        dim (int): Dimension of the space (default: 3)
 
-    output
-        F: 1D force array
+    Returns:
+        np.ndarray: 1D force array
     """
-    N_atom = int(len(pos) / dim)
-    pos = np.reshape(pos, [N_atom, dim])
-    force = np.zeros([N_atom, dim])
+    N_atom = len(pos) // dim
+    pos = pos.reshape(N_atom, dim)
+    force = np.zeros_like(pos)
+
     for i, pos0 in enumerate(pos):
-        pos1 = pos.copy()
-        pos1 = np.delete(pos1, i, 0)
-        distance = cdist([pos0], pos1)
+        pos1 = np.delete(pos, i, axis=0)
         r = pos1 - pos0
-        r2 = np.power(distance, 2)
-        r6 = np.power(r2, 3)
-        r12 = np.power(r6, 2)
-        force[i] = np.dot((48 / r12 - 24 / r6) / r2, r)
+        distance = np.linalg.norm(r, axis=1)
+        r2 = distance**2
+        r6 = r2**3
+        r12 = r6**2
+        force[i] = np.sum((48 / r12 - 24 / r6)[:, np.newaxis] * r / r2[:, np.newaxis], axis=0)
+
     return force.flatten()
 
 
-def single_optimize(pos):
+def optimize_cluster(pos):
     """Perform optimization for a given cluster.
 
     Args:
-        pos: N*dim0 array representing the atomic positions.
-        dim: dimension of the hyper/normal space.
+        pos (np.ndarray): N*dim array representing atomic positions
 
-    output:
-        energy: optmized energy
-        pos: optimized positions
+    Returns:
+        tuple: (optimized energy, optimized positions)
     """
     pos = pos.flatten()
-    fun, jac = LJ, LJ_force
-    res = minimize(fun, pos, jac=jac, method="CG", tol=1e-3)
-    pos = np.reshape(res.x, (int(len(pos) / 3), 3))
-    energy = res.fun
-    return energy, pos
+    res = minimize(lennard_jones_potential, pos, jac=lennard_jones_force, method="CG", tol=1e-3)
+    optimized_pos = res.x.reshape(-1, 3)
+    optimized_energy = res.fun
+    return optimized_energy, optimized_pos
 
 
 if __name__ == "__main__":
-    N = 38
-    L = 10
+    N_ATOMS = 38
+    BOX_SIZE = 10
+    N_ITERATIONS = 20
+
     rng = np.random.default_rng()
-    for i in range(20):
+
+    for i in range(N_ITERATIONS):
         t0 = time()
-        pos0 = L * rng.random((N * 3,))
-        eng, pos = single_optimize(pos0)
-        print(i, eng, time() - t0)
+        initial_pos = BOX_SIZE * rng.random((N_ATOMS * 3,))
+        energy, optimized_pos = optimize_cluster(initial_pos)
+        print(f"Iteration {i}: Energy = {energy:.6f}, Time = {time() - t0:.6f} s")
